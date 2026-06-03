@@ -49,6 +49,13 @@ const resolveSatelliteAuth = (): SatelliteAuth => {
 
     if (urlToken) {
       localStorage.setItem(SATELLITE_TOKEN_STORAGE_KEY, urlToken)
+      // Strip the token from the URL immediately so it can't leak via history,
+      // logs, or referrer headers.
+      params.delete("token")
+      const stripped = `${window.location.pathname}${
+        params.toString() ? `?${params}` : ""
+      }`
+      window.history.replaceState({}, "", stripped)
     }
 
     const token =
@@ -75,18 +82,32 @@ interface SocketContextValue {
   reconnect: () => void
 }
 
+const CLIENT_ID_KEY = "client_id"
+
+const readCookie = (name: string): string | null => {
+  const match = document.cookie.match(
+    new RegExp("(?:^|; )" + name + "=([^;]*)"),
+  )
+  return match?.[1] ? decodeURIComponent(match[1]) : null
+}
+
+const writeCookie = (name: string, value: string) => {
+  // 1-year persistent cookie so the player's identity survives a localStorage
+  // clear / private-tab quirks — they keep their points/place on rejoin.
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${
+    60 * 60 * 24 * 365
+  }; path=/; SameSite=Lax`
+}
+
+// Durable client identity: stored in BOTH localStorage and a long-lived cookie,
+// recovering from whichever survives, so a reconnect always re-binds the same
+// player session (the reconnect guarantee keys on this id).
 const getClientId = (): string => {
   try {
-    const stored = localStorage.getItem("client_id")
-
-    if (stored) {
-      return stored
-    }
-
-    const newId = uuid()
-    localStorage.setItem("client_id", newId)
-
-    return newId
+    const id = localStorage.getItem(CLIENT_ID_KEY) ?? readCookie(CLIENT_ID_KEY) ?? uuid()
+    localStorage.setItem(CLIENT_ID_KEY, id)
+    writeCookie(CLIENT_ID_KEY, id)
+    return id
   } catch {
     return uuid()
   }

@@ -15,6 +15,7 @@ import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import clsx from "clsx"
 import { Maximize } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { type PropsWithChildren, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -35,7 +36,7 @@ const GameWrapper = ({
 }: Props) => {
   const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
-  const { gameId } = useManagerStore()
+  const { gameId, inviteCode } = useManagerStore()
   const { questionStates, setQuestionStates } = useQuestionStore()
   const { theme } = useThemeStore()
   const { t } = useTranslation()
@@ -103,6 +104,28 @@ const GameWrapper = ({
           style={{ opacity: "var(--bg-scrim)" }}
         />
       </div>
+
+      {/* Host-screen rejoin badge: a player who dropped scans this QR (or types
+          the PIN shown on the slide) to come straight back to the game — their
+          identity (points/place) is recovered via the durable clientId cookie. */}
+      {manager && inviteCode && (
+        <div className="fixed bottom-3 left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
+          <div className="rounded bg-white p-1">
+            <QRCodeSVG
+              value={`${window.location.origin}/?pin=${inviteCode}`}
+              size={56}
+            />
+          </div>
+          <div className="leading-tight">
+            <div className="text-[10px] font-semibold uppercase opacity-70">
+              Wieder rein
+            </div>
+            <div className="font-mono text-xl font-bold tracking-widest">
+              {inviteCode}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="z-10 flex w-full flex-1 flex-col justify-between">
         {!isConnected && !statusName ? (
