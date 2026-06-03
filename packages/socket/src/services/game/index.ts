@@ -274,6 +274,10 @@ class Game {
   showLeaderboard() {
     this.round.showLeaderboard()
   }
+
+  setAutoMode(on: boolean) {
+    this.round.setAutoMode(on)
+  }
 }
 
 export default Game

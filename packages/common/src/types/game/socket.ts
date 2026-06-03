@@ -111,6 +111,7 @@ export interface ClientToServerEvents {
     playerId: string
   }) => void
   [EVENTS.MANAGER.START_GAME]: (_message: MessageGameId) => void
+  [EVENTS.MANAGER.SET_AUTO]: (_message: { gameId?: string; auto: boolean }) => void
   [EVENTS.MANAGER.ABORT_QUIZ]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.NEXT_QUESTION]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void

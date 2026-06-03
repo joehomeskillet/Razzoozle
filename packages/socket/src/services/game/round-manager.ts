@@ -52,9 +52,52 @@ export class RoundManager {
   private leaderboard: Player[] = []
   private tempOldLeaderboard: Player[] | null = null
   private questionsHistory: QuestionResult[] = []
+  private autoMode = false
+  private autoTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(opts: RoundManagerOptions) {
     this.opts = opts
+  }
+
+  setAutoMode(on: boolean): void {
+    this.autoMode = on
+    if (!on) {
+      this.clearAuto()
+    }
+  }
+
+  private clearAuto(): void {
+    if (this.autoTimer) {
+      clearTimeout(this.autoTimer)
+      this.autoTimer = null
+    }
+  }
+
+  // Auto mode: after results, advance to leaderboard then the next question
+  // automatically (with pauses), so the host doesn't click through every round.
+  private scheduleAuto(): void {
+    this.clearAuto()
+    const AUTO_RESULT_MS = 6000
+    const AUTO_LEADERBOARD_MS = 5000
+
+    this.autoTimer = setTimeout(() => {
+      if (!this.started || !this.autoMode) {
+        return
+      }
+      this.showLeaderboard()
+      if (!this.started) {
+        return
+      }
+      this.autoTimer = setTimeout(() => {
+        if (!this.started || !this.autoMode) {
+          return
+        }
+        if (this.opts.quizz.questions[this.currentQuestion + 1]) {
+          this.currentQuestion += 1
+          void this.newQuestion()
+        }
+      }, AUTO_LEADERBOARD_MS)
+    }, AUTO_RESULT_MS)
   }
 
   isStarted(): boolean {
@@ -102,6 +145,8 @@ export class RoundManager {
     if (!this.started) {
       return
     }
+
+    this.clearAuto()
 
     const question = this.opts.quizz.questions[this.currentQuestion]
 
@@ -329,6 +374,10 @@ export class RoundManager {
     this.leaderboard = sortedPlayers
     this.tempOldLeaderboard = oldLeaderboard
     this.playersAnswers = []
+
+    if (this.autoMode) {
+      this.scheduleAuto()
+    }
   }
 
   selectAnswer(socket: Socket, answerId: number): void {
