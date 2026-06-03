@@ -34,7 +34,7 @@ const Result = ({
     2: "game:rank.2",
     3: "game:rank.3",
   }
-  const rankKey = rankKeyMap[rank] ?? "rank.other"
+  const rankKey = rankKeyMap[rank] ?? "game:rank.other"
 
   const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
     volume: 0.2,
@@ -78,7 +78,7 @@ const Result = ({
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           {streakBonus && streak ? (
             <span className="rounded-full bg-orange-500/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
-              🔥 Streak ×{streak}
+              🔥 {streak}er-Serie (+{10 * Math.min(streak - 1, 5)}%)
             </span>
           ) : null}
           {bonus && (

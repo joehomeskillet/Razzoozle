@@ -10,6 +10,7 @@ import {
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import clsx from "clsx"
@@ -31,12 +32,23 @@ const GameWrapper = ({
   onBack,
   manager,
 }: Props) => {
-  const { isConnected } = useSocket()
+  const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
+  const { gameId } = useManagerStore()
   const { questionStates, setQuestionStates } = useQuestionStore()
   const { theme } = useThemeStore()
   const { t } = useTranslation()
   const [isDisabled, setIsDisabled] = useState(false)
+  const [autoOn, setAutoOn] = useState(false)
+
+  const toggleAuto = () => {
+    const nextAuto = !autoOn
+    setAutoOn(nextAuto)
+    socket.emit(EVENTS.MANAGER.SET_AUTO, {
+      gameId: gameId ?? undefined,
+      auto: nextAuto,
+    })
+  }
   const next = statusName ? MANAGER_SKIP_BTN[statusName] : null
   const bgSrc =
     (manager ? theme.backgrounds.managerGame : theme.backgrounds.playerGame) ??
@@ -94,6 +106,30 @@ const GameWrapper = ({
                 <div className="flex items-center rounded-md bg-white p-2 px-4 text-lg font-bold text-black">
                   {`${questionStates.current} / ${questionStates.total}`}
                 </div>
+              )}
+
+              {manager && (
+                <button
+                  type="button"
+                  onClick={toggleAuto}
+                  className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-200"
+                  title="Auto-Modus: läuft automatisch weiter"
+                >
+                  <span
+                    className={clsx(
+                      "relative h-5 w-9 rounded-full transition-colors",
+                      autoOn ? "bg-primary" : "bg-gray-300",
+                    )}
+                  >
+                    <span
+                      className={clsx(
+                        "absolute top-0.5 size-4 rounded-full bg-white transition-all",
+                        autoOn ? "left-[18px]" : "left-0.5",
+                      )}
+                    />
+                  </span>
+                  Auto {autoOn ? "an" : "aus"}
+                </button>
               )}
 
               {manager && next && (

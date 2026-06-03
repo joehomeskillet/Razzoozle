@@ -21,6 +21,16 @@ const QuestionEditorType = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const type: QuestionType = currentQuestion.type ?? "choice"
 
+  // Clear fields that don't belong to the target type (avoid stale data).
+  const SLIDER_CLEAR = {
+    min: undefined,
+    max: undefined,
+    correct: undefined,
+    step: undefined,
+    unit: undefined,
+  }
+  const CHOICE_CLEAR = { answers: undefined, solutions: undefined }
+
   const setType = (next: QuestionType) => {
     if (next === "boolean") {
       updateQuestion(currentIndex, {
@@ -29,6 +39,7 @@ const QuestionEditorType = () => {
         solutions: currentQuestion.solutions?.filter((s) => s < 2).length
           ? currentQuestion.solutions.filter((s) => s < 2)
           : [0],
+        ...SLIDER_CLEAR,
       })
     } else if (next === "slider") {
       updateQuestion(currentIndex, {
@@ -38,6 +49,7 @@ const QuestionEditorType = () => {
         correct: currentQuestion.correct ?? 50,
         step: currentQuestion.step ?? 1,
         unit: currentQuestion.unit ?? "",
+        ...CHOICE_CLEAR,
       })
     } else if (next === "poll") {
       updateQuestion(currentIndex, {
@@ -46,6 +58,8 @@ const QuestionEditorType = () => {
           ? currentQuestion.answers
           : ["", ""],
         solutions: [],
+        bonus: undefined,
+        ...SLIDER_CLEAR,
       })
     } else {
       updateQuestion(currentIndex, {
@@ -56,12 +70,23 @@ const QuestionEditorType = () => {
         solutions: currentQuestion.solutions?.length
           ? currentQuestion.solutions
           : [0],
+        ...SLIDER_CLEAR,
       })
     }
   }
 
+  // Bonus and practice are mutually exclusive (practice awards no points).
   const toggleBonus = () =>
-    updateQuestion(currentIndex, { bonus: !currentQuestion.bonus })
+    updateQuestion(currentIndex, {
+      bonus: !currentQuestion.bonus,
+      practice: false,
+    })
+
+  const togglePractice = () =>
+    updateQuestion(currentIndex, {
+      practice: !currentQuestion.practice,
+      bonus: false,
+    })
 
   const setNum =
     (field: "min" | "max" | "correct" | "step") =>
@@ -90,17 +115,28 @@ const QuestionEditorType = () => {
         ))}
       </div>
 
-      {type !== "poll" && (
+      <div className="flex flex-wrap gap-4">
+        {type !== "poll" && (
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
+            <input
+              type="checkbox"
+              checked={!!currentQuestion.bonus}
+              onChange={toggleBonus}
+              className="size-4 cursor-pointer"
+            />
+            ⭐ Bonusfrage (doppelte Punkte)
+          </label>
+        )}
         <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
           <input
             type="checkbox"
-            checked={!!currentQuestion.bonus}
-            onChange={toggleBonus}
+            checked={!!currentQuestion.practice}
+            onChange={togglePractice}
             className="size-4 cursor-pointer"
           />
-          ⭐ Bonusfrage (doppelte Punkte)
+          🎯 Übungsfrage (0 Punkte)
         </label>
-      )}
+      </div>
 
       {type === "slider" && (
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 md:grid-cols-5">

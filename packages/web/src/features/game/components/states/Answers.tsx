@@ -152,7 +152,7 @@ const Answers = ({
               value={sliderValue}
               disabled={submitted}
               onChange={(e) => setSliderValue(Number(e.target.value))}
-              className="accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40"
+              className="accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40 disabled:cursor-not-allowed"
             />
             <div className="flex w-full justify-between text-sm font-semibold text-white/70">
               <span>

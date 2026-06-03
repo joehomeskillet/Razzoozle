@@ -286,10 +286,12 @@ export class RoundManager {
 
         let isCorrect = false
         let rawPoints = 0
+        let baseFactor = 0
 
         if (playerAnswer) {
           const ev = evalAnswer(playerAnswer.answerId)
           isCorrect = ev.correct
+          baseFactor = ev.base
           rawPoints = ev.base * playerAnswer.points
         }
 
@@ -304,12 +306,19 @@ export class RoundManager {
 
         let gotFirst = false
         if (!question.practice && isCorrect && player.id === firstCorrectId) {
-          points += FIRST_CORRECT_BONUS
+          // Scale the first-correct bonus by accuracy (full for choice/boolean,
+          // proportional for slider) so a fast near-miss can't beat an accurate one.
+          points += Math.round(FIRST_CORRECT_BONUS * baseFactor)
           gotFirst = true
         }
 
         player.points += points
-        player.streak = isCorrect ? streakBefore + 1 : 0
+        // Practice questions don't touch the streak (they award no points).
+        player.streak = question.practice
+          ? streakBefore
+          : isCorrect
+            ? streakBefore + 1
+            : 0
 
         return {
           ...player,
@@ -405,7 +414,6 @@ export class RoundManager {
     socket
       .to(this.opts.gameId)
       .emit(EVENTS.GAME.PLAYER_ANSWER, this.playersAnswers.length)
-    this.opts.players.broadcastCount()
 
     if (this.playersAnswers.length === this.opts.players.count()) {
       this.opts.cooldown.abort()

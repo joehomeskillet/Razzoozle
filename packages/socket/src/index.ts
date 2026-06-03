@@ -12,6 +12,9 @@ const WS_PORT = 3001
 
 const io: Server = new ServerIO({
   path: "/ws",
+  // Compress WS frames over 1KB (off by default) + cap inbound buffer.
+  perMessageDeflate: { threshold: 1024 },
+  maxHttpBufferSize: 1e6,
 })
 initConfig()
 
