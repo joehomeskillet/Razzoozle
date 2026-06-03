@@ -54,5 +54,14 @@
     "step2": "Start a game and tap «Satellite» in the game header to enter the code.",
     "step3": "Your phone stays the remote: start, next and auto-mode are all driven from here.",
     "hint": "Pairing only works once a game is running — the code needs the live game and your manager password."
+  },
+  "lowLatency": {
+    "title": "Low Latency Health",
+    "p50p95": "p50 / p95",
+    "rtt": "Latency (RTT)",
+    "clockOffset": "Clock offset",
+    "answerAck": "Answer ack",
+    "reconnects": "Reconnects",
+    "rejected": "Rejected answers"
   }
 }

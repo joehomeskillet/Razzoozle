@@ -114,9 +114,69 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
   socket.on(EVENTS.PLAYER.SELECTED_ANSWER, ({ gameId, data }) =>
     withGame(gameId, socket, (game) =>
-      game.selectAnswer(socket, data.answerKey),
+      // Forward the optional per-tap clientMessageId (LL-mode dedup). A missing
+      // id means "dedup by player+question only", i.e. today's behaviour.
+      game.selectAnswer(socket, data.answerKey, data.clientMessageId),
     ),
   )
+
+  // Low-latency mode: UI-only clock sync. The handler is always registered, but
+  // game.handleClockPing() is a no-op (sends nothing) unless lowLatencyMode is
+  // enabled + clockSync is on, so normal mode is unaffected. We resolve the
+  // game by the socket's own membership (player or manager) — no ownership
+  // check, because a clock ping is a harmless, read-only request.
+  socket.on(EVENTS.CLOCK.PING, (data) => {
+    const clientSendMonoMs = data?.clientSendMonoMs
+
+    if (typeof clientSendMonoMs !== "number") {
+      return
+    }
+
+    const game =
+      registry.getGameByPlayerSocketId(socket.id) ??
+      registry.getGameByManagerSocketId(socket.id)
+
+    if (game) {
+      game.handleClockPing(socket, clientSendMonoMs)
+    }
+  })
+
+  // Low-latency observability: a client reports a measured sample (RTT / clock
+  // offset / ack latency). Resolved by the reporter's own socket membership and
+  // folded into that game's room metrics. game.recordMetric is a no-op unless
+  // low-latency mode is enabled, so normal mode is unaffected. Crash-guarded:
+  // a malformed payload is dropped, never thrown.
+  socket.on(EVENTS.METRICS.REPORT, (report) => {
+    const kind = report?.kind
+    const value = report?.value
+
+    if (typeof kind !== "string" || typeof value !== "number") {
+      return
+    }
+
+    const game =
+      registry.getGameByPlayerSocketId(socket.id) ??
+      registry.getGameByManagerSocketId(socket.id)
+
+    if (game) {
+      game.recordMetric(kind, value)
+    }
+  })
+
+  // Low-latency observability: a manager opts in to health snapshots for its own
+  // game. Manager-only (resolved via getManagerGame + clientId); no-op when the
+  // game isn't found or low-latency mode is off.
+  socket.on(EVENTS.METRICS.SUBSCRIBE, ({ gameId }) => {
+    if (!gameId) {
+      return
+    }
+
+    const game = registry.getManagerGame(gameId, clientId)
+
+    if (game) {
+      game.subscribeMetrics(socket)
+    }
+  })
 
   socket.on(EVENTS.MANAGER.ABORT_QUIZ, ({ gameId }) =>
     withGame(gameId, socket, (game) => game.abortRound(socket)),

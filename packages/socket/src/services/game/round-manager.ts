@@ -8,17 +8,33 @@ import type {
   QuestionResult,
   Quizz,
 } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
+import type {
+  AnswerAck,
+  AnswerAckReason,
+  Server,
+  Socket,
+} from "@razzia/common/types/game/socket"
 import {
   type Status,
   STATUS,
   type StatusDataMap,
 } from "@razzia/common/types/game/status"
+import type { LowLatencyMode } from "@razzia/common/validators/game-config"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
+import { ScoreboardThrottle } from "@razzia/socket/services/game/scoreboard-throttle"
+import { metrics } from "@razzia/socket/services/metrics"
 import { timeToPoint } from "@razzia/socket/utils/game"
 import sleep from "@razzia/socket/utils/sleep"
 import { nanoid } from "nanoid"
+
+// Server-side bookkeeping for a stored answer that never leaves the server: the
+// authoritative receive timestamp and the per-tap dedup id. Kept separate from
+// the shared `Answer` type (common layer) so this stays a server-only concern.
+interface AnswerMeta {
+  serverReceivedAtMs: number
+  clientMessageId?: string
+}
 
 type BroadcastFn = <T extends Status>(
   _status: T,
@@ -41,6 +57,9 @@ export interface RoundManagerOptions {
   send: SendFn
   onNewQuestion: () => void
   onGameFinished: (_result: GameResult) => void
+  // Low-latency mode config (already defaulted by the zod validator). When
+  // `enabled` is false every branch below is skipped => normal mode unchanged.
+  lowLatency: LowLatencyMode
 }
 
 export class RoundManager {
@@ -55,8 +74,35 @@ export class RoundManager {
   private autoMode = false
   private autoTimer: ReturnType<typeof setTimeout> | null = null
 
+  // ── Low-latency mode state (only populated when enabled) ──────────────────
+  private readonly ll: LowLatencyMode
+  // Monotonic server sequence stamped on each SELECT_ANSWER broadcast. Lets a
+  // reconnecting client detect a stale view. Starts at 0; first question = 1.
+  private serverSeq = 0
+  // Per-answer server-side bookkeeping keyed by clientId (receive ts + dedup id).
+  private answerMeta = new Map<string, AnswerMeta>()
+  // Set of clientMessageIds already accepted this question (dedup by id).
+  private seenMessageIds = new Set<string>()
+  // Server wall-clock deadline for the current question (for too_late checks).
+  private answerDeadlineAtServerMs = 0
+  // Leading+trailing throttle for the live answered-count broadcast.
+  private readonly answerCountThrottle: ScoreboardThrottle<number>
+
   constructor(opts: RoundManagerOptions) {
     this.opts = opts
+    this.ll = opts.lowLatency
+
+    // Throttle only the chatter (answered count). delayMs 0 when disabled =>
+    // emits immediately, byte-identical to today.
+    const throttleMs = this.ll.enabled ? this.ll.scoreboardBroadcastThrottleMs : 0
+    this.answerCountThrottle = new ScoreboardThrottle<number>(
+      throttleMs,
+      (count) => {
+        this.opts.io
+          .to(this.opts.gameId)
+          .emit(EVENTS.GAME.PLAYER_ANSWER, count)
+      },
+    )
   }
 
   setAutoMode(on: boolean): void {
@@ -185,6 +231,34 @@ export class RoundManager {
 
     this.startTime = Date.now()
 
+    // Low-latency mode: reset per-question dedup bookkeeping and stamp the
+    // server-authoritative timing anchors. All guarded by `enabled` so normal
+    // mode neither computes nor emits any of this (the optional status fields
+    // stay `undefined` and old clients ignore them).
+    let llAnchors: {
+      serverSeq?: number
+      serverNowMs?: number
+      questionStartAtServerMs?: number
+      answerDeadlineAtServerMs?: number
+    } = {}
+
+    if (this.ll.enabled) {
+      this.answerMeta.clear()
+      this.seenMessageIds.clear()
+      this.serverSeq += 1
+
+      const serverNowMs = this.startTime
+      // Deadline mirrors the existing cooldown.start(question.time) below.
+      this.answerDeadlineAtServerMs = serverNowMs + question.time * 1000
+
+      llAnchors = {
+        serverSeq: this.serverSeq,
+        serverNowMs,
+        questionStartAtServerMs: serverNowMs,
+        answerDeadlineAtServerMs: this.answerDeadlineAtServerMs,
+      }
+    }
+
     this.opts.broadcast(STATUS.SELECT_ANSWER, {
       question: question.question,
       media: question.media,
@@ -199,6 +273,7 @@ export class RoundManager {
             unit: question.unit,
           }
         : { answers: question.answers }),
+      ...llAnchors,
     })
 
     await this.opts.cooldown.start(question.time)
@@ -384,12 +459,21 @@ export class RoundManager {
     this.tempOldLeaderboard = oldLeaderboard
     this.playersAnswers = []
 
+    // Low-latency mode: the question is over — drop any pending throttled count
+    // and close the answer window so a late tap is rejected as `too_late`.
+    this.answerCountThrottle.cancel()
+    this.answerDeadlineAtServerMs = 0
+
     if (this.autoMode) {
       this.scheduleAuto()
     }
   }
 
-  selectAnswer(socket: Socket, answerId: number): void {
+  selectAnswer(socket: Socket, answerId: number, clientMessageId?: string): void {
+    // SERVER receive timestamp — the only clock trusted for scoring. Captured
+    // first thing so the value is unaffected by anything below it.
+    const serverReceivedAtMs = Date.now()
+
     // Resolve + key answers by the durable clientId (not the volatile socket.id)
     // so a tap re-sent after a wifi blip + reconnect is matched, not lost.
     const clientId = socket.handshake.auth.clientId as string
@@ -397,31 +481,132 @@ export class RoundManager {
     const question = this.opts.quizz.questions[this.currentQuestion]
 
     if (!player) {
+      // No durable session for this socket — reject (only acked in LL mode).
+      this.rejectAnswer(socket, "invalid_question", serverReceivedAtMs, clientMessageId)
+
+      return
+    }
+
+    if (!question) {
+      this.rejectAnswer(socket, "invalid_question", serverReceivedAtMs, clientMessageId)
+
       return
     }
 
     // Idempotent within the question: a retry for the same clientId is a no-op.
-    if (this.playersAnswers.find((a) => a.playerId === clientId)) {
+    // In LL mode we additionally dedup by the per-tap clientMessageId so a
+    // socket.io auto-retry of the *same* tap is caught even before the player
+    // record check (and is acked as `duplicate` rather than silently dropped).
+    const alreadyAnswered = !!this.playersAnswers.find(
+      (a) => a.playerId === clientId,
+    )
+    const duplicateMessageId =
+      this.ll.enabled &&
+      clientMessageId !== undefined &&
+      this.seenMessageIds.has(clientMessageId)
+
+    if (alreadyAnswered || duplicateMessageId) {
+      this.rejectAnswer(socket, "duplicate", serverReceivedAtMs, clientMessageId)
+
       return
     }
 
+    // Low-latency mode: reject answers that arrived after the server-side
+    // deadline (with an optional, clamped, server-side compensation window so a
+    // tap that left in time but landed slightly late still counts). Scoring is
+    // NEVER derived from a client-supplied timestamp — only this server clock.
+    if (this.ll.enabled && this.answerDeadlineAtServerMs > 0) {
+      const compensation = Math.max(
+        0,
+        Math.min(this.ll.maxLatencyCompensationMs, 2000),
+      )
+
+      if (serverReceivedAtMs > this.answerDeadlineAtServerMs + compensation) {
+        this.rejectAnswer(socket, "too_late", serverReceivedAtMs, clientMessageId)
+
+        return
+      }
+    }
+
+    // Accept: score strictly from the server clock (startTime captured at
+    // question start). timeToPoint uses Date.now() internally, matching today.
     this.playersAnswers.push({
       playerId: clientId,
       answerId,
       points: timeToPoint(this.startTime, question.time),
     })
 
+    if (this.ll.enabled) {
+      this.answerMeta.set(clientId, { serverReceivedAtMs, clientMessageId })
+
+      if (clientMessageId !== undefined) {
+        this.seenMessageIds.add(clientMessageId)
+      }
+
+      this.emitAck(socket, {
+        accepted: true,
+        reason: "ok",
+        serverReceivedAtMs,
+        clientMessageId,
+      })
+    }
+
     this.opts.send(socket.id, STATUS.WAIT, {
       text: "game:waitingForAnswers",
     })
 
-    socket
-      .to(this.opts.gameId)
-      .emit(EVENTS.GAME.PLAYER_ANSWER, this.playersAnswers.length)
+    // The live answered-count is "chatter": throttled in LL mode, immediate
+    // otherwise. It is NEVER a game-state transition, so throttling it is safe.
+    if (this.ll.enabled) {
+      this.answerCountThrottle.push(this.playersAnswers.length)
+    } else {
+      socket
+        .to(this.opts.gameId)
+        .emit(EVENTS.GAME.PLAYER_ANSWER, this.playersAnswers.length)
+    }
 
     if (this.playersAnswers.length === this.opts.players.count()) {
+      // All in — flush any pending throttled count so the manager sees the
+      // final number immediately, then end the question.
+      this.answerCountThrottle.cancel()
       this.opts.cooldown.abort()
     }
+  }
+
+  // Emit an answer ack (LL mode only) and record reject metrics. A rejected
+  // answer in normal mode is a silent no-op exactly as before.
+  private rejectAnswer(
+    socket: Socket,
+    reason: AnswerAckReason,
+    serverReceivedAtMs: number,
+    clientMessageId?: string,
+  ): void {
+    if (!this.ll.enabled) {
+      return
+    }
+
+    metrics.recordRejected(this.opts.gameId, reason)
+    this.emitAck(socket, {
+      accepted: false,
+      reason,
+      serverReceivedAtMs,
+      clientMessageId,
+    })
+  }
+
+  private emitAck(socket: Socket, ack: AnswerAck): void {
+    if (!this.ll.enabled || !this.ll.answerAck) {
+      return
+    }
+
+    socket.emit(EVENTS.PLAYER.ANSWER_ACK, ack)
+  }
+
+  // Low-latency mode reconnect helper: did this clientId already answer the
+  // current (in-flight) question? Used to render "answered" on resume instead
+  // of re-enabling the buttons. Always false / harmless in normal mode.
+  hasAnswered(clientId: string): boolean {
+    return !!this.playersAnswers.find((a) => a.playerId === clientId)
   }
 
   nextQuestion(socket: Socket): void {

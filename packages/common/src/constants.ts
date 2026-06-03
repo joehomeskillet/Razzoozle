@@ -20,6 +20,25 @@ export const EVENTS = {
     RECONNECT: "player:reconnect",
     LEAVE: "player:leave",
     SELECTED_ANSWER: "player:selectedAnswer",
+    // Low-latency mode: optional server ack for a submitted answer.
+    ANSWER_ACK: "player:answerAck",
+  },
+  // Low-latency mode: UI-only clock sync (never a scoring input).
+  CLOCK: {
+    PING: "clock:ping",
+    PONG: "clock:pong",
+  },
+  // Low-latency mode observability. All three are additive and only ever used
+  // while lowLatencyMode is enabled; in normal mode no client subscribes and the
+  // server never emits, so this group is inert.
+  METRICS: {
+    // client → server: report a client-measured sample (RTT / clock-offset /
+    // answer-ack latency). The server folds it into per-room rolling buffers.
+    REPORT: "metrics:report",
+    // host → server: start receiving health snapshots for the host's own game.
+    SUBSCRIBE: "metrics:subscribe",
+    // server → host: a compact p50/p95 health snapshot (throttled).
+    HEALTH: "metrics:health",
   },
   MANAGER: {
     SUCCESS_RECONNECT: "manager:successReconnect",

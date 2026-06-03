@@ -110,6 +110,38 @@ Options:
 
 - `managerPassword`: The master password for accessing the manager interface. **Must be changed from the default `"PASSWORD"` value**, otherwise manager access is blocked.
 
+#### Low-Latency Mode (optional, off by default)
+
+An opt-in mode that tightens timing fairness, gives players instant local answer
+feedback, smooths reconnects, and adds host-side observability — all on the
+existing socket.io transport, with **no rewrite**. It is **disabled by default**:
+when off, behaviour is byte-identical to a normal Razzia build, and an existing
+`game.json` that only has `managerPassword` keeps working unchanged.
+
+To enable it, add the `lowLatencyMode` block to `config/game.json` (every field
+is optional and defaulted, so you can set only the ones you want):
+
+```jsonc
+{
+  "managerPassword": "PASSWORD",
+  "lowLatencyMode": {
+    "enabled": false,                      // master switch; OFF = today's behaviour
+    "clockSync": true,                     // UI-only client clock offset (never scoring)
+    "preloadNextQuestion": true,           // prefetch the next question's media
+    "answerAck": true,                     // emit an answer ack to the client
+    "scoreboardBroadcastThrottleMs": 100,  // coalesce scoreboard chatter (ms)
+    "maxLatencyCompensationMs": 150        // server-side, capped grace window (ms)
+  }
+}
+```
+
+Scoring always stays **server-authoritative** (the server's receive timestamp,
+never client time). See **[docs/LOW-LATENCY-MODE.md](docs/LOW-LATENCY-MODE.md)**
+for what it does and does not guarantee, why WebSocket/socket.io stays the
+default transport (and why WebTransport is not), the timing model, clock sync,
+answer idempotency/ack, preload, scoreboard throttle, reconnect/resume, and the
+observability metrics.
+
 ### 2. Quiz Configuration (`config/quizz/*.json`)
 
 Quizzes can be created in two ways:
@@ -174,6 +206,19 @@ Quiz Options:
 3. Share the game URL (http://localhost:3000) and room code with participants
 4. Wait for players to join
 5. Click the start button to begin the game
+
+## 📺 Kiosk / Satellite Display
+
+The `/satellite/<gameId>` route is a **display-only kiosk** view of the
+host/presentation screen, intended for a wall-mounted screen or a Raspberry Pi
+wired to a beamer/TV. It renders the manager presentation chrome with **no**
+control buttons — the game is still driven from `/manager` on another device.
+
+Because it has no password prompt, this route does **not** use the manager
+password. It authenticates over socket.io with a **token** supplied via the URL
+(`/satellite/<gameId>?satellite=true&token=<token>`) or a build-time
+`VITE_SATELLITE_TOKEN`, validated against the same `MANAGER.AUTH` path. Without a
+valid token the kiosk cannot connect.
 
 ## 📝 Contributing
 

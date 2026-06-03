@@ -54,5 +54,14 @@
     "step2": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit», um den Code einzugeben.",
     "step3": "Dein Handy bleibt die Fernbedienung: Starten, Weiter und Auto-Modus steuerst du von hier.",
     "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort."
+  },
+  "lowLatency": {
+    "title": "Low-Latency-Status",
+    "p50p95": "p50 / p95",
+    "rtt": "Latenz (RTT)",
+    "clockOffset": "Uhr-Versatz",
+    "answerAck": "Antwort-Bestätigung",
+    "reconnects": "Reconnects",
+    "rejected": "Abgelehnte Antworten"
   }
 }

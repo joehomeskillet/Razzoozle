@@ -5,15 +5,17 @@ import type {
   QuizzWithId,
 } from "@razzia/common/types/game"
 import { quizzValidator } from "@razzia/common/validators/quizz"
+import {
+  type GameConfig,
+  gameConfigValidator,
+} from "@razzia/common/validators/game-config"
 import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import { themeValidator } from "@razzia/common/validators/theme"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import fs from "fs"
 import { resolve } from "path"
 
-interface GameConfig {
-  managerPassword: string
-}
+export type { GameConfig } from "@razzia/common/validators/game-config"
 
 const inContainerPath = process.env.CONFIG_PATH
 
@@ -32,11 +34,23 @@ export const initConfig = () => {
   const isGameConfigExists = fs.existsSync(getPath("game.json"))
 
   if (!isGameConfigExists) {
+    // Seed includes the lowLatencyMode block (enabled: false) for discoverability
+    // so an operator sees the opt-in switches. It is purely documentary: an
+    // existing bare `{ managerPassword }` config still validates because every
+    // field is zod-defaulted, and enabled=false keeps normal-mode behaviour.
     fs.writeFileSync(
       getPath("game.json"),
       JSON.stringify(
         {
           managerPassword: "PASSWORD",
+          lowLatencyMode: {
+            enabled: false,
+            clockSync: true,
+            preloadNextQuestion: true,
+            answerAck: true,
+            scoreboardBroadcastThrottleMs: 100,
+            maxLatencyCompensationMs: 150,
+          },
         },
         null,
         2,
@@ -63,15 +77,29 @@ export const getGameConfig = (): GameConfig => {
     throw new Error("Game config not found")
   }
 
+  // Parse through the zod validator so every field is defaulted/back-filled.
+  // A bare `{ managerPassword: "PASSWORD" }` back-fills the whole lowLatencyMode
+  // block with `enabled: false`, so existing configs validate unchanged and the
+  // auth gate (managerPassword) passes through. On any failure we fall back to
+  // the schema defaults (`gameConfigValidator.parse({})`) so the server never
+  // crashes on a malformed file — it just behaves as normal mode.
   try {
-    const config = fs.readFileSync(getPath("game.json"), "utf-8")
+    const raw = fs.readFileSync(getPath("game.json"), "utf-8")
+    const result = gameConfigValidator.safeParse(JSON.parse(raw))
 
-    return JSON.parse(config) as GameConfig
+    if (result.success) {
+      return result.data
+    }
+
+    console.warn(
+      "Invalid game.json, using defaults:",
+      result.error.issues,
+    )
   } catch (error) {
     console.error("Failed to read game config:", error)
   }
 
-  return {} as GameConfig
+  return gameConfigValidator.parse({})
 }
 
 export const getQuizzMeta = () =>

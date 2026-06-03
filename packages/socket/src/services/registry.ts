@@ -1,5 +1,10 @@
 import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzia/common/constants"
-import Game from "@razzia/socket/services/game"
+// `import type` (not a runtime import): registry only uses Game as a type. A
+// runtime import here creates a registry<->game import cycle, and esbuild's
+// init order then leaves `Registry` undefined when game/index.ts calls
+// Registry.getInstance() at module load — a startup crash that surfaces (when
+// minified) as a misleading zod "cyclical schemas" error. Type-only breaks it.
+import type Game from "@razzia/socket/services/game"
 import dayjs from "dayjs"
 
 interface EmptyGame {
@@ -97,12 +102,17 @@ class Registry {
 
   removeGame(gameId: string): boolean {
     const initialLength = this.games.length
+    const target = this.games.find((g) => g.gameId === gameId)
     this.games = this.games.filter((g) => g.gameId !== gameId)
     this.emptyGames = this.emptyGames.filter((g) => g.game.gameId !== gameId)
 
     const removed = this.games.length < initialLength
 
     if (removed) {
+      // Free any low-latency metrics buffers/timers for this game so the
+      // per-room metrics map can't accumulate keys over a long-lived server.
+      // No-op in normal mode (nothing was ever recorded).
+      target?.disposeMetrics()
       console.log(`Game ${gameId} removed. Total games: ${this.games.length}`)
     }
 
@@ -191,6 +201,10 @@ class Registry {
 
     const removed = this.emptyGames.filter((g) => !stillEmpty.includes(g))
     const removedGameIds = removed.map((r) => r.game.gameId)
+
+    // Free LL metrics buffers/timers for each timed-out game (no-op in normal
+    // mode) so the per-room metrics map doesn't leak across cleanups.
+    removed.forEach((r) => r.game.disposeMetrics())
 
     this.games = this.games.filter((g) => !removedGameIds.includes(g.gameId))
     this.emptyGames = stillEmpty

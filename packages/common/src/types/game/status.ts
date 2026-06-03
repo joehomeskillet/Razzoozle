@@ -39,6 +39,13 @@ export interface CommonStatusDataMap {
     max?: number
     step?: number
     unit?: string
+    // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
+    // absent in normal mode and ignored by old clients. Client uses these only
+    // to drive the countdown/UI (never for scoring — scoring is server-side).
+    serverSeq?: number
+    serverNowMs?: number
+    questionStartAtServerMs?: number
+    answerDeadlineAtServerMs?: number
   }
   SHOW_RESULT: {
     correct: boolean

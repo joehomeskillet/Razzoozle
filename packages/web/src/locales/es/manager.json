@@ -54,5 +54,14 @@
     "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
     "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
     "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager."
+  },
+  "lowLatency": {
+    "title": "Estado de baja latencia",
+    "p50p95": "p50 / p95",
+    "rtt": "Latencia (RTT)",
+    "clockOffset": "Desfase de reloj",
+    "answerAck": "Confirmación de respuesta",
+    "reconnects": "Reconexiones",
+    "rejected": "Respuestas rechazadas"
   }
 }

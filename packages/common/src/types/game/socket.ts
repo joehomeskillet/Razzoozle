@@ -29,6 +29,63 @@ export interface MessageGameId {
   gameId?: string
 }
 
+// ---- Low-latency mode contracts (all OPTIONAL / additive) ----------------
+
+// Why a server may accept or reject a submitted answer. Server-authoritative;
+// the client only displays it. `ok` = counted, everything else = not counted.
+export type AnswerAckReason =
+  | "ok"
+  | "duplicate"
+  | "too_late"
+  | "invalid_question"
+  | "invalid_answer"
+
+// Optional ack the server emits after receiving an answer (low-latency mode).
+export interface AnswerAck {
+  accepted: boolean
+  reason: AnswerAckReason
+  // Server receive timestamp (Date.now()). Authoritative scoring clock.
+  serverReceivedAtMs: number
+  // Echoes the per-tap id so the client can match ack ↔ submit (idempotency).
+  clientMessageId?: string
+}
+
+// ---- Observability (low-latency health) ----------------------------------
+
+// Kinds of client-measured sample the client can report to the server. RTT and
+// clock-offset come from the clock-sync burst; ack latency is the time from a
+// player tapping an answer to receiving its server ack. These are measured on
+// the CLIENT (a one-way server ping has no observable round-trip), so the
+// client reports them and the server aggregates per room for the host widget.
+export type MetricKind = "rtt" | "clockOffset" | "answerAck"
+
+// client → server sample report. `value` is milliseconds. OPTIONAL/additive —
+// only sent while low-latency mode is active; ignored by the server otherwise.
+export interface MetricsReport {
+  kind: MetricKind
+  value: number
+}
+
+// One percentile bucket of a rolling sample buffer. Nulls mean "no samples yet"
+// (the widget renders those as "—"). `count` is the live buffer size.
+export interface MetricPercentiles {
+  p50: number | null
+  p95: number | null
+  count: number
+}
+
+// server → host compact health snapshot. Structural mirror of the server's
+// metrics.snapshot() return — kept here as the wire contract so the common
+// layer (and the web widget) can type it without importing from packages/socket.
+export interface MetricsHealthSnapshot {
+  rtt: MetricPercentiles
+  clockOffset: MetricPercentiles
+  answerAck: MetricPercentiles
+  reconnectCount: number
+  // rejected-answer counts grouped by AnswerAckReason (only non-zero reasons).
+  rejected: Record<string, number>
+}
+
 export interface ServerToClientEvents {
   connect: () => void
 
@@ -56,8 +113,14 @@ export interface ServerToClientEvents {
     status: { name: Status; data: StatusDataMap[Status] }
     player: { username: string; points: number }
     currentQuestion: GameUpdateQuestion
+    // Low-latency mode: true if this player already answered the current
+    // question (resume shows "answered" instead of re-enabling buttons).
+    // OPTIONAL — absent in normal mode; client must default to false.
+    alreadyAnswered?: boolean
   }) => void
   [EVENTS.PLAYER.UPDATE_LEADERBOARD]: (_data: { leaderboard: Player[] }) => void
+  // Low-latency mode: optional ack for a submitted answer.
+  [EVENTS.PLAYER.ANSWER_ACK]: (_ack: AnswerAck) => void
 
   // Manager events
   [EVENTS.MANAGER.SUCCESS_RECONNECT]: (_data: {
@@ -103,6 +166,17 @@ export interface ServerToClientEvents {
   [EVENTS.DISPLAY.REGISTERED]: (_data: { code: string }) => void
   [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
   [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
+
+  // Low-latency mode: UI-only clock sync. Server echoes the client's monotonic
+  // send timestamp and adds its own wall clock so the client can derive offset.
+  [EVENTS.CLOCK.PONG]: (_data: {
+    clientSendMonoMs: number
+    serverNowMs: number
+  }) => void
+
+  // Low-latency observability: compact health snapshot for the host widget.
+  // Only emitted to a subscribed manager while low-latency mode is enabled.
+  [EVENTS.METRICS.HEALTH]: (_snapshot: MetricsHealthSnapshot) => void
 }
 
 // Events a satellite display socket may emit to the server.
@@ -169,11 +243,31 @@ export interface ClientToServerEvents {
   [EVENTS.PLAYER.LOGIN]: (
     _message: MessageWithoutStatus<{ username: string }>,
   ) => void
-  [EVENTS.PLAYER.RECONNECT]: (_message: { gameId: string }) => void
+  [EVENTS.PLAYER.RECONNECT]: (_message: {
+    gameId: string
+    // Low-latency mode: last server sequence the client saw, so resume can
+    // detect a stale view. OPTIONAL — omitted by old/normal-mode clients.
+    lastServerSeq?: number
+  }) => void
   [EVENTS.PLAYER.LEAVE]: (_message: { gameId: string }) => void
   [EVENTS.PLAYER.SELECTED_ANSWER]: (
-    _message: MessageWithoutStatus<{ answerKey: number }>,
+    _message: MessageWithoutStatus<{
+      answerKey: number
+      // Low-latency mode: per-tap dedup id. OPTIONAL — server treats a missing
+      // id as today (dedup by player+question only).
+      clientMessageId?: string
+    }>,
   ) => void
+
+  // Low-latency mode: UI-only clock sync ping (client monotonic clock).
+  [EVENTS.CLOCK.PING]: (_data: { clientSendMonoMs: number }) => void
+
+  // Low-latency observability: client reports a measured sample (RTT / offset /
+  // ack latency). Folded into the reporter's own game room. OPTIONAL/additive.
+  [EVENTS.METRICS.REPORT]: (_report: MetricsReport) => void
+  // Low-latency observability: a manager opts in to health snapshots for its
+  // own game. The server replies with periodic, throttled HEALTH snapshots.
+  [EVENTS.METRICS.SUBSCRIBE]: (_message: MessageGameId) => void
 
   // Results actions
   [EVENTS.RESULTS.GET]: (_id: string) => void

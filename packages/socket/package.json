@@ -5,6 +5,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "node esbuild.config.js",
     "start": "node dist/index.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "types": "tsc --noEmit",
     "format": "prettier --check . --log-level warn",
     "format:fix": "prettier --write . --log-level warn"
@@ -23,6 +25,8 @@
     "@types/node": "^25.6.2",
     "esbuild": "^0.28.0",
     "prettier": "^3.8.3",
-    "tsx": "^4.21.0"
+    "socket.io-client": "^4.8.3",
+    "tsx": "^4.21.0",
+    "vitest": "4.1.7"
   }
 }

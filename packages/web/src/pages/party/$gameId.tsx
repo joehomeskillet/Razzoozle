@@ -1,10 +1,14 @@
 import { EVENTS } from "@razzia/common/constants"
+import { STATUS } from "@razzia/common/types/game/status"
 import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
 import {
   socketClient,
+  useClockSync,
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { useAnswerStore } from "@razzia/web/features/game/stores/answer"
+import { useLowLatencyStore } from "@razzia/web/features/game/stores/lowLatency"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import {
@@ -12,6 +16,7 @@ import {
   isKeyOf,
 } from "@razzia/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
+import { useRef } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -21,11 +26,26 @@ const PlayerGamePage = () => {
   const { gameId: gameIdParam } = useParams({ from: "/party/$gameId" })
   const { status, setPlayer, setGameId, setStatus, reset } = usePlayerStore()
   const { setQuestionStates } = useQuestionStore()
+  const setLowLatencyActive = useLowLatencyStore((s) => s.setActive)
+  const setAlreadyAnswered = useAnswerStore((s) => s.setAlreadyAnswered)
   const { t } = useTranslation()
+
+  // Drive UI-only clock sync while low-latency mode is active (no-op otherwise).
+  useClockSync()
+
+  // Last server sequence this client has seen, sent back on reconnect so the
+  // server can detect a stale view. Defaults to undefined (normal mode / old
+  // server simply ignores it). Held in a ref so updating it never re-renders.
+  const lastServerSeqRef = useRef<number | undefined>(undefined)
 
   useEvent("connect", () => {
     if (gameIdParam) {
-      socket.emit(EVENTS.PLAYER.RECONNECT, { gameId: gameIdParam })
+      // Reuse the durable clientId (carried in the socket handshake auth) plus
+      // the last server sequence so resume can show "answered" if appropriate.
+      socket.emit(EVENTS.PLAYER.RECONNECT, {
+        gameId: gameIdParam,
+        lastServerSeq: lastServerSeqRef.current,
+      })
     }
   })
 
@@ -36,16 +56,44 @@ const PlayerGamePage = () => {
       status: reconnectStatus,
       player,
       currentQuestion,
+      // OPTIONAL — absent in normal mode; default to false so we never crash and
+      // never wrongly lock a player out of answering.
+      alreadyAnswered,
     }) => {
       setGameId(reconnectGameId)
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayer(player)
       setQuestionStates(currentQuestion)
+      // If the server says we already answered the current question, surface that
+      // so the answer screen renders the answered/locked state instead of fresh
+      // buttons. ?? false keeps normal-mode behaviour untouched.
+      setAlreadyAnswered(reconnectGameId, alreadyAnswered ?? false)
     },
   )
 
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
     if (name in GAME_STATE_COMPONENTS) {
+      // Detect low-latency mode from the presence of server-timing anchors and
+      // track the latest server sequence. All reads optional/guarded so a
+      // normal-mode (anchor-less) payload is a no-op here.
+      if (name === STATUS.SELECT_ANSWER) {
+        const anchored = data as {
+          serverSeq?: number
+          serverNowMs?: number
+          answerDeadlineAtServerMs?: number
+        }
+        if (
+          typeof anchored?.serverNowMs === "number" ||
+          typeof anchored?.answerDeadlineAtServerMs === "number"
+        ) {
+          setLowLatencyActive(true)
+        }
+        if (typeof anchored?.serverSeq === "number") {
+          lastServerSeqRef.current = anchored.serverSeq
+        }
+        // A fresh question always clears any prior "already answered" lock.
+        setAlreadyAnswered(gameIdParam, false)
+      }
       setStatus(name, data)
     }
   })

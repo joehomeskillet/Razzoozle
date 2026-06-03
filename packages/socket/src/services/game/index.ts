@@ -6,10 +6,16 @@ import {
   type Status,
   type StatusDataMap,
 } from "@razzia/common/types/game/status"
-import { saveResult } from "@razzia/socket/services/config"
+import type {
+  MetricKind,
+  MetricsHealthSnapshot,
+} from "@razzia/common/types/game/socket"
+import type { LowLatencyMode } from "@razzia/common/validators/game-config"
+import { getGameConfig, saveResult } from "@razzia/socket/services/config"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
 import { RoundManager } from "@razzia/socket/services/game/round-manager"
+import { metrics } from "@razzia/socket/services/metrics"
 import Registry from "@razzia/socket/services/registry"
 import { createInviteCode } from "@razzia/socket/utils/game"
 import { v7 as uuid } from "uuid"
@@ -29,6 +35,15 @@ class Game {
   private readonly playerManager: PlayerManager
   private readonly round: RoundManager
   private readonly cooldown: CooldownTimer
+  // Low-latency mode config snapshot, read ONCE at game creation so a mid-game
+  // config edit can't change behaviour for a running game. enabled=false =>
+  // every LL branch in this game is skipped (normal mode).
+  private readonly lowLatency: LowLatencyMode
+  // Health-snapshot push throttle (low-latency observability). Coalesces bursts
+  // of client metric reports into at most one HEALTH emit per window so a busy
+  // room can't spam the host. null when no emit is currently scheduled.
+  private healthPushTimer: ReturnType<typeof setTimeout> | null = null
+  private readonly HEALTH_PUSH_THROTTLE_MS = 1000
 
   private lastBroadcastStatus: {
     name: Status
@@ -55,6 +70,24 @@ class Game {
       connected: true,
     }
 
+    // Read the LL config once. getGameConfig() is zod-defaulted/back-compatible,
+    // but guard the read so a config error can never crash game creation — fall
+    // back to "disabled" (normal mode).
+    this.lowLatency = (() => {
+      try {
+        return getGameConfig().lowLatencyMode
+      } catch {
+        return {
+          enabled: false,
+          clockSync: true,
+          preloadNextQuestion: true,
+          answerAck: true,
+          scoreboardBroadcastThrottleMs: 100,
+          maxLatencyCompensationMs: 150,
+        }
+      }
+    })()
+
     this.cooldown = new CooldownTimer(io, this.gameId)
 
     this.playerManager = new PlayerManager(
@@ -77,6 +110,7 @@ class Game {
         this.managerStatus = null
       },
       onGameFinished: saveResult,
+      lowLatency: this.lowLatency,
     })
 
     socket.join(this.gameId)
@@ -211,11 +245,23 @@ class Game {
       this.playerStatus.set(socket.id, oldStatus)
     }
 
+    // Low-latency mode: tell the client whether it already answered the current
+    // question so resume renders "answered" instead of re-enabling buttons.
+    // OPTIONAL field — omitted entirely in normal mode (client defaults false).
+    const alreadyAnswered = this.lowLatency.enabled
+      ? this.round.hasAnswered(clientId)
+      : undefined
+
+    if (this.lowLatency.enabled) {
+      metrics.recordReconnect(this.gameId)
+    }
+
     socket.emit(EVENTS.PLAYER.SUCCESS_RECONNECT, {
       gameId: this.gameId,
       currentQuestion: this.round.getReconnectInfo(),
       status,
       player: { username: player.username, points: player.points },
+      ...(alreadyAnswered !== undefined ? { alreadyAnswered } : {}),
     })
     socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
 
@@ -256,8 +302,120 @@ class Game {
     await this.round.start(socket)
   }
 
-  selectAnswer(socket: Socket, answerId: number) {
-    this.round.selectAnswer(socket, answerId)
+  selectAnswer(socket: Socket, answerId: number, clientMessageId?: string) {
+    this.round.selectAnswer(socket, answerId, clientMessageId)
+  }
+
+  // Low-latency mode helpers exposed to the handler layer.
+
+  get lowLatencyMode(): LowLatencyMode {
+    return this.lowLatency
+  }
+
+  // UI-only clock sync: reply with the server wall clock. Gated by enabled +
+  // clockSync so normal mode is an inert no-op. RTT and clock-offset are
+  // measured on the CLIENT (the server can't observe a one-way ping's
+  // round-trip), so the server only answers here; the host widget reads RTT/
+  // offset from the client samples. Returns true if a pong was sent.
+  handleClockPing(socket: Socket, clientSendMonoMs: number): boolean {
+    if (!this.lowLatency.enabled || !this.lowLatency.clockSync) {
+      return false
+    }
+
+    socket.emit(EVENTS.CLOCK.PONG, {
+      clientSendMonoMs,
+      serverNowMs: Date.now(),
+    })
+
+    return true
+  }
+
+  // p50/p95 health snapshot for the optional host widget. Cheap; empty in
+  // normal mode (nothing is ever recorded when disabled).
+  getMetrics(): MetricsHealthSnapshot {
+    return metrics.snapshot(this.gameId)
+  }
+
+  // ── Low-latency observability ─────────────────────────────────────────────
+
+  // Ingest a client-measured sample (RTT / clock-offset / answer-ack latency).
+  // RTT and ack latency are inherently client-side measurements (a one-way
+  // server ping has no observable round-trip), so the client reports them here
+  // and the server aggregates per room. Gated by `enabled`: in normal mode this
+  // is an inert no-op (nothing recorded, no host push), so it cannot change
+  // today's behaviour. Every value is crash-guarded to a finite number.
+  recordMetric(kind: MetricKind, value: number): void {
+    if (!this.lowLatency.enabled) {
+      return
+    }
+
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return
+    }
+
+    switch (kind) {
+      case "rtt":
+        metrics.recordRtt(this.gameId, value)
+        break
+      case "clockOffset":
+        metrics.recordClockOffset(this.gameId, value)
+        break
+      case "answerAck":
+        metrics.recordAnswerAck(this.gameId, value)
+        break
+      default:
+        // Unknown kind from a future/garbled client — ignore safely.
+        return
+    }
+
+    // Coalesce into a throttled push so the host widget refreshes without a
+    // snapshot per individual report.
+    this.scheduleHealthPush()
+  }
+
+  // A manager subscribes to health snapshots for ITS OWN game. We send one
+  // immediate snapshot (so the widget isn't blank) and then rely on the
+  // throttled push as new samples arrive. Gated by `enabled` + manager identity
+  // so a player can't subscribe and normal mode never emits anything.
+  subscribeMetrics(socket: Socket): void {
+    if (!this.lowLatency.enabled) {
+      return
+    }
+
+    if (this._manager.id !== socket.id) {
+      return
+    }
+
+    socket.emit(EVENTS.METRICS.HEALTH, this.getMetrics())
+  }
+
+  // Push a fresh snapshot to the (connected) manager, throttled so a burst of
+  // reports collapses into at most one emit per window.
+  private scheduleHealthPush(): void {
+    if (this.healthPushTimer) {
+      return
+    }
+
+    this.healthPushTimer = setTimeout(() => {
+      this.healthPushTimer = null
+
+      // Only the manager socket receives health; players never see metrics.
+      this.io
+        .to(this._manager.id)
+        .emit(EVENTS.METRICS.HEALTH, this.getMetrics())
+    }, this.HEALTH_PUSH_THROTTLE_MS)
+  }
+
+  // Drop this game's metrics buffers + any pending health push. Called by the
+  // registry on game removal so the per-room metrics map can't accumulate keys
+  // across many enabled games over a long-lived server.
+  disposeMetrics(): void {
+    if (this.healthPushTimer) {
+      clearTimeout(this.healthPushTimer)
+      this.healthPushTimer = null
+    }
+
+    metrics.clear(this.gameId)
   }
 
   nextRound(socket: Socket) {

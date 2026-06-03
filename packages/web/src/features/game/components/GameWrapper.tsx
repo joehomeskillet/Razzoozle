@@ -4,6 +4,7 @@ import background from "@razzia/web/assets/background.png"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
 import DisplayControl from "@razzia/web/features/manager/components/DisplayControl"
+import LowLatencyHealth from "@razzia/web/features/game/components/LowLatencyHealth"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import { preloadFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
 import {
@@ -174,6 +175,10 @@ const GameWrapper = ({
               )}
 
               <div className="flex flex-1 justify-end gap-2">
+                {/* Low-latency health widget. Self-hides unless the server emits
+                    a health snapshot (i.e. low-latency mode is on), so it is
+                    inert in normal mode. */}
+                {manager && <LowLatencyHealth />}
                 {manager && <DisplayControl />}
                 {manager && (
                   <button

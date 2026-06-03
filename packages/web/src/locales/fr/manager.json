@@ -54,5 +54,14 @@
     "step2": "Lance une partie et touche «Satellite» dans l'en-tête du jeu pour saisir le code.",
     "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
     "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager."
+  },
+  "lowLatency": {
+    "title": "État faible latence",
+    "p50p95": "p50 / p95",
+    "rtt": "Latence (RTT)",
+    "clockOffset": "Décalage d'horloge",
+    "answerAck": "Accusé de réponse",
+    "reconnects": "Reconnexions",
+    "rejected": "Réponses rejetées"
   }
 }
