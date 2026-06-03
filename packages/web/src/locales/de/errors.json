@@ -6,7 +6,8 @@
   },
   "display": {
     "invalidCode": "Ungültiger oder abgelaufener Kopplungs-Code",
-    "notConnected": "Die Satelliten-Anzeige ist nicht mehr verbunden"
+    "notConnected": "Die Satelliten-Anzeige ist nicht mehr verbunden",
+    "notManager": "Nur der Spielleiter kann eine Anzeige koppeln"
   },
   "game": {
     "expired": "Spiel abgelaufen",

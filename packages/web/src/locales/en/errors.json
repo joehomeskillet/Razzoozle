@@ -6,7 +6,8 @@
   },
   "display": {
     "invalidCode": "Invalid or expired pairing code",
-    "notConnected": "The satellite display is no longer connected"
+    "notConnected": "The satellite display is no longer connected",
+    "notManager": "Only the game manager can pair a display"
   },
   "game": {
     "expired": "Game expired",

@@ -1,12 +1,13 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getGameConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
 import { randomInt } from "crypto"
 
 interface PairPayload {
   code: string
-  managerPassword: string
+  // Kept for wire-compat with the typed client payload; no longer used for auth
+  // (the manager is authorized by its socket identity in handlePair).
+  managerPassword?: string
   gameId: string
 }
 
@@ -27,34 +28,10 @@ export const handlePair = (
   payload: PairPayload,
 ): boolean => {
   const registry = Registry.getInstance()
-  const { code, managerPassword, gameId } = payload
+  const { code, gameId } = payload
 
   if (!registry.isPairingValid(code)) {
     socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:display.invalidCode")
-
-    return false
-  }
-
-  let config
-  try {
-    config = getGameConfig()
-  } catch {
-    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.failedToReadConfig")
-
-    return false
-  }
-
-  if (config.managerPassword === "PASSWORD") {
-    socket.emit(
-      EVENTS.DISPLAY.PAIR_ERROR,
-      "errors:manager.passwordNotConfigured",
-    )
-
-    return false
-  }
-
-  if (managerPassword !== config.managerPassword) {
-    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.invalidPassword")
 
     return false
   }
@@ -63,6 +40,18 @@ export const handlePair = (
 
   if (!game) {
     socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:game.notFound")
+
+    return false
+  }
+
+  // Authorize by socket identity, NOT a re-typed password: the caller IS this
+  // game's authenticated manager (it ran MANAGER.AUTH to create the game). The
+  // client's password lives only in memory and is gone after a reload or the
+  // GET_CONFIG auto-navigation, so requiring it here silently broke pairing.
+  // Keying on the manager socket is also stronger — a non-manager can't pair
+  // even with a valid code.
+  if (game.manager.id !== socket.id) {
+    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:display.notManager")
 
     return false
   }

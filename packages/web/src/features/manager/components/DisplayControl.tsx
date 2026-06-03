@@ -29,12 +29,14 @@ const DisplayControl = () => {
   useOnClickOutside({ ref: panelRef, handler: () => setOpen(false) })
 
   const pair = () => {
-    if (!gameId || !password || code.trim().length === 0) {
+    if (!gameId || code.trim().length === 0) {
       return
     }
+    // The server authorizes by manager-socket identity; password is sent only
+    // for wire-compat (may be absent after a reload) and is ignored server-side.
     socket.emit(EVENTS.DISPLAY.PAIR, {
       code: code.trim().toUpperCase(),
-      managerPassword: password,
+      managerPassword: password ?? "",
       gameId,
     })
   }
@@ -89,7 +91,7 @@ const DisplayControl = () => {
             <button
               type="button"
               onClick={pair}
-              disabled={!gameId || !password || code.trim().length === 0}
+              disabled={!gameId || code.trim().length === 0}
               className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
             >
               {t("manager:satellite.pair")}
