@@ -1,12 +1,13 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
+import { getGameConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
 import { randomInt } from "crypto"
 
 interface PairPayload {
   code: string
-  // Kept for wire-compat with the typed client payload; no longer used for auth
-  // (the manager is authorized by its socket identity in handlePair).
+  // Optional: kept only as a legacy fallback for non-manager callers. The
+  // manager is normally authorized by socket identity (see handlePair).
   managerPassword?: string
   gameId: string
 }
@@ -28,7 +29,7 @@ export const handlePair = (
   payload: PairPayload,
 ): boolean => {
   const registry = Registry.getInstance()
-  const { code, gameId } = payload
+  const { code, managerPassword, gameId } = payload
 
   if (!registry.isPairingValid(code)) {
     socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:display.invalidCode")
@@ -44,16 +45,29 @@ export const handlePair = (
     return false
   }
 
-  // Authorize by socket identity, NOT a re-typed password: the caller IS this
-  // game's authenticated manager (it ran MANAGER.AUTH to create the game). The
-  // client's password lives only in memory and is gone after a reload or the
-  // GET_CONFIG auto-navigation, so requiring it here silently broke pairing.
-  // Keying on the manager socket is also stronger — a non-manager can't pair
-  // even with a valid code.
+  // Primary auth: the caller IS this game's authenticated manager (it ran
+  // MANAGER.AUTH to create the game), matched by socket identity. Pairing
+  // therefore works even though the client's in-memory password is gone after a
+  // reload or the GET_CONFIG auto-navigation. Password stays only as a legacy
+  // fallback for a non-manager caller.
   if (game.manager.id !== socket.id) {
-    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:display.notManager")
+    let config
+    try {
+      config = getGameConfig()
+    } catch {
+      socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.failedToReadConfig")
 
-    return false
+      return false
+    }
+
+    if (
+      config.managerPassword === "PASSWORD" ||
+      managerPassword !== config.managerPassword
+    ) {
+      socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.invalidPassword")
+
+      return false
+    }
   }
 
   const pairing = registry.getPairing(code)
