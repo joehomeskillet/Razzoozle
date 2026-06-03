@@ -1,6 +1,12 @@
 import { EVENTS } from "@razzia/common/constants"
+import type { ThemeSlot } from "@razzia/socket/services/config"
 import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getGameConfig } from "@razzia/socket/services/config"
+import {
+  getGameConfig,
+  getTheme,
+  saveBackgroundImage,
+  setTheme,
+} from "@razzia/socket/services/config"
 import manager, { emitConfig } from "@razzia/socket/services/manager"
 
 export const managerSocketHandlers = ({ socket }: SocketContext) => {
@@ -9,6 +15,49 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     manager.withAuth(socket, () => {
       emitConfig(socket)
     }),
+  )
+
+  // Public: any client (player or manager) may read the theme to apply it.
+  socket.on(EVENTS.MANAGER.GET_THEME, () => {
+    socket.emit(EVENTS.MANAGER.THEME, getTheme())
+  })
+
+  socket.on(
+    EVENTS.MANAGER.SET_THEME,
+    manager.withAuth(socket, (payload: unknown) => {
+      try {
+        const theme = setTheme(payload)
+        socket.emit(EVENTS.MANAGER.SET_THEME_SUCCESS, theme)
+        // Live-update every other connected client.
+        socket.broadcast.emit(EVENTS.MANAGER.THEME, theme)
+      } catch (error) {
+        socket.emit(
+          EVENTS.MANAGER.THEME_ERROR,
+          error instanceof Error ? error.message : "errors:theme.saveFailed",
+        )
+      }
+    }),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.UPLOAD_BACKGROUND,
+    manager.withAuth(
+      socket,
+      (payload: { slot: ThemeSlot; dataUrl: string }) => {
+        try {
+          const path = saveBackgroundImage(payload.slot, payload.dataUrl)
+          socket.emit(EVENTS.MANAGER.BACKGROUND_UPLOADED, {
+            slot: payload.slot,
+            path,
+          })
+        } catch (error) {
+          socket.emit(
+            EVENTS.MANAGER.THEME_ERROR,
+            error instanceof Error ? error.message : "errors:theme.uploadFailed",
+          )
+        }
+      },
+    ),
   )
 
   socket.on(EVENTS.MANAGER.LOGOUT, () => {

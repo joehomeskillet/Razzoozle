@@ -41,6 +41,13 @@ export const EVENTS = {
     GET_CONFIG: "manager:getConfig",
     LOGOUT: "manager:logout",
     UNAUTHORIZED: "manager:unauthorized",
+    GET_THEME: "manager:getTheme",
+    THEME: "manager:theme",
+    SET_THEME: "manager:setTheme",
+    SET_THEME_SUCCESS: "manager:setThemeSuccess",
+    UPLOAD_BACKGROUND: "manager:uploadBackground",
+    BACKGROUND_UPLOADED: "manager:backgroundUploaded",
+    THEME_ERROR: "manager:themeError",
   },
   QUIZZ: {
     GET: "quizz:get",

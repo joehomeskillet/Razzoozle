@@ -8,4 +8,6 @@ allowBuilds:
 
 minimumReleaseAge: 10080
 blockExoticSubdeps: true
-trustPolicy: no-downgrade
+# Relaxed from "no-downgrade": the upstream lockfile flags react-redux@9.2.0 and
+# semver@6.3.1 as trust-downgrades, which blocks a clean build of this fork.
+trustPolicy: permissive

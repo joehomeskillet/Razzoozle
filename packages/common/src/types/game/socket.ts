@@ -7,6 +7,7 @@ import type {
 } from "@razzia/common/types/game"
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
+import type { Theme } from "@razzia/common/types/theme"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>
@@ -81,6 +82,15 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.PLAYER_KICKED]: (_playerId: string) => void
   [EVENTS.MANAGER.UNAUTHORIZED]: () => void
 
+  // Theme events
+  [EVENTS.MANAGER.THEME]: (_theme: Theme) => void
+  [EVENTS.MANAGER.SET_THEME_SUCCESS]: (_theme: Theme) => void
+  [EVENTS.MANAGER.BACKGROUND_UPLOADED]: (_data: {
+    slot: "auth" | "managerGame" | "playerGame"
+    path: string
+  }) => void
+  [EVENTS.MANAGER.THEME_ERROR]: (_message: string) => void
+
   // Quizz events
   [EVENTS.QUIZZ.SAVE_SUCCESS]: (_data: { id: string }) => void
   [EVENTS.QUIZZ.UPDATE_SUCCESS]: (_data: { id: string }) => void
@@ -106,6 +116,14 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.GET_CONFIG]: () => void
   [EVENTS.MANAGER.LOGOUT]: () => void
+
+  // Theme actions
+  [EVENTS.MANAGER.GET_THEME]: () => void
+  [EVENTS.MANAGER.SET_THEME]: (_theme: Theme) => void
+  [EVENTS.MANAGER.UPLOAD_BACKGROUND]: (_data: {
+    slot: "auth" | "managerGame" | "playerGame"
+    dataUrl: string
+  }) => void
 
   // Quizz actions
   [EVENTS.QUIZZ.GET]: (_id: string) => void

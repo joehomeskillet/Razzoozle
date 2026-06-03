@@ -8,6 +8,7 @@ import ConfigManageQuizz from "@razzia/web/features/manager/components/configura
 import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzia/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigTabButton from "@razzia/web/features/manager/components/configurations/ConfigTabButton"
+import ConfigTheme from "@razzia/web/features/manager/components/configurations/ConfigTheme"
 import { ConfigProvider } from "@razzia/web/features/manager/contexts/config-context"
 import { LogOut } from "lucide-react"
 import { useState } from "react"
@@ -25,6 +26,10 @@ const tabs = [
   {
     nameKey: "manager:tabs.results",
     component: ConfigResults,
+  },
+  {
+    nameKey: "manager:tabs.design",
+    component: ConfigTheme,
   },
 ]
 

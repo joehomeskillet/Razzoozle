@@ -5,6 +5,8 @@ import type {
   QuizzWithId,
 } from "@razzia/common/types/game"
 import { quizzValidator } from "@razzia/common/validators/quizz"
+import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
+import { themeValidator } from "@razzia/common/validators/theme"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import fs from "fs"
 import { resolve } from "path"
@@ -241,4 +243,102 @@ export const saveQuizz = (data: unknown): { id: string } => {
   fs.writeFileSync(filePath, JSON.stringify(result.data, null, 2))
 
   return { id }
+}
+
+// ---- Theme (backgrounds + colors) ---------------------------------------
+
+export const THEME_SLOTS = ["auth", "managerGame", "playerGame"] as const
+export type ThemeSlot = (typeof THEME_SLOTS)[number]
+
+const MIME_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+}
+
+export const getTheme = (): Theme => {
+  const filePath = getPath("theme/theme.json")
+
+  if (!fs.existsSync(filePath)) {
+    return DEFAULT_THEME
+  }
+
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, "utf-8"))
+    const result = themeValidator.safeParse(data)
+
+    if (!result.success) {
+      console.warn("Invalid theme.json, using default:", result.error.issues)
+
+      return DEFAULT_THEME
+    }
+
+    return result.data
+  } catch (error) {
+    console.error("Failed to read theme:", error)
+
+    return DEFAULT_THEME
+  }
+}
+
+export const setTheme = (data: unknown): Theme => {
+  const result = themeValidator.safeParse(data)
+
+  if (!result.success) {
+    throw new Error(result.error.issues[0].message)
+  }
+
+  const themeDir = getPath("theme")
+
+  if (!fs.existsSync(themeDir)) {
+    fs.mkdirSync(themeDir)
+  }
+
+  fs.writeFileSync(
+    getPath("theme/theme.json"),
+    JSON.stringify(result.data, null, 2),
+  )
+
+  return result.data
+}
+
+// Persist an uploaded background image (data URL) for a slot and return its
+// public "/theme/<file>" path (served by nginx from the config volume).
+export const saveBackgroundImage = (slot: ThemeSlot, dataUrl: string): string => {
+  if (!THEME_SLOTS.includes(slot)) {
+    throw new Error("errors:theme.invalidSlot")
+  }
+
+  const match = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(dataUrl)
+
+  if (!match) {
+    throw new Error("errors:theme.invalidImage")
+  }
+
+  const mime = match[1]
+  const ext = MIME_EXT[mime] ?? "png"
+  const buffer = Buffer.from(match[2], "base64")
+
+  // 8 MB hard cap
+  if (buffer.byteLength > 8 * 1024 * 1024) {
+    throw new Error("errors:theme.imageTooLarge")
+  }
+
+  const themeDir = getPath("theme")
+
+  if (!fs.existsSync(themeDir)) {
+    fs.mkdirSync(themeDir)
+  }
+
+  // Remove previous files for this slot so the folder doesn't grow unbounded.
+  for (const file of fs.readdirSync(themeDir)) {
+    if (file.startsWith(`${slot}-`)) {
+      fs.unlinkSync(resolve(themeDir, file))
+    }
+  }
+
+  const filename = `${slot}-${Date.now()}.${ext}`
+  fs.writeFileSync(resolve(themeDir, filename), buffer)
+
+  return `/theme/${filename}`
 }

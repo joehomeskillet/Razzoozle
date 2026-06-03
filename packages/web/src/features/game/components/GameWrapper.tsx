@@ -3,6 +3,7 @@ import type { Status } from "@razzia/common/types/game/status"
 import background from "@razzia/web/assets/background.png"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
+import { useThemeStore } from "@razzia/web/features/theme/store"
 import {
   useEvent,
   useSocket,
@@ -32,9 +33,13 @@ const GameWrapper = ({
   const { isConnected } = useSocket()
   const { player } = usePlayerStore()
   const { questionStates, setQuestionStates } = useQuestionStore()
+  const { theme } = useThemeStore()
   const { t } = useTranslation()
   const [isDisabled, setIsDisabled] = useState(false)
   const next = statusName ? MANAGER_SKIP_BTN[statusName] : null
+  const bgSrc =
+    (manager ? theme.backgrounds.managerGame : theme.backgrounds.playerGame) ??
+    background
 
   useEvent(EVENTS.GAME.UPDATE_QUESTION, ({ current, total }) => {
     setQuestionStates({
@@ -63,7 +68,7 @@ const GameWrapper = ({
       <div className="fixed top-0 left-0 h-full w-full">
         <img
           className="pointer-events-none h-full w-full object-cover select-none"
-          src={background}
+          src={bgSrc}
           alt="background"
         />
       </div>

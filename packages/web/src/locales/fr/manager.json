@@ -39,6 +39,7 @@
   "tabs": {
     "play": "Jouer",
     "quizz": "Quizz",
-    "results": "Résultats"
+    "results": "Résultats",
+    "design": "Apparence"
   }
 }
