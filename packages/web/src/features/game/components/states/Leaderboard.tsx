@@ -90,7 +90,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
                   damping: 25,
                 },
               }}
-              className="bg-primary flex w-full justify-between rounded-xl p-3 text-3xl font-bold text-white"
+              className="flex w-full justify-between rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white"
             >
               <span className="flex items-center gap-2 drop-shadow-md">
                 {username}

@@ -1,3 +1,4 @@
+import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzia/common/constants"
 import Game from "@razzia/socket/services/game"
 import dayjs from "dayjs"
 
@@ -6,12 +7,21 @@ interface EmptyGame {
   game: Game
 }
 
+// A satellite display ("Raspberry Pi" kiosk) that has announced a pairing code
+// but has not yet been paired to a game by a manager.
+export interface DisplayPairing {
+  socketId: string
+  createdAt: number
+}
+
 class Registry {
   private static instance: Registry | null = null
   private games: Game[] = []
   private emptyGames: EmptyGame[] = []
+  private pairings = new Map<string, DisplayPairing>()
   private cleanupInterval: ReturnType<typeof setTimeout> | null = null
   private readonly EMPTY_GAME_TIMEOUT_MINUTES = 5
+  private readonly PAIRING_TIMEOUT_MINUTES = DISPLAY_PAIRING_TTL_MINUTES
   private readonly CLEANUP_INTERVAL_MS = 60_000
 
   private constructor() {
@@ -111,6 +121,62 @@ class Registry {
     return this.emptyGames.length
   }
 
+  // ── Display pairing (satellite kiosk) ────────────────────────────────────
+
+  registerPairing(code: string, socketId: string): void {
+    this.pairings.set(code, { socketId, createdAt: dayjs().unix() })
+    console.log(
+      `Display pairing code registered. Total pending: ${this.pairings.size}`,
+    )
+  }
+
+  getPairing(code: string): DisplayPairing | undefined {
+    return this.pairings.get(code)
+  }
+
+  // A pairing is valid only while it exists AND is within the TTL window.
+  isPairingValid(code: string): boolean {
+    const pairing = this.pairings.get(code)
+
+    if (!pairing) {
+      return false
+    }
+
+    return (
+      dayjs().diff(dayjs.unix(pairing.createdAt), "minute") <
+      this.PAIRING_TIMEOUT_MINUTES
+    )
+  }
+
+  removePairing(code: string): boolean {
+    return this.pairings.delete(code)
+  }
+
+  getPairingCount(): number {
+    return this.pairings.size
+  }
+
+  private cleanupPairings(): void {
+    const now = dayjs()
+    let removed = 0
+
+    for (const [code, pairing] of this.pairings) {
+      if (
+        now.diff(dayjs.unix(pairing.createdAt), "minute") >=
+        this.PAIRING_TIMEOUT_MINUTES
+      ) {
+        this.pairings.delete(code)
+        removed += 1
+      }
+    }
+
+    if (removed > 0) {
+      console.log(
+        `Removed ${removed} stale display pairing(s). Remaining: ${this.pairings.size}`,
+      )
+    }
+  }
+
   private cleanupEmptyGames(): void {
     const now = dayjs()
     const stillEmpty = this.emptyGames.filter(
@@ -137,6 +203,7 @@ class Registry {
   private startCleanupTask(): void {
     this.cleanupInterval = setInterval(() => {
       this.cleanupEmptyGames()
+      this.cleanupPairings()
     }, this.CLEANUP_INTERVAL_MS)
 
     console.log("Game cleanup task started")
@@ -154,6 +221,7 @@ class Registry {
     this.stopCleanupTask()
     this.games = []
     this.emptyGames = []
+    this.pairings.clear()
     console.log("Registry cleaned up")
   }
 }

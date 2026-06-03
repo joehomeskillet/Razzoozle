@@ -3,20 +3,56 @@
 @theme {
   --color-primary: #ff9900;
   --color-secondary: #1a140b;
+  --color-text: #ffffff;
+  --color-accent: #ff9900;
   --font-display: "Rubik Variable", sans-serif;
 }
 
-/* Default answer-button colors; overridden at runtime by the theme. */
+/* Defaults overridden at runtime by the theme (features/theme/apply.ts). */
 :root {
   --answer-1: #e69f00;
   --answer-2: #56b4e9;
   --answer-3: #3dbfa0;
   --answer-4: #cc79a7;
+  --answer-text: #ffffff;
+  --radius-theme: 16px;
+  --bg-scrim: 0;
 }
 
 button:not(:disabled),
 [role="button"]:not(:disabled) {
   cursor: pointer;
+}
+
+/*
+ * Display kiosk (Raspberry Pi satellite → beamer/TV).
+ * The /display routes mount inside `.display-kiosk` (see pages/display/layout.tsx).
+ * Force a fixed, fullscreen, non-scrolling stage that fills the screen on any
+ * resolution (1920x1080 and 3840x2160 4K alike). Font sizing inside the display
+ * pages is viewport-relative (vh units), so it scales automatically with the TV.
+ */
+.display-kiosk {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  /* Hint the compositor: this surface is mostly static, large frames. */
+  contain: layout paint;
+}
+
+/* The game presentation fills the whole kiosk stage. */
+.display-stage,
+.display-stage > section {
+  width: 100%;
+  height: 100%;
+}
+
+/* Honour `prefers-reduced-motion` on the kiosk (e.g. photosensitive venues). */
+@media (prefers-reduced-motion: reduce) {
+  .display-kiosk * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 .spotlight {

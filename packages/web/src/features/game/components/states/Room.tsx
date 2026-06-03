@@ -25,7 +25,6 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const [playerList, setPlayerList] = useState<Player[]>(players)
   const [totalPlayers, setTotalPlayers] = useState(0)
   const [qrOpen, setQrOpen] = useState(false)
-  const [autoOn, setAutoOn] = useState(false)
   const qrContentRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
 
@@ -59,15 +58,6 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   }
 
   const handleCloseQrCode = () => setQrOpen(false)
-
-  const toggleAuto = () => {
-    if (!gameId) {
-      return
-    }
-    const next = !autoOn
-    setAutoOn(next)
-    socket.emit(EVENTS.MANAGER.SET_AUTO, { gameId, auto: next })
-  }
 
   return (
     <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-2">
@@ -137,24 +127,6 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </span>
       </div>
 
-      <button
-        type="button"
-        onClick={toggleAuto}
-        className="mb-6 flex items-center gap-3 rounded-lg bg-black/40 px-5 py-2.5 text-lg font-bold text-white drop-shadow-md"
-      >
-        <span
-          className={`relative h-6 w-11 rounded-full transition-colors ${
-            autoOn ? "bg-primary" : "bg-white/30"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${
-              autoOn ? "left-[22px]" : "left-0.5"
-            }`}
-          />
-        </span>
-        Auto-Modus {autoOn ? "an" : "aus"}
-      </button>
 
       <div className="flex flex-wrap gap-3">
         {playerList.map((player) => (

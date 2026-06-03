@@ -3,4 +3,4 @@
 .env
 .secrets
 release.json
-web2
+web2satellite/rpi-img-builder/

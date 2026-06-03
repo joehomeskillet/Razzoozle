@@ -1,4 +1,4 @@
-import logo from "@razzia/web/assets/logo.svg"
+import defaultLogo from "@razzia/web/assets/logo.svg"
 import GithubIcon from "@razzia/web/components/GithubIcon"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import type { PropsWithChildren } from "react"
@@ -6,6 +6,7 @@ import type { PropsWithChildren } from "react"
 const Background = ({ children }: PropsWithChildren) => {
   const { theme } = useThemeStore()
   const authBg = theme.backgrounds.auth
+  const logo = theme.logo ?? defaultLogo
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
@@ -22,21 +23,27 @@ const Background = ({ children }: PropsWithChildren) => {
             <div className="bg-primary/15 absolute right-[-10vmin] bottom-[-45vmin] min-h-[75vmin] min-w-[75vmin] rotate-20 rounded-4xl" />
           </>
         )}
+        <div
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: "var(--bg-scrim)" }}
+        />
       </div>
 
       <img src={logo} className="z-10 mb-10 h-16" alt="logo" />
       {children}
 
-      <a
-        href="https://github.com/Ralex91/Razzia"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 text-sm font-semibold text-white/50 transition-colors hover:text-white/80"
-      >
-        <GithubIcon size={14} />
-        {/* oxlint-disable-next-line no-undef */}
-        Razzia - v{__APP_VERSION__}
-      </a>
+      {theme.showBranding && (
+        <a
+          href="https://github.com/Ralex91/Razzia"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 text-sm font-semibold text-white/50 transition-colors hover:text-white/80"
+        >
+          <GithubIcon size={14} />
+          {/* oxlint-disable-next-line no-undef */}
+          Razzia - v{__APP_VERSION__}
+        </a>
+      )}
     </section>
   )
 }

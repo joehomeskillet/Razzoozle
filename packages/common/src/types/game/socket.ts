@@ -98,6 +98,28 @@ export interface ServerToClientEvents {
 
   // Results events
   [EVENTS.RESULTS.DATA]: (_result: GameResult) => void
+
+  // Display (satellite) events
+  [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
+  [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
+}
+
+// Events a satellite display socket may emit to the server.
+export interface DisplayToServerEvents {
+  [EVENTS.DISPLAY.REGISTER]: (_data: { code: string }) => void
+  [EVENTS.DISPLAY.PAIR]: (_data: {
+    code: string
+    managerPassword: string
+    gameId: string
+  }) => void
+  [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
+}
+
+// Events the server may emit back to a satellite display socket. The display
+// also receives EVENTS.GAME.STATUS once it has joined the game room.
+export interface ServerToDisplayEvents {
+  [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
+  [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
 }
 
 export interface ClientToServerEvents {
@@ -146,6 +168,15 @@ export interface ClientToServerEvents {
   // Results actions
   [EVENTS.RESULTS.GET]: (_id: string) => void
   [EVENTS.RESULTS.DELETE]: (_id: string) => void
+
+  // Display (satellite) actions
+  [EVENTS.DISPLAY.REGISTER]: (_data: { code: string }) => void
+  [EVENTS.DISPLAY.PAIR]: (_data: {
+    code: string
+    managerPassword: string
+    gameId: string
+  }) => void
+  [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
 
   // Common
   disconnect: () => void

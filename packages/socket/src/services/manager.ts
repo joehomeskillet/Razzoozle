@@ -12,6 +12,13 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     results: getResultsMeta(),
   })
 
+// Auth model is shared by every manager-equivalent client. The Raspberry Pi
+// "satellite" display (kiosk on a beamer/TV, see ../../web .../pages/satellite)
+// is just another socket that runs through the exact same MANAGER.AUTH ->
+// manager.login -> withAuth path below; it carries a credential in its handshake
+// instead of a typed password but gets NO special bypass here. The Pi image is
+// an optional, isolated add-on under repo-root satellite/ and does not change
+// this server. Keep this class behavior-stable so manager auth stays unchanged.
 class Manager {
   private loggedClients = new Set()
 

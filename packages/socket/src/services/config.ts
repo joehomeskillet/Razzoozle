@@ -247,7 +247,12 @@ export const saveQuizz = (data: unknown): { id: string } => {
 
 // ---- Theme (backgrounds + colors) ---------------------------------------
 
-export const THEME_SLOTS = ["auth", "managerGame", "playerGame"] as const
+export const THEME_SLOTS = [
+  "auth",
+  "managerGame",
+  "playerGame",
+  "logo",
+] as const
 export type ThemeSlot = (typeof THEME_SLOTS)[number]
 
 const MIME_EXT: Record<string, string> = {

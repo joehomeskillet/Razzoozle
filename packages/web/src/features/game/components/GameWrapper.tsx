@@ -89,6 +89,10 @@ const GameWrapper = ({
           src={bgSrc}
           alt="background"
         />
+        <div
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: "var(--bg-scrim)" }}
+        />
       </div>
 
       <div className="z-10 flex w-full flex-1 flex-col justify-between">
@@ -101,59 +105,62 @@ const GameWrapper = ({
           </div>
         ) : (
           <>
-            <div className="flex w-full justify-between p-4">
-              {questionStates && (
-                <div className="flex items-center rounded-md bg-white p-2 px-4 text-lg font-bold text-black">
-                  {`${questionStates.current} / ${questionStates.total}`}
-                </div>
-              )}
+            <div className="flex w-full items-center justify-between gap-2 p-4">
+              <div className="flex flex-1 justify-start">
+                {questionStates && (
+                  <div className="flex items-center rounded-md bg-white p-2 px-4 text-lg font-bold text-black">
+                    {`${questionStates.current} / ${questionStates.total}`}
+                  </div>
+                )}
+              </div>
 
               {manager && (
-                <button
-                  type="button"
-                  onClick={toggleAuto}
-                  className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-200"
-                  title="Auto-Modus: läuft automatisch weiter"
-                >
-                  <span
-                    className={clsx(
-                      "relative h-5 w-9 rounded-full transition-colors",
-                      autoOn ? "bg-primary" : "bg-gray-300",
-                    )}
+                <div className="flex flex-1 justify-center">
+                  <button
+                    type="button"
+                    onClick={toggleAuto}
+                    className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-200"
+                    title="Auto-Modus: läuft automatisch weiter"
                   >
                     <span
                       className={clsx(
-                        "absolute top-0.5 size-4 rounded-full bg-white transition-all",
-                        autoOn ? "left-[18px]" : "left-0.5",
+                        "relative h-5 w-9 rounded-full transition-colors",
+                        autoOn ? "bg-primary" : "bg-gray-300",
                       )}
-                    />
-                  </span>
-                  Auto {autoOn ? "an" : "aus"}
-                </button>
+                    >
+                      <span
+                        className={clsx(
+                          "absolute top-0.5 size-4 rounded-full bg-white transition-all",
+                          autoOn ? "left-[18px]" : "left-0.5",
+                        )}
+                      />
+                    </span>
+                    Auto-Modus {autoOn ? "an" : "aus"}
+                  </button>
+                </div>
               )}
 
-              {manager && next && (
-                <Button
-                  className={clsx(
-                    "bg-white px-4 text-black hover:bg-gray-200",
-                    {
+              <div className="flex flex-1 justify-end gap-2">
+                {manager && next && (
+                  <Button
+                    className={clsx("bg-white px-4 text-black hover:bg-gray-200", {
                       "pointer-events-none": isDisabled,
-                    },
-                  )}
-                  onClick={handleNext}
-                >
-                  {t(next)}
-                </Button>
-              )}
+                    })}
+                    onClick={handleNext}
+                  >
+                    {t(next)}
+                  </Button>
+                )}
 
-              {manager && onBack && (
-                <Button
-                  onClick={onBack}
-                  className="bg-white px-4 text-black hover:bg-gray-200"
-                >
-                  {t("common:exit")}
-                </Button>
-              )}
+                {manager && onBack && (
+                  <Button
+                    onClick={onBack}
+                    className="bg-white px-4 text-black hover:bg-gray-200"
+                  >
+                    {t("common:exit")}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {children}

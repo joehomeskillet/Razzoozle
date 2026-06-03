@@ -65,7 +65,19 @@ export const EVENTS = {
     DATA: "results:data",
     DELETE: "results:delete",
   },
+  DISPLAY: {
+    REGISTER: "display:register",
+    PAIR: "display:pair",
+    PAIR_SUCCESS: "display:pairSuccess",
+    PAIR_ERROR: "display:pairError",
+    DISCONNECT: "display:disconnect",
+  },
 } as const
+
+// A satellite display ("Raspberry Pi" kiosk) registers a short pairing code,
+// then a manager pairs that code (with the manager password) so the display
+// joins the game room. Codes expire after this many minutes.
+export const DISPLAY_PAIRING_TTL_MINUTES = 5
 
 export const MEDIA_TYPES = {
   IMAGE: "image",

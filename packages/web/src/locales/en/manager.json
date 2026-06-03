@@ -40,6 +40,18 @@
     "play": "Play",
     "quizz": "Quizz",
     "results": "Results",
-    "design": "Design"
+    "design": "Design",
+    "satellite": "Satellite"
+  },
+  "satellite": {
+    "title": "Satellite Display",
+    "description": "Pair a Raspberry Pi display. Boot the satellite, read the token on the big screen, then paste it here.",
+    "tokenLabel": "Pairing token",
+    "tokenPlaceholder": "Paste the token from the satellite screen",
+    "paste": "Paste",
+    "pasteFailed": "Couldn't read the clipboard — paste the token manually",
+    "pair": "Pair satellite",
+    "paired": "Satellite paired",
+    "invalidToken": "Enter the token printed on the satellite's screen"
   }
 }

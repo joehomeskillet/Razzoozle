@@ -4,21 +4,28 @@ const hexColor = z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor")
 
-// A background reference: either null (use bundled default) or a path under
-// the served /theme/ directory (e.g. "/theme/managerGame-1700000000.png").
-const backgroundRef = z
+// A served asset reference: null (use bundled default) or a path under /theme/.
+const assetRef = z
   .string()
-  .regex(/^\/theme\/[\w.-]+$/, "errors:theme.invalidBackground")
+  .regex(/^\/theme\/[\w.-]+$/, "errors:theme.invalidAsset")
   .nullable()
 
 export const themeValidator = z.object({
   colorPrimary: hexColor,
   colorSecondary: hexColor,
+  colorText: hexColor.default("#ffffff"),
   answerColors: z.tuple([hexColor, hexColor, hexColor, hexColor]),
+  answerTextColor: hexColor.default("#ffffff"),
+  accentColor: hexColor.default("#ff9900"),
+  radius: z.number().min(0).max(40).default(16),
+  scrim: z.number().min(0).max(100).default(0),
+  appTitle: z.string().max(40).nullable().default(null),
+  logo: assetRef.default(null),
+  showBranding: z.boolean().default(true),
   backgrounds: z.object({
-    auth: backgroundRef,
-    managerGame: backgroundRef,
-    playerGame: backgroundRef,
+    auth: assetRef,
+    managerGame: assetRef,
+    playerGame: assetRef,
   }),
 })
 

@@ -15,10 +15,10 @@ import { STATUS } from "@razzia/common/types/game/status"
 
 // Colors come from runtime theme CSS vars (--answer-1..4); see features/theme.
 export const ANSWERS_COLORS = [
-  "bg-[var(--answer-1)] text-white",
-  "bg-[var(--answer-2)] text-white",
-  "bg-[var(--answer-3)] text-white",
-  "bg-[var(--answer-4)] text-white",
+  "bg-[var(--answer-1)] text-[var(--answer-text)]",
+  "bg-[var(--answer-2)] text-[var(--answer-text)]",
+  "bg-[var(--answer-3)] text-[var(--answer-text)]",
+  "bg-[var(--answer-4)] text-[var(--answer-text)]",
 ]
 
 export const ANSWERS_LABELS = ["A", "B", "C", "D"]

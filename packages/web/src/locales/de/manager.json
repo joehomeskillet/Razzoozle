@@ -40,6 +40,18 @@
     "play": "Spielen",
     "quizz": "Quiz",
     "results": "Ergebnisse",
-    "design": "Design"
+    "design": "Design",
+    "satellite": "Satellit"
+  },
+  "satellite": {
+    "title": "Satelliten-Anzeige",
+    "description": "Verbinde eine Raspberry-Pi-Anzeige. Starte den Satelliten, lies den Token auf dem großen Bildschirm ab und füge ihn hier ein.",
+    "tokenLabel": "Kopplungs-Token",
+    "tokenPlaceholder": "Token vom Satelliten-Bildschirm einfügen",
+    "paste": "Einfügen",
+    "pasteFailed": "Zwischenablage konnte nicht gelesen werden — Token manuell einfügen",
+    "pair": "Satellit koppeln",
+    "paired": "Satellit gekoppelt",
+    "invalidToken": "Gib den auf dem Satelliten-Bildschirm angezeigten Token ein"
   }
 }
