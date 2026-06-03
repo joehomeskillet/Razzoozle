@@ -189,12 +189,9 @@ class Game {
       return
     }
 
-    if (player.connected) {
-      socket.emit(EVENTS.GAME.RESET, "errors:game.playerAlreadyConnected")
-
-      return
-    }
-
+    // Takeover, not reject: on flaky wifi a reconnect often races ahead of the
+    // old socket's "disconnect", so player.connected may still be true. Swapping
+    // to the new socket recovers the session instead of evicting the player.
     socket.join(this.gameId)
 
     const oldSocketId = player.id

@@ -267,7 +267,7 @@ export class RoundManager {
     const sortedPlayers = currentPlayers
       .map((player) => {
         const playerAnswer = this.playersAnswers.find(
-          (a) => a.playerId === player.id,
+          (a) => a.playerId === player.clientId,
         )
 
         // Poll: opinion vote — neutral, no points, streak untouched.
@@ -305,7 +305,7 @@ export class RoundManager {
           : Math.round(rawPoints * streakMult * bonusMult)
 
         let gotFirst = false
-        if (!question.practice && isCorrect && player.id === firstCorrectId) {
+        if (!question.practice && isCorrect && player.clientId === firstCorrectId) {
           // Scale the first-correct bonus by accuracy (full for choice/boolean,
           // proportional for slider) so a fast near-miss can't beat an accurate one.
           points += Math.round(FIRST_CORRECT_BONUS * baseFactor)
@@ -375,8 +375,8 @@ export class RoundManager {
       playerAnswers: currentPlayers.map((player) => ({
         playerName: player.username,
         answerId:
-          this.playersAnswers.find((a) => a.playerId === player.id)?.answerId ??
-          null,
+          this.playersAnswers.find((a) => a.playerId === player.clientId)
+            ?.answerId ?? null,
       })),
     })
 
@@ -390,19 +390,23 @@ export class RoundManager {
   }
 
   selectAnswer(socket: Socket, answerId: number): void {
-    const player = this.opts.players.findById(socket.id)
+    // Resolve + key answers by the durable clientId (not the volatile socket.id)
+    // so a tap re-sent after a wifi blip + reconnect is matched, not lost.
+    const clientId = socket.handshake.auth.clientId as string
+    const player = this.opts.players.findByClientId(clientId)
     const question = this.opts.quizz.questions[this.currentQuestion]
 
     if (!player) {
       return
     }
 
-    if (this.playersAnswers.find((a) => a.playerId === socket.id)) {
+    // Idempotent within the question: a retry for the same clientId is a no-op.
+    if (this.playersAnswers.find((a) => a.playerId === clientId)) {
       return
     }
 
     this.playersAnswers.push({
-      playerId: player.id,
+      playerId: clientId,
       answerId,
       points: timeToPoint(this.startTime, question.time),
     })

@@ -10,7 +10,6 @@ import ConfigSelectQuizz from "@razzia/web/features/manager/components/configura
 import ConfigTabButton from "@razzia/web/features/manager/components/configurations/ConfigTabButton"
 import ConfigTheme from "@razzia/web/features/manager/components/configurations/ConfigTheme"
 import { ConfigProvider } from "@razzia/web/features/manager/contexts/config-context"
-import { AddSatelliteForm } from "@razzia/web/pages/manager/config/AddSatellite"
 import { LogOut } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -31,10 +30,6 @@ const tabs = [
   {
     nameKey: "manager:tabs.design",
     component: ConfigTheme,
-  },
-  {
-    nameKey: "manager:tabs.satellite",
-    component: AddSatelliteForm,
   },
 ]
 
