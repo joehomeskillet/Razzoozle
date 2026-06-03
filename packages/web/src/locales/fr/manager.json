@@ -40,6 +40,19 @@
     "play": "Jouer",
     "quizz": "Quizz",
     "results": "Résultats",
-    "design": "Apparence"
+    "design": "Apparence",
+    "satellite": "Satellite"
+  },
+  "satellite": {
+    "title": "Écran satellite",
+    "description": "Branche un Raspberry Pi ou un PC-vidéoprojecteur comme grand écran. Le satellite affiche la vue hôte (salon, questions, résultats) sur le grand écran, pendant que tu pilotes toute la partie depuis ton téléphone. Pas besoin d'ordinateur portable.",
+    "howto": "Ouvre rahoot.joelduss.xyz/display sur le vidéoprojecteur et saisis ici le code qui s'affiche.",
+    "codePlaceholder": "ABC123",
+    "pair": "Associer",
+    "paired": "Écran associé",
+    "step1": "Connecte le Pi ou le vidéoprojecteur à internet et ouvre rahoot.joelduss.xyz/display — le grand écran affiche un code d'association.",
+    "step2": "Lance une partie et touche «Satellite» dans l'en-tête du jeu pour saisir le code.",
+    "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
+    "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager."
   }
 }

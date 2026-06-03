@@ -45,13 +45,14 @@
   },
   "satellite": {
     "title": "Satelliten-Anzeige",
-    "description": "Verbinde eine Raspberry-Pi-Anzeige. Starte den Satelliten, lies den Token auf dem großen Bildschirm ab und füge ihn hier ein.",
-    "tokenLabel": "Kopplungs-Token",
-    "tokenPlaceholder": "Token vom Satelliten-Bildschirm einfügen",
-    "paste": "Einfügen",
-    "pasteFailed": "Zwischenablage konnte nicht gelesen werden — Token manuell einfügen",
-    "pair": "Satellit koppeln",
-    "paired": "Satellit gekoppelt",
-    "invalidToken": "Gib den auf dem Satelliten-Bildschirm angezeigten Token ein"
+    "description": "Schliess einen Raspberry Pi oder einen Beamer-PC als grosse Anzeige an. Der Satellit zeigt die Host-Ansicht (Lobby, Fragen, Resultate) auf dem grossen Bildschirm – gesteuert wird das Spiel komplett von deinem Handy. Du brauchst keinen Laptop am Fest.",
+    "howto": "Öffne rahoot.joelduss.xyz/display auf dem Beamer und gib hier den Code ein, der dort angezeigt wird.",
+    "codePlaceholder": "ABC123",
+    "pair": "Koppeln",
+    "paired": "Anzeige gekoppelt",
+    "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne rahoot.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
+    "step2": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit», um den Code einzugeben.",
+    "step3": "Dein Handy bleibt die Fernbedienung: Starten, Weiter und Auto-Modus steuerst du von hier.",
+    "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort."
   }
 }

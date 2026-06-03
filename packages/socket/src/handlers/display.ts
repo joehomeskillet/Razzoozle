@@ -39,7 +39,7 @@ export const handlePair = (
   try {
     config = getGameConfig()
   } catch {
-    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:failedToReadConfig")
+    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.failedToReadConfig")
 
     return false
   }

@@ -4,6 +4,10 @@
     "usernameTooLong": "Username cannot exceed 20 characters",
     "usernameTooShort": "Username cannot be less than 4 characters"
   },
+  "display": {
+    "invalidCode": "Invalid or expired pairing code",
+    "notConnected": "The satellite display is no longer connected"
+  },
   "game": {
     "expired": "Game expired",
     "kickedByManager": "You have been kicked by the manager",

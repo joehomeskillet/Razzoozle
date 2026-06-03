@@ -47,7 +47,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   })
 
   useEvent(EVENTS.DISPLAY.PAIR_ERROR, (message) => {
-    toast.error(message)
+    toast.error(t(message))
   })
 
   useOnClickOutside({ ref: qrContentRef, handler: () => setQrOpen(false) })

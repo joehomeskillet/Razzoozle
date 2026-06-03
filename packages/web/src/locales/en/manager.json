@@ -45,13 +45,14 @@
   },
   "satellite": {
     "title": "Satellite Display",
-    "description": "Pair a Raspberry Pi display. Boot the satellite, read the token on the big screen, then paste it here.",
-    "tokenLabel": "Pairing token",
-    "tokenPlaceholder": "Paste the token from the satellite screen",
-    "paste": "Paste",
-    "pasteFailed": "Couldn't read the clipboard — paste the token manually",
-    "pair": "Pair satellite",
-    "paired": "Satellite paired",
-    "invalidToken": "Enter the token printed on the satellite's screen"
+    "description": "Attach a Raspberry Pi or a beamer PC as a big screen. The satellite shows the host view (lobby, questions, results) on the big screen, while you drive the whole game from your phone. No laptop needed at the party.",
+    "howto": "Open rahoot.joelduss.xyz/display on the beamer and enter the code it shows here.",
+    "codePlaceholder": "ABC123",
+    "pair": "Pair",
+    "paired": "Display paired",
+    "step1": "Connect the Pi or beamer to the internet and open rahoot.joelduss.xyz/display — the big screen shows a pairing code.",
+    "step2": "Start a game and tap «Satellite» in the game header to enter the code.",
+    "step3": "Your phone stays the remote: start, next and auto-mode are all driven from here.",
+    "hint": "Pairing only works once a game is running — the code needs the live game and your manager password."
   }
 }

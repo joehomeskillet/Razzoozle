@@ -40,6 +40,19 @@
     "play": "Jugar",
     "quizz": "Cuestionario",
     "results": "Resultados",
-    "design": "Diseño"
+    "design": "Diseño",
+    "satellite": "Satélite"
+  },
+  "satellite": {
+    "title": "Pantalla satélite",
+    "description": "Conecta una Raspberry Pi o un PC con proyector como pantalla grande. El satélite muestra la vista del anfitrión (sala, preguntas, resultados) en la pantalla grande, mientras tú controlas todo el juego desde tu teléfono. No necesitas portátil.",
+    "howto": "Abre rahoot.joelduss.xyz/display en el proyector e introduce aquí el código que aparece.",
+    "codePlaceholder": "ABC123",
+    "pair": "Vincular",
+    "paired": "Pantalla vinculada",
+    "step1": "Conecta la Pi o el proyector a internet y abre rahoot.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
+    "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
+    "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
+    "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager."
   }
 }

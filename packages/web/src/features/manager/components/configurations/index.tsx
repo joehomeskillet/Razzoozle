@@ -4,6 +4,7 @@ import Card from "@razzia/web/components/Card"
 import LanguageSwitcher from "@razzia/web/components/LanguageSwitcher"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
+import ConfigDisplay from "@razzia/web/features/manager/components/configurations/ConfigDisplay"
 import ConfigManageQuizz from "@razzia/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzia/web/features/manager/components/configurations/ConfigSelectQuizz"
@@ -30,6 +31,10 @@ const tabs = [
   {
     nameKey: "manager:tabs.design",
     component: ConfigTheme,
+  },
+  {
+    nameKey: "manager:tabs.satellite",
+    component: ConfigDisplay,
   },
 ]
 

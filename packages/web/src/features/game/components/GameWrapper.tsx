@@ -3,6 +3,7 @@ import type { Status } from "@razzia/common/types/game/status"
 import background from "@razzia/web/assets/background.png"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
+import DisplayControl from "@razzia/web/features/manager/components/DisplayControl"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import { preloadFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
 import {
@@ -173,6 +174,7 @@ const GameWrapper = ({
               )}
 
               <div className="flex flex-1 justify-end gap-2">
+                {manager && <DisplayControl />}
                 {manager && (
                   <button
                     type="button"
