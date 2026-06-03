@@ -185,41 +185,97 @@ export class RoundManager {
       {},
     )
 
+    const FIRST_CORRECT_BONUS = 100
+    const isPoll = question.type === "poll"
+
+    // Correctness + base factor (0..1) for a single answer, before multipliers.
+    const evalAnswer = (answerId: number): { correct: boolean; base: number } => {
+      if (
+        question.type === "slider" &&
+        question.min != null &&
+        question.max != null &&
+        question.correct != null
+      ) {
+        const range = question.max - question.min || 1
+        const dist = Math.abs(answerId - question.correct)
+        const accuracy = Math.max(0, 1 - dist / range)
+        return {
+          correct: dist <= Math.max(question.step ?? 0, range * 0.05),
+          base: accuracy,
+        }
+      }
+      const correct = question.solutions?.includes(answerId) ?? false
+      return { correct, base: correct ? 1 : 0 }
+    }
+
+    // The first player (by answer arrival order) to get it right earns a flat bonus.
+    let firstCorrectId: string | null = null
+    if (!isPoll && !question.practice) {
+      for (const a of this.playersAnswers) {
+        if (evalAnswer(a.answerId).correct) {
+          firstCorrectId = a.playerId
+          break
+        }
+      }
+    }
+
     const sortedPlayers = currentPlayers
       .map((player) => {
         const playerAnswer = this.playersAnswers.find(
           (a) => a.playerId === player.id,
         )
 
+        // Poll: opinion vote — neutral, no points, streak untouched.
+        if (isPoll) {
+          return {
+            ...player,
+            lastCorrect: false,
+            lastPoints: 0,
+            lastPoll: true,
+            lastStreak: player.streak,
+            lastStreakBonus: false,
+            lastBonus: false,
+            lastFirstCorrect: false,
+          }
+        }
+
         let isCorrect = false
         let rawPoints = 0
 
         if (playerAnswer) {
-          if (
-            question.type === "slider" &&
-            question.min != null &&
-            question.max != null &&
-            question.correct != null
-          ) {
-            // Slider: points scale with closeness to the correct value.
-            const range = question.max - question.min || 1
-            const dist = Math.abs(playerAnswer.answerId - question.correct)
-            const accuracy = Math.max(0, 1 - dist / range)
-            rawPoints = playerAnswer.points * accuracy
-            isCorrect = dist <= Math.max(question.step ?? 0, range * 0.05)
-          } else {
-            isCorrect = question.solutions?.includes(playerAnswer.answerId) ?? false
-            rawPoints = isCorrect ? playerAnswer.points : 0
-          }
+          const ev = evalAnswer(playerAnswer.answerId)
+          isCorrect = ev.correct
+          rawPoints = ev.base * playerAnswer.points
         }
 
-        // Practice/warm-up questions never award points (leaderboard-neutral).
-        const points = question.practice ? 0 : Math.round(rawPoints)
+        const streakBefore = player.streak
+        // Streak multiplier: +10% per consecutive correct, capped at +50%.
+        const streakMult = isCorrect ? 1 + 0.1 * Math.min(streakBefore, 5) : 1
+        const bonusMult = question.bonus ? 2 : 1
+
+        let points = question.practice
+          ? 0
+          : Math.round(rawPoints * streakMult * bonusMult)
+
+        let gotFirst = false
+        if (!question.practice && isCorrect && player.id === firstCorrectId) {
+          points += FIRST_CORRECT_BONUS
+          gotFirst = true
+        }
 
         player.points += points
-        player.streak = isCorrect ? player.streak + 1 : 0
+        player.streak = isCorrect ? streakBefore + 1 : 0
 
-        return { ...player, lastCorrect: isCorrect, lastPoints: points }
+        return {
+          ...player,
+          lastCorrect: isCorrect,
+          lastPoints: points,
+          lastPoll: false,
+          lastStreak: player.streak,
+          lastStreakBonus: isCorrect && streakBefore > 0 && !question.practice,
+          lastBonus: !!question.bonus && isCorrect && !question.practice,
+          lastFirstCorrect: gotFirst,
+        }
       })
       .sort((a, b) => b.points - a.points)
 
@@ -231,11 +287,20 @@ export class RoundManager {
 
       this.opts.send(player.id, STATUS.SHOW_RESULT, {
         correct: player.lastCorrect,
-        message: player.lastCorrect ? "game:correct" : "game:wrong",
+        message: player.lastPoll
+          ? "game:pollThanks"
+          : player.lastCorrect
+            ? "game:correct"
+            : "game:wrong",
         points: player.lastPoints,
         myPoints: player.points,
         rank,
         aheadOfMe: aheadPlayer ? aheadPlayer.username : null,
+        streak: player.lastStreak,
+        streakBonus: player.lastStreakBonus,
+        bonus: player.lastBonus,
+        firstCorrect: player.lastFirstCorrect,
+        poll: player.lastPoll,
       })
     })
 

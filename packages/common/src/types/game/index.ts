@@ -24,14 +24,14 @@ export interface QuestionMedia {
   url: string
 }
 
-export type QuestionType = "choice" | "boolean" | "slider"
+export type QuestionType = "choice" | "boolean" | "slider" | "poll"
 
 export interface Question {
   question: string
-  // "choice" (default) | "boolean" (2-option true/false) | "slider" (numeric guess)
+  // "choice" (default) | "boolean" | "slider" | "poll" (opinion vote, unscored)
   type?: QuestionType
   media?: QuestionMedia
-  // choice / boolean
+  // choice / boolean / poll
   answers?: string[]
   solutions?: number[]
   // slider
@@ -44,6 +44,8 @@ export interface Question {
   time: number
   // Warm-up/practice question: awards no points (leaderboard-neutral).
   practice?: boolean
+  // Bonus question: doubles the points awarded for this question.
+  bonus?: boolean
 }
 
 export interface Quizz {

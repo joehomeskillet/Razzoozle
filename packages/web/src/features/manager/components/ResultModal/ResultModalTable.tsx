@@ -46,7 +46,7 @@ const ResultModalTable = () => {
                   >
                     <span className="font-bold">{answerLabel}</span>
                     <span className="max-w-30 truncate">
-                      {questionResult.answers[pa.answerId]}
+                      {questionResult.answers?.[pa.answerId] ?? pa.answerId}
                     </span>
                   </span>
                 ) : (

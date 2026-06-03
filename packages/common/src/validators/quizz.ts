@@ -11,7 +11,7 @@ export const questionMediaValidator = z.object({
 const questionValidator = z
   .object({
     question: z.string().min(1, "errors:quizz.questionEmpty"),
-    type: z.enum(["choice", "boolean", "slider"]).optional(),
+    type: z.enum(["choice", "boolean", "slider", "poll"]).optional(),
     media: questionMediaValidator.optional(),
     answers: z
       .array(z.string().min(1, "errors:quizz.answerEmpty"))
@@ -31,6 +31,7 @@ const questionValidator = z
     cooldown: z.number().int().min(3).max(15),
     time: z.number().int().min(5).max(120),
     practice: z.boolean().optional(),
+    bonus: z.boolean().optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -44,6 +45,11 @@ const questionValidator = z
       }
       if (q.correct < q.min || q.correct > q.max) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.sliderCorrect" })
+      }
+    } else if (q.type === "poll") {
+      // Opinion vote: needs answers, no correct solution.
+      if (!q.answers || q.answers.length < 2) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
       }
     } else {
       if (!q.answers || q.answers.length < 2) {

@@ -6,6 +6,7 @@ const TYPES: { key: QuestionType; label: string }[] = [
   { key: "choice", label: "Auswahl" },
   { key: "boolean", label: "Wahr / Falsch" },
   { key: "slider", label: "Slider (Zahl)" },
+  { key: "poll", label: "Umfrage" },
 ]
 
 const SLIDER_FIELDS: { field: "min" | "max" | "correct" | "step"; label: string }[] =
@@ -38,6 +39,14 @@ const QuestionEditorType = () => {
         step: currentQuestion.step ?? 1,
         unit: currentQuestion.unit ?? "",
       })
+    } else if (next === "poll") {
+      updateQuestion(currentIndex, {
+        type: "poll",
+        answers: currentQuestion.answers?.length
+          ? currentQuestion.answers
+          : ["", ""],
+        solutions: [],
+      })
     } else {
       updateQuestion(currentIndex, {
         type: "choice",
@@ -50,6 +59,9 @@ const QuestionEditorType = () => {
       })
     }
   }
+
+  const toggleBonus = () =>
+    updateQuestion(currentIndex, { bonus: !currentQuestion.bonus })
 
   const setNum =
     (field: "min" | "max" | "correct" | "step") =>
@@ -77,6 +89,18 @@ const QuestionEditorType = () => {
           </button>
         ))}
       </div>
+
+      {type !== "poll" && (
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
+          <input
+            type="checkbox"
+            checked={!!currentQuestion.bonus}
+            onChange={toggleBonus}
+            className="size-4 cursor-pointer"
+          />
+          ⭐ Bonusfrage (doppelte Punkte)
+        </label>
+      )}
 
       {type === "slider" && (
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 md:grid-cols-5">

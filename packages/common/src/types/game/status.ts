@@ -47,6 +47,12 @@ export interface CommonStatusDataMap {
     myPoints: number
     rank: number
     aheadOfMe: string | null
+    // bonus / streak display
+    streak?: number
+    streakBonus?: boolean
+    bonus?: boolean
+    firstCorrect?: boolean
+    poll?: boolean
   }
   WAIT: { text: string }
   FINISHED: { subject: string; top: Player[]; rank?: number }

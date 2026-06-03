@@ -12,7 +12,19 @@ interface Props {
 }
 
 const Result = ({
-  data: { correct, message, points, myPoints, rank, aheadOfMe },
+  data: {
+    correct,
+    message,
+    points,
+    myPoints,
+    rank,
+    aheadOfMe,
+    streak,
+    streakBonus,
+    bonus,
+    firstCorrect,
+    poll,
+  },
 }: Props) => {
   const player = usePlayerStore()
   const { t } = useTranslation()
@@ -36,11 +48,12 @@ const Result = ({
 
   return (
     <section className="anim-show relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
-      {correct ? (
-        <CricleCheck className="aspect-square max-h-60 w-full" />
-      ) : (
-        <CricleXmark className="aspect-square max-h-60 w-full" />
-      )}
+      {!poll &&
+        (correct ? (
+          <CricleCheck className="aspect-square max-h-60 w-full" />
+        ) : (
+          <CricleXmark className="aspect-square max-h-60 w-full" />
+        ))}
       <h2 className="mt-1 text-4xl font-bold text-white drop-shadow-lg">
         {t(message)}
       </h2>
@@ -49,10 +62,29 @@ const Result = ({
         {t(rankKey, { rank })}
         {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
       </p>
-      {correct && (
+      {!poll && correct && (
         <span className="mt-2 rounded-lg bg-black/40 px-4 py-2 text-2xl font-bold text-white drop-shadow-lg">
           +{points}
         </span>
+      )}
+      {(streakBonus || bonus || firstCorrect) && (
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          {streakBonus && streak ? (
+            <span className="rounded-full bg-orange-500/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
+              🔥 Streak ×{streak}
+            </span>
+          ) : null}
+          {bonus && (
+            <span className="rounded-full bg-purple-600/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
+              ⭐ Bonus ×2
+            </span>
+          )}
+          {firstCorrect && (
+            <span className="rounded-full bg-yellow-500/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
+              ⚡ Schnellste +100
+            </span>
+          )}
+        </div>
       )}
     </section>
   )

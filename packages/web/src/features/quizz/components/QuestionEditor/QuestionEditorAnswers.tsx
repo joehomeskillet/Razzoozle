@@ -15,6 +15,8 @@ const QuestionEditorAnswers = () => {
     return null
   }
 
+  const isPoll = currentQuestion.type === "poll"
+
   const updateAnswer = (index: number, value: string) => {
     const next = [...currentQuestion.answers]
     next[index] = value
@@ -104,18 +106,20 @@ const QuestionEditorAnswers = () => {
                   value={answer}
                   onChange={(e) => updateAnswer(i, e.target.value)}
                 />
-                <button
-                  type="button"
-                  onClick={() => toggleSolution(i)}
-                  className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                    isSelected
-                      ? "border-white bg-white text-green-600"
-                      : "border-white/60 bg-transparent",
-                  )}
-                >
-                  {isSelected && <Check className="size-4 stroke-5" />}
-                </button>
+                {!isPoll && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSolution(i)}
+                    className={clsx(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                      isSelected
+                        ? "border-white bg-white text-green-600"
+                        : "border-white/60 bg-transparent",
+                    )}
+                  >
+                    {isSelected && <Check className="size-4 stroke-5" />}
+                  </button>
+                )}
               </div>
             </div>
           )
