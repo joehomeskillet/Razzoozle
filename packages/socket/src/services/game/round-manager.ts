@@ -187,8 +187,11 @@ export class RoundManager {
           ? question.solutions.includes(playerAnswer.answerId)
           : false
 
+        // Practice/warm-up questions never award points (leaderboard-neutral).
         const points =
-          playerAnswer && isCorrect ? Math.round(playerAnswer.points) : 0
+          !question.practice && playerAnswer && isCorrect
+            ? Math.round(playerAnswer.points)
+            : 0
 
         player.points += points
         player.streak = isCorrect ? player.streak + 1 : 0

@@ -31,6 +31,8 @@ export interface Question {
   solutions: number[]
   cooldown: number
   time: number
+  // Warm-up/practice question: awards no points (leaderboard-neutral).
+  practice?: boolean
 }
 
 export interface Quizz {
