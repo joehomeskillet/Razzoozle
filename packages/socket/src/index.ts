@@ -15,6 +15,10 @@ const io: Server = new ServerIO({
   // Compress WS frames over 1KB (off by default) + cap inbound buffer.
   perMessageDeflate: { threshold: 1024 },
   maxHttpBufferSize: 1e6,
+  // Detect a dead connection faster on flaky venue wifi (~18s vs ~45s default)
+  // so the client reconnects sooner.
+  pingInterval: 10000,
+  pingTimeout: 8000,
 })
 initConfig()
 

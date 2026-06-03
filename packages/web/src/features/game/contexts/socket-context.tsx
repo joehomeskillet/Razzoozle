@@ -100,6 +100,10 @@ export const socketClient: TypedSocket = io("/", {
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
+  // Cap the backoff + add jitter so a venue-wide blip doesn't thundering-herd
+  // the server with synchronized reconnects, and clients retry promptly.
+  reconnectionDelayMax: 5000,
+  randomizationFactor: 0.5,
   // For satellite kiosks, carry the token in the handshake `auth` payload so the
   // server can grant manager privileges without a password prompt. Normal
   // clients only send `clientId` and continue to authenticate via password.
