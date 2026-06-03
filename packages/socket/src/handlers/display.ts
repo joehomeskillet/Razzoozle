@@ -2,6 +2,7 @@ import { EVENTS } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import { getGameConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
+import { randomInt } from "crypto"
 
 interface PairPayload {
   code: string
@@ -9,13 +10,20 @@ interface PairPayload {
   gameId: string
 }
 
-// Validate a pairing attempt and, on success, join the display socket to the
-// game room so it receives EVENTS.GAME.STATUS broadcasts. Emits PAIR_SUCCESS or
-// PAIR_ERROR on the display socket. Returns true on success.
-//
-// Exported so it can be unit-tested with a mock socket without a live server.
+// Server-generated pairing code (CSPRNG, no ambiguous chars). The display never
+// chooses its own code, so a code can't be guessed/forced by a client.
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+const generateCode = () =>
+  Array.from(
+    { length: 6 },
+    () => CODE_CHARS[randomInt(CODE_CHARS.length)],
+  ).join("")
+
+// Validate a manager's pairing attempt and, on success, join the DISPLAY socket
+// (the one that registered the code) to the game room so the kiosk receives
+// GAME.STATUS broadcasts. The manager (caller) only triggers + gets confirmation.
 export const handlePair = (
-  { socket }: SocketContext,
+  { socket, io }: SocketContext,
   payload: PairPayload,
 ): boolean => {
   const registry = Registry.getInstance()
@@ -36,10 +44,11 @@ export const handlePair = (
     return false
   }
 
-  // Same credential model as MANAGER.AUTH: the placeholder password is never
-  // accepted, and the supplied password must match exactly.
   if (config.managerPassword === "PASSWORD") {
-    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.passwordNotConfigured")
+    socket.emit(
+      EVENTS.DISPLAY.PAIR_ERROR,
+      "errors:manager.passwordNotConfigured",
+    )
 
     return false
   }
@@ -58,10 +67,22 @@ export const handlePair = (
     return false
   }
 
-  // Pairing is single-use: consume the code, then attach the display to the
-  // game room so GAME.STATUS broadcasts reach the kiosk screen.
+  const pairing = registry.getPairing(code)
+  const displaySocket = pairing
+    ? io.sockets.sockets.get(pairing.socketId)
+    : undefined
+
+  if (!displaySocket) {
+    socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:display.notConnected")
+
+    return false
+  }
+
+  // Single-use: consume the code, attach the DISPLAY (not the caller) to the
+  // room, and tell both the display (to start mirroring) and the manager.
   registry.removePairing(code)
-  socket.join(game.gameId)
+  displaySocket.join(game.gameId)
+  displaySocket.emit(EVENTS.DISPLAY.PAIR_SUCCESS, { gameId: game.gameId })
   socket.emit(EVENTS.DISPLAY.PAIR_SUCCESS, { gameId: game.gameId })
 
   console.log(`Display paired to game ${game.inviteCode}`)
@@ -73,8 +94,11 @@ export const displaySocketHandlers = (context: SocketContext) => {
   const { socket } = context
   const registry = Registry.getInstance()
 
-  socket.on(EVENTS.DISPLAY.REGISTER, ({ code }) => {
+  // Display registers (no client-chosen code); server mints + returns one.
+  socket.on(EVENTS.DISPLAY.REGISTER, () => {
+    const code = generateCode()
     registry.registerPairing(code, socket.id)
+    socket.emit(EVENTS.DISPLAY.REGISTERED, { code })
   })
 
   socket.on(EVENTS.DISPLAY.PAIR, (payload) => {

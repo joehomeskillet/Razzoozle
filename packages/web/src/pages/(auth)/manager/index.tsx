@@ -9,7 +9,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 
 const ManagerAuthPage = () => {
-  const { setConfig } = useManagerStore()
+  const { setConfig, setPassword } = useManagerStore()
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
 
@@ -28,6 +28,7 @@ const ManagerAuthPage = () => {
   })
 
   const handleAuth = (password: string) => {
+    setPassword(password)
     socket.emit(EVENTS.MANAGER.AUTH, password)
   }
 

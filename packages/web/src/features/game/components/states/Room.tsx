@@ -11,6 +11,7 @@ import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { useRef, useState } from "react"
+import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -18,15 +19,36 @@ interface Props {
 }
 
 const Room = ({ data: { text, inviteCode } }: Props) => {
-  const { gameId } = useManagerStore()
+  const { gameId, password } = useManagerStore()
   const { socket } = useSocket()
   const webUrl = window.location.origin
   const { players } = useManagerStore()
   const [playerList, setPlayerList] = useState<Player[]>(players)
   const [totalPlayers, setTotalPlayers] = useState(0)
   const [qrOpen, setQrOpen] = useState(false)
+  const [pairCode, setPairCode] = useState("")
   const qrContentRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
+
+  const pairDisplay = () => {
+    if (!gameId || !password || pairCode.trim().length === 0) {
+      return
+    }
+    socket.emit(EVENTS.DISPLAY.PAIR, {
+      code: pairCode.trim().toUpperCase(),
+      managerPassword: password,
+      gameId,
+    })
+  }
+
+  useEvent(EVENTS.DISPLAY.PAIR_SUCCESS, () => {
+    toast.success("Satellit-Display verbunden")
+    setPairCode("")
+  })
+
+  useEvent(EVENTS.DISPLAY.PAIR_ERROR, (message) => {
+    toast.error(message)
+  })
 
   useOnClickOutside({ ref: qrContentRef, handler: () => setQrOpen(false) })
 
@@ -127,6 +149,26 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </span>
       </div>
 
+      <div className="mb-6 flex items-center gap-2 rounded-lg bg-black/40 px-4 py-2">
+        <span className="text-sm font-semibold text-white/70">
+          Satellit-Code:
+        </span>
+        <input
+          value={pairCode}
+          onChange={(e) => setPairCode(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && pairDisplay()}
+          placeholder="ABC123"
+          maxLength={6}
+          className="w-28 rounded-md bg-white/90 px-2 py-1 text-center font-mono text-lg font-bold tracking-widest text-black uppercase outline-none"
+        />
+        <button
+          type="button"
+          onClick={pairDisplay}
+          className="bg-primary rounded-md px-3 py-1.5 text-sm font-bold text-white"
+        >
+          Pairen
+        </button>
+      </div>
 
       <div className="flex flex-wrap gap-3">
         {playerList.map((player) => (

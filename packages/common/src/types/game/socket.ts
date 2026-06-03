@@ -100,6 +100,7 @@ export interface ServerToClientEvents {
   [EVENTS.RESULTS.DATA]: (_result: GameResult) => void
 
   // Display (satellite) events
+  [EVENTS.DISPLAY.REGISTERED]: (_data: { code: string }) => void
   [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
   [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
 }
@@ -139,6 +140,15 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.GET_CONFIG]: () => void
   [EVENTS.MANAGER.LOGOUT]: () => void
+
+  // Display (satellite) actions
+  [EVENTS.DISPLAY.REGISTER]: () => void
+  [EVENTS.DISPLAY.PAIR]: (_data: {
+    code: string
+    managerPassword: string
+    gameId: string
+  }) => void
+  [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
 
   // Theme actions
   [EVENTS.MANAGER.GET_THEME]: () => void

@@ -67,6 +67,7 @@ export const EVENTS = {
   },
   DISPLAY: {
     REGISTER: "display:register",
+    REGISTERED: "display:registered",
     PAIR: "display:pair",
     PAIR_SUCCESS: "display:pairSuccess",
     PAIR_ERROR: "display:pairError",

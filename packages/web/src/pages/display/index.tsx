@@ -48,7 +48,7 @@ const DISPLAY_REGISTERED: DisplayEventName =
 // Payload the server returns once the display socket has a pairing code, and the
 // payload it pushes when the manager successfully pairs us to a game.
 interface RegisteredPayload {
-  pairingCode?: string
+  code?: string
 }
 interface PairSuccessPayload {
   gameId?: string
@@ -90,8 +90,8 @@ const DisplayRegisterPage = () => {
   useEvent(
     DISPLAY_REGISTERED as never,
     ((payload: RegisteredPayload) => {
-      if (payload?.pairingCode) {
-        setPairingCode(payload.pairingCode)
+      if (payload?.code) {
+        setPairingCode(payload.code)
       }
     }) as never,
   )

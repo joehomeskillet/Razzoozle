@@ -14,6 +14,7 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import clsx from "clsx"
+import { Maximize } from "lucide-react"
 import { type PropsWithChildren, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -48,6 +49,14 @@ const GameWrapper = ({
       gameId: gameId ?? undefined,
       auto: nextAuto,
     })
+  }
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.()
+    } else {
+      void document.documentElement.requestFullscreen?.()
+    }
   }
   const next = statusName ? MANAGER_SKIP_BTN[statusName] : null
   const bgSrc =
@@ -141,6 +150,16 @@ const GameWrapper = ({
               )}
 
               <div className="flex flex-1 justify-end gap-2">
+                {manager && (
+                  <button
+                    type="button"
+                    onClick={toggleFullscreen}
+                    title="Vollbild"
+                    className="flex items-center rounded-md bg-white px-3 text-black hover:bg-gray-200"
+                  >
+                    <Maximize className="size-5" />
+                  </button>
+                )}
                 {manager && next && (
                   <Button
                     className={clsx("bg-white px-4 text-black hover:bg-gray-200", {

@@ -13,12 +13,16 @@ interface ManagerStore<T> {
   gameId: string | null
   status: Status<T> | null
   players: Player[]
+  // Kept in-memory only (never persisted) so the satellite-display pairing UI
+  // can authenticate the pairing without re-prompting.
+  password: string | null
 
   setConfig: (_config: ManagerConfig) => void
   setGameId: (_gameId: string | null) => void
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
   resetStatus: () => void
   setPlayers: (_players: Player[]) => void
+  setPassword: (_password: string) => void
 
   reset: () => void
 }
@@ -28,6 +32,7 @@ const initialState = {
   gameId: null,
   status: null,
   players: [],
+  password: null,
 }
 
 export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => ({
@@ -41,6 +46,7 @@ export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => ({
   resetStatus: () => set({ status: null }),
 
   setPlayers: (players) => set({ players }),
+  setPassword: (password) => set({ password }),
 
   reset: () => set(initialState),
 }))
