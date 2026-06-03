@@ -3,6 +3,7 @@ import CricleCheck from "@razzia/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzia/web/features/game/components/icons/CricleXmark"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { SFX } from "@razzia/web/features/game/utils/constants"
+import { playFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -42,7 +43,13 @@ const Result = ({
   useEffect(() => {
     player.updatePoints(myPoints)
 
-    sfxResults()
+    // The first-correct winner hears the champions sting; everyone else the
+    // normal result sound.
+    if (firstCorrect) {
+      playFirstCorrectSound()
+    } else {
+      sfxResults()
+    }
     // oxlint-disable-next-line
   }, [sfxResults])
 

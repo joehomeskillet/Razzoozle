@@ -4,6 +4,7 @@ import background from "@razzia/web/assets/background.png"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
 import { useThemeStore } from "@razzia/web/features/theme/store"
+import { preloadFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
 import {
   useEvent,
   useSocket,
@@ -57,6 +58,11 @@ const GameWrapper = ({
   useEffect(() => {
     setIsDisabled(false)
   }, [statusName])
+
+  // Preload the "champions" sting at game start so it plays instantly.
+  useEffect(() => {
+    preloadFirstCorrectSound()
+  }, [])
 
   const handleNext = () => {
     setIsDisabled(true)
