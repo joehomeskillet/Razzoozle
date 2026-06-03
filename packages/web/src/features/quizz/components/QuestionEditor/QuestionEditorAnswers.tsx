@@ -11,6 +11,10 @@ const QuestionEditorAnswers = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
 
+  if (!currentQuestion.answers || !currentQuestion.solutions) {
+    return null
+  }
+
   const updateAnswer = (index: number, value: string) => {
     const next = [...currentQuestion.answers]
     next[index] = value

@@ -65,18 +65,25 @@ const QuizzEditorCard = ({
 
       <SlideMedia media={question.media} />
 
-      <div className="grid grid-cols-2 gap-1">
-        {question.answers.map((_, i) => (
-          <div
-            key={i}
-            className="flex h-4 flex-1 items-center rounded-md border border-gray-300 px-0.5"
-          >
-            {question.solutions.includes(i) && (
-              <div className="ml-auto size-1.5 rounded-full bg-green-400" />
-            )}
-          </div>
-        ))}
-      </div>
+      {question.type === "slider" ? (
+        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-400">
+          {question.min}–{question.max}
+          {question.unit ? ` ${question.unit}` : ""}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-1">
+          {(question.answers ?? []).map((_, i) => (
+            <div
+              key={i}
+              className="flex h-4 flex-1 items-center rounded-md border border-gray-300 px-0.5"
+            >
+              {(question.solutions ?? []).includes(i) && (
+                <div className="ml-auto size-1.5 rounded-full bg-green-400" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {canDelete && (
         <AlertDialog

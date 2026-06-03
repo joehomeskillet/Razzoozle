@@ -23,5 +23,8 @@
   "usernamePlaceholder": "Pseudo",
   "waitingForAnswers": "En attente des réponses des joueurs",
   "waitingForPlayers": "En attente des joueurs",
-  "wrong": "Dommage"
+  "wrong": "Dommage",
+  "slider": {
+    "submit": "Confirmer"
+  }
 }

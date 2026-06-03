@@ -24,11 +24,22 @@ export interface QuestionMedia {
   url: string
 }
 
+export type QuestionType = "choice" | "boolean" | "slider"
+
 export interface Question {
   question: string
+  // "choice" (default) | "boolean" (2-option true/false) | "slider" (numeric guess)
+  type?: QuestionType
   media?: QuestionMedia
-  answers: string[]
-  solutions: number[]
+  // choice / boolean
+  answers?: string[]
+  solutions?: number[]
+  // slider
+  min?: number
+  max?: number
+  correct?: number
+  step?: number
+  unit?: string
   cooldown: number
   time: number
   // Warm-up/practice question: awards no points (leaderboard-neutral).

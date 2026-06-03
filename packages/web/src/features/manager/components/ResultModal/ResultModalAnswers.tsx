@@ -58,11 +58,11 @@ const ResultModalAnswers = () => {
   const noAnswerCount = totalPlayers - answeredCount
 
   const rows: AnswerRow[] = [
-    ...questionResult.answers.map((label, ai) => ({
+    ...(questionResult.answers ?? []).map((label, ai) => ({
       label,
       count: questionResult.playerAnswers.filter((pa) => pa.answerId === ai)
         .length,
-      isCorrect: questionResult.solutions.includes(ai),
+      isCorrect: (questionResult.solutions ?? []).includes(ai),
       color: ANSWERS_COLORS[ai % 4],
       answerLabel: ANSWERS_LABELS[ai % 4],
     })),

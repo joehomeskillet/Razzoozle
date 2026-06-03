@@ -29,7 +29,7 @@ const ResultModalTable = () => {
         {questionResult.playerAnswers.map((pa, i) => {
           const isCorrect =
             pa.answerId !== null &&
-            questionResult.solutions.includes(pa.answerId)
+            (questionResult.solutions ?? []).includes(pa.answerId)
           const answerLabel =
             pa.answerId !== null ? ANSWERS_LABELS[pa.answerId % 4] : null
 

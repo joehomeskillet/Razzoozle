@@ -42,7 +42,8 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
 
   const correctCount = questionResult.playerAnswers.filter(
     (pa) =>
-      pa.answerId !== null && questionResult.solutions.includes(pa.answerId),
+      pa.answerId !== null &&
+      (questionResult.solutions ?? []).includes(pa.answerId),
   ).length
 
   const correctPct =
@@ -50,7 +51,7 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
 
   const maxAnswerCount = Math.max(
     1,
-    ...questionResult.answers.map(
+    ...(questionResult.answers ?? []).map(
       (_, ai) =>
         questionResult.playerAnswers.filter((pa) => pa.answerId === ai).length,
     ),

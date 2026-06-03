@@ -23,13 +23,29 @@ interface Props {
 }
 
 const Answers = ({
-  data: { question, answers, media, time, totalPlayer },
+  data: {
+    question,
+    answers,
+    media,
+    time,
+    totalPlayer,
+    type,
+    min,
+    max,
+    step,
+    unit,
+  },
 }: Props) => {
   const { socket } = useSocket()
   const { player, gameId } = usePlayerStore()
 
+  const isSlider = type === "slider" && min != null && max != null
   const [cooldown, setCooldown] = useState(time)
   const [totalAnswer, setTotalAnswer] = useState(0)
+  const [sliderValue, setSliderValue] = useState(
+    isSlider ? Math.round((min! + max!) / 2) : 0,
+  )
+  const [submitted, setSubmitted] = useState(false)
   const { t } = useTranslation()
 
   const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
@@ -53,6 +69,19 @@ const Answers = ({
         answerKey,
       },
     })
+    sfxPop()
+  }
+
+  const submitSlider = () => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: { answerKey: sliderValue },
+    })
+    setSubmitted(true)
     sfxPop()
   }
 
@@ -109,18 +138,54 @@ const Answers = ({
           </div>
         </div>
 
-        <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl">
-          {answers.map((answer, key) => (
-            <AnswerButton
-              key={key}
-              className={clsx(ANSWERS_COLORS[key])}
-              label={ANSWERS_LABELS[key]}
-              onClick={handleAnswer(key)}
+        {isSlider ? (
+          <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
+            <div className="text-5xl font-bold text-white drop-shadow-lg">
+              {sliderValue}
+              {unit ? ` ${unit}` : ""}
+            </div>
+            <input
+              type="range"
+              min={min}
+              max={max}
+              step={step ?? 1}
+              value={sliderValue}
+              disabled={submitted}
+              onChange={(e) => setSliderValue(Number(e.target.value))}
+              className="accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40"
+            />
+            <div className="flex w-full justify-between text-sm font-semibold text-white/70">
+              <span>
+                {min}
+                {unit ? ` ${unit}` : ""}
+              </span>
+              <span>
+                {max}
+                {unit ? ` ${unit}` : ""}
+              </span>
+            </div>
+            <button
+              onClick={submitSlider}
+              disabled={submitted}
+              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50"
             >
-              {answer}
-            </AnswerButton>
-          ))}
-        </div>
+              {submitted ? t("game:hud.answers") : t("game:slider.submit")}
+            </button>
+          </div>
+        ) : (
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl">
+            {(answers ?? []).map((answer, key) => (
+              <AnswerButton
+                key={key}
+                className={clsx(ANSWERS_COLORS[key])}
+                label={ANSWERS_LABELS[key]}
+                onClick={handleAnswer(key)}
+              >
+                {answer}
+              </AnswerButton>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

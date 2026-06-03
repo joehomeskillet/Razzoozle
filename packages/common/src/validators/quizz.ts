@@ -8,20 +8,52 @@ export const questionMediaValidator = z.object({
   url: z.url("errors:quizz.invalidMediaUrl"),
 })
 
-const questionValidator = z.object({
-  question: z.string().min(1, "errors:quizz.questionEmpty"),
-  media: questionMediaValidator.optional(),
-  answers: z
-    .array(z.string().min(1, "errors:quizz.answerEmpty"))
-    .min(2, "errors:quizz.tooFewAnswers")
-    .max(4, "errors:quizz.tooManyAnswers"),
-  solutions: z
-    .union([z.number().int().min(0), z.array(z.number().int().min(0)).min(1)])
-    .transform((v) => (Array.isArray(v) ? v : [v])),
-  cooldown: z.number().int().min(3).max(15),
-  time: z.number().int().min(5).max(120),
-  practice: z.boolean().optional(),
-})
+const questionValidator = z
+  .object({
+    question: z.string().min(1, "errors:quizz.questionEmpty"),
+    type: z.enum(["choice", "boolean", "slider"]).optional(),
+    media: questionMediaValidator.optional(),
+    answers: z
+      .array(z.string().min(1, "errors:quizz.answerEmpty"))
+      .min(2, "errors:quizz.tooFewAnswers")
+      .max(4, "errors:quizz.tooManyAnswers")
+      .optional(),
+    solutions: z
+      .union([z.number().int().min(0), z.array(z.number().int().min(0)).min(1)])
+      .transform((v) => (Array.isArray(v) ? v : [v]))
+      .optional(),
+    // slider
+    min: z.number().optional(),
+    max: z.number().optional(),
+    correct: z.number().optional(),
+    step: z.number().positive().optional(),
+    unit: z.string().optional(),
+    cooldown: z.number().int().min(3).max(15),
+    time: z.number().int().min(5).max(120),
+    practice: z.boolean().optional(),
+  })
+  .superRefine((q, ctx) => {
+    if (q.type === "slider") {
+      if (q.min == null || q.max == null || q.correct == null) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.sliderMissing" })
+
+        return
+      }
+      if (q.min >= q.max) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.sliderRange" })
+      }
+      if (q.correct < q.min || q.correct > q.max) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.sliderCorrect" })
+      }
+    } else {
+      if (!q.answers || q.answers.length < 2) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
+      }
+      if (!q.solutions || q.solutions.length < 1) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.noSolution" })
+      }
+    }
+  })
 
 export const quizzValidator = z.object({
   subject: z.string().min(1, "errors:quizz.subjectEmpty"),

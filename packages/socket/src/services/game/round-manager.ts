@@ -113,7 +113,7 @@ export class RoundManager {
     })
 
     this.opts.broadcast(STATUS.SHOW_PREPARED, {
-      totalAnswers: question.answers.length,
+      totalAnswers: question.answers?.length ?? 0,
       questionNumber: this.currentQuestion + 1,
     })
 
@@ -142,10 +142,18 @@ export class RoundManager {
 
     this.opts.broadcast(STATUS.SELECT_ANSWER, {
       question: question.question,
-      answers: question.answers,
       media: question.media,
       time: question.time,
       totalPlayer: this.opts.players.count(),
+      type: question.type,
+      ...(question.type === "slider"
+        ? {
+            min: question.min,
+            max: question.max,
+            step: question.step,
+            unit: question.unit,
+          }
+        : { answers: question.answers }),
     })
 
     await this.opts.cooldown.start(question.time)
@@ -183,15 +191,30 @@ export class RoundManager {
           (a) => a.playerId === player.id,
         )
 
-        const isCorrect = playerAnswer
-          ? question.solutions.includes(playerAnswer.answerId)
-          : false
+        let isCorrect = false
+        let rawPoints = 0
+
+        if (playerAnswer) {
+          if (
+            question.type === "slider" &&
+            question.min != null &&
+            question.max != null &&
+            question.correct != null
+          ) {
+            // Slider: points scale with closeness to the correct value.
+            const range = question.max - question.min || 1
+            const dist = Math.abs(playerAnswer.answerId - question.correct)
+            const accuracy = Math.max(0, 1 - dist / range)
+            rawPoints = playerAnswer.points * accuracy
+            isCorrect = dist <= Math.max(question.step ?? 0, range * 0.05)
+          } else {
+            isCorrect = question.solutions?.includes(playerAnswer.answerId) ?? false
+            rawPoints = isCorrect ? playerAnswer.points : 0
+          }
+        }
 
         // Practice/warm-up questions never award points (leaderboard-neutral).
-        const points =
-          !question.practice && playerAnswer && isCorrect
-            ? Math.round(playerAnswer.points)
-            : 0
+        const points = question.practice ? 0 : Math.round(rawPoints)
 
         player.points += points
         player.streak = isCorrect ? player.streak + 1 : 0
@@ -216,9 +239,16 @@ export class RoundManager {
       })
     })
 
+    const guesses = this.playersAnswers.map((a) => a.answerId)
+    const averageGuess =
+      question.type === "slider" && guesses.length
+        ? Math.round(guesses.reduce((s, v) => s + v, 0) / guesses.length)
+        : undefined
+
     this.opts.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
       ...question,
       responses: totalType,
+      averageGuess,
     })
 
     this.questionsHistory.push({

@@ -15,8 +15,20 @@ interface Props {
 }
 
 const Responses = ({
-  data: { question, answers, responses, solutions },
+  data: {
+    question,
+    answers,
+    responses,
+    solutions,
+    type,
+    correct,
+    unit,
+    averageGuess,
+  },
 }: Props) => {
+  const isSlider = type === "slider"
+  const answerList = answers ?? []
+  const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
 
@@ -58,44 +70,64 @@ const Responses = ({
           {question}
         </h2>
 
-        <div
-          className={`mt-8 grid h-40 w-full max-w-3xl gap-4 px-2`}
-          style={{ gridTemplateColumns: `repeat(${answers.length}, 1fr)` }}
-        >
-          {answers.map((_, key) => (
-            <div
-              key={key}
-              className={clsx(
-                "flex flex-col justify-end self-end overflow-hidden rounded-md",
-                ANSWERS_COLORS[key],
-              )}
-              style={{ height: percentages[key] }}
-            >
-              <span className="w-full bg-black/10 text-center text-lg font-bold text-white drop-shadow-md">
-                {responses[key] || 0}
-              </span>
+        {isSlider ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-lg font-semibold text-white/70">
+              Richtige Antwort
             </div>
-          ))}
-        </div>
+            <div className="text-6xl font-bold text-white drop-shadow-lg">
+              {correct}
+              {unit ? ` ${unit}` : ""}
+            </div>
+            {averageGuess != null && (
+              <div className="text-xl font-semibold text-white/80">
+                Schnitt der Schätzungen: {averageGuess}
+                {unit ? ` ${unit}` : ""}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`mt-8 grid h-40 w-full max-w-3xl gap-4 px-2`}
+            style={{ gridTemplateColumns: `repeat(${answerList.length}, 1fr)` }}
+          >
+            {answerList.map((_, key) => (
+              <div
+                key={key}
+                className={clsx(
+                  "flex flex-col justify-end self-end overflow-hidden rounded-md",
+                  ANSWERS_COLORS[key],
+                )}
+                style={{ height: percentages[key] }}
+              >
+                <span className="w-full bg-black/10 text-center text-lg font-bold text-white drop-shadow-md">
+                  {responses[key] || 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div>
-        <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl">
-          {answers.map((answer, key) => (
-            <AnswerButton
-              key={key}
-              className={clsx(ANSWERS_COLORS[key], {
-                // oxlint-disable-next-line typescript/no-unnecessary-condition
-                "opacity-65": responses && !solutions.includes(key),
-              })}
-              label={ANSWERS_LABELS[key]}
-              correct={solutions.includes(key)}
-            >
-              {answer}
-            </AnswerButton>
-          ))}
+      {!isSlider && (
+        <div>
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl">
+            {answerList.map((answer, key) => (
+              <AnswerButton
+                key={key}
+                className={clsx(ANSWERS_COLORS[key], {
+                  // oxlint-disable-next-line typescript/no-unnecessary-condition
+                  "opacity-65": responses && !solutionList.includes(key),
+                })}
+                label={ANSWERS_LABELS[key]}
+                correct={solutionList.includes(key)}
+              >
+                {answer}
+              </AnswerButton>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
