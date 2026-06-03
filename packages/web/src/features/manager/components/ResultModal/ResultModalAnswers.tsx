@@ -56,6 +56,17 @@ const ResultModalAnswers = () => {
   const { t } = useTranslation()
 
   const noAnswerCount = totalPlayers - answeredCount
+  const isPoll = questionResult.type === "poll"
+  const isSlider = questionResult.type === "slider"
+  const sliderGuesses = questionResult.playerAnswers
+    .map((pa) => pa.answerId)
+    .filter((v): v is number => v !== null)
+  const sliderAvg = sliderGuesses.length
+    ? Math.round(
+        sliderGuesses.reduce((s, v) => s + v, 0) / sliderGuesses.length,
+      )
+    : null
+  const unit = questionResult.unit ? ` ${questionResult.unit}` : ""
 
   const rows: AnswerRow[] = [
     ...(questionResult.answers ?? []).map((label, ai) => ({
@@ -93,51 +104,71 @@ const ResultModalAnswers = () => {
           {questionResult.question}
         </p>
 
-        {rows.map((row, i) => (
-          <div key={i} className="flex items-center gap-3">
-            {row.color && row.answerLabel ? (
-              <div
-                className={clsx(
-                  "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white",
-                  row.color,
-                )}
-              >
-                {row.answerLabel}
-              </div>
-            ) : (
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white">
-                <X className="size-3 text-gray-400" />
+        {isSlider ? (
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="font-semibold text-gray-800">
+              Richtige Antwort: {questionResult.correct}
+              {unit}
+            </div>
+            {sliderAvg !== null && (
+              <div className="text-gray-600">
+                Schnitt der Schätzungen: {sliderAvg}
+                {unit}
               </div>
             )}
-
-            <span
-              className={clsx("min-w-0 flex-1 truncate text-sm font-medium", {
-                "text-gray-400": !row.color,
-              })}
-            >
-              {row.label}
-            </span>
-
-            <div className="shrink-0">
-              {row.isCorrect ? (
-                <Check className="size-5 text-green-500" />
-              ) : (
-                <X
-                  className={clsx(
-                    "size-5",
-                    row.color ? "text-red-500" : "text-red-400",
-                  )}
-                />
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="text-center text-sm font-semibold text-gray-600">
-                {row.count}
-              </span>
+            <div className="text-gray-500">
+              {answeredCount} Schätzungen · {noAnswerCount} ohne Antwort
             </div>
           </div>
-        ))}
+        ) : (
+          rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-3">
+              {row.color && row.answerLabel ? (
+                <div
+                  className={clsx(
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white",
+                    row.color,
+                  )}
+                >
+                  {row.answerLabel}
+                </div>
+              ) : (
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white">
+                  <X className="size-3 text-gray-400" />
+                </div>
+              )}
+
+              <span
+                className={clsx("min-w-0 flex-1 truncate text-sm font-medium", {
+                  "text-gray-400": !row.color,
+                })}
+              >
+                {row.label}
+              </span>
+
+              {!isPoll && (
+                <div className="shrink-0">
+                  {row.isCorrect ? (
+                    <Check className="size-5 text-green-500" />
+                  ) : (
+                    <X
+                      className={clsx(
+                        "size-5",
+                        row.color ? "text-red-500" : "text-red-400",
+                      )}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-center text-sm font-semibold text-gray-600">
+                  {row.count}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

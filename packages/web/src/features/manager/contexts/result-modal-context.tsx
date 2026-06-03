@@ -40,11 +40,25 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
     (pa) => pa.answerId !== null,
   ).length
 
-  const correctCount = questionResult.playerAnswers.filter(
-    (pa) =>
-      pa.answerId !== null &&
-      (questionResult.solutions ?? []).includes(pa.answerId),
-  ).length
+  const sliderThreshold =
+    questionResult.type === "slider" &&
+    questionResult.min != null &&
+    questionResult.max != null
+      ? Math.max(
+          questionResult.step ?? 0,
+          (questionResult.max - questionResult.min) * 0.05,
+        )
+      : null
+
+  const correctCount = questionResult.playerAnswers.filter((pa) => {
+    if (pa.answerId === null) {
+      return false
+    }
+    if (sliderThreshold !== null && questionResult.correct != null) {
+      return Math.abs(pa.answerId - questionResult.correct) <= sliderThreshold
+    }
+    return (questionResult.solutions ?? []).includes(pa.answerId)
+  }).length
 
   const correctPct =
     totalPlayers > 0 ? Math.round((correctCount / totalPlayers) * 100) : 0

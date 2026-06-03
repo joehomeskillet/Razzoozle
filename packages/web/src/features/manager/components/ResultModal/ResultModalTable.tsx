@@ -27,17 +27,41 @@ const ResultModalTable = () => {
       </thead>
       <tbody className="divide-y divide-gray-100">
         {questionResult.playerAnswers.map((pa, i) => {
-          const isCorrect =
+          const isSlider = questionResult.type === "slider"
+          const isPoll = questionResult.type === "poll"
+          const sliderCorrect =
+            isSlider &&
             pa.answerId !== null &&
-            (questionResult.solutions ?? []).includes(pa.answerId)
+            questionResult.min != null &&
+            questionResult.max != null &&
+            questionResult.correct != null &&
+            Math.abs(pa.answerId - questionResult.correct) <=
+              Math.max(
+                questionResult.step ?? 0,
+                (questionResult.max - questionResult.min) * 0.05,
+              )
+          const isCorrect = isSlider
+            ? sliderCorrect
+            : !isPoll &&
+              pa.answerId !== null &&
+              (questionResult.solutions ?? []).includes(pa.answerId)
           const answerLabel =
-            pa.answerId !== null ? ANSWERS_LABELS[pa.answerId % 4] : null
+            !isSlider && pa.answerId !== null
+              ? ANSWERS_LABELS[pa.answerId % 4]
+              : null
 
           return (
             <tr key={i} className="hover:bg-gray-50">
               <td className="px-5 py-2.5 font-medium">{pa.playerName}</td>
               <td className="px-4 py-2.5">
-                {pa.answerId !== null && answerLabel ? (
+                {pa.answerId === null ? (
+                  <span className="text-xs text-gray-400">—</span>
+                ) : isSlider ? (
+                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">
+                    {pa.answerId}
+                    {questionResult.unit ? ` ${questionResult.unit}` : ""}
+                  </span>
+                ) : answerLabel ? (
                   <span
                     className={clsx(
                       "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white",
@@ -54,7 +78,9 @@ const ResultModalTable = () => {
                 )}
               </td>
               <td className="px-4 py-2.5">
-                {isCorrect ? (
+                {isPoll ? (
+                  <span className="text-gray-400">—</span>
+                ) : isCorrect ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <Check className="size-3.5" />{" "}
                     {t("manager:result.table.correct")}
