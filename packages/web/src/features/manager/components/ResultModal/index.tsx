@@ -1,38 +1,52 @@
+import * as RadixDialog from "@radix-ui/react-alert-dialog"
 import type { GameResult } from "@razzia/common/types/game"
 import ResultModalAnswers from "@razzia/web/features/manager/components/ResultModal/ResultModalAnswers"
 import ResultModalHeader from "@razzia/web/features/manager/components/ResultModal/ResultModalHeader"
 import ResultModalStats from "@razzia/web/features/manager/components/ResultModal/ResultModalStats"
 import ResultModalTable from "@razzia/web/features/manager/components/ResultModal/ResultModalTable"
 import { ResultModalProvider } from "@razzia/web/features/manager/contexts/result-modal-context"
-import { useEffect } from "react"
+
+// The dialog title (`result.subject`) is rendered inside ResultModalHeader; this
+// shared id wires Radix's `aria-labelledby` to that heading.
+export const RESULT_MODAL_TITLE_ID = "result-modal-title"
 
 interface Props {
   result: GameResult
   onClose: () => void
 }
 
+// Radix gives us focus-trap, aria-modal, Escape-to-close, return-focus and
+// body-scroll-lock for free. `react-alert-dialog` is the dialog primitive that
+// ships as a direct dependency here; it provides the same Root/Portal/Overlay/
+// Content/Title parts as react-dialog.
 const ResultModal = ({ result, onClose }: Props) => {
-  useEffect(() => {
-    document.body.style.overflow = "hidden"
-
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [])
-
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-        <ResultModalProvider result={result} onClose={onClose}>
-          <ResultModalHeader />
-          <ResultModalAnswers />
-          <ResultModalStats />
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <ResultModalTable />
-          </div>
-        </ResultModalProvider>
-      </div>
-    </div>
+    <RadixDialog.Root
+      open
+      onOpenChange={(next) => {
+        if (!next) {
+          onClose()
+        }
+      }}
+    >
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay className="fixed inset-0 z-60 bg-black/50" />
+        <RadixDialog.Content
+          aria-labelledby={RESULT_MODAL_TITLE_ID}
+          aria-describedby={undefined}
+          className="fixed top-1/2 left-1/2 z-60 flex max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow-2xl focus:outline-none"
+        >
+          <ResultModalProvider result={result} onClose={onClose}>
+            <ResultModalHeader />
+            <ResultModalAnswers />
+            <ResultModalStats />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ResultModalTable />
+            </div>
+          </ResultModalProvider>
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   )
 }
 

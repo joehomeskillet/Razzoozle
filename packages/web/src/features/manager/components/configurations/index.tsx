@@ -68,18 +68,26 @@ const Configurations = ({ data }: Props) => {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <button
-              className="rounded-sm p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              type="button"
+              className="rounded-sm p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               onClick={handleLogout}
               title={t("manager:logout")}
+              aria-label={t("manager:logout")}
             >
               <LogOut className="size-4" />
             </button>
           </div>
         </div>
-        <div className="flex shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
+        <div
+          role="tablist"
+          aria-label={t("manager:configurationsTitle")}
+          className="flex shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+        >
           {tabs.map((tab, index) => (
             <ConfigTabButton
               key={tab.nameKey}
+              id={`config-tab-${index}`}
+              aria-controls={`config-tabpanel-${index}`}
               active={index === selectedTab}
               onClick={handleSelect(index)}
             >
@@ -88,7 +96,13 @@ const Configurations = ({ data }: Props) => {
           ))}
         </div>
         <hr className="my-4 text-gray-100" />
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          role="tabpanel"
+          id={`config-tabpanel-${selectedTab}`}
+          aria-labelledby={`config-tab-${selectedTab}`}
+          tabIndex={0}
+          className="flex min-h-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
           <TabComponent />
         </div>
       </Card>

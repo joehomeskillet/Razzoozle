@@ -1,5 +1,13 @@
 // oxlint-disable typescript/no-unnecessary-condition
-import { EVENTS, MEDIA_TYPES } from "@razzia/common/constants"
+import {
+  EVENTS,
+  FIRST_CORRECT_BONUS,
+  MAX_LATENCY_COMPENSATION_MS,
+  MEDIA_TYPES,
+  SLIDER_TOLERANCE_FRACTION,
+  STREAK_CAP,
+  STREAK_STEP,
+} from "@razzia/common/constants"
 import type {
   Answer,
   GameResult,
@@ -305,7 +313,6 @@ export class RoundManager {
       {},
     )
 
-    const FIRST_CORRECT_BONUS = 100
     const isPoll = question.type === "poll"
 
     // Correctness + base factor (0..1) for a single answer, before multipliers.
@@ -320,7 +327,8 @@ export class RoundManager {
         const dist = Math.abs(answerId - question.correct)
         const accuracy = Math.max(0, 1 - dist / range)
         return {
-          correct: dist <= Math.max(question.step ?? 0, range * 0.05),
+          correct:
+            dist <= Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION),
           base: accuracy,
         }
       }
@@ -372,7 +380,9 @@ export class RoundManager {
 
         const streakBefore = player.streak
         // Streak multiplier: +10% per consecutive correct, capped at +50%.
-        const streakMult = isCorrect ? 1 + 0.1 * Math.min(streakBefore, 5) : 1
+        const streakMult = isCorrect
+          ? 1 + STREAK_STEP * Math.min(streakBefore, STREAK_CAP)
+          : 1
         const bonusMult = question.bonus ? 2 : 1
 
         let points = question.practice
@@ -441,6 +451,10 @@ export class RoundManager {
 
     this.opts.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
       ...question,
+      // Question is validator-inferred, so these are optional; the status
+      // payload requires concrete arrays. Default to empty for slider/poll.
+      solutions: question.solutions ?? [],
+      answers: question.answers ?? [],
       responses: totalType,
       averageGuess,
     })
@@ -518,7 +532,7 @@ export class RoundManager {
     if (this.ll.enabled && this.answerDeadlineAtServerMs > 0) {
       const compensation = Math.max(
         0,
-        Math.min(this.ll.maxLatencyCompensationMs, 2000),
+        Math.min(this.ll.maxLatencyCompensationMs, MAX_LATENCY_COMPENSATION_MS),
       )
 
       if (serverReceivedAtMs > this.answerDeadlineAtServerMs + compensation) {
@@ -531,6 +545,8 @@ export class RoundManager {
     // Accept: score strictly from the server clock (startTime captured at
     // question start). timeToPoint uses Date.now() internally, matching today.
     this.playersAnswers.push({
+      // `playerId` on the common Answer type actually holds the durable clientId
+      // (not the volatile socket.id) so reconnects still match the right answer.
       playerId: clientId,
       answerId,
       points: timeToPoint(this.startTime, question.time),

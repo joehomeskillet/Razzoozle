@@ -7,7 +7,7 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import clsx from "clsx"
 import { Monitor, MonitorCheck } from "lucide-react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -25,8 +25,16 @@ const DisplayControl = () => {
   const [code, setCode] = useState("")
   const [paired, setPaired] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useOnClickOutside({ ref: panelRef, handler: () => setOpen(false) })
+
+  // Move focus into the code field when the popover opens.
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus()
+    }
+  }, [open])
 
   const pair = () => {
     if (!gameId || code.trim().length === 0) {
@@ -58,6 +66,9 @@ const DisplayControl = () => {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title={t("manager:satellite.title")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="display-control-popover"
         className={clsx(
           "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-bold hover:bg-gray-200",
           paired ? "bg-green-100 text-green-800" : "bg-white text-black",
@@ -74,17 +85,29 @@ const DisplayControl = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl">
+        <div
+          id="display-control-popover"
+          role="dialog"
+          aria-label={t("manager:satellite.title")}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setOpen(false)
+            }
+          }}
+          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl"
+        >
           <p className="text-sm font-bold">{t("manager:satellite.title")}</p>
           <p className="mt-1 text-xs leading-snug text-gray-600">
             {t("manager:satellite.howto")}
           </p>
           <div className="mt-2 flex gap-2">
             <input
+              ref={inputRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && pair()}
               placeholder={t("manager:satellite.codePlaceholder")}
+              aria-label={t("manager:satellite.codeLabel")}
               maxLength={6}
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus:border-gray-500"
             />

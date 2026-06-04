@@ -4,6 +4,8 @@ import CricleXmark from "@razzia/web/features/game/components/icons/CricleXmark"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import { playFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
+import { rankKeyFor } from "@razzia/web/features/game/utils/rank"
+import { Flame, Star, Zap } from "lucide-react"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -29,12 +31,7 @@ const Result = ({
 }: Props) => {
   const player = usePlayerStore()
   const { t } = useTranslation()
-  const rankKeyMap: Record<number, string> = {
-    1: "game:rank.1",
-    2: "game:rank.2",
-    3: "game:rank.3",
-  }
-  const rankKey = rankKeyMap[rank] ?? "game:rank.other"
+  const rankKey = rankKeyFor(rank)
 
   const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
     volume: 0.2,
@@ -70,25 +67,26 @@ const Result = ({
         {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
       </p>
       {!poll && correct && (
-        <span className="mt-2 rounded-lg bg-black/40 px-4 py-2 text-2xl font-bold text-white drop-shadow-lg">
+        <span className="mt-2 rounded-lg bg-black/40 px-4 py-2 text-2xl font-bold tabular-nums text-white drop-shadow-lg">
           +{points}
         </span>
       )}
       {(streakBonus || bonus || firstCorrect) && (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           {streakBonus && streak ? (
-            <span className="rounded-full bg-orange-500/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
-              🔥 {streak}er-Serie (+{10 * Math.min(streak - 1, 5)}%)
+            <span className="bg-primary/90 inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold text-white drop-shadow">
+              <Flame className="size-4" aria-hidden="true" /> {streak}er-Serie (+
+              {10 * Math.min(streak - 1, 5)}%)
             </span>
           ) : null}
           {bonus && (
-            <span className="rounded-full bg-purple-600/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
-              ⭐ Bonus ×2
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-4)] px-3 py-1 text-sm font-bold text-white drop-shadow">
+              <Star className="size-4" aria-hidden="true" /> Bonus ×2
             </span>
           )}
           {firstCorrect && (
-            <span className="rounded-full bg-yellow-500/90 px-3 py-1 text-sm font-bold text-white drop-shadow">
-              ⚡ Schnellste +100
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-2)] px-3 py-1 text-sm font-bold text-white drop-shadow">
+              <Zap className="size-4" aria-hidden="true" /> Schnellste +100
             </span>
           )}
         </div>

@@ -4,6 +4,7 @@ import AlertDialog from "@razzia/web/components/AlertDialog"
 import { type QuestionWithId } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
 import { Music, Trash2, Video } from "lucide-react"
+import type { KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { twMerge } from "tailwind-merge"
 
@@ -44,12 +45,24 @@ const QuizzEditorCard = ({
 }: Props) => {
   const { t } = useTranslation()
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-current={isActive ? "true" : undefined}
+      aria-label={t("quizz:slideLabel", { index: index + 1 })}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className={twMerge(
         clsx(
-          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 rounded-lg border-2 border-gray-200 bg-white px-6 py-2",
+          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 rounded-lg border-2 border-gray-200 bg-white px-6 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           {
             "border-primary": isActive,
           },
@@ -89,7 +102,10 @@ const QuizzEditorCard = ({
         <AlertDialog
           trigger={
             <button
+              type="button"
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              aria-label={t("quizz:question.deleteQuestion")}
               className="absolute top-1.5 right-1.5 hidden rounded-sm bg-white p-1 text-gray-400 group-hover:block hover:bg-red-50 hover:text-red-500"
             >
               <Trash2 className="size-3.5" />

@@ -1,8 +1,8 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
 import {
-  ANSWERS_COLORS,
-  ANSWERS_LABELS,
+  answerColor,
+  answerLabel,
   SFX,
 } from "@razzia/web/features/game/utils/constants"
 import { calculatePercentages } from "@razzia/web/features/game/utils/score"
@@ -88,21 +88,27 @@ const Responses = ({
           </div>
         ) : (
           <div
-            className={`mt-8 grid h-40 w-full max-w-3xl gap-4 px-2`}
+            className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[40vh]`}
             style={{ gridTemplateColumns: `repeat(${answerList.length}, 1fr)` }}
           >
             {answerList.map((_, key) => (
-              <div
-                key={key}
-                className={clsx(
-                  "flex flex-col justify-end self-end overflow-hidden rounded-md",
-                  ANSWERS_COLORS[key],
-                )}
-                style={{ height: percentages[key] }}
-              >
-                <span className="w-full bg-black/10 text-center text-lg font-bold text-white drop-shadow-md">
-                  {responses[key] || 0}
+              <div key={key} className="flex h-full flex-col justify-end gap-2">
+                {/* Answer letter makes each bar identifiable without relying on
+                    color alone (color-blind safe). */}
+                <span className="text-center text-xl font-bold text-white drop-shadow-md">
+                  {answerLabel(key)}
                 </span>
+                <div
+                  className={clsx(
+                    "flex flex-col justify-end overflow-hidden rounded-md",
+                    answerColor(key),
+                  )}
+                  style={{ height: percentages[key] }}
+                >
+                  <span className="w-full bg-black/10 text-center text-lg font-bold tabular-nums text-white drop-shadow-md">
+                    {responses[key] || 0}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -115,11 +121,11 @@ const Responses = ({
             {answerList.map((answer, key) => (
               <AnswerButton
                 key={key}
-                className={clsx(ANSWERS_COLORS[key], {
+                className={clsx(answerColor(key), {
                   // oxlint-disable-next-line typescript/no-unnecessary-condition
                   "opacity-65": responses && !solutionList.includes(key),
                 })}
-                label={ANSWERS_LABELS[key]}
+                label={answerLabel(key)}
                 correct={solutionList.includes(key)}
               >
                 {answer}

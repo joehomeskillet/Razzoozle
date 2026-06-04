@@ -7,6 +7,7 @@ import {
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
+import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
@@ -70,7 +71,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
     setTotalPlayers(total)
   })
 
-  const handleKick = (playerId: string) => () => {
+  const kickPlayer = (playerId: string) => {
     if (!gameId) {
       return
     }
@@ -90,7 +91,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
           <div className="flex flex-col items-center justify-center rounded-xl bg-white px-6 py-4 md:flex-row">
             <div>
               <p className="text-2xl font-bold">{t("game:joinInstruction")}</p>
-              <p className="max-w-64 text-lg font-extrabold break-all">
+              <p className="max-w-64 text-lg font-extrabold break-words">
                 {webUrl}
               </p>
             </div>
@@ -99,7 +100,9 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
 
             <div>
               <p className="text-2xl font-bold">{t("game:gamePinLabel")}</p>
-              <p className="text-6xl font-extrabold">{inviteCode}</p>
+              <p className="text-6xl font-extrabold tabular-nums lg:text-[clamp(3.75rem,12vh,9rem)]">
+                {inviteCode}
+              </p>
             </div>
           </div>
         </div>
@@ -109,7 +112,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
             <div className="group relative flex h-40 shrink-0 cursor-pointer rounded-xl bg-white p-2">
               <QRCodeSVG
                 className="h-auto w-auto"
-                value={`${webUrl}?pin=${inviteCode}`}
+                value={buildJoinUrl(inviteCode, webUrl)}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-xl opacity-0 transition-opacity group-hover:opacity-100">
                 <div className="rounded-md bg-black/80 p-2">
@@ -133,7 +136,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               </button>
               <QRCodeSVG
                 className="size-56 md:size-70 lg:size-95"
-                value={`${webUrl}?pin=${inviteCode}`}
+                value={buildJoinUrl(inviteCode, webUrl)}
               />
             </AlertDialog.Content>
           </AlertDialog.Portal>
@@ -176,12 +179,54 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         {playerList.map((player) => (
           <div
             key={player.id}
-            className="bg-primary rounded-xl px-4 py-3 font-bold text-white"
-            onClick={handleKick(player.id)}
+            className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
           >
-            <span className="cursor-pointer text-3xl drop-shadow-sm hover:line-through hover:decoration-3">
-              {player.username}
-            </span>
+            <span className="text-3xl drop-shadow-sm">{player.username}</span>
+            <AlertDialog.Root>
+              <AlertDialog.Trigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("manager:kickPlayer.aria", {
+                    name: player.username,
+                  })}
+                  className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <X className="size-4" />
+                </button>
+              </AlertDialog.Trigger>
+              <AlertDialog.Portal>
+                <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+                <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-black">
+                  <AlertDialog.Title className="text-xl font-bold">
+                    {t("manager:kickPlayer.title")}
+                  </AlertDialog.Title>
+                  <AlertDialog.Description className="mt-2 text-gray-600">
+                    {t("manager:kickPlayer.description", {
+                      name: player.username,
+                    })}
+                  </AlertDialog.Description>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <AlertDialog.Cancel asChild>
+                      <button
+                        type="button"
+                        className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+                      >
+                        {t("common:cancel")}
+                      </button>
+                    </AlertDialog.Cancel>
+                    <AlertDialog.Action asChild>
+                      <button
+                        type="button"
+                        onClick={() => kickPlayer(player.id)}
+                        className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                      >
+                        {t("manager:kickPlayer.confirm")}
+                      </button>
+                    </AlertDialog.Action>
+                  </div>
+                </AlertDialog.Content>
+              </AlertDialog.Portal>
+            </AlertDialog.Root>
           </div>
         ))}
       </div>

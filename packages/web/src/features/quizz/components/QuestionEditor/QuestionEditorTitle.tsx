@@ -15,6 +15,7 @@ const QuestionEditorTitle = () => {
       <input
         className="w-full resize-none p-4 text-center text-xl font-semibold text-gray-800 outline-none placeholder:text-gray-400"
         placeholder={t("quizz:question.placeholder")}
+        aria-label={t("quizz:question.inputLabel")}
         value={currentQuestion.question}
         onChange={handleChangeQuestion}
       />

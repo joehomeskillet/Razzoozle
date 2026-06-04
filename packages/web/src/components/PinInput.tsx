@@ -5,6 +5,7 @@ import {
   type ClipboardEvent,
   type KeyboardEvent,
 } from "react"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   value: string
@@ -15,6 +16,7 @@ interface Props {
 
 const PinInput = ({ value, onChange, length = 6, className }: Props) => {
   const refs = useRef<Array<HTMLInputElement | null>>([])
+  const { t } = useTranslation()
 
   const padded = value.padEnd(length, " ").slice(0, length)
   const digits = Array.from({ length }, (_, i) => padded[i].trim())
@@ -86,12 +88,14 @@ const PinInput = ({ value, onChange, length = 6, className }: Props) => {
           }}
           type="text"
           inputMode="numeric"
+          autoComplete={i === 0 ? "one-time-code" : "off"}
+          aria-label={t("common:pinDigit", { number: i + 1 })}
           maxLength={1}
           value={digit}
           onChange={handleChange(i)}
           onKeyDown={handleKeyDown(i)}
           onPaste={handlePaste}
-          className="focus:border-primary w-10 flex-1 rounded-lg border-2 border-gray-300 p-2 text-center text-lg font-semibold outline-none"
+          className="focus:border-primary min-h-11 w-10 flex-1 rounded-lg border-2 border-gray-300 p-2 text-center text-lg font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         />
       ))}
     </div>

@@ -22,7 +22,7 @@ const AnimatedPoints = ({ from, to }: { from: number; to: number }) => {
     return unsubscribe
   }, [to, spring, display])
 
-  return <span className="drop-shadow-md">{displayValue}</span>
+  return <span className="tabular-nums drop-shadow-md">{displayValue}</span>
 }
 
 const StreakBadge = ({ streak }: { streak: number }) => (
@@ -64,7 +64,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
 
   return (
     <section className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-2">
-      <h2 className="mb-6 text-5xl font-bold text-white drop-shadow-md">
+      <h2 className="mb-6 text-5xl font-bold text-white drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
         {t("game:leaderboard")}
       </h2>
       <div className="flex w-full flex-col gap-2">
@@ -90,7 +90,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
                   damping: 25,
                 },
               }}
-              className="flex w-full justify-between rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white"
+              className="flex w-full justify-between rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]"
             >
               <span className="flex items-center gap-2 drop-shadow-md">
                 {username}
@@ -102,7 +102,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
                   to={leaderboard.find((u) => u.id === id)?.points ?? 0}
                 />
               ) : (
-                <span className="drop-shadow-md">{points}</span>
+                <span className="tabular-nums drop-shadow-md">{points}</span>
               )}
             </motion.div>
           ))}

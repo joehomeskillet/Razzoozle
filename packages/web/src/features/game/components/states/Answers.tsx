@@ -15,6 +15,7 @@ import {
   ANSWERS_LABELS,
   SFX,
 } from "@razzia/web/features/game/utils/constants"
+import { monoNow } from "@razzia/web/features/game/utils/monoNow"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -29,13 +30,6 @@ interface Props {
 // hint. We do NOT resend — a missing ack just means the network is slow; the
 // server is idempotent and will count the first arrival.
 const ACK_PENDING_HINT_MS = 800
-
-// Monotonic clock for measuring ack latency, immune to wall-clock jumps. Falls
-// back to Date.now() so it never throws where Performance is unavailable.
-const monoNow = (): number =>
-  typeof performance !== "undefined" && typeof performance.now === "function"
-    ? performance.now()
-    : Date.now()
 
 const Answers = ({
   data: {
@@ -73,7 +67,9 @@ const Answers = ({
   const [cooldown, setCooldown] = useState(time)
   const [totalAnswer, setTotalAnswer] = useState(0)
   const [sliderValue, setSliderValue] = useState(
-    isSlider ? Math.round((min! + max!) / 2) : 0,
+    type === "slider" && min != null && max != null
+      ? Math.round((min + max) / 2)
+      : 0,
   )
   // `submitted` covers slider (today's behaviour) AND, in low-latency mode,
   // multiple-choice (lock after first tap). In normal mode multiple-choice stays
@@ -215,12 +211,6 @@ const Answers = ({
       return
     }
 
-    const monoNow = (): number =>
-      typeof performance !== "undefined" &&
-      typeof performance.now === "function"
-        ? performance.now()
-        : Date.now()
-
     const tick = () => {
       const serverNowEstimate = monoNow() + (clockOffsetMs || 0)
       const remainingMs = answerDeadlineAtServerMs - serverNowEstimate
@@ -325,13 +315,13 @@ const Answers = ({
         <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl">
           <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
             <span className="translate-y-1 text-sm">{t("game:hud.time")}</span>
-            <span>{cooldown}</span>
+            <span className="tabular-nums">{cooldown}</span>
           </div>
           <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
             <span className="translate-y-1 text-sm">
               {t("game:hud.answers")}
             </span>
-            <span>
+            <span className="tabular-nums">
               {totalAnswer}/{totalPlayer}
             </span>
           </div>

@@ -4,6 +4,7 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { useThemeStore } from "@razzia/web/features/theme/store"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { QRCodeSVG } from "qrcode.react"
 import { useEffect, useState } from "react"
@@ -17,47 +18,12 @@ import { useTranslation } from "react-i18next"
 // admin. When the server pairs the display to a live game it pushes
 // DISPLAY.PAIR_SUCCESS with the gameId; we then hand off to `/display/play`,
 // which renders the game fullscreen.
-//
-// The DISPLAY.* socket events live in the shared `common`/`socket` packages
-// (sibling work-package). To keep this UI work additive and decoupled from the
-// exact shape of that typed surface, we reference the event names defensively
-// (with string fallbacks) and emit through a loosely-typed socket handle — the
-// same pattern AddSatellite.tsx already uses for `manager:pairSatellite`.
-
-// Resolve the DISPLAY.* event names whether or not `EVENTS.DISPLAY` has shipped
-// yet. The string literals match the agreed wire contract
-// ("display:register" / "display:pairSuccess" / "display:registered").
-type DisplayEventName = string
-const DISPLAY_EVENTS = (
-  EVENTS as unknown as {
-    DISPLAY?: {
-      REGISTER?: DisplayEventName
-      PAIR_SUCCESS?: DisplayEventName
-      REGISTERED?: DisplayEventName
-    }
-  }
-).DISPLAY
-
-const DISPLAY_REGISTER: DisplayEventName =
-  DISPLAY_EVENTS?.REGISTER ?? "display:register"
-const DISPLAY_PAIR_SUCCESS: DisplayEventName =
-  DISPLAY_EVENTS?.PAIR_SUCCESS ?? "display:pairSuccess"
-const DISPLAY_REGISTERED: DisplayEventName =
-  DISPLAY_EVENTS?.REGISTERED ?? "display:registered"
-
-// Payload the server returns once the display socket has a pairing code, and the
-// payload it pushes when the manager successfully pairs us to a game.
-interface RegisteredPayload {
-  code?: string
-}
-interface PairSuccessPayload {
-  gameId?: string
-}
 
 const DisplayRegisterPage = () => {
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
   const { t } = useTranslation()
+  const appTitle = useThemeStore((s) => s.theme.appTitle)
   const [pairingCode, setPairingCode] = useState<string | null>(null)
 
   // Best-effort fullscreen. Chromium `--kiosk` already boots fullscreen, so a
@@ -74,49 +40,41 @@ const DisplayRegisterPage = () => {
     if (!isConnected) {
       return
     }
-    // oxlint-disable-next-line no-explicit-any, no-unsafe-argument
-    ;(socket as any).emit(DISPLAY_REGISTER)
+    socket.emit(EVENTS.DISPLAY.REGISTER)
   }, [socket, isConnected])
 
   // Some server builds hand the pairing code back synchronously in the ack of
   // the very first connect rather than waiting for `isConnected` to flip, so we
   // also (re)register on the raw connect event.
   useEvent("connect", () => {
-    // oxlint-disable-next-line no-explicit-any, no-unsafe-argument
-    ;(socket as any).emit(DISPLAY_REGISTER)
+    socket.emit(EVENTS.DISPLAY.REGISTER)
   })
 
   // The server assigns this display a short pairing code to show on the beamer.
-  useEvent(
-    DISPLAY_REGISTERED as never,
-    ((payload: RegisteredPayload) => {
-      if (payload?.code) {
-        setPairingCode(payload.code)
-      }
-    }) as never,
-  )
+  useEvent(EVENTS.DISPLAY.REGISTERED, ({ code }) => {
+    if (code) {
+      setPairingCode(code)
+    }
+  })
 
   // Manager paired us to a game from their phone → render the game fullscreen.
-  useEvent(
-    DISPLAY_PAIR_SUCCESS as never,
-    ((payload: PairSuccessPayload) => {
-      if (!payload?.gameId) {
-        return
-      }
+  useEvent(EVENTS.DISPLAY.PAIR_SUCCESS, ({ gameId }) => {
+    if (!gameId) {
+      return
+    }
 
-      navigate({
-        to: "/display/play",
-        search: { gameId: payload.gameId },
-      })
-    }) as never,
-  )
+    navigate({
+      to: "/display/play",
+      search: { gameId },
+    })
+  })
 
   const joinUrl = `${window.location.origin}/manager`
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-[3vh] px-[5vw] text-center">
       <h1 className="text-[6vh] leading-tight font-extrabold tracking-tight">
-        Rahoot
+        {appTitle?.trim() || "Rahoot"}
       </h1>
 
       {pairingCode ? (

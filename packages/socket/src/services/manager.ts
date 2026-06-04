@@ -20,7 +20,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
 // an optional, isolated add-on under repo-root satellite/ and does not change
 // this server. Keep this class behavior-stable so manager auth stays unchanged.
 class Manager {
-  private loggedClients = new Set()
+  private loggedClients = new Set<string>()
 
   isLogged(socket: Socket) {
     return this.loggedClients.has(getClientId(socket))

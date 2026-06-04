@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzia/common/constants"
+import { quizzValidator } from "@razzia/common/validators/quizz"
 import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
 import {
@@ -38,12 +39,25 @@ const ConfigManageQuizz = () => {
     const reader = new FileReader()
 
     reader.onload = (event) => {
+      let data: unknown = null
+
       try {
-        const data: unknown = JSON.parse(event.target?.result as string)
-        socket.emit(EVENTS.QUIZZ.SAVE, data)
+        data = JSON.parse(event.target?.result as string)
       } catch {
-        toast.error("Invalid JSON file")
+        toast.error(t("manager:quizz.invalidJson"))
+
+        return
       }
+
+      const result = quizzValidator.safeParse(data)
+
+      if (!result.success) {
+        toast.error(t("manager:quizz.invalidJson"))
+
+        return
+      }
+
+      socket.emit(EVENTS.QUIZZ.SAVE, result.data)
     }
 
     reader.readAsText(file)
@@ -63,6 +77,7 @@ const ConfigManageQuizz = () => {
           className="aspect-square bg-gray-200 px-3 text-gray-600"
           onClick={() => fileInputRef.current?.click()}
           title={t("manager:quizz.import")}
+          aria-label={t("manager:quizz.import")}
         >
           <Upload className="size-4" />
         </Button>
@@ -83,7 +98,9 @@ const ConfigManageQuizz = () => {
             <p className="truncate">{q.subject}</p>
             <div className="flex gap-0.5">
               <button
-                className="rounded-sm p-2 text-gray-600 hover:bg-gray-600/10"
+                type="button"
+                aria-label={t("manager:quizz.edit", { name: q.subject })}
+                className="rounded-sm p-2 text-gray-600 hover:bg-gray-600/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 onClick={() =>
                   navigate({
                     to: "/manager/quizz/$quizzId",
@@ -96,7 +113,11 @@ const ConfigManageQuizz = () => {
 
               <AlertDialog
                 trigger={
-                  <button className="rounded-sm p-2 hover:bg-red-600/10">
+                  <button
+                    type="button"
+                    aria-label={t("manager:quizz.delete")}
+                    className="rounded-sm p-2 hover:bg-red-600/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
                     <Trash2 className="size-4 stroke-red-500" />
                   </button>
                 }

@@ -2,15 +2,9 @@ import { EVENTS } from "@razzia/common/constants"
 import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
 import {
   socketClient,
-  useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { useQuestionStore } from "@razzia/web/features/game/stores/question"
-import {
-  GAME_STATE_COMPONENTS_MANAGER,
-  isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
 import {
   createFileRoute,
   useParams,
@@ -23,8 +17,8 @@ import { z } from "zod"
 // beamer/TV renders this route fullscreen, while the real manager drives the
 // game from their phone. Auth is NOT enforced at the route level (this route is
 // intentionally outside the (auth) layout); instead the satellite authenticates
-// over socket.io using a token carried in the handshake.
-const SATELLITE_TOKEN_HEADER = "X-Satellite-Token"
+// over socket.io using a token carried in the handshake (the canonical
+// `SATELLITE_TOKEN_HEADER`/storage-key live in socket-context).
 
 const searchSchema = z.object({
   // `?satellite=true` signals that route-level auth is intentionally skipped;
@@ -42,9 +36,6 @@ const SatelliteManagerPage = () => {
   const { gameId: gameIdParam } = useParams({ from: "/satellite/$gameId" })
   const { token } = useSearch({ from: "/satellite/$gameId" })
   const { socket } = useSocket()
-  const { status, setGameId, setStatus, setPlayers, resetStatus } =
-    useManagerStore()
-  const { setQuestionStates } = useQuestionStore()
 
   const satelliteToken = resolveSatelliteToken(token)
 
@@ -61,52 +52,17 @@ const SatelliteManagerPage = () => {
   // manager privileges to this display without a typed password. We expose the
   // token both as a handshake `auth` field and as a transport header so the
   // server-side validator (separate WP) can read whichever it prefers.
-  useEvent("connect", () => {
-    socket.auth = {
-      ...(socket.auth as Record<string, unknown>),
-      satelliteToken,
-    }
+  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
+    onConnect: () => {
+      socket.auth = {
+        ...(socket.auth as Record<string, unknown>),
+        satelliteToken,
+      }
 
-    // Authenticate this socket as a manager-equivalent display using the token.
-    socket.emit(EVENTS.MANAGER.AUTH, satelliteToken)
-
-    if (gameIdParam) {
-      socket.emit(EVENTS.MANAGER.RECONNECT, { gameId: gameIdParam })
-    }
-  })
-
-  useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
-    if (name in GAME_STATE_COMPONENTS_MANAGER) {
-      setStatus(name, data)
-    }
-  })
-
-  useEvent(
-    EVENTS.MANAGER.SUCCESS_RECONNECT,
-    ({
-      gameId: reconnectGameId,
-      status: reconnectStatus,
-      players,
-      currentQuestion,
-    }) => {
-      setGameId(reconnectGameId)
-      setStatus(reconnectStatus.name, reconnectStatus.data)
-      setPlayers(players)
-      setQuestionStates(currentQuestion)
+      // Authenticate this socket as a manager-equivalent display using the token.
+      socket.emit(EVENTS.MANAGER.AUTH, satelliteToken)
     },
-  )
-
-  // On a full game reset the satellite simply waits for the next game; it has no
-  // dashboard to navigate back to, so it stays put and clears its state.
-  useEvent(EVENTS.GAME.RESET, () => {
-    resetStatus()
-    setQuestionStates(null)
   })
-
-  const CurrentComponent =
-    status && isKeyOf(GAME_STATE_COMPONENTS_MANAGER, status.name)
-      ? GAME_STATE_COMPONENTS_MANAGER[status.name]
-      : null
 
   // Render the manager presentation chrome (background + question counter) with
   // NO onNext/onBack handlers, so GameWrapper hides every control button — the
@@ -127,5 +83,3 @@ export const Route = createFileRoute("/satellite/$gameId")({
     socketClient.emit(EVENTS.MANAGER.LEAVE, { gameId })
   },
 })
-
-export { SATELLITE_TOKEN_HEADER }

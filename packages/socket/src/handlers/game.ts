@@ -4,11 +4,18 @@ import type { SocketContext } from "@razzia/socket/handlers/types"
 import { getQuizz } from "@razzia/socket/services/config"
 import Game from "@razzia/socket/services/game"
 import Registry from "@razzia/socket/services/registry"
+import { selectedAnswerValidator } from "@razzia/socket/services/validators"
 import { withGame } from "@razzia/socket/utils/game"
 
 export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   const registry = Registry.getInstance()
   const clientId = socket.handshake.auth.clientId as string
+
+  // Resolve the game this socket belongs to (as player or manager). Used by the
+  // read-only, ownership-free handlers (clock ping / metrics report).
+  const resolveOwnGame = () =>
+    registry.getGameByPlayerSocketId(socket.id) ??
+    registry.getGameByManagerSocketId(socket.id)
 
   const handleManagerLeave = (game: Game) => {
     game.setManagerDisconnected()
@@ -109,15 +116,36 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   )
 
   socket.on(EVENTS.MANAGER.SET_AUTO, ({ gameId, auto }) =>
-    withGame(gameId, socket, (game) => game.setAutoMode(auto)),
+    withGame(gameId, socket, (game) => game.setAutoMode(auto === true)),
   )
 
   socket.on(EVENTS.PLAYER.SELECTED_ANSWER, ({ gameId, data }) =>
-    withGame(gameId, socket, (game) =>
+    withGame(gameId, socket, (game) => {
+      // Harden against malformed/hostile payloads: require a finite integer
+      // answerKey and an optional string clientMessageId, mirroring the JOIN/
+      // username validation pattern. Guard `data` is an object first.
+      if (typeof data !== "object" || data === null) {
+        socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:game.invalidAnswer")
+
+        return
+      }
+
+      const result = selectedAnswerValidator.safeParse(data)
+
+      if (!result.success) {
+        socket.emit(EVENTS.GAME.ERROR_MESSAGE, result.error.issues[0].message)
+
+        return
+      }
+
       // Forward the optional per-tap clientMessageId (LL-mode dedup). A missing
       // id means "dedup by player+question only", i.e. today's behaviour.
-      game.selectAnswer(socket, data.answerKey, data.clientMessageId),
-    ),
+      game.selectAnswer(
+        socket,
+        result.data.answerKey,
+        result.data.clientMessageId,
+      )
+    }),
   )
 
   // Low-latency mode: UI-only clock sync. The handler is always registered, but
@@ -132,9 +160,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
-    const game =
-      registry.getGameByPlayerSocketId(socket.id) ??
-      registry.getGameByManagerSocketId(socket.id)
+    const game = resolveOwnGame()
 
     if (game) {
       game.handleClockPing(socket, clientSendMonoMs)
@@ -154,9 +180,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
-    const game =
-      registry.getGameByPlayerSocketId(socket.id) ??
-      registry.getGameByManagerSocketId(socket.id)
+    const game = resolveOwnGame()
 
     if (game) {
       game.recordMetric(kind, value)

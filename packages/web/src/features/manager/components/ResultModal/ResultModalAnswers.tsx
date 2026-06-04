@@ -1,8 +1,8 @@
 import { MEDIA_TYPES } from "@razzia/common/constants"
 import type { QuestionMedia } from "@razzia/common/types/game"
 import {
-  ANSWERS_COLORS,
-  ANSWERS_LABELS,
+  answerColor,
+  answerLabel,
 } from "@razzia/web/features/game/utils/constants"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
@@ -74,8 +74,8 @@ const ResultModalAnswers = () => {
       count: questionResult.playerAnswers.filter((pa) => pa.answerId === ai)
         .length,
       isCorrect: (questionResult.solutions ?? []).includes(ai),
-      color: ANSWERS_COLORS[ai % 4],
-      answerLabel: ANSWERS_LABELS[ai % 4],
+      color: answerColor(ai),
+      answerLabel: answerLabel(ai),
     })),
     {
       label: t("manager:result.noAnswer"),

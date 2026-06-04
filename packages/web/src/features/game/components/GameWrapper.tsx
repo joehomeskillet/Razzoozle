@@ -14,6 +14,7 @@ import {
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
+import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import clsx from "clsx"
 import { Maximize } from "lucide-react"
@@ -75,7 +76,6 @@ const GameWrapper = ({
 
   useEvent(EVENTS.GAME.ERROR_MESSAGE, (message) => {
     toast.error(t(message))
-    console.log(t(message))
     setIsDisabled(false)
   })
 
@@ -113,10 +113,7 @@ const GameWrapper = ({
       {manager && inviteCode && (
         <div className="fixed bottom-3 left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
           <div className="rounded bg-white p-1">
-            <QRCodeSVG
-              value={`${window.location.origin}/?pin=${inviteCode}`}
-              size={56}
-            />
+            <QRCodeSVG value={buildJoinUrl(inviteCode)} size={56} />
           </div>
           <div className="leading-tight">
             <div className="text-[10px] font-semibold uppercase opacity-70">
@@ -139,6 +136,22 @@ const GameWrapper = ({
           </div>
         ) : (
           <>
+            {/* Persistent reconnecting banner: a mid-game socket drop (when a
+                statusName is already set, so the full-screen connecting loader
+                above no longer fires) would otherwise be invisible. Show it
+                whenever the socket is down so players/host know the game is
+                paused, and block answer interaction until it recovers. */}
+            {!isConnected && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="fixed top-0 right-0 left-0 z-50 flex items-center justify-center gap-3 bg-black/80 px-4 py-2 text-center text-sm font-bold text-white"
+              >
+                <Loader className="h-5" />
+                {t("common:reconnecting")}
+              </div>
+            )}
+
             <div className="flex w-full items-center justify-between gap-2 p-4">
               <div className="flex flex-1 justify-start">
                 {questionStates && (
@@ -164,7 +177,7 @@ const GameWrapper = ({
                     >
                       <span
                         className={clsx(
-                          "absolute top-0.5 size-4 rounded-full bg-white transition-all",
+                          "absolute top-0.5 size-4 rounded-full bg-white transition-[left]",
                           autoOn ? "left-[18px]" : "left-0.5",
                         )}
                       />
@@ -212,12 +225,21 @@ const GameWrapper = ({
               </div>
             </div>
 
-            {children}
+            <div
+              aria-disabled={!isConnected}
+              className={clsx(
+                "flex flex-1 flex-col",
+                !isConnected &&
+                  "pointer-events-none opacity-60 select-none",
+              )}
+            >
+              {children}
+            </div>
 
             {!manager && (
               <div className="z-50 flex items-center justify-between bg-white px-4 py-2 text-lg font-bold text-white">
                 <p className="text-gray-800">{player?.username}</p>
-                <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg">
+                <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
                   {player?.points}
                 </div>
               </div>

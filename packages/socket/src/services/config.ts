@@ -1,4 +1,8 @@
-import { EXAMPLE_QUIZZ } from "@razzia/common/constants"
+import {
+  EXAMPLE_QUIZZ,
+  THEME_SLOTS,
+  type ThemeSlot,
+} from "@razzia/common/constants"
 import type {
   GameResult,
   GameResultMeta,
@@ -11,6 +15,7 @@ import {
 } from "@razzia/common/validators/game-config"
 import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import { themeValidator } from "@razzia/common/validators/theme"
+import { gameResultValidator } from "@razzia/socket/services/validators"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import fs from "fs"
 import { resolve } from "path"
@@ -213,13 +218,17 @@ export const getResultsMeta = (): GameResultMeta[] => {
   const readMeta = (file: string): GameResultMeta | null => {
     try {
       const data = fs.readFileSync(getPath(`results/${file}`), "utf-8")
-      const result = JSON.parse(data) as GameResult
+      const result = gameResultValidator.safeParse(JSON.parse(data))
+
+      if (!result.success) {
+        return null
+      }
 
       return {
-        id: result.id,
-        subject: result.subject,
-        date: result.date,
-        playerCount: result.players.length,
+        id: result.data.id,
+        subject: result.data.subject,
+        date: result.data.date,
+        playerCount: result.data.players.length,
       }
     } catch {
       return null
@@ -245,7 +254,17 @@ export const getResultById = (id: string): GameResult => {
     throw new Error(`Result "${id}" not found`)
   }
 
-  return JSON.parse(fs.readFileSync(filePath, "utf-8")) as GameResult
+  // Validate the on-disk file instead of a bare cast, consistent with the
+  // quizz/theme readers. A malformed/corrupt file is treated as not found.
+  const result = gameResultValidator.safeParse(
+    JSON.parse(fs.readFileSync(filePath, "utf-8")),
+  )
+
+  if (!result.success) {
+    throw new Error(`Result "${id}" not found`)
+  }
+
+  return result.data as GameResult
 }
 
 export const deleteResult = (id: string): void => {
@@ -274,14 +293,8 @@ export const saveQuizz = (data: unknown): { id: string } => {
 }
 
 // ---- Theme (backgrounds + colors) ---------------------------------------
-
-export const THEME_SLOTS = [
-  "auth",
-  "managerGame",
-  "playerGame",
-  "logo",
-] as const
-export type ThemeSlot = (typeof THEME_SLOTS)[number]
+// THEME_SLOTS / ThemeSlot are imported from @razzia/common (single source of
+// truth shared with the web client). The runtime guard below is unchanged.
 
 const MIME_EXT: Record<string, string> = {
   "image/png": "png",

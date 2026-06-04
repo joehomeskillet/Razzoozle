@@ -19,7 +19,10 @@ const formatDate = (iso: string) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  })} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+  })} · ${d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`
 }
 
 const ConfigResults = () => {
@@ -56,8 +59,11 @@ const ConfigResults = () => {
             >
               <p className="truncate font-medium">{r.subject}</p>
               <p className="text-xs text-gray-400">
-                {formatDate(r.date)} -{" "}
-                {t("manager:result.playerCount", { count: r.playerCount })}
+                {formatDate(r.date)}
+                {" · "}
+                <span className="tabular-nums">
+                  {t("manager:result.playerCount", { count: r.playerCount })}
+                </span>
               </p>
             </button>
             <AlertDialog

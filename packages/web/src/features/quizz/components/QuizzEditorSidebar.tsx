@@ -8,7 +8,7 @@ import Button from "@razzia/web/components/Button"
 import QuizzEditorCard from "@razzia/web/features/quizz/components/QuizzEditorCard"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
-import { Plus } from "lucide-react"
+import { GripVertical, Plus } from "lucide-react"
 import { useRef } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -69,9 +69,29 @@ const QuizzEditorSidebar = () => {
                     <div
                       ref={draggableProvided.innerRef}
                       {...draggableProvided.draggableProps}
-                      {...draggableProvided.dragHandleProps}
-                      className={clsx(snapshot.isDragging && "shadow-lg")}
+                      className={clsx(
+                        "group relative",
+                        snapshot.isDragging && "shadow-lg",
+                      )}
                     >
+                      {/*
+                        Dedicated drag handle. Spreading dragHandleProps here
+                        keeps the library's keyboard sensor wiring intact
+                        (tabIndex, role, aria-describedby, onKeyDown, draggable):
+                        focus the handle, press Space to lift, arrows to move,
+                        Space to drop. The card itself stays a separate
+                        role="button" for slide selection.
+                      */}
+                      <button
+                        type="button"
+                        {...draggableProvided.dragHandleProps}
+                        aria-label={t("quizz:reorderSlideLabel", {
+                          index: index + 1,
+                        })}
+                        className="absolute top-1/2 left-0.5 z-10 -translate-y-1/2 rounded-sm bg-white/90 p-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                      >
+                        <GripVertical className="size-3.5" />
+                      </button>
                       <QuizzEditorCard
                         question={q}
                         index={index}

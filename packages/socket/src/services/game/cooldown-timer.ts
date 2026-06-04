@@ -36,6 +36,6 @@ export class CooldownTimer {
   }
 
   abort() {
-    this.active &&= false
+    this.active = false
   }
 }

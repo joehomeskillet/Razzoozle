@@ -3,7 +3,7 @@ import Button from "@razzia/web/components/Button"
 import Card from "@razzia/web/components/Card"
 import Input from "@razzia/web/components/Input"
 import { useEvent } from "@razzia/web/features/game/contexts/socket-context"
-import { type KeyboardEvent, useState } from "react"
+import { type FormEvent, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -15,14 +15,9 @@ const ManagerPassword = ({ onSubmit }: Props) => {
   const [password, setPassword] = useState("")
   const { t } = useTranslation()
 
-  const handleSubmit = () => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     onSubmit(password)
-  }
-
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Enter") {
-      handleSubmit()
-    }
   }
 
   useEvent(EVENTS.MANAGER.ERROR_MESSAGE, (message) => {
@@ -31,15 +26,22 @@ const ManagerPassword = ({ onSubmit }: Props) => {
 
   return (
     <Card>
-      <Input
-        type="password"
-        onChange={(e) => setPassword(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={t("manager:passwordPlaceholder")}
-      />
-      <Button className="mt-4" onClick={handleSubmit}>
-        {t("common:submit")}
-      </Button>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="manager-password" className="sr-only">
+          {t("manager:aria.passwordLabel")}
+        </label>
+        <Input
+          id="manager-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={t("manager:passwordPlaceholder")}
+        />
+        <Button className="mt-4" type="submit">
+          {t("common:submit")}
+        </Button>
+      </form>
     </Card>
   )
 }

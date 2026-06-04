@@ -38,7 +38,9 @@ const ResultModalStats = () => {
               />
             </svg>
           </div>
-          <span className="text-sm font-semibold">{correctPct}%</span>
+          <span className="text-sm font-semibold tabular-nums">
+            {correctPct}%
+          </span>
         </div>
       </div>
 
@@ -48,7 +50,7 @@ const ResultModalStats = () => {
         </p>
         <div className="flex items-center gap-2">
           <Users className="size-4 text-blue-500" />
-          <span className="text-sm font-semibold">
+          <span className="text-sm font-semibold tabular-nums">
             {answeredCount}/{totalPlayers}
           </span>
         </div>

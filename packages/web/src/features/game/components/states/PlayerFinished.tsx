@@ -1,5 +1,6 @@
 import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+import { rankKeyFor } from "@razzia/web/features/game/utils/rank"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -10,13 +11,7 @@ const PlayerFinished = ({ data: { rank, subject } }: Props) => {
   const { player } = usePlayerStore()
   const { t } = useTranslation()
 
-  const rankKeyMap: Record<number, string> = {
-    1: "game:rank.1",
-    2: "game:rank.2",
-    3: "game:rank.3",
-  }
-  const rankKey =
-    typeof rank === "number" ? (rankKeyMap[rank] ?? "game:rank.other") : null
+  const rankKey = typeof rank === "number" ? rankKeyFor(rank) : null
 
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center gap-4 px-4">
@@ -28,7 +23,7 @@ const PlayerFinished = ({ data: { rank, subject } }: Props) => {
         {rankKey !== null ? t(rankKey, { rank }) : "—"}
       </p>
 
-      <p className="mt-2 rounded bg-black/40 px-6 py-2 text-2xl font-bold text-white">
+      <p className="mt-2 rounded bg-black/40 px-6 py-2 text-2xl font-bold tabular-nums text-white">
         {player?.points ?? 0} pts
       </p>
     </div>

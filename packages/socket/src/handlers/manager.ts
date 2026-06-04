@@ -1,5 +1,4 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { ThemeSlot } from "@razzia/socket/services/config"
+import { EVENTS, type ThemeSlot } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import {
   getGameConfig,

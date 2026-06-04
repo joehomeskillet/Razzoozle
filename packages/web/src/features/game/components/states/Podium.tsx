@@ -2,6 +2,7 @@ import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
+import { useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
 import ReactConfetti from "react-confetti"
 import useSound from "use-sound"
@@ -99,10 +100,11 @@ const Podium = ({ data: { subject, top } }: Props) => {
   const apparition = usePodiumAnimation(top.length)
 
   const { width, height } = useScreenSize()
+  const reducedMotion = useReducedMotion()
 
   return (
     <>
-      {apparition >= 4 && (
+      {apparition >= 4 && !reducedMotion && (
         <ReactConfetti
           width={width}
           height={height}
@@ -110,13 +112,13 @@ const Podium = ({ data: { subject, top } }: Props) => {
         />
       )}
 
-      {apparition >= 3 && top.length >= 3 && (
+      {apparition >= 3 && top.length >= 3 && !reducedMotion && (
         <div className="pointer-events-none absolute min-h-dvh w-full overflow-hidden">
           <div className="spotlight"></div>
         </div>
       )}
       <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-between">
-        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
           {subject}
         </h2>
 
@@ -127,13 +129,13 @@ const Podium = ({ data: { subject, top } }: Props) => {
           {top[1] && (
             <div
               className={clsx(
-                "z-20 flex h-[50%] w-full translate-y-full flex-col items-center justify-center gap-3 opacity-0 transition-all",
+                "z-20 flex h-[50%] w-full translate-y-full flex-col items-center justify-center gap-3 opacity-0 transition-[transform,opacity]",
                 { "translate-y-0! opacity-100": apparition >= 2 },
               )}
             >
               <p
                 className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl",
+                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                   {
                     "anim-balanced": apparition >= 4,
                   },
@@ -143,7 +145,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
               </p>
               <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={2} />
-                <p className="text-3xl font-bold text-white drop-shadow-sm md:text-4xl">
+                <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[1].points}
                 </p>
               </div>
@@ -152,7 +154,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
 
           <div
             className={clsx(
-              "z-30 flex h-[60%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-all",
+              "z-30 flex h-[60%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-[transform,opacity]",
               {
                 "translate-y-0! opacity-100": apparition >= 3,
               },
@@ -163,7 +165,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
           >
             <p
               className={clsx(
-                "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white opacity-0 drop-shadow-lg md:text-4xl",
+                "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white opacity-0 drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                 { "anim-balanced opacity-100": apparition >= 4 },
               )}
             >
@@ -171,7 +173,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
             </p>
             <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
               <Medal rank={1} />
-              <p className="text-3xl font-bold text-white drop-shadow-sm md:text-4xl">
+              <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                 {top[0].points}
               </p>
             </div>
@@ -180,7 +182,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
           {top[2] && (
             <div
               className={clsx(
-                "z-10 flex h-[40%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-all",
+                "z-10 flex h-[40%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-[transform,opacity]",
                 {
                   "translate-y-0! opacity-100": apparition >= 1,
                 },
@@ -188,7 +190,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
             >
               <p
                 className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl",
+                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                   {
                     "anim-balanced": apparition >= 4,
                   },
@@ -199,7 +201,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
               <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={3} />
 
-                <p className="text-3xl font-bold text-white drop-shadow-sm md:text-4xl">
+                <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[2].points}
                 </p>
               </div>

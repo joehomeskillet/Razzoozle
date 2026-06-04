@@ -8,6 +8,7 @@ import type {
   ServerToClientEvents,
 } from "@razzia/common/types/game/socket"
 import { useLowLatencyStore } from "@razzia/web/features/game/stores/lowLatency"
+import { monoNow } from "@razzia/web/features/game/utils/monoNow"
 import React, {
   createContext,
   useCallback,
@@ -236,14 +237,6 @@ export const useEvent = <E extends keyof ServerToClientEvents>(
   }, [socket, event, callback])
 }
 
-// Monotonic clock for clock-sync send/receive timestamps. performance.now() is
-// immune to wall-clock jumps; fall back to Date.now() in the (unlikely) absence
-// of the Performance API so we never throw.
-const monoNow = (): number =>
-  typeof performance !== "undefined" && typeof performance.now === "function"
-    ? performance.now()
-    : Date.now()
-
 // Number of ping/pong samples to collect per sync burst. Capped so a venue-wide
 // reconnect storm on flaky wifi can't amplify into a ping flood — we sample 5
 // then go idle until the next re-sync trigger.
@@ -323,8 +316,9 @@ export const useClockSync = (): void => {
       }
     }
 
-    // oxlint-disable-next-line no-explicit-any
-    const onPong = (data: any) => {
+    const onPong = (
+      data: Parameters<ServerToClientEvents[typeof EVENTS.CLOCK.PONG]>[0],
+    ) => {
       // Crash-guard every field: a malformed/legacy pong must never throw.
       const clientSendMonoMs = data?.clientSendMonoMs
       const serverNowMs = data?.serverNowMs

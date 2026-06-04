@@ -1,6 +1,6 @@
 import {
-  ANSWERS_COLORS,
-  ANSWERS_LABELS,
+  answerColor,
+  answerLabel,
 } from "@razzia/web/features/game/utils/constants"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
@@ -8,7 +8,7 @@ import { Check, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 const ResultModalTable = () => {
-  const { questionResult, getPlayerPoints } = useResultModal()
+  const { questionResult, isAnswerCorrect, getPlayerPoints } = useResultModal()
   const { t } = useTranslation()
 
   return (
@@ -29,26 +29,9 @@ const ResultModalTable = () => {
         {questionResult.playerAnswers.map((pa, i) => {
           const isSlider = questionResult.type === "slider"
           const isPoll = questionResult.type === "poll"
-          const sliderCorrect =
-            isSlider &&
-            pa.answerId !== null &&
-            questionResult.min != null &&
-            questionResult.max != null &&
-            questionResult.correct != null &&
-            Math.abs(pa.answerId - questionResult.correct) <=
-              Math.max(
-                questionResult.step ?? 0,
-                (questionResult.max - questionResult.min) * 0.05,
-              )
-          const isCorrect = isSlider
-            ? sliderCorrect
-            : !isPoll &&
-              pa.answerId !== null &&
-              (questionResult.solutions ?? []).includes(pa.answerId)
-          const answerLabel =
-            !isSlider && pa.answerId !== null
-              ? ANSWERS_LABELS[pa.answerId % 4]
-              : null
+          const isCorrect = isAnswerCorrect(pa)
+          const label =
+            !isSlider && pa.answerId !== null ? answerLabel(pa.answerId) : null
 
           return (
             <tr key={i} className="hover:bg-gray-50">
@@ -57,18 +40,18 @@ const ResultModalTable = () => {
                 {pa.answerId === null ? (
                   <span className="text-xs text-gray-400">—</span>
                 ) : isSlider ? (
-                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">
+                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 tabular-nums">
                     {pa.answerId}
                     {questionResult.unit ? ` ${questionResult.unit}` : ""}
                   </span>
-                ) : answerLabel ? (
+                ) : label ? (
                   <span
                     className={clsx(
                       "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white",
-                      ANSWERS_COLORS[pa.answerId % 4],
+                      answerColor(pa.answerId),
                     )}
                   >
-                    <span className="font-bold">{answerLabel}</span>
+                    <span className="font-bold">{label}</span>
                     <span className="max-w-30 truncate">
                       {questionResult.answers?.[pa.answerId] ?? pa.answerId}
                     </span>
@@ -92,7 +75,7 @@ const ResultModalTable = () => {
                   </span>
                 )}
               </td>
-              <td className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              <td className="px-4 py-2.5 text-right font-semibold text-gray-700 tabular-nums">
                 {getPlayerPoints(pa.playerName)}
               </td>
             </tr>

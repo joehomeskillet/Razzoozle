@@ -1,3 +1,10 @@
+import {
+  WS_DEFAULT_PORT,
+  WS_DEFLATE_THRESHOLD_BYTES,
+  WS_MAX_HTTP_BUFFER_BYTES,
+  WS_PING_INTERVAL_MS,
+  WS_PING_TIMEOUT_MS,
+} from "@razzia/common/constants"
 import type { Server } from "@razzia/common/types/game/socket"
 import { displaySocketHandlers } from "@razzia/socket/handlers/display"
 import { gameSocketHandlers } from "@razzia/socket/handlers/game"
@@ -9,17 +16,17 @@ import { initConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
 import { Server as ServerIO } from "socket.io"
 
-const WS_PORT = 3001
+const WS_PORT = Number(process.env.WS_PORT) || WS_DEFAULT_PORT
 
 const io: Server = new ServerIO({
   path: "/ws",
   // Compress WS frames over 1KB (off by default) + cap inbound buffer.
-  perMessageDeflate: { threshold: 1024 },
-  maxHttpBufferSize: 1e6,
+  perMessageDeflate: { threshold: WS_DEFLATE_THRESHOLD_BYTES },
+  maxHttpBufferSize: WS_MAX_HTTP_BUFFER_BYTES,
   // Detect a dead connection faster on flaky venue wifi (~18s vs ~45s default)
   // so the client reconnects sooner.
-  pingInterval: 10000,
-  pingTimeout: 8000,
+  pingInterval: WS_PING_INTERVAL_MS,
+  pingTimeout: WS_PING_TIMEOUT_MS,
 })
 initConfig()
 

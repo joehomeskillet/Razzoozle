@@ -1,3 +1,4 @@
+import { MAX_POINTS } from "@razzia/common/constants"
 import type { Socket } from "@razzia/common/types/game/socket"
 import Game from "@razzia/socket/services/game"
 import Registry from "@razzia/socket/services/registry"
@@ -55,12 +56,12 @@ export const normalizeFilename = (subject: string) => {
 }
 
 export const timeToPoint = (startTime: number, secondes: number): number => {
-  let points = 1000
+  let points = MAX_POINTS
 
   const actualTime = Date.now()
   const tempsPasseEnSecondes = (actualTime - startTime) / 1000
 
-  points -= (1000 / secondes) * tempsPasseEnSecondes
+  points -= (MAX_POINTS / secondes) * tempsPasseEnSecondes
   points = Math.max(0, points)
 
   return points

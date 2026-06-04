@@ -1,4 +1,8 @@
-import { EVENTS } from "@razzia/common/constants"
+import {
+  type BackgroundSlot,
+  EVENTS,
+  type ThemeSlot,
+} from "@razzia/common/constants"
 import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import Button from "@razzia/web/components/Button"
 import {
@@ -7,24 +11,48 @@ import {
 } from "@razzia/web/features/game/contexts/socket-context"
 import { applyTheme } from "@razzia/web/features/theme/apply"
 import { useThemeStore } from "@razzia/web/features/theme/store"
+import { LoaderCircle } from "lucide-react"
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { useTranslation } from "react-i18next"
 
-type Slot = "auth" | "managerGame" | "playerGame" | "logo"
+// Match the server's hard cap in saveBackgroundImage so we reject oversized
+// files client-side before pushing megabytes over the socket.
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
-const BG_SLOTS: { key: "auth" | "managerGame" | "playerGame"; label: string }[] =
-  [
-    { key: "auth", label: "Startseite / Beitritt" },
-    { key: "managerGame", label: "Host-Bildschirm (Frage)" },
-    { key: "playerGame", label: "Spieler-Handy (im Spiel)" },
-  ]
+const BG_SLOTS: Array<{ key: BackgroundSlot; label: string }> = [
+  { key: "auth", label: "Startseite / Beitritt" },
+  { key: "managerGame", label: "Host-Bildschirm (Frage)" },
+  { key: "playerGame", label: "Spieler-Handy (im Spiel)" },
+]
 
 const ConfigTheme = () => {
   const { socket } = useSocket()
   const { theme, setTheme } = useThemeStore()
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<Theme>({ ...DEFAULT_THEME, ...theme })
+  // The single slot whose upload is currently in flight (one at a time).
+  const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
+  // Slot-scoped upload error, surfaced inline next to the slot's controls.
+  const [slotErrors, setSlotErrors] = useState<Partial<Record<ThemeSlot, string>>>(
+    {},
+  )
+
+  const setSlotError = (slot: ThemeSlot, message: string | null) =>
+    setSlotErrors((prev) => {
+      if (message) {
+        return { ...prev, [slot]: message }
+      }
+
+      // Drop the slot's error without a dynamic `delete`.
+      return Object.fromEntries(
+        Object.entries(prev).filter(([key]) => key !== slot),
+      ) as Partial<Record<ThemeSlot, string>>
+    })
 
   useEvent(EVENTS.MANAGER.BACKGROUND_UPLOADED, ({ slot, path }) => {
+    setPendingSlot((current) => (current === slot ? null : current))
+    setSlotError(slot, null)
     setDraft((prev) =>
       slot === "logo"
         ? { ...prev, logo: path }
@@ -40,6 +68,15 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.MANAGER.THEME_ERROR, (message) => {
+    // THEME_ERROR carries no slot. If an upload is in flight, attribute the
+    // failure to that slot inline; otherwise it's a save error → toast.
+    if (pendingSlot) {
+      setSlotError(pendingSlot, message)
+      setPendingSlot(null)
+
+      return
+    }
+
     toast.error(message)
   })
 
@@ -61,11 +98,24 @@ const ConfigTheme = () => {
     }
 
   const handleUpload =
-    (slot: Slot) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    (slot: ThemeSlot) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
+      // Allow re-selecting the same file after an error.
+      e.target.value = ""
+
       if (!file) {
         return
       }
+
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setSlotError(slot, "errors:theme.imageTooLarge")
+
+        return
+      }
+
+      setSlotError(slot, null)
+      setPendingSlot(slot)
+
       const reader = new FileReader()
       reader.onload = () => {
         socket.emit(EVENTS.MANAGER.UPLOAD_BACKGROUND, {
@@ -73,10 +123,14 @@ const ConfigTheme = () => {
           dataUrl: reader.result as string,
         })
       }
+      reader.onerror = () => {
+        setSlotError(slot, "errors:theme.uploadFailed")
+        setPendingSlot((current) => (current === slot ? null : current))
+      }
       reader.readAsDataURL(file)
     }
 
-  const clearBackground = (slot: "auth" | "managerGame" | "playerGame") => () =>
+  const clearBackground = (slot: BackgroundSlot) => () =>
     setDraft((prev) => ({
       ...prev,
       backgrounds: { ...prev.backgrounds, [slot]: null },
@@ -95,11 +149,41 @@ const ConfigTheme = () => {
         type="color"
         value={value}
         onChange={onChange}
-        className="size-10 cursor-pointer rounded"
+        className="size-10 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       />
       {label}
+      <span className="font-mono text-[10px] tracking-tight text-gray-400 uppercase tabular-nums">
+        {value}
+      </span>
     </label>
   )
+
+  const uploadButton = (slot: ThemeSlot, accept: string) => {
+    const uploading = pendingSlot === slot
+
+    return (
+      <label
+        aria-disabled={uploading}
+        className={
+          uploading
+            ? "bg-primary/60 flex cursor-not-allowed items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-white"
+            : "bg-primary flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-white"
+        }
+      >
+        {uploading && (
+          <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+        )}
+        Bild
+        <input
+          type="file"
+          accept={accept}
+          className="hidden"
+          disabled={uploading}
+          onChange={handleUpload(slot)}
+        />
+      </label>
+    )
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
@@ -124,17 +208,14 @@ const ConfigTheme = () => {
               <p className="truncate text-xs text-gray-400">
                 {draft.logo ?? "Standard"}
               </p>
+              {slotErrors.logo && (
+                <p className="truncate text-xs text-red-500" role="alert">
+                  {t(slotErrors.logo)}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <label className="bg-primary cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold text-white">
-                Bild
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="hidden"
-                  onChange={handleUpload("logo")}
-                />
-              </label>
+              {uploadButton("logo", "image/png,image/jpeg,image/webp,image/svg+xml")}
               {draft.logo && (
                 <button
                   type="button"
@@ -209,24 +290,24 @@ const ConfigTheme = () => {
       <div>
         <p className="mb-2 text-sm font-semibold text-gray-700">Hintergründe</p>
         <div className="flex flex-col gap-3">
-          {BG_SLOTS.map(({ key, label }) => (
+          {BG_SLOTS.map(({ key, label }) => {
+            const slotError = slotErrors[key]
+
+            return (
             <div key={key} className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-sm text-gray-700">{label}</p>
                 <p className="truncate text-xs text-gray-400">
                   {draft.backgrounds[key] ?? "Standard"}
                 </p>
+                {slotError && (
+                  <p className="truncate text-xs text-red-500" role="alert">
+                    {t(slotError)}
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <label className="bg-primary cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold text-white">
-                  Bild
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="hidden"
-                    onChange={handleUpload(key)}
-                  />
-                </label>
+                {uploadButton(key, "image/png,image/jpeg,image/webp")}
                 {draft.backgrounds[key] && (
                   <button
                     type="button"
@@ -238,7 +319,8 @@ const ConfigTheme = () => {
                 )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

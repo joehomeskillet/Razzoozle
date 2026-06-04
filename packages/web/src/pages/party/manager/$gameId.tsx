@@ -3,16 +3,12 @@ import { STATUS } from "@razzia/common/types/game/status"
 import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
 import {
   socketClient,
-  useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
-import {
-  GAME_STATE_COMPONENTS_MANAGER,
-  MANAGER_SKIP_EVENTS,
-  isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+import { MANAGER_SKIP_EVENTS, isKeyOf } from "@razzia/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -21,43 +17,17 @@ const ManagerGamePage = () => {
   const navigate = useNavigate()
   const { gameId: gameIdParam } = useParams({ from: "/party/manager/$gameId" })
   const { socket } = useSocket()
-  const { gameId, status, setGameId, setStatus, setPlayers, reset } =
-    useManagerStore()
+  const { gameId, reset } = useManagerStore()
   const { setQuestionStates } = useQuestionStore()
   const { t } = useTranslation()
 
-  useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
-    if (name in GAME_STATE_COMPONENTS_MANAGER) {
-      setStatus(name, data)
-    }
-  })
-
-  useEvent("connect", () => {
-    if (gameIdParam) {
-      socket.emit(EVENTS.MANAGER.RECONNECT, { gameId: gameIdParam })
-    }
-  })
-
-  useEvent(
-    EVENTS.MANAGER.SUCCESS_RECONNECT,
-    ({
-      gameId: reconnectGameId,
-      status: reconnectStatus,
-      players,
-      currentQuestion,
-    }) => {
-      setGameId(reconnectGameId)
-      setStatus(reconnectStatus.name, reconnectStatus.data)
-      setPlayers(players)
-      setQuestionStates(currentQuestion)
+  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
+    onReset: (message) => {
+      navigate({ to: "/manager/config" })
+      reset()
+      setQuestionStates(null)
+      toast.error(t(message))
     },
-  )
-
-  useEvent(EVENTS.GAME.RESET, (message) => {
-    navigate({ to: "/manager/config" })
-    reset()
-    setQuestionStates(null)
-    toast.error(t(message))
   })
 
   const handleSkip = () => {
@@ -87,11 +57,6 @@ const ManagerGamePage = () => {
     reset()
     setQuestionStates(null)
   }
-
-  const CurrentComponent =
-    status && isKeyOf(GAME_STATE_COMPONENTS_MANAGER, status.name)
-      ? GAME_STATE_COMPONENTS_MANAGER[status.name]
-      : null
 
   if (!status) {
     return null

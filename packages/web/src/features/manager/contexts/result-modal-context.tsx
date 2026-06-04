@@ -1,4 +1,8 @@
-import type { GameResult, QuestionResult } from "@razzia/common/types/game"
+import type {
+  GameResult,
+  PlayerAnswerRecord,
+  QuestionResult,
+} from "@razzia/common/types/game"
 import {
   createContext,
   useContext,
@@ -16,6 +20,7 @@ interface ResultModalContextType {
   correctCount: number
   correctPct: number
   maxAnswerCount: number
+  isAnswerCorrect: (_pa: PlayerAnswerRecord) => boolean
   getPlayerPoints: (_name: string) => number
   goNext: () => void
   goPrev: () => void
@@ -50,15 +55,24 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
         )
       : null
 
-  const correctCount = questionResult.playerAnswers.filter((pa) => {
+  // Single source of truth for per-player correctness, so the table and the
+  // aggregate counts can never drift apart (previously the 5% slider tolerance
+  // was duplicated in ResultModalTable).
+  const isAnswerCorrect = (pa: PlayerAnswerRecord) => {
     if (pa.answerId === null) {
+      return false
+    }
+    if (questionResult.type === "poll") {
       return false
     }
     if (sliderThreshold !== null && questionResult.correct != null) {
       return Math.abs(pa.answerId - questionResult.correct) <= sliderThreshold
     }
     return (questionResult.solutions ?? []).includes(pa.answerId)
-  }).length
+  }
+
+  const correctCount =
+    questionResult.playerAnswers.filter(isAnswerCorrect).length
 
   const correctPct =
     totalPlayers > 0 ? Math.round((correctCount / totalPlayers) * 100) : 0
@@ -90,6 +104,7 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
         correctCount,
         correctPct,
         maxAnswerCount,
+        isAnswerCorrect,
         getPlayerPoints,
         goNext,
         goPrev,

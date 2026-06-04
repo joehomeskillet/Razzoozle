@@ -1,17 +1,8 @@
 import { EVENTS } from "@razzia/common/constants"
 import Loader from "@razzia/web/components/Loader"
 import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
-import {
-  socketClient,
-  useEvent,
-  useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { useQuestionStore } from "@razzia/web/features/game/stores/question"
-import {
-  GAME_STATE_COMPONENTS_MANAGER,
-  isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+import { socketClient } from "@razzia/web/features/game/contexts/socket-context"
+import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
@@ -35,10 +26,6 @@ const searchSchema = z.object({
 
 const DisplayPlayPage = () => {
   const { gameId: gameIdParam } = useSearch({ from: "/display/play" })
-  const { socket } = useSocket()
-  const { status, setGameId, setStatus, setPlayers, resetStatus } =
-    useManagerStore()
-  const { setQuestionStates } = useQuestionStore()
   const { t } = useTranslation()
 
   // Best-effort fullscreen for the beamer (kiosk Chromium already covers this).
@@ -50,52 +37,11 @@ const DisplayPlayPage = () => {
 
   // Join the paired game. We reconnect as a manager-equivalent display; the
   // socket was already authenticated during the display pairing handshake.
-  useEvent("connect", () => {
-    if (gameIdParam) {
-      socket.emit(EVENTS.MANAGER.RECONNECT, { gameId: gameIdParam })
-    }
+  // `reconnectIfConnected` also fires the reconnect immediately when we land
+  // here already connected (in-app navigation from /display).
+  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
+    reconnectIfConnected: true,
   })
-
-  // If we land here already connected (in-app navigation from /display), fire the
-  // reconnect immediately rather than waiting for the next `connect` event.
-  useEffect(() => {
-    if (gameIdParam && socket.connected) {
-      socket.emit(EVENTS.MANAGER.RECONNECT, { gameId: gameIdParam })
-    }
-  }, [socket, gameIdParam])
-
-  useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
-    if (name in GAME_STATE_COMPONENTS_MANAGER) {
-      setStatus(name, data)
-    }
-  })
-
-  useEvent(
-    EVENTS.MANAGER.SUCCESS_RECONNECT,
-    ({
-      gameId: reconnectGameId,
-      status: reconnectStatus,
-      players,
-      currentQuestion,
-    }) => {
-      setGameId(reconnectGameId)
-      setStatus(reconnectStatus.name, reconnectStatus.data)
-      setPlayers(players)
-      setQuestionStates(currentQuestion)
-    },
-  )
-
-  // On a full game reset the display has no dashboard to return to; it simply
-  // clears its state and keeps showing the idle/waiting screen.
-  useEvent(EVENTS.GAME.RESET, () => {
-    resetStatus()
-    setQuestionStates(null)
-  })
-
-  const CurrentComponent =
-    status && isKeyOf(GAME_STATE_COMPONENTS_MANAGER, status.name)
-      ? GAME_STATE_COMPONENTS_MANAGER[status.name]
-      : null
 
   // Idle screen between pairing and the first status push.
   if (!status) {

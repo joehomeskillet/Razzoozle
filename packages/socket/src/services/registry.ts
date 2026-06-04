@@ -59,9 +59,9 @@ class Registry {
     )
   }
 
-  getManagerGame(gmageId: string, clientId: string): Game | undefined {
+  getManagerGame(gameId: string, clientId: string): Game | undefined {
     return this.games.find(
-      (g) => g.gameId === gmageId && g.manager.clientId === clientId,
+      (g) => g.gameId === gameId && g.manager.clientId === clientId,
     )
   }
 
