@@ -6,10 +6,12 @@
     "time": "Zeit"
   },
   "joinInstruction": "Tritt dem Spiel bei auf",
+  "joinTimeout": "Beitritt fehlgeschlagen. Bitte versuche es erneut",
   "leaderboard": "Bestenliste",
   "pinLabel": "PIN-Code",
   "playersJoined": "Verbundene Spieler: ",
   "questionPrefix": "Frage #",
+  "rejoin": "Wieder rein",
   "sending": "wird gesendet…",
   "rank": {
     "1": "1. Platz",
@@ -21,12 +23,22 @@
   "resultBehind": ", hinter ",
   "resultTop": "Du hast ",
   "startGame": "Spiel starten",
+  "usernameLabel": "Spitzname",
   "usernamePlaceholder": "Benutzername hier",
+  "usernameRequired": "Bitte gib einen Spitznamen ein",
   "waitingForAnswers": "Warten auf die Antworten der Spieler",
   "waitingForPlayers": "Warten auf Spieler",
   "wrong": "Schade",
   "slider": {
-    "submit": "Bestätigen"
+    "submit": "Bestätigen",
+    "submitted": "Abgeschickt",
+    "correctAnswer": "Richtige Antwort",
+    "averageGuess": "Schnitt der Schätzungen: {{value}}"
   },
-  "pollThanks": "Danke für deine Stimme"
+  "pollThanks": "Danke für deine Stimme",
+  "streak": {
+    "streak": "{{count}}er-Serie (+{{percent}}%)",
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Schnellste +100"
+  }
 }

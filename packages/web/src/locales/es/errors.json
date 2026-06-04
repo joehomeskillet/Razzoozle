@@ -6,6 +6,7 @@
   },
   "game": {
     "expired": "Partida expirada",
+    "invalidAnswer": "Respuesta inválida",
     "kickedByManager": "Has sido expulsado por el administrador",
     "managerAlreadyConnected": "El administrador ya está conectado",
     "managerDisconnected": "El administrador se ha desconectado",
@@ -40,5 +41,9 @@
     "back": "Volver al inicio",
     "description": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
     "title": "Algo salió mal"
+  },
+  "theme": {
+    "imageTooLarge": "La imagen es demasiado grande (máx. 8 MB)",
+    "uploadFailed": "No se pudo subir la imagen"
   }
 }

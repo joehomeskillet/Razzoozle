@@ -117,7 +117,7 @@ const GameWrapper = ({
           </div>
           <div className="leading-tight">
             <div className="text-[10px] font-semibold uppercase opacity-70">
-              Wieder rein
+              {t("game:rejoin")}
             </div>
             <div className="font-mono text-xl font-bold tracking-widest">
               {inviteCode}

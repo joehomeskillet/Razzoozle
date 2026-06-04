@@ -13,6 +13,8 @@
   },
   "loading": "Cargando...",
   "next": "Siguiente",
+  "pinDigit": "Dígito {{number}} del PIN",
+  "reconnecting": "Reconectando …",
   "save": "Guardar",
   "seconds": "seg",
   "skip": "Omitir",

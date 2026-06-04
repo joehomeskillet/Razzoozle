@@ -1,8 +1,10 @@
 {
   "addAnswerPlaceholder": "Antwort hinzufügen...",
   "addQuestion": "Frage hinzufügen",
+  "answerInputLabel": "Antwort {{label}}",
   "answersCountSuffix": " Antworten",
   "deleteQuestion": "Frage löschen",
+  "markAnswerCorrectLabel": "Antwort {{label}} als richtig markieren",
   "noQuestionYet": "Noch keine Fragen",
   "question": {
     "addMediaHint": "Füge ein Bild, Video oder Audio zu deiner Frage hinzu",
@@ -15,6 +17,7 @@
     },
     "deleteQuestion": "Frage löschen",
     "deleteQuestionConfirm": "Möchtest du diese Frage wirklich löschen?",
+    "inputLabel": "Frage",
     "media": {
       "audio": "Audio",
       "image": "Bild",
@@ -25,5 +28,24 @@
   },
   "quizzSaved": "Quiz erfolgreich gespeichert",
   "quizzUpdated": "Quiz erfolgreich aktualisiert",
-  "titleQuizzPlaceholder": "Quiz-Titel..."
+  "reorderSlideLabel": "Folie {{index}} verschieben",
+  "slideLabel": "Folie {{index}}",
+  "subjectInputLabel": "Quizz-Titel",
+  "titleQuizzPlaceholder": "Quiz-Titel...",
+  "type": {
+    "choice": "Auswahl",
+    "boolean": "Wahr / Falsch",
+    "slider": "Slider (Zahl)",
+    "poll": "Umfrage",
+    "bonusQuestion": "Bonusfrage (doppelte Punkte)",
+    "practiceQuestion": "Übungsfrage (0 Punkte)"
+  },
+  "slider": {
+    "min": "Min",
+    "max": "Max",
+    "correct": "Richtig",
+    "step": "Schritt",
+    "unit": "Einheit",
+    "unitPlaceholder": "z.B. kWh"
+  }
 }

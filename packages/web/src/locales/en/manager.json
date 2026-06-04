@@ -2,6 +2,15 @@
   "configurationsTitle": "Configurations",
   "logout": "Logout",
   "passwordPlaceholder": "Password",
+  "aria": {
+    "passwordLabel": "Password"
+  },
+  "kickPlayer": {
+    "aria": "Remove {{name}} from the game",
+    "title": "Remove player?",
+    "description": "Are you sure you want to remove “{{name}}” from the game?",
+    "confirm": "Remove"
+  },
   "quizz": {
     "create": "Create Quizz",
     "delete": "Delete quizz",
@@ -12,7 +21,9 @@
     "notFound": "No quizz found",
     "pleaseCreate": "Please create a quizz first",
     "pleaseSelect": "Please select a quizz",
-    "startGame": "Start game"
+    "startGame": "Start game",
+    "invalidJson": "Invalid or incomplete JSON file",
+    "edit": "Edit “{{name}}”"
   },
   "result": {
     "delete": "Delete result",
@@ -34,7 +45,17 @@
       "points": "Points"
     },
     "playerCount": "{{count}} player(s)",
-    "timeLimitSuffix": "s time limit"
+    "timeLimitSuffix": "s time limit",
+    "aria": {
+      "prevQuestion": "Previous question",
+      "nextQuestion": "Next question",
+      "close": "Close"
+    },
+    "slider": {
+      "correctAnswer": "Correct answer:",
+      "average": "Average of guesses:",
+      "guessSummary": "{{count}} guesses · {{noAnswer}} without an answer"
+    }
   },
   "tabs": {
     "play": "Play",
@@ -48,6 +69,7 @@
     "description": "Attach a Raspberry Pi or a beamer PC as a big screen. The satellite shows the host view (lobby, questions, results) on the big screen, while you drive the whole game from your phone. No laptop needed at the party.",
     "howto": "Open rahoot.joelduss.xyz/display on the beamer and enter the code it shows here.",
     "codePlaceholder": "ABC123",
+    "codeLabel": "Pairing code",
     "pair": "Pair",
     "paired": "Display paired",
     "step1": "Connect the Pi or beamer to the internet and open rahoot.joelduss.xyz/display — the big screen shows a pairing code.",
@@ -63,5 +85,34 @@
     "answerAck": "Answer ack",
     "reconnects": "Reconnects",
     "rejected": "Rejected answers"
+  },
+  "theme": {
+    "branding": "Branding",
+    "appTitle": "App title",
+    "logo": "Logo",
+    "default": "Default",
+    "showFooter": "Show \"Razzia\" footer",
+    "upload": "Image",
+    "uiColors": "UI colors",
+    "colors": {
+      "primary": "Primary",
+      "background": "Background",
+      "accent": "Accent",
+      "text": "Text"
+    },
+    "answerColors": "Answer colors",
+    "scrim": "Darken background ({{value}}%)",
+    "backgrounds": "Backgrounds",
+    "bgSlots": {
+      "auth": "Home / Join",
+      "managerGame": "Host screen (question)",
+      "playerGame": "Player phone (in game)"
+    },
+    "save": "Save",
+    "reset": "Reset",
+    "toast": {
+      "imageUploaded": "Image uploaded",
+      "saved": "Design saved"
+    }
   }
 }

@@ -75,18 +75,23 @@ const Result = ({
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           {streakBonus && streak ? (
             <span className="bg-primary/90 inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Flame className="size-4" aria-hidden="true" /> {streak}er-Serie (+
-              {10 * Math.min(streak - 1, 5)}%)
+              <Flame className="size-4" aria-hidden="true" />{" "}
+              {t("game:streak.streak", {
+                count: streak,
+                percent: 10 * Math.min(streak - 1, 5),
+              })}
             </span>
           ) : null}
           {bonus && (
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-4)] px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Star className="size-4" aria-hidden="true" /> Bonus ×2
+              <Star className="size-4" aria-hidden="true" />{" "}
+              {t("game:streak.bonus")}
             </span>
           )}
           {firstCorrect && (
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-2)] px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Zap className="size-4" aria-hidden="true" /> Schnellste +100
+              <Zap className="size-4" aria-hidden="true" />{" "}
+              {t("game:streak.firstCorrect")}
             </span>
           )}
         </div>

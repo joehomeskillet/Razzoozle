@@ -107,17 +107,21 @@ const ResultModalAnswers = () => {
         {isSlider ? (
           <div className="flex flex-col gap-1 text-sm">
             <div className="font-semibold text-gray-800">
-              Richtige Antwort: {questionResult.correct}
+              {t("manager:result.slider.correctAnswer")}{" "}
+              {questionResult.correct}
               {unit}
             </div>
             {sliderAvg !== null && (
               <div className="text-gray-600">
-                Schnitt der Schätzungen: {sliderAvg}
+                {t("manager:result.slider.average")} {sliderAvg}
                 {unit}
               </div>
             )}
             <div className="text-gray-500">
-              {answeredCount} Schätzungen · {noAnswerCount} ohne Antwort
+              {t("manager:result.slider.guessSummary", {
+                count: answeredCount,
+                noAnswer: noAnswerCount,
+              })}
             </div>
           </div>
         ) : (

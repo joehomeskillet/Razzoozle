@@ -6,6 +6,7 @@
   },
   "game": {
     "expired": "Partita terminata",
+    "invalidAnswer": "Risposta non valida",
     "kickedByManager": "Sei stato espulso dal gestore",
     "managerAlreadyConnected": "Gestore già connesso",
     "managerDisconnected": "Gestore disconnesso",
@@ -40,5 +41,9 @@
     "back": "Torna alla home",
     "description": "Si è verificato un errore imprevisto. Riprova.",
     "title": "Qualcosa è andato storto"
+  },
+  "theme": {
+    "imageTooLarge": "L'immagine è troppo grande (max 8 MB)",
+    "uploadFailed": "Impossibile caricare l'immagine"
   }
 }

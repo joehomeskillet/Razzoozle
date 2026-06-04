@@ -13,6 +13,8 @@
   },
   "loading": "Caricamento...",
   "next": "Avanti",
+  "pinDigit": "Cifra PIN {{number}}",
+  "reconnecting": "Riconnessione in corso …",
   "save": "Salva",
   "seconds": "sec",
   "skip": "Salta",

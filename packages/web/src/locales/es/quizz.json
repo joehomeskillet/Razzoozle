@@ -1,8 +1,10 @@
 {
   "addAnswerPlaceholder": "Añadir una respuesta...",
   "addQuestion": "Añadir pregunta",
+  "answerInputLabel": "Respuesta {{label}}",
   "answersCountSuffix": " respuestas",
   "deleteQuestion": "Eliminar pregunta",
+  "markAnswerCorrectLabel": "Marcar la respuesta {{label}} como correcta",
   "noQuestionYet": "Aún no hay preguntas",
   "question": {
     "addMediaHint": "Añade una imagen, video o audio a tu pregunta",
@@ -15,6 +17,7 @@
     },
     "deleteQuestion": "Eliminar pregunta",
     "deleteQuestionConfirm": "¿Estás seguro de que quieres eliminar esta pregunta?",
+    "inputLabel": "Pregunta",
     "media": {
       "audio": "Audio",
       "image": "Imagen",
@@ -25,5 +28,24 @@
   },
   "quizzSaved": "Cuestionario guardado con éxito",
   "quizzUpdated": "Cuestionario actualizado con éxito",
-  "titleQuizzPlaceholder": "Título del cuestionario..."
+  "reorderSlideLabel": "Mover la diapositiva {{index}}",
+  "slideLabel": "Diapositiva {{index}}",
+  "slider": {
+    "correct": "Correcto",
+    "max": "Máx",
+    "min": "Mín",
+    "step": "Paso",
+    "unit": "Unidad",
+    "unitPlaceholder": "p. ej. kWh"
+  },
+  "subjectInputLabel": "Título del cuestionario",
+  "titleQuizzPlaceholder": "Título del cuestionario...",
+  "type": {
+    "bonusQuestion": "Pregunta bonus (puntos dobles)",
+    "boolean": "Verdadero / Falso",
+    "choice": "Selección",
+    "poll": "Encuesta",
+    "practiceQuestion": "Pregunta de práctica (0 puntos)",
+    "slider": "Slider (número)"
+  }
 }

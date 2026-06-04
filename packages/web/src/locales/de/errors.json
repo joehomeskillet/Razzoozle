@@ -11,6 +11,7 @@
   },
   "game": {
     "expired": "Spiel abgelaufen",
+    "invalidAnswer": "Ungültige Antwort",
     "kickedByManager": "Du wurdest vom Manager entfernt",
     "managerAlreadyConnected": "Manager bereits verbunden",
     "managerDisconnected": "Manager getrennt",
@@ -45,5 +46,9 @@
     "back": "Zurück zur Startseite",
     "description": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
     "title": "Etwas ist schiefgelaufen"
+  },
+  "theme": {
+    "imageTooLarge": "Das Bild ist zu gross (max. 8 MB)",
+    "uploadFailed": "Bild konnte nicht hochgeladen werden"
   }
 }

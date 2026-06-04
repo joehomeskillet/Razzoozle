@@ -6,10 +6,12 @@
     "time": "Time"
   },
   "joinInstruction": "Join the game at",
+  "joinTimeout": "Could not join in time. Please try again",
   "leaderboard": "Leaderboard",
   "pinLabel": "PIN Code",
   "playersJoined": "Players Joined: ",
   "questionPrefix": "Question #",
+  "rejoin": "Rejoin",
   "sending": "sending…",
   "rank": {
     "1": "1st place",
@@ -21,12 +23,22 @@
   "resultBehind": ", behind ",
   "resultTop": "You finished ",
   "startGame": "Start Game",
+  "streak": {
+    "streak": "{{count}} streak (+{{percent}}%)",
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Fastest +100"
+  },
+  "usernameLabel": "Nickname",
   "usernamePlaceholder": "Username here",
+  "usernameRequired": "Please enter a nickname",
   "waitingForAnswers": "Waiting for the players to answer",
   "waitingForPlayers": "Waiting for players",
   "wrong": "Too bad",
   "slider": {
-    "submit": "Confirm"
+    "submit": "Confirm",
+    "submitted": "Sent",
+    "correctAnswer": "Correct answer",
+    "averageGuess": "Average guess: {{value}}"
   },
   "pollThanks": "Thanks for your vote"
 }

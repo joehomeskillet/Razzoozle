@@ -1,4 +1,4 @@
-import * as RadixDialog from "@radix-ui/react-alert-dialog"
+import * as RadixDialog from "@radix-ui/react-dialog"
 import type { GameResult } from "@razzia/common/types/game"
 import ResultModalAnswers from "@razzia/web/features/manager/components/ResultModal/ResultModalAnswers"
 import ResultModalHeader from "@razzia/web/features/manager/components/ResultModal/ResultModalHeader"
@@ -16,9 +16,11 @@ interface Props {
 }
 
 // Radix gives us focus-trap, aria-modal, Escape-to-close, return-focus and
-// body-scroll-lock for free. `react-alert-dialog` is the dialog primitive that
-// ships as a direct dependency here; it provides the same Root/Portal/Overlay/
-// Content/Title parts as react-dialog.
+// body-scroll-lock for free. We use `react-dialog` (not `react-alert-dialog`)
+// because this is a browsable results viewer with prev/next navigation, not an
+// urgent confirmation — so it should carry `role="dialog"`, not
+// `role="alertdialog"`. Parts used: Root/Portal/Overlay/Content; the Title and
+// Close live in ResultModalHeader.
 const ResultModal = ({ result, onClose }: Props) => {
   return (
     <RadixDialog.Root

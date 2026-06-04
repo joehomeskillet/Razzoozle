@@ -1,24 +1,28 @@
 import type { QuestionType } from "@razzia/common/types/game"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
+import { useTranslation } from "react-i18next"
 
-const TYPES: { key: QuestionType; label: string }[] = [
-  { key: "choice", label: "Auswahl" },
-  { key: "boolean", label: "Wahr / Falsch" },
-  { key: "slider", label: "Slider (Zahl)" },
-  { key: "poll", label: "Umfrage" },
+const TYPES: { key: QuestionType; labelKey: string }[] = [
+  { key: "choice", labelKey: "quizz:type.choice" },
+  { key: "boolean", labelKey: "quizz:type.boolean" },
+  { key: "slider", labelKey: "quizz:type.slider" },
+  { key: "poll", labelKey: "quizz:type.poll" },
 ]
 
-const SLIDER_FIELDS: { field: "min" | "max" | "correct" | "step"; label: string }[] =
-  [
-    { field: "min", label: "Min" },
-    { field: "max", label: "Max" },
-    { field: "correct", label: "Richtig" },
-    { field: "step", label: "Schritt" },
-  ]
+const SLIDER_FIELDS: {
+  field: "min" | "max" | "correct" | "step"
+  labelKey: string
+}[] = [
+  { field: "min", labelKey: "quizz:slider.min" },
+  { field: "max", labelKey: "quizz:slider.max" },
+  { field: "correct", labelKey: "quizz:slider.correct" },
+  { field: "step", labelKey: "quizz:slider.step" },
+]
 
 const QuestionEditorType = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
+  const { t } = useTranslation()
   const type: QuestionType = currentQuestion.type ?? "choice"
 
   // Clear fields that don't belong to the target type (avoid stale data).
@@ -110,7 +114,7 @@ const QuestionEditorType = () => {
                 : "bg-white text-gray-500 hover:bg-gray-100",
             )}
           >
-            {tp.label}
+            {t(tp.labelKey)}
           </button>
         ))}
       </div>
@@ -124,7 +128,7 @@ const QuestionEditorType = () => {
               onChange={toggleBonus}
               className="size-4 cursor-pointer"
             />
-            ⭐ Bonusfrage (doppelte Punkte)
+            <span aria-hidden="true">⭐</span> {t("quizz:type.bonusQuestion")}
           </label>
         )}
         <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
@@ -134,18 +138,18 @@ const QuestionEditorType = () => {
             onChange={togglePractice}
             className="size-4 cursor-pointer"
           />
-          🎯 Übungsfrage (0 Punkte)
+          <span aria-hidden="true">🎯</span> {t("quizz:type.practiceQuestion")}
         </label>
       </div>
 
       {type === "slider" && (
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 md:grid-cols-5">
-          {SLIDER_FIELDS.map(({ field, label }) => (
+          {SLIDER_FIELDS.map(({ field, labelKey }) => (
             <label
               key={field}
               className="flex flex-col gap-1 text-xs font-semibold text-gray-500"
             >
-              {label}
+              {t(labelKey)}
               <input
                 type="number"
                 value={currentQuestion[field] ?? ""}
@@ -155,13 +159,13 @@ const QuestionEditorType = () => {
             </label>
           ))}
           <label className="flex flex-col gap-1 text-xs font-semibold text-gray-500">
-            Einheit
+            {t("quizz:slider.unit")}
             <input
               value={currentQuestion.unit ?? ""}
               onChange={(e) =>
                 updateQuestion(currentIndex, { unit: e.target.value })
               }
-              placeholder="z.B. kWh"
+              placeholder={t("quizz:slider.unitPlaceholder")}
               className="rounded-lg border border-gray-200 px-2 py-1 text-gray-800 outline-none"
             />
           </label>

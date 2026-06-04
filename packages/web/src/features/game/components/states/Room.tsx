@@ -156,7 +156,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
 
       <div className="mb-6 flex items-center gap-2 rounded-lg bg-black/40 px-4 py-2">
         <span className="text-sm font-semibold text-white/70">
-          Satellit-Code:
+          {t("manager:satellite.codeLabel")}
         </span>
         <input
           value={pairCode}
@@ -171,7 +171,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
           onClick={pairDisplay}
           className="bg-primary rounded-md px-3 py-1.5 text-sm font-bold text-white"
         >
-          Pairen
+          {t("manager:satellite.pair")}
         </button>
       </div>
 

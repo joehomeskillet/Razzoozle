@@ -1,5 +1,14 @@
 {
+  "aria": {
+    "passwordLabel": "Contraseña"
+  },
   "configurationsTitle": "Configuraciones",
+  "kickPlayer": {
+    "aria": "Expulsar a {{name}} de la partida",
+    "confirm": "Expulsar",
+    "description": "¿Seguro que quieres expulsar a «{{name}}» de la partida?",
+    "title": "¿Expulsar al jugador?"
+  },
   "logout": "Cerrar sesión",
   "passwordPlaceholder": "Contraseña",
   "quizz": {
@@ -7,7 +16,9 @@
     "delete": "Eliminar cuestionario",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleted": "Cuestionario eliminado",
+    "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
+    "invalidJson": "Archivo JSON inválido o incompleto",
     "none": "Aún no se ha creado ningún cuestionario",
     "notFound": "No se encontró ningún cuestionario",
     "pleaseCreate": "Por favor crea un cuestionario primero",
@@ -15,12 +26,22 @@
     "startGame": "Iniciar juego"
   },
   "result": {
+    "aria": {
+      "close": "Cerrar",
+      "nextQuestion": "Pregunta siguiente",
+      "prevQuestion": "Pregunta anterior"
+    },
     "delete": "Eliminar resultado",
     "deleteConfirm": "¿Eliminar el resultado de \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleted": "Resultado eliminado",
     "noAnswer": "Sin respuesta",
     "none": "Aún no hay resultados, termina una partida para ver los informes aquí",
     "paginationOf": " de ",
+    "slider": {
+      "average": "Media de las estimaciones:",
+      "correctAnswer": "Respuesta correcta:",
+      "guessSummary": "{{count}} estimaciones · {{noAnswer}} sin respuesta"
+    },
     "stats": {
       "correctAnswers": "Respuestas correctas",
       "playersAnswered": "Jugadores que respondieron"
@@ -47,6 +68,7 @@
     "title": "Pantalla satélite",
     "description": "Conecta una Raspberry Pi o un PC con proyector como pantalla grande. El satélite muestra la vista del anfitrión (sala, preguntas, resultados) en la pantalla grande, mientras tú controlas todo el juego desde tu teléfono. No necesitas portátil.",
     "howto": "Abre rahoot.joelduss.xyz/display en el proyector e introduce aquí el código que aparece.",
+    "codeLabel": "Código de vinculación",
     "codePlaceholder": "ABC123",
     "pair": "Vincular",
     "paired": "Pantalla vinculada",
@@ -63,5 +85,34 @@
     "answerAck": "Confirmación de respuesta",
     "reconnects": "Reconexiones",
     "rejected": "Respuestas rechazadas"
+  },
+  "theme": {
+    "branding": "Identidad de marca",
+    "appTitle": "Título de la app",
+    "logo": "Logotipo",
+    "default": "Estándar",
+    "showFooter": "Mostrar el pie de página «Razzia»",
+    "upload": "Imagen",
+    "uiColors": "Colores de la interfaz",
+    "colors": {
+      "primary": "Primario",
+      "background": "Fondo",
+      "accent": "Acento",
+      "text": "Texto"
+    },
+    "answerColors": "Colores de las respuestas",
+    "scrim": "Oscurecer el fondo ({{value}}%)",
+    "backgrounds": "Fondos",
+    "bgSlots": {
+      "auth": "Inicio / Unirse",
+      "managerGame": "Pantalla del anfitrión (pregunta)",
+      "playerGame": "Móvil del jugador (en partida)"
+    },
+    "save": "Guardar",
+    "reset": "Restablecer",
+    "toast": {
+      "imageUploaded": "Imagen subida",
+      "saved": "Diseño guardado"
+    }
   }
 }

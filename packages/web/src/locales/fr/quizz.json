@@ -1,8 +1,10 @@
 {
   "addAnswerPlaceholder": "Ajouter une réponse...",
   "addQuestion": "Ajouter une question",
+  "answerInputLabel": "Réponse {{label}}",
   "answersCountSuffix": " réponses",
   "deleteQuestion": "Supprimer la question",
+  "markAnswerCorrectLabel": "Marquer la réponse {{label}} comme correcte",
   "noQuestionYet": "Aucune question pour l'instant",
   "question": {
     "addMediaHint": "Ajoutez une image, une vidéo ou un audio à votre question",
@@ -15,6 +17,7 @@
     },
     "deleteQuestion": "Supprimer la question",
     "deleteQuestionConfirm": "Êtes-vous sûr de vouloir supprimer cette question ?",
+    "inputLabel": "Question",
     "media": {
       "audio": "Audio",
       "image": "Image",
@@ -25,5 +28,24 @@
   },
   "quizzSaved": "Quizz enregistré avec succès",
   "quizzUpdated": "Quizz mis à jour avec succès",
-  "titleQuizzPlaceholder": "Titre du quizz..."
+  "reorderSlideLabel": "Déplacer la diapositive {{index}}",
+  "slideLabel": "Diapositive {{index}}",
+  "slider": {
+    "min": "Min",
+    "max": "Max",
+    "correct": "Correct",
+    "step": "Pas",
+    "unit": "Unité",
+    "unitPlaceholder": "ex. kWh"
+  },
+  "subjectInputLabel": "Titre du quizz",
+  "titleQuizzPlaceholder": "Titre du quizz...",
+  "type": {
+    "choice": "Choix",
+    "boolean": "Vrai / Faux",
+    "slider": "Curseur (nombre)",
+    "poll": "Sondage",
+    "bonusQuestion": "Question bonus (points doublés)",
+    "practiceQuestion": "Question d'entraînement (0 point)"
+  }
 }

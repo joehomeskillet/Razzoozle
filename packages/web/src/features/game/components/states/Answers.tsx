@@ -358,7 +358,7 @@ const Answers = ({
               disabled={submitted}
               className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50"
             >
-              {submitted ? t("game:hud.answers") : t("game:slider.submit")}
+              {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
             </button>
           </div>
         ) : (

@@ -11,6 +11,7 @@
   },
   "game": {
     "expired": "Game expired",
+    "invalidAnswer": "Invalid answer",
     "kickedByManager": "You have been kicked by the manager",
     "managerAlreadyConnected": "Manager already connected",
     "managerDisconnected": "Manager disconnected",
@@ -45,5 +46,9 @@
     "back": "Go back home",
     "description": "An unexpected error occurred. Please try again.",
     "title": "Something went wrong"
+  },
+  "theme": {
+    "imageTooLarge": "Image is too large (max 8 MB)",
+    "uploadFailed": "Image upload failed"
   }
 }

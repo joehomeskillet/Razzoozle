@@ -6,6 +6,7 @@
     "time": "Tiempo"
   },
   "joinInstruction": "Únete al juego en",
+  "joinTimeout": "No se pudo unir a tiempo. Inténtalo de nuevo",
   "leaderboard": "Clasificación",
   "pinLabel": "Código PIN",
   "playersJoined": "Jugadores conectados: ",
@@ -17,15 +18,26 @@
     "other": "Puesto {{rank}}"
   },
   "rankSuffix": " puesto",
+  "rejoin": "Volver a entrar",
   "resultBehind": ", detrás de ",
   "resultTop": "Terminaste ",
   "startGame": "Iniciar juego",
+  "streak": {
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Más rápido +100",
+    "streak": "Racha de {{count}} (+{{percent}}%)"
+  },
+  "usernameLabel": "Apodo",
   "usernamePlaceholder": "Nombre de usuario aquí",
+  "usernameRequired": "Por favor, introduce un apodo",
   "waitingForAnswers": "Esperando que los jugadores respondan",
   "waitingForPlayers": "Esperando jugadores",
   "wrong": "Mala suerte",
   "slider": {
-    "submit": "Confirmar"
+    "averageGuess": "Media de las estimaciones: {{value}}",
+    "correctAnswer": "Respuesta correcta",
+    "submit": "Confirmar",
+    "submitted": "Enviado"
   },
   "pollThanks": "Gracias por tu voto"
 }

@@ -26,7 +26,19 @@
   "waitingForPlayers": "In attesa di giocatori",
   "wrong": "Peccato",
   "slider": {
-    "submit": "Conferma"
+    "submit": "Conferma",
+    "submitted": "Inviato",
+    "correctAnswer": "Risposta corretta",
+    "averageGuess": "Media delle stime: {{value}}"
   },
-  "pollThanks": "Grazie per il tuo voto"
+  "pollThanks": "Grazie per il tuo voto",
+  "usernameLabel": "Soprannome",
+  "usernameRequired": "Inserisci un soprannome",
+  "joinTimeout": "Impossibile entrare in tempo. Riprova",
+  "rejoin": "Rientra",
+  "streak": {
+    "streak": "Serie da {{count}} (+{{percent}}%)",
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Più veloce +100"
+  }
 }

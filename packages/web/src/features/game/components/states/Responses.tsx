@@ -8,6 +8,7 @@ import {
 import { calculatePercentages } from "@razzia/web/features/game/utils/score"
 import clsx from "clsx"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
 interface Props {
@@ -31,6 +32,7 @@ const Responses = ({
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const { t } = useTranslation()
 
   const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
     volume: 0.2,
@@ -73,7 +75,7 @@ const Responses = ({
         {isSlider ? (
           <div className="flex flex-col items-center gap-3">
             <div className="text-lg font-semibold text-white/70">
-              Richtige Antwort
+              {t("game:slider.correctAnswer")}
             </div>
             <div className="text-6xl font-bold text-white drop-shadow-lg">
               {correct}
@@ -81,7 +83,7 @@ const Responses = ({
             </div>
             {averageGuess != null && (
               <div className="text-xl font-semibold text-white/80">
-                Schnitt der Schätzungen: {averageGuess}
+                {t("game:slider.averageGuess", { value: averageGuess })}
                 {unit ? ` ${unit}` : ""}
               </div>
             )}

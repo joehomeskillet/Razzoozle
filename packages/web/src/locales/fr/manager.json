@@ -1,5 +1,14 @@
 {
+  "aria": {
+    "passwordLabel": "Mot de passe"
+  },
   "configurationsTitle": "Configurations",
+  "kickPlayer": {
+    "aria": "Retirer {{name}} de la partie",
+    "title": "Retirer le joueur ?",
+    "description": "Veux-tu vraiment retirer « {{name}} » de la partie ?",
+    "confirm": "Retirer"
+  },
   "logout": "Déconnexion",
   "passwordPlaceholder": "Mot de passe",
   "quizz": {
@@ -7,7 +16,9 @@
     "delete": "Supprimer le quizz",
     "deleteConfirm": "Supprimer \"{{name}}\" ? Cette action est irréversible.",
     "deleted": "Quizz supprimé",
+    "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
+    "invalidJson": "Fichier JSON invalide ou incomplet",
     "none": "Aucun quizz créé",
     "notFound": "Aucun quizz trouvé",
     "pleaseCreate": "Veuillez d'abord créer un quizz",
@@ -15,6 +26,11 @@
     "startGame": "Démarrer la partie"
   },
   "result": {
+    "aria": {
+      "prevQuestion": "Question précédente",
+      "nextQuestion": "Question suivante",
+      "close": "Fermer"
+    },
     "delete": "Supprimer le résultat",
     "deleteConfirm": "Supprimer le résultat \"{{name}}\" ? Cette action est irréversible.",
     "deleted": "Résultat supprimé",
@@ -34,7 +50,12 @@
       "points": "Points"
     },
     "playerCount": "{{count}} joueur(s)",
-    "timeLimitSuffix": "s limite"
+    "timeLimitSuffix": "s limite",
+    "slider": {
+      "correctAnswer": "Bonne réponse :",
+      "average": "Moyenne des estimations :",
+      "guessSummary": "{{count}} estimations · {{noAnswer}} sans réponse"
+    }
   },
   "tabs": {
     "play": "Jouer",
@@ -45,6 +66,7 @@
   },
   "satellite": {
     "title": "Écran satellite",
+    "codeLabel": "Code d'association",
     "description": "Branche un Raspberry Pi ou un PC-vidéoprojecteur comme grand écran. Le satellite affiche la vue hôte (salon, questions, résultats) sur le grand écran, pendant que tu pilotes toute la partie depuis ton téléphone. Pas besoin d'ordinateur portable.",
     "howto": "Ouvre rahoot.joelduss.xyz/display sur le vidéoprojecteur et saisis ici le code qui s'affiche.",
     "codePlaceholder": "ABC123",
@@ -63,5 +85,34 @@
     "answerAck": "Accusé de réponse",
     "reconnects": "Reconnexions",
     "rejected": "Réponses rejetées"
+  },
+  "theme": {
+    "branding": "Image de marque",
+    "appTitle": "Titre de l'application",
+    "logo": "Logo",
+    "default": "Par défaut",
+    "showFooter": "Afficher le pied de page « Razzia »",
+    "upload": "Image",
+    "uiColors": "Couleurs de l'interface",
+    "colors": {
+      "primary": "Primaire",
+      "background": "Arrière-plan",
+      "accent": "Accent",
+      "text": "Texte"
+    },
+    "answerColors": "Couleurs des réponses",
+    "scrim": "Assombrir l'arrière-plan ({{value}} %)",
+    "backgrounds": "Arrière-plans",
+    "bgSlots": {
+      "auth": "Accueil / Rejoindre",
+      "managerGame": "Écran hôte (question)",
+      "playerGame": "Téléphone du joueur (en jeu)"
+    },
+    "save": "Enregistrer",
+    "reset": "Réinitialiser",
+    "toast": {
+      "imageUploaded": "Image envoyée",
+      "saved": "Apparence enregistrée"
+    }
   }
 }

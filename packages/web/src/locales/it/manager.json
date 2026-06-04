@@ -12,7 +12,9 @@
     "notFound": "Nessun quiz trovato",
     "pleaseCreate": "Per favore crea prima un quiz",
     "pleaseSelect": "Per favore seleziona un quiz",
-    "startGame": "Inizia il gioco"
+    "startGame": "Inizia il gioco",
+    "invalidJson": "File JSON non valido o incompleto",
+    "edit": "Modifica «{{name}}»"
   },
   "result": {
     "delete": "Elimina risultato",
@@ -34,7 +36,17 @@
       "points": "Punti"
     },
     "playerCount": "{{count}} giocatore/i",
-    "timeLimitSuffix": "s limite di tempo"
+    "timeLimitSuffix": "s limite di tempo",
+    "aria": {
+      "prevQuestion": "Domanda precedente",
+      "nextQuestion": "Domanda successiva",
+      "close": "Chiudi"
+    },
+    "slider": {
+      "correctAnswer": "Risposta corretta:",
+      "average": "Media delle stime:",
+      "guessSummary": "{{count}} stime · {{noAnswer}} senza risposta"
+    }
   },
   "tabs": {
     "play": "Gioca",
@@ -53,7 +65,8 @@
     "step1": "Collega il Pi o il proiettore a internet e apri rahoot.joelduss.xyz/display — lo schermo grande mostra un codice di abbinamento.",
     "step2": "Avvia una partita e tocca «Satellite» nell'intestazione del gioco per inserire il codice.",
     "step3": "Il telefono resta il telecomando: avvio, avanti e modalità automatica si controllano da qui.",
-    "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager."
+    "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager.",
+    "codeLabel": "Codice di abbinamento"
   },
   "lowLatency": {
     "title": "Stato bassa latenza",
@@ -63,5 +76,43 @@
     "answerAck": "Conferma risposta",
     "reconnects": "Riconnessioni",
     "rejected": "Risposte rifiutate"
+  },
+  "kickPlayer": {
+    "aria": "Rimuovi {{name}} dal gioco",
+    "title": "Rimuovere il giocatore?",
+    "description": "Vuoi davvero rimuovere «{{name}}» dal gioco?",
+    "confirm": "Rimuovi"
+  },
+  "aria": {
+    "passwordLabel": "Password"
+  },
+  "theme": {
+    "branding": "Branding",
+    "appTitle": "Titolo dell'app",
+    "logo": "Logo",
+    "default": "Predefinito",
+    "showFooter": "Mostra footer «Razzia»",
+    "upload": "Immagine",
+    "uiColors": "Colori dell'interfaccia",
+    "colors": {
+      "primary": "Primario",
+      "background": "Sfondo",
+      "accent": "Accento",
+      "text": "Testo"
+    },
+    "answerColors": "Colori delle risposte",
+    "scrim": "Scurisci lo sfondo ({{value}}%)",
+    "backgrounds": "Sfondi",
+    "bgSlots": {
+      "auth": "Home / Accesso",
+      "managerGame": "Schermo host (domanda)",
+      "playerGame": "Telefono giocatore (in gioco)"
+    },
+    "save": "Salva",
+    "reset": "Reimposta",
+    "toast": {
+      "imageUploaded": "Immagine caricata",
+      "saved": "Design salvato"
+    }
   }
 }

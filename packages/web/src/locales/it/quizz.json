@@ -21,9 +21,31 @@
       "video": "Video"
     },
     "mediaUrlPlaceholder": "Inserisci URL...",
-    "placeholder": "Inizia a scrivere la tua domanda..."
+    "placeholder": "Inizia a scrivere la tua domanda...",
+    "inputLabel": "Domanda"
   },
   "quizzSaved": "Quiz salvato con successo",
   "quizzUpdated": "Quiz aggiornato con successo",
-  "titleQuizzPlaceholder": "Titolo del quiz..."
+  "titleQuizzPlaceholder": "Titolo del quiz...",
+  "answerInputLabel": "Risposta {{label}}",
+  "markAnswerCorrectLabel": "Segna la risposta {{label}} come corretta",
+  "subjectInputLabel": "Titolo del quiz",
+  "slideLabel": "Diapositiva {{index}}",
+  "reorderSlideLabel": "Sposta la diapositiva {{index}}",
+  "type": {
+    "choice": "Scelta",
+    "boolean": "Vero / Falso",
+    "slider": "Slider (numero)",
+    "poll": "Sondaggio",
+    "bonusQuestion": "Domanda bonus (punti doppi)",
+    "practiceQuestion": "Domanda di prova (0 punti)"
+  },
+  "slider": {
+    "min": "Min",
+    "max": "Max",
+    "correct": "Corretto",
+    "step": "Passo",
+    "unit": "Unità",
+    "unitPlaceholder": "es. kWh"
+  }
 }

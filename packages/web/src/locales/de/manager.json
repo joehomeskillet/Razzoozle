@@ -1,5 +1,14 @@
 {
+  "aria": {
+    "passwordLabel": "Passwort"
+  },
   "configurationsTitle": "Konfigurationen",
+  "kickPlayer": {
+    "aria": "{{name}} aus dem Spiel entfernen",
+    "title": "Spieler entfernen?",
+    "description": "Möchtest du „{{name}}\" wirklich aus dem Spiel entfernen?",
+    "confirm": "Entfernen"
+  },
   "logout": "Abmelden",
   "passwordPlaceholder": "Passwort",
   "quizz": {
@@ -7,7 +16,9 @@
     "delete": "Quiz löschen",
     "deleteConfirm": "Möchtest du \"{{name}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleted": "Quiz gelöscht",
+    "edit": "„{{name}}\" bearbeiten",
     "import": "Quiz aus JSON importieren",
+    "invalidJson": "Ungültige oder unvollständige JSON-Datei",
     "none": "Noch kein Quiz erstellt",
     "notFound": "Kein Quiz gefunden",
     "pleaseCreate": "Bitte erstelle zuerst ein Quiz",
@@ -34,7 +45,17 @@
       "points": "Punkte"
     },
     "playerCount": "{{count}} Spieler",
-    "timeLimitSuffix": "s Zeitlimit"
+    "timeLimitSuffix": "s Zeitlimit",
+    "aria": {
+      "prevQuestion": "Vorherige Frage",
+      "nextQuestion": "Nächste Frage",
+      "close": "Schließen"
+    },
+    "slider": {
+      "correctAnswer": "Richtige Antwort:",
+      "average": "Schnitt der Schätzungen:",
+      "guessSummary": "{{count}} Schätzungen · {{noAnswer}} ohne Antwort"
+    }
   },
   "tabs": {
     "play": "Spielen",
@@ -48,6 +69,7 @@
     "description": "Schliess einen Raspberry Pi oder einen Beamer-PC als grosse Anzeige an. Der Satellit zeigt die Host-Ansicht (Lobby, Fragen, Resultate) auf dem grossen Bildschirm – gesteuert wird das Spiel komplett von deinem Handy. Du brauchst keinen Laptop am Fest.",
     "howto": "Öffne rahoot.joelduss.xyz/display auf dem Beamer und gib hier den Code ein, der dort angezeigt wird.",
     "codePlaceholder": "ABC123",
+    "codeLabel": "Kopplungscode",
     "pair": "Koppeln",
     "paired": "Anzeige gekoppelt",
     "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne rahoot.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
@@ -63,5 +85,34 @@
     "answerAck": "Antwort-Bestätigung",
     "reconnects": "Reconnects",
     "rejected": "Abgelehnte Antworten"
+  },
+  "theme": {
+    "branding": "Branding",
+    "appTitle": "App-Titel",
+    "logo": "Logo",
+    "default": "Standard",
+    "showFooter": "„Razzia\"-Footer zeigen",
+    "upload": "Bild",
+    "uiColors": "UI-Farben",
+    "colors": {
+      "primary": "Primär",
+      "background": "Hintergrund",
+      "accent": "Akzent",
+      "text": "Text"
+    },
+    "answerColors": "Antwort-Farben",
+    "scrim": "Hintergrund abdunkeln ({{value}}%)",
+    "backgrounds": "Hintergründe",
+    "bgSlots": {
+      "auth": "Startseite / Beitritt",
+      "managerGame": "Host-Bildschirm (Frage)",
+      "playerGame": "Spieler-Handy (im Spiel)"
+    },
+    "save": "Speichern",
+    "reset": "Zurücksetzen",
+    "toast": {
+      "imageUploaded": "Bild hochgeladen",
+      "saved": "Design gespeichert"
+    }
   }
 }

@@ -1,8 +1,10 @@
 {
   "addAnswerPlaceholder": "Add an answer...",
   "addQuestion": "Add question",
+  "answerInputLabel": "Answer {{label}}",
   "answersCountSuffix": " answers",
   "deleteQuestion": "Delete question",
+  "markAnswerCorrectLabel": "Mark answer {{label}} correct",
   "noQuestionYet": "No question yet",
   "question": {
     "addMediaHint": "Add an image, video or audio to your question",
@@ -15,6 +17,7 @@
     },
     "deleteQuestion": "Delete question",
     "deleteQuestionConfirm": "Are you sure you want to delete this question?",
+    "inputLabel": "Question",
     "media": {
       "audio": "Audio",
       "image": "Image",
@@ -25,5 +28,24 @@
   },
   "quizzSaved": "Quizz saved successfully",
   "quizzUpdated": "Quizz updated successfully",
-  "titleQuizzPlaceholder": "Quizz title..."
+  "reorderSlideLabel": "Reorder slide {{index}}",
+  "slideLabel": "Slide {{index}}",
+  "slider": {
+    "min": "Min",
+    "max": "Max",
+    "correct": "Correct",
+    "step": "Step",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g. kWh"
+  },
+  "subjectInputLabel": "Quizz title",
+  "titleQuizzPlaceholder": "Quizz title...",
+  "type": {
+    "choice": "Choice",
+    "boolean": "True / False",
+    "slider": "Slider (number)",
+    "poll": "Poll",
+    "bonusQuestion": "Bonus question (double points)",
+    "practiceQuestion": "Practice question (0 points)"
+  }
 }
