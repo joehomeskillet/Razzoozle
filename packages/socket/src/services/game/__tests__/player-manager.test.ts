@@ -36,16 +36,16 @@ interface IoEmit {
 
 interface FakeIo {
   io: Server
-  // emits captured from io.to(target).emit(event, payload)
+  // Emits captured from io.to(target).emit(event, payload)
   emits: IoEmit[]
-  // ids passed to io.in(id), so we can prove the player's room membership is
+  // Ids passed to io.in(id), so we can prove the player's room membership is
   // torn down on kick.
-  socketsLeft: { target: string; room: string }[]
+  socketsLeft: Array<{ target: string; room: string }>
 }
 
 const makeIo = (): FakeIo => {
   const emits: IoEmit[] = []
-  const socketsLeft: { target: string; room: string }[] = []
+  const socketsLeft: Array<{ target: string; room: string }> = []
 
   const io = {
     to: (target: string) => ({
@@ -70,12 +70,12 @@ const makeIo = (): FakeIo => {
 // socket.join() that PlayerManager.join() calls.
 interface FakeSocket {
   socket: Socket
-  emitted: { event: string; payload: unknown }[]
+  emitted: Array<{ event: string; payload: unknown }>
   joinedRooms: string[]
 }
 
 const makeSocket = (clientId: string, socketId = clientId): FakeSocket => {
-  const emitted: { event: string; payload: unknown }[] = []
+  const emitted: Array<{ event: string; payload: unknown }> = []
   const joinedRooms: string[] = []
 
   const socket = {
@@ -95,9 +95,10 @@ const makeSocket = (clientId: string, socketId = clientId): FakeSocket => {
 }
 
 const eventsOf = (
-  bag: { event: string; payload: unknown }[],
+  bag: Array<{ event: string; payload: unknown }>,
   event: string,
-): { event: string; payload: unknown }[] => bag.filter((e) => e.event === event)
+): Array<{ event: string; payload: unknown }> =>
+  bag.filter((e) => e.event === event)
 
 afterEach(() => {
   vi.useRealTimers()
@@ -200,7 +201,7 @@ describe("PlayerManager.join", () => {
     const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID)
 
     const { socket, emitted, joinedRooms } = makeSocket("shorty")
-    // usernameValidator requires min length 4 → "abc" fails.
+    // UsernameValidator requires min length 4 → "abc" fails.
     pm.join(socket, "abc")
 
     expect(pm.count()).toBe(0)

@@ -31,7 +31,7 @@ const DisplayPlayPage = () => {
   // Best-effort fullscreen for the beamer (kiosk Chromium already covers this).
   useEffect(() => {
     document.documentElement.requestFullscreen?.().catch(() => {
-      /* ignore: fullscreen needs a gesture outside kiosk mode */
+      /* Ignore: fullscreen needs a gesture outside kiosk mode */
     })
   }, [])
 
@@ -73,6 +73,7 @@ export const Route = createFileRoute("/display/play")({
   validateSearch: searchSchema,
   onLeave: ({ search }) => {
     const gameId = (search as { gameId?: string })?.gameId
+
     if (gameId) {
       socketClient.emit(EVENTS.MANAGER.LEAVE, { gameId })
     }

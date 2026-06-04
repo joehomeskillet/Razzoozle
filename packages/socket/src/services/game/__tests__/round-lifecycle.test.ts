@@ -90,15 +90,15 @@ describe("RoundManager auto-mode: schedule after the result cooldown", () => {
 
     // Nothing should advance before AUTO_RESULT_MS elapses.
     vi.advanceTimersByTime(AUTO_RESULT_MS - 1)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(false)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      false,
+    )
 
     // First leg fires: leaderboard is shown (not the last round of two).
     vi.advanceTimersByTime(1)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(true)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      true,
+    )
     // Still on question 0; the next-question leg hasn't fired yet.
     expect(getCurrentQuestion(ctx.round)).toBe(0)
 
@@ -117,16 +117,16 @@ describe("RoundManager auto-mode: schedule after the result cooldown", () => {
 
     setStarted(ctx.round, true)
     setCurrentQuestion(ctx.round, 0)
-    // autoMode left false (default).
+    // AutoMode left false (default).
 
     runShowResults(ctx.round, quizz.questions[0])
 
     expect(getAutoTimer(ctx.round)).toBeNull()
 
     vi.advanceTimersByTime(AUTO_RESULT_MS + AUTO_LEADERBOARD_MS)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(false)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      false,
+    )
     expect(getCurrentQuestion(ctx.round)).toBe(0)
   })
 })
@@ -152,9 +152,9 @@ describe("RoundManager auto-mode: clearAuto cancels a pending advance", () => {
 
     // Advancing well past both legs fires nothing.
     vi.advanceTimersByTime(AUTO_RESULT_MS + AUTO_LEADERBOARD_MS + 1000)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(false)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      false,
+    )
     expect(getCurrentQuestion(ctx.round)).toBe(0)
   })
 
@@ -175,14 +175,14 @@ describe("RoundManager auto-mode: clearAuto cancels a pending advance", () => {
     setStarted(ctx.round, false)
 
     vi.advanceTimersByTime(AUTO_RESULT_MS + AUTO_LEADERBOARD_MS)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(false)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      false,
+    )
     expect(getCurrentQuestion(ctx.round)).toBe(0)
   })
 
   it("CHARACTERIZATION: abortQuestion() only aborts the cooldown — it does NOT clear a pending auto timer", () => {
-    // abortQuestion(socket) is the manager's 'skip to results' control: per the
+    // AbortQuestion(socket) is the manager's 'skip to results' control: per the
     // real impl it calls cooldown.abort() and nothing else, so a previously
     // scheduled auto timer is left intact. (clearAuto is reached only via
     // setAutoMode(false) / newQuestion().) We assert the ACTUAL behavior here.
@@ -217,9 +217,9 @@ describe("RoundManager auto-mode: clearAuto cancels a pending advance", () => {
 
     // And so the auto advance still fires on schedule.
     vi.advanceTimersByTime(AUTO_RESULT_MS)
-    expect(
-      ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD),
-    ).toBe(true)
+    expect(ctx.sends.some((s) => s.status === STATUS.SHOW_LEADERBOARD)).toBe(
+      true,
+    )
   })
 
   it("newQuestion()'s clearAuto cancels a pending auto timer (guarded against double-advance)", () => {
@@ -238,7 +238,9 @@ describe("RoundManager auto-mode: clearAuto cancels a pending advance", () => {
 
     // Manually starting the next question clears the pending auto timer up front
     // (newQuestion() calls clearAuto() before doing anything else).
-    void (ctx.round as unknown as { newQuestion: () => Promise<void> }).newQuestion()
+    void (
+      ctx.round as unknown as { newQuestion: () => Promise<void> }
+    ).newQuestion()
     expect(getAutoTimer(ctx.round)).toBeNull()
   })
 })

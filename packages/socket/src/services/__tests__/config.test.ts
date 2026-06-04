@@ -117,7 +117,7 @@ describe("getGameConfig()", () => {
   })
 
   it("falls back to defaults when game.json is valid JSON but the wrong shape", async () => {
-    // managerPassword has the wrong type ⇒ safeParse fails ⇒ default fallback.
+    // ManagerPassword has the wrong type ⇒ safeParse fails ⇒ default fallback.
     fs.writeFileSync(
       path.join(tmpDir, "game.json"),
       JSON.stringify({ managerPassword: 12345 }),
@@ -150,9 +150,9 @@ describe("saveBackgroundImage()", () => {
   it("rejects an outright non-dataUrl string", async () => {
     const config = await loadConfig()
 
-    expect(() =>
-      config.saveBackgroundImage("auth", "not-a-data-url"),
-    ).toThrow("errors:theme.invalidImage")
+    expect(() => config.saveBackgroundImage("auth", "not-a-data-url")).toThrow(
+      "errors:theme.invalidImage",
+    )
   })
 
   it("rejects an unknown slot with errors:theme.invalidSlot", async () => {
@@ -233,9 +233,7 @@ describe("saveBackgroundImage()", () => {
 
     for (const slot of THEME_SLOTS) {
       const out = config.saveBackgroundImage(slot, PNG_1PX)
-      expect(out).toMatch(
-        new RegExp(`^/theme/${slot}-\\d+\\.(png|jpg|webp)$`),
-      )
+      expect(out).toMatch(new RegExp(`^/theme/${slot}-\\d+\\.(png|jpg|webp)$`))
     }
   })
 })
@@ -251,7 +249,7 @@ describe("setTheme() / getTheme() round-trip", () => {
     const config = await loadConfig()
 
     const saved = config.setTheme(VALID_THEME)
-    // setTheme returns the parsed/validated theme.
+    // SetTheme returns the parsed/validated theme.
     expect(saved.colorPrimary).toBe("#ff9900")
 
     const loaded = config.getTheme()
@@ -282,7 +280,7 @@ describe("setTheme() / getTheme() round-trip", () => {
     fs.mkdirSync(themeDir)
     fs.writeFileSync(
       path.join(themeDir, "theme.json"),
-      JSON.stringify({ colorPrimary: "#fff" }), // missing required fields
+      JSON.stringify({ colorPrimary: "#fff" }), // Missing required fields
     )
 
     expect(config.getTheme()).toEqual(DEFAULT_THEME)
@@ -344,7 +342,7 @@ describe("getResultById() — gameResultValidator path", () => {
         id: "badshape",
         subject: "x",
         date: "2026-06-04",
-        players: [{ username: "a" }], // missing points + rank
+        players: [{ username: "a" }], // Missing points + rank
         questions: [],
       }),
     )

@@ -30,7 +30,7 @@ const DisplayRegisterPage = () => {
   // rejected promise here (no user gesture) is harmless.
   useEffect(() => {
     document.documentElement.requestFullscreen?.().catch(() => {
-      /* fullscreen needs a gesture in non-kiosk browsers; ignore */
+      /* Fullscreen needs a gesture in non-kiosk browsers; ignore */
     })
   }, [])
 
@@ -40,6 +40,7 @@ const DisplayRegisterPage = () => {
     if (!isConnected) {
       return
     }
+
     socket.emit(EVENTS.DISPLAY.REGISTER)
   }, [socket, isConnected])
 
@@ -74,7 +75,7 @@ const DisplayRegisterPage = () => {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-[3vh] px-[5vw] text-center">
       <h1 className="text-[6vh] leading-tight font-extrabold tracking-tight">
-        {appTitle?.trim() || "Rahoot"}
+        {appTitle?.trim() ?? "Rahoot"}
       </h1>
 
       {pairingCode ? (

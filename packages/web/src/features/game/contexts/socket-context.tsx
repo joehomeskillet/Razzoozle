@@ -93,9 +93,8 @@ interface SocketContextValue {
 const CLIENT_ID_KEY = "client_id"
 
 const readCookie = (name: string): string | null => {
-  const match = document.cookie.match(
-    new RegExp("(?:^|; )" + name + "=([^;]*)"),
-  )
+  const match = new RegExp(`(?:^|; )${name}=([^;]*)`).exec(document.cookie)
+
   return match?.[1] ? decodeURIComponent(match[1]) : null
 }
 
@@ -112,9 +111,11 @@ const writeCookie = (name: string, value: string) => {
 // player session (the reconnect guarantee keys on this id).
 const getClientId = (): string => {
   try {
-    const id = localStorage.getItem(CLIENT_ID_KEY) ?? readCookie(CLIENT_ID_KEY) ?? uuid()
+    const id =
+      localStorage.getItem(CLIENT_ID_KEY) ?? readCookie(CLIENT_ID_KEY) ?? uuid()
     localStorage.setItem(CLIENT_ID_KEY, id)
     writeCookie(CLIENT_ID_KEY, id)
+
     return id
   } catch {
     return uuid()
@@ -214,11 +215,7 @@ export const useSocket = () => useContext(SocketContext)
 
 // Re-exported so the satellite route (and any server-coordination code) can
 // reference the same header/storage keys instead of redefining the strings.
-export {
-  SATELLITE_TOKEN_HEADER,
-  SATELLITE_TOKEN_STORAGE_KEY,
-  satelliteAuth,
-}
+export { SATELLITE_TOKEN_HEADER, SATELLITE_TOKEN_STORAGE_KEY, satelliteAuth }
 
 export const useEvent = <E extends keyof ServerToClientEvents>(
   event: E,
@@ -248,7 +245,7 @@ const CLOCK_SYNC_INTERVAL_MS = 250
 // outlier rather than poisoning the offset estimate.
 const CLOCK_SYNC_TIMEOUT_MS = 2000
 
-// useClockSync — UI-only clock synchronisation for low-latency mode.
+// UseClockSync — UI-only clock synchronisation for low-latency mode.
 //
 // When low-latency mode is detected (server-timing anchors present), this runs a
 // single burst of CLOCK_SYNC_SAMPLES clock:ping → clock:pong round-trips, derives
@@ -268,9 +265,11 @@ export const useClockSync = (): void => {
     if (!active || !isConnected) {
       return
     }
+
     if (runningRef.current) {
       return
     }
+
     runningRef.current = true
 
     const samples: ClockSample[] = []
@@ -285,14 +284,18 @@ export const useClockSync = (): void => {
       if (cancelled) {
         return
       }
+
       cancelled = true
+
       if (intervalId !== undefined) {
         clearInterval(intervalId)
       }
+
       socket.off(EVENTS.CLOCK.PONG, onPong)
       runningRef.current = false
 
       const result = computeClockOffset(samples)
+
       if (result) {
         setOffset(result.offsetMs, result.rttMs)
 
@@ -307,6 +310,7 @@ export const useClockSync = (): void => {
             value: result.rttMs,
           })
         }
+
         if (Number.isFinite(result.offsetMs)) {
           socket.emit(EVENTS.METRICS.REPORT, {
             kind: "clockOffset",
@@ -322,19 +326,24 @@ export const useClockSync = (): void => {
       // Crash-guard every field: a malformed/legacy pong must never throw.
       const clientSendMonoMs = data?.clientSendMonoMs
       const serverNowMs = data?.serverNowMs
+
       if (
         typeof clientSendMonoMs !== "number" ||
         typeof serverNowMs !== "number"
       ) {
         return
       }
+
       const sendAt = pending.get(clientSendMonoMs)
+
       if (sendAt === undefined) {
         return
       }
+
       pending.delete(clientSendMonoMs)
 
       const clientRecvMonoMs = monoNow()
+
       // Drop a stale pong whose round-trip blew the timeout ceiling.
       if (clientRecvMonoMs - sendAt <= CLOCK_SYNC_TIMEOUT_MS) {
         samples.push({
@@ -356,10 +365,12 @@ export const useClockSync = (): void => {
       if (cancelled) {
         return
       }
+
       const clientSendMonoMs = monoNow()
       pending.set(clientSendMonoMs, clientSendMonoMs)
       socket.emit(EVENTS.CLOCK.PING, { clientSendMonoMs })
       sent += 1
+
       if (sent >= CLOCK_SYNC_SAMPLES && intervalId !== undefined) {
         clearInterval(intervalId)
         intervalId = undefined

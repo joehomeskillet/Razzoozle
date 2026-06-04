@@ -25,7 +25,7 @@ const GAME_ID = "test-game"
 // the room each emit targeted so a test can prove emits land on io.to(gameId).
 interface FakeIo {
   io: Server
-  roomEmitted: { room: string; event: string; payload: unknown }[]
+  roomEmitted: Array<{ room: string; event: string; payload: unknown }>
 }
 
 const makeIo = (): FakeIo => {
@@ -64,12 +64,12 @@ describe("CooldownTimer.start()", () => {
 
     timer.start(3)
 
-    // count starts at seconds-1 = 2.
+    // Count starts at seconds-1 = 2.
     // t=1000: count 2 > 0 → emit 2, count→1
     vi.advanceTimersByTime(1000)
     expect(cooldownCounts(rec)).toEqual([2])
 
-    // t=2000: count 1 > 0 → emit 1, count→0
+    // T=2000: count 1 > 0 → emit 1, count→0
     vi.advanceTimersByTime(1000)
     expect(cooldownCounts(rec)).toEqual([2, 1])
 
@@ -111,7 +111,7 @@ describe("CooldownTimer.start()", () => {
       resolved = true
     })
 
-    // count = 1 - 1 = 0 ⇒ first tick hits the `count <= 0` branch immediately.
+    // Count = 1 - 1 = 0 ⇒ first tick hits the `count <= 0` branch immediately.
     await vi.advanceTimersByTimeAsync(1000)
     await done
     expect(resolved).toBe(true)
@@ -127,7 +127,7 @@ describe("CooldownTimer reentrancy guard", () => {
     const first = timer.start(4)
 
     // Advance into the first countdown so it is mid-flight (active === true).
-    vi.advanceTimersByTime(1000) // emit 3
+    vi.advanceTimersByTime(1000) // Emit 3
     expect(cooldownCounts(rec)).toEqual([3])
 
     // Second start() while the first is still active: the guard returns an
@@ -142,8 +142,8 @@ describe("CooldownTimer reentrancy guard", () => {
 
     // No extra interval was created: the count stream is still the SAME single
     // descending series from the first start(), not doubled-up.
-    vi.advanceTimersByTime(1000) // emit 2
-    vi.advanceTimersByTime(1000) // emit 1
+    vi.advanceTimersByTime(1000) // Emit 2
+    vi.advanceTimersByTime(1000) // Emit 1
     expect(cooldownCounts(rec)).toEqual([3, 2, 1])
 
     // Drain the first countdown to completion.
@@ -168,7 +168,7 @@ describe("CooldownTimer.abort()", () => {
     expect(cooldownCounts(rec)).toEqual([9, 8])
     expect(resolved).toBe(false)
 
-    // abort() flips active=false; the very next tick sees !active and resolves
+    // Abort() flips active=false; the very next tick sees !active and resolves
     // WITHOUT emitting anything more.
     timer.abort()
     await vi.advanceTimersByTimeAsync(1000)
@@ -188,17 +188,17 @@ describe("CooldownTimer.abort()", () => {
     const timer = new CooldownTimer(rec.io, GAME_ID)
 
     const first = timer.start(10)
-    vi.advanceTimersByTime(1000) // emit 9
+    vi.advanceTimersByTime(1000) // Emit 9
     timer.abort()
-    await vi.advanceTimersByTimeAsync(1000) // first run resolves early
+    await vi.advanceTimersByTimeAsync(1000) // First run resolves early
     await first
 
-    // active is back to false ⇒ a new start() is allowed and counts down again.
+    // Active is back to false ⇒ a new start() is allowed and counts down again.
     const beforeSecond = cooldownCounts(rec).length
     const second = timer.start(3)
-    await vi.advanceTimersByTimeAsync(1000) // emit 2
-    await vi.advanceTimersByTimeAsync(1000) // emit 1
-    await vi.advanceTimersByTimeAsync(1000) // resolve
+    await vi.advanceTimersByTimeAsync(1000) // Emit 2
+    await vi.advanceTimersByTimeAsync(1000) // Emit 1
+    await vi.advanceTimersByTimeAsync(1000) // Resolve
     await second
 
     const after = cooldownCounts(rec).slice(beforeSecond)

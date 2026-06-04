@@ -82,18 +82,22 @@ const PlayerGamePage = () => {
           serverNowMs?: number
           answerDeadlineAtServerMs?: number
         }
+
         if (
           typeof anchored?.serverNowMs === "number" ||
           typeof anchored?.answerDeadlineAtServerMs === "number"
         ) {
           setLowLatencyActive(true)
         }
+
         if (typeof anchored?.serverSeq === "number") {
           lastServerSeqRef.current = anchored.serverSeq
         }
+
         // A fresh question always clears any prior "already answered" lock.
         setAlreadyAnswered(gameIdParam, false)
       }
+
       setStatus(name, data)
     }
   })

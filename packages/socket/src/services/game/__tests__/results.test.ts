@@ -42,7 +42,7 @@ import {
   openQuestion,
 } from "./helpers"
 
-const QUESTION_START = 1_000_000_000_000 // fixed epoch ms for determinism
+const QUESTION_START = 1_000_000_000_000 // Fixed epoch ms for determinism
 const MANAGER_ID = "manager-socket"
 
 beforeEach(() => {
@@ -93,6 +93,7 @@ const resultFor = (
   const found = ctx.sends.find(
     (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
   )
+
   return found?.data as StatusDataMap["SHOW_RESULT"] | undefined
 }
 
@@ -103,6 +104,7 @@ const responsesPayload = (
   const found = ctx.sends.find(
     (s) => s.target === MANAGER_ID && s.status === STATUS.SHOW_RESPONSES,
   )
+
   return found?.data as StatusDataMap["SHOW_RESPONSES"] | undefined
 }
 
@@ -124,7 +126,10 @@ const setPlayerState = (
   state: Partial<Pick<Player, "streak" | "points">>,
 ): void => {
   const p = players.find((pl) => pl.clientId === clientId)
-  if (p) Object.assign(p, state)
+
+  if (p) {
+    Object.assign(p, state)
+  }
 }
 
 // ── correct vs incorrect (time decay) ───────────────────────────────────────
@@ -144,8 +149,8 @@ describe("correct vs incorrect points (time-decay from MAX_POINTS)", () => {
     })
 
     // Both answer at t+0 (no decay): timeToPoint == MAX_POINTS.
-    answer(ctx, "right", 1) // correct
-    answer(ctx, "wrong", 0) // wrong
+    answer(ctx, "right", 1) // Correct
+    answer(ctx, "wrong", 0) // Wrong
 
     callShowResults(ctx)
 
@@ -214,7 +219,7 @@ describe("correct vs incorrect points (time-decay from MAX_POINTS)", () => {
 describe("streak multiplier (grows by STREAK_STEP, capped at STREAK_CAP)", () => {
   it("applies 1 + STREAK_STEP * streakBefore for a correct answer", () => {
     const players = [makePlayer("streaky")]
-    // streakBefore = 2 ⇒ mult = 1 + 0.1*2 = 1.2
+    // StreakBefore = 2 ⇒ mult = 1 + 0.1*2 = 1.2
     setPlayerState(players, "streaky", { streak: 2 })
 
     const ctx = buildRound({
@@ -227,14 +232,14 @@ describe("streak multiplier (grows by STREAK_STEP, capped at STREAK_CAP)", () =>
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "streaky", 1) // correct, full base = MAX_POINTS, at t+0
+    answer(ctx, "streaky", 1) // Correct, full base = MAX_POINTS, at t+0
     callShowResults(ctx)
 
     const mult = 1 + STREAK_STEP * 2
     const base = Math.round(MAX_POINTS * mult)
     // Lone correct player ⇒ first-correct flat bonus added (full base factor).
     expect(resultFor(ctx, "streaky")?.points).toBe(base + FIRST_CORRECT_BONUS)
-    // streakBefore > 0 + correct ⇒ streakBonus flag set; streak advances to 3.
+    // StreakBefore > 0 + correct ⇒ streakBonus flag set; streak advances to 3.
     expect(resultFor(ctx, "streaky")?.streakBonus).toBe(true)
     expect(resultFor(ctx, "streaky")?.streak).toBe(3)
   })
@@ -254,7 +259,7 @@ describe("streak multiplier (grows by STREAK_STEP, capped at STREAK_CAP)", () =>
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "hot", 1) // correct, full base at t+0
+    answer(ctx, "hot", 1) // Correct, full base at t+0
     callShowResults(ctx)
 
     const cappedMult = 1 + STREAK_STEP * STREAK_CAP // == 1.5
@@ -283,7 +288,7 @@ describe("streak multiplier (grows by STREAK_STEP, capped at STREAK_CAP)", () =>
     const r = resultFor(ctx, "breaks")
     expect(r?.correct).toBe(false)
     expect(r?.points).toBe(0)
-    expect(r?.streak).toBe(0) // reset
+    expect(r?.streak).toBe(0) // Reset
     expect(r?.streakBonus).toBe(false)
   })
 })
@@ -305,9 +310,9 @@ describe("first-correct flat FIRST_CORRECT_BONUS (first arrival only)", () => {
     })
 
     // "first" answers first (arrival order = push order), then "second".
-    answer(ctx, "first", 1) // correct, t+0
+    answer(ctx, "first", 1) // Correct, t+0
     vi.setSystemTime(QUESTION_START + 2_000)
-    answer(ctx, "second", 1) // correct, t+2s (slightly decayed)
+    answer(ctx, "second", 1) // Correct, t+2s (slightly decayed)
 
     callShowResults(ctx)
 
@@ -316,9 +321,9 @@ describe("first-correct flat FIRST_CORRECT_BONUS (first arrival only)", () => {
     expect(f?.firstCorrect).toBe(true)
     expect(s?.firstCorrect).toBe(false)
 
-    // first: full base + flat bonus (base factor 1.0 ⇒ full FIRST_CORRECT_BONUS).
+    // First: full base + flat bonus (base factor 1.0 ⇒ full FIRST_CORRECT_BONUS).
     expect(f?.points).toBe(MAX_POINTS + FIRST_CORRECT_BONUS)
-    // second: decayed base, NO flat bonus. Points were captured at answer() time
+    // Second: decayed base, NO flat bonus. Points were captured at answer() time
     // (system time still at t+2s here), so timeToPoint(start, 20) re-derives the
     // same stored value: 1000 - (1000/20)*2 = 900.
     const secondBase = timeToPoint(QUESTION_START, 20)
@@ -340,8 +345,8 @@ describe("first-correct flat FIRST_CORRECT_BONUS (first arrival only)", () => {
       questionTimeSec: 20,
     })
 
-    answer(ctx, "earlyWrong", 0) // wrong, arrives first
-    answer(ctx, "laterRight", 1) // correct, arrives second
+    answer(ctx, "earlyWrong", 0) // Wrong, arrives first
+    answer(ctx, "laterRight", 1) // Correct, arrives second
 
     callShowResults(ctx)
 
@@ -374,7 +379,7 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
     }) as Quizz
 
   it("treats a guess inside range*SLIDER_TOLERANCE_FRACTION as correct (no step)", () => {
-    // range = 100, tolerance = max(0, 100 * 0.05) = 5. Guess 53 ⇒ dist 3 ≤ 5.
+    // Range = 100, tolerance = max(0, 100 * 0.05) = 5. Guess 53 ⇒ dist 3 ≤ 5.
     const tol = 100 * SLIDER_TOLERANCE_FRACTION
     expect(tol).toBe(5)
 
@@ -389,12 +394,12 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "near", 53) // dist 3 ≤ 5 ⇒ correct, accuracy 1 - 3/100 = 0.97
+    answer(ctx, "near", 53) // Dist 3 ≤ 5 ⇒ correct, accuracy 1 - 3/100 = 0.97
     callShowResults(ctx)
 
     const r = resultFor(ctx, "near")
     expect(r?.correct).toBe(true)
-    // points = round(accuracy * MAX_POINTS) + first-correct(round(BONUS*accuracy))
+    // Points = round(accuracy * MAX_POINTS) + first-correct(round(BONUS*accuracy))
     const accuracy = 1 - 3 / 100
     const expected =
       Math.round(accuracy * MAX_POINTS) +
@@ -439,7 +444,7 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "off", 60) // dist 10 > 5 ⇒ NOT correct; accuracy = 0.90
+    answer(ctx, "off", 60) // Dist 10 > 5 ⇒ NOT correct; accuracy = 0.90
     callShowResults(ctx)
 
     const r = resultFor(ctx, "off")
@@ -448,7 +453,7 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
     // No streak mult (incorrect), no firstCorrect (incorrect), no bonus.
     expect(r?.points).toBe(Math.round(accuracy * MAX_POINTS))
     expect(r?.firstCorrect).toBe(false)
-    expect(r?.streak).toBe(0) // incorrect ⇒ streak reset
+    expect(r?.streak).toBe(0) // Incorrect ⇒ streak reset
   })
 
   it("reports averageGuess in SHOW_RESPONSES for a slider", () => {
@@ -468,7 +473,7 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
     callShowResults(ctx)
 
     const resp = responsesPayload(ctx)
-    expect(resp?.averageGuess).toBe(50) // round((40+60)/2)
+    expect(resp?.averageGuess).toBe(50) // Round((40+60)/2)
   })
 })
 
@@ -500,9 +505,9 @@ describe("poll question = neutral (no correctness, no points)", () => {
     expect(r?.poll).toBe(true)
     expect(r?.correct).toBe(false)
     expect(r?.points).toBe(0)
-    // streak preserved (poll branch uses player.streak unchanged).
+    // Streak preserved (poll branch uses player.streak unchanged).
     expect(r?.streak).toBe(3)
-    expect(r?.myPoints).toBe(250) // unchanged total
+    expect(r?.myPoints).toBe(250) // Unchanged total
     expect(r?.message).toBe("game:pollThanks")
     expect(r?.streakBonus).toBe(false)
     expect(r?.bonus).toBe(false)
@@ -535,7 +540,7 @@ describe("practice question = 0 points AND streak preserved", () => {
     expect(r?.correct).toBe(true)
     // …but awards no points and no flat bonus.
     expect(r?.points).toBe(0)
-    expect(r?.myPoints).toBe(800) // total untouched
+    expect(r?.myPoints).toBe(800) // Total untouched
     // …and the streak is PRESERVED (not incremented, not reset).
     expect(r?.streak).toBe(4)
     expect(r?.firstCorrect).toBe(false)
@@ -559,11 +564,11 @@ describe("bonus question = points doubled", () => {
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "dbl", 1) // correct, full base at t+0, streak 0 ⇒ mult 1
+    answer(ctx, "dbl", 1) // Correct, full base at t+0, streak 0 ⇒ mult 1
     callShowResults(ctx)
 
     const r = resultFor(ctx, "dbl")
-    // points = round(MAX_POINTS * 1 * 2) + flat first-correct bonus.
+    // Points = round(MAX_POINTS * 1 * 2) + flat first-correct bonus.
     expect(r?.points).toBe(MAX_POINTS * 2 + FIRST_CORRECT_BONUS)
     expect(r?.bonus).toBe(true)
   })
@@ -580,13 +585,13 @@ describe("bonus question = points doubled", () => {
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "missBonus", 0) // wrong
+    answer(ctx, "missBonus", 0) // Wrong
     callShowResults(ctx)
 
     const r = resultFor(ctx, "missBonus")
     expect(r?.correct).toBe(false)
     expect(r?.points).toBe(0)
-    expect(r?.bonus).toBe(false) // bonus flag only when correct
+    expect(r?.bonus).toBe(false) // Bonus flag only when correct
   })
 })
 
@@ -607,7 +612,7 @@ describe("leaderboard ordering / snapshot after results", () => {
     })
 
     // Arrival order: high (t+0, first-correct), mid (t+5s), low (t+15s).
-    answer(ctx, "high", 1) // full base + flat bonus
+    answer(ctx, "high", 1) // Full base + flat bonus
     vi.setSystemTime(QUESTION_START + 5_000)
     answer(ctx, "mid", 1) // 750 base
     vi.setSystemTime(QUESTION_START + 15_000)
@@ -624,7 +629,7 @@ describe("leaderboard ordering / snapshot after results", () => {
     expect(mid?.rank).toBe(2)
     expect(low?.rank).toBe(3)
 
-    // rank 1 has nobody ahead; lower ranks name the player directly above.
+    // Rank 1 has nobody ahead; lower ranks name the player directly above.
     expect(high?.aheadOfMe).toBeNull()
     expect(mid?.aheadOfMe).toBe("high")
     expect(low?.aheadOfMe).toBe("mid")
@@ -632,7 +637,7 @@ describe("leaderboard ordering / snapshot after results", () => {
     // The internal leaderboard snapshot is sorted the same way.
     const lb = (ctx.round as unknown as { leaderboard: Player[] }).leaderboard
     expect(lb.map((p) => p.clientId)).toEqual(["high", "mid", "low"])
-    // playersAnswers is cleared at the end of results.
+    // PlayersAnswers is cleared at the end of results.
     expect(
       (ctx.round as unknown as { playersAnswers: unknown[] }).playersAnswers
         .length,
@@ -640,11 +645,7 @@ describe("leaderboard ordering / snapshot after results", () => {
   })
 
   it("emits SHOW_RESPONSES to the manager with the per-answer tally", () => {
-    const players = [
-      makePlayer("a"),
-      makePlayer("b"),
-      makePlayer("c"),
-    ]
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c")]
     const ctx = buildRound({
       quizz: quizzOf({ solutions: [1] }),
       players,
@@ -656,15 +657,15 @@ describe("leaderboard ordering / snapshot after results", () => {
       questionTimeSec: 20,
     })
 
-    answer(ctx, "a", 1) // answerId 1
-    answer(ctx, "b", 1) // answerId 1
-    answer(ctx, "c", 2) // answerId 2
+    answer(ctx, "a", 1) // AnswerId 1
+    answer(ctx, "b", 1) // AnswerId 1
+    answer(ctx, "c", 2) // AnswerId 2
 
     callShowResults(ctx)
 
     const resp = responsesPayload(ctx)
     expect(resp).toBeDefined()
-    // responses is a tally keyed by answerId.
+    // Responses is a tally keyed by answerId.
     expect(resp?.responses[1]).toBe(2)
     expect(resp?.responses[2]).toBe(1)
     // The question's solutions are echoed through (defaulted to []).

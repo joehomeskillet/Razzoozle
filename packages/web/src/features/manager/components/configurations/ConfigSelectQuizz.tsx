@@ -56,8 +56,8 @@ const ConfigSelectQuizz = () => {
             aria-checked={selected === quizz.id}
             className={clsx(
               "flex w-full items-center justify-between rounded-md p-3 outline outline-gray-300",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-              selected === quizz.id && "outline-2 outline-primary",
+              "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2",
+              selected === quizz.id && "outline-primary outline-2",
             )}
             onClick={handleSelect(quizz.id)}
           >

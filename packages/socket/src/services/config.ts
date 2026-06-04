@@ -96,10 +96,7 @@ export const getGameConfig = (): GameConfig => {
       return result.data
     }
 
-    console.warn(
-      "Invalid game.json, using defaults:",
-      result.error.issues,
-    )
+    console.warn("Invalid game.json, using defaults:", result.error.issues)
   } catch (error) {
     console.error("Failed to read game config:", error)
   }
@@ -350,7 +347,10 @@ export const setTheme = (data: unknown): Theme => {
 
 // Persist an uploaded background image (data URL) for a slot and return its
 // public "/theme/<file>" path (served by nginx from the config volume).
-export const saveBackgroundImage = (slot: ThemeSlot, dataUrl: string): string => {
+export const saveBackgroundImage = (
+  slot: ThemeSlot,
+  dataUrl: string,
+): string => {
   if (!THEME_SLOTS.includes(slot)) {
     throw new Error("errors:theme.invalidSlot")
   }

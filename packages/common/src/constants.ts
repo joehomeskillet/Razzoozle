@@ -32,12 +32,12 @@ export const EVENTS = {
   // while lowLatencyMode is enabled; in normal mode no client subscribes and the
   // server never emits, so this group is inert.
   METRICS: {
-    // client → server: report a client-measured sample (RTT / clock-offset /
+    // Client → server: report a client-measured sample (RTT / clock-offset /
     // answer-ack latency). The server folds it into per-room rolling buffers.
     REPORT: "metrics:report",
-    // host → server: start receiving health snapshots for the host's own game.
+    // Host → server: start receiving health snapshots for the host's own game.
     SUBSCRIBE: "metrics:subscribe",
-    // server → host: a compact p50/p95 health snapshot (throttled).
+    // Server → host: a compact p50/p95 health snapshot (throttled).
     HEALTH: "metrics:health",
   },
   MANAGER: {
@@ -108,29 +108,42 @@ export const MEDIA_TYPES = {
 // Question kinds. Single source of truth: the zod question validator reuses this
 // (mirror of MEDIA_TYPES) and types/game derives `QuestionType` from it.
 export const QUESTION_TYPES = ["choice", "boolean", "slider", "poll"] as const
+
 export type QuestionType = (typeof QUESTION_TYPES)[number]
 
 // Theme image slots. Backgrounds are the three screen slots; the full theme slot
 // set additionally includes the brand "logo". The server accepts uploads for
 // every THEME_SLOT (logo included), so socket/web should type slots from here.
 export const BACKGROUND_SLOTS = ["auth", "managerGame", "playerGame"] as const
+
 export const THEME_SLOTS = [...BACKGROUND_SLOTS, "logo"] as const
+
 export type BackgroundSlot = (typeof BACKGROUND_SLOTS)[number]
+
 export type ThemeSlot = (typeof THEME_SLOTS)[number]
 
 // ---- Scoring / timing tuning (server imports these in a later phase) -------
 export const FIRST_CORRECT_BONUS = 100
+
 export const STREAK_STEP = 0.1
+
 export const STREAK_CAP = 5
+
 export const SLIDER_TOLERANCE_FRACTION = 0.05
+
 export const MAX_POINTS = 1000
+
 export const MAX_LATENCY_COMPENSATION_MS = 2000
 
 // ---- WebSocket / server tuning ---------------------------------------------
 export const WS_DEFAULT_PORT = 3001
+
 export const WS_PING_INTERVAL_MS = 10000
+
 export const WS_PING_TIMEOUT_MS = 8000
+
 export const WS_MAX_HTTP_BUFFER_BYTES = 1_000_000
+
 export const WS_DEFLATE_THRESHOLD_BYTES = 1024
 
 export const EXAMPLE_QUIZZ = {

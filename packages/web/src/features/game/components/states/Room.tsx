@@ -35,6 +35,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
     if (!gameId || pairCode.trim().length === 0) {
       return
     }
+
     // Server authorizes by manager-socket identity; password (in-memory only,
     // may be gone after a reload) is sent for wire-compat and ignored.
     socket.emit(EVENTS.DISPLAY.PAIR, {

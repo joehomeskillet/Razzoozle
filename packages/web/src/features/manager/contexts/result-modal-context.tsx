@@ -62,12 +62,15 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
     if (pa.answerId === null) {
       return false
     }
+
     if (questionResult.type === "poll") {
       return false
     }
+
     if (sliderThreshold !== null && questionResult.correct != null) {
       return Math.abs(pa.answerId - questionResult.correct) <= sliderThreshold
     }
+
     return (questionResult.solutions ?? []).includes(pa.answerId)
   }
 

@@ -69,7 +69,7 @@ const Configurations = ({ data }: Props) => {
             <LanguageSwitcher />
             <button
               type="button"
-              className="rounded-sm p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="focus-visible:outline-primary rounded-sm p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2"
               onClick={handleLogout}
               title={t("manager:logout")}
               aria-label={t("manager:logout")}
@@ -101,7 +101,7 @@ const Configurations = ({ data }: Props) => {
           id={`config-tabpanel-${selectedTab}`}
           aria-labelledby={`config-tab-${selectedTab}`}
           tabIndex={0}
-          className="flex min-h-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="focus-visible:outline-primary flex min-h-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <TabComponent />
         </div>

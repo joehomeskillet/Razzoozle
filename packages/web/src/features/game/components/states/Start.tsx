@@ -44,7 +44,7 @@ const Start = ({ data: { time, subject } }: Props) => {
               transform: `rotate(${45 * (time - cooldown)}deg)`,
             }}
           ></div>
-          <span className="absolute text-6xl font-bold tabular-nums text-white drop-shadow-md md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]">
+          <span className="absolute text-6xl font-bold text-white tabular-nums drop-shadow-md md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]">
             {cooldown}
           </span>
         </>

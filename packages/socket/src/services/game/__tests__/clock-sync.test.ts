@@ -23,11 +23,7 @@ import {
   type ClockSample,
 } from "@razzia/common/utils/clock-sync"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import {
-  buildRound,
-  enabledLL,
-  makePlayer,
-} from "./helpers"
+import { buildRound, enabledLL, makePlayer } from "./helpers"
 
 // ── Unit: clock-offset median + outlier rejection ───────────────────────────
 
@@ -56,7 +52,7 @@ describe("computeClockOffset(): median of 5 + outlier rejection", () => {
   ): ClockSample => ({
     clientSendMonoMs: sendMono,
     clientRecvMonoMs: sendMono + rtt,
-    // serverNow taken at the round-trip midpoint = sendMono + rtt/2 + offset.
+    // ServerNow taken at the round-trip midpoint = sendMono + rtt/2 + offset.
     serverNowMs: sendMono + rtt / 2 + offset,
   })
 
@@ -85,7 +81,7 @@ describe("computeClockOffset(): median of 5 + outlier rejection", () => {
       sample(100, 52, TRUE_OFFSET),
       sample(200, 48, TRUE_OFFSET),
       sample(300, 51, TRUE_OFFSET),
-      // congested: rtt 5000ms AND a wrong apparent offset (e.g. +900 skew)
+      // Congested: rtt 5000ms AND a wrong apparent offset (e.g. +900 skew)
       {
         clientSendMonoMs: 400,
         clientRecvMonoMs: 400 + 5_000,
@@ -103,11 +99,11 @@ describe("computeClockOffset(): median of 5 + outlier rejection", () => {
 
   it("drops samples with a negative / non-finite rtt", () => {
     const samples: ClockSample[] = [
-      // clock went backwards (recv before send) — invalid.
+      // Clock went backwards (recv before send) — invalid.
       { clientSendMonoMs: 100, clientRecvMonoMs: 50, serverNowMs: 1_000 },
       // NaN server clock — invalid.
       { clientSendMonoMs: 0, clientRecvMonoMs: 40, serverNowMs: NaN },
-      // one good sample, offset 2000.
+      // One good sample, offset 2000.
       { clientSendMonoMs: 0, clientRecvMonoMs: 40, serverNowMs: 20 + 2_000 },
     ]
 
@@ -186,21 +182,26 @@ describe("real socket.io: answer ack + idempotency + clock pong", () => {
 
       // Open the answer window (server-authoritative start + deadline).
       const start = Date.now()
-      ;(ctx.round as unknown as {
-        currentQuestion: number
-        startTime: number
-        serverSeq: number
-        answerMeta: Map<string, unknown>
-        seenMessageIds: Set<string>
-        answerDeadlineAtServerMs: number
-      }).currentQuestion = 0
+      ;(
+        ctx.round as unknown as {
+          currentQuestion: number
+          startTime: number
+          serverSeq: number
+          answerMeta: Map<string, unknown>
+          seenMessageIds: Set<string>
+          answerDeadlineAtServerMs: number
+        }
+      ).currentQuestion = 0
       ;(ctx.round as unknown as { startTime: number }).startTime = start
-      ;(ctx.round as unknown as { answerDeadlineAtServerMs: number }).answerDeadlineAtServerMs =
-        start + 30_000
+      ;(
+        ctx.round as unknown as { answerDeadlineAtServerMs: number }
+      ).answerDeadlineAtServerMs = start + 30_000
 
       socket.on(
         EVENTS.PLAYER.SELECTED_ANSWER,
-        (payload: { data: { answerKey: number; clientMessageId?: string } }) => {
+        (payload: {
+          data: { answerKey: number; clientMessageId?: string }
+        }) => {
           // Drive the ACTUAL RoundManager over the wire.
           ctx.round.selectAnswer(
             socket as never,
@@ -210,16 +211,13 @@ describe("real socket.io: answer ack + idempotency + clock pong", () => {
         },
       )
 
-      socket.on(
-        EVENTS.CLOCK.PING,
-        (data: { clientSendMonoMs: number }) => {
-          // Mirror Game.handleClockPing's contract exactly.
-          socket.emit(EVENTS.CLOCK.PONG, {
-            clientSendMonoMs: data.clientSendMonoMs,
-            serverNowMs: Date.now(),
-          })
-        },
-      )
+      socket.on(EVENTS.CLOCK.PING, (data: { clientSendMonoMs: number }) => {
+        // Mirror Game.handleClockPing's contract exactly.
+        socket.emit(EVENTS.CLOCK.PONG, {
+          clientSendMonoMs: data.clientSendMonoMs,
+          serverNowMs: Date.now(),
+        })
+      })
 
       resolveServerSocket(socket)
     })
@@ -264,7 +262,7 @@ describe("real socket.io: answer ack + idempotency + clock pong", () => {
 
   it("acks the first answer ok, then dedups a re-send as duplicate", async () => {
     const client = await connectClient()
-    await serverSocketReady // ensure the server wired its handlers
+    await serverSocketReady // Ensure the server wired its handlers
 
     const waitAck = (predicate: (a: AnswerAck) => boolean) =>
       new Promise<AnswerAck>((resolve, reject) => {

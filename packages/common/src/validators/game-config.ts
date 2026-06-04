@@ -37,4 +37,5 @@ export const gameConfigValidator = z.object({
 })
 
 export type GameConfig = z.infer<typeof gameConfigValidator>
+
 export type LowLatencyMode = z.infer<typeof lowLatencyModeValidator>

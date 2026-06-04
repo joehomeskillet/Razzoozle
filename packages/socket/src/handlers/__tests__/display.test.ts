@@ -27,7 +27,10 @@
 
 import { EVENTS } from "@razzia/common/constants"
 import type Game from "@razzia/socket/services/game"
-import { displaySocketHandlers, handlePair } from "@razzia/socket/handlers/display"
+import {
+  displaySocketHandlers,
+  handlePair,
+} from "@razzia/socket/handlers/display"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import Registry from "@razzia/socket/services/registry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -36,18 +39,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 interface FakeDisplaySocket {
   id: string
-  emitted: { event: string; payload: unknown }[]
+  emitted: Array<{ event: string; payload: unknown }>
   joined: string[]
   // The real socket.io API surface handlePair / displaySocketHandlers touch.
   emit: (event: string, payload?: unknown) => boolean
   join: (room: string) => void
   on: (event: string, handler: (...args: unknown[]) => void) => void
-  // handler registry so we can drive socket.on(...) callbacks in register tests.
+  // Handler registry so we can drive socket.on(...) callbacks in register tests.
   handlers: Map<string, (...args: unknown[]) => void>
 }
 
 const makeFakeSocket = (id: string): FakeDisplaySocket => {
-  const emitted: { event: string; payload: unknown }[] = []
+  const emitted: Array<{ event: string; payload: unknown }> = []
   const joined: string[] = []
   const handlers = new Map<string, (...args: unknown[]) => void>()
 
@@ -82,7 +85,7 @@ const makeFakeIo = (sockets: FakeDisplaySocket[]) => {
 }
 
 const ctxOf = (socket: FakeDisplaySocket, io: ReturnType<typeof makeFakeIo>) =>
-  ({ socket, io } as unknown as SocketContext)
+  ({ socket, io }) as unknown as SocketContext
 
 // Minimal stand-in for a Game: handlePair only reads gameId, inviteCode and
 // manager.id. Injected into the registry via addGame (cast) so getGameById /
@@ -95,8 +98,12 @@ const fakeGame = (opts: {
   ({
     gameId: opts.gameId,
     inviteCode: opts.inviteCode,
-    manager: { id: opts.managerSocketId, clientId: "mgr-client", connected: true },
-  } as unknown as Game)
+    manager: {
+      id: opts.managerSocketId,
+      clientId: "mgr-client",
+      connected: true,
+    },
+  }) as unknown as Game
 
 // Pull the registered code out of a DISPLAY.REGISTERED emit.
 const registeredCode = (socket: FakeDisplaySocket): string => {
@@ -107,7 +114,9 @@ const registeredCode = (socket: FakeDisplaySocket): string => {
 }
 
 const lastPairError = (socket: FakeDisplaySocket): unknown => {
-  const errs = socket.emitted.filter((e) => e.event === EVENTS.DISPLAY.PAIR_ERROR)
+  const errs = socket.emitted.filter(
+    (e) => e.event === EVENTS.DISPLAY.PAIR_ERROR,
+  )
 
   return errs.length ? errs[errs.length - 1].payload : undefined
 }
@@ -136,7 +145,7 @@ describe("display REGISTER", () => {
     display.handlers.get(EVENTS.DISPLAY.REGISTER)!()
 
     const code = registeredCode(display)
-    // generateCode(): 6 chars from "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    // GenerateCode(): 6 chars from "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
     // (no ambiguous I/L/O/0/1).
     expect(code).toHaveLength(6)
     expect(code).toMatch(/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/)
@@ -178,7 +187,11 @@ describe("handlePair — valid code, authenticated manager", () => {
     // Authenticated manager owns the game by SOCKET IDENTITY (manager.id ===
     // caller socket.id), so no password is needed (current impl).
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     const result = handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
@@ -214,11 +227,17 @@ describe("handlePair — valid code, authenticated manager", () => {
     const code = registeredCode(display)
 
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     // First pairing consumes the code.
-    expect(handlePair(ctxOf(manager, io), { code, gameId: "game-A" })).toBe(true)
+    expect(handlePair(ctxOf(manager, io), { code, gameId: "game-A" })).toBe(
+      true,
+    )
     expect(registry.getPairing(code)).toBeUndefined()
     expect(registry.isPairingValid(code)).toBe(false)
 
@@ -244,7 +263,11 @@ describe("handlePair — invalid code paths", () => {
     const io = makeFakeIo([display, manager])
 
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     const result = handlePair(ctxOf(manager, io), {
@@ -274,7 +297,11 @@ describe("handlePair — invalid code paths", () => {
     expect(registry.isPairingValid(code)).toBe(true)
 
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     // Jump 6 minutes (> 5-min TTL). The pairing entry still EXISTS in the map
@@ -326,7 +353,11 @@ describe("handlePair — authorization", () => {
     const code = registeredCode(display)
 
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     // No managerPassword in the payload — identity match alone authorizes.
@@ -347,7 +378,11 @@ describe("handlePair — authorization", () => {
     const code = registeredCode(display)
 
     registry.addGame(
-      fakeGame({ gameId: "game-A", inviteCode: "INV123", managerSocketId: "mgr-sock" }),
+      fakeGame({
+        gameId: "game-A",
+        inviteCode: "INV123",
+        managerSocketId: "mgr-sock",
+      }),
     )
 
     const result = handlePair(ctxOf(other, io), {

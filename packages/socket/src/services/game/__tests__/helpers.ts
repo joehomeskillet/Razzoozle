@@ -66,16 +66,16 @@ export const makePlayers = (initial: Player[]): PlayerManager => {
 // can assert acks / answered-count chatter.
 export interface FakeSocket {
   socket: Socket
-  emitted: { event: string; payload: unknown }[]
-  roomEmitted: { event: string; payload: unknown }[]
+  emitted: Array<{ event: string; payload: unknown }>
+  roomEmitted: Array<{ event: string; payload: unknown }>
 }
 
 export const makeSocket = (
   clientId: string,
   socketId = clientId,
 ): FakeSocket => {
-  const emitted: { event: string; payload: unknown }[] = []
-  const roomEmitted: { event: string; payload: unknown }[] = []
+  const emitted: Array<{ event: string; payload: unknown }> = []
+  const roomEmitted: Array<{ event: string; payload: unknown }> = []
 
   const socket = {
     id: socketId,
@@ -85,7 +85,7 @@ export const makeSocket = (
 
       return true
     },
-    // socket.to(room).emit(...) — used for the immediate (normal-mode) count.
+    // Socket.to(room).emit(...) — used for the immediate (normal-mode) count.
     to: (_room: string) => ({
       emit: (event: string, payload: unknown) => {
         roomEmitted.push({ event, payload })
@@ -102,8 +102,8 @@ export const makeSocket = (
 // out SELECT_ANSWER anchors and per-player SHOW_RESULT points.
 export interface CapturedRound {
   round: RoundManager
-  broadcasts: { status: Status; data: StatusDataMap[Status] }[]
-  sends: { target: string; status: Status; data: StatusDataMap[Status] }[]
+  broadcasts: Array<{ status: Status; data: StatusDataMap[Status] }>
+  sends: Array<{ target: string; status: Status; data: StatusDataMap[Status] }>
   cooldownAborts: number
   io: Server
 }
@@ -118,9 +118,9 @@ export const buildRound = (opts: {
   const sends: CapturedRound["sends"] = []
   let cooldownAborts = 0
 
-  // io is only used by RoundManager for the throttled answered-count emit
+  // Io is only used by RoundManager for the throttled answered-count emit
   // (io.to(gameId).emit). Capture it but it's not load-bearing for scoring.
-  const ioRoomEmitted: { event: string; payload: unknown }[] = []
+  const ioRoomEmitted: Array<{ event: string; payload: unknown }> = []
   const io = {
     to: (_room: string) => ({
       emit: (event: string, payload: unknown) => {
@@ -175,9 +175,15 @@ export const answeredPoints = (
   round: RoundManager,
   clientId: string,
 ): number | null => {
-  const answers = (round as unknown as {
-    playersAnswers: { playerId: string; answerId: number; points: number }[]
-  }).playersAnswers
+  const answers = (
+    round as unknown as {
+      playersAnswers: Array<{
+        playerId: string
+        answerId: number
+        points: number
+      }>
+    }
+  ).playersAnswers
   const found = answers?.find((a) => a.playerId === clientId)
 
   return found ? found.points : null
@@ -186,9 +192,11 @@ export const answeredPoints = (
 // Number of stored answers (server-accepted). Used to prove a duplicate is a
 // no-op (count stays 1).
 export const answerCount = (round: RoundManager): number => {
-  const answers = (round as unknown as {
-    playersAnswers: { playerId: string }[]
-  }).playersAnswers
+  const answers = (
+    round as unknown as {
+      playersAnswers: Array<{ playerId: string }>
+    }
+  ).playersAnswers
 
   return answers?.length ?? 0
 }

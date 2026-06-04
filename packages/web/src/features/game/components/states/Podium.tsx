@@ -145,7 +145,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
               </p>
               <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={2} />
-                <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+                <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[1].points}
                 </p>
               </div>
@@ -173,7 +173,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
             </p>
             <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
               <Medal rank={1} />
-              <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+              <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                 {top[0].points}
               </p>
             </div>
@@ -201,7 +201,7 @@ const Podium = ({ data: { subject, top } }: Props) => {
               <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={3} />
 
-                <p className="text-3xl font-bold tabular-nums text-white drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+                <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[2].points}
                 </p>
               </div>

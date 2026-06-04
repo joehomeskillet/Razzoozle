@@ -205,9 +205,12 @@ const GameWrapper = ({
                 )}
                 {manager && next && (
                   <Button
-                    className={clsx("bg-white px-4 text-black hover:bg-gray-200", {
-                      "pointer-events-none": isDisabled,
-                    })}
+                    className={clsx(
+                      "bg-white px-4 text-black hover:bg-gray-200",
+                      {
+                        "pointer-events-none": isDisabled,
+                      },
+                    )}
                     onClick={handleNext}
                   >
                     {t(next)}
@@ -229,8 +232,7 @@ const GameWrapper = ({
               aria-disabled={!isConnected}
               className={clsx(
                 "flex flex-1 flex-col",
-                !isConnected &&
-                  "pointer-events-none opacity-60 select-none",
+                !isConnected && "pointer-events-none opacity-60 select-none",
               )}
             >
               {children}

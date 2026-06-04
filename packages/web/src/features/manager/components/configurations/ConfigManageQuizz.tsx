@@ -100,7 +100,7 @@ const ConfigManageQuizz = () => {
               <button
                 type="button"
                 aria-label={t("manager:quizz.edit", { name: q.subject })}
-                className="rounded-sm p-2 text-gray-600 hover:bg-gray-600/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="focus-visible:outline-primary rounded-sm p-2 text-gray-600 hover:bg-gray-600/10 focus-visible:outline-2 focus-visible:outline-offset-2"
                 onClick={() =>
                   navigate({
                     to: "/manager/quizz/$quizzId",
@@ -116,7 +116,7 @@ const ConfigManageQuizz = () => {
                   <button
                     type="button"
                     aria-label={t("manager:quizz.delete")}
-                    className="rounded-sm p-2 hover:bg-red-600/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    className="focus-visible:outline-primary rounded-sm p-2 hover:bg-red-600/10 focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     <Trash2 className="size-4 stroke-red-500" />
                   </button>

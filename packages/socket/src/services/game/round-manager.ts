@@ -102,19 +102,20 @@ export class RoundManager {
 
     // Throttle only the chatter (answered count). delayMs 0 when disabled =>
     // emits immediately, byte-identical to today.
-    const throttleMs = this.ll.enabled ? this.ll.scoreboardBroadcastThrottleMs : 0
+    const throttleMs = this.ll.enabled
+      ? this.ll.scoreboardBroadcastThrottleMs
+      : 0
     this.answerCountThrottle = new ScoreboardThrottle<number>(
       throttleMs,
       (count) => {
-        this.opts.io
-          .to(this.opts.gameId)
-          .emit(EVENTS.GAME.PLAYER_ANSWER, count)
+        this.opts.io.to(this.opts.gameId).emit(EVENTS.GAME.PLAYER_ANSWER, count)
       },
     )
   }
 
   setAutoMode(on: boolean): void {
     this.autoMode = on
+
     if (!on) {
       this.clearAuto()
     }
@@ -138,14 +139,18 @@ export class RoundManager {
       if (!this.started || !this.autoMode) {
         return
       }
+
       this.showLeaderboard()
+
       if (!this.started) {
         return
       }
+
       this.autoTimer = setTimeout(() => {
         if (!this.started || !this.autoMode) {
           return
         }
+
         if (this.opts.quizz.questions[this.currentQuestion + 1]) {
           this.currentQuestion += 1
           void this.newQuestion()
@@ -316,7 +321,9 @@ export class RoundManager {
     const isPoll = question.type === "poll"
 
     // Correctness + base factor (0..1) for a single answer, before multipliers.
-    const evalAnswer = (answerId: number): { correct: boolean; base: number } => {
+    const evalAnswer = (
+      answerId: number,
+    ): { correct: boolean; base: number } => {
       if (
         question.type === "slider" &&
         question.min != null &&
@@ -326,22 +333,28 @@ export class RoundManager {
         const range = question.max - question.min || 1
         const dist = Math.abs(answerId - question.correct)
         const accuracy = Math.max(0, 1 - dist / range)
+
         return {
           correct:
-            dist <= Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION),
+            dist <=
+            Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION),
           base: accuracy,
         }
       }
+
       const correct = question.solutions?.includes(answerId) ?? false
+
       return { correct, base: correct ? 1 : 0 }
     }
 
     // The first player (by answer arrival order) to get it right earns a flat bonus.
     let firstCorrectId: string | null = null
+
     if (!isPoll && !question.practice) {
       for (const a of this.playersAnswers) {
         if (evalAnswer(a.answerId).correct) {
           firstCorrectId = a.playerId
+
           break
         }
       }
@@ -390,7 +403,12 @@ export class RoundManager {
           : Math.round(rawPoints * streakMult * bonusMult)
 
         let gotFirst = false
-        if (!question.practice && isCorrect && player.clientId === firstCorrectId) {
+
+        if (
+          !question.practice &&
+          isCorrect &&
+          player.clientId === firstCorrectId
+        ) {
           // Scale the first-correct bonus by accuracy (full for choice/boolean,
           // proportional for slider) so a fast near-miss can't beat an accurate one.
           points += Math.round(FIRST_CORRECT_BONUS * baseFactor)
@@ -412,7 +430,7 @@ export class RoundManager {
           lastPoll: false,
           lastStreak: player.streak,
           lastStreakBonus: isCorrect && streakBefore > 0 && !question.practice,
-          lastBonus: !!question.bonus && isCorrect && !question.practice,
+          lastBonus: Boolean(question.bonus) && isCorrect && !question.practice,
           lastFirstCorrect: gotFirst,
         }
       })
@@ -483,7 +501,11 @@ export class RoundManager {
     }
   }
 
-  selectAnswer(socket: Socket, answerId: number, clientMessageId?: string): void {
+  selectAnswer(
+    socket: Socket,
+    answerId: number,
+    clientMessageId?: string,
+  ): void {
     // SERVER receive timestamp — the only clock trusted for scoring. Captured
     // first thing so the value is unaffected by anything below it.
     const serverReceivedAtMs = Date.now()
@@ -496,13 +518,23 @@ export class RoundManager {
 
     if (!player) {
       // No durable session for this socket — reject (only acked in LL mode).
-      this.rejectAnswer(socket, "invalid_question", serverReceivedAtMs, clientMessageId)
+      this.rejectAnswer(
+        socket,
+        "invalid_question",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
 
       return
     }
 
     if (!question) {
-      this.rejectAnswer(socket, "invalid_question", serverReceivedAtMs, clientMessageId)
+      this.rejectAnswer(
+        socket,
+        "invalid_question",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
 
       return
     }
@@ -511,8 +543,8 @@ export class RoundManager {
     // In LL mode we additionally dedup by the per-tap clientMessageId so a
     // socket.io auto-retry of the *same* tap is caught even before the player
     // record check (and is acked as `duplicate` rather than silently dropped).
-    const alreadyAnswered = !!this.playersAnswers.find(
-      (a) => a.playerId === clientId,
+    const alreadyAnswered = Boolean(
+      this.playersAnswers.find((a) => a.playerId === clientId),
     )
     const duplicateMessageId =
       this.ll.enabled &&
@@ -520,7 +552,12 @@ export class RoundManager {
       this.seenMessageIds.has(clientMessageId)
 
     if (alreadyAnswered || duplicateMessageId) {
-      this.rejectAnswer(socket, "duplicate", serverReceivedAtMs, clientMessageId)
+      this.rejectAnswer(
+        socket,
+        "duplicate",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
 
       return
     }
@@ -536,7 +573,12 @@ export class RoundManager {
       )
 
       if (serverReceivedAtMs > this.answerDeadlineAtServerMs + compensation) {
-        this.rejectAnswer(socket, "too_late", serverReceivedAtMs, clientMessageId)
+        this.rejectAnswer(
+          socket,
+          "too_late",
+          serverReceivedAtMs,
+          clientMessageId,
+        )
 
         return
       }
@@ -622,7 +664,7 @@ export class RoundManager {
   // current (in-flight) question? Used to render "answered" on resume instead
   // of re-enabling the buttons. Always false / harmless in normal mode.
   hasAnswered(clientId: string): boolean {
-    return !!this.playersAnswers.find((a) => a.playerId === clientId)
+    return Boolean(this.playersAnswers.find((a) => a.playerId === clientId))
   }
 
   nextQuestion(socket: Socket): void {

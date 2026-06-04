@@ -9,6 +9,7 @@ import type {
 // Re-export the single-source question kinds so consumers can keep importing
 // `QuestionType` (and the runtime list) from `types/game`.
 export { QUESTION_TYPES } from "@razzia/common/constants"
+
 export type { QuestionType } from "@razzia/common/constants"
 
 export interface Player {

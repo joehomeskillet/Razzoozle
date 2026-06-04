@@ -32,6 +32,7 @@ export interface ClockSyncResult {
 // i.e. we assume the server timestamp was taken at the round-trip midpoint.
 const sampleOffset = (s: ClockSample): number => {
   const rtt = s.clientRecvMonoMs - s.clientSendMonoMs
+
   return s.serverNowMs - (s.clientSendMonoMs + rtt / 2)
 }
 
@@ -73,7 +74,9 @@ export const computeClockOffset = (
     if (!s) {
       return false
     }
+
     const rtt = sampleRtt(s)
+
     return Number.isFinite(rtt) && rtt >= 0 && Number.isFinite(s.serverNowMs)
   })
 

@@ -52,7 +52,9 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         } catch (error) {
           socket.emit(
             EVENTS.MANAGER.THEME_ERROR,
-            error instanceof Error ? error.message : "errors:theme.uploadFailed",
+            error instanceof Error
+              ? error.message
+              : "errors:theme.uploadFailed",
           )
         }
       },

@@ -17,7 +17,7 @@ interface RoomMetrics {
   clockOffset: Sample[]
   answerAck: Sample[]
   reconnectCount: number
-  // rejected answers grouped by reason (ok answers are NOT counted here)
+  // Rejected answers grouped by reason (ok answers are NOT counted here)
   rejected: Record<string, number>
 }
 
@@ -87,7 +87,7 @@ export const metrics = {
     room.rejected[reason] = (room.rejected[reason] ?? 0) + 1
   },
 
-  // p50/p95 snapshot for a room. Safe to call any time; returns nulls when no
+  // P50/p95 snapshot for a room. Safe to call any time; returns nulls when no
   // samples exist yet (the health widget defaults those to "—"). The shape is
   // the shared MetricsHealthSnapshot wire contract (common layer).
   snapshot(gameId: string): MetricsHealthSnapshot {

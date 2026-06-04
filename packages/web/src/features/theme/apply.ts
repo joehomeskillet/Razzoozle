@@ -5,7 +5,7 @@ import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 // re-colors the whole UI. Other tokens are consumed via bg-[var(--x)] classes.
 export const applyTheme = (theme: Theme) => {
   const t: Theme = { ...DEFAULT_THEME, ...theme }
-  const style = document.documentElement.style
+  const { style } = document.documentElement
   style.setProperty("--color-primary", t.colorPrimary)
   style.setProperty("--color-secondary", t.colorSecondary)
   style.setProperty("--color-text", t.colorText)
@@ -18,7 +18,7 @@ export const applyTheme = (theme: Theme) => {
   style.setProperty("--bg-scrim", `${t.scrim / 100}`)
 
   if (typeof document !== "undefined") {
-    document.title = t.appTitle?.trim() || "Razzia"
+    document.title = t.appTitle?.trim() ?? "Razzia"
   }
 }
 

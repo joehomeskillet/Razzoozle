@@ -107,7 +107,7 @@ const Responses = ({
                   )}
                   style={{ height: percentages[key] }}
                 >
-                  <span className="w-full bg-black/10 text-center text-lg font-bold tabular-nums text-white drop-shadow-md">
+                  <span className="w-full bg-black/10 text-center text-lg font-bold text-white tabular-nums drop-shadow-md">
                     {responses[key] || 0}
                   </span>
                 </div>

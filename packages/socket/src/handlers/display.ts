@@ -52,10 +52,14 @@ export const handlePair = (
   // fallback for a non-manager caller.
   if (game.manager.id !== socket.id) {
     let config
+
     try {
       config = getGameConfig()
     } catch {
-      socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.failedToReadConfig")
+      socket.emit(
+        EVENTS.DISPLAY.PAIR_ERROR,
+        "errors:manager.failedToReadConfig",
+      )
 
       return false
     }

@@ -8,7 +8,10 @@ import {
 import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
-import { MANAGER_SKIP_EVENTS, isKeyOf } from "@razzia/web/features/game/utils/constants"
+import {
+  MANAGER_SKIP_EVENTS,
+  isKeyOf,
+} from "@razzia/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"

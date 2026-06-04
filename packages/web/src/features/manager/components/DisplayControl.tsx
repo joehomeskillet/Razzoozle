@@ -40,6 +40,7 @@ const DisplayControl = () => {
     if (!gameId || code.trim().length === 0) {
       return
     }
+
     // The server authorizes by manager-socket identity; password is sent only
     // for wire-compat (may be absent after a reload) and is ignored server-side.
     socket.emit(EVENTS.DISPLAY.PAIR, {

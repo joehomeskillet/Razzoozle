@@ -143,7 +143,9 @@ describe("Registry — empty-game cleanup (EMPTY_GAME_TIMEOUT_MINUTES = 5)", () 
     // so the interval's callback sees an aged-out game. (setSystemTime alone
     // moves Date.now() but not the timer scheduler; advanceTimersByTime moves
     // the scheduler but not Date.now() — drive both.)
-    ;(registry as unknown as { startCleanupTask: () => void }).startCleanupTask()
+    ;(
+      registry as unknown as { startCleanupTask: () => void }
+    ).startCleanupTask()
     vi.setSystemTime(T0 + EMPTY_GAME_TIMEOUT_MINUTES * MINUTE_MS + 1)
     vi.advanceTimersByTime(CLEANUP_INTERVAL_MS)
 

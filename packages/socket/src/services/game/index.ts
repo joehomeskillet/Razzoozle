@@ -330,7 +330,7 @@ class Game {
     return true
   }
 
-  // p50/p95 health snapshot for the optional host widget. Cheap; empty in
+  // P50/p95 health snapshot for the optional host widget. Cheap; empty in
   // normal mode (nothing is ever recorded when disabled).
   getMetrics(): MetricsHealthSnapshot {
     return metrics.snapshot(this.gameId)
@@ -356,13 +356,19 @@ class Game {
     switch (kind) {
       case "rtt":
         metrics.recordRtt(this.gameId, value)
+
         break
+
       case "clockOffset":
         metrics.recordClockOffset(this.gameId, value)
+
         break
+
       case "answerAck":
         metrics.recordAnswerAck(this.gameId, value)
+
         break
+
       default:
         // Unknown kind from a future/garbled client — ignore safely.
         return

@@ -79,7 +79,10 @@ const Username = () => {
         aria-describedby={error ? "username-error" : undefined}
       />
       {error && (
-        <p id="username-error" className="mt-2 text-sm font-semibold text-red-600">
+        <p
+          id="username-error"
+          className="mt-2 text-sm font-semibold text-red-600"
+        >
           {t("game:usernameRequired")}
         </p>
       )}

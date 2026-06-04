@@ -32,6 +32,7 @@ const prefetchMedia = (media?: QuestionMediaType): (() => void) | undefined => {
       const img = new Image()
       img.decoding = "async"
       img.src = media.url
+
       // Nothing to clean up; let GC collect the detached node.
       return undefined
     }
@@ -48,7 +49,7 @@ const prefetchMedia = (media?: QuestionMediaType): (() => void) | undefined => {
       try {
         link.remove()
       } catch {
-        /* ignore */
+        /* Ignore */
       }
     }
   } catch {
@@ -57,13 +58,20 @@ const prefetchMedia = (media?: QuestionMediaType): (() => void) | undefined => {
   }
 }
 
-const QuestionMedia = ({ media, alt = "", next, preloadNext = false }: Props) => {
+const QuestionMedia = ({
+  media,
+  alt = "",
+  next,
+  preloadNext = false,
+}: Props) => {
   // Prefetch the next question's media when preload is on. No-op otherwise.
   useEffect(() => {
     if (!preloadNext) {
       return
     }
+
     const cleanup = prefetchMedia(next)
+
     return cleanup
   }, [preloadNext, next?.url, next?.type])
 

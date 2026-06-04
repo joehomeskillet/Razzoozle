@@ -9,7 +9,7 @@ import { create } from "zustand"
 // a new one. Everything here is OPTIONAL low-latency behaviour: in normal mode
 // `alreadyAnswered` is always false and the component behaves exactly as today.
 interface AnswerState {
-  // gameId the flag belongs to (guards against cross-game leakage).
+  // GameId the flag belongs to (guards against cross-game leakage).
   gameId: string | null
   // True if the server told us this player already answered the live question.
   alreadyAnswered: boolean

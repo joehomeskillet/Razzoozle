@@ -1,5 +1,8 @@
 import { EVENTS } from "@razzia/common/constants"
-import { useEvent, useSocket } from "@razzia/web/features/game/contexts/socket-context"
+import {
+  useEvent,
+  useSocket,
+} from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import {
@@ -21,7 +24,7 @@ interface ManagerGameSessionOptions {
   reconnectIfConnected?: boolean
 }
 
-// useManagerGameSession — shared socket wiring for the three manager-presentation
+// UseManagerGameSession — shared socket wiring for the three manager-presentation
 // routes (the host's /party/manager/$gameId, the /satellite/$gameId kiosk, and
 // the /display/play beamer view). They all subscribe to the same GAME.STATUS /
 // MANAGER.SUCCESS_RECONNECT / GAME.RESET surface, reconnect to the game on
@@ -47,6 +50,7 @@ export const useManagerGameSession = (
 
   useEvent("connect", () => {
     onConnect?.()
+
     if (gameId) {
       socket.emit(EVENTS.MANAGER.RECONNECT, { gameId })
     }

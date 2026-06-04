@@ -33,7 +33,7 @@ export interface CommonStatusDataMap {
     media?: QuestionMedia
     time: number
     totalPlayer: number
-    // slider questions (no `correct` here — must not leak to players)
+    // Slider questions (no `correct` here — must not leak to players)
     type?: QuestionType
     min?: number
     max?: number
@@ -54,7 +54,7 @@ export interface CommonStatusDataMap {
     myPoints: number
     rank: number
     aheadOfMe: string | null
-    // bonus / streak display
+    // Bonus / streak display
     streak?: number
     streakBonus?: boolean
     bonus?: boolean
@@ -73,7 +73,7 @@ interface ManagerExtraStatus {
     solutions: number[]
     answers: string[]
     media?: QuestionMedia
-    // slider result
+    // Slider result
     type?: QuestionType
     correct?: number
     unit?: string

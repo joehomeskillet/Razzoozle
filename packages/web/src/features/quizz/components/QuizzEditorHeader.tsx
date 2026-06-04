@@ -28,6 +28,7 @@ const QuizzEditorHeader = () => {
 
   const handleChangeSubject = (e: ChangeEvent<HTMLInputElement>) => {
     setSubject(e.target.value)
+
     if (subjectError) {
       setSubjectError(null)
     }
@@ -44,7 +45,7 @@ const QuizzEditorHeader = () => {
 
     if (!result.success) {
       const firstIssue = result.error.issues[0]
-      const path = firstIssue.path
+      const { path } = firstIssue
 
       if (path[0] === "subject") {
         setSubjectError(firstIssue.message)

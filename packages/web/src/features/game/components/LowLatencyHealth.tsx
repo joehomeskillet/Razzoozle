@@ -46,9 +46,7 @@ const MetricRow = ({ label, p50, p95, count }: RowProps) => (
       <span className="text-white">{fmtMs(p50)}</span>
       <span className="px-1 text-white/40">/</span>
       <span className="text-white/80">{fmtMs(p95)}</span>
-      <span className="ml-1.5 text-[10px] text-white/40">
-        (n={count ?? 0})
-      </span>
+      <span className="ml-1.5 text-[10px] text-white/40">(n={count ?? 0})</span>
     </span>
   </div>
 )
@@ -70,6 +68,7 @@ const LowLatencyHealth = () => {
     if (!gameId) {
       return
     }
+
     socket.emit(EVENTS.METRICS.SUBSCRIBE, { gameId })
   }, [socket, gameId])
 
@@ -86,10 +85,12 @@ const LowLatencyHealth = () => {
     if (!snap || typeof snap !== "object") {
       return
     }
+
     if (!seenRef.current) {
       seenRef.current = true
       setVisible(true)
     }
+
     setSnapshot(snap)
   })
 

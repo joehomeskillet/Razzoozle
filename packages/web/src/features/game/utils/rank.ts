@@ -1,4 +1,4 @@
-// i18n key for a player's final rank. Mirrors the inline rankKeyMap logic in
+// I18n key for a player's final rank. Mirrors the inline rankKeyMap logic in
 // Result.tsx and PlayerFinished.tsx: 1/2/3 map to their own keys, everything
 // else (including null/undefined) falls back to "game:rank.other".
 const rankKeyMap: Record<number, string> = {

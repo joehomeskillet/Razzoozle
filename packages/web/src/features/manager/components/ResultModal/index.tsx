@@ -21,35 +21,33 @@ interface Props {
 // urgent confirmation — so it should carry `role="dialog"`, not
 // `role="alertdialog"`. Parts used: Root/Portal/Overlay/Content; the Title and
 // Close live in ResultModalHeader.
-const ResultModal = ({ result, onClose }: Props) => {
-  return (
-    <RadixDialog.Root
-      open
-      onOpenChange={(next) => {
-        if (!next) {
-          onClose()
-        }
-      }}
-    >
-      <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-60 bg-black/50" />
-        <RadixDialog.Content
-          aria-labelledby={RESULT_MODAL_TITLE_ID}
-          aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 z-60 flex max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow-2xl focus:outline-none"
-        >
-          <ResultModalProvider result={result} onClose={onClose}>
-            <ResultModalHeader />
-            <ResultModalAnswers />
-            <ResultModalStats />
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <ResultModalTable />
-            </div>
-          </ResultModalProvider>
-        </RadixDialog.Content>
-      </RadixDialog.Portal>
-    </RadixDialog.Root>
-  )
-}
+const ResultModal = ({ result, onClose }: Props) => (
+  <RadixDialog.Root
+    open
+    onOpenChange={(next) => {
+      if (!next) {
+        onClose()
+      }
+    }}
+  >
+    <RadixDialog.Portal>
+      <RadixDialog.Overlay className="fixed inset-0 z-60 bg-black/50" />
+      <RadixDialog.Content
+        aria-labelledby={RESULT_MODAL_TITLE_ID}
+        aria-describedby={undefined}
+        className="fixed top-1/2 left-1/2 z-60 flex max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow-2xl focus:outline-none"
+      >
+        <ResultModalProvider result={result} onClose={onClose}>
+          <ResultModalHeader />
+          <ResultModalAnswers />
+          <ResultModalStats />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ResultModalTable />
+          </div>
+        </ResultModalProvider>
+      </RadixDialog.Content>
+    </RadixDialog.Portal>
+  </RadixDialog.Root>
+)
 
 export default ResultModal

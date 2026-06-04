@@ -5,11 +5,7 @@ import {
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
-import {
-  createFileRoute,
-  useParams,
-  useSearch,
-} from "@tanstack/react-router"
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"
 
@@ -44,7 +40,7 @@ const SatelliteManagerPage = () => {
   // boots fullscreen, so a rejected promise here is harmless.
   useEffect(() => {
     document.documentElement.requestFullscreen?.().catch(() => {
-      /* fullscreen not permitted without a gesture; kiosk flag covers this */
+      /* Fullscreen not permitted without a gesture; kiosk flag covers this */
     })
   }, [])
 

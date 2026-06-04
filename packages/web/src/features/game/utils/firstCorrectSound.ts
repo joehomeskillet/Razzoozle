@@ -15,10 +15,11 @@ export const preloadFirstCorrectSound = () => {
 
 export const playFirstCorrectSound = () => {
   preloadFirstCorrectSound()
+
   if (audio) {
     audio.currentTime = 0
     void audio.play().catch(() => {
-      // ignore autoplay rejection (player has already interacted in-game)
+      // Ignore autoplay rejection (player has already interacted in-game)
     })
   }
 }

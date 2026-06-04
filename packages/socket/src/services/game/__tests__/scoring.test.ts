@@ -42,7 +42,7 @@ const QUIZZ: Quizz = {
   ],
 }
 
-const QUESTION_START = 1_000_000_000_000 // fixed epoch ms for determinism
+const QUESTION_START = 1_000_000_000_000 // Fixed epoch ms for determinism
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -74,8 +74,8 @@ describe("server-receive scoring (timeToPoint)", () => {
     const { socket } = makeSocket("alice")
     ctx.round.selectAnswer(socket, 1, "msg-1")
 
-    // timeToPoint(startTime, 20) at +5s = 1000 - (1000/20)*5 = 750.
-    const expected = timeToPoint(QUESTION_START, 20) // computed at same "now"
+    // TimeToPoint(startTime, 20) at +5s = 1000 - (1000/20)*5 = 750.
+    const expected = timeToPoint(QUESTION_START, 20) // Computed at same "now"
     expect(answeredPoints(ctx.round, "alice")).toBe(750)
     expect(answeredPoints(ctx.round, "alice")).toBe(expected)
   })
@@ -93,7 +93,7 @@ describe("server-receive scoring (timeToPoint)", () => {
       questionTimeSec: 20,
     })
 
-    // a answers at t+0 (full 1000), b at t+10s (half = 500).
+    // A answers at t+0 (full 1000), b at t+10s (half = 500).
     ctx.round.selectAnswer(makeSocket("a").socket, 1, "a-1")
     expect(answeredPoints(ctx.round, "a")).toBe(1000)
 
@@ -131,9 +131,8 @@ describe("duplicate-answer rejection", () => {
     expect(answeredPoints(ctx.round, "alice")).toBe(pointsAfterFirst)
 
     // The duplicate is acked as `duplicate` (LL mode + answerAck on).
-    const ack = second.emitted.find(
-      (e) => e.event === EVENTS.PLAYER.ANSWER_ACK,
-    )?.payload as AnswerAck | undefined
+    const ack = second.emitted.find((e) => e.event === EVENTS.PLAYER.ANSWER_ACK)
+      ?.payload as AnswerAck | undefined
     expect(ack?.accepted).toBe(false)
     expect(ack?.reason).toBe("duplicate")
   })
@@ -155,14 +154,13 @@ describe("duplicate-answer rejection", () => {
     ctx.round.selectAnswer(makeSocket("alice").socket, 1, "dup")
     expect(answerCount(ctx.round)).toBe(1)
 
-    // socket.io auto-retry of the SAME tap (same clientMessageId) — rejected.
+    // Socket.io auto-retry of the SAME tap (same clientMessageId) — rejected.
     const retry = makeSocket("alice", "alice-new-socket")
     ctx.round.selectAnswer(retry.socket, 1, "dup")
 
     expect(answerCount(ctx.round)).toBe(1)
-    const ack = retry.emitted.find(
-      (e) => e.event === EVENTS.PLAYER.ANSWER_ACK,
-    )?.payload as AnswerAck | undefined
+    const ack = retry.emitted.find((e) => e.event === EVENTS.PLAYER.ANSWER_ACK)
+      ?.payload as AnswerAck | undefined
     expect(ack?.reason).toBe("duplicate")
   })
 })

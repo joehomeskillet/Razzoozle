@@ -54,7 +54,7 @@ export interface AnswerAck {
 // client reports them and the server aggregates per room for the host widget.
 export type MetricKind = "rtt" | "clockOffset" | "answerAck"
 
-// client → server sample report. `value` is milliseconds. OPTIONAL/additive —
+// Client → server sample report. `value` is milliseconds. OPTIONAL/additive —
 // only sent while low-latency mode is active; ignored by the server otherwise.
 export interface MetricsReport {
   kind: MetricKind
@@ -69,7 +69,7 @@ export interface MetricPercentiles {
   count: number
 }
 
-// server → host compact health snapshot. Structural mirror of the server's
+// Server → host compact health snapshot. Structural mirror of the server's
 // metrics.snapshot() return — kept here as the wire contract so the common
 // layer (and the web widget) can type it without importing from packages/socket.
 export interface MetricsHealthSnapshot {
@@ -77,7 +77,7 @@ export interface MetricsHealthSnapshot {
   clockOffset: MetricPercentiles
   answerAck: MetricPercentiles
   reconnectCount: number
-  // rejected-answer counts grouped by AnswerAckReason (only non-zero reasons).
+  // Rejected-answer counts grouped by AnswerAckReason (only non-zero reasons).
   rejected: Record<string, number>
 }
 
@@ -185,7 +185,10 @@ export interface ClientToServerEvents {
     playerId: string
   }) => void
   [EVENTS.MANAGER.START_GAME]: (_message: MessageGameId) => void
-  [EVENTS.MANAGER.SET_AUTO]: (_message: { gameId?: string; auto: boolean }) => void
+  [EVENTS.MANAGER.SET_AUTO]: (_message: {
+    gameId?: string
+    auto: boolean
+  }) => void
   [EVENTS.MANAGER.ABORT_QUIZ]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.NEXT_QUESTION]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void

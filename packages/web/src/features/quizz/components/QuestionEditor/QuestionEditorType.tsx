@@ -3,17 +3,17 @@ import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor
 import clsx from "clsx"
 import { useTranslation } from "react-i18next"
 
-const TYPES: { key: QuestionType; labelKey: string }[] = [
+const TYPES: Array<{ key: QuestionType; labelKey: string }> = [
   { key: "choice", labelKey: "quizz:type.choice" },
   { key: "boolean", labelKey: "quizz:type.boolean" },
   { key: "slider", labelKey: "quizz:type.slider" },
   { key: "poll", labelKey: "quizz:type.poll" },
 ]
 
-const SLIDER_FIELDS: {
+const SLIDER_FIELDS: Array<{
   field: "min" | "max" | "correct" | "step"
   labelKey: string
-}[] = [
+}> = [
   { field: "min", labelKey: "quizz:slider.min" },
   { field: "max", labelKey: "quizz:slider.max" },
   { field: "correct", labelKey: "quizz:slider.correct" },
@@ -124,7 +124,7 @@ const QuestionEditorType = () => {
           <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
             <input
               type="checkbox"
-              checked={!!currentQuestion.bonus}
+              checked={Boolean(currentQuestion.bonus)}
               onChange={toggleBonus}
               className="size-4 cursor-pointer"
             />
@@ -134,7 +134,7 @@ const QuestionEditorType = () => {
         <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
           <input
             type="checkbox"
-            checked={!!currentQuestion.practice}
+            checked={Boolean(currentQuestion.practice)}
             onChange={togglePractice}
             className="size-4 cursor-pointer"
           />

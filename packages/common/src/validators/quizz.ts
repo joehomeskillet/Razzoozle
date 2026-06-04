@@ -22,7 +22,7 @@ export const questionValidator = z
       .union([z.number().int().min(0), z.array(z.number().int().min(0)).min(1)])
       .transform((v) => (Array.isArray(v) ? v : [v]))
       .optional(),
-    // slider
+    // Slider
     min: z.number().optional(),
     max: z.number().optional(),
     correct: z.number().optional(),
@@ -40,9 +40,11 @@ export const questionValidator = z
 
         return
       }
+
       if (q.min >= q.max) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.sliderRange" })
       }
+
       if (q.correct < q.min || q.correct > q.max) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.sliderCorrect" })
       }
@@ -55,6 +57,7 @@ export const questionValidator = z
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
       }
+
       if (!q.solutions || q.solutions.length < 1) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.noSolution" })
       }

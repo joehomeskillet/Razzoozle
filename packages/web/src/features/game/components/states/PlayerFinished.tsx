@@ -23,7 +23,7 @@ const PlayerFinished = ({ data: { rank, subject } }: Props) => {
         {rankKey !== null ? t(rankKey, { rank }) : "—"}
       </p>
 
-      <p className="mt-2 rounded bg-black/40 px-6 py-2 text-2xl font-bold tabular-nums text-white">
+      <p className="mt-2 rounded bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums">
         {player?.points ?? 0} pts
       </p>
     </div>

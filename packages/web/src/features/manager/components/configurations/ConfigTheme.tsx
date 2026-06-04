@@ -34,9 +34,9 @@ const ConfigTheme = () => {
   // The single slot whose upload is currently in flight (one at a time).
   const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
   // Slot-scoped upload error, surfaced inline next to the slot's controls.
-  const [slotErrors, setSlotErrors] = useState<Partial<Record<ThemeSlot, string>>>(
-    {},
-  )
+  const [slotErrors, setSlotErrors] = useState<
+    Partial<Record<ThemeSlot, string>>
+  >({})
 
   const setSlotError = (slot: ThemeSlot, message: string | null) =>
     setSlotErrors((prev) => {
@@ -86,7 +86,13 @@ const ConfigTheme = () => {
   }
 
   const setColor =
-    (key: "colorPrimary" | "colorSecondary" | "accentColor" | "answerTextColor") =>
+    (
+      key:
+        | "colorPrimary"
+        | "colorSecondary"
+        | "accentColor"
+        | "answerTextColor",
+    ) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
       preview({ ...draft, [key]: e.target.value })
 
@@ -149,7 +155,7 @@ const ConfigTheme = () => {
         type="color"
         value={value}
         onChange={onChange}
-        className="size-10 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="focus-visible:outline-primary size-10 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2"
       />
       {label}
       <span className="font-mono text-[10px] tracking-tight text-gray-400 uppercase tabular-nums">
@@ -219,7 +225,10 @@ const ConfigTheme = () => {
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {uploadButton("logo", "image/png,image/jpeg,image/webp,image/svg+xml")}
+              {uploadButton(
+                "logo",
+                "image/png,image/jpeg,image/webp,image/svg+xml",
+              )}
               {draft.logo && (
                 <button
                   type="button"
@@ -276,7 +285,11 @@ const ConfigTheme = () => {
           {draft.answerColors.map((color, index) => (
             // oxlint-disable-next-line no-array-index-key
             <div key={index}>
-              {colorField(["A", "B", "C", "D"][index] ?? "", color, setAnswer(index))}
+              {colorField(
+                ["A", "B", "C", "D"][index] ?? "",
+                color,
+                setAnswer(index),
+              )}
             </div>
           ))}
           {colorField(
@@ -310,31 +323,36 @@ const ConfigTheme = () => {
             const slotError = slotErrors[key]
 
             return (
-            <div key={key} className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-gray-700">{t(labelKey)}</p>
-                <p className="truncate text-xs text-gray-400">
-                  {draft.backgrounds[key] ?? t("manager:theme.default")}
-                </p>
-                {slotError && (
-                  <p className="truncate text-xs text-red-500" role="alert">
-                    {t(slotError)}
+              <div
+                key={key}
+                className="flex items-center justify-between gap-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-gray-700">
+                    {t(labelKey)}
                   </p>
-                )}
+                  <p className="truncate text-xs text-gray-400">
+                    {draft.backgrounds[key] ?? t("manager:theme.default")}
+                  </p>
+                  {slotError && (
+                    <p className="truncate text-xs text-red-500" role="alert">
+                      {t(slotError)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {uploadButton(key, "image/png,image/jpeg,image/webp")}
+                  {draft.backgrounds[key] && (
+                    <button
+                      type="button"
+                      onClick={clearBackground(key)}
+                      className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100"
+                    >
+                      {t("manager:theme.default")}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {uploadButton(key, "image/png,image/jpeg,image/webp")}
-                {draft.backgrounds[key] && (
-                  <button
-                    type="button"
-                    onClick={clearBackground(key)}
-                    className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100"
-                  >
-                    {t("manager:theme.default")}
-                  </button>
-                )}
-              </div>
-            </div>
             )
           })}
         </div>

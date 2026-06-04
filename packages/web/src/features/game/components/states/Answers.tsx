@@ -99,13 +99,14 @@ const Answers = ({
   })
 
   // Clear any pending ack timer on unmount so it can't fire after teardown.
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (ackTimerRef.current) {
         clearTimeout(ackTimerRef.current)
       }
-    }
-  }, [])
+    },
+    [],
+  )
 
   // Send a multiple-choice answer. In low-latency mode this gives instant local
   // feedback (highlight + sfx synchronously), locks further taps, attaches a
@@ -144,9 +145,11 @@ const Answers = ({
       // Stamp the send time so the ack handler can report send→ack latency.
       pendingSentAtRef.current = monoNow()
       setAckPending(false)
+
       if (ackTimerRef.current) {
         clearTimeout(ackTimerRef.current)
       }
+
       // Show "wird gesendet…" if no ack lands within the window. No resend.
       ackTimerRef.current = setTimeout(() => {
         setAckPending(true)
@@ -175,9 +178,11 @@ const Answers = ({
       pendingMessageIdRef.current = clientMessageId ?? null
       pendingSentAtRef.current = monoNow()
       setAckPending(false)
+
       if (ackTimerRef.current) {
         clearTimeout(ackTimerRef.current)
       }
+
       ackTimerRef.current = setTimeout(() => {
         setAckPending(true)
       }, ACK_PENDING_HINT_MS)
@@ -225,7 +230,7 @@ const Answers = ({
     const id = setInterval(tick, 250)
 
     return () => clearInterval(id)
-    // serverNowMs is included so a re-anchored question restarts the timer.
+    // ServerNowMs is included so a re-anchored question restarts the timer.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [lowLatency, answerDeadlineAtServerMs, serverNowMs, clockOffsetMs])
 
@@ -236,6 +241,7 @@ const Answers = ({
     if (lowLatency) {
       return
     }
+
     setCooldown(sec)
   })
 
@@ -250,6 +256,7 @@ const Answers = ({
   // pending state (the server is authoritative; first valid answer is counted).
   useEvent(EVENTS.PLAYER.ANSWER_ACK, (ack) => {
     const ackId = ack?.clientMessageId
+
     // Match by id when present; otherwise accept any ack while one is pending.
     if (
       pendingMessageIdRef.current &&
@@ -258,6 +265,7 @@ const Answers = ({
     ) {
       return
     }
+
     if (ackTimerRef.current) {
       clearTimeout(ackTimerRef.current)
       ackTimerRef.current = null
@@ -267,8 +275,10 @@ const Answers = ({
     // when we actually have a pending send timestamp (guards a duplicate/late
     // ack with no in-flight answer). UI-derived metric, never a scoring input.
     const sentAt = pendingSentAtRef.current
+
     if (sentAt !== null) {
       const latency = monoNow() - sentAt
+
       if (Number.isFinite(latency) && latency >= 0) {
         socket.emit(EVENTS.METRICS.REPORT, {
           kind: "answerAck",
@@ -276,6 +286,7 @@ const Answers = ({
         })
       }
     }
+
     pendingSentAtRef.current = null
 
     pendingMessageIdRef.current = null
@@ -375,9 +386,7 @@ const Answers = ({
                     selectedKey !== null &&
                     selectedKey !== key &&
                     "opacity-40",
-                  choiceLocked &&
-                    selectedKey === key &&
-                    "ring-4 ring-white/80",
+                  choiceLocked && selectedKey === key && "ring-4 ring-white/80",
                 )}
                 label={ANSWERS_LABELS[key]}
                 disabled={choiceLocked}

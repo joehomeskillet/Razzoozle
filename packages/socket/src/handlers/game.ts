@@ -116,7 +116,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   )
 
   socket.on(EVENTS.MANAGER.SET_AUTO, ({ gameId, auto }) =>
-    withGame(gameId, socket, (game) => game.setAutoMode(auto === true)),
+    withGame(gameId, socket, (game) => game.setAutoMode(auto)),
   )
 
   socket.on(EVENTS.PLAYER.SELECTED_ANSWER, ({ gameId, data }) =>

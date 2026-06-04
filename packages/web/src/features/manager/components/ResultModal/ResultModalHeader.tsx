@@ -19,7 +19,7 @@ const ResultModalHeader = () => {
         </h2>
       </RadixDialog.Title>
       <div className="flex shrink-0 items-center gap-1">
-        {/* whitespace-nowrap keeps the "1 von 5" counter on one line; the
+        {/* Whitespace-nowrap keeps the "1 von 5" counter on one line; the
             separator string already carries its own spaces, so we don't add
             extra ones. */}
         <span className="text-sm whitespace-nowrap text-gray-400 tabular-nums">
@@ -32,7 +32,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.prevQuestion")}
           disabled={questionIndex === 0}
           onClick={goPrev}
-          className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="rounded p-1 text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -41,7 +41,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.nextQuestion")}
           disabled={questionIndex === total - 1}
           onClick={goNext}
-          className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="rounded p-1 text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
         >
           <ChevronRight className="size-5" />
         </button>
