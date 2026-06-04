@@ -16,7 +16,7 @@
   --answer-4: #cc79a7;
   --answer-text: #ffffff;
   --radius-theme: 16px;
-  --bg-scrim: 0;
+  --bg-scrim: 0.4;
 }
 
 button:not(:disabled),
@@ -55,6 +55,22 @@ button:not(:disabled),
   }
 }
 
+/*
+ * Global `prefers-reduced-motion` (phone + admin + kiosk). The kiosk-scoped rule
+ * above is kept for clarity; this un-scoped block supersedes it everywhere.
+ * JS-driven effects (e.g. confetti) are gated separately in their components.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .spotlight {
   position: absolute;
   height: 200%;
@@ -66,35 +82,48 @@ button:not(:disabled),
     rgba(0, 0, 0, 0.6) 200px
   );
   opacity: 0;
+  /* Resting position; the animation offsets this with transform only. */
   left: -50%;
   top: -50%;
-  transition: all 0.5s;
+  transform-origin: center;
+  transition: transform 0.5s, opacity 0.5s;
   animation: spotlightAnim 2.5s ease-in;
 }
 
+/*
+ * GPU-friendly: animate `transform`/`opacity` only (no layout props).
+ * The translate offsets are element-relative; since the box is 200% of its
+ * parent, a parent-relative shift of N% maps to a translate of N/2 %. This
+ * reproduces the original left/top keyframes (resting -50%/-50%):
+ *   0%  -20%/-20% → +30%/+30% parent → translate( 15%,  15%)
+ *  30%  -80%/-80% → -30%/-30% parent → translate(-15%, -15%)
+ *  60%  -20%/-50% → +30%/  0% parent → translate( 15%,   0%)
+ *  80%  -50%/-50% →   0%/  0% parent → translate(  0%,   0%)
+ */
 @keyframes spotlightAnim {
   0% {
-    left: -20%;
-    top: -20%;
+    opacity: 0;
+    transform: translate(15%, 15%);
   }
   30% {
-    opacity: 100;
-    top: -80%;
-    left: -80%;
+    opacity: 1;
+    transform: translate(-15%, -15%);
   }
   60% {
-    top: -50%;
-    left: -20%;
+    opacity: 1;
+    transform: translate(15%, 0%);
   }
   80% {
-    top: -50%;
-    left: -50%;
+    opacity: 1;
+    transform: translate(0%, 0%);
   }
   98% {
     opacity: 1;
+    transform: translate(0%, 0%);
   }
   100% {
     opacity: 0;
+    transform: translate(0%, 0%);
   }
 }
 
@@ -110,6 +139,7 @@ button:not(:disabled),
   animation: quizz 0.8s linear;
   transform: perspective(1200px) rotateY(-15deg) rotateX(15deg)
     translateZ(100px);
+  /* Static resting shadow only — the @keyframes animate transform, never box-shadow. */
   box-shadow: 10px 10px 0 rgba(20, 24, 29, 1);
 }
 

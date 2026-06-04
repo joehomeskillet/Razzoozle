@@ -1,3 +1,4 @@
+import { MAX_LATENCY_COMPENSATION_MS } from "@razzia/common/constants"
 import { z } from "zod"
 
 // Low-latency mode feature flag. Master switch `enabled` defaults FALSE so the
@@ -16,7 +17,12 @@ export const lowLatencyModeValidator = z
       .min(0)
       .max(5000)
       .default(100),
-    maxLatencyCompensationMs: z.number().int().min(0).max(2000).default(150),
+    maxLatencyCompensationMs: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_LATENCY_COMPENSATION_MS)
+      .default(150),
   })
   // A missing block back-fills the whole thing (enabled=false). `prefault`
   // pre-parses `{}` through this schema so every inner `.default(...)` applies;

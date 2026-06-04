@@ -1,4 +1,4 @@
-import { MEDIA_TYPES } from "@razzia/common/constants"
+import { MEDIA_TYPES, QUESTION_TYPES } from "@razzia/common/constants"
 import { z } from "zod"
 
 export const questionMediaValidator = z.object({
@@ -8,10 +8,10 @@ export const questionMediaValidator = z.object({
   url: z.url("errors:quizz.invalidMediaUrl"),
 })
 
-const questionValidator = z
+export const questionValidator = z
   .object({
     question: z.string().min(1, "errors:quizz.questionEmpty"),
-    type: z.enum(["choice", "boolean", "slider", "poll"]).optional(),
+    type: z.enum(QUESTION_TYPES).optional(),
     media: questionMediaValidator.optional(),
     answers: z
       .array(z.string().min(1, "errors:quizz.answerEmpty"))
@@ -65,5 +65,3 @@ export const quizzValidator = z.object({
   subject: z.string().min(1, "errors:quizz.subjectEmpty"),
   questions: z.array(questionValidator).min(1, "errors:quizz.noQuestions"),
 })
-
-export type QuizzValidated = z.infer<typeof quizzValidator>

@@ -23,6 +23,14 @@ export const ANSWERS_COLORS = [
 
 export const ANSWERS_LABELS = ["A", "B", "C", "D"]
 
+export function answerColor(i: number): string {
+  return ANSWERS_COLORS[i % ANSWERS_COLORS.length]
+}
+
+export function answerLabel(i: number): string {
+  return ANSWERS_LABELS[i % ANSWERS_LABELS.length]
+}
+
 export const GAME_STATES = {
   status: {
     name: STATUS.WAIT,

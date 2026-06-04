@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzia/common/constants"
+import type { ThemeSlot } from "@razzia/common/constants"
 import type {
   GameResult,
   GameUpdateQuestion,
@@ -13,12 +14,6 @@ import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>
 
 export type Socket = SocketIO<ClientToServerEvents, ServerToClientEvents>
-
-export interface Message<K extends keyof StatusDataMap = keyof StatusDataMap> {
-  gameId?: string
-  status: K
-  data: StatusDataMap[K]
-}
 
 export interface MessageWithoutStatus<T = unknown> {
   gameId?: string
@@ -149,7 +144,7 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.THEME]: (_theme: Theme) => void
   [EVENTS.MANAGER.SET_THEME_SUCCESS]: (_theme: Theme) => void
   [EVENTS.MANAGER.BACKGROUND_UPLOADED]: (_data: {
-    slot: "auth" | "managerGame" | "playerGame"
+    slot: ThemeSlot
     path: string
   }) => void
   [EVENTS.MANAGER.THEME_ERROR]: (_message: string) => void
@@ -177,24 +172,6 @@ export interface ServerToClientEvents {
   // Low-latency observability: compact health snapshot for the host widget.
   // Only emitted to a subscribed manager while low-latency mode is enabled.
   [EVENTS.METRICS.HEALTH]: (_snapshot: MetricsHealthSnapshot) => void
-}
-
-// Events a satellite display socket may emit to the server.
-export interface DisplayToServerEvents {
-  [EVENTS.DISPLAY.REGISTER]: (_data: { code: string }) => void
-  [EVENTS.DISPLAY.PAIR]: (_data: {
-    code: string
-    managerPassword: string
-    gameId: string
-  }) => void
-  [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
-}
-
-// Events the server may emit back to a satellite display socket. The display
-// also receives EVENTS.GAME.STATUS once it has joined the game room.
-export interface ServerToDisplayEvents {
-  [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
-  [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
 }
 
 export interface ClientToServerEvents {
@@ -228,7 +205,7 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.GET_THEME]: () => void
   [EVENTS.MANAGER.SET_THEME]: (_theme: Theme) => void
   [EVENTS.MANAGER.UPLOAD_BACKGROUND]: (_data: {
-    slot: "auth" | "managerGame" | "playerGame"
+    slot: ThemeSlot
     dataUrl: string
   }) => void
 
@@ -272,15 +249,6 @@ export interface ClientToServerEvents {
   // Results actions
   [EVENTS.RESULTS.GET]: (_id: string) => void
   [EVENTS.RESULTS.DELETE]: (_id: string) => void
-
-  // Display (satellite) actions
-  [EVENTS.DISPLAY.REGISTER]: (_data: { code: string }) => void
-  [EVENTS.DISPLAY.PAIR]: (_data: {
-    code: string
-    managerPassword: string
-    gameId: string
-  }) => void
-  [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
 
   // Common
   disconnect: () => void

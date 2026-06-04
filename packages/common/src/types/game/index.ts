@@ -1,4 +1,15 @@
 import type { MEDIA_TYPES } from "@razzia/common/constants"
+import type { z } from "zod"
+
+import type {
+  questionValidator,
+  quizzValidator,
+} from "@razzia/common/validators/quizz"
+
+// Re-export the single-source question kinds so consumers can keep importing
+// `QuestionType` (and the runtime list) from `types/game`.
+export { QUESTION_TYPES } from "@razzia/common/constants"
+export type { QuestionType } from "@razzia/common/constants"
 
 export interface Player {
   id: string
@@ -24,34 +35,13 @@ export interface QuestionMedia {
   url: string
 }
 
-export type QuestionType = "choice" | "boolean" | "slider" | "poll"
+// Single source of truth is the zod validator: a parsed quizz IS a `Quizz`, so
+// the type is inferred from `questionValidator` / `quizzValidator` rather than
+// hand-mirrored. Field semantics (defaults, slider rules, practice/bonus) live
+// in `validators/quizz.ts`.
+export type Question = z.infer<typeof questionValidator>
 
-export interface Question {
-  question: string
-  // "choice" (default) | "boolean" | "slider" | "poll" (opinion vote, unscored)
-  type?: QuestionType
-  media?: QuestionMedia
-  // choice / boolean / poll
-  answers?: string[]
-  solutions?: number[]
-  // slider
-  min?: number
-  max?: number
-  correct?: number
-  step?: number
-  unit?: string
-  cooldown: number
-  time: number
-  // Warm-up/practice question: awards no points (leaderboard-neutral).
-  practice?: boolean
-  // Bonus question: doubles the points awarded for this question.
-  bonus?: boolean
-}
-
-export interface Quizz {
-  subject: string
-  questions: Question[]
-}
+export type Quizz = z.infer<typeof quizzValidator>
 
 export type QuizzWithId = Quizz & { id: string }
 

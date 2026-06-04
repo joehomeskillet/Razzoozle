@@ -1,3 +1,7 @@
+import type { z } from "zod"
+
+import type { themeValidator } from "@razzia/common/validators/theme"
+
 export interface ThemeBackgrounds {
   // Start / join / manager-login / result screens (the <Background> wrapper)
   auth: string | null
@@ -7,20 +11,9 @@ export interface ThemeBackgrounds {
   playerGame: string | null
 }
 
-export interface Theme {
-  colorPrimary: string
-  colorSecondary: string
-  colorText: string
-  answerColors: [string, string, string, string]
-  answerTextColor: string
-  accentColor: string
-  radius: number
-  scrim: number
-  appTitle: string | null
-  logo: string | null
-  showBranding: boolean
-  backgrounds: ThemeBackgrounds
-}
+// Single source of truth is the zod validator: a parsed/persisted theme IS a
+// `Theme`, so the type is inferred rather than hand-mirrored.
+export type Theme = z.infer<typeof themeValidator>
 
 export const DEFAULT_THEME: Theme = {
   colorPrimary: "#ff9900",
@@ -30,7 +23,7 @@ export const DEFAULT_THEME: Theme = {
   answerTextColor: "#ffffff",
   accentColor: "#ff9900",
   radius: 16,
-  scrim: 0,
+  scrim: 40,
   appTitle: null,
   logo: null,
   showBranding: true,
