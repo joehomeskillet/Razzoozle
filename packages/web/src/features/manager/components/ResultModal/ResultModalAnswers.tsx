@@ -3,7 +3,7 @@ import type { QuestionMedia } from "@razzia/common/types/game"
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzia/web/features/game/utils/answers"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
 import { Check, Clock, ImageOff, Music, Video, X } from "lucide-react"

@@ -1,6 +1,6 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { Status } from "@razzia/common/types/game/status"
-import background from "@razzia/web/assets/background.png"
+import background from "@razzia/web/assets/background.webp"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
 import DisplayControl from "@razzia/web/features/manager/components/DisplayControl"

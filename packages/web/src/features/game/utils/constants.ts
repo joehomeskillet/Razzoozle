@@ -13,23 +13,15 @@ import Wait from "@razzia/web/features/game/components/states/Wait"
 
 import { STATUS } from "@razzia/common/types/game/status"
 
-// Colors come from runtime theme CSS vars (--answer-1..4); see features/theme.
-export const ANSWERS_COLORS = [
-  "bg-[var(--answer-1)] text-[var(--answer-text)]",
-  "bg-[var(--answer-2)] text-[var(--answer-text)]",
-  "bg-[var(--answer-3)] text-[var(--answer-text)]",
-  "bg-[var(--answer-4)] text-[var(--answer-text)]",
-]
-
-export const ANSWERS_LABELS = ["A", "B", "C", "D"]
-
-export function answerColor(i: number): string {
-  return ANSWERS_COLORS[i % ANSWERS_COLORS.length]
-}
-
-export function answerLabel(i: number): string {
-  return ANSWERS_LABELS[i % ANSWERS_LABELS.length]
-}
+// Answer color/label data + helpers live in the leaf module ./answers to avoid
+// an ESM import cycle (components import these AND are imported by the maps
+// below). Re-exported here for backwards-compatible import sites.
+export {
+  ANSWERS_COLORS,
+  ANSWERS_LABELS,
+  answerColor,
+  answerLabel,
+} from "./answers"
 
 export const GAME_STATES = {
   status: {

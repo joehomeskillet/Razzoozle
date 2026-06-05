@@ -22,7 +22,7 @@ export interface Player {
 }
 
 export interface Answer {
-  playerId: string
+  clientId: string
   answerId: number
   points: number
 }

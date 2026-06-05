@@ -178,13 +178,13 @@ export const answeredPoints = (
   const answers = (
     round as unknown as {
       playersAnswers: Array<{
-        playerId: string
+        clientId: string
         answerId: number
         points: number
       }>
     }
   ).playersAnswers
-  const found = answers?.find((a) => a.playerId === clientId)
+  const found = answers?.find((a) => a.clientId === clientId)
 
   return found ? found.points : null
 }
@@ -194,7 +194,7 @@ export const answeredPoints = (
 export const answerCount = (round: RoundManager): number => {
   const answers = (
     round as unknown as {
-      playersAnswers: Array<{ playerId: string }>
+      playersAnswers: Array<{ clientId: string }>
     }
   ).playersAnswers
 

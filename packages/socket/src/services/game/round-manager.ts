@@ -351,7 +351,7 @@ export class RoundManager {
     if (!isPoll && !question.practice) {
       for (const a of this.playersAnswers) {
         if (evalAnswer(a.answerId).correct) {
-          firstCorrectId = a.playerId
+          firstCorrectId = a.clientId
 
           break
         }
@@ -361,7 +361,7 @@ export class RoundManager {
     const sortedPlayers = currentPlayers
       .map((player) => {
         const playerAnswer = this.playersAnswers.find(
-          (a) => a.playerId === player.clientId,
+          (a) => a.clientId === player.clientId,
         )
 
         // Poll: opinion vote — neutral, no points, streak untouched.
@@ -480,7 +480,7 @@ export class RoundManager {
       playerAnswers: currentPlayers.map((player) => ({
         playerName: player.username,
         answerId:
-          this.playersAnswers.find((a) => a.playerId === player.clientId)
+          this.playersAnswers.find((a) => a.clientId === player.clientId)
             ?.answerId ?? null,
       })),
     })
@@ -542,7 +542,7 @@ export class RoundManager {
     // socket.io auto-retry of the *same* tap is caught even before the player
     // record check (and is acked as `duplicate` rather than silently dropped).
     const alreadyAnswered = Boolean(
-      this.playersAnswers.find((a) => a.playerId === clientId),
+      this.playersAnswers.find((a) => a.clientId === clientId),
     )
     const duplicateMessageId =
       this.ll.enabled &&
@@ -585,9 +585,9 @@ export class RoundManager {
     // Accept: score strictly from the server clock (startTime captured at
     // question start). timeToPoint uses Date.now() internally, matching today.
     this.playersAnswers.push({
-      // `playerId` on the common Answer type actually holds the durable clientId
-      // (not the volatile socket.id) so reconnects still match the right answer.
-      playerId: clientId,
+      // The Answer `clientId` holds the durable clientId (not the volatile
+      // socket.id) so reconnects still match the right answer.
+      clientId,
       answerId,
       points: timeToPoint(this.startTime, question.time),
     })
@@ -662,7 +662,7 @@ export class RoundManager {
   // current (in-flight) question? Used to render "answered" on resume instead
   // of re-enabling the buttons. Always false / harmless in normal mode.
   hasAnswered(clientId: string): boolean {
-    return Boolean(this.playersAnswers.find((a) => a.playerId === clientId))
+    return Boolean(this.playersAnswers.find((a) => a.clientId === clientId))
   }
 
   nextQuestion(socket: Socket): void {

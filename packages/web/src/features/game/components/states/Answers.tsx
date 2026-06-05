@@ -13,8 +13,8 @@ import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-  SFX,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzia/web/features/game/utils/answers"
+import { SFX } from "@razzia/web/features/game/utils/constants"
 import { monoNow } from "@razzia/web/features/game/utils/monoNow"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"

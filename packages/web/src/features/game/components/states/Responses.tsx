@@ -3,8 +3,8 @@ import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
 import {
   answerColor,
   answerLabel,
-  SFX,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzia/web/features/game/utils/answers"
+import { SFX } from "@razzia/web/features/game/utils/constants"
 import { calculatePercentages } from "@razzia/web/features/game/utils/score"
 import clsx from "clsx"
 import { useEffect, useState } from "react"

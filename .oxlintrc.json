@@ -17,6 +17,14 @@
       "rules": {
         "react/jsx-key": "off"
       }
+    },
+    {
+      "files": ["**/__tests__/**", "**/*.test.ts"],
+      "rules": {
+        "@stylistic/line-comment-position": "off",
+        "no-inline-comments": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
     }
   ],
   "rules": {

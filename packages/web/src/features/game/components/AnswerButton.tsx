@@ -1,7 +1,7 @@
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzia/web/features/game/utils/answers"
 import clsx from "clsx"
 import { Check, X } from "lucide-react"
 import type { ButtonHTMLAttributes, PropsWithChildren } from "react"
