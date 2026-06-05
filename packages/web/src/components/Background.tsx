@@ -6,7 +6,7 @@ import type { PropsWithChildren } from "react"
 const Background = ({ children }: PropsWithChildren) => {
   const { theme } = useThemeStore()
   const authBg = theme.backgrounds.auth
-  const logo = theme.logo ?? defaultLogo
+  const appTitle = theme.appTitle?.trim()
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
@@ -29,7 +29,22 @@ const Background = ({ children }: PropsWithChildren) => {
         />
       </div>
 
-      <img src={logo} className="z-10 mb-10 h-16" alt="logo" />
+      {/* Brand above the login: a custom uploaded logo wins; otherwise show the
+          themed appTitle as text (e.g. "Südhang Kahoot"); fall back to the
+          bundled logo only when neither is set. */}
+      {theme.logo ? (
+        <img
+          src={theme.logo}
+          className="z-10 mb-10 h-16"
+          alt={appTitle ?? "logo"}
+        />
+      ) : appTitle ? (
+        <h1 className="z-10 mb-10 text-center text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-5xl">
+          {appTitle}
+        </h1>
+      ) : (
+        <img src={defaultLogo} className="z-10 mb-10 h-16" alt="logo" />
+      )}
       {children}
 
       {theme.showBranding && (
