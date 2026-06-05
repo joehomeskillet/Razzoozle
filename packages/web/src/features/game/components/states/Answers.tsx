@@ -306,8 +306,8 @@ const Answers = ({
 
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
-      <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5">
-        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+      <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
+        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           {question}
         </h2>
 
@@ -318,12 +318,12 @@ const Answers = ({
         {/* Low-latency "wird gesendet…" hint — only shown while an answer ack is
             outstanding. No blind resend happens. */}
         {ackPending && (
-          <div className="mx-auto mb-2 w-full max-w-7xl px-2 text-center text-sm font-semibold text-white/80">
+          <div className="mx-auto mb-2 w-full max-w-7xl px-2 text-center text-sm font-semibold text-white/80 lg:max-w-[85vw]">
             {t("game:sending")}
           </div>
         )}
 
-        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl">
+        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
           <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
             <span className="translate-y-1 text-sm">{t("game:hud.time")}</span>
             <span className="tabular-nums">{cooldown}</span>
@@ -340,7 +340,7 @@ const Answers = ({
 
         {isSlider ? (
           <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            <div className="text-5xl font-bold text-white drop-shadow-lg">
+            <div className="text-5xl font-bold text-white drop-shadow-lg lg:text-[clamp(3rem,8vh,8rem)]">
               {sliderValue}
               {unit ? ` ${unit}` : ""}
             </div>
@@ -352,9 +352,9 @@ const Answers = ({
               value={sliderValue}
               disabled={submitted}
               onChange={(e) => setSliderValue(Number(e.target.value))}
-              className="accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40 disabled:cursor-not-allowed"
+              className="accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
             />
-            <div className="flex w-full justify-between text-sm font-semibold text-white/70">
+            <div className="flex w-full justify-between text-sm font-semibold text-white/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
               <span>
                 {min}
                 {unit ? ` ${unit}` : ""}
@@ -367,13 +367,13 @@ const Answers = ({
             <button
               onClick={submitSlider}
               disabled={submitted}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50"
+              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             >
               {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
             </button>
           </div>
         ) : (
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl">
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {(answers ?? []).map((answer, key) => (
               <AnswerButton
                 key={key}

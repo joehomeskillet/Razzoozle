@@ -12,15 +12,15 @@
     "confirm": "Remove"
   },
   "quizz": {
-    "create": "Create Quizz",
-    "delete": "Delete quizz",
+    "create": "Create Quiz",
+    "delete": "Delete quiz",
     "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
-    "deleted": "Quizz deleted",
-    "import": "Import quizz from JSON",
-    "none": "No quizz created yet",
-    "notFound": "No quizz found",
-    "pleaseCreate": "Please create a quizz first",
-    "pleaseSelect": "Please select a quizz",
+    "deleted": "Quiz deleted",
+    "import": "Import quiz from JSON",
+    "none": "No quiz created yet",
+    "notFound": "No quiz found",
+    "pleaseCreate": "Please create a quiz first",
+    "pleaseSelect": "Please select a quiz",
     "startGame": "Start game",
     "invalidJson": "Invalid or incomplete JSON file",
     "edit": "Edit “{{name}}”"
@@ -59,7 +59,7 @@
   },
   "tabs": {
     "play": "Play",
-    "quizz": "Quizz",
+    "quizz": "Quiz",
     "results": "Results",
     "design": "Design",
     "satellite": "Satellite"

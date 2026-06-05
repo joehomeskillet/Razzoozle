@@ -26,8 +26,8 @@
     "mediaUrlPlaceholder": "Enter URL...",
     "placeholder": "Start typing your question..."
   },
-  "quizzSaved": "Quizz saved successfully",
-  "quizzUpdated": "Quizz updated successfully",
+  "quizzSaved": "Quiz saved successfully",
+  "quizzUpdated": "Quiz updated successfully",
   "reorderSlideLabel": "Reorder slide {{index}}",
   "slideLabel": "Slide {{index}}",
   "slider": {
@@ -38,8 +38,8 @@
     "unit": "Unit",
     "unitPlaceholder": "e.g. kWh"
   },
-  "subjectInputLabel": "Quizz title",
-  "titleQuizzPlaceholder": "Quizz title...",
+  "subjectInputLabel": "Quiz title",
+  "titleQuizzPlaceholder": "Quiz title...",
   "type": {
     "choice": "Choice",
     "boolean": "True / False",

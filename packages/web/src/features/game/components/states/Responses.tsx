@@ -67,22 +67,22 @@ const Responses = ({
 
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
-      <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5">
-        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+      <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
+        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           {question}
         </h2>
 
         {isSlider ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="text-lg font-semibold text-white/70">
+            <div className="text-lg font-semibold text-white/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]">
               {t("game:slider.correctAnswer")}
             </div>
-            <div className="text-6xl font-bold text-white drop-shadow-lg">
+            <div className="text-6xl font-bold text-white drop-shadow-lg lg:text-[clamp(4rem,10vh,10rem)]">
               {correct}
               {unit ? ` ${unit}` : ""}
             </div>
             {averageGuess != null && (
-              <div className="text-xl font-semibold text-white/80">
+              <div className="text-xl font-semibold text-white/80 lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                 {t("game:slider.averageGuess", { value: averageGuess })}
                 {unit ? ` ${unit}` : ""}
               </div>
@@ -97,7 +97,7 @@ const Responses = ({
               <div key={key} className="flex h-full flex-col justify-end gap-2">
                 {/* Answer letter makes each bar identifiable without relying on
                     color alone (color-blind safe). */}
-                <span className="text-center text-xl font-bold text-white drop-shadow-md">
+                <span className="text-center text-xl font-bold text-white drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                   {answerLabel(key)}
                 </span>
                 <div
@@ -107,7 +107,7 @@ const Responses = ({
                   )}
                   style={{ height: percentages[key] }}
                 >
-                  <span className="w-full bg-black/10 text-center text-lg font-bold text-white tabular-nums drop-shadow-md">
+                  <span className="w-full bg-black/10 text-center text-lg font-bold text-white tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                     {responses[key] || 0}
                   </span>
                 </div>
@@ -119,7 +119,7 @@ const Responses = ({
 
       {!isSlider && (
         <div>
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl">
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (
               <AnswerButton
                 key={key}
