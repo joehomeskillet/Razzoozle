@@ -1,4 +1,8 @@
-import { EVENTS, type ThemeSlot } from "@razzia/common/constants"
+import {
+  DEFAULT_MANAGER_PASSWORD,
+  EVENTS,
+  type ThemeSlot,
+} from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import {
   getGameConfig,
@@ -69,7 +73,7 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     try {
       const config = getGameConfig()
 
-      if (config.managerPassword === "PASSWORD") {
+      if (config.managerPassword === DEFAULT_MANAGER_PASSWORD) {
         socket.emit(
           EVENTS.MANAGER.ERROR_MESSAGE,
           "errors:manager.passwordNotConfigured",

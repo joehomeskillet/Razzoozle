@@ -1,4 +1,5 @@
 import {
+  DEFAULT_MANAGER_PASSWORD,
   EXAMPLE_QUIZZ,
   THEME_SLOTS,
   type ThemeSlot,
@@ -47,7 +48,7 @@ export const initConfig = () => {
       getPath("game.json"),
       JSON.stringify(
         {
-          managerPassword: "PASSWORD",
+          managerPassword: DEFAULT_MANAGER_PASSWORD,
           lowLatencyMode: {
             enabled: false,
             clockSync: true,

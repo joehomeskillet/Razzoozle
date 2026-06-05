@@ -1,4 +1,4 @@
-import { EVENTS } from "@razzia/common/constants"
+import { DEFAULT_MANAGER_PASSWORD, EVENTS } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import { getGameConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
@@ -65,7 +65,7 @@ export const handlePair = (
     }
 
     if (
-      config.managerPassword === "PASSWORD" ||
+      config.managerPassword === DEFAULT_MANAGER_PASSWORD ||
       managerPassword !== config.managerPassword
     ) {
       socket.emit(EVENTS.DISPLAY.PAIR_ERROR, "errors:manager.invalidPassword")

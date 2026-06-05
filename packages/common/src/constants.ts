@@ -94,6 +94,9 @@ export const EVENTS = {
   },
 } as const
 
+// Insecure placeholder; password-based display pairing is refused while this is unchanged.
+export const DEFAULT_MANAGER_PASSWORD = "PASSWORD"
+
 // A satellite display ("Raspberry Pi" kiosk) registers a short pairing code,
 // then a manager pairs that code (with the manager password) so the display
 // joins the game room. Codes expire after this many minutes.

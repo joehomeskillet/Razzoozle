@@ -333,13 +333,11 @@ export class RoundManager {
         const range = question.max - question.min || 1
         const dist = Math.abs(answerId - question.correct)
         const accuracy = Math.max(0, 1 - dist / range)
+        const within =
+          dist <=
+          Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION)
 
-        return {
-          correct:
-            dist <=
-            Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION),
-          base: accuracy,
-        }
+        return { correct: within, base: within ? accuracy : 0 }
       }
 
       const correct = question.solutions?.includes(answerId) ?? false

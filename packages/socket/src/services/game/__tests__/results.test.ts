@@ -428,11 +428,9 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
     expect(r?.points).toBe(MAX_POINTS + FIRST_CORRECT_BONUS)
   })
 
-  it("a guess outside tolerance is NOT correct but still earns accuracy-scaled points (actual behavior)", () => {
-    // CHARACTERIZATION: for a slider, evalAnswer.base = accuracy is independent
-    // of `correct`. So an OUT-OF-TOLERANCE guess (correct=false) STILL awards
-    // round(accuracy * points) — only the streak/firstCorrect/multiplier gates
-    // see `correct=false`. (See notes.)
+  it("a guess outside tolerance is NOT correct and earns 0 points", () => {
+    // An OUT-OF-TOLERANCE slider guess (correct=false) earns NO partial credit:
+    // base is gated on `within`, so it is 0 once dist exceeds the tolerance.
     const players = [makePlayer("off")]
     const ctx = buildRound({
       quizz: sliderQuizz(),
@@ -444,14 +442,13 @@ describe("slider accuracy + SLIDER_TOLERANCE_FRACTION tolerance", () => {
       ll: DISABLED_LL,
       questionTimeSec: 20,
     })
-    answer(ctx, "off", 60) // Dist 10 > 5 ⇒ NOT correct; accuracy = 0.90
+    answer(ctx, "off", 60) // Dist 10 > 5 ⇒ NOT correct ⇒ 0 points
     callShowResults(ctx)
 
     const r = resultFor(ctx, "off")
     expect(r?.correct).toBe(false)
-    const accuracy = 1 - 10 / 100 // 0.9
-    // No streak mult (incorrect), no firstCorrect (incorrect), no bonus.
-    expect(r?.points).toBe(Math.round(accuracy * MAX_POINTS))
+    // No partial credit when outside tolerance.
+    expect(r?.points).toBe(0)
     expect(r?.firstCorrect).toBe(false)
     expect(r?.streak).toBe(0) // Incorrect ⇒ streak reset
   })

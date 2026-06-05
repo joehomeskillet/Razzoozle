@@ -1,4 +1,7 @@
-import { MAX_LATENCY_COMPENSATION_MS } from "@razzia/common/constants"
+import {
+  DEFAULT_MANAGER_PASSWORD,
+  MAX_LATENCY_COMPENSATION_MS,
+} from "@razzia/common/constants"
 import { z } from "zod"
 
 // Low-latency mode feature flag. Master switch `enabled` defaults FALSE so the
@@ -32,7 +35,7 @@ export const lowLatencyModeValidator = z
 export const gameConfigValidator = z.object({
   // The existing manager-password gate. Passed through unchanged so the auth
   // check (managerPassword === "PASSWORD" by default) keeps working.
-  managerPassword: z.string().default("PASSWORD"),
+  managerPassword: z.string().default(DEFAULT_MANAGER_PASSWORD),
   lowLatencyMode: lowLatencyModeValidator,
 })
 
