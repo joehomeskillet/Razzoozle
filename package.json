@@ -14,6 +14,11 @@
     "format": "pnpm -r --parallel run format",
     "format:fix": "pnpm -r --parallel run format:fix"
   },
+  "pnpm": {
+    "overrides": {
+      "ws": "^8.20.1"
+    }
+  },
   "devDependencies": {
     "@stylistic/eslint-plugin": "latest",
     "dotenv-cli": "^11.0.0",

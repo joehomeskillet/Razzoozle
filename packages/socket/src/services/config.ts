@@ -30,6 +30,15 @@ const getPath = (path = "") =>
     ? resolve(inContainerPath, path)
     : resolve(process.cwd(), "../../config", path)
 
+// Quizz/result ids are server-generated uuids / safe slugs. Reject anything that
+// could escape the quizz/results dir (path traversal) before using it in a path.
+const SAFE_ID = /^[A-Za-z0-9_-]+$/
+const assertSafeId = (id: string): void => {
+  if (typeof id !== "string" || !SAFE_ID.test(id)) {
+    throw new Error("Invalid id")
+  }
+}
+
 export const initConfig = () => {
   const isConfigFolderExists = fs.existsSync(getPath())
 
@@ -109,6 +118,8 @@ export const getQuizzMeta = () =>
   getQuizz().map(({ id, subject }) => ({ id, subject }))
 
 export const getQuizzById = (id: string) => {
+  assertSafeId(id)
+
   const filePath = getPath(`quizz/${id}.json`)
 
   if (!fs.existsSync(filePath)) {
@@ -160,6 +171,8 @@ export const getQuizz = () => {
 }
 
 export const updateQuizz = (id: string, data: unknown): { id: string } => {
+  assertSafeId(id)
+
   const result = quizzValidator.safeParse(data)
 
   if (!result.success) {
@@ -178,6 +191,8 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
 }
 
 export const deleteQuizz = (id: string): void => {
+  assertSafeId(id)
+
   const filePath = getPath(`quizz/${id}.json`)
 
   if (!fs.existsSync(filePath)) {
@@ -246,6 +261,8 @@ export const getResultsMeta = (): GameResultMeta[] => {
 }
 
 export const getResultById = (id: string): GameResult => {
+  assertSafeId(id)
+
   const filePath = getPath(`results/${id}.json`)
 
   if (!fs.existsSync(filePath)) {
@@ -266,6 +283,8 @@ export const getResultById = (id: string): GameResult => {
 }
 
 export const deleteResult = (id: string): void => {
+  assertSafeId(id)
+
   const filePath = getPath(`results/${id}.json`)
 
   if (!fs.existsSync(filePath)) {

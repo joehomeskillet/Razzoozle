@@ -352,3 +352,105 @@ describe("getResultById() — gameResultValidator path", () => {
     )
   })
 })
+
+describe("path-traversal guard (assertSafeId)", () => {
+  // Defense-in-depth: ids come straight from a socket client. resolve() would
+  // normalize "../" segments and let a crafted id read/delete arbitrary .json
+  // files (e.g. "../game" leaks managerPassword). The guard rejects anything
+  // outside the safe [A-Za-z0-9_-] charset BEFORE it touches the filesystem.
+
+  const writeResult = (id: string, contents: string) => {
+    const resultsDir = path.join(tmpDir, "results")
+    fs.mkdirSync(resultsDir, { recursive: true })
+    fs.writeFileSync(path.join(resultsDir, `${id}.json`), contents)
+  }
+
+  const writeQuizz = (id: string, contents: string) => {
+    const quizzDir = path.join(tmpDir, "quizz")
+    fs.mkdirSync(quizzDir, { recursive: true })
+    fs.writeFileSync(path.join(quizzDir, `${id}.json`), contents)
+  }
+
+  it("getResultById('../game') is rejected (cannot escape to game.json)", async () => {
+    const config = await loadConfig()
+    // Seed a game.json next to the results dir to prove it is NOT reachable.
+    fs.writeFileSync(
+      path.join(tmpDir, "game.json"),
+      JSON.stringify({ managerPassword: "SECRET" }),
+    )
+
+    expect(() => config.getResultById("../game")).toThrow("Invalid id")
+  })
+
+  it("getResultById('../../etc/passwd') is rejected", async () => {
+    const config = await loadConfig()
+
+    expect(() => config.getResultById("../../etc/passwd")).toThrow("Invalid id")
+  })
+
+  it("getQuizzById('../foo') is rejected", async () => {
+    const config = await loadConfig()
+
+    expect(() => config.getQuizzById("../foo")).toThrow("Invalid id")
+  })
+
+  it("deleteResult('a/b') is rejected (no path separators allowed)", async () => {
+    const config = await loadConfig()
+
+    expect(() => config.deleteResult("a/b")).toThrow("Invalid id")
+  })
+
+  it("deleteQuizz('../foo') is rejected", async () => {
+    const config = await loadConfig()
+
+    expect(() => config.deleteQuizz("../foo")).toThrow("Invalid id")
+  })
+
+  it("updateQuizz('../foo', data) is rejected before any write", async () => {
+    const config = await loadConfig()
+
+    expect(() => config.updateQuizz("../foo", {})).toThrow("Invalid id")
+  })
+
+  it("a normal uuid-like id still works on an existing result fixture", async () => {
+    const config = await loadConfig()
+    const id = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+    writeResult(
+      id,
+      JSON.stringify({
+        id,
+        subject: "Sample Quiz",
+        date: "2026-06-04T00:00:00.000Z",
+        players: [{ username: "alice", points: 100, rank: 1 }],
+        questions: [{ anything: true }],
+      }),
+    )
+
+    const result = config.getResultById(id)
+    expect(result.id).toBe(id)
+    expect(result.subject).toBe("Sample Quiz")
+  })
+
+  it("a normal slug id still works on an existing quizz fixture", async () => {
+    const config = await loadConfig()
+    const id = "example"
+    writeQuizz(
+      id,
+      JSON.stringify({
+        subject: "Example",
+        questions: [
+          {
+            question: "Q?",
+            answers: ["a", "b"],
+            solutions: [0],
+            time: 10,
+            cooldown: 5,
+          },
+        ],
+      }),
+    )
+
+    const quizz = config.getQuizzById(id)
+    expect(quizz.id).toBe(id)
+  })
+})
