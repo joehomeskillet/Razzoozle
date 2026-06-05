@@ -160,6 +160,15 @@ class Game {
     this.io.to(target).emit(EVENTS.GAME.STATUS, statusData)
   }
 
+  // Tell every client still in the room that the manager is gone for good. Used
+  // by the registry once a game's empty-grace window elapses (true abandonment),
+  // so still-connected players get a clean RESET instead of being orphaned.
+  notifyManagerGone(): void {
+    this.io
+      .to(this.gameId)
+      .emit(EVENTS.GAME.RESET, "errors:game.managerDisconnected")
+  }
+
   // Player actions
 
   join(socket: Socket, username: string) {

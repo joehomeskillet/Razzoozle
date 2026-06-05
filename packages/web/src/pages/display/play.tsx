@@ -13,8 +13,11 @@ import { z } from "zod"
 // This mirrors the manager presentation (`/party/manager/$gameId` and the
 // `/satellite/$gameId` kiosk) but is a PURE display: no skip/back/auto buttons,
 // no player score bar, no navigation. We reuse GameWrapper with `manager` so the
-// presentation chrome (background, question counter) matches the host screen,
-// but we pass NO onNext/onBack handlers, so GameWrapper renders zero controls.
+// presentation chrome (background, question counter, rejoin QR) matches the host
+// screen, but pass `controls={false}` to explicitly suppress every manager
+// interactive control (auto-advance toggle, low-latency health, display pairing
+// panel, fullscreen button) — the skip/back buttons are also absent since we
+// pass NO onNext/onBack handlers.
 //
 // The display is reached after pairing on `/display`; the gameId arrives as a
 // search param. We reconnect to that game over the (already display-authed)
@@ -57,11 +60,11 @@ const DisplayPlayPage = () => {
     )
   }
 
-  // GameWrapper with `manager` chrome but NO control handlers → a clean,
+  // GameWrapper with `manager` chrome but `controls={false}` → a clean,
   // distraction-free presentation sized for a beamer/TV.
   return (
     <div className="display-stage h-full w-full">
-      <GameWrapper statusName={status.name} manager>
+      <GameWrapper statusName={status.name} manager controls={false}>
         {CurrentComponent && <CurrentComponent data={status.data as never} />}
       </GameWrapper>
     </div>

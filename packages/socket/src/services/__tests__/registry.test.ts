@@ -34,18 +34,26 @@ const EMPTY_GAME_TIMEOUT_MINUTES = 5
 const PAIRING_TIMEOUT_MINUTES = DISPLAY_PAIRING_TTL_MINUTES
 
 // Minimal fake Game — the Registry only references Game as a *type* and, for the
-// paths under test, only reads `gameId`/`inviteCode` and calls `disposeMetrics`.
+// paths under test, only reads `gameId`/`inviteCode` and calls `disposeMetrics`
+// plus `notifyManagerGone` (the latter on a game removed past the empty-grace
+// window — a truly abandoned game gets a clean RESET to its remaining players).
 const makeGame = (
   gameId: string,
-): { game: Game; disposeMetrics: ReturnType<typeof vi.fn> } => {
+): {
+  game: Game
+  disposeMetrics: ReturnType<typeof vi.fn>
+  notifyManagerGone: ReturnType<typeof vi.fn>
+} => {
   const disposeMetrics = vi.fn()
+  const notifyManagerGone = vi.fn()
   const game = {
     gameId,
     inviteCode: `INV-${gameId}`,
     disposeMetrics,
+    notifyManagerGone,
   } as unknown as Game
 
-  return { game, disposeMetrics }
+  return { game, disposeMetrics, notifyManagerGone }
 }
 
 // Private-method shims (the janitor is private; the project's other tests reflect

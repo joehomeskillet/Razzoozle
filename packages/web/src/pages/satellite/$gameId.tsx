@@ -60,11 +60,14 @@ const SatelliteManagerPage = () => {
     },
   })
 
-  // Render the manager presentation chrome (background + question counter) with
-  // NO onNext/onBack handlers, so GameWrapper hides every control button — the
-  // phone is the controller, the satellite is a pure display.
+  // Render the manager presentation chrome (background + question counter +
+  // rejoin QR) with `controls={false}`, so GameWrapper suppresses every manager
+  // interactive control (auto-advance toggle, low-latency health, display
+  // pairing panel, fullscreen button); we also pass NO onNext/onBack handlers,
+  // so the skip/back buttons are absent too — the phone is the controller, the
+  // satellite is a pure display.
   return (
-    <GameWrapper statusName={status?.name} manager>
+    <GameWrapper statusName={status?.name} manager controls={false}>
       {status && CurrentComponent && (
         <CurrentComponent data={status.data as never} />
       )}

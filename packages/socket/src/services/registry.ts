@@ -202,9 +202,16 @@ class Registry {
     const removed = this.emptyGames.filter((g) => !stillEmpty.includes(g))
     const removedGameIds = removed.map((r) => r.game.gameId)
 
-    // Free LL metrics buffers/timers for each timed-out game (no-op in normal
-    // mode) so the per-room metrics map doesn't leak across cleanups.
-    removed.forEach((r) => r.game.disposeMetrics())
+    // A game that stayed empty past the grace window is truly abandoned (the
+    // manager never reconnected). Tell its still-connected players the manager
+    // is gone (clean RESET) instead of orphaning them, then free LL metrics
+    // buffers/timers (no-op in normal mode) so the per-room metrics map doesn't
+    // leak across cleanups. The blip case is unaffected: a reconnect within the
+    // window calls reactivateGame, so it never reaches this list.
+    removed.forEach((r) => {
+      r.game.notifyManagerGone()
+      r.game.disposeMetrics()
+    })
 
     this.games = this.games.filter((g) => !removedGameIds.includes(g.gameId))
     this.emptyGames = stillEmpty

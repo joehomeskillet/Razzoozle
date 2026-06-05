@@ -28,6 +28,7 @@ type Props = PropsWithChildren & {
   onNext?: () => void
   onBack?: () => void
   manager?: boolean
+  controls?: boolean
 }
 
 const GameWrapper = ({
@@ -36,6 +37,7 @@ const GameWrapper = ({
   onNext,
   onBack,
   manager,
+  controls = true,
 }: Props) => {
   const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
@@ -161,7 +163,7 @@ const GameWrapper = ({
                 )}
               </div>
 
-              {manager && (
+              {manager && controls && (
                 <div className="flex flex-1 justify-center">
                   <button
                     type="button"
@@ -191,9 +193,9 @@ const GameWrapper = ({
                 {/* Low-latency health widget. Self-hides unless the server emits
                     a health snapshot (i.e. low-latency mode is on), so it is
                     inert in normal mode. */}
-                {manager && <LowLatencyHealth />}
-                {manager && <DisplayControl />}
-                {manager && (
+                {manager && controls && <LowLatencyHealth />}
+                {manager && controls && <DisplayControl />}
+                {manager && controls && (
                   <button
                     type="button"
                     onClick={toggleFullscreen}
