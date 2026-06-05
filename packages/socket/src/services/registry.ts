@@ -5,7 +5,10 @@ import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzia/common/constants"
 // Registry.getInstance() at module load — a startup crash that surfaces (when
 // minified) as a misleading zod "cyclical schemas" error. Type-only breaks it.
 import type Game from "@razzia/socket/services/game"
+import type { Server } from "@razzia/common/types/game/socket"
 import dayjs from "dayjs"
+import fs from "fs"
+import { resolve } from "path"
 
 interface EmptyGame {
   since: number
@@ -25,9 +28,13 @@ class Registry {
   private emptyGames: EmptyGame[] = []
   private pairings = new Map<string, DisplayPairing>()
   private cleanupInterval: ReturnType<typeof setTimeout> | null = null
+  // Periodic crash-recovery snapshot task handle (null when not running). Set by
+  // startSnapshotTask(), cleared in cleanup() so no timer leaks across restarts.
+  private snapshotInterval: ReturnType<typeof setInterval> | null = null
   private readonly EMPTY_GAME_TIMEOUT_MINUTES = 5
   private readonly PAIRING_TIMEOUT_MINUTES = DISPLAY_PAIRING_TTL_MINUTES
   private readonly CLEANUP_INTERVAL_MS = 60_000
+  private readonly SNAPSHOT_VERSION = 1
 
   private constructor() {
     this.startCleanupTask()
@@ -238,8 +245,161 @@ class Registry {
     }
   }
 
+  // ── Crash-recovery snapshot persistence ──────────────────────────────────
+  //
+  // Persist STABLE in-flight game state to disk on an interval (and on graceful
+  // shutdown) so a process crash / redeploy doesn't lose a running event. On the
+  // next boot loadSnapshot() rebuilds games DETACHED; the existing clientId
+  // reconnect flow re-binds each browser. EVERY path here is crash-guarded: a
+  // save failure or a corrupt/missing file is a no-op that NEVER throws into the
+  // game loop or the boot sequence.
+
+  private static snapshotDir(): string {
+    const base = process.env.CONFIG_PATH ?? "./config"
+
+    return resolve(base, "state")
+  }
+
+  private static snapshotFile(): string {
+    return resolve(Registry.snapshotDir(), "registry.json")
+  }
+
+  // Atomically write the current game state. Writes to a .tmp sibling then
+  // fs.renameSync (atomic on the same filesystem) so a crash mid-write can never
+  // leave a half-written, unparseable snapshot. Wrapped in try/catch: a save
+  // failure logs and continues — it must NEVER throw into the periodic task or
+  // a signal handler.
+  saveSnapshot(): void {
+    try {
+      // Skip trivially-empty games (no players AND not yet started): there is
+      // nothing worth restoring and it keeps the file small. Anything with
+      // players or that has started is saved in full.
+      const games = this.games
+        .filter((g) => g.started || g.players.length > 0)
+        .map((g) => g.toSnapshot())
+
+      const payload = {
+        version: this.SNAPSHOT_VERSION,
+        savedAt: Date.now(),
+        games,
+      }
+
+      const dir = Registry.snapshotDir()
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      const file = Registry.snapshotFile()
+      const tmp = `${file}.tmp`
+
+      fs.writeFileSync(tmp, JSON.stringify(payload))
+      fs.renameSync(tmp, file)
+    } catch (error) {
+      // Never propagate — a failed snapshot must not disrupt live gameplay.
+      console.error("Failed to save registry snapshot:", error)
+    }
+  }
+
+  // Read + restore games from disk on boot. Missing file => no-op. Corrupt /
+  // wrong-version file => logged + ignored (returns without restoring). Game is
+  // imported dynamically to avoid the registry<->game runtime import cycle (see
+  // the file header note); the dynamic import resolves to the same bundled
+  // module after init, so Game is defined by the time we call fromSnapshot.
+  async loadSnapshot(io: Server): Promise<void> {
+    try {
+      const file = Registry.snapshotFile()
+
+      if (!fs.existsSync(file)) {
+        return
+      }
+
+      const raw = fs.readFileSync(file, "utf-8")
+      const parsed: unknown = (() => {
+        try {
+          return JSON.parse(raw) as unknown
+        } catch (error) {
+          console.error("Corrupt registry snapshot, ignoring:", error)
+
+          return undefined
+        }
+      })()
+
+      // Corrupt JSON parsed to undefined above (already logged) — bail.
+      if (parsed === undefined) {
+        return
+      }
+
+      const snapshot = parsed as {
+        version?: number
+        games?: unknown[]
+      } | null
+
+      if (
+        !snapshot ||
+        snapshot.version !== this.SNAPSHOT_VERSION ||
+        !Array.isArray(snapshot.games)
+      ) {
+        console.warn("Unrecognised registry snapshot shape, ignoring")
+
+        return
+      }
+
+      // Dynamic import breaks the registry<->game import cycle (registry only
+      // type-imports Game at the top). Resolves to the bundled module.
+      const { default: Game } = await import("@razzia/socket/services/game")
+
+      let restored = 0
+
+      for (const g of snapshot.games) {
+        try {
+          const game = Game.fromSnapshot(
+            io,
+            g as Parameters<typeof Game.fromSnapshot>[1],
+          )
+          this.addGame(game)
+          // Mark restored so it is cleaned up normally if NOBODY reconnects
+          // within the existing EMPTY_GAME_TIMEOUT window.
+          this.markGameAsEmpty(game)
+          restored += 1
+        } catch (error) {
+          // One bad game must not abort restoring the rest.
+          console.error("Failed to restore a game from snapshot:", error)
+        }
+      }
+
+      console.log(`Restored ${restored} game(s) from snapshot`)
+    } catch (error) {
+      // Any unexpected failure is swallowed: boot must never crash on restore.
+      console.error("Failed to load registry snapshot:", error)
+    }
+  }
+
+  // Arm the periodic snapshot. Idempotent: a second call clears the old handle
+  // first so we never leak an interval.
+  startSnapshotTask(intervalMs = 5000): void {
+    if (this.snapshotInterval) {
+      clearInterval(this.snapshotInterval)
+    }
+
+    this.snapshotInterval = setInterval(() => {
+      this.saveSnapshot()
+    }, intervalMs)
+
+    console.log("Snapshot task started")
+  }
+
+  stopSnapshotTask(): void {
+    if (this.snapshotInterval) {
+      clearInterval(this.snapshotInterval)
+      this.snapshotInterval = null
+      console.log("Snapshot task stopped")
+    }
+  }
+
   cleanup(): void {
     this.stopCleanupTask()
+    this.stopSnapshotTask()
     this.games = []
     this.emptyGames = []
     this.pairings.clear()

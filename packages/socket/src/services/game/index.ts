@@ -1,15 +1,16 @@
 import { EVENTS } from "@razzia/common/constants"
-import type { Player, Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
+import type { Player, QuestionResult, Quizz } from "@razzia/common/types/game"
+import type {
+  MetricKind,
+  MetricsHealthSnapshot,
+  Server,
+  Socket,
+} from "@razzia/common/types/game/socket"
 import {
   STATUS,
   type Status,
   type StatusDataMap,
 } from "@razzia/common/types/game/status"
-import type {
-  MetricKind,
-  MetricsHealthSnapshot,
-} from "@razzia/common/types/game/socket"
 import type { LowLatencyMode } from "@razzia/common/validators/game-config"
 import { getGameConfig, saveResult } from "@razzia/socket/services/config"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
@@ -21,6 +22,33 @@ import { createInviteCode } from "@razzia/socket/utils/game"
 import { v7 as uuid } from "uuid"
 
 const registry = Registry.getInstance()
+
+// Serializable crash-recovery snapshot for a single game. Only STABLE state is
+// captured — never live sockets, timers, or a mid-question's partial answers.
+// `quizz` is included because a restored game must still be playable past the
+// resume point (the leaderboard): the manager can advance to the next question,
+// which reads from the quizz. It changes nothing about a normal running game.
+export interface GameSnapshot {
+  gameId: string
+  inviteCode: string
+  started: boolean
+  managerClientId: string
+  autoMode: boolean
+  quizz: Quizz
+  round: {
+    started: boolean
+    currentQuestion: number
+    leaderboard: Player[]
+    questionsHistory: QuestionResult[]
+    autoMode: boolean
+  }
+  players: Array<{
+    clientId: string
+    username: string
+    points: number
+    streak: number
+  }>
+}
 
 class Game {
   readonly gameId: string
@@ -35,6 +63,9 @@ class Game {
   private readonly playerManager: PlayerManager
   private readonly round: RoundManager
   private readonly cooldown: CooldownTimer
+  // The game's quizz, kept so a crash-recovery snapshot can persist it and a
+  // restored game stays playable past the resume point (manager can advance).
+  private readonly quizz: Quizz
   // Low-latency mode config snapshot, read ONCE at game creation so a mid-game
   // config edit can't change behaviour for a running game. enabled=false =>
   // every LL branch in this game is skipped (normal mode).
@@ -58,16 +89,31 @@ class Game {
     { name: Status; data: StatusDataMap[Status] }
   >()
 
-  constructor(io: Server, socket: Socket, quizz: Quizz) {
-    const clientId = socket.handshake.auth.clientId as string
+  // `socket` is null ONLY for the crash-recovery restore path: a restored game
+  // has no live socket yet (the manager re-binds later via the existing
+  // reconnect flow). For a normal new game `socket` is always present and the
+  // behaviour is byte-identical to before. On restore, `restore` carries the
+  // SAVED identity (gameId/inviteCode/managerClientId) so the reused ids match
+  // what reconnecting clients hold — gameId/inviteCode stay readonly.
+  constructor(
+    io: Server,
+    socket: Socket | null,
+    quizz: Quizz,
+    restore?: { gameId: string; inviteCode: string; managerClientId: string },
+  ) {
+    const clientId = socket
+      ? (socket.handshake.auth.clientId as string)
+      : (restore?.managerClientId ?? "")
 
     this.io = io
-    this.gameId = uuid()
-    this.inviteCode = createInviteCode()
+    this.quizz = quizz
+    this.gameId = restore ? restore.gameId : uuid()
+    this.inviteCode = restore ? restore.inviteCode : createInviteCode()
     this._manager = {
-      id: socket.id,
+      // No live socket on restore: detached until a real reconnect binds one.
+      id: socket ? socket.id : "",
       clientId,
-      connected: true,
+      connected: Boolean(socket),
     }
 
     // Read the LL config once. getGameConfig() is zod-defaulted/back-compatible,
@@ -113,15 +159,20 @@ class Game {
       lowLatency: this.lowLatency,
     })
 
-    socket.join(this.gameId)
-    socket.emit(EVENTS.MANAGER.GAME_CREATED, {
-      gameId: this.gameId,
-      inviteCode: this.inviteCode,
-    })
+    // Restore path: no live socket — skip the room join + GAME_CREATED emit +
+    // creation log entirely. The manager re-binds (and lands at the leaderboard)
+    // through the existing reconnect flow once its browser reconnects.
+    if (socket) {
+      socket.join(this.gameId)
+      socket.emit(EVENTS.MANAGER.GAME_CREATED, {
+        gameId: this.gameId,
+        inviteCode: this.inviteCode,
+      })
 
-    console.log(
-      `New game created: ${this.inviteCode} subject: ${quizz.subject}`,
-    )
+      console.log(
+        `New game created: ${this.inviteCode} subject: ${quizz.subject}`,
+      )
+    }
   }
 
   get manager() {
@@ -447,6 +498,55 @@ class Game {
 
   setAutoMode(on: boolean) {
     this.round.setAutoMode(on)
+  }
+
+  // ── Crash-recovery snapshot ──────────────────────────────────────────────
+
+  // Serialize the STABLE, durable game state for an at-rest snapshot. Pure read
+  // — touches nothing about a running game, so normal gameplay is unchanged.
+  toSnapshot(): GameSnapshot {
+    const round = this.round.toSnapshot()
+
+    return {
+      gameId: this.gameId,
+      inviteCode: this.inviteCode,
+      started: this.started,
+      managerClientId: this._manager.clientId,
+      autoMode: round.autoMode,
+      quizz: this.quizz,
+      round,
+      players: this.playerManager.toSnapshot(),
+    }
+  }
+
+  // Reconstruct a DETACHED Game from a snapshot (no live sockets). The saved
+  // gameId/inviteCode/managerClientId are reused so reconnecting clients match.
+  // The manager stays connected:false until a real socket reconnects. The
+  // screen resumes "at the leaderboard": lastBroadcastStatus is primed with a
+  // SHOW_LEADERBOARD view built from the restored standings so a reconnecting
+  // client lands on the clean standings rather than a half-finished question.
+  static fromSnapshot(io: Server, snap: GameSnapshot): Game {
+    const game = new Game(io, null, snap.quizz, {
+      gameId: snap.gameId,
+      inviteCode: snap.inviteCode,
+      managerClientId: snap.managerClientId,
+    })
+
+    game.round.restore(snap.round)
+    game.playerManager.restore(snap.players)
+
+    // Prime the resume view: reconnecting clients (manager + players) get the
+    // leaderboard as their "current" status via the existing reconnect flow,
+    // which falls back to lastBroadcastStatus.
+    const leaderboard = snap.round.leaderboard
+      .slice(0, 5)
+      .map((p) => ({ ...p }))
+    game.lastBroadcastStatus = {
+      name: STATUS.SHOW_LEADERBOARD,
+      data: { oldLeaderboard: leaderboard, leaderboard },
+    }
+
+    return game
   }
 }
 

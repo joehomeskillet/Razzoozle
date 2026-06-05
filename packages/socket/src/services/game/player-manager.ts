@@ -126,4 +126,44 @@ export class PlayerManager {
   broadcastCount(): void {
     this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
   }
+
+  // ── Crash-recovery snapshot ──────────────────────────────────────────────
+  // Serialize only the STABLE, durable fields. The volatile socket id and the
+  // live `connected` flag are intentionally dropped — on restore they are
+  // reconstructed as id:"" / connected:false until a real socket re-binds via
+  // the existing clientId-based reconnect flow. Pure read; no behaviour change.
+  toSnapshot(): Array<{
+    clientId: string
+    username: string
+    points: number
+    streak: number
+  }> {
+    return this.players.map((p) => ({
+      clientId: p.clientId,
+      username: p.username,
+      points: p.points,
+      streak: p.streak,
+    }))
+  }
+
+  // Rebuild the player list from a snapshot as DETACHED records (no live
+  // socket): id:"" and connected:false. The existing reconnect flow swaps in a
+  // real socket id + flips connected:true when each browser reconnects.
+  restore(
+    players: Array<{
+      clientId: string
+      username: string
+      points: number
+      streak: number
+    }>,
+  ): void {
+    this.players = players.map((p) => ({
+      id: "",
+      clientId: p.clientId,
+      connected: false,
+      username: p.username,
+      points: p.points,
+      streak: p.streak,
+    }))
+  }
 }

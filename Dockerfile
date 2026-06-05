@@ -28,6 +28,10 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 COPY --from=builder /app/packages/web/dist /app/web
 COPY --from=builder /app/packages/socket/dist/index.cjs /app/socket/index.cjs
 
+# Health check the FULL chain: nginx (3000) proxying to the socket /healthz
+# (3001). If either is down the container is marked unhealthy. busybox wget.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
+
 EXPOSE 3000
 
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

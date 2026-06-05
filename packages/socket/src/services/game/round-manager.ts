@@ -163,6 +163,64 @@ export class RoundManager {
     return this.started
   }
 
+  // Public read of the 0-based current question index. Used by Game.toSnapshot
+  // (and as a getter the task asks for) without exposing the mutable field.
+  getCurrentQuestion(): number {
+    return this.currentQuestion
+  }
+
+  // ── Crash-recovery snapshot ──────────────────────────────────────────────
+  // Serialize only STABLE, serializable round state — never live timers, the
+  // in-flight question's partial answers, or per-tap dedup bookkeeping. Pure
+  // read; no behaviour change for a running game.
+  toSnapshot(): {
+    started: boolean
+    currentQuestion: number
+    leaderboard: Player[]
+    questionsHistory: QuestionResult[]
+    autoMode: boolean
+  } {
+    return {
+      started: this.started,
+      currentQuestion: this.currentQuestion,
+      leaderboard: this.leaderboard,
+      questionsHistory: this.questionsHistory,
+      autoMode: this.autoMode,
+    }
+  }
+
+  // Rebuild round state from a snapshot. We deliberately DO NOT resume a live
+  // question: playersAnswers is cleared, autoMode is forced false (a restored
+  // game must not auto-advance), every timer/map is reset. leaderboard and
+  // questionsHistory are deep-copied so the snapshot object can't alias live
+  // state. Resume happens "at the leaderboard" (see Game.fromSnapshot).
+  restore(snap: {
+    started: boolean
+    currentQuestion: number
+    leaderboard: Player[]
+    questionsHistory: QuestionResult[]
+    autoMode: boolean
+  }): void {
+    this.started = snap.started
+    this.currentQuestion = snap.currentQuestion
+    this.leaderboard = snap.leaderboard.map((p) => ({ ...p }))
+    this.questionsHistory = snap.questionsHistory.map((q) => ({ ...q }))
+    // Force OFF: never auto-advance a restored game regardless of saved value.
+    this.autoMode = false
+
+    // No live question is resumed — drop partial answers + transient anchors.
+    this.playersAnswers = []
+    this.startTime = 0
+    this.tempOldLeaderboard = null
+    this.answerDeadlineAtServerMs = 0
+
+    // Clear any timers/maps so a restored game starts from a clean slate.
+    this.clearAuto()
+    this.seenMessageIds.clear()
+    this.answerMeta.clear()
+    this.answerCountThrottle.cancel()
+  }
+
   getReconnectInfo() {
     return {
       current: this.currentQuestion + 1,

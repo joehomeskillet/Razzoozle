@@ -14,6 +14,7 @@ import { resultsSocketHandlers } from "@razzia/socket/handlers/results"
 import type { SocketHandler } from "@razzia/socket/handlers/types"
 import { initConfig } from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
+import { createServer } from "http"
 import { Server as ServerIO } from "socket.io"
 
 const WS_PORT = Number(process.env.WS_PORT) || WS_DEFAULT_PORT
@@ -30,8 +31,41 @@ const io: Server = new ServerIO({
 })
 initConfig()
 
+// Explicit HTTP server so we can serve a tiny health endpoint alongside the
+// socket.io upgrade path. socket.io owns its own `/ws` path (handled before
+// this fires); only non-`/ws` plain HTTP requests reach this handler, so the
+// `/healthz` check never interferes with WS traffic.
+const httpServer = createServer((req, res) => {
+  if (req.url === "/healthz") {
+    res.writeHead(200, { "content-type": "text/plain" })
+    res.end("ok")
+
+    return
+  }
+
+  res.writeHead(404)
+  res.end()
+})
+
+io.attach(httpServer)
+
 console.log(`Socket server running on port ${WS_PORT}`)
-io.listen(WS_PORT)
+httpServer.listen(WS_PORT)
+
+const registry = Registry.getInstance()
+
+// Crash recovery: restore any games persisted before the last shutdown, THEN
+// start the periodic snapshot (so the first save can't overwrite the snapshot
+// before restore has read it). Both steps are fully crash-guarded internally —
+// a missing/corrupt snapshot is a no-op and never blocks boot.
+void registry
+  .loadSnapshot(io)
+  .catch((error: unknown) => {
+    console.error("loadSnapshot failed:", error)
+  })
+  .finally(() => {
+    registry.startSnapshotTask()
+  })
 
 const socketHandlers: SocketHandler[] = [
   managerSocketHandlers,
@@ -51,12 +85,16 @@ io.on("connection", (socket) => {
   })
 })
 
+// On a graceful redeploy/shutdown, snapshot the LATEST state BEFORE cleanup so
+// the next boot can restore in-flight games. saveSnapshot is crash-guarded.
 process.on("SIGINT", () => {
-  Registry.getInstance().cleanup()
+  registry.saveSnapshot()
+  registry.cleanup()
   process.exit(0)
 })
 
 process.on("SIGTERM", () => {
-  Registry.getInstance().cleanup()
+  registry.saveSnapshot()
+  registry.cleanup()
   process.exit(0)
 })
