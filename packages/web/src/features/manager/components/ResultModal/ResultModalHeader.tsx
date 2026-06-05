@@ -1,4 +1,4 @@
-import * as RadixDialog from "@radix-ui/react-alert-dialog"
+import * as RadixDialog from "@radix-ui/react-dialog"
 import { RESULT_MODAL_TITLE_ID } from "@razzia/web/features/manager/components/ResultModal"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
@@ -45,9 +45,9 @@ const ResultModalHeader = () => {
         >
           <ChevronRight className="size-5" />
         </button>
-        {/* Radix Cancel closes the dialog (→ onOpenChange → onClose); no manual
+        {/* Radix Close closes the dialog (→ onOpenChange → onClose); no manual
             onClick needed. */}
-        <RadixDialog.Cancel asChild>
+        <RadixDialog.Close asChild>
           <button
             type="button"
             aria-label={t("manager:result.aria.close")}
@@ -55,7 +55,7 @@ const ResultModalHeader = () => {
           >
             <X className="size-5" />
           </button>
-        </RadixDialog.Cancel>
+        </RadixDialog.Close>
       </div>
     </div>
   )

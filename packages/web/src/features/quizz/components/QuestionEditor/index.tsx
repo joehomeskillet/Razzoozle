@@ -5,9 +5,11 @@ import QuestionEditorConfig from "@razzia/web/features/quizz/components/Question
 import QuestionEditorMedia from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorTitle from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorType"
+import { useThemeStore } from "@razzia/web/features/theme/store"
 
 const QuestionEditor = () => {
   const { currentQuestion } = useQuizzEditor()
+  const { theme } = useThemeStore()
   const isSlider = currentQuestion.type === "slider"
 
   return (
@@ -21,7 +23,7 @@ const QuestionEditor = () => {
         <div className="fixed top-0 left-0 h-full w-full">
           <img
             className="pointer-events-none h-full w-full object-cover select-none"
-            src={background}
+            src={theme.backgrounds.auth ?? background}
             alt="background"
           />
         </div>
