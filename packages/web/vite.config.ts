@@ -46,21 +46,34 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // PRECACHE THE SHELL — do NOT precache mp3 (the sounds dir is large;
-        // runtime-cache it instead).
-        globPatterns: ["**/*.{js,css,html,woff2,woff,svg,png,webp}"],
-        navigateFallback: "/index.html",
-        // CRITICAL: never intercept the websocket (/ws), socket.io, or the
-        // runtime theme.
-        navigateFallbackDenylist: [/^\/ws/, /^\/socket/, /^\/theme/],
+        // Precache the hashed (immutable) assets, but NOT index.html: serve the
+        // HTML shell NetworkFirst so a deploy is picked up on the next reload
+        // (no double-reload). This app needs the websocket to function, so an
+        // online-first shell is the right tradeoff (offline play is impossible
+        // anyway); the runtime cache still covers a brief static-side blip.
+        globPatterns: ["**/*.{js,css,woff2,woff,svg,png,webp}"],
+        // vite-plugin-pwa defaults navigateFallback to "index.html", which would
+        // auto-register a cache-first NavigationRoute *before* (and thus shadow)
+        // our NetworkFirst navigate route below. Null it out so the only handler
+        // for navigations is the NetworkFirst route — that's the whole point.
+        navigateFallback: null,
         runtimeCaching: [
+          {
+            // request.mode === "navigate" matches only top-level page loads — it
+            // never matches /ws (websocket), socket.io XHR, /theme, or asset fetches.
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-shell",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 16 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /\/sounds\/.*\.mp3$/,
             handler: "CacheFirst",
-            options: {
-              cacheName: "sounds",
-              expiration: { maxEntries: 20 },
-            },
+            options: { cacheName: "sounds", expiration: { maxEntries: 20 } },
           },
         ],
         cleanupOutdatedCaches: true,
