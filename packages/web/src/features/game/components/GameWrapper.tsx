@@ -195,7 +195,11 @@ const GameWrapper = ({
                     inert in normal mode. */}
                 {manager && controls && <LowLatencyHealth />}
                 {manager && controls && <DisplayControl />}
-                {manager && controls && (
+                {/* Fullscreen is a kiosk affordance, not a manager control:
+                    show it whenever the manager chrome renders (incl. the passive
+                    /display + /satellite beamer, where auto-requestFullscreen is
+                    blocked without a user gesture, so the button is the only way). */}
+                {manager && (
                   <button
                     type="button"
                     onClick={toggleFullscreen}

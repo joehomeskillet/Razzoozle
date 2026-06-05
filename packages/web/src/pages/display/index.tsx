@@ -6,6 +6,7 @@ import {
 } from "@razzia/web/features/game/contexts/socket-context"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Maximize } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -25,6 +26,18 @@ const DisplayRegisterPage = () => {
   const { t } = useTranslation()
   const appTitle = useThemeStore((s) => s.theme.appTitle)
   const [pairingCode, setPairingCode] = useState<string | null>(null)
+
+  // Manual fullscreen for the beamer: the auto-request below is blocked without
+  // a user gesture in a normal browser, so the operator needs a button to click.
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.()
+    } else {
+      void document.documentElement.requestFullscreen?.().catch(() => {
+        /* ignore */
+      })
+    }
+  }
 
   // Best-effort fullscreen. Chromium `--kiosk` already boots fullscreen, so a
   // rejected promise here (no user gesture) is harmless.
@@ -74,6 +87,16 @@ const DisplayRegisterPage = () => {
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-[3vh] px-[5vw] text-center">
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        title={t("display:fullscreen", { defaultValue: "Vollbild" })}
+        aria-label={t("display:fullscreen", { defaultValue: "Vollbild" })}
+        className="fixed top-[2vh] right-[2vh] z-50 rounded-md bg-white/10 p-[1.4vh] text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        <Maximize className="h-[3vh] w-[3vh]" />
+      </button>
+
       <h1 className="text-[6vh] leading-tight font-extrabold tracking-tight">
         {appTitle?.trim() ?? "Rahoot"}
       </h1>
