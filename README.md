@@ -2,14 +2,25 @@
   <img width="450" height="120" align="center" src=".github/logo.svg">
   <br>
   <div align="center">
-    <img alt="Visitor Badge" src="https://api.visitorbadge.io/api/visitors?path=https://github.com/Ralex91/Razzia/edit/main/README.md&countColor=%23FF9900">
-    <img src="https://img.shields.io/docker/pulls/ralex91/razzia?style=for-the-badge&color=FF9900" alt="Docker Pulls">
+    <img alt="Status" src="https://img.shields.io/badge/status-live-FF9900?style=for-the-badge">
+    <img alt="Tests" src="https://img.shields.io/badge/tests-125%20passing-FF9900?style=for-the-badge">
+    <img alt="TypeScript" src="https://img.shields.io/badge/typecheck-green-FF9900?style=for-the-badge">
+    <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-FF9900?style=for-the-badge">
   </div>
 </p>
 
+> **Südhang fork** of [Razzia](https://github.com/Ralex91/Razzia) — a hardened,
+> branded production deployment for the **Südhang Personalfest**. Live at
+> **[rahoot.joelduss.xyz](https://rahoot.joelduss.xyz)**. See
+> **[CHANGELOG.md](CHANGELOG.md)** for what this fork carries beyond upstream and
+> **[docs/OPERATIONS.md](docs/OPERATIONS.md)** for the deploy/ops runbook.
+
 ## 🧩 What is this project?
 
-Razzia is a straightforward and open-source quiz platform, allowing users to host it on their own server for smaller events.
+A self-hosted, open-source Kahoot-style live quiz: the host drives the game from
+`/manager` (shown big on a beamer), players join and answer on their phones. This
+fork adds native branding/theming, a beamer kiosk, a low-latency mode, five
+languages, an installable PWA, and crash-recovery on top of upstream Razzia.
 
 > **Disclaimer**: Razzia is an independent, open-source software project. It is not affiliated with, endorsed by, or sponsored by any third-party quiz platform or service. Any resemblance to other quiz platforms is purely incidental.
 
@@ -18,6 +29,27 @@ Razzia is a straightforward and open-source quiz platform, allowing users to hos
   <img width="30%" src=".github/previews/2.png" alt="Manager Room">
   <img width="30%" src=".github/previews/3.png" alt="Question Screen">
 </p>
+
+## ✨ What this fork adds (beyond upstream Razzia)
+
+- **🎨 Native theming** — per-view backgrounds, colours, app title and logo, edited live from a **Design tab** in `/manager` (stored in `config/theme/`, applied via CSS variables; the whole UI recolours, no rebuild). Five languages: **de / en / es / fr / it**.
+- **📺 Beamer kiosk + satellite** — a `/display` route renders the game fullscreen for a projector/TV (vh-scaled type that reads across a 4K room), pairable from a phone; optional Raspberry-Pi satellite image.
+- **⚡ Low-latency mode** (opt-in) — clock-sync, instant local answer feedback, answer-ack, scoreboard throttle, smoother reconnects — server-authoritative scoring stays intact. See [docs/LOW-LATENCY-MODE.md](docs/LOW-LATENCY-MODE.md).
+- **🛡️ Event robustness** — **crash-recovery** (in-flight games are snapshotted to disk and restored on restart — a process crash or redeploy mid-quiz no longer kicks anyone), a `/healthz` endpoint + Docker **HEALTHCHECK** for auto-heal, graceful shutdown, host-blip lobby grace, and a mid-game reconnect banner.
+- **📦 Installable PWA** — precached app shell for instant load + add-to-home-screen, with a NetworkFirst HTML shell so deploys land on one reload.
+- **♿ Accessibility & polish** — focus rings, `tabular-nums` scores/timers, `prefers-reduced-motion`, ARIA dialogs/tabs, keyboard-reorderable quiz editor.
+
+### 📊 Optimize pass — by the numbers
+
+| Dimension               | Before  | After                                         |
+| ----------------------- | ------- | --------------------------------------------- |
+| TypeScript (3 packages) | ❌ red  | ✅ green                                      |
+| Test suite              | 21      | **125**                                       |
+| Player initial payload  | ~3.8 MB | **~1.1 MB** (WebP + route code-split)         |
+| Load tested             | —       | **600 concurrent players** @ <10% socket CPU  |
+| Crash recovery          | none    | **proven** (kill -9 → restart → state intact) |
+
+Plus a security pass (path-traversal fix, patched `ws` CVE). Full detail in [CHANGELOG.md](CHANGELOG.md).
 
 ## ⚙️ Prerequisites
 
@@ -125,13 +157,13 @@ is optional and defaulted, so you can set only the ones you want):
 {
   "managerPassword": "PASSWORD",
   "lowLatencyMode": {
-    "enabled": false,                      // master switch; OFF = today's behaviour
-    "clockSync": true,                     // UI-only client clock offset (never scoring)
-    "preloadNextQuestion": true,           // prefetch the next question's media
-    "answerAck": true,                     // emit an answer ack to the client
-    "scoreboardBroadcastThrottleMs": 100,  // coalesce scoreboard chatter (ms)
-    "maxLatencyCompensationMs": 150        // server-side, capped grace window (ms)
-  }
+    "enabled": false, // master switch; OFF = today's behaviour
+    "clockSync": true, // UI-only client clock offset (never scoring)
+    "preloadNextQuestion": true, // prefetch the next question's media
+    "answerAck": true, // emit an answer ack to the client
+    "scoreboardBroadcastThrottleMs": 100, // coalesce scoreboard chatter (ms)
+    "maxLatencyCompensationMs": 150, // server-side, capped grace window (ms)
+  },
 }
 ```
 
@@ -224,8 +256,8 @@ valid token the kiosk cannot connect.
 
 Contributions are welcome! Please read the [CONTRIBUTING.md](.github/CONTRIBUTING.md) guide before submitting a pull request.
 
-For bug reports or feature requests, please [create an issue](https://github.com/Ralex91/Razzia/issues).
+For bug reports or feature requests on this fork, please [create an issue](https://git.joelduss.xyz/agent-claude/rahoot/issues).
 
-## ⭐ Star History
+## 🙏 Credits
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Ralex91/Razzia&type=date&legend=bottom-right)](https://www.star-history.com/#Ralex91/Razzia&type=date&legend=bottom-right)
+Built on the excellent [Razzia](https://github.com/Ralex91/Razzia) by Ralex91 (open-source). This is the **Südhang fork** — see [CHANGELOG.md](CHANGELOG.md) for the full divergence and [docs/OPERATIONS.md](docs/OPERATIONS.md) for operations.
