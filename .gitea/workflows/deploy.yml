@@ -1,9 +1,11 @@
 # Continuous deploy for rahoot.
-# Runs on the self-hosted HOST runner (has docker + the live deploy dir).
+# The deploy runs on the HOST via the agent-dispatch receiver, not on the
+# containerized Gitea runner (which has no host filesystem access). The runner
+# just POSTs to the host webhook at 172.22.0.1:8810 (the runner's docker-network
+# gateway to the host); the receiver runs scripts/deploy.sh on the host.
 # The heavy lifting -- source self-update, image build, smoke-test,
 # `docker compose up -d`, health-gate and auto-rollback -- lives in
-# scripts/deploy.sh, so this workflow stays thin.
-# No actions/checkout (the host runner has no node); deploy.sh self-updates the source and runs from a /tmp copy to avoid self-modification.
+# scripts/deploy.sh. The runner just triggers and gates on the JSON `ok` field.
 # An n8n flow can call the same script as a fallback.
 name: Deploy
 
@@ -20,10 +22,14 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Build, smoke-test, deploy, health-gate (auto-rollback)
+      - name: Trigger host deploy via agent-dispatch (runs scripts/deploy.sh on the host)
         run: |
           set -euo pipefail
-          tmp="$(mktemp)"
-          cp /nvmetank1/projects/rahoot/source/scripts/deploy.sh "$tmp"
-          DEPLOY_DIR=/nvmetank1/projects/rahoot bash "$tmp"
-          rm -f "$tmp"
+          echo "Triggering host-side deploy (build, smoke, compose up, health-gate, auto-rollback)..."
+          resp="$(curl -fsS -X POST \
+            -H "X-Webhook-Token: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --max-time 800 \
+            http://172.22.0.1:8810/hook/host-action/deploy-rahoot)"
+          echo "$resp"
+          echo "$resp" | grep -q '"ok": *true' || { echo "::error::host deploy reported failure"; exit 1; }
