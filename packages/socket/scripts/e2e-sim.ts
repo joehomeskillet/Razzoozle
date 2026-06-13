@@ -145,6 +145,9 @@ async function run(args: Args): Promise<Summary> {
   const clientId = `e2e-mgr-${Math.random().toString(36).slice(2, 10)}`
 
   const socket: ClientSocket = ioClient(args.url, {
+    // The server mounts socket.io at a custom path (/ws); nginx proxies
+    // `location /ws` → :3001. The default /socket.io/ path hits the SPA fallback.
+    path: "/ws",
     transports: ["websocket"],
     auth: { clientId },
     reconnection: false,
