@@ -28,9 +28,9 @@ const loadConfig = async (): Promise<ConfigModule> => {
   return import("@razzia/socket/services/config")
 }
 
-// Minimal 1x1 PNG as a base64 data URL — a real, accepted image payload.
+// Minimal valid 1x1 PNG as a base64 data URL — a real, cwebp-decodable payload.
 const PNG_1PX =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME = {
@@ -142,26 +142,26 @@ describe("saveBackgroundImage()", () => {
   it("rejects a non-image dataUrl with errors:theme.invalidImage", async () => {
     const config = await loadConfig()
 
-    expect(() =>
+    await expect(
       config.saveBackgroundImage("auth", "data:text/plain;base64,aGVsbG8="),
-    ).toThrow("errors:theme.invalidImage")
+    ).rejects.toThrow("errors:theme.invalidImage")
   })
 
   it("rejects an outright non-dataUrl string", async () => {
     const config = await loadConfig()
 
-    expect(() => config.saveBackgroundImage("auth", "not-a-data-url")).toThrow(
-      "errors:theme.invalidImage",
-    )
+    await expect(
+      config.saveBackgroundImage("auth", "not-a-data-url"),
+    ).rejects.toThrow("errors:theme.invalidImage")
   })
 
   it("rejects an unknown slot with errors:theme.invalidSlot", async () => {
     const config = await loadConfig()
 
-    expect(() =>
+    await expect(
       // @ts-expect-error — exercising the runtime slot guard with a bad slot.
       config.saveBackgroundImage("nope", PNG_1PX),
-    ).toThrow("errors:theme.invalidSlot")
+    ).rejects.toThrow("errors:theme.invalidSlot")
   })
 
   it("rejects a payload over the 8MB cap with errors:theme.imageTooLarge", async () => {
@@ -172,7 +172,7 @@ describe("saveBackgroundImage()", () => {
     const bigBase64 = Buffer.alloc(bytes, 0).toString("base64")
     const bigDataUrl = `data:image/png;base64,${bigBase64}`
 
-    expect(() => config.saveBackgroundImage("auth", bigDataUrl)).toThrow(
+    await expect(config.saveBackgroundImage("auth", bigDataUrl)).rejects.toThrow(
       "errors:theme.imageTooLarge",
     )
   })
@@ -180,9 +180,9 @@ describe("saveBackgroundImage()", () => {
   it("persists a valid image and returns its /theme/<file> path", async () => {
     const config = await loadConfig()
 
-    const result = config.saveBackgroundImage("auth", PNG_1PX)
+    const result = await config.saveBackgroundImage("auth", PNG_1PX)
 
-    expect(result).toMatch(/^\/theme\/auth-\d+\.png$/)
+    expect(result).toMatch(/^\/theme\/auth-\d+\.webp$/)
     const onDisk = path.join(tmpDir, result.replace(/^\//, ""))
     expect(fs.existsSync(onDisk)).toBe(true)
   })
@@ -191,15 +191,16 @@ describe("saveBackgroundImage()", () => {
     const config = await loadConfig()
     const themeDir = path.join(tmpDir, "theme")
 
-    const first = config.saveBackgroundImage("auth", PNG_1PX)
+    const first = await config.saveBackgroundImage("auth", PNG_1PX)
     const firstAbs = path.join(tmpDir, first.replace(/^\//, ""))
     expect(fs.existsSync(firstAbs)).toBe(true)
 
     // Force Date.now() forward so the second filename differs from the first.
-    vi.useFakeTimers()
-    vi.setSystemTime(Date.now() + 5_000)
-    const second = config.saveBackgroundImage("auth", PNG_1PX)
-    vi.useRealTimers()
+    // A Date.now spy (not fake timers) is used because toWebp spawns a real
+    // cwebp child process whose close event would never fire under fake timers.
+    const dateSpy = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 5_000)
+    const second = await config.saveBackgroundImage("auth", PNG_1PX)
+    dateSpy.mockRestore()
 
     expect(second).not.toBe(first)
     // The previous "auth-*" file is gone; only the new one remains for the slot.
@@ -214,14 +215,15 @@ describe("saveBackgroundImage()", () => {
     const config = await loadConfig()
     const themeDir = path.join(tmpDir, "theme")
 
-    config.saveBackgroundImage("auth", PNG_1PX)
-    config.saveBackgroundImage("managerGame", PNG_1PX)
+    await config.saveBackgroundImage("auth", PNG_1PX)
+    await config.saveBackgroundImage("managerGame", PNG_1PX)
 
-    // Re-upload auth; managerGame must survive.
-    vi.useFakeTimers()
-    vi.setSystemTime(Date.now() + 5_000)
-    config.saveBackgroundImage("auth", PNG_1PX)
-    vi.useRealTimers()
+    // Re-upload auth; managerGame must survive. A Date.now spy (not fake timers)
+    // is used because toWebp spawns a real cwebp child process whose close event
+    // would never fire under fake timers.
+    const dateSpy = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 5_000)
+    await config.saveBackgroundImage("auth", PNG_1PX)
+    dateSpy.mockRestore()
 
     const files = fs.readdirSync(themeDir)
     expect(files.filter((f) => f.startsWith("auth-"))).toHaveLength(1)
@@ -232,8 +234,8 @@ describe("saveBackgroundImage()", () => {
     const config = await loadConfig()
 
     for (const slot of THEME_SLOTS) {
-      const out = config.saveBackgroundImage(slot, PNG_1PX)
-      expect(out).toMatch(new RegExp(`^/theme/${slot}-\\d+\\.(png|jpg|webp)$`))
+      const out = await config.saveBackgroundImage(slot, PNG_1PX)
+      expect(out).toMatch(new RegExp(`^/theme/${slot}-\\d+\\.webp$`))
     }
   })
 })

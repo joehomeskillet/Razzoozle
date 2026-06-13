@@ -81,9 +81,9 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.MANAGER.UPLOAD_BACKGROUND,
     manager.withAuth(
       socket,
-      (payload: { slot: ThemeSlot; dataUrl: string }) => {
+      async (payload: { slot: ThemeSlot; dataUrl: string }) => {
         try {
-          const path = saveBackgroundImage(payload.slot, payload.dataUrl)
+          const path = await saveBackgroundImage(payload.slot, payload.dataUrl)
           socket.emit(EVENTS.MANAGER.BACKGROUND_UPLOADED, {
             slot: payload.slot,
             path,

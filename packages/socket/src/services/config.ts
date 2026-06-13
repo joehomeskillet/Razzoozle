@@ -17,6 +17,7 @@ import {
 import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import { themeValidator } from "@razzia/common/validators/theme"
 import { gameResultValidator } from "@razzia/socket/services/validators"
+import { toWebp } from "@razzia/socket/services/webp"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { submissionRecordValidator } from "@razzia/common/validators/submission"
 import type {
@@ -420,7 +421,7 @@ export const deleteSubmission = (id: string): void => {
 // config volume, mirroring saveBackgroundImage's /theme/ mechanism). The bytes
 // are fetched over HTTP by the caller so the socket container never needs to
 // reach the ComfyUI host filesystem. `destName` is server-generated
-// (gen-<nanoid>.png) and re-checked with assertSafeId stem.
+// (gen-<nanoid>.webp) and re-checked with assertSafeId stem.
 export const saveGeneratedImageBytes = (
   buffer: Buffer,
   destName: string,
@@ -457,12 +458,6 @@ export const saveQuizz = (data: unknown): { id: string } => {
 // ---- Theme (backgrounds + colors) ---------------------------------------
 // THEME_SLOTS / ThemeSlot are imported from @razzia/common (single source of
 // truth shared with the web client). The runtime guard below is unchanged.
-
-const MIME_EXT: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-}
 
 export const getTheme = (): Theme => {
   const filePath = getPath("theme/theme.json")
@@ -512,10 +507,10 @@ export const setTheme = (data: unknown): Theme => {
 
 // Persist an uploaded background image (data URL) for a slot and return its
 // public "/theme/<file>" path (served by nginx from the config volume).
-export const saveBackgroundImage = (
+export const saveBackgroundImage = async (
   slot: ThemeSlot,
   dataUrl: string,
-): string => {
+): Promise<string> => {
   if (!THEME_SLOTS.includes(slot)) {
     throw new Error("errors:theme.invalidSlot")
   }
@@ -526,8 +521,6 @@ export const saveBackgroundImage = (
     throw new Error("errors:theme.invalidImage")
   }
 
-  const mime = match[1]
-  const ext = MIME_EXT[mime] ?? "png"
   const buffer = Buffer.from(match[2], "base64")
 
   // 8 MB hard cap
@@ -548,8 +541,10 @@ export const saveBackgroundImage = (
     }
   }
 
-  const filename = `${slot}-${Date.now()}.${ext}`
-  fs.writeFileSync(resolve(themeDir, filename), buffer)
+  // Transcode every upload to WebP so served theme assets are WebP-only.
+  const webp = await toWebp(buffer)
+  const filename = `${slot}-${Date.now()}.webp`
+  fs.writeFileSync(resolve(themeDir, filename), webp)
 
   return `/theme/${filename}`
 }
