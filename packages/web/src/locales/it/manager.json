@@ -53,7 +53,8 @@
     "quizz": "Quiz",
     "results": "Risultati",
     "design": "Design",
-    "satellite": "Satellite"
+    "satellite": "Satellite",
+    "submissions": "Proposte"
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -120,5 +121,16 @@
       "imageUploaded": "Immagine caricata",
       "saved": "Design salvato"
     }
+  },
+  "submissions": {
+    "empty": "Nessuna proposta in sospeso.",
+    "approve": "Approva",
+    "reject": "Rifiuta",
+    "edit": "Modifica",
+    "preview": "Anteprima",
+    "selectQuizz": "Seleziona quiz",
+    "confirmReject": "Vuoi davvero rifiutare questa proposta?",
+    "submittedBy": "Inviata da {{name}}",
+    "submittedAt": "il {{date}}"
   }
 }

@@ -62,7 +62,8 @@
     "quizz": "Cuestionario",
     "results": "Resultados",
     "design": "Diseño",
-    "satellite": "Satélite"
+    "satellite": "Satélite",
+    "submissions": "Sugerencias"
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -120,5 +121,16 @@
       "imageUploaded": "Imagen subida",
       "saved": "Diseño guardado"
     }
+  },
+  "submissions": {
+    "empty": "No hay sugerencias pendientes.",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "edit": "Editar",
+    "preview": "Vista previa",
+    "selectQuizz": "Seleccionar quiz",
+    "confirmReject": "¿Seguro que quieres rechazar esta sugerencia?",
+    "submittedBy": "Enviada por {{name}}",
+    "submittedAt": "el {{date}}"
   }
 }

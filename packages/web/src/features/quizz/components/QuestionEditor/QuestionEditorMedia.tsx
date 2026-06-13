@@ -1,19 +1,39 @@
+import { EVENTS } from "@razzia/common/constants"
 import type { QuestionMediaType } from "@razzia/common/types/game"
 import { questionMediaValidator } from "@razzia/common/validators/quizz"
 import Button from "@razzia/web/components/Button"
 import Card from "@razzia/web/components/Card"
 import Input from "@razzia/web/components/Input"
+import Loader from "@razzia/web/components/Loader"
 import QuestionMedia from "@razzia/web/components/QuestionMedia"
+import {
+  useEvent,
+  useSocket,
+} from "@razzia/web/features/game/contexts/socket-context"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
-import { Image, ImageOff, Music, Video } from "lucide-react"
-import { type ChangeEvent } from "react"
+import { Image, ImageOff, Music, Sparkles, Video } from "lucide-react"
+import { useState, type ChangeEvent } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const QuestionEditorMedia = () => {
   const { updateQuestion, currentIndex, currentQuestion } = useQuizzEditor()
+  const { socket } = useSocket()
   const questionMedia = currentQuestion.media
   const { t } = useTranslation()
+  const [aiPrompt, setAiPrompt] = useState("")
+  const [generating, setGenerating] = useState(false)
+
+  useEvent(EVENTS.MANAGER.IMAGE_GENERATED, ({ url }) => {
+    updateQuestion(currentIndex, { media: { type: "image", url } })
+    setGenerating(false)
+    setAiPrompt("")
+  })
+
+  useEvent(EVENTS.MANAGER.IMAGE_ERROR, (message) => {
+    toast.error(t(message))
+    setGenerating(false)
+  })
 
   const hadnleChangeMediaType = (type: QuestionMediaType) => () => {
     const result = questionMediaValidator.safeParse({
@@ -42,6 +62,17 @@ const QuestionEditorMedia = () => {
     updateQuestion(currentIndex, {
       media: { url: e.target.value },
     })
+  }
+
+  const handleGenerate = () => {
+    const prompt = aiPrompt.trim()
+
+    if (!prompt || generating) {
+      return
+    }
+
+    setGenerating(true)
+    socket.emit(EVENTS.MANAGER.GENERATE_IMAGE, { prompt })
   }
 
   return (
@@ -87,6 +118,31 @@ const QuestionEditorMedia = () => {
               <div className="flex items-center gap-1.5">
                 <Music className="size-6" />
                 <p>{t("quizz:question.media.audio")}</p>
+              </div>
+            </Button>
+          </div>
+
+          <div className="mt-2 flex w-full max-w-md flex-col items-center gap-2 border-t border-gray-200 pt-3">
+            <Input
+              variant="sm"
+              className="w-full"
+              placeholder={t("quizz:question.media.aiPromptPlaceholder")}
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              disabled={generating}
+            />
+            <Button
+              size="sm"
+              onClick={handleGenerate}
+              disabled={generating || !aiPrompt.trim()}
+            >
+              <div className="flex items-center gap-1.5">
+                {generating ? (
+                  <Loader className="size-5 text-white" />
+                ) : (
+                  <Sparkles className="size-5" />
+                )}
+                <p>{t("quizz:question.media.aiGenerate")}</p>
               </div>
             </Button>
           </div>

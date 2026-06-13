@@ -69,6 +69,21 @@ export const EVENTS = {
     UPLOAD_BACKGROUND: "manager:uploadBackground",
     BACKGROUND_UPLOADED: "manager:backgroundUploaded",
     THEME_ERROR: "manager:themeError",
+    // Public question submission (client -> server, no auth)
+    SUBMIT_QUESTION: "manager:submitQuestion",
+    // Admin submission moderation (client -> server, auth-gated)
+    LIST_SUBMISSIONS: "manager:listSubmissions",
+    APPROVE_SUBMISSION: "manager:approveSubmission",
+    REJECT_SUBMISSION: "manager:rejectSubmission",
+    EDIT_SUBMISSION: "manager:editSubmission",
+    // Server -> client
+    SUBMISSIONS_DATA: "manager:submissionsData",
+    SUBMISSION_ERROR: "manager:submissionError",
+    SUBMIT_SUCCESS: "manager:submitSuccess",
+    // AI image generation (public, hard-throttled)
+    GENERATE_IMAGE: "manager:generateImage",
+    IMAGE_GENERATED: "manager:imageGenerated",
+    IMAGE_ERROR: "manager:imageError",
   },
   QUIZZ: {
     GET: "quizz:get",

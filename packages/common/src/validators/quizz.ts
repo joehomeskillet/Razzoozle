@@ -32,6 +32,7 @@ export const questionValidator = z
     time: z.number().int().min(5).max(120),
     practice: z.boolean().optional(),
     bonus: z.boolean().optional(),
+    submittedBy: z.string().optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {

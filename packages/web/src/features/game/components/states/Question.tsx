@@ -2,14 +2,18 @@ import { MEDIA_TYPES } from "@razzia/common/constants"
 import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import { useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
 interface Props {
   data: CommonStatusDataMap["SHOW_QUESTION"]
 }
 
-const Question = ({ data: { question, media, cooldown } }: Props) => {
+const Question = ({
+  data: { question, media, cooldown, submittedBy },
+}: Props) => {
   const [sfxShow] = useSound(SFX.SHOW_SOUND, { volume: 0.5 })
+  const { t } = useTranslation()
 
   useEffect(() => {
     sfxShow()
@@ -21,6 +25,12 @@ const Question = ({ data: { question, media, cooldown } }: Props) => {
         <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,6vh,7rem)]">
           {question}
         </h2>
+
+        {submittedBy && (
+          <p className="text-sm text-white/60 text-center">
+            {t("game:submittedBy", { name: submittedBy })}
+          </p>
+        )}
 
         {media?.type === MEDIA_TYPES.IMAGE && (
           <img

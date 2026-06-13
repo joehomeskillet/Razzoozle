@@ -18,6 +18,11 @@ import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import { themeValidator } from "@razzia/common/validators/theme"
 import { gameResultValidator } from "@razzia/socket/services/validators"
 import { normalizeFilename } from "@razzia/socket/utils/game"
+import { submissionRecordValidator } from "@razzia/common/validators/submission"
+import type {
+  Submission,
+  SubmissionMeta,
+} from "@razzia/common/types/submission"
 import fs from "fs"
 import { resolve } from "path"
 
@@ -33,7 +38,7 @@ const getPath = (path = "") =>
 // Quizz/result ids are server-generated uuids / safe slugs. Reject anything that
 // could escape the quizz/results dir (path traversal) before using it in a path.
 const SAFE_ID = /^[A-Za-z0-9_-]+$/
-const assertSafeId = (id: string): void => {
+export const assertSafeId = (id: string): void => {
   if (typeof id !== "string" || !SAFE_ID.test(id)) {
     throw new Error("Invalid id")
   }
@@ -82,6 +87,20 @@ export const initConfig = () => {
       getPath("quizz/example.json"),
       JSON.stringify(EXAMPLE_QUIZZ, null, 2),
     )
+  }
+
+  // Submission moderation queue + AI-generated media store. Mirror the quizz
+  // dir bootstrap so both folders exist on a fresh config volume.
+  const submissionsDir = getPath("submissions")
+
+  if (!fs.existsSync(submissionsDir)) {
+    fs.mkdirSync(submissionsDir, { recursive: true })
+  }
+
+  const mediaDir = getPath("media")
+
+  if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true })
   }
 }
 
@@ -292,6 +311,140 @@ export const deleteResult = (id: string): void => {
   }
 
   fs.unlinkSync(filePath)
+}
+
+// ---- Submissions (public question-submission moderation queue) ------------
+// Records are validated through submissionRecordValidator on every read; every
+// path interpolation is guarded by assertSafeId so a user-supplied id cannot
+// escape the submissions dir.
+
+export const saveSubmission = (data: Submission): void => {
+  assertSafeId(data.id)
+
+  const dir = getPath("submissions")
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+
+  fs.writeFileSync(
+    getPath(`submissions/${data.id}.json`),
+    JSON.stringify(data, null, 2),
+  )
+}
+
+export const getSubmissions = (): Submission[] => {
+  const dir = getPath("submissions")
+
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith(".json"))
+    .flatMap((file) => {
+      try {
+        const raw = fs.readFileSync(getPath(`submissions/${file}`), "utf-8")
+        const result = submissionRecordValidator.safeParse(JSON.parse(raw))
+
+        if (!result.success) {
+          console.warn(`Invalid submission file "${file}":`, result.error.issues)
+
+          return []
+        }
+
+        return [result.data as Submission]
+      } catch {
+        return []
+      }
+    })
+}
+
+export const getSubmissionsMeta = (): SubmissionMeta[] =>
+  getSubmissions().map(({ id, submittedBy, submittedAt, status, question }) => ({
+    id,
+    submittedBy,
+    submittedAt,
+    status,
+    question: question.question,
+  }))
+
+export const getSubmissionById = (id: string): Submission | null => {
+  assertSafeId(id)
+
+  const filePath = getPath(`submissions/${id}.json`)
+
+  if (!fs.existsSync(filePath)) {
+    return null
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+    const result = submissionRecordValidator.safeParse(JSON.parse(raw))
+
+    return result.success ? (result.data as Submission) : null
+  } catch {
+    return null
+  }
+}
+
+export const updateSubmission = (
+  id: string,
+  data: Partial<Submission>,
+): void => {
+  assertSafeId(id)
+
+  const existing = getSubmissionById(id)
+
+  if (!existing) {
+    throw new Error(`Submission "${id}" not found`)
+  }
+
+  // Force the id back to the validated one so a Partial can never repoint it.
+  saveSubmission({ ...existing, ...data, id })
+}
+
+export const deleteSubmission = (id: string): void => {
+  assertSafeId(id)
+
+  const filePath = getPath(`submissions/${id}.json`)
+
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath)
+  }
+}
+
+// Copy a ComfyUI-produced PNG into config/media under a server-generated name
+// and return its public "/media/<file>" path (served by nginx from the config
+// volume, mirroring saveBackgroundImage's /theme/ mechanism). `destName` is
+// server-generated (gen-<nanoid>.png) and re-checked with assertSafeId stem.
+export const saveGeneratedImage = (
+  srcFilename: string,
+  destName: string,
+): string => {
+  // destName is server-generated; guard its stem so it can never escape /media.
+  assertSafeId(destName.replace(/\.png$/u, ""))
+
+  const srcDir =
+    process.env.COMFYUI_OUTPUT_DIR ?? "/nvmetank1/AI/comfyui/output"
+  const srcPath = resolve(srcDir, srcFilename)
+
+  // Keep the copy inside the source dir — defend against a maliciously crafted
+  // history filename trying to read outside the ComfyUI output directory.
+  if (!srcPath.startsWith(resolve(srcDir))) {
+    throw new Error("errors:submission.imageGenFailed")
+  }
+
+  const mediaDir = getPath("media")
+
+  if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true })
+  }
+
+  fs.copyFileSync(srcPath, getPath(`media/${destName}`))
+
+  return `/media/${destName}`
 }
 
 export const saveQuizz = (data: unknown): { id: string } => {

@@ -47,5 +47,10 @@
   "theme": {
     "imageTooLarge": "L'immagine è troppo grande (max 8 MB)",
     "uploadFailed": "Impossibile caricare l'immagine"
+  },
+  "submission": {
+    "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",
+    "notFound": "Proposta non trovata.",
+    "quizzNotFound": "Quiz non trovato."
   }
 }

@@ -317,6 +317,9 @@ export class RoundManager {
       question: question.question,
       media: imageMedia,
       cooldown: question.cooldown,
+      // Display-only attribution; undefined for non-submitted questions. Carries
+      // NO correct-answer data — solutions stay server-side (anti-cheat).
+      submittedBy: question.submittedBy,
     })
 
     await sleep(question.cooldown)
@@ -370,6 +373,9 @@ export class RoundManager {
           }
         : { answers: question.answers }),
       ...llAnchors,
+      // Display-only attribution; same value carried through both phases. NO
+      // solutions/correct field is ever broadcast to clients (anti-cheat).
+      submittedBy: question.submittedBy,
     })
 
     // Sim mode: the answer window is now open — let the BotManager schedule its

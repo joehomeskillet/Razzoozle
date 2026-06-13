@@ -36,6 +36,7 @@ const Answers = ({
     question,
     answers,
     media,
+    submittedBy,
     time,
     totalPlayer,
     type,
@@ -312,6 +313,12 @@ const Answers = ({
         </h2>
 
         <QuestionMedia media={media} alt={question} />
+
+        {submittedBy && (
+          <p className="text-sm text-white/60 text-center">
+            {t("game:submittedBy", { name: submittedBy })}
+          </p>
+        )}
       </div>
 
       <div>

@@ -1,0 +1,19 @@
+{
+  "form": {
+    "title": "Suggest a question",
+    "namePlaceholder": "Your name (4–20 characters)",
+    "questionPlaceholder": "Your question...",
+    "answerPlaceholder": "Answer {{index}}",
+    "correctAnswerLabel": "Correct answer",
+    "submitButton": "Submit question"
+  },
+  "success": {
+    "title": "Thank you",
+    "body": "Your question has been submitted and is under review.",
+    "again": "Submit another question"
+  },
+  "errors": {
+    "rateLimited": "You've submitted too many questions. Please wait a moment.",
+    "serverError": "Something went wrong. Please try again."
+  }
+}

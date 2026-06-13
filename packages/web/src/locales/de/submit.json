@@ -1,0 +1,19 @@
+{
+  "form": {
+    "title": "Frage vorschlagen",
+    "namePlaceholder": "Dein Name (4–20 Zeichen)",
+    "questionPlaceholder": "Deine Frage...",
+    "answerPlaceholder": "Antwort {{index}}",
+    "correctAnswerLabel": "Richtige Antwort",
+    "submitButton": "Frage einreichen"
+  },
+  "success": {
+    "title": "Danke",
+    "body": "Deine Frage wurde eingereicht und wird geprüft.",
+    "again": "Weitere Frage einreichen"
+  },
+  "errors": {
+    "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",
+    "serverError": "Ein Fehler ist aufgetreten. Bitte versuche es erneut."
+  }
+}

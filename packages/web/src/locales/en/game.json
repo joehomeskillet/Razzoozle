@@ -40,5 +40,6 @@
     "correctAnswer": "Correct answer",
     "averageGuess": "Average guess: {{value}}"
   },
-  "pollThanks": "Thanks for your vote"
+  "pollThanks": "Thanks for your vote",
+  "submittedBy": "submitted by {{name}}"
 }

@@ -8,6 +8,7 @@ import type {
 } from "@razzia/common/types/game"
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
+import type { Submission } from "@razzia/common/types/submission"
 import type { Theme } from "@razzia/common/types/theme"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
@@ -149,6 +150,13 @@ export interface ServerToClientEvents {
   }) => void
   [EVENTS.MANAGER.THEME_ERROR]: (_message: string) => void
 
+  // Question-submission events (feature #5)
+  [EVENTS.MANAGER.SUBMISSIONS_DATA]: (_submissions: Submission[]) => void
+  [EVENTS.MANAGER.SUBMISSION_ERROR]: (_message: string) => void
+  [EVENTS.MANAGER.SUBMIT_SUCCESS]: () => void
+  [EVENTS.MANAGER.IMAGE_GENERATED]: (_data: { url: string }) => void
+  [EVENTS.MANAGER.IMAGE_ERROR]: (_message: string) => void
+
   // Quizz events
   [EVENTS.QUIZZ.SAVE_SUCCESS]: (_data: { id: string }) => void
   [EVENTS.QUIZZ.UPDATE_SUCCESS]: (_data: { id: string }) => void
@@ -200,6 +208,17 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.GET_CONFIG]: () => void
   [EVENTS.MANAGER.LOGOUT]: () => void
+
+  // Question-submission actions (feature #5)
+  [EVENTS.MANAGER.SUBMIT_QUESTION]: (_payload: unknown) => void
+  [EVENTS.MANAGER.GENERATE_IMAGE]: (_payload: { prompt: string }) => void
+  [EVENTS.MANAGER.LIST_SUBMISSIONS]: () => void
+  [EVENTS.MANAGER.EDIT_SUBMISSION]: (_payload: unknown) => void
+  [EVENTS.MANAGER.APPROVE_SUBMISSION]: (_payload: {
+    id: string
+    quizzId: string
+  }) => void
+  [EVENTS.MANAGER.REJECT_SUBMISSION]: (_payload: { id: string }) => void
 
   // Display (satellite) actions
   [EVENTS.DISPLAY.REGISTER]: () => void

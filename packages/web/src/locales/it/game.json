@@ -40,5 +40,6 @@
     "streak": "Serie da {{count}} (+{{percent}}%)",
     "bonus": "Bonus ×2",
     "firstCorrect": "Più veloce +100"
-  }
+  },
+  "submittedBy": "inviata da {{name}}"
 }

@@ -1,7 +1,11 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { Socket } from "@razzia/common/types/game/socket"
 import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getQuizzMeta, getResultsMeta } from "@razzia/socket/services/config"
+import {
+  getQuizzMeta,
+  getResultsMeta,
+  getSubmissionsMeta,
+} from "@razzia/socket/services/config"
 
 const getClientId = (socket: SocketContext["socket"]) =>
   socket.handshake.auth.clientId as string
@@ -10,6 +14,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
   socket.emit(EVENTS.MANAGER.CONFIG, {
     quizz: getQuizzMeta(),
     results: getResultsMeta(),
+    submissions: getSubmissionsMeta(),
   })
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi
