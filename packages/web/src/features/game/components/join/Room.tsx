@@ -102,6 +102,15 @@ const Room = () => {
         {isJoining && <Loader className="h-5 w-5" />}
         {t("common:submit")}
       </Button>
+
+      {/* Public entry point to the question-submission page (standalone flow,
+          so a plain anchor / full navigation is fine and keeps Cmd-click). */}
+      <a
+        href="/submit"
+        className="text-primary focus-visible:ring-primary/40 mt-4 block rounded text-center text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      >
+        {t("submit:form.title")}
+      </a>
     </Card>
   )
 }
