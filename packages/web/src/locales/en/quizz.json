@@ -69,5 +69,7 @@
       "fuzzy": "Fuzzy (typos ok)"
     },
     "minAnswersRequired": "At least one answer required"
-  }
+  },
+  "addAnswerCountLabel": "Add answer",
+  "removeAnswerCountLabel": "Remove answer"
 }

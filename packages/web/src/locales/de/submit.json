@@ -6,7 +6,14 @@
     "questionPlaceholder": "Deine Frage...",
     "answerPlaceholder": "Antwort {{index}}",
     "correctAnswerLabel": "Richtige Antwort",
-    "submitButton": "Frage einreichen"
+    "submitButton": "Frage einreichen",
+    "section": {
+      "name": "Dein Name",
+      "question": "Deine Frage",
+      "media": "Medien (optional)",
+      "answers": "Antworten",
+      "settings": "Einstellungen"
+    }
   },
   "success": {
     "title": "Danke",

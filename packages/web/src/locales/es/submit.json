@@ -6,7 +6,14 @@
     "questionPlaceholder": "Tu pregunta...",
     "answerPlaceholder": "Respuesta {{index}}",
     "correctAnswerLabel": "Respuesta correcta",
-    "submitButton": "Enviar pregunta"
+    "submitButton": "Enviar pregunta",
+    "section": {
+      "name": "Tu nombre",
+      "question": "Tu pregunta",
+      "media": "Multimedia (opcional)",
+      "answers": "Respuestas",
+      "settings": "Ajustes"
+    }
   },
   "success": {
     "title": "Gracias",

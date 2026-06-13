@@ -156,7 +156,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             </p>
           </header>
 
-          <RevealSection index={0} label="Dein Name">
+          <RevealSection index={0} label={t("submit:form.section.name")}>
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <label htmlFor="submit-submitted-by" className="sr-only">
                 {t("submit:form.namePlaceholder")}
@@ -172,21 +172,21 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             </div>
           </RevealSection>
 
-          <RevealSection index={1} label="Deine Frage">
+          <RevealSection index={1} label={t("submit:form.section.question")}>
             <QuestionEditorTitle />
             <div className="rounded-2xl bg-white p-4 shadow-sm [&>div>div:first-child]:-mx-1 [&>div>div:first-child]:overflow-x-auto [&>div>div:first-child]:px-1 [&>div>div:first-child]:pb-1 [&>div>div:first-child>button]:min-h-11 [&>div>div:first-child>button]:shrink-0">
               <QuestionEditorType />
             </div>
           </RevealSection>
 
-          <RevealSection index={2} label="Medien (optional)">
+          <RevealSection index={2} label={t("submit:form.section.media")}>
             <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full [&>div]:min-h-0">
               <QuestionEditorMedia />
             </div>
           </RevealSection>
 
           {!isSlider && !isTypeAnswer && (
-            <RevealSection index={3} label="Antworten">
+            <RevealSection index={3} label={t("submit:form.section.answers")}>
               <div className="w-full overflow-hidden [&>div>div:nth-child(2)]:grid-cols-1 sm:[&>div>div:nth-child(2)]:grid-cols-2">
                 <QuestionEditorAnswers />
               </div>
@@ -199,7 +199,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             </RevealSection>
           )}
 
-          <RevealSection index={4} label="Einstellungen">
+          <RevealSection index={4} label={t("submit:form.section.settings")}>
             <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:p-0 [&>aside]:shadow-none">
               <QuestionEditorConfig />
             </div>

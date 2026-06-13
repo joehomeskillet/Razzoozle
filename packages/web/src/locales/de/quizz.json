@@ -69,5 +69,7 @@
       "fuzzy": "Tolerant (Tippfehler ok)"
     },
     "minAnswersRequired": "Mindestens eine Antwort erforderlich"
-  }
+  },
+  "addAnswerCountLabel": "Antwort hinzufügen",
+  "removeAnswerCountLabel": "Antwort entfernen"
 }

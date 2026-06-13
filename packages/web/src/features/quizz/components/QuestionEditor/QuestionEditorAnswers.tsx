@@ -70,16 +70,20 @@ const QuestionEditorAnswers = () => {
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={removeAnswer}
             disabled={answers.length <= 2}
-            className="flex size-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-40"
+            aria-label={t("quizz:removeAnswerCountLabel")}
+            className="flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
           >
             <Minus className="size-4" />
           </button>
           <button
+            type="button"
             onClick={addAnswer}
             disabled={answers.length >= 4}
-            className="flex size-7 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-40"
+            aria-label={t("quizz:addAnswerCountLabel")}
+            className="flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
           >
             <Plus className="size-4" />
           </button>
