@@ -11,7 +11,7 @@ import {
 } from "@razzia/web/features/manager/components/console"
 import ResultModal from "@razzia/web/features/manager/components/ResultModal"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
-import { BarChart3, Trash2 } from "lucide-react"
+import { BarChart3, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useState } from "react"
 import toast from "react-hot-toast"
@@ -61,6 +61,16 @@ const ConfigResults = () => {
     setPendingDelete(null)
   }
 
+  const handleShare = (id: string) => async () => {
+    const url = `${window.location.origin}/r/${id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(t("manager:result.share.copied"))
+    } catch {
+      toast.error(t("manager:result.share.copyFailed"))
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {results.length === 0 ? (
@@ -107,6 +117,12 @@ const ConfigResults = () => {
                 onClick={handleOpen(r.id)}
                 bodyLabel={t("manager:result.open", { name: r.subject })}
                 actions={[
+                  {
+                    key: "share",
+                    icon: Share2,
+                    label: t("manager:result.share.action"),
+                    onClick: handleShare(r.id),
+                  },
                   {
                     key: "delete",
                     icon: Trash2,

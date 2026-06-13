@@ -15,6 +15,7 @@ import { Route as SubmitIndexRouteImport } from './pages/submit/index'
 import { Route as DisplayIndexRouteImport } from './pages/display/index'
 import { Route as authIndexRouteImport } from './pages/(auth)/index'
 import { Route as SatelliteGameIdRouteImport } from './pages/satellite/$gameId'
+import { Route as RIdRouteImport } from './pages/r/$id'
 import { Route as PartyGameIdRouteImport } from './pages/party/$gameId'
 import { Route as ManagerConfigRouteImport } from './pages/manager/config'
 import { Route as DisplayPlayRouteImport } from './pages/display/play'
@@ -51,6 +52,11 @@ const authIndexRoute = authIndexRouteImport.update({
 const SatelliteGameIdRoute = SatelliteGameIdRouteImport.update({
   id: '/satellite/$gameId',
   path: '/satellite/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RIdRoute = RIdRouteImport.update({
+  id: '/r/$id',
+  path: '/r/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartyGameIdRoute = PartyGameIdRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/display/play': typeof DisplayPlayRoute
   '/manager/config': typeof ManagerConfigRoute
   '/party/$gameId': typeof PartyGameIdRoute
+  '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/display/play': typeof DisplayPlayRoute
   '/manager/config': typeof ManagerConfigRoute
   '/party/$gameId': typeof PartyGameIdRoute
+  '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/': typeof authIndexRoute
   '/display': typeof DisplayIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/display/play': typeof DisplayPlayRoute
   '/manager/config': typeof ManagerConfigRoute
   '/party/$gameId': typeof PartyGameIdRoute
+  '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/(auth)/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/display/play'
     | '/manager/config'
     | '/party/$gameId'
+    | '/r/$id'
     | '/satellite/$gameId'
     | '/'
     | '/display/'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/display/play'
     | '/manager/config'
     | '/party/$gameId'
+    | '/r/$id'
     | '/satellite/$gameId'
     | '/'
     | '/display'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/display/play'
     | '/manager/config'
     | '/party/$gameId'
+    | '/r/$id'
     | '/satellite/$gameId'
     | '/(auth)/'
     | '/display/'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   ManagerQuizzLayoutRoute: typeof ManagerQuizzLayoutRouteWithChildren
   ManagerConfigRoute: typeof ManagerConfigRoute
   PartyGameIdRoute: typeof PartyGameIdRoute
+  RIdRoute: typeof RIdRoute
   SatelliteGameIdRoute: typeof SatelliteGameIdRoute
   SubmitIndexRoute: typeof SubmitIndexRoute
   PartyManagerGameIdRoute: typeof PartyManagerGameIdRoute
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/satellite/$gameId'
       fullPath: '/satellite/$gameId'
       preLoaderRoute: typeof SatelliteGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$id': {
+      id: '/r/$id'
+      path: '/r/$id'
+      fullPath: '/r/$id'
+      preLoaderRoute: typeof RIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/party/$gameId': {
@@ -347,6 +367,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManagerQuizzLayoutRoute: ManagerQuizzLayoutRouteWithChildren,
   ManagerConfigRoute: ManagerConfigRoute,
   PartyGameIdRoute: PartyGameIdRoute,
+  RIdRoute: RIdRoute,
   SatelliteGameIdRoute: SatelliteGameIdRoute,
   SubmitIndexRoute: SubmitIndexRoute,
   PartyManagerGameIdRoute: PartyManagerGameIdRoute,

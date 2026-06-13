@@ -57,6 +57,11 @@
       "correctAnswer": "Richtige Antwort:",
       "average": "Schnitt der Schätzungen:",
       "guessSummary": "{{count}} Schätzungen · {{noAnswer}} ohne Antwort"
+    },
+    "share": {
+      "action": "Link teilen",
+      "copied": "Link kopiert",
+      "copyFailed": "Link konnte nicht kopiert werden"
     }
   },
   "tabs": {

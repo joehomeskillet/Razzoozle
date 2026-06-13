@@ -5,6 +5,7 @@ import type {
   GameUpdateQuestion,
   Player,
   QuizzWithId,
+  SharedResult,
 } from "@razzia/common/types/game"
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
@@ -164,6 +165,7 @@ export interface ServerToClientEvents {
 
   // Results events
   [EVENTS.RESULTS.DATA]: (_result: GameResult) => void
+  [EVENTS.RESULTS.SHARED_DATA]: (_result: SharedResult) => void
 
   // Display (satellite) events
   [EVENTS.DISPLAY.REGISTERED]: (_data: { code: string }) => void
@@ -281,6 +283,7 @@ export interface ClientToServerEvents {
   // Results actions
   [EVENTS.RESULTS.GET]: (_id: string) => void
   [EVENTS.RESULTS.DELETE]: (_id: string) => void
+  [EVENTS.RESULTS.GET_SHARED]: (_id: string) => void
 
   // Common
   disconnect: () => void

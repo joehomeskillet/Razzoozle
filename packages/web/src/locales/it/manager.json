@@ -48,6 +48,11 @@
       "correctAnswer": "Risposta corretta:",
       "average": "Media delle stime:",
       "guessSummary": "{{count}} stime · {{noAnswer}} senza risposta"
+    },
+    "share": {
+      "action": "Condividi link",
+      "copied": "Link copiato",
+      "copyFailed": "Impossibile copiare il link"
     }
   },
   "tabs": {

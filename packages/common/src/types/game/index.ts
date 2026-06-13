@@ -97,3 +97,13 @@ export interface GameResultMeta {
   date: string
   playerCount: number
 }
+
+// PUBLIC, shareable post-event leaderboard. Deliberately OMITS `questions`
+// (per-question answers/solutions) — privacy + anti-cheat: never leak the quiz
+// content on a public link. Only the final ranking is shared.
+export interface SharedResult {
+  id: string
+  subject: string
+  date: string
+  players: GameResultPlayer[]
+}

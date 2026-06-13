@@ -57,6 +57,11 @@
       "correctAnswer": "Correct answer:",
       "average": "Average of guesses:",
       "guessSummary": "{{count}} guesses · {{noAnswer}} without an answer"
+    },
+    "share": {
+      "action": "Share link",
+      "copied": "Link copied",
+      "copyFailed": "Could not copy the link"
     }
   },
   "tabs": {
