@@ -62,7 +62,7 @@ const QuizzEditorCard = ({
       onKeyDown={handleKeyDown}
       className={twMerge(
         clsx(
-          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 rounded-lg border-2 border-gray-200 bg-white px-6 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           {
             "border-primary": isActive,
           },
@@ -110,7 +110,7 @@ const QuizzEditorCard = ({
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
               aria-label={t("quizz:question.deleteQuestion")}
-              className="absolute top-1.5 right-1.5 hidden rounded-sm bg-white p-1 text-gray-400 group-hover:block hover:bg-red-50 hover:text-red-500"
+              className="focus-visible:outline-primary absolute top-1.5 right-1.5 rounded-md bg-white p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Trash2 className="size-3.5" />
             </button>

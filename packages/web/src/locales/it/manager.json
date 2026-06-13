@@ -22,6 +22,8 @@
     "deleted": "Risultato eliminato",
     "noAnswer": "Nessuna risposta",
     "none": "Nessun risultato ancora, termina una partita per vedere i rapporti qui",
+    "emptyHeadline": "Nessun risultato ancora",
+    "open": "Apri il risultato di \"{{name}}\"",
     "paginationOf": " di ",
     "stats": {
       "correctAnswers": "Risposte corrette",
@@ -108,6 +110,7 @@
       "text": "Testo"
     },
     "answerColors": "Colori delle risposte",
+    "contrastNote": "I colori primari chiari vengono scuriti automaticamente per testo e icone in modo che restino leggibili.",
     "scrim": "Scurisci lo sfondo ({{value}}%)",
     "backgrounds": "Sfondi",
     "bgSlots": {
@@ -124,6 +127,7 @@
   },
   "submissions": {
     "empty": "Nessuna proposta in sospeso.",
+    "emptyHeadline": "Nessuna proposta",
     "approve": "Approva",
     "reject": "Rifiuta",
     "edit": "Modifica",

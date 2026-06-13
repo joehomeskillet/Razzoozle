@@ -1,0 +1,20 @@
+// Shared admin-console design primitives (2026 redesign — spec §4).
+// Generic + presentational; i18n strings are passed in by the wiring phase.
+export { default as ConsoleShell } from "@razzia/web/features/manager/components/console/ConsoleShell"
+export type {
+  ConsoleNavItem,
+  ConsoleShellProps,
+} from "@razzia/web/features/manager/components/console/ConsoleShell"
+export { default as NavItem } from "@razzia/web/features/manager/components/console/NavItem"
+export type { NavItemProps } from "@razzia/web/features/manager/components/console/NavItem"
+export { default as SelectableRow } from "@razzia/web/features/manager/components/console/SelectableRow"
+export type { SelectableRowProps } from "@razzia/web/features/manager/components/console/SelectableRow"
+export { default as ListRow } from "@razzia/web/features/manager/components/console/ListRow"
+export type {
+  ListRowAction,
+  ListRowProps,
+} from "@razzia/web/features/manager/components/console/ListRow"
+export { default as EmptyState } from "@razzia/web/features/manager/components/console/EmptyState"
+export type { EmptyStateProps } from "@razzia/web/features/manager/components/console/EmptyState"
+export { default as Field } from "@razzia/web/features/manager/components/console/Field"
+export type { FieldProps } from "@razzia/web/features/manager/components/console/Field"

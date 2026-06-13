@@ -1,10 +1,12 @@
 import { EVENTS } from "@razzia/common/constants"
 import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
+import Input from "@razzia/web/components/Input"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
+import { EmptyState } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
-import clsx from "clsx"
-import { Check } from "lucide-react"
+import { Check, Inbox } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -29,6 +31,7 @@ const ConfigSubmissions = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const { t } = useTranslation()
+  const reducedMotion = useReducedMotion()
 
   const pending = submissions.filter((s) => s.status === "pending")
 
@@ -76,26 +79,55 @@ const ConfigSubmissions = () => {
     toast.success(t("manager:submissions.reject"))
   }
 
+  if (pending.length === 0) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col justify-center">
+        <EmptyState
+          icon={Inbox}
+          headline={t("manager:submissions.emptyHeadline")}
+          hint={t("manager:submissions.empty")}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 space-y-2 overflow-auto p-0.5">
-        {pending.map((s) => (
-          <div
+      <motion.div
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={
+          reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+        }
+      >
+        {pending.map((s, index) => (
+          <motion.div
             key={s.id}
-            className="rounded-md px-3 py-2.5 outline outline-gray-300"
+            className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200"
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={
+              reducedMotion
+                ? undefined
+                : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+            }
           >
             {editingId === s.id ? (
-              <input
+              <Input
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="focus-visible:outline-primary w-full rounded-md px-3 py-2 outline outline-gray-300 focus-visible:outline-2"
+                variant="sm"
+                className="min-h-11 w-full rounded-lg"
                 aria-label={t("manager:submissions.edit")}
               />
             ) : (
-              <p className="truncate font-medium">{s.question}</p>
+              <p className="truncate font-semibold text-gray-900">
+                {s.question}
+              </p>
             )}
 
-            <p className="mt-0.5 text-xs text-gray-400">
+            <p className="mt-1 text-sm text-gray-500">
               {t("manager:submissions.submittedBy", { name: s.submittedBy })}
               {" · "}
               {t("manager:submissions.submittedAt", {
@@ -103,14 +135,18 @@ const ConfigSubmissions = () => {
               })}
             </p>
 
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" onClick={handleOpenApprove(s.id)}>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="min-h-11 rounded-lg"
+                onClick={handleOpenApprove(s.id)}
+              >
                 {t("manager:submissions.approve")}
               </Button>
 
               <Button
                 size="sm"
-                className="bg-gray-200 text-gray-700"
+                className="min-h-11 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
                 onClick={handleOpenEdit(s.id, s.question)}
               >
                 {t("manager:submissions.edit")}
@@ -118,12 +154,16 @@ const ConfigSubmissions = () => {
 
               {editingId === s.id && (
                 <>
-                  <Button size="sm" onClick={handleSaveEdit(s.id)}>
+                  <Button
+                    size="sm"
+                    className="min-h-11 rounded-lg"
+                    onClick={handleSaveEdit(s.id)}
+                  >
                     {t("common:save")}
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-gray-200 text-gray-700"
+                    className="min-h-11 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
                     onClick={handleCancelEdit}
                   >
                     {t("common:cancel")}
@@ -135,7 +175,7 @@ const ConfigSubmissions = () => {
                 trigger={
                   <Button
                     size="sm"
-                    className="bg-red-500 text-white hover:brightness-95 active:brightness-90"
+                    className="min-h-11 rounded-lg bg-red-500 text-white hover:brightness-95 active:brightness-90"
                   >
                     {t("manager:submissions.reject")}
                   </Button>
@@ -148,12 +188,12 @@ const ConfigSubmissions = () => {
             </div>
 
             {approvingId === s.id && (
-              <div className="mt-2 space-y-1.5">
-                <p className="text-xs text-gray-500">
+              <div className="mt-3 space-y-2 rounded-lg bg-gray-50 p-3">
+                <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   {t("manager:submissions.selectQuizz")}
                 </p>
                 {quizzList.length === 0 ? (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-sm text-gray-500">
                     {t("manager:quizz.notFound")}
                   </p>
                 ) : (
@@ -161,29 +201,24 @@ const ConfigSubmissions = () => {
                     <button
                       key={quizz.id}
                       type="button"
-                      className={clsx(
-                        "flex w-full items-center justify-between rounded-md p-2.5 text-left outline outline-gray-300",
-                        "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2",
-                        "hover:outline-primary",
-                      )}
+                      className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg bg-white p-3 text-left outline-2 -outline-offset-2 outline-gray-200 transition-colors hover:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                       onClick={handleApprove(s.id, quizz.id)}
                     >
-                      <span className="min-w-0 truncate">{quizz.subject}</span>
-                      <Check className="text-primary size-4 shrink-0" />
+                      <span className="min-w-0 truncate font-medium text-gray-900">
+                        {quizz.subject}
+                      </span>
+                      <Check
+                        className="size-5 shrink-0 text-[var(--accent-contrast)]"
+                        aria-hidden
+                      />
                     </button>
                   ))
                 )}
               </div>
             )}
-          </div>
+          </motion.div>
         ))}
-
-        {pending.length === 0 && (
-          <p className="my-8 text-center text-gray-500">
-            {t("manager:submissions.empty")}
-          </p>
-        )}
-      </div>
+      </motion.div>
     </div>
   )
 }

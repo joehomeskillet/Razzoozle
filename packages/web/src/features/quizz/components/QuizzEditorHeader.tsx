@@ -87,44 +87,45 @@ const QuizzEditorHeader = () => {
   })
 
   return (
-    <header className="z-20 flex h-14 items-center justify-between gap-4 bg-white px-4 shadow-sm">
-      <div className="flex items-center gap-6">
-        <div className="flex flex-col">
-          <Input
-            id={SUBJECT_INPUT_ID}
-            variant="sm"
-            className="w-64"
-            value={subject}
-            onChange={handleChangeSubject}
-            placeholder={t("quizz:titleQuizzPlaceholder")}
-            aria-label={t("quizz:subjectInputLabel")}
-            aria-invalid={subjectError ? true : undefined}
-            aria-errormessage={subjectError ? SUBJECT_ERROR_ID : undefined}
-          />
-          {subjectError && (
-            <span
-              id={SUBJECT_ERROR_ID}
-              className="mt-0.5 text-xs font-semibold text-red-500"
-            >
-              {t(subjectError)}
-            </span>
-          )}
-        </div>
+    <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 shadow-sm sm:px-6">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Input
+          id={SUBJECT_INPUT_ID}
+          variant="sm"
+          className="min-h-11 w-full max-w-xs"
+          value={subject}
+          onChange={handleChangeSubject}
+          placeholder={t("quizz:titleQuizzPlaceholder")}
+          aria-label={t("quizz:subjectInputLabel")}
+          aria-invalid={subjectError ? true : undefined}
+          aria-errormessage={subjectError ? SUBJECT_ERROR_ID : undefined}
+        />
+        {subjectError && (
+          <span
+            id={SUBJECT_ERROR_ID}
+            className="mt-0.5 text-xs font-semibold text-red-500"
+          >
+            {t(subjectError)}
+          </span>
+        )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex shrink-0 gap-2">
         <Button
-          className="text-md bg-gray-200 px-4 py-2 font-semibold text-gray-600"
+          size="sm"
+          className="focus-visible:outline-primary min-h-11 bg-gray-100 px-4 font-semibold text-gray-700 hover:bg-gray-200"
           onClick={() => navigate({ to: "/manager" })}
         >
           {t("common:exit")}
         </Button>
         <Button
-          className="bg-primary text-md px-4 py-2"
+          size="sm"
+          className="min-h-11 px-4"
           onClick={handleSave}
           disabled={isSaving}
+          aria-busy={isSaving}
         >
-          {isSaving && <Loader className="size-5" />}
+          {isSaving && <Loader className="size-5 text-white" />}
           {t("common:save")}
         </Button>
       </div>

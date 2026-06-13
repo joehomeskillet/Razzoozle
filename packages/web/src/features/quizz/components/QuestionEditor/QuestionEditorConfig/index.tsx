@@ -14,7 +14,7 @@ const QuestionEditorConfig = () => {
   }
 
   return (
-    <aside className="z-10 m-3 flex w-68 shrink-0 flex-col gap-6 self-start overflow-auto rounded-xl bg-white p-4 shadow-sm">
+    <aside className="z-10 m-4 flex shrink-0 flex-col gap-6 self-start overflow-auto rounded-2xl bg-white p-4 shadow-sm xl:mt-6 xl:w-72">
       <ConfigSection title={t("quizz:question.config.timings")}>
         <ConfigField>
           <ConfigField.Label

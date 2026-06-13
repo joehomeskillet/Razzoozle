@@ -17,6 +17,17 @@
   --answer-text: #ffffff;
   --radius-theme: 16px;
   --bg-scrim: 0.4;
+
+  /*
+   * Derived accent tokens — globally available (not just inside the console).
+   * `color-mix()` re-evaluates at paint, so they track the runtime-themed
+   * `--color-primary` automatically with no JS. `--accent-contrast` darkens the
+   * accent just enough that white text + filled icons stay AA-legible even when
+   * the themed primary is a light color (e.g. #ff9900 ~2.6:1 on white). Mirrored
+   * by features/manager/components/console/tokens.css for the console shell.
+   */
+  --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
+  --accent-contrast: color-mix(in srgb, var(--color-primary), black 14%);
 }
 
 button:not(:disabled),

@@ -6,10 +6,15 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import {
+  EmptyState,
+  ListRow,
+} from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { SquarePen, Trash2, Upload } from "lucide-react"
-import { type ChangeEvent, useRef } from "react"
+import { ListChecks, SquarePen, Trash2, Upload } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
+import { type ChangeEvent, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -19,14 +24,25 @@ const ConfigManageQuizz = () => {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { t } = useTranslation()
+  const reducedMotion = useReducedMotion()
+  // The quiz pending a delete confirmation; drives the AlertDialog.
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string
+    subject: string
+  } | null>(null)
 
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
     toast.error(t(message))
   })
 
-  const handleDelete = (id: string) => () => {
-    socket.emit(EVENTS.QUIZZ.DELETE, id)
+  const handleDelete = () => {
+    if (!pendingDelete) {
+      return
+    }
+
+    socket.emit(EVENTS.QUIZZ.DELETE, pendingDelete.id)
     toast.success(t("manager:quizz.deleted"))
+    setPendingDelete(null)
   }
 
   const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
@@ -68,18 +84,18 @@ const ConfigManageQuizz = () => {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex shrink-0 gap-2">
         <Button
-          className="flex-1"
+          className="min-h-11 flex-1 rounded-xl"
           onClick={() => navigate({ to: "/manager/quizz" })}
         >
           {t("manager:quizz.create")}
         </Button>
         <Button
-          className="aspect-square bg-gray-200 px-3 text-gray-600"
+          className="aspect-square min-h-11 rounded-xl bg-gray-100 px-3 text-gray-600 hover:bg-gray-200"
           onClick={() => fileInputRef.current?.click()}
           title={t("manager:quizz.import")}
           aria-label={t("manager:quizz.import")}
         >
-          <Upload className="size-4" />
+          <Upload className="size-5" aria-hidden />
         </Button>
         <input
           ref={fileInputRef}
@@ -89,54 +105,84 @@ const ConfigManageQuizz = () => {
           onChange={handleImport}
         />
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-auto p-0.5">
-        {quizz.map((q) => (
-          <div
-            key={q.id}
-            className="flex h-12 w-full items-center justify-between rounded-md pr-1.5 pl-3 outline outline-gray-300"
-          >
-            <p className="truncate">{q.subject}</p>
-            <div className="flex gap-0.5">
-              <button
-                type="button"
-                aria-label={t("manager:quizz.edit", { name: q.subject })}
-                className="focus-visible:outline-primary rounded-sm p-2 text-gray-600 hover:bg-gray-600/10 focus-visible:outline-2 focus-visible:outline-offset-2"
-                onClick={() =>
-                  navigate({
-                    to: "/manager/quizz/$quizzId",
-                    params: { quizzId: q.id },
-                  })
-                }
-              >
-                <SquarePen className="size-4" />
-              </button>
 
-              <AlertDialog
-                trigger={
-                  <button
-                    type="button"
-                    aria-label={t("manager:quizz.delete")}
-                    className="focus-visible:outline-primary rounded-sm p-2 hover:bg-red-600/10 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    <Trash2 className="size-4 stroke-red-500" />
-                  </button>
-                }
-                title={t("manager:quizz.delete")}
-                description={t("manager:quizz.deleteConfirm", {
-                  name: q.subject,
-                })}
-                confirmLabel={t("common:delete")}
-                onConfirm={handleDelete(q.id)}
+      {quizz.length === 0 ? (
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <EmptyState
+            icon={ListChecks}
+            headline={t("manager:quizz.none")}
+            hint={t("manager:quizz.pleaseCreate")}
+            action={{
+              label: t("manager:quizz.create"),
+              onClick: () => {
+                void navigate({ to: "/manager/quizz" })
+              },
+            }}
+          />
+        </div>
+      ) : (
+        <motion.div
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={
+            reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+          }
+        >
+          {quizz.map((q, index) => (
+            <motion.div
+              key={q.id}
+              initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={
+                reducedMotion
+                  ? undefined
+                  : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+              }
+            >
+              <ListRow
+                title={q.subject}
+                actions={[
+                  {
+                    key: "edit",
+                    icon: SquarePen,
+                    label: t("manager:quizz.edit", { name: q.subject }),
+                    onClick: () => {
+                      void navigate({
+                        to: "/manager/quizz/$quizzId",
+                        params: { quizzId: q.id },
+                      })
+                    },
+                  },
+                  {
+                    key: "delete",
+                    icon: Trash2,
+                    label: t("manager:quizz.delete"),
+                    destructive: true,
+                    onClick: () =>
+                      setPendingDelete({ id: q.id, subject: q.subject }),
+                  },
+                ]}
               />
-            </div>
-          </div>
-        ))}
-        {quizz.length === 0 && (
-          <p className="my-8 text-center text-gray-500">
-            {t("manager:quizz.none")}
-          </p>
-        )}
-      </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null)
+          }
+        }}
+        title={t("manager:quizz.delete")}
+        description={t("manager:quizz.deleteConfirm", {
+          name: pendingDelete?.subject ?? "",
+        })}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

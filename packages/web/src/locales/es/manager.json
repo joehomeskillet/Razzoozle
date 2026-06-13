@@ -36,6 +36,8 @@
     "deleted": "Resultado eliminado",
     "noAnswer": "Sin respuesta",
     "none": "Aún no hay resultados, termina una partida para ver los informes aquí",
+    "emptyHeadline": "Aún no hay resultados",
+    "open": "Abrir el resultado de \"{{name}}\"",
     "paginationOf": " de ",
     "slider": {
       "average": "Media de las estimaciones:",
@@ -108,6 +110,7 @@
       "text": "Texto"
     },
     "answerColors": "Colores de las respuestas",
+    "contrastNote": "Los colores primarios claros se oscurecen automáticamente para el texto y los iconos para que sigan siendo legibles.",
     "scrim": "Oscurecer el fondo ({{value}}%)",
     "backgrounds": "Fondos",
     "bgSlots": {
@@ -124,6 +127,7 @@
   },
   "submissions": {
     "empty": "No hay sugerencias pendientes.",
+    "emptyHeadline": "No hay sugerencias",
     "approve": "Aprobar",
     "reject": "Rechazar",
     "edit": "Editar",

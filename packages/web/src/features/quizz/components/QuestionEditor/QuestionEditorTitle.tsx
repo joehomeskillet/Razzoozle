@@ -11,9 +11,9 @@ const QuestionEditorTitle = () => {
   }
 
   return (
-    <div className="z-10 rounded-xl bg-white shadow-sm">
+    <div className="focus-within:outline-primary z-10 rounded-2xl bg-white shadow-sm focus-within:outline-2 focus-within:-outline-offset-2">
       <input
-        className="w-full resize-none p-4 text-center text-xl font-semibold text-gray-800 outline-none placeholder:text-gray-400"
+        className="min-h-12 w-full resize-none rounded-2xl p-4 text-center text-xl font-semibold text-gray-800 outline-none placeholder:text-gray-400"
         placeholder={t("quizz:question.placeholder")}
         aria-label={t("quizz:question.inputLabel")}
         value={currentQuestion.question}

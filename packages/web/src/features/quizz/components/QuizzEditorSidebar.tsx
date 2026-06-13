@@ -7,6 +7,7 @@ import {
 import Button from "@razzia/web/components/Button"
 import QuizzEditorCard from "@razzia/web/features/quizz/components/QuizzEditorCard"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { GripVertical, Plus } from "lucide-react"
 import { useRef } from "react"
@@ -22,6 +23,12 @@ const QuizzEditorSidebar = () => {
     reorderQuestions,
   } = useQuizzEditor()
   const { t } = useTranslation()
+  const { width } = useScreenSize()
+
+  // < md (768px): the rail collapses to a horizontal slide scroller above the
+  // canvas; ≥ md it's a vertical rail beside it. The DnD `direction` follows so
+  // drag math stays correct in both orientations.
+  const isHorizontal = width < 768
 
   const isDragging = useRef(false)
 
@@ -49,19 +56,22 @@ const QuizzEditorSidebar = () => {
   }
 
   return (
-    <aside className="z-10 m-3 flex w-72 shrink-0 flex-col gap-2 overflow-auto rounded-xl bg-white p-3 shadow-sm">
+    <aside className="z-10 m-4 flex shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden rounded-2xl bg-white p-3 shadow-sm md:max-h-[unset] md:w-72 md:flex-col md:overflow-x-hidden md:overflow-y-auto">
       <DragDropContext
         onDragStart={() => {
           isDragging.current = true
         }}
         onDragEnd={handleDragEnd}
       >
-        <Droppable droppableId="questions">
+        <Droppable
+          droppableId="questions"
+          direction={isHorizontal ? "horizontal" : "vertical"}
+        >
           {(provided) => (
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex flex-col gap-2"
+              className="flex flex-row gap-2 md:flex-col"
             >
               {questions.map((q, index) => (
                 <Draggable key={q.id} draggableId={q.id} index={index}>
@@ -70,7 +80,7 @@ const QuizzEditorSidebar = () => {
                       ref={draggableProvided.innerRef}
                       {...draggableProvided.draggableProps}
                       className={clsx(
-                        "group relative",
+                        "group relative w-36 shrink-0 md:w-auto",
                         snapshot.isDragging && "shadow-lg",
                       )}
                     >
@@ -111,10 +121,11 @@ const QuizzEditorSidebar = () => {
       </DragDropContext>
 
       <Button
+        size="sm"
         onClick={addQuestion}
-        className="bg text-md mt-1 mb-8 flex items-center justify-center gap-1 bg-gray-200 text-gray-600"
+        className="focus-visible:outline-primary flex min-h-11 w-36 shrink-0 items-center justify-center gap-1 self-center bg-gray-100 font-semibold text-gray-700 hover:bg-gray-200 md:mt-1 md:mb-2 md:w-full"
       >
-        <Plus className="size-6" />
+        <Plus className="size-5" />
         {t("quizz:addQuestion")}
       </Button>
     </aside>

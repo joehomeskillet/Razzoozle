@@ -1,4 +1,3 @@
-import background from "@razzia/web/assets/background.webp"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import QuestionEditorAcceptedAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
@@ -6,31 +5,84 @@ import QuestionEditorConfig from "@razzia/web/features/quizz/components/Question
 import QuestionEditorMedia from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorTitle from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorType"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+import { motion, useReducedMotion } from "motion/react"
+import { type ReactNode } from "react"
 
+interface RevealProps {
+  children: ReactNode
+  index: number
+}
+
+/**
+ * One subtle staggered fade/slide-up reveal on mount (matches /submit). GPU-only
+ * (transform/opacity) and gated by `useReducedMotion()`.
+ */
+const Reveal = ({ children, index }: RevealProps) => {
+  const reducedMotion = useReducedMotion()
+
+  return (
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={
+        reducedMotion
+          ? undefined
+          : { duration: 0.32, ease: "easeOut", delay: index * 0.06 }
+      }
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+/**
+ * The editor body: the question canvas (`<main>`) plus the per-question config.
+ *
+ * Layout is driven by the parent page shell. On desktop the parent lays
+ * sidebar | this | (nothing else) out in a row and `main` + `config` sit
+ * side-by-side here (`xl:flex-row`); on mobile (< 768px / < xl when the rail is
+ * already cramped) `main` and the config rail STACK — the config flows
+ * full-width below the canvas instead of squeezing into a tiny side column.
+ *
+ * The shared sub-components (Title/Type/Media/Answers/Config) are reused as-is —
+ * /submit wraps the same components, so their markup stays untouched here.
+ */
 const QuestionEditor = () => {
   const { currentQuestion } = useQuizzEditor()
-  const { theme } = useThemeStore()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <main className="mx-auto flex max-w-7xl flex-1 flex-col gap-4 overflow-y-auto p-6">
-        <QuestionEditorTitle />
-        <QuestionEditorType />
-        <QuestionEditorMedia />
-        {!isSlider && !isTypeAnswer && <QuestionEditorAnswers />}
-        {isTypeAnswer && <QuestionEditorAcceptedAnswers />}
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
+      <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-6 xl:overflow-y-auto">
+        <Reveal index={0}>
+          <QuestionEditorTitle />
+        </Reveal>
 
-        <div className="fixed top-0 left-0 h-full w-full">
-          <img
-            className="pointer-events-none h-full w-full object-cover select-none"
-            src={theme.backgrounds.auth ?? background}
-            alt="background"
-          />
-        </div>
+        <Reveal index={1}>
+          <div className="rounded-2xl bg-white p-4 shadow-sm">
+            <QuestionEditorType />
+          </div>
+        </Reveal>
+
+        <Reveal index={2}>
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full">
+            <QuestionEditorMedia />
+          </div>
+        </Reveal>
+
+        {!isSlider && !isTypeAnswer && (
+          <Reveal index={3}>
+            <QuestionEditorAnswers />
+          </Reveal>
+        )}
+        {isTypeAnswer && (
+          <Reveal index={3}>
+            <QuestionEditorAcceptedAnswers />
+          </Reveal>
+        )}
       </main>
+
       <QuestionEditorConfig />
     </div>
   )

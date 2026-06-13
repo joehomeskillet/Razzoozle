@@ -36,6 +36,8 @@
     "deleted": "Résultat supprimé",
     "noAnswer": "Sans réponse",
     "none": "Aucun résultat pour l'instant, terminez une partie pour voir les rapports",
+    "emptyHeadline": "Aucun résultat pour l'instant",
+    "open": "Ouvrir le résultat de \"{{name}}\"",
     "paginationOf": " sur ",
     "stats": {
       "correctAnswers": "Bonnes réponses",
@@ -108,6 +110,7 @@
       "text": "Texte"
     },
     "answerColors": "Couleurs des réponses",
+    "contrastNote": "Les couleurs primaires claires sont automatiquement assombries pour le texte et les icônes afin de rester lisibles.",
     "scrim": "Assombrir l'arrière-plan ({{value}} %)",
     "backgrounds": "Arrière-plans",
     "bgSlots": {
@@ -124,6 +127,7 @@
   },
   "submissions": {
     "empty": "Aucune proposition en attente.",
+    "emptyHeadline": "Aucune proposition",
     "approve": "Approuver",
     "reject": "Rejeter",
     "edit": "Modifier",

@@ -1,10 +1,14 @@
 import { EVENTS } from "@razzia/common/constants"
 import Button from "@razzia/web/components/Button"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
+import {
+  EmptyState,
+  SelectableRow,
+} from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import clsx from "clsx"
-import { Check } from "lucide-react"
+import { ListChecks, Play } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -14,14 +18,10 @@ const ConfigSelectQuizz = () => {
   const navigate = useNavigate()
   const [selected, setSelected] = useState<string | null>(null)
   const { t } = useTranslation()
+  const reducedMotion = useReducedMotion()
 
-  const handleSelect = (id: string) => () => {
-    if (selected === id) {
-      setSelected(null)
-    } else {
-      setSelected(id)
-    }
-  }
+  const handleSelect = (id: string) => () =>
+    setSelected((current) => (current === id ? null : id))
 
   const handleSubmit = () => {
     if (!selected) {
@@ -31,64 +31,66 @@ const ConfigSelectQuizz = () => {
     socket.emit(EVENTS.GAME.CREATE, selected)
   }
 
+  if (quizzList.length === 0) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col justify-center">
+        <EmptyState
+          icon={ListChecks}
+          headline={t("manager:quizz.notFound")}
+          hint={t("manager:quizz.pleaseCreate")}
+          action={{
+            label: t("manager:quizz.create"),
+            onClick: () => {
+              void navigate({ to: "/manager/quizz" })
+            },
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {quizzList.length > 0 && (
+      <motion.div
+        role="radiogroup"
+        aria-label={t("manager:quizz.startGame")}
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={
+          reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+        }
+      >
+        {quizzList.map((quizz, index) => (
+          <motion.div
+            key={quizz.id}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={
+              reducedMotion
+                ? undefined
+                : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+            }
+          >
+            <SelectableRow
+              title={quizz.subject}
+              selected={selected === quizz.id}
+              onClick={handleSelect(quizz.id)}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <div className="shrink-0 pt-4">
         <Button
-          className="mb-4 shrink-0"
+          className="min-h-12 w-full rounded-xl"
           onClick={handleSubmit}
           disabled={!selected}
           title={selected ? undefined : t("manager:quizz.pleaseSelect")}
         >
-          {t("manager:quizz.startGame")}
+          <Play className="size-5" aria-hidden strokeWidth={2.5} />
+          <span>{t("manager:quizz.startGame")}</span>
         </Button>
-      )}
-      <div
-        role="radiogroup"
-        aria-label={t("manager:quizz.startGame")}
-        className="min-h-0 flex-1 space-y-2 overflow-auto p-0.5"
-      >
-        {quizzList.map((quizz) => (
-          <button
-            key={quizz.id}
-            type="button"
-            role="radio"
-            aria-checked={selected === quizz.id}
-            className={clsx(
-              "flex w-full items-center justify-between rounded-md p-3 outline outline-gray-300",
-              "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2",
-              selected === quizz.id && "outline-primary outline-2",
-            )}
-            onClick={handleSelect(quizz.id)}
-          >
-            {quizz.subject}
-
-            <div
-              className={clsx(
-                "size-5 rounded p-0.5 outline outline-offset-3 outline-gray-300",
-                selected === quizz.id && "bg-primary border-primary/80",
-              )}
-            >
-              {selected === quizz.id && (
-                <Check className="size-full stroke-4 text-white" />
-              )}
-            </div>
-          </button>
-        ))}
-        {!quizzList.length && (
-          <div className="my-8 flex flex-col items-center gap-3 text-center text-gray-500">
-            <div>
-              <p>{t("manager:quizz.notFound")}</p>
-              <p className="text-sm">{t("manager:quizz.pleaseCreate")}</p>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => navigate({ to: "/manager/quizz" })}
-            >
-              {t("manager:quizz.create")}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )

@@ -31,6 +31,8 @@
     "deleted": "Ergebnis gelöscht",
     "noAnswer": "Keine Antwort",
     "none": "Noch keine Ergebnisse, beende ein Spiel, um Berichte hier zu sehen",
+    "emptyHeadline": "Noch keine Ergebnisse",
+    "open": "Ergebnis für „{{name}}\" öffnen",
     "paginationOf": " von ",
     "stats": {
       "correctAnswers": "Richtige Antworten",
@@ -108,6 +110,7 @@
       "text": "Text"
     },
     "answerColors": "Antwort-Farben",
+    "contrastNote": "Helle Primärfarben werden für Text und Symbole automatisch abgedunkelt, damit sie lesbar bleiben.",
     "scrim": "Hintergrund abdunkeln ({{value}}%)",
     "backgrounds": "Hintergründe",
     "bgSlots": {
@@ -124,6 +127,7 @@
   },
   "submissions": {
     "empty": "Keine ausstehenden Vorschläge.",
+    "emptyHeadline": "Keine Vorschläge",
     "approve": "Genehmigen",
     "reject": "Ablehnen",
     "edit": "Bearbeiten",

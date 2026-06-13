@@ -131,10 +131,11 @@ const QuestionEditorType = () => {
             key={tp.key}
             type="button"
             onClick={() => setType(tp.key)}
+            aria-pressed={type === tp.key}
             className={clsx(
-              "rounded-lg px-3 py-1.5 text-sm font-semibold",
+              "focus-visible:outline-primary flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
               type === tp.key
-                ? "bg-primary text-white"
+                ? "bg-[var(--accent-contrast)] text-white"
                 : "bg-white text-gray-500 hover:bg-gray-100",
             )}
           >
@@ -145,22 +146,22 @@ const QuestionEditorType = () => {
 
       <div className="flex flex-wrap gap-4">
         {type !== "poll" && (
-          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
+          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
             <input
               type="checkbox"
               checked={Boolean(currentQuestion.bonus)}
               onChange={toggleBonus}
-              className="size-4 cursor-pointer"
+              className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             />
             <span aria-hidden="true">⭐</span> {t("quizz:type.bonusQuestion")}
           </label>
         )}
-        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
+        <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
           <input
             type="checkbox"
             checked={Boolean(currentQuestion.practice)}
             onChange={togglePractice}
-            className="size-4 cursor-pointer"
+            className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
           />
           <span aria-hidden="true">🎯</span> {t("quizz:type.practiceQuestion")}
         </label>

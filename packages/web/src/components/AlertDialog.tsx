@@ -4,11 +4,16 @@ import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
-  trigger: ReactNode
+  /** Element that opens the dialog. Omit for controlled use (`open`/`onOpenChange`). */
+  trigger?: ReactNode
   title: string
   description: string
   confirmLabel?: string
   onConfirm: () => void
+  /** Controlled open state. When provided, the dialog is driven by the caller. */
+  open?: boolean
+  /** Controlled open-state change handler (paired with `open`). */
+  onOpenChange?: (open: boolean) => void
 }
 
 const AlertDialog = ({
@@ -17,12 +22,16 @@ const AlertDialog = ({
   description,
   confirmLabel,
   onConfirm,
+  open,
+  onOpenChange,
 }: Props) => {
   const { t } = useTranslation()
 
   return (
-    <RadixAlertDialog.Root>
-      <RadixAlertDialog.Trigger asChild>{trigger}</RadixAlertDialog.Trigger>
+    <RadixAlertDialog.Root open={open} onOpenChange={onOpenChange}>
+      {trigger && (
+        <RadixAlertDialog.Trigger asChild>{trigger}</RadixAlertDialog.Trigger>
+      )}
 
       <RadixAlertDialog.Portal>
         <RadixAlertDialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
