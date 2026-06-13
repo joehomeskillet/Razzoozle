@@ -1,9 +1,10 @@
 // AI image generation via a local ComfyUI instance. Server-controlled paths
 // only (env overrides with safe defaults) — the prompt is the sole user input
 // and is validated/throttled by the GENERATE_IMAGE handler before it reaches
-// here. Output is copied into config/media via saveGeneratedImage and served by
-// nginx from the config volume at /media/<file> (mirrors the /theme/ alias).
-import { saveGeneratedImage } from "@razzia/socket/services/config"
+// here. The generated PNG bytes are fetched over HTTP from ComfyUI's /view
+// endpoint and persisted into config/media via saveGeneratedImageBytes, then
+// served by nginx from the config volume at /media/<file> (mirrors /theme/).
+import { saveGeneratedImageBytes } from "@razzia/socket/services/config"
 import fs from "fs"
 import { nanoid } from "nanoid"
 
@@ -26,6 +27,8 @@ interface QueueResponse {
 
 interface HistoryImage {
   filename: string
+  subfolder?: string
+  type?: string
 }
 
 interface HistoryEntry {
@@ -102,11 +105,26 @@ export const generateImage = async (prompt: string): Promise<string> => {
 
       const history = (await res.json()) as Record<string, HistoryEntry>
       const entry = history[promptId]
-      const filename = entry?.outputs?.[SAVE_NODE]?.images?.[0]?.filename
+      const img = entry?.outputs?.[SAVE_NODE]?.images?.[0]
 
-      if (filename) {
-        // Copy the generated PNG into config/media and return its public URL.
-        return saveGeneratedImage(filename, `gen-${nanoid(8)}.png`)
+      if (img?.filename) {
+        // Fetch the generated PNG bytes over HTTP (the socket runs in a
+        // container that can't read ComfyUI's output dir), then persist them
+        // into config/media and return the public URL.
+        const params = new URLSearchParams({
+          filename: img.filename,
+          subfolder: img.subfolder ?? "",
+          type: img.type ?? "output",
+        })
+        const viewRes = await fetch(`${COMFYUI_URL}/view?${params.toString()}`)
+
+        if (!viewRes.ok) {
+          throw new Error("errors:submission.imageGenFailed")
+        }
+
+        const buffer = Buffer.from(await viewRes.arrayBuffer())
+
+        return saveGeneratedImageBytes(buffer, `gen-${nanoid(8)}.png`)
       }
     } catch {
       // Transient fetch/parse error — keep polling until the deadline.

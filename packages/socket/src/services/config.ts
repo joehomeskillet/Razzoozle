@@ -415,26 +415,18 @@ export const deleteSubmission = (id: string): void => {
   }
 }
 
-// Copy a ComfyUI-produced PNG into config/media under a server-generated name
-// and return its public "/media/<file>" path (served by nginx from the config
-// volume, mirroring saveBackgroundImage's /theme/ mechanism). `destName` is
-// server-generated (gen-<nanoid>.png) and re-checked with assertSafeId stem.
-export const saveGeneratedImage = (
-  srcFilename: string,
+// Persist ComfyUI-produced PNG bytes into config/media under a server-generated
+// name and return its public "/media/<file>" path (served by nginx from the
+// config volume, mirroring saveBackgroundImage's /theme/ mechanism). The bytes
+// are fetched over HTTP by the caller so the socket container never needs to
+// reach the ComfyUI host filesystem. `destName` is server-generated
+// (gen-<nanoid>.png) and re-checked with assertSafeId stem.
+export const saveGeneratedImageBytes = (
+  buffer: Buffer,
   destName: string,
 ): string => {
   // destName is server-generated; guard its stem so it can never escape /media.
   assertSafeId(destName.replace(/\.png$/u, ""))
-
-  const srcDir =
-    process.env.COMFYUI_OUTPUT_DIR ?? "/nvmetank1/AI/comfyui/output"
-  const srcPath = resolve(srcDir, srcFilename)
-
-  // Keep the copy inside the source dir — defend against a maliciously crafted
-  // history filename trying to read outside the ComfyUI output directory.
-  if (!srcPath.startsWith(resolve(srcDir))) {
-    throw new Error("errors:submission.imageGenFailed")
-  }
 
   const mediaDir = getPath("media")
 
@@ -442,7 +434,7 @@ export const saveGeneratedImage = (
     fs.mkdirSync(mediaDir, { recursive: true })
   }
 
-  fs.copyFileSync(srcPath, getPath(`media/${destName}`))
+  fs.writeFileSync(getPath(`media/${destName}`), buffer)
 
   return `/media/${destName}`
 }
