@@ -225,7 +225,20 @@ const ConfigSubmissions = () => {
       return
     }
 
-    socket.emit(EVENTS.MANAGER.EDIT_SUBMISSION, { id, question: trimmed })
+    // The server validates the FULL questionValidator object, not a bare
+    // string. The inline editor only changes the question TEXT, so merge the
+    // edited text back into the complete question object (from SUBMISSIONS_DATA)
+    // and emit that — otherwise inline edits fail server-side validation.
+    const fullQuestion = fullById(id)
+
+    if (!fullQuestion) {
+      return
+    }
+
+    socket.emit(EVENTS.MANAGER.EDIT_SUBMISSION, {
+      id,
+      question: { ...fullQuestion, question: trimmed },
+    })
     setEditingId(null)
     requestFull()
   }
@@ -307,24 +320,27 @@ const ConfigSubmissions = () => {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
+                  variant="primary"
                   size="sm"
-                  className="min-h-11 rounded-lg"
+                  className="min-h-11"
                   onClick={handleOpenApprove(s.id)}
                 >
                   {t("manager:submissions.approve")}
                 </Button>
 
                 <Button
+                  variant="secondary"
                   size="sm"
-                  className="min-h-11 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="min-h-11"
                   onClick={handleOpenEdit(s.id, s.question)}
                 >
                   {t("manager:submissions.edit")}
                 </Button>
 
                 <Button
+                  variant="ghost"
                   size="sm"
-                  className="min-h-11 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="min-h-11"
                   onClick={handleTogglePreview(s.id)}
                   aria-expanded={previewOpen}
                   classNameContent="gap-1.5"
@@ -344,15 +360,17 @@ const ConfigSubmissions = () => {
                 {editingId === s.id && (
                   <>
                     <Button
+                      variant="primary"
                       size="sm"
-                      className="min-h-11 rounded-lg"
+                      className="min-h-11"
                       onClick={handleSaveEdit(s.id)}
                     >
                       {t("common:save")}
                     </Button>
                     <Button
+                      variant="secondary"
                       size="sm"
-                      className="min-h-11 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      className="min-h-11"
                       onClick={handleCancelEdit}
                     >
                       {t("common:cancel")}
@@ -362,10 +380,7 @@ const ConfigSubmissions = () => {
 
                 <AlertDialog
                   trigger={
-                    <Button
-                      size="sm"
-                      className="min-h-11 rounded-lg bg-red-500 text-white hover:brightness-95 active:brightness-90"
-                    >
+                    <Button variant="danger" size="sm" className="min-h-11">
                       {t("manager:submissions.reject")}
                     </Button>
                   }
@@ -396,20 +411,23 @@ const ConfigSubmissions = () => {
                     </p>
                   ) : (
                     quizzList.map((quizz) => (
-                      <button
+                      <Button
                         key={quizz.id}
+                        variant="secondary"
+                        size="sm"
                         type="button"
-                        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg bg-white p-3 text-left outline-2 -outline-offset-2 outline-gray-200 transition-colors hover:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                        className="min-h-11 w-full p-3 font-medium"
+                        classNameContent="w-full justify-between gap-2"
                         onClick={handleApprove(s.id, quizz.id)}
                       >
-                        <span className="min-w-0 truncate font-medium text-gray-900">
+                        <span className="min-w-0 truncate text-gray-900">
                           {quizz.subject}
                         </span>
                         <Check
                           className="size-5 shrink-0 text-[var(--accent-contrast)]"
                           aria-hidden
                         />
-                      </button>
+                      </Button>
                     ))
                   )}
                 </div>

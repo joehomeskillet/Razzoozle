@@ -45,9 +45,10 @@ const EmptyState = ({
     {hint && <p className="max-w-sm text-sm text-gray-500">{hint}</p>}
     {action && (
       <Button
-        onClick={action.onClick}
+        variant="primary"
         size="md"
-        className="mt-1 min-h-11 rounded-xl"
+        onClick={action.onClick}
+        className="mt-1 rounded-xl"
       >
         {action.label}
       </Button>

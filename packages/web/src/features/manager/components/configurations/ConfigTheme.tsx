@@ -222,13 +222,15 @@ const ConfigTheme = () => {
 
   // A "back to default" secondary action shared by logo + background slots.
   const resetSlotButton = (onClick: () => void) => (
-    <button
+    <Button
+      variant="secondary"
+      size="sm"
       type="button"
       onClick={onClick}
-      className="min-h-11 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+      className="text-xs"
     >
       {t("manager:theme.default")}
-    </button>
+    </Button>
   )
 
   return (
@@ -395,17 +397,22 @@ const ConfigTheme = () => {
       </div>
 
       <div className="mt-4 flex shrink-0 gap-2 border-t border-gray-200 pt-4">
-        <Button className="min-h-11 flex-1 rounded-xl" onClick={handleSave}>
+        <Button
+          variant="primary"
+          className="flex-1 rounded-xl"
+          onClick={handleSave}
+        >
           {t("manager:theme.save")}
         </Button>
-        <button
+        <Button
+          variant="secondary"
           type="button"
           onClick={handleReset}
-          className="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="rounded-xl"
         >
           <RotateCcw className="size-4" aria-hidden />
           {t("manager:theme.reset")}
-        </button>
+        </Button>
       </div>
     </motion.div>
   )

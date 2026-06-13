@@ -17,7 +17,6 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
-import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
 import clsx from "clsx"
 import { LogOut, Maximize } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
@@ -167,17 +166,26 @@ const GameWrapper = ({
 
               {manager && controls && (
                 <div className="flex flex-1 justify-center">
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={toggleAuto}
                     aria-pressed={autoOn}
-                    className={HOST_CONTROL_BTN}
+                    // ON state keeps an accent fill so the active mode is
+                    // unmistakable at a glance: white text on --accent-contrast
+                    // (computed to clear AA against white), with a matching
+                    // hover that stays on the accent rather than dropping to the
+                    // secondary gray hover.
+                    className={clsx("min-h-11", {
+                      "border-transparent bg-[var(--accent-contrast)] text-white shadow-sm hover:bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]":
+                        autoOn,
+                    })}
                     title={t("game:controls.autoTitle")}
                   >
                     <span
                       className={clsx(
                         "relative h-5 w-9 rounded-full transition-colors",
-                        autoOn ? "bg-[var(--accent-contrast)]" : "bg-gray-300",
+                        autoOn ? "bg-white/30" : "bg-gray-300",
                       )}
                     >
                       <span
@@ -191,7 +199,7 @@ const GameWrapper = ({
                     {autoOn
                       ? t("game:controls.autoOn")
                       : t("game:controls.autoOff")}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -207,20 +215,21 @@ const GameWrapper = ({
                     /display + /satellite beamer, where auto-requestFullscreen is
                     blocked without a user gesture, so the button is the only way). */}
                 {manager && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    size="icon"
                     onClick={toggleFullscreen}
                     title={t("game:controls.fullscreen")}
                     aria-label={t("game:controls.fullscreen")}
-                    className={clsx(HOST_CONTROL_BTN, "px-3")}
                   >
                     <Maximize className="size-5" aria-hidden />
-                  </button>
+                  </Button>
                 )}
                 {manager && next && (
                   <Button
+                    variant="primary"
                     size="sm"
-                    className={clsx("min-h-11 rounded-lg px-5", {
+                    className={clsx("min-h-11 px-5", {
                       "pointer-events-none": isDisabled,
                     })}
                     onClick={handleNext}
@@ -230,14 +239,15 @@ const GameWrapper = ({
                 )}
 
                 {manager && onBack && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-11"
                     onClick={onBack}
-                    className={HOST_CONTROL_BTN}
                   >
                     <LogOut className="size-5" aria-hidden />
                     <span className="hidden sm:inline">{t("common:exit")}</span>
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

@@ -47,16 +47,11 @@ const AlertDialog = ({
 
           <div className="mt-6 flex justify-end gap-2">
             <RadixAlertDialog.Cancel asChild>
-              <Button className="bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-600">
-                {t("common:cancel")}
-              </Button>
+              <Button variant="secondary">{t("common:cancel")}</Button>
             </RadixAlertDialog.Cancel>
 
             <RadixAlertDialog.Action asChild>
-              <Button
-                className="bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:brightness-95 active:brightness-90"
-                onClick={onConfirm}
-              >
+              <Button variant="danger" onClick={onConfirm}>
                 {confirmLabel ?? t("common:confirm")}
               </Button>
             </RadixAlertDialog.Action>

@@ -4,9 +4,10 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
-import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
+import Button from "@razzia/web/components/Button"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
+import clsx from "clsx"
 import { Bot } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -56,8 +57,9 @@ const SimControl = () => {
 
   return (
     <div className="relative" ref={panelRef}>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() =>
           setOpen((v) => {
             const next = !v
@@ -72,11 +74,11 @@ const SimControl = () => {
         aria-expanded={open}
         aria-controls="sim-control-popover"
         aria-label={t("manager:sim.button")}
-        className={HOST_CONTROL_BTN}
+        className={clsx("min-h-11")}
       >
         <Bot className="size-5" aria-hidden />
         <span className="hidden sm:inline">{t("manager:sim.button")}</span>
-      </button>
+      </Button>
 
       {open && (
         <div

@@ -89,13 +89,16 @@ const ConfigManageQuizz = () => {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex shrink-0 gap-2">
         <Button
-          className="min-h-11 flex-1 rounded-xl"
+          variant="primary"
+          className="flex-1 rounded-xl"
           onClick={() => navigate({ to: "/manager/quizz" })}
         >
           {t("manager:quizz.create")}
         </Button>
         <Button
-          className="aspect-square min-h-11 rounded-xl bg-gray-100 px-3 text-gray-600 hover:bg-gray-200"
+          variant="secondary"
+          size="icon"
+          className="rounded-xl"
           onClick={() => fileInputRef.current?.click()}
           title={t("manager:quizz.import")}
           aria-label={t("manager:quizz.import")}

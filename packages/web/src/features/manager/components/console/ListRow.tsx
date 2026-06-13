@@ -1,3 +1,4 @@
+import Button from "@razzia/web/components/Button"
 import clsx from "clsx"
 import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
@@ -30,14 +31,16 @@ export interface ListRowProps {
   className?: string
 }
 
+// Row actions use the shared ghost icon button. The only per-state override is
+// the colour channel: a muted gray-400 idle (calmer than ghost's gray-600) plus
+// a red destructive hover for delete-style actions — spacing/state only, never
+// a re-skin of the variant's surface/radius/focus.
 const actionClasses = (destructive?: boolean) =>
   clsx(
-    "flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors",
-    "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2",
-    "disabled:cursor-not-allowed disabled:opacity-50",
+    "shrink-0 text-gray-400",
     destructive
-      ? "text-gray-400 hover:bg-red-50 hover:text-red-600"
-      : "text-gray-400 hover:bg-gray-100 hover:text-gray-700",
+      ? "hover:bg-red-50 hover:text-red-600"
+      : "hover:bg-gray-100 hover:text-gray-700",
   )
 
 /**
@@ -96,19 +99,23 @@ const ListRow = ({
 
       {actions && actions.length > 0 && (
         <div className="flex shrink-0 items-center gap-1">
-          {actions.map(({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={act}
-              disabled={disabled}
-              aria-label={label}
-              title={label}
-              className={actionClasses(destructive)}
-            >
-              <Icon className="size-5" aria-hidden />
-            </button>
-          ))}
+          {actions.map(
+            ({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
+              <Button
+                key={key}
+                variant="ghost"
+                size="icon"
+                type="button"
+                onClick={act}
+                disabled={disabled}
+                aria-label={label}
+                title={label}
+                className={actionClasses(destructive)}
+              >
+                <Icon className="size-5" aria-hidden />
+              </Button>
+            ),
+          )}
         </div>
       )}
     </div>

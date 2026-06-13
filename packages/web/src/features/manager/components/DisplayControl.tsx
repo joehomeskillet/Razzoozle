@@ -3,11 +3,10 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
-import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
+import Button from "@razzia/web/components/Button"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import clsx from "clsx"
-import { twMerge } from "tailwind-merge"
 import { Monitor, MonitorCheck } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -65,21 +64,22 @@ const DisplayControl = () => {
 
   return (
     <div className="relative" ref={panelRef}>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen((v) => !v)}
         title={t("manager:satellite.title")}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="display-control-popover"
         aria-label={t("manager:satellite.title")}
-        className={twMerge(
-          clsx(
-            HOST_CONTROL_BTN,
-            paired &&
-              "border-green-200 bg-green-100 text-green-800 hover:bg-green-200",
-          ),
-        )}
+        // Paired keeps a green status fill (AA: green-800 on green-100) so the
+        // host can see the beamer is bound at a glance; otherwise it reads as a
+        // plain secondary control in the cluster.
+        className={clsx("min-h-11", {
+          "border-green-200 bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-200":
+            paired,
+        })}
       >
         {paired ? (
           <MonitorCheck className="size-5" aria-hidden />
@@ -89,7 +89,7 @@ const DisplayControl = () => {
         <span className="hidden sm:inline">
           {paired ? t("manager:satellite.paired") : t("manager:tabs.satellite")}
         </span>
-      </button>
+      </Button>
 
       {open && (
         <div

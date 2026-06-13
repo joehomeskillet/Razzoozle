@@ -83,7 +83,9 @@ const ConfigSelectQuizz = () => {
 
       <div className="shrink-0 pt-4">
         <Button
-          className="min-h-12 w-full rounded-xl"
+          variant="primary"
+          size="lg"
+          className="w-full rounded-xl"
           onClick={handleSubmit}
           disabled={!selected}
           title={selected ? undefined : t("manager:quizz.pleaseSelect")}
