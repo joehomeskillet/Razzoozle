@@ -3,6 +3,7 @@ import { submissionValidator } from "@razzia/common/validators/submission"
 import Background from "@razzia/web/components/Background"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
+import LanguageSwitcher from "@razzia/web/components/LanguageSwitcher"
 import Loader from "@razzia/web/components/Loader"
 import {
   useEvent,
@@ -18,6 +19,8 @@ import {
   QuizzEditorProvider,
   useQuizzEditor,
 } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import { useThemeStore } from "@razzia/web/features/theme/store"
+import defaultLogo from "@razzia/web/assets/logo.svg"
 import { CheckCircle2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode, useState } from "react"
@@ -34,6 +37,28 @@ interface RevealSectionProps {
   label: string
 }
 
+// Mirrors the console header brand (logo → appTitle → bundled logo).
+const SubmitBrand = () => {
+  const { theme } = useThemeStore()
+  const appTitle = theme.appTitle?.trim()
+
+  if (theme.logo) {
+    return (
+      <img
+        src={theme.logo}
+        alt={appTitle ?? "logo"}
+        className="h-7 w-auto shrink-0 object-contain"
+      />
+    )
+  }
+
+  if (appTitle) {
+    return <span className="truncate">{appTitle}</span>
+  }
+
+  return <img src={defaultLogo} alt="logo" className="h-7 w-auto shrink-0" />
+}
+
 const RevealSection = ({ children, index, label }: RevealSectionProps) => {
   const reducedMotion = useReducedMotion()
 
@@ -48,7 +73,7 @@ const RevealSection = ({ children, index, label }: RevealSectionProps) => {
       }
       className="flex flex-col gap-2"
     >
-      <p className="w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-semibold tracking-wide text-gray-500 uppercase shadow-sm backdrop-blur">
+      <p className="w-fit text-xs font-semibold tracking-wide text-gray-500 uppercase">
         {label}
       </p>
       {children}
@@ -144,18 +169,40 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
   }
 
   return (
-    <div className="z-10 flex max-h-[calc(100dvh-7.5rem)] w-full max-w-xl flex-col px-4 pb-[env(safe-area-inset-bottom)] xl:max-w-5xl 2xl:max-w-6xl">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28">
-        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
-          <header className="mb-1 text-center text-white drop-shadow-lg xl:col-span-2">
-            <h2 className="text-3xl font-extrabold tracking-tight">
-              {t("submit:form.title")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 font-semibold text-white/90">
-              {t("submit:form.subtitle")}
-            </p>
-          </header>
+    <motion.section
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={
+        reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }
+      }
+      className="z-10 mx-auto flex max-h-[88svh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg xl:max-w-5xl"
+    >
+      {/* Branded header band — same treatment as the /manager/config console. */}
+      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2 font-bold text-gray-900">
+            <SubmitBrand />
+          </div>
+          <span aria-hidden className="hidden h-5 w-px bg-gray-300 sm:block" />
+          <h1 className="hidden truncate text-lg font-semibold text-gray-700 sm:block">
+            {t("submit:form.title")}
+          </h1>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <LanguageSwitcher />
+        </div>
+        <h1 className="w-full truncate text-base font-semibold text-gray-700 sm:hidden">
+          {t("submit:form.title")}
+        </h1>
+      </header>
 
+      {/* Body — sunken gray surface so the white form cards read clearly. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 sm:p-6">
+        <p className="mb-4 text-sm leading-6 text-gray-600">
+          {t("submit:form.subtitle")}
+        </p>
+
+        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
           <RevealSection index={0} label={t("submit:form.section.name")}>
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <label htmlFor="submit-submitted-by" className="sr-only">
@@ -174,7 +221,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
 
           <RevealSection index={1} label={t("submit:form.section.question")}>
             <QuestionEditorTitle />
-            <div className="rounded-2xl bg-white p-4 shadow-sm [&>div>div:first-child]:-mx-1 [&>div>div:first-child]:overflow-x-auto [&>div>div:first-child]:px-1 [&>div>div:first-child]:pb-1 [&>div>div:first-child>button]:min-h-11 [&>div>div:first-child>button]:shrink-0">
+            <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm [&>div>div:first-child]:-mx-1 [&>div>div:first-child]:overflow-x-auto [&>div>div:first-child]:px-1 [&>div>div:first-child]:pb-1 [&>div>div:first-child>button]:min-h-11 [&>div>div:first-child>button]:shrink-0">
               <QuestionEditorType />
             </div>
           </RevealSection>
@@ -194,7 +241,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           )}
 
           {isTypeAnswer && (
-            <RevealSection index={3} label="Akzeptierte Antworten">
+            <RevealSection index={3} label={t("submit:form.section.answers")}>
               <QuestionEditorAcceptedAnswers />
             </RevealSection>
           )}
@@ -207,11 +254,12 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-4 shrink-0 border-t border-white/40 bg-white/80 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] shadow-[0_-16px_30px_rgba(15,23,42,0.16)] backdrop-blur">
+      {/* Footer submit bar — pinned to the panel bottom. */}
+      <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
         {fieldError && (
           <p
             role="alert"
-            className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-center text-sm font-semibold text-red-600 shadow-sm"
+            className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-center text-sm font-semibold text-red-600"
           >
             {t(fieldError)}
           </p>
@@ -228,7 +276,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           <span>{t("submit:form.submitButton")}</span>
         </Button>
       </div>
-    </div>
+    </motion.section>
   )
 }
 
