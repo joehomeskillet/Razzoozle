@@ -237,7 +237,7 @@ const GameWrapper = ({
             <div
               aria-disabled={!isConnected}
               className={clsx(
-                "flex flex-1 flex-col",
+                "flex min-h-0 flex-1 flex-col overflow-y-auto pb-24 lg:pb-0",
                 !isConnected && "pointer-events-none opacity-60 select-none",
               )}
             >

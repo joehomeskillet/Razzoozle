@@ -76,6 +76,23 @@ class Game {
   private healthPushTimer: ReturnType<typeof setTimeout> | null = null
   private readonly HEALTH_PUSH_THROTTLE_MS = 1000
 
+  // A lobby player whose socket merely dropped (wifi blip / tab-background) is
+  // kept on the roster and marked disconnected so PLAYER.RECONNECT can recover
+  // them. If they never come back within this window we remove them so genuinely-
+  // gone players don't pile up as ghosts in the host's lobby roster. 45s is long
+  // enough for a real mobile reconnect storm (reconnectionDelayMax:5000 x retries)
+  // yet short enough to clear the roster before a host typically starts the game.
+  private readonly LOBBY_DISCONNECT_GRACE_MS = 45_000
+
+  // Pending per-player lobby grace-removal timers, keyed by clientId. A lobby
+  // transport-disconnect arms one; it is cleared on reconnect / kick / removal /
+  // game disposal so no timer ever dangles. Started-game disconnects do NOT arm
+  // one (started-game grace + reconnect is handled by the round/reconnect flow).
+  private lobbyDisconnectTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >()
+
   private lastBroadcastStatus: {
     name: Status
     data: StatusDataMap[Status]
@@ -227,8 +244,14 @@ class Game {
   }
 
   kickPlayer(socket: Socket, playerId: string) {
+    const target = this.playerManager.findById(playerId)
+
     if (this.playerManager.kick(socket, playerId)) {
       this.playerStatus.delete(playerId)
+
+      if (target) {
+        this.clearLobbyDisconnectTimer(target.clientId)
+      }
     }
   }
 
@@ -282,6 +305,8 @@ class Game {
     if (!player) {
       return
     }
+
+    this.clearLobbyDisconnectTimer(clientId)
 
     // Takeover, not reject: on flaky wifi a reconnect often races ahead of the
     // old socket's "disconnect", so player.connected may still be true. Swapping
@@ -340,6 +365,7 @@ class Game {
     const player = this.playerManager.remove(socketId)
 
     if (player) {
+      this.clearLobbyDisconnectTimer(player.clientId)
       this.io.to(this._manager.id).emit(EVENTS.MANAGER.REMOVE_PLAYER, player.id)
       this.playerManager.broadcastCount()
     }
@@ -350,6 +376,52 @@ class Game {
   setPlayerDisconnected(socketId: string) {
     this.playerManager.setDisconnected(socketId)
     this.playerManager.broadcastCount()
+
+    // Lobby-only grace: a not-yet-started game keeps the dropped player on the
+    // roster briefly so a flaky-wifi reconnect lands them back in the waiting
+    // screen. A started game's disconnect grace is handled by the reconnect flow,
+    // so we do NOT arm a removal timer there.
+    if (!this.started) {
+      this.scheduleLobbyDisconnectRemoval(socketId)
+    }
+  }
+
+  private scheduleLobbyDisconnectRemoval(socketId: string): void {
+    const player = this.playerManager.findById(socketId)
+
+    if (!player) {
+      return
+    }
+
+    const { clientId } = player
+
+    // Re-arm cleanly: cancel any prior pending timer for this player first so a
+    // re-drop never leaks a timer or double-fires.
+    this.clearLobbyDisconnectTimer(clientId)
+
+    const timer = setTimeout(() => {
+      this.lobbyDisconnectTimers.delete(clientId)
+
+      // Idempotent + guarded: only remove a player who is STILL present, still
+      // disconnected, in a STILL-unstarted game. If they reconnected
+      // (connected:true) or the game started, this is a no-op.
+      const current = this.playerManager.findByClientId(clientId)
+
+      if (current && !current.connected && !this.started) {
+        this.removePlayer(current.id)
+      }
+    }, this.LOBBY_DISCONNECT_GRACE_MS)
+
+    this.lobbyDisconnectTimers.set(clientId, timer)
+  }
+
+  private clearLobbyDisconnectTimer(clientId: string): void {
+    const timer = this.lobbyDisconnectTimers.get(clientId)
+
+    if (timer) {
+      clearTimeout(timer)
+      this.lobbyDisconnectTimers.delete(clientId)
+    }
   }
 
   // Game flow
@@ -480,6 +552,13 @@ class Game {
       clearTimeout(this.healthPushTimer)
       this.healthPushTimer = null
     }
+
+    // Clear any pending lobby grace-removal timers so a disposed/abandoned game
+    // never leaks a timer (mirrors the healthPushTimer cleanup above).
+    for (const timer of this.lobbyDisconnectTimers.values()) {
+      clearTimeout(timer)
+    }
+    this.lobbyDisconnectTimers.clear()
 
     metrics.clear(this.gameId)
   }

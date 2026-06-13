@@ -41,6 +41,17 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     game.setPlayerDisconnected(socket.id)
   }
 
+  const handlePlayerDisconnect = (game: Game) => {
+    // A transport-level disconnect (wifi blip / tab-background / network switch)
+    // is NOT an intentional leave — the client only emits EVENTS.PLAYER.LEAVE on
+    // deliberate in-app navigation. So a player drop, whether the game is started
+    // OR still in the lobby, keeps the player and marks them disconnected (grace),
+    // allowing PLAYER.RECONNECT to recover the session. In the lobby this also arms
+    // a per-player grace-removal timer (see services/game setPlayerDisconnected) so
+    // a genuinely-gone player is cleared from the host roster after the grace window.
+    game.setPlayerDisconnected(socket.id)
+  }
+
   socket.on(EVENTS.PLAYER.RECONNECT, ({ gameId }) => {
     const game = registry.getPlayerGame(gameId, clientId)
 
@@ -242,7 +253,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     const playerGame = registry.getGameByPlayerSocketId(socket.id)
 
     if (playerGame) {
-      handlePlayerLeave(playerGame)
+      handlePlayerDisconnect(playerGame)
     }
   })
 }

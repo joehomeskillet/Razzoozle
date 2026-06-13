@@ -7,6 +7,38 @@ is not the upstream changelog. The fork runs as a single Docker image
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Südhang lobby + mobile bugfixes] — 2026-06-13
+
+Three field-reported bugs, fixed and verified end-to-end (unit tests +
+Playwright against a production container). See
+`docs/bugfixes/2026-06-13-lobby-mobile-slider.md` for root-cause analysis and
+Gitea issues #1–#3.
+
+### Fixed
+
+- **Lobby no longer kicks players on a transient disconnect (#1).** A brief
+  network blip while *waiting* in the lobby (mobile wifi↔LTE switch, tab
+  backgrounding, screen lock) used to remove the player immediately — on
+  reconnect they were "not found" and bounced to the join screen. The lobby now
+  graces a dropped player exactly like an in-progress game: the player is kept
+  and `PLAYER.RECONNECT` recovers the session. A genuinely-gone player is cleared
+  after a 45 s grace window so the host roster doesn't accumulate ghosts. An
+  intentional in-app leave still removes immediately. Covered by 5 new socket
+  tests; proven live (offline→online keeps the player in the game).
+- **Small/old phones: all answers reachable, page scrolls (#2).** On short
+  viewports two of the four answer tiles (or the slider's submit button) were cut
+  off below the fold with no way to scroll. The player content area is now a
+  proper scroll region (`min-h-0` + `overflow-y-auto`) and the question/media
+  block no longer greedily claims the full height, so over-tall content is
+  reachable instead of clipped. Tile padding is phone-first (`py-3 sm:py-5
+  lg:py-10`); desktop/beamer layout is unchanged.
+- **Slider renders in every browser (#3).** The range control used
+  `appearance-none` without vendor pseudo-element styling, so the thumb was
+  invisible/undraggable on Safari/iOS and older Android WebViews. Added explicit
+  `::-webkit-slider-runnable-track` / `::-webkit-slider-thumb` (with thumb
+  centering) and `::-moz-range-track` / `::-moz-range-thumb` rules under a
+  dedicated `.quiz-range` class; the thumb uses the runtime theme accent.
+
 ## [Südhang optimize pass] — 2026-06-06
 
 An 8-wave hardening and optimization pass across the `common` / `socket` / `web`
