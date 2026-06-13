@@ -133,7 +133,7 @@ const QuestionEditorAnswers = () => {
       </div>
 
       {isMultiSelect && solutions.length < 2 && (
-        <p className="mt-2 text-sm text-amber-600">
+        <p className="mt-2 w-fit rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">
           {t("quizz:multipleSelect.minSolutionsHint")}
         </p>
       )}
