@@ -1,6 +1,7 @@
 {
   "form": {
     "title": "Proposer une question",
+    "subtitle": "Propose ta propre question de quiz – nous les vérifions et ajoutons les meilleures au quiz.",
     "namePlaceholder": "Ton nom (4–20 caractères)",
     "questionPlaceholder": "Ta question...",
     "answerPlaceholder": "Réponse {{index}}",

@@ -1,6 +1,7 @@
 {
   "form": {
     "title": "Suggest a question",
+    "subtitle": "Suggest your own quiz question – we review them and add the best ones to the quiz.",
     "namePlaceholder": "Your name (4–20 characters)",
     "questionPlaceholder": "Your question...",
     "answerPlaceholder": "Answer {{index}}",

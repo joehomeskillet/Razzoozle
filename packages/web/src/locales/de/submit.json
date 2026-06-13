@@ -1,6 +1,7 @@
 {
   "form": {
     "title": "Frage vorschlagen",
+    "subtitle": "Stell deine eigene Quizfrage – wir prüfen sie und nehmen die besten ins Quiz auf.",
     "namePlaceholder": "Dein Name (4–20 Zeichen)",
     "questionPlaceholder": "Deine Frage...",
     "answerPlaceholder": "Antwort {{index}}",

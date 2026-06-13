@@ -1,6 +1,7 @@
 {
   "form": {
     "title": "Proponi una domanda",
+    "subtitle": "Proponi la tua domanda per il quiz: le verifichiamo e aggiungiamo le migliori al quiz.",
     "namePlaceholder": "Il tuo nome (4–20 caratteri)",
     "questionPlaceholder": "La tua domanda...",
     "answerPlaceholder": "Risposta {{index}}",
