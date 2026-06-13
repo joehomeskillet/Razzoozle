@@ -58,7 +58,11 @@ export const QuizzEditorProvider = ({
       : [defaultQuestion()],
   )
   const [currentIndex, setCurrentIndex] = useState(0)
-  const currentQuestion = questions[currentIndex]
+  // Clamp at read so currentQuestion is NEVER undefined, even during an
+  // intermediate render where questions has shrunk (delete) but currentIndex
+  // hasn't caught up yet — consumers read currentQuestion.type directly.
+  const currentQuestion =
+    questions[Math.min(Math.max(0, currentIndex), questions.length - 1)]
 
   const addQuestion = () => {
     setQuestions((prev) => [...prev, defaultQuestion()])
@@ -66,17 +70,21 @@ export const QuizzEditorProvider = ({
   }
 
   const removeQuestion = (index: number) => {
-    setQuestions((list) => {
-      const next = list.filter((_, i) => i !== index)
-      setCurrentIndex((current) =>
-        Math.min(
-          Math.max(0, current >= index ? current - 1 : current),
-          next.length - 1,
-        ),
-      )
+    // Never delete the last question (quizzValidator requires >=1) and never
+    // leave currentQuestion undefined.
+    if (questions.length <= 1) {
+      return
+    }
 
-      return next
-    })
+    // De-nested: calling setCurrentIndex INSIDE the setQuestions updater caused
+    // an intermediate render with the shrunk list but a stale currentIndex
+    // (out-of-bounds -> currentQuestion undefined -> crash). Both setters here
+    // are batched into one commit instead.
+    const newMaxIndex = questions.length - 2
+    setQuestions((list) => list.filter((_, i) => i !== index))
+    setCurrentIndex((current) =>
+      Math.min(Math.max(0, current >= index ? current - 1 : current), newMaxIndex),
+    )
   }
 
   const reorderQuestions = (from: number, to: number) => {

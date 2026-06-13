@@ -7,8 +7,15 @@ import { useTranslation } from "react-i18next"
 
 // Quote a single CSV field per RFC 4180: wrap in double quotes and double any
 // embedded quote, so commas/quotes/newlines in a username can't break the grid.
-const csvField = (value: string | number) =>
-  `"${String(value).replace(/"/g, '""')}"`
+// Also neutralise CSV/formula injection: a value beginning with =,+,-,@,tab or
+// CR is treated as a formula by Excel/Sheets, so prefix it with a single quote.
+const csvField = (value: string | number) => {
+  let s = String(value)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`
+  }
+  return `"${s.replace(/"/g, '""')}"`
+}
 
 // Build a deterministic, spreadsheet-friendly filename from the game subject +
 // date. Strips anything that isn't a safe path char so the download never
