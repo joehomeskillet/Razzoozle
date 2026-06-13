@@ -85,7 +85,7 @@ const QuestionEditorAcceptedAnswers = () => {
       )}
 
       <label className="flex w-fit flex-col gap-1 text-xs font-semibold text-gray-500">
-        {t("quizz:typeAnswer.matchMode")}
+        {t("quizz:typeAnswer.matchMode.label")}
         <select
           value={matchMode}
           onChange={(e) =>
