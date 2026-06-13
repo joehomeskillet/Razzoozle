@@ -19,7 +19,10 @@ const SAMPLER_NODE = "3" // KSampler — randomize .inputs.seed for variety
 const SAVE_NODE = "9" // SaveImage — its history output carries images[0].filename
 
 const POLL_INTERVAL_MS = 1000
-const POLL_TIMEOUT_MS = 60_000
+// ComfyUI reloads the Z-Image model into VRAM on a cold run (~30-40s observed)
+// before the ~8-step render; with any queue ahead a single gen can exceed a
+// minute. Ceiling generously so a legit slow render isn't reported as a timeout.
+const POLL_TIMEOUT_MS = 180_000
 
 interface QueueResponse {
   prompt_id: string
