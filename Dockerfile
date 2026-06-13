@@ -20,7 +20,10 @@ RUN pnpm build
 # ---- RUNNER ----
 FROM alpine:3.23 AS runner
 
-RUN apk add --no-cache nginx nodejs supervisor
+# libwebp-tools provides `cwebp` — the socket converts AI-generated PNGs to WebP
+# before persisting them (2MB PNG -> ~150KB WebP), consistent with the project's
+# webp-only image policy.
+RUN apk add --no-cache nginx nodejs supervisor libwebp-tools
 
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf

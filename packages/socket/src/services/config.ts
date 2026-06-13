@@ -426,7 +426,7 @@ export const saveGeneratedImageBytes = (
   destName: string,
 ): string => {
   // destName is server-generated; guard its stem so it can never escape /media.
-  assertSafeId(destName.replace(/\.png$/u, ""))
+  assertSafeId(destName.replace(/\.[a-z0-9]+$/u, ""))
 
   const mediaDir = getPath("media")
 
