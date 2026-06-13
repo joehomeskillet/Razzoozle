@@ -165,11 +165,16 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       }
 
       // Forward the optional per-tap clientMessageId (LL-mode dedup). A missing
-      // id means "dedup by player+question only", i.e. today's behaviour.
+      // id means "dedup by player+question only", i.e. today's behaviour. The
+      // answer arg is `answerKeys` (number[]) for multiple-select, otherwise the
+      // scalar `answerKey`; `answerText` carries the free-text for type-answer.
+      // Per-question-type validity (array vs scalar vs text) is enforced
+      // server-side in selectAnswer, which holds the live question.
       game.selectAnswer(
         socket,
-        result.data.answerKey,
+        result.data.answerKeys ?? result.data.answerKey,
         result.data.clientMessageId,
+        result.data.answerText,
       )
     }),
   )

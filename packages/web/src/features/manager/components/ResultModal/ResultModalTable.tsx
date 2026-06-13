@@ -37,7 +37,34 @@ const ResultModalTable = () => {
             <tr key={i} className="hover:bg-gray-50">
               <td className="px-5 py-2.5 font-medium">{pa.playerName}</td>
               <td className="px-4 py-2.5">
-                {pa.answerId === null ? (
+                {pa.answerText != null ? (
+                  // Type-answer: render the submitted free-text
+                  <span className="inline-block max-w-32 truncate rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                    {pa.answerText}
+                  </span>
+                ) : pa.answerIds != null ? (
+                  // Multiple-select: one colored badge per selected option
+                  <div className="flex flex-wrap gap-1">
+                    {pa.answerIds.length > 0 ? (
+                      pa.answerIds.map((id) => (
+                        <span
+                          key={id}
+                          className={clsx(
+                            "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white",
+                            answerColor(id),
+                          )}
+                        >
+                          <span className="font-bold">{answerLabel(id)}</span>
+                          <span className="max-w-30 truncate">
+                            {questionResult.answers?.[id] ?? id}
+                          </span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </div>
+                ) : pa.answerId === null ? (
                   <span className="text-xs text-gray-400">—</span>
                 ) : isSlider ? (
                   <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 tabular-nums">

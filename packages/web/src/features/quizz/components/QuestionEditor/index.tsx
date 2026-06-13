@@ -1,5 +1,6 @@
 import background from "@razzia/web/assets/background.webp"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import QuestionEditorAcceptedAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
 import QuestionEditorMedia from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
@@ -11,6 +12,7 @@ const QuestionEditor = () => {
   const { currentQuestion } = useQuizzEditor()
   const { theme } = useThemeStore()
   const isSlider = currentQuestion.type === "slider"
+  const isTypeAnswer = currentQuestion.type === "type-answer"
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -18,7 +20,8 @@ const QuestionEditor = () => {
         <QuestionEditorTitle />
         <QuestionEditorType />
         <QuestionEditorMedia />
-        {!isSlider && <QuestionEditorAnswers />}
+        {!isSlider && !isTypeAnswer && <QuestionEditorAnswers />}
+        {isTypeAnswer && <QuestionEditorAcceptedAnswers />}
 
         <div className="fixed top-0 left-0 h-full w-full">
           <img

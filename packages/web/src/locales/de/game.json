@@ -41,5 +41,7 @@
     "bonus": "Bonus ×2",
     "firstCorrect": "Schnellste +100"
   },
-  "submittedBy": "eingereicht von {{name}}"
+  "submittedBy": "eingereicht von {{name}}",
+  "typeAnswerPlaceholder": "Antwort eingeben...",
+  "submitAnswer": "Absenden"
 }

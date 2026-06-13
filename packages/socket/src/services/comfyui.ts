@@ -5,7 +5,7 @@
 // endpoint and persisted into config/media via saveGeneratedImageBytes, then
 // served by nginx from the config volume at /media/<file> (mirrors /theme/).
 import { saveGeneratedImageBytes } from "@razzia/socket/services/config"
-import { spawn } from "child_process"
+import { toWebp } from "@razzia/socket/services/webp"
 import fs from "fs"
 import { nanoid } from "nanoid"
 
@@ -41,25 +41,7 @@ interface HistoryEntry {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Convert PNG bytes to WebP via cwebp (reads stdin, writes stdout). Quality
-// 82 is a good size/quality balance for quiz media. Rejects on non-zero exit.
-const pngToWebp = (png: Buffer): Promise<Buffer> =>
-  new Promise((resolve, reject) => {
-    const proc = spawn("cwebp", ["-quiet", "-q", "82", "-o", "-", "--", "-"])
-    const chunks: Buffer[] = []
-    proc.stdout.on("data", (c) => chunks.push(c))
-    proc.on("error", reject)
-    proc.on("close", (code) =>
-      code === 0
-        ? resolve(Buffer.concat(chunks))
-        : reject(new Error("errors:submission.imageGenFailed")),
-    )
-    proc.stdin.on("error", () => {})
-    proc.stdin.write(png)
-    proc.stdin.end()
-  })
-
-// Generate an image for `prompt`, returning its public "/media/gen-<id>.png"
+// Generate an image for `prompt`, returning its public "/media/gen-<id>.webp"
 // URL. Throws an `errors:submission.*` message on timeout/failure so the
 // handler can surface a safe, i18n-keyed error to the client.
 export const generateImage = async (prompt: string): Promise<string> => {
@@ -145,7 +127,7 @@ export const generateImage = async (prompt: string): Promise<string> => {
         }
 
         const buffer = Buffer.from(await viewRes.arrayBuffer())
-        const webp = await pngToWebp(buffer)
+        const webp = await toWebp(buffer)
 
         return saveGeneratedImageBytes(webp, `gen-${nanoid(8)}.webp`)
       }

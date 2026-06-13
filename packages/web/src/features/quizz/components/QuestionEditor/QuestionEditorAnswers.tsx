@@ -19,6 +19,7 @@ const QuestionEditorAnswers = () => {
   const solutions = currentQuestion.solutions ?? []
 
   const isPoll = currentQuestion.type === "poll"
+  const isMultiSelect = currentQuestion.type === "multiple-select"
 
   const updateAnswer = (index: number, value: string) => {
     const next = [...answers]
@@ -130,6 +131,12 @@ const QuestionEditorAnswers = () => {
           )
         })}
       </div>
+
+      {isMultiSelect && solutions.length < 2 && (
+        <p className="mt-2 text-sm text-amber-600">
+          {t("quizz:multipleSelect.minSolutionsHint")}
+        </p>
+      )}
     </div>
   )
 }

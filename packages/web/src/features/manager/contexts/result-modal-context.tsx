@@ -3,6 +3,7 @@ import type {
   PlayerAnswerRecord,
   QuestionResult,
 } from "@razzia/common/types/game"
+import { matchAnswer } from "@razzia/web/features/game/utils/text-match"
 import {
   createContext,
   useContext,
@@ -42,7 +43,14 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   const totalPlayers = result.players.length
 
   const answeredCount = questionResult.playerAnswers.filter(
-    (pa) => pa.answerId !== null,
+    // A record counts as answered if it carries any answer payload: the scalar
+    // answerId (choice/boolean/slider/poll), the multiple-select set, or the
+    // type-answer free-text. New types use a sentinel answerId, so the scalar
+    // check alone would miss "no answer" — hence the explicit field checks.
+    (pa) =>
+      Boolean(pa.answerText) ||
+      (pa.answerIds != null && pa.answerIds.length > 0) ||
+      pa.answerId !== null,
   ).length
 
   const sliderThreshold =
@@ -59,11 +67,43 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   // aggregate counts can never drift apart (previously the 5% slider tolerance
   // was duplicated in ResultModalTable).
   const isAnswerCorrect = (pa: PlayerAnswerRecord) => {
-    if (pa.answerId === null) {
+    if (questionResult.type === "poll") {
       return false
     }
 
-    if (questionResult.type === "poll") {
+    if (questionResult.type === "type-answer") {
+      if (!pa.answerText) {
+        return false
+      }
+
+      // Mirror the server's scoring: normalized/exact/fuzzy match against the
+      // authored accepted answers.
+      return matchAnswer(
+        pa.answerText,
+        questionResult.acceptedAnswers ?? [],
+        questionResult.matchMode ?? "normalized",
+      )
+    }
+
+    if (questionResult.type === "multiple-select") {
+      // All-or-nothing set equality vs the correct solutions — mirrors the
+      // server-side evalAnswer.
+      if (!pa.answerIds || pa.answerIds.length === 0) {
+        return false
+      }
+
+      const solutions = questionResult.solutions ?? []
+
+      if (pa.answerIds.length !== solutions.length) {
+        return false
+      }
+
+      const selectedSet = new Set(pa.answerIds)
+
+      return solutions.every((s) => selectedSet.has(s))
+    }
+
+    if (pa.answerId === null) {
       return false
     }
 
@@ -84,7 +124,11 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
     1,
     ...(questionResult.answers ?? []).map(
       (_, ai) =>
-        questionResult.playerAnswers.filter((pa) => pa.answerId === ai).length,
+        questionResult.playerAnswers.filter(
+          // Multiple-select counts each selected option; other types keep the
+          // scalar answerId.
+          (pa) => pa.answerIds?.includes(ai) ?? pa.answerId === ai,
+        ).length,
     ),
   )
 

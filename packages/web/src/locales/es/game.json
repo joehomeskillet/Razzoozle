@@ -40,5 +40,7 @@
     "submitted": "Enviado"
   },
   "pollThanks": "Gracias por tu voto",
-  "submittedBy": "enviada por {{name}}"
+  "submittedBy": "enviada por {{name}}",
+  "typeAnswerPlaceholder": "Escribe tu respuesta...",
+  "submitAnswer": "Enviar"
 }

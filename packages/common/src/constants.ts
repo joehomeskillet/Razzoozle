@@ -126,7 +126,14 @@ export const MEDIA_TYPES = {
 
 // Question kinds. Single source of truth: the zod question validator reuses this
 // (mirror of MEDIA_TYPES) and types/game derives `QuestionType` from it.
-export const QUESTION_TYPES = ["choice", "boolean", "slider", "poll"] as const
+export const QUESTION_TYPES = [
+  "choice",
+  "boolean",
+  "slider",
+  "poll",
+  "multiple-select",
+  "type-answer",
+] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]
 

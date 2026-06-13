@@ -40,5 +40,7 @@
   "usernameLabel": "Pseudo",
   "usernameRequired": "Saisis un pseudo",
   "pollThanks": "Merci pour ton vote",
-  "submittedBy": "proposée par {{name}}"
+  "submittedBy": "proposée par {{name}}",
+  "typeAnswerPlaceholder": "Saisissez votre réponse...",
+  "submitAnswer": "Envoyer"
 }

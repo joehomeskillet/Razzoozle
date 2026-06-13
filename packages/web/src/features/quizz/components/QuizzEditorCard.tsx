@@ -83,6 +83,10 @@ const QuizzEditorCard = ({
           {question.min}–{question.max}
           {question.unit ? ` ${question.unit}` : ""}
         </div>
+      ) : question.type === "type-answer" ? (
+        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-400">
+          Aa
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-1">
           {(question.answers ?? []).map((_, i) => (

@@ -28,6 +28,10 @@ export interface Player {
 export interface Answer {
   clientId: string
   answerId: number
+  // Multiple-select: the set of selected option indices (answerId is a sentinel).
+  answerIds?: number[]
+  // Type-answer: the raw submitted free-text (answerId is a sentinel).
+  answerText?: string
   points: number
 }
 
@@ -63,6 +67,10 @@ export interface GameUpdateQuestion {
 export interface PlayerAnswerRecord {
   playerName: string
   answerId: number | null
+  // Multiple-select selected set; null/absent when not applicable.
+  answerIds?: number[] | null
+  // Type-answer submitted text; null/absent when not applicable.
+  answerText?: string | null
 }
 
 export type QuestionResult = Question & {

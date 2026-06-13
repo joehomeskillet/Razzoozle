@@ -7,9 +7,17 @@ import { z } from "zod"
 
 // SELECTED_ANSWER payload: answerKey must be a finite integer; the optional
 // per-tap clientMessageId (LL-mode dedup) is a string when present. A missing id
-// means "dedup by player+question only".
+// means "dedup by player+question only". For multiple-select the real payload is
+// in answerKeys (1..4 ints, mirroring the question validator's answers cap);
+// for type-answer it is in answerText (capped at 200 chars to block payload
+// bombs). answerKey stays REQUIRED for backward compatibility — multi-select /
+// type-answer clients send a sentinel (e.g. -1). The per-question-type rules
+// (which of these is meaningful) are enforced in RoundManager.selectAnswer,
+// which has the live question.
 export const selectedAnswerValidator = z.object({
   answerKey: z.number().int("errors:game.invalidAnswer"),
+  answerKeys: z.array(z.number().int()).min(1).max(4).optional(),
+  answerText: z.string().max(200).optional(),
   clientMessageId: z.string().optional(),
 })
 

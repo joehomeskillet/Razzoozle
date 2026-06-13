@@ -48,6 +48,26 @@
     "slider": "Curseur (nombre)",
     "poll": "Sondage",
     "bonusQuestion": "Question bonus (points doublés)",
-    "practiceQuestion": "Question d'entraînement (0 point)"
+    "practiceQuestion": "Question d'entraînement (0 point)",
+    "multipleSelect": "Choix multiple",
+    "typeAnswer": "Réponse texte"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
+    "submitButton": "Soumettre les réponses",
+    "selectHint": "Plusieurs réponses possibles"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Réponses acceptées",
+    "addAcceptedAnswer": "Ajouter une réponse",
+    "acceptedAnswerPlaceholder": "ex. Paris",
+    "removeAcceptedAnswer": "Supprimer la réponse {{index}}",
+    "matchMode": {
+      "label": "Mode de correspondance",
+      "exact": "Exact",
+      "normalized": "Normalisé (recommandé)",
+      "fuzzy": "Tolérant (fautes ok)"
+    },
+    "minAnswersRequired": "Au moins une réponse requise"
   }
 }

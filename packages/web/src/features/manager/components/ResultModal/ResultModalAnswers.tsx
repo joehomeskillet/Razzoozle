@@ -4,6 +4,10 @@ import {
   answerColor,
   answerLabel,
 } from "@razzia/web/features/game/utils/answers"
+import {
+  matchAnswer,
+  normalizeText,
+} from "@razzia/web/features/game/utils/text-match"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
 import { Check, Clock, ImageOff, Music, Video, X } from "lucide-react"
@@ -58,6 +62,43 @@ const ResultModalAnswers = () => {
   const noAnswerCount = totalPlayers - answeredCount
   const isPoll = questionResult.type === "poll"
   const isSlider = questionResult.type === "slider"
+  const isTypeAnswer = questionResult.type === "type-answer"
+
+  // Type-answer: bucket the submitted free-text by its normalized form so
+  // case/diacritic variants collapse into one row, ranked by frequency. Match
+  // status is computed once per bucket via the same util the server scores with.
+  const textBuckets = isTypeAnswer
+    ? (() => {
+        const buckets: Record<
+          string,
+          { display: string; count: number; isMatch: boolean }
+        > = {}
+
+        for (const pa of questionResult.playerAnswers) {
+          if (!pa.answerText) {
+            continue
+          }
+
+          const key = normalizeText(pa.answerText)
+
+          if (!buckets[key]) {
+            buckets[key] = {
+              display: pa.answerText,
+              count: 0,
+              isMatch: matchAnswer(
+                pa.answerText,
+                questionResult.acceptedAnswers ?? [],
+                questionResult.matchMode ?? "normalized",
+              ),
+            }
+          }
+
+          buckets[key].count += 1
+        }
+
+        return Object.values(buckets).sort((a, b) => b.count - a.count)
+      })()
+    : []
   const sliderGuesses = questionResult.playerAnswers
     .map((pa) => pa.answerId)
     .filter((v): v is number => v !== null)
@@ -71,8 +112,11 @@ const ResultModalAnswers = () => {
   const rows: AnswerRow[] = [
     ...(questionResult.answers ?? []).map((label, ai) => ({
       label,
-      count: questionResult.playerAnswers.filter((pa) => pa.answerId === ai)
-        .length,
+      count: questionResult.playerAnswers.filter(
+        // Multiple-select stores the selected set in answerIds; choice/boolean/
+        // poll keep the scalar answerId, so fall back to that when absent.
+        (pa) => pa.answerIds?.includes(ai) ?? pa.answerId === ai,
+      ).length,
       isCorrect: (questionResult.solutions ?? []).includes(ai),
       color: answerColor(ai),
       answerLabel: answerLabel(ai),
@@ -104,7 +148,48 @@ const ResultModalAnswers = () => {
           {questionResult.question}
         </p>
 
-        {isSlider ? (
+        {isTypeAnswer ? (
+          <div className="flex flex-col gap-2">
+            {/* Accepted answers legend */}
+            <div className="mb-2 flex flex-wrap gap-2">
+              {(questionResult.acceptedAnswers ?? []).map((a) => (
+                <span
+                  key={a}
+                  className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+
+            {/* Submitted answers, ranked by frequency */}
+            {textBuckets.map(({ display, count, isMatch }) => (
+              <div
+                key={display}
+                className="flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-2"
+              >
+                {isMatch ? (
+                  <Check className="size-4 shrink-0 text-green-500" />
+                ) : (
+                  <X className="size-4 shrink-0 text-red-400" />
+                )}
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
+                  {display}
+                </span>
+                <span className="shrink-0 text-sm font-semibold text-gray-600">
+                  {count}
+                </span>
+              </div>
+            ))}
+
+            {noAnswerCount > 0 && (
+              <div className="flex items-center justify-between px-3 py-2 text-gray-400">
+                <span className="text-sm">{t("manager:result.noAnswer")}</span>
+                <span className="text-sm font-semibold">{noAnswerCount}</span>
+              </div>
+            )}
+          </div>
+        ) : isSlider ? (
           <div className="flex flex-col gap-1 text-sm">
             <div className="font-semibold text-gray-800">
               {t("manager:result.slider.correctAnswer")}{" "}

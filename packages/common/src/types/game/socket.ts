@@ -258,6 +258,10 @@ export interface ClientToServerEvents {
   [EVENTS.PLAYER.SELECTED_ANSWER]: (
     _message: MessageWithoutStatus<{
       answerKey: number
+      // Multiple-select: the set of selected option indices (answerKey is a sentinel).
+      answerKeys?: number[]
+      // Type-answer: the submitted free-text (answerKey is a sentinel).
+      answerText?: string
       // Low-latency mode: per-tap dedup id. OPTIONAL — server treats a missing
       // id as today (dedup by player+question only).
       clientMessageId?: string
