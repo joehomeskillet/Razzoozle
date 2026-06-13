@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as DisplayLayoutRouteImport } from './pages/display/layout'
 import { Route as authLayoutRouteImport } from './pages/(auth)/layout'
+import { Route as SubmitIndexRouteImport } from './pages/submit/index'
 import { Route as DisplayIndexRouteImport } from './pages/display/index'
 import { Route as authIndexRouteImport } from './pages/(auth)/index'
 import { Route as SatelliteGameIdRouteImport } from './pages/satellite/$gameId'
@@ -30,6 +31,11 @@ const DisplayLayoutRoute = DisplayLayoutRouteImport.update({
 } as any)
 const authLayoutRoute = authLayoutRouteImport.update({
   id: '/(auth)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmitIndexRoute = SubmitIndexRouteImport.update({
+  id: '/submit/',
+  path: '/submit/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DisplayIndexRoute = DisplayIndexRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
+  '/submit/': typeof SubmitIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/manager/': typeof authManagerIndexRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/': typeof authIndexRoute
   '/display': typeof DisplayIndexRoute
+  '/submit': typeof SubmitIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/manager': typeof authManagerIndexRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/satellite/$gameId': typeof SatelliteGameIdRoute
   '/(auth)/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
+  '/submit/': typeof SubmitIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/(auth)/manager/': typeof authManagerIndexRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/satellite/$gameId'
     | '/'
     | '/display/'
+    | '/submit/'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/manager/'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/satellite/$gameId'
     | '/'
     | '/display'
+    | '/submit'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/manager'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/satellite/$gameId'
     | '/(auth)/'
     | '/display/'
+    | '/submit/'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/(auth)/manager/'
@@ -181,6 +193,7 @@ export interface RootRouteChildren {
   ManagerConfigRoute: typeof ManagerConfigRoute
   PartyGameIdRoute: typeof PartyGameIdRoute
   SatelliteGameIdRoute: typeof SatelliteGameIdRoute
+  SubmitIndexRoute: typeof SubmitIndexRoute
   PartyManagerGameIdRoute: typeof PartyManagerGameIdRoute
 }
 
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof authLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submit/': {
+      id: '/submit/'
+      path: '/submit'
+      fullPath: '/submit/'
+      preLoaderRoute: typeof SubmitIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/display/': {
@@ -328,6 +348,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManagerConfigRoute: ManagerConfigRoute,
   PartyGameIdRoute: PartyGameIdRoute,
   SatelliteGameIdRoute: SatelliteGameIdRoute,
+  SubmitIndexRoute: SubmitIndexRoute,
   PartyManagerGameIdRoute: PartyManagerGameIdRoute,
 }
 export const routeTree = rootRouteImport

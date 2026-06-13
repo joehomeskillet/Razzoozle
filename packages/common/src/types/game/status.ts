@@ -26,6 +26,7 @@ export interface CommonStatusDataMap {
     question: string
     media?: QuestionMedia
     cooldown: number
+    submittedBy?: string
   }
   SELECT_ANSWER: {
     question: string
@@ -46,6 +47,7 @@ export interface CommonStatusDataMap {
     serverNowMs?: number
     questionStartAtServerMs?: number
     answerDeadlineAtServerMs?: number
+    submittedBy?: string
   }
   SHOW_RESULT: {
     correct: boolean

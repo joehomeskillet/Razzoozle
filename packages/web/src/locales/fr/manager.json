@@ -62,7 +62,8 @@
     "quizz": "Quizz",
     "results": "Résultats",
     "design": "Apparence",
-    "satellite": "Satellite"
+    "satellite": "Satellite",
+    "submissions": "Propositions"
   },
   "satellite": {
     "title": "Écran satellite",
@@ -120,5 +121,16 @@
       "imageUploaded": "Image envoyée",
       "saved": "Apparence enregistrée"
     }
+  },
+  "submissions": {
+    "empty": "Aucune proposition en attente.",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "edit": "Modifier",
+    "preview": "Aperçu",
+    "selectQuizz": "Choisir le quiz",
+    "confirmReject": "Vraiment rejeter cette proposition ?",
+    "submittedBy": "Proposée par {{name}}",
+    "submittedAt": "le {{date}}"
   }
 }

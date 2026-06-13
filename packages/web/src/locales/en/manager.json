@@ -62,7 +62,8 @@
     "quizz": "Quiz",
     "results": "Results",
     "design": "Design",
-    "satellite": "Satellite"
+    "satellite": "Satellite",
+    "submissions": "Suggestions"
   },
   "satellite": {
     "title": "Satellite Display",
@@ -120,5 +121,16 @@
       "imageUploaded": "Image uploaded",
       "saved": "Design saved"
     }
+  },
+  "submissions": {
+    "empty": "No pending suggestions.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "edit": "Edit",
+    "preview": "Preview",
+    "selectQuizz": "Select quiz",
+    "confirmReject": "Really reject this suggestion?",
+    "submittedBy": "Submitted by {{name}}",
+    "submittedAt": "on {{date}}"
   }
 }

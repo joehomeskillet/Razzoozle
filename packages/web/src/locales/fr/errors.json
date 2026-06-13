@@ -47,5 +47,10 @@
   "theme": {
     "imageTooLarge": "L'image est trop volumineuse (max. 8 Mo)",
     "uploadFailed": "Échec de l'envoi de l'image"
+  },
+  "submission": {
+    "rateLimited": "Tu as envoyé trop de questions. Attends un instant.",
+    "notFound": "Proposition non trouvée.",
+    "quizzNotFound": "Quiz non trouvé."
   }
 }

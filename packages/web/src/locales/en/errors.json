@@ -52,5 +52,10 @@
   "theme": {
     "imageTooLarge": "Image is too large (max 8 MB)",
     "uploadFailed": "Image upload failed"
+  },
+  "submission": {
+    "rateLimited": "You've submitted too many questions. Please wait a moment.",
+    "notFound": "Suggestion not found.",
+    "quizzNotFound": "Quiz not found."
   }
 }

@@ -8,6 +8,7 @@ import ConfigDisplay from "@razzia/web/features/manager/components/configuration
 import ConfigManageQuizz from "@razzia/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzia/web/features/manager/components/configurations/ConfigSelectQuizz"
+import ConfigSubmissions from "@razzia/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTabButton from "@razzia/web/features/manager/components/configurations/ConfigTabButton"
 import ConfigTheme from "@razzia/web/features/manager/components/configurations/ConfigTheme"
 import { ConfigProvider } from "@razzia/web/features/manager/contexts/config-context"
@@ -35,6 +36,10 @@ const tabs = [
   {
     nameKey: "manager:tabs.satellite",
     component: ConfigDisplay,
+  },
+  {
+    nameKey: "manager:tabs.submissions",
+    component: ConfigSubmissions,
   },
 ]
 

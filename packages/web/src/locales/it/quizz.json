@@ -18,7 +18,9 @@
     "media": {
       "audio": "Audio",
       "image": "Immagine",
-      "video": "Video"
+      "video": "Video",
+      "aiGenerate": "Genera con IA",
+      "aiPromptPlaceholder": "Descrivi l'immagine..."
     },
     "mediaUrlPlaceholder": "Inserisci URL...",
     "placeholder": "Inizia a scrivere la tua domanda...",

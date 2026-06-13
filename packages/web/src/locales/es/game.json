@@ -39,5 +39,6 @@
     "submit": "Confirmar",
     "submitted": "Enviado"
   },
-  "pollThanks": "Gracias por tu voto"
+  "pollThanks": "Gracias por tu voto",
+  "submittedBy": "enviada por {{name}}"
 }

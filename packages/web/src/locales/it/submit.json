@@ -1,0 +1,19 @@
+{
+  "form": {
+    "title": "Proponi una domanda",
+    "namePlaceholder": "Il tuo nome (4–20 caratteri)",
+    "questionPlaceholder": "La tua domanda...",
+    "answerPlaceholder": "Risposta {{index}}",
+    "correctAnswerLabel": "Risposta corretta",
+    "submitButton": "Invia domanda"
+  },
+  "success": {
+    "title": "Grazie",
+    "body": "La tua domanda è stata inviata e sarà verificata.",
+    "again": "Invia un'altra domanda"
+  },
+  "errors": {
+    "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",
+    "serverError": "Si è verificato un errore. Riprova."
+  }
+}
