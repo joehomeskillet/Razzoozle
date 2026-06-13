@@ -52,6 +52,17 @@ export class PlayerManager {
     socket.emit(EVENTS.GAME.SUCCESS_JOIN, this.gameId)
   }
 
+  // Insert a pre-built sim-mode bot directly (bypasses the socket-dependent
+  // join()): a bot has no real socket / clientId-collision check and no username
+  // validation (its name is server-generated + deduped by the BotManager). We
+  // emit MANAGER.NEW_PLAYER so the bot surfaces in the host roster, but DO NOT
+  // broadcast the count here — Game.addBots calls broadcastCount() once after
+  // the whole batch so N bots don't trigger N count emits.
+  addBot(player: Player): void {
+    this.players.push(player)
+    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
+  }
+
   kick(socket: Socket, playerId: string): boolean {
     if (this.getManagerId() !== socket.id) {
       return false
@@ -138,12 +149,16 @@ export class PlayerManager {
     points: number
     streak: number
   }> {
-    return this.players.map((p) => ({
-      clientId: p.clientId,
-      username: p.username,
-      points: p.points,
-      streak: p.streak,
-    }))
+    // Filter sim-mode bots: they are a transient test aid and must NEVER persist
+    // to a crash-recovery snapshot (a restore must not resurrect bot ghosts).
+    return this.players
+      .filter((p) => !p.isBot)
+      .map((p) => ({
+        clientId: p.clientId,
+        username: p.username,
+        points: p.points,
+        streak: p.streak,
+      }))
   }
 
   // Rebuild the player list from a snapshot as DETACHED records (no live

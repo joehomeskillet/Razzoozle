@@ -65,6 +65,13 @@ export interface RoundManagerOptions {
   send: SendFn
   onNewQuestion: () => void
   onGameFinished: (_result: GameResult) => void
+  // Sim mode: fired right after the SELECT_ANSWER broadcast (answer window now
+  // open) so the BotManager can schedule its per-bot answers; and at EVERY point
+  // the window closes (early-advance abort, showResults, abortQuestion) so the
+  // BotManager can cancel pending bot timers (no late-bot race into the next Q).
+  // OPTIONAL — absent in normal mode / unit-test fakes => no-op.
+  onQuestionOpen?: (_question: Question) => void
+  onAnswerWindowClose?: () => void
   // Low-latency mode config (already defaulted by the zod validator). When
   // `enabled` is false every branch below is skipped => normal mode unchanged.
   lowLatency: LowLatencyMode
@@ -81,6 +88,9 @@ export class RoundManager {
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
   private autoTimer: ReturnType<typeof setTimeout> | null = null
+  // Sim mode: true while the SELECT_ANSWER window is open. Gates Game.addBots
+  // (no mid-window bot injection) via isAnswerWindowOpen().
+  private answerWindowOpen = false
 
   // ── Low-latency mode state (only populated when enabled) ──────────────────
   private readonly ll: LowLatencyMode
@@ -180,11 +190,26 @@ export class RoundManager {
     questionsHistory: QuestionResult[]
     autoMode: boolean
   } {
+    // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
+    // them from BOTH the leaderboard AND each question's playerAnswers — a
+    // reviewer trace proved that filtering only the player list still
+    // resurrects bot ghosts via the round leaderboard / saved result on restore.
+    // playerAnswers store the username (not isBot), so we derive the set of bot
+    // usernames from the leaderboard and drop those entries by name.
+    const botUsernames = new Set(
+      this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
+    )
+
     return {
       started: this.started,
       currentQuestion: this.currentQuestion,
-      leaderboard: this.leaderboard,
-      questionsHistory: this.questionsHistory,
+      leaderboard: this.leaderboard.filter((p) => !p.isBot),
+      questionsHistory: this.questionsHistory.map((q) => ({
+        ...q,
+        playerAnswers: q.playerAnswers.filter(
+          (a) => !botUsernames.has(a.playerName),
+        ),
+      })),
       autoMode: this.autoMode,
     }
   }
@@ -347,6 +372,11 @@ export class RoundManager {
       ...llAnchors,
     })
 
+    // Sim mode: the answer window is now open — let the BotManager schedule its
+    // per-bot answers against the real selectAnswer path.
+    this.answerWindowOpen = true
+    this.opts.onQuestionOpen?.(question)
+
     await this.opts.cooldown.start(question.time)
 
     if (!this.started) {
@@ -357,6 +387,11 @@ export class RoundManager {
   }
 
   private showResults(question: Question): void {
+    // Sim mode: the window is closing — cancel pending bot timers first so no
+    // late bot answer can land after results are computed.
+    this.answerWindowOpen = false
+    this.opts.onAnswerWindowClose?.()
+
     const currentPlayers = this.opts.players.getAll()
 
     const oldLeaderboard = (() => {
@@ -683,6 +718,12 @@ export class RoundManager {
       // All in — flush any pending throttled count so the manager sees the
       // final number immediately, then end the question.
       this.answerCountThrottle.cancel()
+      // Sim mode (CRITICAL): close the window + cancel pending bot timers HERE,
+      // not only in showResults. cooldown.abort() only resolves on the next ~1s
+      // interval tick (cooldown-timer.ts), so cancelling solely in showResults
+      // leaves a ~1s gap where a late bot timer could fire into the next Q.
+      this.answerWindowOpen = false
+      this.opts.onAnswerWindowClose?.()
       this.opts.cooldown.abort()
     }
   }
@@ -749,7 +790,16 @@ export class RoundManager {
       return
     }
 
+    // Sim mode: window closing on a manager abort — cancel pending bot timers.
+    this.answerWindowOpen = false
+    this.opts.onAnswerWindowClose?.()
     this.opts.cooldown.abort()
+  }
+
+  // Sim mode: is the SELECT_ANSWER window currently open? Game.addBots refuses to
+  // add bots mid-window (no remaining-time race into the next question).
+  isAnswerWindowOpen(): boolean {
+    return this.answerWindowOpen
   }
 
   showLeaderboard(): void {
@@ -761,16 +811,33 @@ export class RoundManager {
 
       const top = this.leaderboard.slice(0, 3)
 
+      // Sim mode: the PERSISTED result must never carry bots (they would pollute
+      // the real results archive / history UI). Mirror toSnapshot's filter here —
+      // this saved-result path is independent of toSnapshot and reads the live
+      // unfiltered arrays. Rank is computed over humans only (1..N). The live
+      // FINISHED `top` display is intentionally left unfiltered (bots stay
+      // visible during play, per the feature contract).
+      const botUsernames = new Set(
+        this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
+      )
+
       this.opts.onGameFinished({
         id: `${Date.now()}-${nanoid(8)}`,
         subject: this.opts.quizz.subject,
         date: new Date().toISOString(),
-        players: this.leaderboard.map((player, index) => ({
-          username: player.username,
-          points: player.points,
-          rank: index + 1,
+        players: this.leaderboard
+          .filter((p) => !p.isBot)
+          .map((player, index) => ({
+            username: player.username,
+            points: player.points,
+            rank: index + 1,
+          })),
+        questions: this.questionsHistory.map((q) => ({
+          ...q,
+          playerAnswers: q.playerAnswers.filter(
+            (a) => !botUsernames.has(a.playerName),
+          ),
         })),
-        questions: this.questionsHistory,
       })
 
       this.opts.send(this.opts.getManagerId(), STATUS.FINISHED, {

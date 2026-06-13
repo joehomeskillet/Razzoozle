@@ -1,4 +1,4 @@
-import { EVENTS } from "@razzia/common/constants"
+import { BOT, EVENTS } from "@razzia/common/constants"
 import type { Player, QuestionResult, Quizz } from "@razzia/common/types/game"
 import type {
   MetricKind,
@@ -13,6 +13,7 @@ import {
 } from "@razzia/common/types/game/status"
 import type { LowLatencyMode } from "@razzia/common/validators/game-config"
 import { getGameConfig, saveResult } from "@razzia/socket/services/config"
+import { BotManager } from "@razzia/socket/services/game/bot-manager"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
 import { RoundManager } from "@razzia/socket/services/game/round-manager"
@@ -63,6 +64,10 @@ class Game {
   private readonly playerManager: PlayerManager
   private readonly round: RoundManager
   private readonly cooldown: CooldownTimer
+  // Sim mode: owns bot identity + the per-question answer scheduler. Always
+  // constructed (the code is in the prod bundle), but inert until addBots is
+  // called — and addBots refuses unless RAHOOT_SIM_MODE === "1".
+  private readonly botManager: BotManager
   // The game's quizz, kept so a crash-recovery snapshot can persist it and a
   // restored game stays playable past the resume point (manager can advance).
   private readonly quizz: Quizz
@@ -159,6 +164,16 @@ class Game {
       () => this._manager.id,
     )
 
+    // Sim mode: bots submit via the EXISTING selectAnswer path (real dedup /
+    // scoring / deadline / early-advance) using a synthetic socket stub, and
+    // read the live roster for username dedup + per-question scheduling.
+    this.botManager = new BotManager({
+      submit: (stub, answerId) => {
+        this.round.selectAnswer(stub, answerId)
+      },
+      roster: () => this.playerManager.getAll(),
+    })
+
     this.round = new RoundManager({
       quizz,
       players: this.playerManager,
@@ -173,6 +188,14 @@ class Game {
         this.managerStatus = null
       },
       onGameFinished: saveResult,
+      // Sim mode: schedule bot answers when the window opens, cancel pending bot
+      // timers at every window close (early-advance, results, abort).
+      onQuestionOpen: (question) => {
+        this.botManager.onQuestionOpen(question)
+      },
+      onAnswerWindowClose: () => {
+        this.botManager.cancelPending()
+      },
       lowLatency: this.lowLatency,
     })
 
@@ -251,8 +274,61 @@ class Game {
 
       if (target) {
         this.clearLobbyDisconnectTimer(target.clientId)
+
+        // Sim mode: if a bot was kicked, clear its pending answer timer so it
+        // can't fire a selectAnswer for a now-removed roster entry.
+        if (target.isBot) {
+          this.botManager.cancelPending(target.clientId)
+        }
       }
     }
+  }
+
+  // ── Sim mode: add scripted bot opponents ───────────────────────────────────
+  // Three independent gates (per the feature contract):
+  //   1. RUNTIME ENV gate — refuse unless RAHOOT_SIM_MODE === "1" (default off).
+  //      The code is in the prod bundle; only the ABILITY is gated.
+  //   2. OWNERSHIP gate — only the game's manager socket may add bots.
+  //   3. WINDOW gate — never inject mid-answer-window (no remaining-time race).
+  // Then clamps to the per-game ceiling (BOT.MAX_TOTAL), builds the bots,
+  // inserts each, and broadcasts the count ONCE for the whole batch.
+  addBots(socket: Socket, count: number): void {
+    if (process.env.RAHOOT_SIM_MODE !== "1") {
+      socket.emit(
+        EVENTS.MANAGER.ERROR_MESSAGE,
+        "errors:manager.simModeDisabled",
+      )
+
+      return
+    }
+
+    if (socket.id !== this._manager.id) {
+      return
+    }
+
+    if (this.round.isAnswerWindowOpen()) {
+      socket.emit(EVENTS.MANAGER.ERROR_MESSAGE, "errors:manager.simWindowOpen")
+
+      return
+    }
+
+    // Clamp so the cumulative bot count never exceeds BOT.MAX_TOTAL.
+    const existingBots = this.botManager.count()
+    const room = Math.max(0, BOT.MAX_TOTAL - existingBots)
+    const toAdd = Math.min(count, room)
+
+    if (toAdd <= 0) {
+      return
+    }
+
+    const bots = this.botManager.addBots(toAdd)
+
+    for (const bot of bots) {
+      this.playerManager.addBot(bot)
+    }
+
+    // One count broadcast for the whole batch (addBot intentionally skips it).
+    this.playerManager.broadcastCount()
   }
 
   // Reconnect
@@ -559,6 +635,10 @@ class Game {
       clearTimeout(timer)
     }
     this.lobbyDisconnectTimers.clear()
+
+    // Sim mode: cancel all pending bot answer timers so removing a game never
+    // leaves a setTimeout retaining a dead Game (and bot state is dropped).
+    this.botManager.removeAll()
 
     metrics.clear(this.gameId)
   }

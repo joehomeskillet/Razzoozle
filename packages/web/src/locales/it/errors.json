@@ -17,7 +17,9 @@
   "manager": {
     "failedToReadConfig": "Impossibile leggere la configurazione del gioco",
     "invalidPassword": "Password non valida",
-    "passwordNotConfigured": "La password del gestore non è configurata"
+    "passwordNotConfigured": "La password del gestore non è configurata",
+    "simModeDisabled": "La modalità simulazione non è attivata sul server",
+    "simWindowOpen": "Puoi aggiungere bot solo nella lobby o tra una domanda e l'altra, non mentre una domanda è aperta"
   },
   "notFound": {
     "back": "Torna alla home",

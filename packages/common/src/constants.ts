@@ -55,6 +55,7 @@ export const EVENTS = {
     KICK_PLAYER: "manager:kickPlayer",
     START_GAME: "manager:startGame",
     SET_AUTO: "manager:setAuto",
+    ADD_BOTS: "manager:addBots",
     ABORT_QUIZ: "manager:abortQuiz",
     NEXT_QUESTION: "manager:nextQuestion",
     SHOW_LEADERBOARD: "manager:showLeaderboard",
@@ -133,6 +134,18 @@ export const STREAK_STEP = 0.1
 export const STREAK_CAP = 5
 
 export const SLIDER_TOLERANCE_FRACTION = 0.05
+
+// ---- Sim-mode bot tuning (server-side scripted opponents) ------------------
+// Read by the BotManager (delay scheduling, correctness) and the addBots
+// validator/ceiling. Bots are a DEV/test aid, gated by RAHOOT_SIM_MODE at
+// runtime; these constants tune their behaviour, not their availability.
+export const BOT = {
+  MAX_PER_REQUEST: 50, // addBots count cap (validator)
+  MAX_TOTAL: 200, // cumulative ceiling per game (repeated clicks stack)
+  CORRECT_RATE: 0.6, // default P(answer correct)
+  MIN_DELAY_MS: 1200, // floor so a fast human can still claim first-correct
+  MAX_DELAY_MS: 8000, // cap; also clamped to question.time*1000*0.85
+} as const
 
 export const MAX_POINTS = 1000
 

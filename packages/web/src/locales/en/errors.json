@@ -22,7 +22,9 @@
   "manager": {
     "failedToReadConfig": "Failed to read game config",
     "invalidPassword": "Invalid password",
-    "passwordNotConfigured": "Manager password is not configured"
+    "passwordNotConfigured": "Manager password is not configured",
+    "simModeDisabled": "Simulation mode is not enabled on the server",
+    "simWindowOpen": "You can only add bots in the lobby or between questions, not while a question is open"
   },
   "notFound": {
     "back": "Go back home",

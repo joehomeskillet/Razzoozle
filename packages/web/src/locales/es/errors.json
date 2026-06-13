@@ -17,7 +17,9 @@
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",
     "invalidPassword": "Contraseña incorrecta",
-    "passwordNotConfigured": "La contraseña del administrador no está configurada"
+    "passwordNotConfigured": "La contraseña del administrador no está configurada",
+    "simModeDisabled": "El modo de simulación no está activado en el servidor",
+    "simWindowOpen": "Solo puedes añadir bots en la sala de espera o entre preguntas, no mientras una pregunta está abierta"
   },
   "notFound": {
     "back": "Volver al inicio",

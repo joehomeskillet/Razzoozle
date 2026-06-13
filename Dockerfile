@@ -34,4 +34,10 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget 
 
 EXPOSE 3000
 
+# Sim mode default OFF. supervisord forwards this to the socket process via
+# RAHOOT_SIM_MODE="%(ENV_RAHOOT_SIM_MODE)s"; `docker run -e RAHOOT_SIM_MODE=1`
+# overrides it to enable scripted bot opponents. Prod (no -e) sees "0" => bots
+# refused at runtime in game.addBots.
+ENV RAHOOT_SIM_MODE=0
+
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

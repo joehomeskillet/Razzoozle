@@ -189,6 +189,12 @@ export interface ClientToServerEvents {
     gameId?: string
     auto: boolean
   }) => void
+  // Sim mode: host adds N scripted bot opponents. Flat payload (matches
+  // SET_AUTO), NOT a {data} envelope. Refused server-side unless RAHOOT_SIM_MODE.
+  [EVENTS.MANAGER.ADD_BOTS]: (_message: {
+    gameId?: string
+    count: number
+  }) => void
   [EVENTS.MANAGER.ABORT_QUIZ]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.NEXT_QUESTION]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void

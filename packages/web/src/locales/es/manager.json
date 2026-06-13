@@ -77,6 +77,12 @@
     "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
     "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager."
   },
+  "sim": {
+    "button": "Bots (Sim)",
+    "count": "Cantidad",
+    "add": "Añadir",
+    "windowHint": "Añade bots en la sala de espera o entre preguntas"
+  },
   "lowLatency": {
     "title": "Estado de baja latencia",
     "p50p95": "p50 / p95",

@@ -68,6 +68,12 @@
     "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager.",
     "codeLabel": "Codice di abbinamento"
   },
+  "sim": {
+    "button": "Bots (Sim)",
+    "count": "Numero",
+    "add": "Aggiungi",
+    "windowHint": "Aggiungi bot nella lobby o tra una domanda e l'altra"
+  },
   "lowLatency": {
     "title": "Stato bassa latenza",
     "p50p95": "p50 / p95",

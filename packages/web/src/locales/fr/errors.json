@@ -17,7 +17,9 @@
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",
     "invalidPassword": "Mot de passe invalide",
-    "passwordNotConfigured": "Mot de passe manager non configuré"
+    "passwordNotConfigured": "Mot de passe manager non configuré",
+    "simModeDisabled": "Le mode simulation n'est pas activé sur le serveur",
+    "simWindowOpen": "Tu ne peux ajouter des bots que dans le salon ou entre les questions, pas pendant qu'une question est ouverte"
   },
   "notFound": {
     "back": "Retour à l'accueil",

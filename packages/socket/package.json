@@ -5,6 +5,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "node esbuild.config.js",
     "start": "node dist/index.cjs",
+    "load-sim": "tsx scripts/load-sim.ts",
+    "e2e-sim": "tsx scripts/e2e-sim.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "types": "tsc --noEmit",

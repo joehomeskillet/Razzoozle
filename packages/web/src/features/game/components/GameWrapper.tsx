@@ -4,6 +4,7 @@ import background from "@razzia/web/assets/background.webp"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
 import DisplayControl from "@razzia/web/features/manager/components/DisplayControl"
+import SimControl from "@razzia/web/features/manager/components/SimControl"
 import LowLatencyHealth from "@razzia/web/features/game/components/LowLatencyHealth"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import { preloadFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
@@ -195,6 +196,7 @@ const GameWrapper = ({
                     inert in normal mode. */}
                 {manager && controls && <LowLatencyHealth />}
                 {manager && controls && <DisplayControl />}
+                {manager && controls && import.meta.env.DEV && <SimControl />}
                 {/* Fullscreen is a kiosk affordance, not a manager control:
                     show it whenever the manager chrome renders (incl. the passive
                     /display + /satellite beamer, where auto-requestFullscreen is

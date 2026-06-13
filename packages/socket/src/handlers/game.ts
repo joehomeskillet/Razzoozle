@@ -4,7 +4,10 @@ import type { SocketContext } from "@razzia/socket/handlers/types"
 import { getQuizz } from "@razzia/socket/services/config"
 import Game from "@razzia/socket/services/game"
 import Registry from "@razzia/socket/services/registry"
-import { selectedAnswerValidator } from "@razzia/socket/services/validators"
+import {
+  addBotsValidator,
+  selectedAnswerValidator,
+} from "@razzia/socket/services/validators"
 import { withGame } from "@razzia/socket/utils/game"
 
 export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
@@ -124,6 +127,22 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
   socket.on(EVENTS.MANAGER.SET_AUTO, ({ gameId, auto }) =>
     withGame(gameId, socket, (game) => game.setAutoMode(auto)),
+  )
+
+  // Sim mode: host adds N scripted bot opponents. Flat payload (matches
+  // SET_AUTO), validated by addBotsValidator; the env / ownership / window gates
+  // live in game.addBots so a malformed count is rejected here but the prod-
+  // safety gate is enforced server-side regardless of the handler.
+  socket.on(EVENTS.MANAGER.ADD_BOTS, ({ gameId, count }) =>
+    withGame(gameId, socket, (game) => {
+      const parsed = addBotsValidator.safeParse({ count })
+
+      if (!parsed.success) {
+        return
+      }
+
+      game.addBots(socket, parsed.data.count)
+    }),
   )
 
   socket.on(EVENTS.PLAYER.SELECTED_ANSWER, ({ gameId, data }) =>

@@ -77,6 +77,12 @@
     "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
     "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager."
   },
+  "sim": {
+    "button": "Bots (Sim)",
+    "count": "Nombre",
+    "add": "Ajouter",
+    "windowHint": "Ajoute des bots dans le salon ou entre les questions"
+  },
   "lowLatency": {
     "title": "État faible latence",
     "p50p95": "p50 / p95",

@@ -19,6 +19,10 @@ export interface Player {
   username: string
   points: number
   streak: number
+  // NEW — true for sim bots (server-side scripted opponents); absent/false for
+  // humans. Carried along by the `...player` spreads in scoring/snapshot so it's
+  // available to filter on (bots are never persisted to a crash-recovery snapshot).
+  isBot?: boolean
 }
 
 export interface Answer {
