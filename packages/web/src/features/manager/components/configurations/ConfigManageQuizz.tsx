@@ -12,7 +12,7 @@ import {
 } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { ListChecks, SquarePen, Trash2, Upload } from "lucide-react"
+import { Copy, ListChecks, SquarePen, Trash2, Upload } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { type ChangeEvent, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -43,6 +43,11 @@ const ConfigManageQuizz = () => {
     socket.emit(EVENTS.QUIZZ.DELETE, pendingDelete.id)
     toast.success(t("manager:quizz.deleted"))
     setPendingDelete(null)
+  }
+
+  const handleDuplicate = (id: string) => {
+    socket.emit(EVENTS.QUIZZ.DUPLICATE, id)
+    toast.success(t("manager:quizz.duplicated"))
   }
 
   const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +158,12 @@ const ConfigManageQuizz = () => {
                         params: { quizzId: q.id },
                       })
                     },
+                  },
+                  {
+                    key: "duplicate",
+                    icon: Copy,
+                    label: t("manager:quizz.duplicate", { name: q.subject }),
+                    onClick: () => handleDuplicate(q.id),
                   },
                   {
                     key: "delete",

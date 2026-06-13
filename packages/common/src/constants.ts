@@ -93,6 +93,9 @@ export const EVENTS = {
     UPDATE: "quizz:update",
     UPDATE_SUCCESS: "quizz:updateSuccess",
     DELETE: "quizz:delete",
+    // Server-side copy: reads a quizz by id and saves it under a new id with a
+    // "(Kopie)"-suffixed subject, then re-emits config so the list refreshes.
+    DUPLICATE: "quizz:duplicate",
     ERROR: "quizz:error",
   },
   RESULTS: {

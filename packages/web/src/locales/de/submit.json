@@ -15,6 +15,9 @@
       "settings": "Einstellungen"
     }
   },
+  "cta": {
+    "afterGame": "Hat dir das Quiz gefallen? Reich eine eigene Frage ein"
+  },
   "success": {
     "title": "Danke",
     "body": "Deine Frage wurde eingereicht und wird geprüft.",

@@ -16,6 +16,8 @@
     "delete": "Supprimer le quizz",
     "deleteConfirm": "Supprimer \"{{name}}\" ? Cette action est irréversible.",
     "deleted": "Quizz supprimé",
+    "duplicate": "Dupliquer « {{name}} »",
+    "duplicated": "Quizz dupliqué",
     "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
     "invalidJson": "Fichier JSON invalide ou incomplet",
@@ -62,6 +64,10 @@
       "action": "Partager le lien",
       "copied": "Lien copié",
       "copyFailed": "Impossible de copier le lien"
+    },
+    "export": {
+      "csv": "Exporter en CSV",
+      "done": "CSV téléchargé"
     }
   },
   "tabs": {

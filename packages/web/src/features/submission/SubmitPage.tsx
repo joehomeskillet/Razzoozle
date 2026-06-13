@@ -144,10 +144,10 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
   }
 
   return (
-    <div className="z-10 flex max-h-[calc(100dvh-7.5rem)] w-full max-w-xl flex-col px-4 pb-[env(safe-area-inset-bottom)]">
+    <div className="z-10 flex max-h-[calc(100dvh-7.5rem)] w-full max-w-xl flex-col px-4 pb-[env(safe-area-inset-bottom)] xl:max-w-5xl 2xl:max-w-6xl">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28">
-        <div className="flex flex-col gap-4">
-          <header className="mb-1 text-center text-white drop-shadow-lg">
+        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
+          <header className="mb-1 text-center text-white drop-shadow-lg xl:col-span-2">
             <h2 className="text-3xl font-extrabold tracking-tight">
               {t("submit:form.title")}
             </h2>
@@ -221,7 +221,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           onClick={handleSubmit}
           disabled={awaiting}
           aria-busy={awaiting}
-          className="min-h-11 w-full rounded-xl"
+          className="min-h-11 w-full rounded-xl xl:mx-auto xl:block xl:max-w-lg"
           size="md"
         >
           {awaiting && <Loader className="size-5 text-white" />}

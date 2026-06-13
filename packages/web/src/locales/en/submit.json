@@ -15,6 +15,9 @@
       "settings": "Settings"
     }
   },
+  "cta": {
+    "afterGame": "Enjoyed the quiz? Suggest your own question"
+  },
   "success": {
     "title": "Thank you",
     "body": "Your question has been submitted and is under review.",

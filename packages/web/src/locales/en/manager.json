@@ -16,6 +16,8 @@
     "delete": "Delete quiz",
     "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "deleted": "Quiz deleted",
+    "duplicate": "Duplicate “{{name}}”",
+    "duplicated": "Quiz duplicated",
     "import": "Import quiz from JSON",
     "none": "No quiz created yet",
     "notFound": "No quiz found",
@@ -62,6 +64,10 @@
       "action": "Share link",
       "copied": "Link copied",
       "copyFailed": "Could not copy the link"
+    },
+    "export": {
+      "csv": "Export as CSV",
+      "done": "CSV downloaded"
     }
   },
   "tabs": {

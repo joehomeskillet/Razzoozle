@@ -15,6 +15,9 @@
       "settings": "Ajustes"
     }
   },
+  "cta": {
+    "afterGame": "¿Te gustó el quiz? Sugiere tu propia pregunta"
+  },
   "success": {
     "title": "Gracias",
     "body": "Tu pregunta se ha enviado y está siendo revisada.",

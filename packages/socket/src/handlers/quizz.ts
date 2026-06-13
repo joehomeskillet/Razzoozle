@@ -55,6 +55,25 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
   )
 
   socket.on(
+    EVENTS.QUIZZ.DUPLICATE,
+    manager.withAuth(socket, (id) => {
+      try {
+        // Read the source quizz, drop its id, and re-save with a suffixed
+        // subject. saveQuizz derives a fresh id from the new subject via
+        // normalizeFilename, so the original is left untouched.
+        const { id: _sourceId, subject, ...rest } = getQuizzById(id)
+
+        saveQuizz({ ...rest, subject: `${subject} (Kopie)` })
+
+        emitConfig(socket)
+      } catch (error) {
+        console.error("Failed to duplicate quizz:", error)
+        socket.emit(EVENTS.QUIZZ.ERROR, "errors:quizz.failedToSave")
+      }
+    }),
+  )
+
+  socket.on(
     EVENTS.QUIZZ.UPDATE,
     manager.withAuth(socket, ({ id, ...data }) => {
       try {

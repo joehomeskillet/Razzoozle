@@ -16,6 +16,8 @@
     "delete": "Eliminar cuestionario",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleted": "Cuestionario eliminado",
+    "duplicate": "Duplicar «{{name}}»",
+    "duplicated": "Cuestionario duplicado",
     "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
     "invalidJson": "Archivo JSON inválido o incompleto",
@@ -62,6 +64,10 @@
       "action": "Compartir enlace",
       "copied": "Enlace copiado",
       "copyFailed": "No se pudo copiar el enlace"
+    },
+    "export": {
+      "csv": "Exportar como CSV",
+      "done": "CSV descargado"
     }
   },
   "tabs": {
