@@ -42,7 +42,7 @@ const QuizzEditorShell = () => {
       </div>
 
       {/* Solid app surface — content sits here, never on the photo. */}
-      <div className="relative z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3">
+      <div className="relative z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3 2xl:mx-auto 2xl:w-full 2xl:max-w-[110rem]">
         <QuizzEditorHeader />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
           <QuizzEditorSidebar />

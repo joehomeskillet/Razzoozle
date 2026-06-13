@@ -17,5 +17,9 @@
  */
 :root {
   --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
-  --accent-contrast: color-mix(in srgb, var(--color-primary), black 14%);
+  --accent-contrast: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-primary), black 34%),
+    #1f2937 12%
+  );
 }

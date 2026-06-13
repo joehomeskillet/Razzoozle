@@ -114,7 +114,7 @@ const ConsoleShell = ({
         reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }
       }
       className={clsx(
-        "z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg",
+        "z-10 flex min-h-[32rem] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg xl:max-w-5xl 2xl:max-w-6xl",
         "max-h-[88svh]",
         className,
       )}
