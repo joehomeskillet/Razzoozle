@@ -143,9 +143,14 @@
     "reject": "Reject",
     "edit": "Edit",
     "preview": "Preview",
+    "hidePreview": "Hide preview",
     "selectQuizz": "Select quiz",
     "confirmReject": "Really reject this suggestion?",
     "submittedBy": "Submitted by {{name}}",
-    "submittedAt": "on {{date}}"
+    "submittedAt": "on {{date}}",
+    "previewLabels": {
+      "cooldown": "Cooldown",
+      "loading": "Loading preview …"
+    }
   }
 }

@@ -3,9 +3,11 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import clsx from "clsx"
+import { twMerge } from "tailwind-merge"
 import { Monitor, MonitorCheck } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -70,15 +72,19 @@ const DisplayControl = () => {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="display-control-popover"
-        className={clsx(
-          "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-bold hover:bg-gray-200",
-          paired ? "bg-green-100 text-green-800" : "bg-white text-black",
+        aria-label={t("manager:satellite.title")}
+        className={twMerge(
+          clsx(
+            HOST_CONTROL_BTN,
+            paired &&
+              "border-green-200 bg-green-100 text-green-800 hover:bg-green-200",
+          ),
         )}
       >
         {paired ? (
-          <MonitorCheck className="size-5" />
+          <MonitorCheck className="size-5" aria-hidden />
         ) : (
-          <Monitor className="size-5" />
+          <Monitor className="size-5" aria-hidden />
         )}
         <span className="hidden sm:inline">
           {paired ? t("manager:satellite.paired") : t("manager:tabs.satellite")}

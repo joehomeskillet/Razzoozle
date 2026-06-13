@@ -4,9 +4,9 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
-import clsx from "clsx"
 import { Bot } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -71,12 +71,10 @@ const SimControl = () => {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="sim-control-popover"
-        className={clsx(
-          "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-bold hover:bg-gray-200",
-          "bg-white text-black",
-        )}
+        aria-label={t("manager:sim.button")}
+        className={HOST_CONTROL_BTN}
       >
-        <Bot className="size-5" />
+        <Bot className="size-5" aria-hidden />
         <span className="hidden sm:inline">{t("manager:sim.button")}</span>
       </button>
 

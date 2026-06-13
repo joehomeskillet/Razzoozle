@@ -17,8 +17,9 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
+import { HOST_CONTROL_BTN } from "@razzia/web/features/game/utils/hostControls"
 import clsx from "clsx"
-import { Maximize } from "lucide-react"
+import { LogOut, Maximize } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { type PropsWithChildren, useEffect, useState } from "react"
 import toast from "react-hot-toast"
@@ -158,7 +159,7 @@ const GameWrapper = ({
             <div className="flex w-full items-center justify-between gap-2 p-4">
               <div className="flex flex-1 justify-start">
                 {questionStates && (
-                  <div className="flex items-center rounded-md bg-white p-2 px-4 text-lg font-bold text-black">
+                  <div className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black">
                     {`${questionStates.current} / ${questionStates.total}`}
                   </div>
                 )}
@@ -169,13 +170,14 @@ const GameWrapper = ({
                   <button
                     type="button"
                     onClick={toggleAuto}
-                    className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-200"
-                    title="Auto-Modus: läuft automatisch weiter"
+                    aria-pressed={autoOn}
+                    className={HOST_CONTROL_BTN}
+                    title={t("game:controls.autoTitle")}
                   >
                     <span
                       className={clsx(
                         "relative h-5 w-9 rounded-full transition-colors",
-                        autoOn ? "bg-primary" : "bg-gray-300",
+                        autoOn ? "bg-[var(--accent-contrast)]" : "bg-gray-300",
                       )}
                     >
                       <span
@@ -185,7 +187,10 @@ const GameWrapper = ({
                         )}
                       />
                     </span>
-                    Auto-Modus {autoOn ? "an" : "aus"}
+                    {t("game:controls.autoMode")}{" "}
+                    {autoOn
+                      ? t("game:controls.autoOn")
+                      : t("game:controls.autoOff")}
                   </button>
                 </div>
               )}
@@ -205,20 +210,19 @@ const GameWrapper = ({
                   <button
                     type="button"
                     onClick={toggleFullscreen}
-                    title="Vollbild"
-                    className="flex items-center rounded-md bg-white px-3 text-black hover:bg-gray-200"
+                    title={t("game:controls.fullscreen")}
+                    aria-label={t("game:controls.fullscreen")}
+                    className={clsx(HOST_CONTROL_BTN, "px-3")}
                   >
-                    <Maximize className="size-5" />
+                    <Maximize className="size-5" aria-hidden />
                   </button>
                 )}
                 {manager && next && (
                   <Button
-                    className={clsx(
-                      "bg-white px-4 text-black hover:bg-gray-200",
-                      {
-                        "pointer-events-none": isDisabled,
-                      },
-                    )}
+                    size="sm"
+                    className={clsx("min-h-11 rounded-lg px-5", {
+                      "pointer-events-none": isDisabled,
+                    })}
                     onClick={handleNext}
                   >
                     {t(next)}
@@ -226,12 +230,14 @@ const GameWrapper = ({
                 )}
 
                 {manager && onBack && (
-                  <Button
+                  <button
+                    type="button"
                     onClick={onBack}
-                    className="bg-white px-4 text-black hover:bg-gray-200"
+                    className={HOST_CONTROL_BTN}
                   >
-                    {t("common:exit")}
-                  </Button>
+                    <LogOut className="size-5" aria-hidden />
+                    <span className="hidden sm:inline">{t("common:exit")}</span>
+                  </button>
                 )}
               </div>
             </div>

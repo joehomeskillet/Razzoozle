@@ -43,5 +43,12 @@
   },
   "submittedBy": "inviata da {{name}}",
   "typeAnswerPlaceholder": "Scrivi la tua risposta...",
-  "submitAnswer": "Invia"
+  "submitAnswer": "Invia",
+  "controls": {
+    "autoMode": "Modalità auto",
+    "autoOn": "attiva",
+    "autoOff": "disattiva",
+    "autoTitle": "Modalità auto: avanza automaticamente",
+    "fullscreen": "Schermo intero"
+  }
 }

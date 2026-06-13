@@ -143,9 +143,14 @@
     "reject": "Ablehnen",
     "edit": "Bearbeiten",
     "preview": "Vorschau",
+    "hidePreview": "Vorschau ausblenden",
     "selectQuizz": "Quizz auswählen",
     "confirmReject": "Diesen Vorschlag wirklich ablehnen?",
     "submittedBy": "Eingereicht von {{name}}",
-    "submittedAt": "am {{date}}"
+    "submittedAt": "am {{date}}",
+    "previewLabels": {
+      "cooldown": "Pause",
+      "loading": "Vorschau wird geladen …"
+    }
   }
 }

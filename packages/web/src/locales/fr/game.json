@@ -42,5 +42,12 @@
   "pollThanks": "Merci pour ton vote",
   "submittedBy": "proposée par {{name}}",
   "typeAnswerPlaceholder": "Saisissez votre réponse...",
-  "submitAnswer": "Envoyer"
+  "submitAnswer": "Envoyer",
+  "controls": {
+    "autoMode": "Mode auto",
+    "autoOn": "activé",
+    "autoOff": "désactivé",
+    "autoTitle": "Mode auto : avance automatiquement",
+    "fullscreen": "Plein écran"
+  }
 }

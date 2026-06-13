@@ -143,9 +143,14 @@
     "reject": "Rechazar",
     "edit": "Editar",
     "preview": "Vista previa",
+    "hidePreview": "Ocultar vista previa",
     "selectQuizz": "Seleccionar quiz",
     "confirmReject": "¿Seguro que quieres rechazar esta sugerencia?",
     "submittedBy": "Enviada por {{name}}",
-    "submittedAt": "el {{date}}"
+    "submittedAt": "el {{date}}",
+    "previewLabels": {
+      "cooldown": "Pausa",
+      "loading": "Cargando vista previa …"
+    }
   }
 }

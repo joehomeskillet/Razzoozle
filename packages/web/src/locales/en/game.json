@@ -43,5 +43,12 @@
   "pollThanks": "Thanks for your vote",
   "submittedBy": "submitted by {{name}}",
   "typeAnswerPlaceholder": "Type your answer...",
-  "submitAnswer": "Submit"
+  "submitAnswer": "Submit",
+  "controls": {
+    "autoMode": "Auto mode",
+    "autoOn": "on",
+    "autoOff": "off",
+    "autoTitle": "Auto mode: advances automatically",
+    "fullscreen": "Fullscreen"
+  }
 }

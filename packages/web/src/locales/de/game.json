@@ -43,5 +43,12 @@
   },
   "submittedBy": "eingereicht von {{name}}",
   "typeAnswerPlaceholder": "Antwort eingeben...",
-  "submitAnswer": "Absenden"
+  "submitAnswer": "Absenden",
+  "controls": {
+    "autoMode": "Auto-Modus",
+    "autoOn": "an",
+    "autoOff": "aus",
+    "autoTitle": "Auto-Modus: läuft automatisch weiter",
+    "fullscreen": "Vollbild"
+  }
 }
