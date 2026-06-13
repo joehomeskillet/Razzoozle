@@ -6,7 +6,9 @@ import {
 } from "@razzia/web/features/game/utils/answers"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import { calculatePercentages } from "@razzia/web/features/game/utils/score"
+import { matchAnswer } from "@razzia/web/features/game/utils/text-match"
 import clsx from "clsx"
+import { Check } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -25,9 +27,13 @@ const Responses = ({
     correct,
     unit,
     averageGuess,
+    textResponses,
+    acceptedAnswers,
+    matchMode,
   },
 }: Props) => {
   const isSlider = type === "slider"
+  const isTypeAnswer = type === "type-answer"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -72,7 +78,51 @@ const Responses = ({
           {question}
         </h2>
 
-        {isSlider ? (
+        {isTypeAnswer ? (
+          <div className="mx-auto w-full max-w-4xl px-4">
+            {/* Accepted answers legend */}
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(acceptedAnswers ?? []).map((a) => (
+                <span
+                  key={a}
+                  className="rounded-full bg-green-500/20 px-3 py-1 text-sm font-semibold text-green-300"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+            {/* Submitted text answers, ranked by frequency */}
+            <div className="flex flex-col gap-2">
+              {Object.entries(textResponses ?? {})
+                .sort(([, a], [, b]) => b - a)
+                .map(([text, count]) => {
+                  const isMatch = matchAnswer(
+                    text,
+                    acceptedAnswers ?? [],
+                    matchMode ?? "normalized",
+                  )
+
+                  return (
+                    <div
+                      key={text}
+                      className={clsx(
+                        "flex items-center justify-between rounded-xl px-4 py-2",
+                        isMatch
+                          ? "bg-green-500/30 text-green-100"
+                          : "bg-white/10 text-white/70",
+                      )}
+                    >
+                      <span className="font-semibold">{text}</span>
+                      <span className="ml-4 flex shrink-0 items-center gap-2 font-bold">
+                        {count}
+                        {isMatch && <Check className="size-4 text-green-400" />}
+                      </span>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        ) : isSlider ? (
           <div className="flex flex-col items-center gap-3">
             <div className="text-lg font-semibold text-white/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]">
               {t("game:slider.correctAnswer")}
@@ -117,7 +167,7 @@ const Responses = ({
         )}
       </div>
 
-      {!isSlider && (
+      {!isSlider && !isTypeAnswer && (
         <div>
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (

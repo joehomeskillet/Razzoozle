@@ -31,6 +31,10 @@ import type { LowLatencyMode } from "@razzia/common/validators/game-config"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
 import { ScoreboardThrottle } from "@razzia/socket/services/game/scoreboard-throttle"
+import {
+  matchAnswer,
+  normalizeText,
+} from "@razzia/socket/services/game/text-match"
 import { metrics } from "@razzia/socket/services/metrics"
 import { timeToPoint } from "@razzia/socket/utils/game"
 import sleep from "@razzia/socket/utils/sleep"
@@ -409,20 +413,70 @@ export class RoundManager {
     })()
 
     const totalType = this.playersAnswers.reduce(
-      (acc: Record<number, number>, { answerId }) => {
-        acc[answerId] = (acc[answerId] || 0) + 1
+      (acc: Record<number, number>, answer) => {
+        // Multiple-select: increment EACH selected option's bucket so the
+        // manager histogram shows how many players picked each option. All other
+        // types keep the single-bucket behaviour (answerId === -1 for type-answer
+        // lands in a bucket the text histogram ignores).
+        if (answer.answerIds !== undefined) {
+          for (const id of answer.answerIds) {
+            acc[id] = (acc[id] || 0) + 1
+          }
+        } else {
+          acc[answer.answerId] = (acc[answer.answerId] || 0) + 1
+        }
 
         return acc
       },
       {},
     )
 
+    // Type-answer: a parallel text-keyed histogram (normalized text -> count) so
+    // the manager can see how the free-text answers clustered. undefined for all
+    // other types. Keyed by the SAME normalization used for scoring so case/accent
+    // variants collapse into one bar.
+    const textResponses =
+      question.type === "type-answer"
+        ? this.playersAnswers.reduce(
+            (acc: Record<string, number>, { answerText }) => {
+              const key = normalizeText(answerText ?? "")
+
+              if (key) {
+                acc[key] = (acc[key] || 0) + 1
+              }
+
+              return acc
+            },
+            {},
+          )
+        : undefined
+
     const isPoll = question.type === "poll"
 
     // Correctness + base factor (0..1) for a single answer, before multipliers.
+    // answerIds carries a multiple-select player's selected set; answerText the
+    // type-answer free text. Both are undefined for choice/boolean/slider/poll.
     const evalAnswer = (
       answerId: number,
+      answerIds?: number[],
+      answerText?: string,
     ): { correct: boolean; base: number } => {
+      // Type-answer: server-authoritative text match (anti-cheat — acceptedAnswers
+      // never leave the server). All-or-nothing (base 1 on a match, else 0).
+      if (question.type === "type-answer") {
+        if (!answerText || !question.acceptedAnswers?.length) {
+          return { correct: false, base: 0 }
+        }
+
+        const correct = matchAnswer(
+          answerText,
+          question.acceptedAnswers,
+          question.matchMode ?? "normalized",
+        )
+
+        return { correct, base: correct ? 1 : 0 }
+      }
+
       if (
         question.type === "slider" &&
         question.min != null &&
@@ -439,6 +493,25 @@ export class RoundManager {
         return { correct: within, base: within ? accuracy : 0 }
       }
 
+      // Multiple-select: all-or-nothing. The selected set must equal solutions
+      // EXACTLY by size and content (order irrelevant — Set comparison). No
+      // partial credit.
+      if (question.type === "multiple-select" && answerIds !== undefined) {
+        // Dedupe solutions too: a hand-crafted/imported quiz could carry
+        // duplicate indices (the validator only enforces length>=2), which would
+        // otherwise let a wrong same-size selection score as correct.
+        const solutions = [...new Set(question.solutions ?? [])]
+
+        if (answerIds.length !== solutions.length) {
+          return { correct: false, base: 0 }
+        }
+
+        const selectedSet = new Set(answerIds)
+        const correct = solutions.every((s) => selectedSet.has(s))
+
+        return { correct, base: correct ? 1 : 0 }
+      }
+
       const correct = question.solutions?.includes(answerId) ?? false
 
       return { correct, base: correct ? 1 : 0 }
@@ -449,7 +522,7 @@ export class RoundManager {
 
     if (!isPoll && !question.practice) {
       for (const a of this.playersAnswers) {
-        if (evalAnswer(a.answerId).correct) {
+        if (evalAnswer(a.answerId, a.answerIds, a.answerText).correct) {
           firstCorrectId = a.clientId
 
           break
@@ -482,7 +555,11 @@ export class RoundManager {
         let baseFactor = 0
 
         if (playerAnswer) {
-          const ev = evalAnswer(playerAnswer.answerId)
+          const ev = evalAnswer(
+            playerAnswer.answerId,
+            playerAnswer.answerIds,
+            playerAnswer.answerText,
+          )
           isCorrect = ev.correct
           baseFactor = ev.base
           rawPoints = ev.base * playerAnswer.points
@@ -572,16 +649,35 @@ export class RoundManager {
       answers: question.answers ?? [],
       responses: totalType,
       averageGuess,
+      // Type-answer (MANAGER-ONLY send — players never receive SHOW_RESPONSES):
+      // the normalized text histogram plus the authored accepted answers and the
+      // match mode so the host result view can render them. Gated to type-answer
+      // so other types carry none of these (acceptedAnswers/matchMode are
+      // anti-cheat-sensitive and must never leak to a player-facing payload).
+      textResponses,
+      acceptedAnswers:
+        question.type === "type-answer" ? question.acceptedAnswers : undefined,
+      matchMode:
+        question.type === "type-answer" ? question.matchMode : undefined,
     })
 
     this.questionsHistory.push({
       ...question,
-      playerAnswers: currentPlayers.map((player) => ({
-        playerName: player.username,
-        answerId:
-          this.playersAnswers.find((a) => a.clientId === player.clientId)
-            ?.answerId ?? null,
-      })),
+      playerAnswers: currentPlayers.map((player) => {
+        const playerAnswer = this.playersAnswers.find(
+          (a) => a.clientId === player.clientId,
+        )
+
+        return {
+          playerName: player.username,
+          answerId: playerAnswer?.answerId ?? null,
+          // Multiple-select selected set / type-answer free text, persisted so
+          // the saved-result view can render the player's actual answer. null
+          // when not applicable (matches PlayerAnswerRecord).
+          answerIds: playerAnswer?.answerIds ?? null,
+          answerText: playerAnswer?.answerText ?? null,
+        }
+      }),
     })
 
     this.leaderboard = sortedPlayers
@@ -600,8 +696,9 @@ export class RoundManager {
 
   selectAnswer(
     socket: Socket,
-    answerId: number,
+    answerId: number | number[],
     clientMessageId?: string,
+    answerText?: string,
   ): void {
     // SERVER receive timestamp — the only clock trusted for scoring. Captured
     // first thing so the value is unaffected by anything below it.
@@ -626,6 +723,53 @@ export class RoundManager {
     }
 
     if (!question) {
+      this.rejectAnswer(
+        socket,
+        "invalid_question",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
+
+      return
+    }
+
+    // Per-question-type payload guards (ANTI-CHEAT — reject mismatched shapes a
+    // hostile client could craft to bypass the answer UI). These reject silently
+    // (LL mode acks via rejectAnswer; normal mode is a no-op, like every other
+    // pre-accept reject here):
+    //   - multiple-select MUST carry an array of keys; a scalar is malformed.
+    //   - any non-multiple-select type MUST NOT carry an array (a scalar-only
+    //     type can't be smuggled an index set).
+    //   - type-answer MUST carry non-empty trimmed text (an empty string would
+    //     otherwise score as a (failing) answer; reject it so it can't occupy
+    //     the player's one slot or pollute the histogram).
+    const isMultiSelect = question.type === "multiple-select"
+    const isTextAnswer = question.type === "type-answer"
+    const trimmedText = answerText?.trim() ?? ""
+
+    if (isMultiSelect && !Array.isArray(answerId)) {
+      this.rejectAnswer(
+        socket,
+        "invalid_question",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
+
+      return
+    }
+
+    if (!isMultiSelect && Array.isArray(answerId)) {
+      this.rejectAnswer(
+        socket,
+        "invalid_question",
+        serverReceivedAtMs,
+        clientMessageId,
+      )
+
+      return
+    }
+
+    if (isTextAnswer && !trimmedText) {
       this.rejectAnswer(
         socket,
         "invalid_question",
@@ -687,7 +831,15 @@ export class RoundManager {
       // The Answer `clientId` holds the durable clientId (not the volatile
       // socket.id) so reconnects still match the right answer.
       clientId,
-      answerId,
+      // Multiple-select / type-answer store a -1 sentinel in answerId and carry
+      // their real payload in answerIds / answerText respectively (the guards
+      // above already proved the shapes match the question type). dedupe the
+      // multi-select keys so a client can't pad the histogram with repeats.
+      answerId: isMultiSelect || isTextAnswer ? -1 : (answerId as number),
+      answerIds: isMultiSelect
+        ? [...new Set(answerId as number[])]
+        : undefined,
+      answerText: isTextAnswer ? answerText : undefined,
       points: timeToPoint(this.startTime, question.time),
     })
 

@@ -40,7 +40,9 @@
     "slider": "Slider (numero)",
     "poll": "Sondaggio",
     "bonusQuestion": "Domanda bonus (punti doppi)",
-    "practiceQuestion": "Domanda di prova (0 punti)"
+    "practiceQuestion": "Domanda di prova (0 punti)",
+    "multipleSelect": "Selezione multipla",
+    "typeAnswer": "Risposta testuale"
   },
   "slider": {
     "min": "Min",
@@ -49,5 +51,23 @@
     "step": "Passo",
     "unit": "Unità",
     "unitPlaceholder": "es. kWh"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Seleziona almeno 2 risposte corrette",
+    "submitButton": "Invia le risposte",
+    "selectHint": "Più risposte possibili"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Risposte accettate",
+    "addAcceptedAnswer": "Aggiungi risposta",
+    "acceptedAnswerPlaceholder": "ad es. Parigi",
+    "removeAcceptedAnswer": "Rimuovi la risposta {{index}}",
+    "matchMode": {
+      "label": "Modalità di confronto",
+      "exact": "Esatto",
+      "normalized": "Normalizzato (consigliato)",
+      "fuzzy": "Tollerante (refusi ok)"
+    },
+    "minAnswersRequired": "È richiesta almeno una risposta"
   }
 }

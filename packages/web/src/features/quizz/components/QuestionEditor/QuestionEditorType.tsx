@@ -8,6 +8,8 @@ const TYPES: Array<{ key: QuestionType; labelKey: string }> = [
   { key: "boolean", labelKey: "quizz:type.boolean" },
   { key: "slider", labelKey: "quizz:type.slider" },
   { key: "poll", labelKey: "quizz:type.poll" },
+  { key: "multiple-select", labelKey: "quizz:type.multipleSelect" },
+  { key: "type-answer", labelKey: "quizz:type.typeAnswer" },
 ]
 
 const SLIDER_FIELDS: Array<{
@@ -63,6 +65,28 @@ const QuestionEditorType = () => {
           : ["", ""],
         solutions: [],
         bonus: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "multiple-select") {
+      updateQuestion(currentIndex, {
+        type: "multiple-select",
+        answers:
+          (currentQuestion.answers?.length ?? 0) >= 2
+            ? currentQuestion.answers
+            : ["", ""],
+        solutions:
+          (currentQuestion.solutions?.length ?? 0) >= 2
+            ? currentQuestion.solutions
+            : [0, 1],
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "type-answer") {
+      updateQuestion(currentIndex, {
+        type: "type-answer",
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: currentQuestion.acceptedAnswers ?? [],
+        matchMode: currentQuestion.matchMode ?? "normalized",
         ...SLIDER_CLEAR,
       })
     } else {

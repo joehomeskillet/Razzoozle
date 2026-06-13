@@ -48,6 +48,26 @@
     "choice": "Selección",
     "poll": "Encuesta",
     "practiceQuestion": "Pregunta de práctica (0 puntos)",
-    "slider": "Slider (número)"
+    "slider": "Slider (número)",
+    "multipleSelect": "Selección múltiple",
+    "typeAnswer": "Respuesta libre"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
+    "submitButton": "Enviar respuestas",
+    "selectHint": "Selecciona todas las correctas"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Respuestas aceptadas",
+    "addAcceptedAnswer": "Añadir respuesta",
+    "acceptedAnswerPlaceholder": "p.ej. París",
+    "removeAcceptedAnswer": "Eliminar respuesta {{index}}",
+    "matchMode": {
+      "label": "Modo de coincidencia",
+      "exact": "Exacto",
+      "normalized": "Normalizado (recomendado)",
+      "fuzzy": "Tolerante (errores ok)"
+    },
+    "minAnswersRequired": "Se requiere al menos una respuesta"
   }
 }

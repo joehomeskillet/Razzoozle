@@ -48,6 +48,26 @@
     "slider": "Slider (number)",
     "poll": "Poll",
     "bonusQuestion": "Bonus question (double points)",
-    "practiceQuestion": "Practice question (0 points)"
+    "practiceQuestion": "Practice question (0 points)",
+    "multipleSelect": "Multiple select",
+    "typeAnswer": "Type answer"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Mark at least 2 correct answers",
+    "submitButton": "Submit answers",
+    "selectHint": "Select all that apply"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Accepted answers",
+    "addAcceptedAnswer": "Add answer",
+    "acceptedAnswerPlaceholder": "e.g. Paris",
+    "removeAcceptedAnswer": "Remove answer {{index}}",
+    "matchMode": {
+      "label": "Match mode",
+      "exact": "Exact",
+      "normalized": "Normalized (recommended)",
+      "fuzzy": "Fuzzy (typos ok)"
+    },
+    "minAnswersRequired": "At least one answer required"
   }
 }

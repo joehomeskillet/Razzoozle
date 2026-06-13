@@ -33,6 +33,13 @@ export const questionValidator = z
     practice: z.boolean().optional(),
     bonus: z.boolean().optional(),
     submittedBy: z.string().optional(),
+    // Type-answer: free-text accepted answers + how they're compared.
+    acceptedAnswers: z
+      .array(z.string().min(1).max(200))
+      .min(1)
+      .max(20)
+      .optional(),
+    matchMode: z.enum(["exact", "normalized", "fuzzy"]).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -53,6 +60,28 @@ export const questionValidator = z
       // Opinion vote: needs answers, no correct solution.
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
+      }
+    } else if (q.type === "multiple-select") {
+      // Needs >=2 answers and >=2 correct solutions.
+      if (!q.answers || q.answers.length < 2) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
+      }
+
+      if (!q.solutions || q.solutions.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.solutionsMin2",
+          path: ["solutions"],
+        })
+      }
+    } else if (q.type === "type-answer") {
+      // Free-text: needs >=1 accepted answer; answers/solutions not required.
+      if (!q.acceptedAnswers || q.acceptedAnswers.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.acceptedAnswersMin",
+          path: ["acceptedAnswers"],
+        })
       }
     } else {
       if (!q.answers || q.answers.length < 2) {

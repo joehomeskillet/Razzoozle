@@ -510,8 +510,13 @@ class Game {
     await this.round.start(socket)
   }
 
-  selectAnswer(socket: Socket, answerId: number, clientMessageId?: string) {
-    this.round.selectAnswer(socket, answerId, clientMessageId)
+  selectAnswer(
+    socket: Socket,
+    answerId: number | number[],
+    clientMessageId?: string,
+    answerText?: string,
+  ) {
+    this.round.selectAnswer(socket, answerId, clientMessageId, answerText)
   }
 
   // Low-latency mode helpers exposed to the handler layer.

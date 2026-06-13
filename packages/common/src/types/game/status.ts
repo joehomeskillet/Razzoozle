@@ -80,6 +80,11 @@ interface ManagerExtraStatus {
     correct?: number
     unit?: string
     averageGuess?: number
+    // Type-answer result (manager-only — never sent to players). Normalized
+    // text -> count, the authored accepted answers, and the comparison mode.
+    textResponses?: Record<string, number>
+    acceptedAnswers?: string[]
+    matchMode?: "exact" | "normalized" | "fuzzy"
   }
   SHOW_LEADERBOARD: { oldLeaderboard: Player[]; leaderboard: Player[] }
 }

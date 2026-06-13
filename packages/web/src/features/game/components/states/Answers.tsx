@@ -65,6 +65,8 @@ const Answers = ({
   const lowLatency = llActive && hasServerDeadline
 
   const isSlider = type === "slider" && min != null && max != null
+  const isMultiSelect = type === "multiple-select"
+  const isTypeAnswer = type === "type-answer"
   const [cooldown, setCooldown] = useState(time)
   const [totalAnswer, setTotalAnswer] = useState(0)
   const [sliderValue, setSliderValue] = useState(
@@ -79,6 +81,11 @@ const Answers = ({
   const [submitted, setSubmitted] = useState(resumeAnswered)
   // Which answer key the player tapped (for instant local highlight). -1 = none.
   const [selectedKey, setSelectedKey] = useState<number | null>(null)
+  // Multiple-select: the set of option keys the player has toggled on. Reset to
+  // [] per question via remount (same lifecycle as `selectedKey`/`submitted`).
+  const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
+  // Type-answer: the free-text the player is entering. Reset likewise per question.
+  const [textAnswer, setTextAnswer] = useState("")
   // True once we've sent an answer but not yet seen its ack (LL mode only).
   const [ackPending, setAckPending] = useState(false)
   // The clientMessageId of the in-flight answer, so we can match its ack.
@@ -188,6 +195,64 @@ const Answers = ({
         setAckPending(true)
       }, ACK_PENDING_HINT_MS)
     }
+  }
+
+  // Multiple-select: tap toggles a key in the local set. No emit until Submit.
+  const handleMultiAnswer = (key: number) => () => {
+    if (submitted) {
+      return
+    }
+
+    setMultiSelectedKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    )
+    sfxPop()
+  }
+
+  // Multiple-select: explicit submit of the toggled set. Sends the sentinel
+  // answerKey: -1 plus the selected keys; the server scores the set all-or-nothing.
+  const submitMultiSelect = () => {
+    if (!player || !gameId || submitted || multiSelectedKeys.length === 0) {
+      return
+    }
+
+    setSubmitted(true)
+    sfxPop()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerKeys: multiSelectedKeys,
+      },
+    })
+  }
+
+  // Type-answer: submit the trimmed free-text. Sends the sentinel answerKey: -1
+  // plus answerText. Reuses the same clientMessageId pattern slider uses so the
+  // server can dedup in low-latency mode (omitted in normal mode).
+  const submitTextAnswer = () => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+
+    const trimmed = textAnswer.trim()
+
+    if (!trimmed) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+
+    setSubmitted(true)
+    sfxPop()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: trimmed,
+        ...(clientMessageId ? { clientMessageId } : {}),
+      },
+    })
   }
 
   useEffect(() => {
@@ -345,7 +410,66 @@ const Answers = ({
           </div>
         </div>
 
-        {isSlider ? (
+        {isTypeAnswer ? (
+          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
+            <input
+              type="text"
+              maxLength={200}
+              value={textAnswer}
+              onChange={(e) => setTextAnswer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  submitTextAnswer()
+                }
+              }}
+              disabled={submitted}
+              placeholder={t("game:typeAnswerPlaceholder")}
+              autoFocus
+              autoComplete="off"
+              autoCorrect="off"
+              className="w-full rounded-xl border-2 border-white/40 bg-white/20 px-5 py-4 text-xl font-semibold text-white placeholder-white/50 outline-none focus:border-white disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+            />
+            <button
+              type="button"
+              onClick={submitTextAnswer}
+              disabled={submitted || textAnswer.trim().length === 0}
+              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+            >
+              {t("game:submitAnswer")}
+            </button>
+          </div>
+        ) : isMultiSelect ? (
+          <div className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-4 px-2 lg:max-w-[85vw]">
+            <p className="text-center text-sm font-medium text-white/80">
+              {t("quizz:multipleSelect.selectHint")}
+            </p>
+            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+              {(answers ?? []).map((answer, key) => (
+                <AnswerButton
+                  key={key}
+                  className={clsx(
+                    ANSWERS_COLORS[key],
+                    submitted && "opacity-50",
+                    multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
+                  )}
+                  label={ANSWERS_LABELS[key]}
+                  disabled={submitted}
+                  onClick={handleMultiAnswer(key)}
+                >
+                  {answer}
+                </AnswerButton>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={submitMultiSelect}
+              disabled={submitted || multiSelectedKeys.length === 0}
+              className="bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+            >
+              {t("quizz:multipleSelect.submitButton")}
+            </button>
+          </div>
+        ) : isSlider ? (
           <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
             <div className="text-5xl font-bold text-white drop-shadow-lg lg:text-[clamp(3rem,8vh,8rem)]">
               {sliderValue}

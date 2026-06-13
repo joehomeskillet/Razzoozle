@@ -41,5 +41,7 @@
     "averageGuess": "Average guess: {{value}}"
   },
   "pollThanks": "Thanks for your vote",
-  "submittedBy": "submitted by {{name}}"
+  "submittedBy": "submitted by {{name}}",
+  "typeAnswerPlaceholder": "Type your answer...",
+  "submitAnswer": "Submit"
 }
