@@ -1,0 +1,25 @@
+# Continuous deploy for rahoot.
+# Runs on the self-hosted HOST runner (has docker + the live deploy dir).
+# The heavy lifting -- source self-update, image build, smoke-test,
+# `docker compose up -d`, health-gate and auto-rollback -- lives in
+# scripts/deploy.sh, so this workflow stays thin.
+# An n8n flow can call the same script as a fallback.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-rahoot
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout merged main (provides scripts/deploy.sh)
+        uses: actions/checkout@v4
+      - name: Build, smoke-test, deploy, health-gate (auto-rollback)
+        run: DEPLOY_DIR=/nvmetank1/projects/rahoot bash ./scripts/deploy.sh
