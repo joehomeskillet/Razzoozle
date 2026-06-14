@@ -64,6 +64,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
           question: result.data.question,
           tags: result.data.tags,
         })
+        socket.emit(EVENTS.CATALOG.ADD_SUCCESS)
         socket.emit(EVENTS.CATALOG.DATA, getCatalog())
       } catch (error) {
         socket.emit(

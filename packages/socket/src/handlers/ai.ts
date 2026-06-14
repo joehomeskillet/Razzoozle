@@ -117,6 +117,15 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.AI.TEST_PROVIDER,
     manager.withAuth(socket, (payload: unknown) => {
       void (async () => {
+        if (!allowTextGen(socket.id)) {
+          socket.emit(EVENTS.AI.TEST_RESULT, {
+            ok: false,
+            message: "errors:ai.rateLimited",
+          })
+
+          return
+        }
+
         const result = aiTestValidator.safeParse(payload)
 
         if (!result.success) {

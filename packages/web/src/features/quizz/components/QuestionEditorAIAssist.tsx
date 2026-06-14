@@ -87,10 +87,24 @@ const QuestionEditorAIAssist = () => {
       return
     }
 
+    // The server validator only accepts these authoring kinds; clamp anything
+    // else (slider, poll, undefined) to "choice" so it never trips zod.
+    const supportedTypes = [
+      "choice",
+      "boolean",
+      "multiple-select",
+      "type-answer",
+    ] as const
+    const safeType = supportedTypes.includes(
+      currentQuestion.type as (typeof supportedTypes)[number],
+    )
+      ? (currentQuestion.type as (typeof supportedTypes)[number])
+      : "choice"
+
     setGenQuestion(true)
     socket.emit(EVENTS.AI.GENERATE_QUESTION, {
       topic: trimmedTopic,
-      type: currentQuestion.type ?? "choice",
+      type: safeType,
     })
   }
 
