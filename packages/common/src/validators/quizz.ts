@@ -100,4 +100,7 @@ export const quizzValidator = z.object({
   // Archived quizzes stay on disk + remain editable, but are hidden from the
   // "play" list. Optional so every pre-existing quizz.json validates unchanged.
   archived: z.boolean().optional(),
+  // References a theme-template id; absent/"" = global theme. Optional so every
+  // pre-existing quizz.json validates unchanged (back-compat).
+  themeId: z.string().max(80).optional(),
 })

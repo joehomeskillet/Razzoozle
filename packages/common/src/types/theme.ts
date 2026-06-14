@@ -33,3 +33,19 @@ export const DEFAULT_THEME: Theme = {
     playerGame: null,
   },
 }
+
+// A named, savable preset of a full Theme (stored one-per-file under
+// config/theme-templates/<id>.json). DATA on the wire carries the full template
+// so a picker can apply it without a second fetch.
+export interface ThemeTemplate {
+  id: string
+  name: string
+  theme: Theme
+}
+
+// Lightweight listing of a template ({id,name}) — used by the design-tab picker
+// and carried in ManagerConfig.themeTemplates.
+export interface ThemeTemplateMeta {
+  id: string
+  name: string
+}

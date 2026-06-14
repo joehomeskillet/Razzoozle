@@ -105,6 +105,17 @@ export const EVENTS = {
     SET_ARCHIVED: "quizz:setArchived",
     ERROR: "quizz:error",
   },
+  // Theme templates (named theme presets). DATA carries the full ThemeTemplate[]
+  // so the design-tab picker can apply a template without a second fetch. All
+  // events are auth-gated (manager only) on the server.
+  THEME_TEMPLATE: {
+    LIST: "themeTemplate:list",
+    DATA: "themeTemplate:data",
+    SAVE: "themeTemplate:save",
+    SAVE_SUCCESS: "themeTemplate:saveSuccess",
+    DELETE: "themeTemplate:delete",
+    ERROR: "themeTemplate:error",
+  },
   // Reusable question bank. Approved submissions, editor-saved questions and
   // manual entries land here; the editor inserts from it. All events are
   // auth-gated (manager only) on the server.

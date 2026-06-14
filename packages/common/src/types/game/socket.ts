@@ -14,7 +14,7 @@ import type {
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
 import type { Submission } from "@razzia/common/types/submission"
-import type { Theme } from "@razzia/common/types/theme"
+import type { Theme, ThemeTemplate } from "@razzia/common/types/theme"
 import type { MediaMeta } from "@razzia/common/types/media"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
@@ -164,6 +164,12 @@ export interface ServerToClientEvents {
   }) => void
   [EVENTS.MANAGER.THEME_ERROR]: (_message: string) => void
 
+  // Theme-template events (server -> client). DATA carries the full
+  // ThemeTemplate[] so the picker can apply a template without a second fetch.
+  [EVENTS.THEME_TEMPLATE.DATA]: (_t: ThemeTemplate[]) => void
+  [EVENTS.THEME_TEMPLATE.SAVE_SUCCESS]: () => void
+  [EVENTS.THEME_TEMPLATE.ERROR]: (_m: string) => void
+
   // Question-submission events (feature #5)
   [EVENTS.MANAGER.SUBMISSIONS_DATA]: (_submissions: Submission[]) => void
   [EVENTS.MANAGER.SUBMISSION_ERROR]: (_message: string) => void
@@ -269,6 +275,11 @@ export interface ClientToServerEvents {
     slot: ThemeSlot
     dataUrl: string
   }) => void
+
+  // Theme-template actions (client -> server, auth-gated server-side)
+  [EVENTS.THEME_TEMPLATE.LIST]: () => void
+  [EVENTS.THEME_TEMPLATE.SAVE]: (_p: unknown) => void
+  [EVENTS.THEME_TEMPLATE.DELETE]: (_p: { id: string }) => void
 
   // Quizz actions
   [EVENTS.QUIZZ.GET]: (_id: string) => void

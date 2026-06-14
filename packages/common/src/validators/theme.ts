@@ -28,3 +28,11 @@ export const themeValidator = z.object({
     playerGame: assetRef,
   }),
 })
+
+// A savable, named theme preset. `id` is server-assigned (slug of name) on save,
+// so it's optional on the wire. Mirrors the ThemeTemplate type.
+export const themeTemplateValidator = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1).max(60),
+  theme: themeValidator,
+})
