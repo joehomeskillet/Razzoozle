@@ -1,3 +1,4 @@
+import background from "@razzia/web/assets/background.webp"
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import GithubIcon from "@razzia/web/components/GithubIcon"
 import { useThemeStore } from "@razzia/web/features/theme/store"
@@ -5,7 +6,7 @@ import type { PropsWithChildren } from "react"
 
 const Background = ({ children }: PropsWithChildren) => {
   const { theme } = useThemeStore()
-  const authBg = theme.backgrounds.auth
+  const authBg = theme.backgrounds.auth ?? background
   const appTitle = theme.appTitle?.trim()
 
   return (
