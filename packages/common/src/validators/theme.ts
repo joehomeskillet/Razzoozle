@@ -4,10 +4,17 @@ const hexColor = z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor")
 
-// A served asset reference: null (use bundled default) or a path under /theme/.
+// A served asset reference: null (use bundled default) or a path under /theme/
+// or /media/ (incl. nested subdirs like /media/backgrounds/x.webp after the media
+// restructure). Each "/"-separated segment is [\w.-] so a traversal "../" can't
+// form (a ".." segment is allowed as a literal name but never as a path op — the
+// real filesystem guard is assertSafeId on the server, this is only a URL ref).
 const assetRef = z
   .string()
-  .regex(/^\/theme\/[\w.-]+$/, "errors:theme.invalidAsset")
+  .regex(
+    /^\/(?:theme|media)\/(?:[\w.-]+\/)*[\w.-]+$/,
+    "errors:theme.invalidAsset",
+  )
   .nullable()
 
 export const themeValidator = z.object({
