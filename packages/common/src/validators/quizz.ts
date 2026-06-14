@@ -97,4 +97,7 @@ export const questionValidator = z
 export const quizzValidator = z.object({
   subject: z.string().min(1, "errors:quizz.subjectEmpty"),
   questions: z.array(questionValidator).min(1, "errors:quizz.noQuestions"),
+  // Archived quizzes stay on disk + remain editable, but are hidden from the
+  // "play" list. Optional so every pre-existing quizz.json validates unchanged.
+  archived: z.boolean().optional(),
 })

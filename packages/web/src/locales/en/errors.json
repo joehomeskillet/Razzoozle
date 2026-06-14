@@ -57,5 +57,22 @@
     "rateLimited": "You've submitted too many questions. Please wait a moment.",
     "notFound": "Suggestion not found.",
     "quizzNotFound": "Quiz not found."
+  },
+  "catalog": {
+    "notFound": "Catalog question not found.",
+    "saveFailed": "Could not save the question to the catalog.",
+    "deleteFailed": "Could not remove the question.",
+    "invalid": "The question is incomplete."
+  },
+  "ai": {
+    "notConfigured": "No AI provider configured.",
+    "noKey": "No API key set for this provider.",
+    "generationFailed": "AI generation failed.",
+    "invalidOutput": "The AI response was invalid. Please try again.",
+    "providerError": "The AI provider returned an error.",
+    "rateLimited": "Too many AI requests. Please wait a moment.",
+    "testFailed": "Could not connect to the AI provider.",
+    "saveFailed": "Could not save the AI settings.",
+    "unsupported": "This capability is not supported by the selected provider."
   }
 }

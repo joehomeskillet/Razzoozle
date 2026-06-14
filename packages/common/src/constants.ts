@@ -96,7 +96,45 @@ export const EVENTS = {
     // Server-side copy: reads a quizz by id and saves it under a new id with a
     // "(Kopie)"-suffixed subject, then re-emits config so the list refreshes.
     DUPLICATE: "quizz:duplicate",
+    // Archive toggle: hides a quizz from the play list without deleting it.
+    // Payload { id, archived }. Server flips the flag + re-emits config.
+    SET_ARCHIVED: "quizz:setArchived",
     ERROR: "quizz:error",
+  },
+  // Reusable question bank. Approved submissions, editor-saved questions and
+  // manual entries land here; the editor inserts from it. All events are
+  // auth-gated (manager only) on the server.
+  CATALOG: {
+    LIST: "catalog:list",
+    DATA: "catalog:data",
+    ADD: "catalog:add",
+    ADD_SUCCESS: "catalog:addSuccess",
+    UPDATE: "catalog:update",
+    DELETE: "catalog:delete",
+    ERROR: "catalog:error",
+  },
+  // AI provider configuration + generation. ALL auth-gated (text gen can spend
+  // money via a cloud key). API keys live server-side only (config/ai-secrets.json)
+  // and are NEVER part of any emitted payload — the client only ever sees a
+  // `keyConfigured` boolean per provider.
+  AI: {
+    GET_SETTINGS: "ai:getSettings",
+    SETTINGS: "ai:settings",
+    SET_SETTINGS: "ai:setSettings",
+    SET_SETTINGS_SUCCESS: "ai:setSettingsSuccess",
+    // Set/clear one provider's API key (server stores it; never echoed back).
+    SET_KEY: "ai:setKey",
+    // Connectivity probe for the active/selected provider.
+    TEST_PROVIDER: "ai:testProvider",
+    TEST_RESULT: "ai:testResult",
+    // Generation (auth + per-socket throttle).
+    GENERATE_QUESTION: "ai:generateQuestion",
+    QUESTION_GENERATED: "ai:questionGenerated",
+    GENERATE_DISTRACTORS: "ai:generateDistractors",
+    DISTRACTORS_GENERATED: "ai:distractorsGenerated",
+    GENERATE_QUIZ: "ai:generateQuiz",
+    QUIZ_GENERATED: "ai:quizGenerated",
+    ERROR: "ai:error",
   },
   RESULTS: {
     GET: "results:get",
@@ -143,6 +181,69 @@ export const QUESTION_TYPES = [
 ] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]
+
+// ---- AI provider abstraction (standardized interface) ----------------------
+// Two transport shapes cover every supported text backend:
+//   - "openai-compatible": local Ollama/LM Studio, OpenAI, OpenRouter, ...
+//     (POST {baseUrl}/chat/completions). baseUrl distinguishes the vendor.
+//   - "anthropic": Claude (POST https://api.anthropic.com/v1/messages).
+// Image generation stays a separate concern (local ComfyUI / Z-Image).
+export const AI_PROVIDER_KINDS = ["openai-compatible", "anthropic"] as const
+
+export type AIProviderKind = (typeof AI_PROVIDER_KINDS)[number]
+
+// Seed providers offered in the KI tab. baseUrl is editable by the admin; these
+// are sensible defaults. The local default targets the host via host-gateway
+// (same mechanism as COMFYUI_URL) — overridable server-side by RAHOOT_AI_LOCAL_URL.
+export const AI_TEXT_PROVIDER_PRESETS = [
+  {
+    id: "local",
+    label: "Lokal (Ollama)",
+    kind: "openai-compatible" as AIProviderKind,
+    baseUrl: "http://host.docker.internal:11434/v1",
+    model: "llama3.2:3b",
+  },
+  {
+    id: "claude",
+    label: "Claude (Anthropic)",
+    kind: "anthropic" as AIProviderKind,
+    model: "claude-haiku-4-5-20251001",
+  },
+  {
+    id: "openai",
+    label: "OpenAI",
+    kind: "openai-compatible" as AIProviderKind,
+    baseUrl: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    kind: "openai-compatible" as AIProviderKind,
+    baseUrl: "https://openrouter.ai/api/v1",
+    model: "meta-llama/llama-3.3-70b-instruct",
+  },
+] as const
+
+// "off" sentinel = no provider selected (generation disabled).
+export const AI_PROVIDER_OFF = "off"
+
+// Generation guard-rails (shared by server throttle + client UI hints).
+export const AI = {
+  TOPIC_MAX_LEN: 200,
+  TEXT_GEN_COOLDOWN_MS: 4_000,
+  TEXT_GEN_MAX_PER_SOCKET: 60,
+  QUIZ_MIN_QUESTIONS: 1,
+  QUIZ_MAX_QUESTIONS: 15,
+  // Anthropic API version pin (Messages API).
+  ANTHROPIC_VERSION: "2023-06-01",
+  ANTHROPIC_BASE_URL: "https://api.anthropic.com/v1",
+} as const
+
+// Catalog entry provenance — purely informational (shown as a chip in the UI).
+export const CATALOG_SOURCES = ["manual", "submission", "editor", "ai"] as const
+
+export type CatalogSource = (typeof CATALOG_SOURCES)[number]
 
 // Theme image slots. Backgrounds are the three screen slots; the full theme slot
 // set additionally includes the brand "logo". The server accepts uploads for

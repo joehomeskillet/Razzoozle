@@ -57,6 +57,10 @@ export type QuizzWithId = Quizz & { id: string }
 export interface QuizzMeta {
   id: string
   subject: string
+  // Hidden from the play list while true (still listed in management + editable).
+  archived?: boolean
+  // Convenience for list UIs (avoids loading every quiz to show a count).
+  questionCount?: number
 }
 
 export interface GameUpdateQuestion {

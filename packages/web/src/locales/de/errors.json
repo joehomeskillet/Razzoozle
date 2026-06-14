@@ -57,5 +57,22 @@
     "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",
     "notFound": "Vorschlag nicht gefunden.",
     "quizzNotFound": "Quizz nicht gefunden."
+  },
+  "catalog": {
+    "notFound": "Katalog-Frage nicht gefunden.",
+    "saveFailed": "Frage konnte nicht im Katalog gespeichert werden.",
+    "deleteFailed": "Frage konnte nicht entfernt werden.",
+    "invalid": "Die Frage ist unvollständig."
+  },
+  "ai": {
+    "notConfigured": "Kein KI-Anbieter konfiguriert.",
+    "noKey": "Für diesen Anbieter ist kein API-Schlüssel hinterlegt.",
+    "generationFailed": "Die KI-Generierung ist fehlgeschlagen.",
+    "invalidOutput": "Die KI-Antwort war ungültig. Bitte erneut versuchen.",
+    "providerError": "Der KI-Anbieter hat einen Fehler gemeldet.",
+    "rateLimited": "Zu viele KI-Anfragen. Bitte kurz warten.",
+    "testFailed": "Verbindung zum KI-Anbieter fehlgeschlagen.",
+    "saveFailed": "KI-Einstellungen konnten nicht gespeichert werden.",
+    "unsupported": "Diese Funktion wird vom gewählten Anbieter nicht unterstützt."
   }
 }
