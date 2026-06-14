@@ -23,6 +23,10 @@ export interface Player {
   // humans. Carried along by the `...player` spreads in scoring/snapshot so it's
   // available to filter on (bots are never persisted to a crash-recovery snapshot).
   isBot?: boolean
+  // NEW — chosen avatar: a generic-set URL/id (see AVATARS_GENERIC) or an
+  // ephemeral uploaded URL under /media/avatars/<gameId>/. Optional for
+  // back-compat and snapshot restore.
+  avatar?: string
 }
 
 export interface Answer {

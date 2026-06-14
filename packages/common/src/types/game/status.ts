@@ -5,7 +5,11 @@ import type {
 } from "@razzia/common/types/game"
 
 export const STATUS = {
-  SHOW_ROOM: "SHOW_ROOM",
+  // NOTE: the literal type is widened to include "PAUSED" (runtime value is
+  // unchanged) so existing web records keyed off STATUS.* (e.g. MANAGER_SKIP_BTN,
+  // indexed by a raw Status) keep typechecking before WP-WEB-QR-PAUSE adds a
+  // real PAUSED branch. Additive/back-compat only.
+  SHOW_ROOM: "SHOW_ROOM" as "SHOW_ROOM" | "PAUSED",
   SHOW_START: "SHOW_START",
   SHOW_PREPARED: "SHOW_PREPARED",
   SHOW_QUESTION: "SHOW_QUESTION",
@@ -15,6 +19,7 @@ export const STATUS = {
   SHOW_LEADERBOARD: "SHOW_LEADERBOARD",
   FINISHED: "FINISHED",
   WAIT: "WAIT",
+  PAUSED: "PAUSED",
 } as const
 
 export type Status = (typeof STATUS)[keyof typeof STATUS]
@@ -64,6 +69,7 @@ export interface CommonStatusDataMap {
     poll?: boolean
   }
   WAIT: { text: string }
+  PAUSED: { reason?: string }
   FINISHED: { subject: string; top: Player[]; rank?: number }
 }
 

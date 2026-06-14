@@ -15,6 +15,7 @@ import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
 import type { Submission } from "@razzia/common/types/submission"
 import type { Theme } from "@razzia/common/types/theme"
+import type { MediaMeta } from "@razzia/common/types/media"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>
@@ -145,6 +146,14 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.ERROR_MESSAGE]: (_message: string) => void
   [EVENTS.MANAGER.PLAYER_KICKED]: (_playerId: string) => void
   [EVENTS.MANAGER.UNAUTHORIZED]: () => void
+  [EVENTS.MANAGER.PLAYER_RECONNECTED]: (_data: {
+    id: string
+    username: string
+  }) => void
+  // Media-manager events (server -> client)
+  [EVENTS.MEDIA.DATA]: (_media: MediaMeta[]) => void
+  [EVENTS.MEDIA.UPLOAD_SUCCESS]: () => void
+  [EVENTS.MEDIA.ERROR]: (_message: string) => void
 
   // Theme events
   [EVENTS.MANAGER.THEME]: (_theme: Theme) => void
@@ -290,8 +299,10 @@ export interface ClientToServerEvents {
   // Player actions
   [EVENTS.PLAYER.JOIN]: (_inviteCode: string) => void
   [EVENTS.PLAYER.LOGIN]: (
-    _message: MessageWithoutStatus<{ username: string }>,
+    _message: MessageWithoutStatus<{ username: string; avatar?: string }>,
   ) => void
+  // Player avatar selection/upload (generic id or data URL)
+  [EVENTS.PLAYER.SET_AVATAR]: (_payload: unknown) => void
   [EVENTS.PLAYER.RECONNECT]: (_message: {
     gameId: string
     // Low-latency mode: last server sequence the client saw, so resume can
@@ -326,6 +337,14 @@ export interface ClientToServerEvents {
   [EVENTS.RESULTS.GET]: (_id: string) => void
   [EVENTS.RESULTS.DELETE]: (_id: string) => void
   [EVENTS.RESULTS.GET_SHARED]: (_id: string) => void
+
+  // Pause/resume (manager-owned, between-questions only — enforced server-side)
+  [EVENTS.MANAGER.PAUSE_GAME]: (_message: { gameId?: string }) => void
+  [EVENTS.MANAGER.RESUME_GAME]: (_message: { gameId?: string }) => void
+  // Media-manager actions (client -> server, all auth-gated server-side)
+  [EVENTS.MEDIA.LIST]: () => void
+  [EVENTS.MEDIA.UPLOAD]: (_payload: unknown) => void
+  [EVENTS.MEDIA.DELETE]: (_payload: { id: string }) => void
 
   // Common
   disconnect: () => void

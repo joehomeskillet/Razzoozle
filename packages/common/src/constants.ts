@@ -22,6 +22,7 @@ export const EVENTS = {
     SELECTED_ANSWER: "player:selectedAnswer",
     // Low-latency mode: optional server ack for a submitted answer.
     ANSWER_ACK: "player:answerAck",
+    SET_AVATAR: "player:setAvatar",
   },
   // Low-latency mode: UI-only clock sync (never a scoring input).
   CLOCK: {
@@ -84,6 +85,9 @@ export const EVENTS = {
     GENERATE_IMAGE: "manager:generateImage",
     IMAGE_GENERATED: "manager:imageGenerated",
     IMAGE_ERROR: "manager:imageError",
+    PLAYER_RECONNECTED: "manager:playerReconnected",
+    PAUSE_GAME: "manager:pauseGame",
+    RESUME_GAME: "manager:resumeGame",
   },
   QUIZZ: {
     GET: "quizz:get",
@@ -112,6 +116,14 @@ export const EVENTS = {
     UPDATE: "catalog:update",
     DELETE: "catalog:delete",
     ERROR: "catalog:error",
+  },
+  MEDIA: {
+    LIST: "media:list",
+    DATA: "media:data",
+    UPLOAD: "media:upload",
+    UPLOAD_SUCCESS: "media:uploadSuccess",
+    DELETE: "media:delete",
+    ERROR: "media:error",
   },
   // AI provider configuration + generation. ALL auth-gated (text gen can spend
   // money via a cloud key). API keys live server-side only (config/ai-secrets.json)
@@ -162,6 +174,28 @@ export const DEFAULT_MANAGER_PASSWORD = "PASSWORD"
 // then a manager pairs that code (with the manager password) so the display
 // joins the game room. Codes expire after this many minutes.
 export const DISPLAY_PAIRING_TTL_MINUTES = 5
+
+// Generic KI-generated avatar set (committed/seeded, persistent under config/media/avatars/generic/).
+export const AVATARS_GENERIC = [
+  "/media/avatars/generic/generic-1.webp",
+  "/media/avatars/generic/generic-2.webp",
+  "/media/avatars/generic/generic-3.webp",
+  "/media/avatars/generic/generic-4.webp",
+] as const
+
+// Max decoded size for an uploaded ephemeral player avatar.
+export const AVATAR_MAX_BYTES = 4_000_000
+
+// Media-manager storage categories (subdirs under config/media/).
+export const MEDIA_CATEGORIES = [
+  "backgrounds",
+  "questions",
+  "generated",
+  "avatars",
+  "audio",
+] as const
+
+export type MediaCategory = (typeof MEDIA_CATEGORIES)[number]
 
 export const MEDIA_TYPES = {
   IMAGE: "image",
