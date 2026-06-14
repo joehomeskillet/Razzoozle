@@ -9,7 +9,7 @@ import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
 import { ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 const ConfigSelectQuizz = () => {
@@ -19,6 +19,16 @@ const ConfigSelectQuizz = () => {
   const [selected, setSelected] = useState<string | null>(null)
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
+  const list = useMemo(
+    () => quizzList.filter((q) => !q.archived),
+    [quizzList],
+  )
+
+  useEffect(() => {
+    if (selected && !list.some((q) => q.id === selected)) {
+      setSelected(null)
+    }
+  }, [list, selected])
 
   const handleSelect = (id: string) => () =>
     setSelected((current) => (current === id ? null : id))
@@ -31,7 +41,7 @@ const ConfigSelectQuizz = () => {
     socket.emit(EVENTS.GAME.CREATE, selected)
   }
 
-  if (quizzList.length === 0) {
+  if (list.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col justify-center">
         <EmptyState
@@ -61,7 +71,7 @@ const ConfigSelectQuizz = () => {
           reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
         }
       >
-        {quizzList.map((quizz, index) => (
+        {list.map((quizz, index) => (
           <motion.div
             key={quizz.id}
             initial={reducedMotion ? false : { opacity: 0, y: 10 }}

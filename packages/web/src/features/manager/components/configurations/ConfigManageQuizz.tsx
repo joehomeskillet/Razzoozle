@@ -12,7 +12,15 @@ import {
 } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { Copy, ListChecks, SquarePen, Trash2, Upload } from "lucide-react"
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  ListChecks,
+  SquarePen,
+  Trash2,
+  Upload,
+} from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { type ChangeEvent, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -25,11 +33,14 @@ const ConfigManageQuizz = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
+  const [showArchived, setShowArchived] = useState(false)
   // The quiz pending a delete confirmation; drives the AlertDialog.
   const [pendingDelete, setPendingDelete] = useState<{
     id: string
     subject: string
   } | null>(null)
+  const activeQuizz = quizz.filter((q) => !q.archived)
+  const archivedQuizz = quizz.filter((q) => q.archived)
 
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
     toast.error(t(message))
@@ -48,6 +59,17 @@ const ConfigManageQuizz = () => {
   const handleDuplicate = (id: string) => {
     socket.emit(EVENTS.QUIZZ.DUPLICATE, id)
     toast.success(t("manager:quizz.duplicated"))
+  }
+
+  const handleArchived = (id: string, archived: boolean) => {
+    socket.emit(EVENTS.QUIZZ.SET_ARCHIVED, { id, archived })
+    toast.success(
+      t(
+        archived
+          ? "manager:quizz.archivedToast"
+          : "manager:quizz.unarchivedToast",
+      ),
+    )
   }
 
   const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +159,7 @@ const ConfigManageQuizz = () => {
             reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
           }
         >
-          {quizz.map((q, index) => (
+          {activeQuizz.map((q, index) => (
             <motion.div
               key={q.id}
               initial={reducedMotion ? false : { opacity: 0, y: 10 }}
@@ -154,6 +176,11 @@ const ConfigManageQuizz = () => {
             >
               <ListRow
                 title={q.subject}
+                meta={
+                  q.questionCount != null
+                    ? t("manager:catalog.count", { count: q.questionCount })
+                    : undefined
+                }
                 actions={[
                   {
                     key: "edit",
@@ -173,6 +200,12 @@ const ConfigManageQuizz = () => {
                     onClick: () => handleDuplicate(q.id),
                   },
                   {
+                    key: "archive",
+                    icon: Archive,
+                    label: t("manager:quizz.archive"),
+                    onClick: () => handleArchived(q.id, true),
+                  },
+                  {
                     key: "delete",
                     icon: Trash2,
                     label: t("manager:quizz.delete"),
@@ -184,6 +217,96 @@ const ConfigManageQuizz = () => {
               />
             </motion.div>
           ))}
+
+          {archivedQuizz.length > 0 && (
+            <div className="space-y-3 pt-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">
+                    {t("manager:quizz.archivedSection")}
+                  </p>
+                  {showArchived && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      {t("manager:quizz.archivedHint")}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArchived((current) => !current)}
+                  aria-expanded={showArchived}
+                >
+                  {showArchived
+                    ? t("manager:quizz.hideArchived")
+                    : t("manager:quizz.showArchived")}
+                </Button>
+              </div>
+
+              {showArchived &&
+                archivedQuizz.map((q, index) => (
+                  <motion.div
+                    key={q.id}
+                    initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                    animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                    transition={
+                      reducedMotion
+                        ? undefined
+                        : {
+                            duration: 0.28,
+                            ease: "easeOut",
+                            delay: Math.min(index, 8) * 0.04,
+                          }
+                    }
+                  >
+                    <ListRow
+                      title={q.subject}
+                      meta={
+                        q.questionCount != null
+                          ? t("manager:catalog.count", {
+                              count: q.questionCount,
+                            })
+                          : t("manager:quizz.archived")
+                      }
+                      className="opacity-85"
+                      actions={[
+                        {
+                          key: "restore",
+                          icon: ArchiveRestore,
+                          label: t("manager:quizz.unarchive"),
+                          onClick: () => handleArchived(q.id, false),
+                        },
+                        {
+                          key: "edit",
+                          icon: SquarePen,
+                          label: t("manager:quizz.edit", {
+                            name: q.subject,
+                          }),
+                          onClick: () => {
+                            void navigate({
+                              to: "/manager/quizz/$quizzId",
+                              params: { quizzId: q.id },
+                            })
+                          },
+                        },
+                        {
+                          key: "delete",
+                          icon: Trash2,
+                          label: t("manager:quizz.delete"),
+                          destructive: true,
+                          onClick: () =>
+                            setPendingDelete({
+                              id: q.id,
+                              subject: q.subject,
+                            }),
+                        },
+                      ]}
+                    />
+                  </motion.div>
+                ))}
+            </div>
+          )}
         </motion.div>
       )}
 

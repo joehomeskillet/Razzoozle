@@ -17,6 +17,7 @@ import {
   getSubmissions,
   getTheme,
   saveBackgroundImage,
+  saveCatalogEntry,
   saveSubmission,
   setTheme,
   updateQuizz,
@@ -257,7 +258,13 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MANAGER.APPROVE_SUBMISSION,
     manager.withAuth(socket, (payload: unknown) => {
-      const schema = z.object({ id: z.string(), quizzId: z.string() })
+      // Two destinations: append to an existing quizz (quizzId required) OR file
+      // the submission into the reusable catalog (toCatalog: true).
+      const schema = z.object({
+        id: z.string(),
+        quizzId: z.string().optional(),
+        toCatalog: z.boolean().optional(),
+      })
       const result = schema.safeParse(payload)
 
       if (!result.success) {
@@ -271,7 +278,6 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
 
       try {
         assertSafeId(result.data.id)
-        assertSafeId(result.data.quizzId)
 
         const submission = getSubmissionById(result.data.id)
 
@@ -283,6 +289,32 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
 
           return
         }
+
+        // Approve-to-catalog: persist the question into the catalog (source
+        // "submission") and mark the submission approved. Skip the quiz append.
+        if (result.data.toCatalog === true) {
+          saveCatalogEntry({
+            question: submission.question,
+            source: "submission",
+          })
+
+          updateSubmission(result.data.id, { status: "approved" })
+          emitConfig(socket)
+
+          return
+        }
+
+        // Append-to-quizz path (unchanged): quizzId is required here.
+        if (!result.data.quizzId) {
+          socket.emit(
+            EVENTS.MANAGER.SUBMISSION_ERROR,
+            "errors:submission.quizzNotFound",
+          )
+
+          return
+        }
+
+        assertSafeId(result.data.quizzId)
 
         const quizz = getQuizzById(result.data.quizzId)
 

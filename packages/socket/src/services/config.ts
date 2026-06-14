@@ -1,4 +1,6 @@
 import {
+  AI_PROVIDER_OFF,
+  AI_TEXT_PROVIDER_PRESETS,
   DEFAULT_MANAGER_PASSWORD,
   EXAMPLE_QUIZZ,
   THEME_SLOTS,
@@ -7,19 +9,33 @@ import {
 import type {
   GameResult,
   GameResultMeta,
+  QuizzMeta,
   QuizzWithId,
 } from "@razzia/common/types/game"
+import type {
+  AIProviderPublic,
+  AISettings,
+  AISettingsPublic,
+} from "@razzia/common/types/ai"
+import type { CatalogEntry } from "@razzia/common/types/catalog"
 import { quizzValidator } from "@razzia/common/validators/quizz"
+import {
+  catalogAddValidator,
+  catalogEntryValidator,
+} from "@razzia/common/validators/catalog"
+import { aiSettingsValidator } from "@razzia/common/validators/ai"
 import {
   type GameConfig,
   gameConfigValidator,
 } from "@razzia/common/validators/game-config"
 import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
 import { themeValidator } from "@razzia/common/validators/theme"
+import { hasKey } from "@razzia/socket/services/ai-secrets"
 import { gameResultValidator } from "@razzia/socket/services/validators"
 import { toWebp } from "@razzia/socket/services/webp"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { submissionRecordValidator } from "@razzia/common/validators/submission"
+import type { z } from "zod"
 import type {
   Submission,
   SubmissionMeta,
@@ -90,8 +106,9 @@ export const initConfig = () => {
     )
   }
 
-  // Submission moderation queue + AI-generated media store. Mirror the quizz
-  // dir bootstrap so both folders exist on a fresh config volume.
+  // Submission moderation queue + AI-generated media store + catalog (question
+  // bank). Mirror the quizz dir bootstrap so every folder exists on a fresh
+  // config volume.
   const submissionsDir = getPath("submissions")
 
   if (!fs.existsSync(submissionsDir)) {
@@ -102,6 +119,12 @@ export const initConfig = () => {
 
   if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true })
+  }
+
+  const catalogDir = getPath("catalog")
+
+  if (!fs.existsSync(catalogDir)) {
+    fs.mkdirSync(catalogDir, { recursive: true })
   }
 }
 
@@ -134,8 +157,15 @@ export const getGameConfig = (): GameConfig => {
   return gameConfigValidator.parse({})
 }
 
-export const getQuizzMeta = () =>
-  getQuizz().map(({ id, subject }) => ({ id, subject }))
+export const getQuizzMeta = (): QuizzMeta[] =>
+  getQuizz().map(
+    (q): QuizzMeta => ({
+      id: q.id,
+      subject: q.subject,
+      archived: !!q.archived,
+      questionCount: q.questions.length,
+    }),
+  )
 
 export const getQuizzById = (id: string) => {
   assertSafeId(id)
@@ -208,6 +238,32 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
   fs.writeFileSync(oldPath, JSON.stringify(result.data, null, 2))
 
   return { id }
+}
+
+// Archive toggle: flip the `archived` flag on a quizz without deleting it.
+// Reads the on-disk file through quizzValidator (so the rest of the record is
+// re-validated), sets the flag, and writes it back. assertSafeId guards the path.
+export const setQuizzArchived = (id: string, archived: boolean): void => {
+  assertSafeId(id)
+
+  const filePath = getPath(`quizz/${id}.json`)
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Quizz "${id}" not found`)
+  }
+
+  const result = quizzValidator.safeParse(
+    JSON.parse(fs.readFileSync(filePath, "utf-8")),
+  )
+
+  if (!result.success) {
+    throw new Error(`Invalid quizz "${id}"`)
+  }
+
+  fs.writeFileSync(
+    filePath,
+    JSON.stringify({ ...result.data, archived }, null, 2),
+  )
 }
 
 export const deleteQuizz = (id: string): void => {
@@ -415,6 +471,245 @@ export const deleteSubmission = (id: string): void => {
     fs.unlinkSync(filePath)
   }
 }
+
+// ---- Catalog (reusable question bank) -------------------------------------
+// Each entry is a config/catalog/<id>.json CatalogEntry. Reads validate every
+// file through catalogEntryValidator (skipping invalid ones, like getSubmissions).
+// Every path interpolation is guarded by assertSafeId so a user-supplied id can
+// never escape the catalog dir.
+
+export const getCatalog = (): CatalogEntry[] => {
+  const dir = getPath("catalog")
+
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith(".json"))
+    .flatMap((file) => {
+      try {
+        const raw = fs.readFileSync(getPath(`catalog/${file}`), "utf-8")
+        const result = catalogEntryValidator.safeParse(JSON.parse(raw))
+
+        if (!result.success) {
+          console.warn(`Invalid catalog file "${file}":`, result.error.issues)
+
+          return []
+        }
+
+        const id = file.replace(".json", "")
+
+        return [{ ...result.data, id } as CatalogEntry]
+      } catch {
+        return []
+      }
+    })
+}
+
+export const getCatalogById = (id: string): CatalogEntry | null => {
+  assertSafeId(id)
+
+  const filePath = getPath(`catalog/${id}.json`)
+
+  if (!fs.existsSync(filePath)) {
+    return null
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+    const result = catalogEntryValidator.safeParse(JSON.parse(raw))
+
+    return result.success ? ({ ...result.data, id } as CatalogEntry) : null
+  } catch {
+    return null
+  }
+}
+
+export const saveCatalogEntry = (
+  payload: z.infer<typeof catalogAddValidator>,
+): CatalogEntry => {
+  // Re-validate the inbound payload so callers passing a hand-built object (e.g.
+  // approve-to-catalog) get the SAME superRefine guarantees as a wire ADD.
+  const parsed = catalogAddValidator.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message)
+  }
+
+  const dir = getPath("catalog")
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+
+  // Derive a safe id from the question text; dedupe with a -2/-3 suffix so two
+  // entries with identical text don't clobber each other.
+  const baseId = normalizeFilename(parsed.data.question.question)
+  let id = baseId
+  let suffix = 2
+
+  while (fs.existsSync(getPath(`catalog/${id}.json`))) {
+    id = `${baseId}-${suffix}`
+    suffix += 1
+  }
+
+  assertSafeId(id)
+
+  const entry: CatalogEntry = {
+    id,
+    question: parsed.data.question,
+    tags: parsed.data.tags,
+    source: parsed.data.source ?? "manual",
+    addedAt: new Date().toISOString(),
+  }
+
+  // Validate the fully-assembled entry before persisting.
+  const validated = catalogEntryValidator.safeParse(entry)
+
+  if (!validated.success) {
+    throw new Error(validated.error.issues[0].message)
+  }
+
+  fs.writeFileSync(
+    getPath(`catalog/${id}.json`),
+    JSON.stringify(entry, null, 2),
+  )
+
+  return entry
+}
+
+export const updateCatalogEntry = (
+  id: string,
+  data: { question: CatalogEntry["question"]; tags?: string[] },
+): CatalogEntry => {
+  assertSafeId(id)
+
+  const existing = getCatalogById(id)
+
+  if (!existing) {
+    throw new Error("errors:catalog.notFound")
+  }
+
+  const entry: CatalogEntry = {
+    ...existing,
+    id,
+    question: data.question,
+    tags: data.tags,
+  }
+
+  const validated = catalogEntryValidator.safeParse(entry)
+
+  if (!validated.success) {
+    throw new Error(validated.error.issues[0].message)
+  }
+
+  fs.writeFileSync(
+    getPath(`catalog/${id}.json`),
+    JSON.stringify(entry, null, 2),
+  )
+
+  return entry
+}
+
+export const deleteCatalogEntry = (id: string): void => {
+  assertSafeId(id)
+
+  const filePath = getPath(`catalog/${id}.json`)
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error("errors:catalog.notFound")
+  }
+
+  fs.unlinkSync(filePath)
+}
+
+// ---- AI settings (config/ai-settings.json) --------------------------------
+// Never carries any secret (those live in ai-secrets.json). On a missing/corrupt
+// file we SEED from the constants presets so the KI tab is populated out of the
+// box; the active text provider defaults to "off" (generation disabled).
+
+const seedAISettings = (): AISettings => {
+  const localOverride = process.env.RAHOOT_AI_LOCAL_URL
+
+  return {
+    text: {
+      activeProvider: AI_PROVIDER_OFF,
+      providers: AI_TEXT_PROVIDER_PRESETS.map((p) => ({
+        id: p.id,
+        label: p.label,
+        kind: p.kind,
+        // The "local" provider's baseUrl is overridable server-side so an
+        // operator can point Ollama elsewhere without editing the file.
+        baseUrl:
+          p.id === "local" && localOverride
+            ? localOverride
+            : "baseUrl" in p
+              ? p.baseUrl
+              : undefined,
+        model: p.model,
+      })),
+    },
+    image: {
+      activeProvider: "comfyui",
+      providers: [{ id: "comfyui", label: "ComfyUI / Z-Image" }],
+    },
+  }
+}
+
+export const getAISettings = (): AISettings => {
+  const filePath = getPath("ai-settings.json")
+
+  if (!fs.existsSync(filePath)) {
+    return seedAISettings()
+  }
+
+  // Mirror getGameConfig: never throw on a malformed file — fall back to the
+  // seed so the server keeps booting and the KI tab stays usable.
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+    const result = aiSettingsValidator.safeParse(JSON.parse(raw))
+
+    if (result.success) {
+      return result.data
+    }
+
+    console.warn("Invalid ai-settings.json, using seed:", result.error.issues)
+  } catch (error) {
+    console.error("Failed to read ai settings:", error)
+  }
+
+  return seedAISettings()
+}
+
+export const setAISettings = (payload: unknown): AISettings => {
+  const result = aiSettingsValidator.safeParse(payload)
+
+  if (!result.success) {
+    throw new Error(result.error.issues[0].message)
+  }
+
+  fs.writeFileSync(
+    getPath("ai-settings.json"),
+    JSON.stringify(result.data, null, 2),
+  )
+
+  return result.data
+}
+
+// Map persisted settings to the wire shape: each text provider gains a
+// `keyConfigured` boolean (derived from ai-secrets) and NEVER carries the key
+// itself. Image providers are unchanged (no secrets).
+export const toPublicAISettings = (s: AISettings): AISettingsPublic => ({
+  text: {
+    activeProvider: s.text.activeProvider,
+    providers: s.text.providers.map(
+      (p): AIProviderPublic => ({ ...p, keyConfigured: hasKey(p.id) }),
+    ),
+  },
+  image: s.image,
+})
 
 // Persist ComfyUI-produced PNG bytes into config/media under a server-generated
 // name and return its public "/media/<file>" path (served by nginx from the

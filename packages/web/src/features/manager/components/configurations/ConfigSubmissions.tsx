@@ -162,6 +162,7 @@ const ConfigSubmissions = () => {
   const { socket } = useSocket()
   const { submissions, quizz: quizzList } = useConfig()
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [approveToCatalog, setApproveToCatalog] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [previewId, setPreviewId] = useState<string | null>(null)
@@ -194,12 +195,23 @@ const ConfigSubmissions = () => {
 
   const handleOpenApprove = (id: string) => () => {
     setEditingId(null)
+    setApproveToCatalog(false)
     setApprovingId((current) => (current === id ? null : id))
   }
 
   const handleApprove = (id: string, quizzId: string) => () => {
     socket.emit(EVENTS.MANAGER.APPROVE_SUBMISSION, { id, quizzId })
     setApprovingId(null)
+    setApproveToCatalog(false)
+    setPreviewId(null)
+    requestFull()
+    toast.success(t("manager:submissions.approve"))
+  }
+
+  const handleApproveToCatalog = (id: string) => () => {
+    socket.emit(EVENTS.MANAGER.APPROVE_SUBMISSION, { id, toCatalog: true })
+    setApprovingId(null)
+    setApproveToCatalog(false)
     setPreviewId(null)
     requestFull()
     toast.success(t("manager:submissions.approve"))
@@ -207,6 +219,7 @@ const ConfigSubmissions = () => {
 
   const handleOpenEdit = (id: string, question: string) => () => {
     setApprovingId(null)
+    setApproveToCatalog(false)
 
     if (editingId === id) {
       setEditingId(null)
@@ -406,10 +419,36 @@ const ConfigSubmissions = () => {
 
               {approvingId === s.id && (
                 <div className="mt-3 space-y-2 rounded-lg bg-gray-50 p-3">
-                  <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                    {t("manager:submissions.selectQuizz")}
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={approveToCatalog}
+                      onChange={(event) =>
+                        setApproveToCatalog(event.target.checked)
+                      }
+                      className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                    />
+                    <span>{t("manager:catalog.approveToCatalog")}</span>
+                  </label>
+                  <p className="text-sm text-gray-500">
+                    {t("manager:catalog.approveToCatalogHint")}
                   </p>
-                  {quizzList.length === 0 ? (
+                  {!approveToCatalog && (
+                    <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                      {t("manager:submissions.selectQuizz")}
+                    </p>
+                  )}
+                  {approveToCatalog ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      type="button"
+                      className="min-h-11 w-full p-3 font-medium"
+                      onClick={handleApproveToCatalog(s.id)}
+                    >
+                      {t("manager:catalog.approveToCatalog")}
+                    </Button>
+                  ) : quizzList.length === 0 ? (
                     <p className="text-sm text-gray-500">
                       {t("manager:quizz.notFound")}
                     </p>

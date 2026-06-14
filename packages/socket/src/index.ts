@@ -6,6 +6,8 @@ import {
   WS_PING_TIMEOUT_MS,
 } from "@razzia/common/constants"
 import type { Server } from "@razzia/common/types/game/socket"
+import { aiSocketHandlers } from "@razzia/socket/handlers/ai"
+import { catalogSocketHandlers } from "@razzia/socket/handlers/catalog"
 import { displaySocketHandlers } from "@razzia/socket/handlers/display"
 import { gameSocketHandlers } from "@razzia/socket/handlers/game"
 import { managerSocketHandlers } from "@razzia/socket/handlers/manager"
@@ -70,6 +72,8 @@ void registry
 const socketHandlers: SocketHandler[] = [
   managerSocketHandlers,
   quizzSocketHandlers,
+  catalogSocketHandlers,
+  aiSocketHandlers,
   gameSocketHandlers,
   resultsSocketHandlers,
   displaySocketHandlers,

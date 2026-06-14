@@ -1,9 +1,13 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { ThemeSlot } from "@razzia/common/constants"
+import type { AISettingsPublic, AITestResult } from "@razzia/common/types/ai"
+import type { CatalogEntry } from "@razzia/common/types/catalog"
 import type {
   GameResult,
   GameUpdateQuestion,
   Player,
+  Question,
+  Quizz,
   QuizzWithId,
   SharedResult,
 } from "@razzia/common/types/game"
@@ -163,6 +167,21 @@ export interface ServerToClientEvents {
   [EVENTS.QUIZZ.UPDATE_SUCCESS]: (_data: { id: string }) => void
   [EVENTS.QUIZZ.ERROR]: (_message: string) => void
 
+  // Catalog (question bank) — server → client
+  [EVENTS.CATALOG.DATA]: (_entries: CatalogEntry[]) => void
+  [EVENTS.CATALOG.ADD_SUCCESS]: () => void
+  [EVENTS.CATALOG.ERROR]: (_message: string) => void
+
+  // AI provider config + generation — server → client. Settings carry only a
+  // `keyConfigured` flag per provider (AISettingsPublic), never a secret.
+  [EVENTS.AI.SETTINGS]: (_settings: AISettingsPublic) => void
+  [EVENTS.AI.SET_SETTINGS_SUCCESS]: () => void
+  [EVENTS.AI.TEST_RESULT]: (_result: AITestResult) => void
+  [EVENTS.AI.QUESTION_GENERATED]: (_data: { question: Question }) => void
+  [EVENTS.AI.DISTRACTORS_GENERATED]: (_data: { distractors: string[] }) => void
+  [EVENTS.AI.QUIZ_GENERATED]: (_data: { quizz: Quizz }) => void
+  [EVENTS.AI.ERROR]: (_message: string) => void
+
   // Results events
   [EVENTS.RESULTS.DATA]: (_result: GameResult) => void
   [EVENTS.RESULTS.SHARED_DATA]: (_result: SharedResult) => void
@@ -216,9 +235,12 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.GENERATE_IMAGE]: (_payload: { prompt: string }) => void
   [EVENTS.MANAGER.LIST_SUBMISSIONS]: () => void
   [EVENTS.MANAGER.EDIT_SUBMISSION]: (_payload: unknown) => void
+  // Approve a submission either into a quiz (quizzId) OR into the catalog
+  // (toCatalog). Exactly one path is taken server-side.
   [EVENTS.MANAGER.APPROVE_SUBMISSION]: (_payload: {
     id: string
-    quizzId: string
+    quizzId?: string
+    toCatalog?: boolean
   }) => void
   [EVENTS.MANAGER.REJECT_SUBMISSION]: (_payload: { id: string }) => void
 
@@ -245,6 +267,25 @@ export interface ClientToServerEvents {
   [EVENTS.QUIZZ.UPDATE]: (_data: QuizzWithId) => void
   [EVENTS.QUIZZ.DELETE]: (_id: string) => void
   [EVENTS.QUIZZ.DUPLICATE]: (_id: string) => void
+  [EVENTS.QUIZZ.SET_ARCHIVED]: (_payload: {
+    id: string
+    archived: boolean
+  }) => void
+
+  // Catalog actions — client → server
+  [EVENTS.CATALOG.LIST]: () => void
+  [EVENTS.CATALOG.ADD]: (_payload: unknown) => void
+  [EVENTS.CATALOG.UPDATE]: (_payload: unknown) => void
+  [EVENTS.CATALOG.DELETE]: (_payload: { id: string }) => void
+
+  // AI actions — client → server (all auth-gated server-side)
+  [EVENTS.AI.GET_SETTINGS]: () => void
+  [EVENTS.AI.SET_SETTINGS]: (_payload: unknown) => void
+  [EVENTS.AI.SET_KEY]: (_payload: unknown) => void
+  [EVENTS.AI.TEST_PROVIDER]: (_payload: unknown) => void
+  [EVENTS.AI.GENERATE_QUESTION]: (_payload: unknown) => void
+  [EVENTS.AI.GENERATE_DISTRACTORS]: (_payload: unknown) => void
+  [EVENTS.AI.GENERATE_QUIZ]: (_payload: unknown) => void
 
   // Player actions
   [EVENTS.PLAYER.JOIN]: (_inviteCode: string) => void

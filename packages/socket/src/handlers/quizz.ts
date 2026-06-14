@@ -1,12 +1,15 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import {
+  assertSafeId,
   deleteQuizz,
   getQuizzById,
   saveQuizz,
+  setQuizzArchived,
   updateQuizz,
 } from "@razzia/socket/services/config"
 import manager, { emitConfig } from "@razzia/socket/services/manager"
+import { z } from "zod"
 
 export const quizzSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
@@ -86,6 +89,34 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
         const message =
           error instanceof Error ? error.message : "errors:quizz.failedToUpdate"
         socket.emit(EVENTS.QUIZZ.ERROR, message)
+      }
+    }),
+  )
+
+  // Archive toggle: hides a quizz from the play list without deleting it.
+  socket.on(
+    EVENTS.QUIZZ.SET_ARCHIVED,
+    manager.withAuth(socket, (payload: unknown) => {
+      const result = z
+        .object({ id: z.string(), archived: z.boolean() })
+        .safeParse(payload)
+
+      if (!result.success) {
+        socket.emit(EVENTS.QUIZZ.ERROR, result.error.issues[0].message)
+
+        return
+      }
+
+      try {
+        assertSafeId(result.data.id)
+        setQuizzArchived(result.data.id, result.data.archived)
+        emitConfig(socket)
+      } catch (error) {
+        console.error("Failed to set quizz archived:", error)
+        socket.emit(
+          EVENTS.QUIZZ.ERROR,
+          error instanceof Error ? error.message : "errors:quizz.notFound",
+        )
       }
     }),
   )
