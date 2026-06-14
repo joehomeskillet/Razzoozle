@@ -247,7 +247,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           )}
 
           <RevealSection index={4} label={t("submit:form.section.settings")}>
-            <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:p-0 [&>aside]:shadow-none">
+            <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
               <QuestionEditorConfig />
             </div>
           </RevealSection>
