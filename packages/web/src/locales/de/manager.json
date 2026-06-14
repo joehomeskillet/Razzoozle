@@ -87,7 +87,33 @@
     "results": "Ergebnisse",
     "design": "Design",
     "satellite": "Satellit",
-    "submissions": "Vorschläge"
+    "submissions": "Vorschläge",
+    "media": "Medien"
+  },
+  "media": {
+    "title": "Medienbibliothek",
+    "intro": "Bilder, Audio und generierte Inhalte an einem Ort verwalten.",
+    "empty": "Noch keine Medien vorhanden.",
+    "emptyHeadline": "Bibliothek ist leer",
+    "upload": "Hochladen",
+    "uploading": "Wird hochgeladen…",
+    "uploaded": "Medium hochgeladen",
+    "delete": "Löschen",
+    "deleteConfirm": "Dieses Medium wirklich löschen?",
+    "deleted": "Medium gelöscht",
+    "search": "Medien durchsuchen",
+    "source": {
+      "upload": "Hochgeladen",
+      "ai": "KI",
+      "theme": "Design"
+    },
+    "category": {
+      "backgrounds": "Hintergründe",
+      "questions": "Fragen",
+      "generated": "Generiert",
+      "avatars": "Avatare",
+      "audio": "Audio"
+    }
   },
   "catalog": {
     "title": "Fragenkatalog",

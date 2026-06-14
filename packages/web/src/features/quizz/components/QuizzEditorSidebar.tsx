@@ -6,6 +6,7 @@ import {
 } from "@hello-pangea/dnd"
 import { EVENTS } from "@razzia/common/constants"
 import type { Question } from "@razzia/common/types/game"
+import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import CatalogPickerModal from "@razzia/web/features/quizz/components/CatalogPickerModal"
@@ -13,8 +14,15 @@ import QuizzEditorCard from "@razzia/web/features/quizz/components/QuizzEditorCa
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
-import { BookmarkPlus, BookOpen, GripVertical, Plus } from "lucide-react"
-import { useRef, useState } from "react"
+import {
+  BookmarkPlus,
+  BookOpen,
+  GripVertical,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react"
+import { type MouseEvent, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -29,6 +37,7 @@ const QuizzEditorSidebar = () => {
     setCurrentIndex,
     addQuestion,
     removeQuestion,
+    removeQuestions,
     reorderQuestions,
     updateQuestion,
   } = useQuizzEditor()
@@ -36,6 +45,12 @@ const QuizzEditorSidebar = () => {
   const { t } = useTranslation()
   const { width } = useScreenSize()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+
+  // Multi-select state. `selected` is the working set; `anchor` is the pivot for
+  // Shift+click range selection (set on the last plain/ctrl click).
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [anchor, setAnchor] = useState<number | null>(null)
 
   // < md (768px): the rail collapses to a horizontal slide scroller above the
   // canvas; ≥ md it's a vertical rail beside it. The DnD `direction` follows so
@@ -44,14 +59,77 @@ const QuizzEditorSidebar = () => {
 
   const isDragging = useRef(false)
 
-  const handleSlideClick = (index: number) => () => {
-    if (!isDragging.current) {
+  const clearSelection = () => {
+    setSelected(new Set())
+    setAnchor(null)
+  }
+
+  const toggleSelect = (index: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+
+      return next
+    })
+    setAnchor(index)
+  }
+
+  const selectRange = (from: number, to: number) => {
+    const lo = Math.min(from, to)
+    const hi = Math.max(from, to)
+    const next = new Set<number>()
+
+    for (let i = lo; i <= hi; i++) {
+      next.add(i)
+    }
+
+    setSelected(next)
+  }
+
+  const handleSlideClick =
+    (index: number) => (event: MouseEvent<HTMLDivElement>) => {
+      if (isDragging.current) {
+        return
+      }
+
+      // Ctrl (Win/Linux) / Cmd (macOS) → toggle membership, keep the rest.
+      if (event.ctrlKey || event.metaKey) {
+        toggleSelect(index)
+
+        return
+      }
+
+      // Shift → contiguous range from the anchor (or this card if no anchor).
+      if (event.shiftKey) {
+        selectRange(anchor ?? index, index)
+        setCurrentIndex(index)
+
+        return
+      }
+
+      // Plain click → single-select (clears any multi-selection) and focuses
+      // the slide in the canvas, exactly as before.
+      clearSelection()
       setCurrentIndex(index)
     }
-  }
 
   const handleDelete = (index: number) => () => {
     removeQuestion(index)
+    setSelected((prev) => {
+      if (!prev.has(index)) {
+        return prev
+      }
+
+      const next = new Set(prev)
+      next.delete(index)
+
+      return next
+    })
   }
 
   const handleDragEnd = (result: DropResult) => {
@@ -64,6 +142,9 @@ const QuizzEditorSidebar = () => {
       return
     }
 
+    // Reordering invalidates index-based selection; clear it to avoid the set
+    // pointing at the wrong slides after the move.
+    clearSelection()
     reorderQuestions(result.source.index, result.destination.index)
   }
 
@@ -82,9 +163,76 @@ const QuizzEditorSidebar = () => {
     toast.success(t("manager:catalog.saved"))
   }
 
+  const handleBulkSaveToCatalog = () => {
+    const indices = [...selected].sort((a, b) => a - b)
+
+    indices.forEach((index) => {
+      const target = questions[index]
+
+      if (!target) {
+        return
+      }
+
+      const { id: _id, ...question } = target
+      socket.emit(EVENTS.CATALOG.ADD, { question, source: "editor" })
+    })
+
+    toast.success(t("manager:catalog.saved"))
+  }
+
+  const handleBulkDelete = () => {
+    removeQuestions([...selected])
+    clearSelection()
+    setBulkDeleteOpen(false)
+  }
+
+  const selectionActive = selected.size > 0
+
   return (
     <>
       <aside className="z-10 m-4 flex shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden rounded-2xl bg-white p-3 shadow-sm md:max-h-[unset] md:w-72 md:flex-col md:overflow-x-hidden md:overflow-y-auto">
+        {selectionActive && (
+          <div
+            role="toolbar"
+            aria-label={t("quizz:bulkSelected", { count: selected.size })}
+            className="order-first flex shrink-0 flex-col gap-2 rounded-xl bg-gray-50 p-2 md:sticky md:top-0 md:z-20"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-gray-700">
+                {t("quizz:bulkSelected", { count: selected.size })}
+              </span>
+              <button
+                type="button"
+                onClick={clearSelection}
+                aria-label={t("common:cancel")}
+                className="focus-visible:outline-primary rounded-md p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleBulkSaveToCatalog}
+              classNameContent="min-w-0 gap-1"
+            >
+              <BookmarkPlus className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">
+                {t("quizz:bulkToCatalog")}
+              </span>
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => setBulkDeleteOpen(true)}
+              classNameContent="min-w-0 gap-1"
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">{t("quizz:bulkDelete")}</span>
+            </Button>
+          </div>
+        )}
+
         <DragDropContext
           onDragStart={() => {
             isDragging.current = true
@@ -135,7 +283,10 @@ const QuizzEditorSidebar = () => {
                           index={index}
                           isActive={currentIndex === index}
                           canDelete={questions.length > 1}
+                          selected={selected.has(index)}
+                          selectionActive={selectionActive}
                           onClick={handleSlideClick(index)}
+                          onToggleSelect={() => toggleSelect(index)}
                           onDelete={handleDelete(index)}
                         />
                       </div>
@@ -182,6 +333,15 @@ const QuizzEditorSidebar = () => {
           </span>
         </Button>
       </aside>
+
+      <AlertDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={t("quizz:bulkDelete")}
+        description={t("quizz:bulkDeleteConfirm")}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleBulkDelete}
+      />
 
       <CatalogPickerModal
         open={pickerOpen}

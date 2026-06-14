@@ -7,6 +7,7 @@ import ConfigAI from "@razzia/web/features/manager/components/configurations/Con
 import ConfigCatalog from "@razzia/web/features/manager/components/configurations/ConfigCatalog"
 import ConfigDisplay from "@razzia/web/features/manager/components/configurations/ConfigDisplay"
 import ConfigManageQuizz from "@razzia/web/features/manager/components/configurations/ConfigManageQuizz"
+import ConfigMedia from "@razzia/web/features/manager/components/configurations/ConfigMedia"
 import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzia/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigSubmissions from "@razzia/web/features/manager/components/configurations/ConfigSubmissions"
@@ -22,6 +23,7 @@ import { useThemeStore } from "@razzia/web/features/theme/store"
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import {
   ClipboardList,
+  Images,
   Library,
   type LucideIcon,
   ListChecks,
@@ -42,13 +44,14 @@ interface TabDef {
   component: ComponentType
 }
 
-// The 6 sections, in display order. The nav rail maps each to a NavItem; the
+// The sections, in display order. The nav rail maps each to a NavItem; the
 // matching component renders in the console panel. Internals are unchanged
 // (separate track) — this file only wires them into <ConsoleShell>.
 const tabs: TabDef[] = [
   { key: "play", nameKey: "manager:tabs.play", icon: Play, component: ConfigSelectQuizz },
   { key: "quizz", nameKey: "manager:tabs.quizz", icon: ListChecks, component: ConfigManageQuizz },
   { key: "catalog", nameKey: "manager:tabs.catalog", icon: Library, component: ConfigCatalog },
+  { key: "media", nameKey: "manager:tabs.media", icon: Images, component: ConfigMedia },
   { key: "ki", nameKey: "manager:tabs.ki", icon: Sparkles, component: ConfigAI },
   { key: "results", nameKey: "manager:tabs.results", icon: Trophy, component: ConfigResults },
   { key: "design", nameKey: "manager:tabs.design", icon: Palette, component: ConfigTheme },

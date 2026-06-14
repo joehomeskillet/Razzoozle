@@ -1,15 +1,59 @@
 import type { QuestionType } from "@razzia/common/types/game"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
+import {
+  BarChart3,
+  CircleDot,
+  Keyboard,
+  ListChecks,
+  SlidersHorizontal,
+  ToggleLeft,
+  type LucideIcon,
+} from "lucide-react"
 import { useTranslation } from "react-i18next"
 
-const TYPES: Array<{ key: QuestionType; labelKey: string }> = [
-  { key: "choice", labelKey: "quizz:type.choice" },
-  { key: "boolean", labelKey: "quizz:type.boolean" },
-  { key: "slider", labelKey: "quizz:type.slider" },
-  { key: "poll", labelKey: "quizz:type.poll" },
-  { key: "multiple-select", labelKey: "quizz:type.multipleSelect" },
-  { key: "type-answer", labelKey: "quizz:type.typeAnswer" },
+const TYPES: Array<{
+  key: QuestionType
+  labelKey: string
+  descKey: string
+  icon: LucideIcon
+}> = [
+  {
+    key: "choice",
+    labelKey: "quizz:type.choice",
+    descKey: "quizz:type.choiceDesc",
+    icon: CircleDot,
+  },
+  {
+    key: "boolean",
+    labelKey: "quizz:type.boolean",
+    descKey: "quizz:type.booleanDesc",
+    icon: ToggleLeft,
+  },
+  {
+    key: "slider",
+    labelKey: "quizz:type.slider",
+    descKey: "quizz:type.sliderDesc",
+    icon: SlidersHorizontal,
+  },
+  {
+    key: "poll",
+    labelKey: "quizz:type.poll",
+    descKey: "quizz:type.pollDesc",
+    icon: BarChart3,
+  },
+  {
+    key: "multiple-select",
+    labelKey: "quizz:type.multipleSelect",
+    descKey: "quizz:type.multipleSelectDesc",
+    icon: ListChecks,
+  },
+  {
+    key: "type-answer",
+    labelKey: "quizz:type.typeAnswer",
+    descKey: "quizz:type.typeAnswerDesc",
+    icon: Keyboard,
+  },
 ]
 
 const SLIDER_FIELDS: Array<{
@@ -103,6 +147,20 @@ const QuestionEditorType = () => {
     }
   }
 
+  // Roving-tabindex arrow navigation across the radio cards (wraps).
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    let delta = 0
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") delta = 1
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") delta = -1
+    else return
+
+    e.preventDefault()
+    const currentIdx = TYPES.findIndex((tp) => tp.key === type)
+    const fallbackIdx = currentIdx === -1 ? 0 : currentIdx
+    const nextIdx = (fallbackIdx + delta + TYPES.length) % TYPES.length
+    setType(TYPES[nextIdx].key)
+  }
+
   // Bonus and practice are mutually exclusive (practice awards no points).
   const toggleBonus = () =>
     updateQuestion(currentIndex, {
@@ -125,24 +183,52 @@ const QuestionEditorType = () => {
 
   return (
     <div className="z-10 flex flex-col gap-3">
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {TYPES.map((tp) => (
-          <button
-            key={tp.key}
-            type="button"
-            onClick={() => setType(tp.key)}
-            aria-pressed={type === tp.key}
-            className={clsx(
-              "focus-visible:outline-primary flex min-h-11 shrink-0 items-center rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
-              type === tp.key
-                ? "bg-[var(--accent-contrast)] text-white"
-                : "bg-white text-gray-500 hover:bg-gray-100",
-            )}
-          >
-            {t(tp.labelKey)}
-          </button>
-        ))}
-      </div>
+      <fieldset
+        role="radiogroup"
+        aria-label={t("quizz:type.choice")}
+        className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+      >
+        {TYPES.map((tp) => {
+          const selected = type === tp.key
+          const Icon = tp.icon
+          return (
+            <button
+              key={tp.key}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => setType(tp.key)}
+              onKeyDown={handleKeyDown}
+              className={clsx(
+                "flex min-h-11 flex-col gap-1 rounded-2xl bg-white p-3 text-left shadow-sm outline-2 -outline-offset-2 transition-colors focus-visible:outline-[var(--color-primary)]",
+                selected
+                  ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] outline-[var(--color-primary)]"
+                  : "outline-transparent hover:bg-gray-50",
+              )}
+            >
+              <span
+                className={clsx(
+                  "flex items-center gap-2 text-sm font-semibold",
+                  selected ? "text-[var(--accent-contrast)]" : "text-gray-700",
+                )}
+              >
+                <Icon
+                  aria-hidden="true"
+                  className={clsx(
+                    "size-4 shrink-0",
+                    selected
+                      ? "text-[var(--accent-contrast)]"
+                      : "text-gray-400",
+                  )}
+                />
+                {t(tp.labelKey)}
+              </span>
+              <span className="text-xs text-gray-500">{t(tp.descKey)}</span>
+            </button>
+          )
+        })}
+      </fieldset>
 
       <div className="flex flex-wrap gap-4">
         {type !== "poll" && (

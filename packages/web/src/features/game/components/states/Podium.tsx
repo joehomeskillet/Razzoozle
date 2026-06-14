@@ -1,4 +1,5 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
+import Avatar from "@razzia/web/components/Avatar"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
@@ -133,6 +134,12 @@ const Podium = ({ data: { subject, top } }: Props) => {
                 { "translate-y-0! opacity-100": apparition >= 2 },
               )}
             >
+              <Avatar
+                src={top[1].avatar}
+                name={top[1].username}
+                size={56}
+                className="mx-auto"
+              />
               <p
                 className={clsx(
                   "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
@@ -163,6 +170,12 @@ const Podium = ({ data: { subject, top } }: Props) => {
               },
             )}
           >
+            <Avatar
+              src={top[0].avatar}
+              name={top[0].username}
+              size={72}
+              className="mx-auto"
+            />
             <p
               className={clsx(
                 "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white opacity-0 drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
@@ -188,6 +201,12 @@ const Podium = ({ data: { subject, top } }: Props) => {
                 },
               )}
             >
+              <Avatar
+                src={top[2].avatar}
+                name={top[2].username}
+                size={56}
+                className="mx-auto"
+              />
               <p
                 className={clsx(
                   "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",

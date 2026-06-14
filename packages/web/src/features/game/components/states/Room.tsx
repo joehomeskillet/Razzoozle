@@ -2,6 +2,7 @@ import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import { EVENTS } from "@razzia/common/constants"
 import type { Player } from "@razzia/common/types/game"
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
+import Avatar from "@razzia/web/components/Avatar"
 import {
   useEvent,
   useSocket,
@@ -187,6 +188,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
             key={player.id}
             className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
           >
+            <Avatar src={player.avatar} name={player.username} size={40} />
             <span className="text-3xl drop-shadow-sm">{player.username}</span>
             <AlertDialog.Root>
               <AlertDialog.Trigger asChild>

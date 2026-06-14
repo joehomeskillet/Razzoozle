@@ -50,5 +50,22 @@
     "autoOff": "aus",
     "autoTitle": "Auto-Modus: läuft automatisch weiter",
     "fullscreen": "Vollbild"
-  }
+  },
+  "avatar": {
+    "title": "Dein Avatar",
+    "choose": "Avatar wählen",
+    "upload": "Bild hochladen",
+    "uploading": "Wird hochgeladen…",
+    "uploaded": "Avatar hochgeladen",
+    "skip": "Überspringen",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pause",
+    "paused": "Das Spiel ist pausiert",
+    "resumeHint": "Du machst weiter, sobald der Host fortsetzt",
+    "pauseGame": "Spiel pausieren",
+    "resumeGame": "Spiel fortsetzen"
+  },
+  "playerReconnected": "{{name}} ist wieder verbunden"
 }

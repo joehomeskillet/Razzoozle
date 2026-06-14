@@ -50,7 +50,13 @@
     "bonusQuestion": "Bonus question (double points)",
     "practiceQuestion": "Practice question (0 points)",
     "multipleSelect": "Multiple select",
-    "typeAnswer": "Type answer"
+    "typeAnswer": "Type answer",
+    "choiceDesc": "One correct answer",
+    "booleanDesc": "True or false",
+    "sliderDesc": "A number on a scale",
+    "pollDesc": "Opinion poll, no scoring",
+    "multipleSelectDesc": "Several correct answers",
+    "typeAnswerDesc": "Freely typed answer"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",
@@ -71,5 +77,9 @@
     "minAnswersRequired": "At least one answer required"
   },
   "addAnswerCountLabel": "Add answer",
-  "removeAnswerCountLabel": "Remove answer"
+  "removeAnswerCountLabel": "Remove answer",
+  "bulkSelected": "{{count}} selected",
+  "bulkDelete": "Delete",
+  "bulkDeleteConfirm": "Really delete the selected questions?",
+  "bulkToCatalog": "Save to catalog"
 }

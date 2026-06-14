@@ -8,6 +8,7 @@ import { create } from "zustand"
 interface PlayerState {
   username?: string
   points?: number
+  avatar?: string
 }
 
 interface PlayerStore<T> {
@@ -21,6 +22,7 @@ interface PlayerStore<T> {
   login: (_gameId: string) => void
   join: (_username: string) => void
   updatePoints: (_points: number) => void
+  setAvatar: (_avatar: string) => void
 
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
 
@@ -54,6 +56,11 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
   updatePoints: (points) =>
     set((state) => ({
       player: { ...state.player, points },
+    })),
+
+  setAvatar: (avatar) =>
+    set((state) => ({
+      player: { ...state.player, avatar },
     })),
 
   setStatus: (name, data) => set({ status: createStatus(name, data) }),

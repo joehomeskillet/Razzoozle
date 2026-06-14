@@ -21,6 +21,7 @@ interface QuizzEditorContextType {
   setCurrentIndex: (_index: number) => void
   addQuestion: () => void
   removeQuestion: (_index: number) => void
+  removeQuestions: (_indices: number[]) => void
   reorderQuestions: (_from: number, _to: number) => void
   updateQuestion: (_index: number, _updates: Partial<QuestionWithId>) => void
 }
@@ -87,6 +88,46 @@ export const QuizzEditorProvider = ({
     )
   }
 
+  const removeQuestions = (indices: number[]) => {
+    // Bulk delete. De-duplicate + delete high→low so earlier indices don't
+    // shift before we reach them. Never delete the last remaining question
+    // (quizzValidator requires >=1): if the selection would empty the quiz,
+    // keep one slide back by trimming the lowest-index entry from the removal
+    // set. currentIndex is clamped after removal so currentQuestion is never
+    // undefined.
+    const removalSet = new Set(
+      indices.filter((i) => i >= 0 && i < questions.length),
+    )
+
+    if (removalSet.size === 0) {
+      return
+    }
+
+    // Guard: never remove every question. Drop the lowest index from the set so
+    // the quiz keeps at least one slide.
+    if (removalSet.size >= questions.length) {
+      const keep = Math.min(...removalSet)
+      removalSet.delete(keep)
+    }
+
+    if (removalSet.size === 0) {
+      return
+    }
+
+    // How many removed entries sit at or before the current slide — used to
+    // shift currentIndex by the right amount so it tracks the same logical slide
+    // (or its predecessor when the current slide itself was removed).
+    const removedBeforeOrAt = [...removalSet].filter(
+      (i) => i <= currentIndex,
+    ).length
+    const remainingCount = questions.length - removalSet.size
+
+    setQuestions((list) => list.filter((_, i) => !removalSet.has(i)))
+    setCurrentIndex((current) =>
+      Math.min(Math.max(0, current - removedBeforeOrAt), remainingCount - 1),
+    )
+  }
+
   const reorderQuestions = (from: number, to: number) => {
     setQuestions((prev) => {
       const next = [...prev]
@@ -116,6 +157,7 @@ export const QuizzEditorProvider = ({
         setCurrentIndex,
         addQuestion,
         removeQuestion,
+        removeQuestions,
         reorderQuestions,
         updateQuestion,
       }}

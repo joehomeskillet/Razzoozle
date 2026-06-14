@@ -13,7 +13,15 @@ import {
 import { Field } from "@razzia/web/features/manager/components/console"
 import { applyTheme } from "@razzia/web/features/theme/apply"
 import { useThemeStore } from "@razzia/web/features/theme/store"
-import { LoaderCircle, RotateCcw, Upload } from "lucide-react"
+import {
+  Image as ImageIcon,
+  LoaderCircle,
+  Palette,
+  RotateCcw,
+  SwatchBook,
+  Type,
+  Upload,
+} from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode, useState } from "react"
 import toast from "react-hot-toast"
@@ -29,31 +37,56 @@ const BG_SLOTS: Array<{ key: BackgroundSlot; labelKey: string }> = [
   { key: "playerGame", labelKey: "manager:theme.bgSlots.playerGame" },
 ]
 
-// Upload-label class set, split out to keep the JSX tidy.
+// Upload-label class set, split out to keep the JSX tidy. Mirrors the shared
+// <Button variant="primary"> surface (accent-contrast clears AA on white).
 const clsxUpload = (uploading: boolean) =>
   [
-    "flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-colors",
-    "bg-[var(--accent-contrast)] hover:brightness-105",
-    "focus-within:outline-[var(--color-primary)] focus-within:outline-2 focus-within:outline-offset-2",
-    uploading && "cursor-not-allowed opacity-70",
+    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-white shadow-sm transition-colors",
+    "bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]",
+    "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white",
+    uploading && "cursor-not-allowed opacity-60",
   ]
     .filter(Boolean)
     .join(" ")
 
-// A labelled section grouping related controls into one card (spec §5 "Dense").
-const Section = ({
-  legend,
+// A titled section card matching ConfigAI/ConfigCatalog: white panel, gray
+// outline, header (icon + title + optional description). Sunken bg-gray-50
+// surfaces live inside via SubGroup.
+const SectionCard = ({
+  icon,
+  title,
+  description,
   children,
 }: {
-  legend: string
+  icon: ReactNode
+  title: string
+  description?: string
   children: ReactNode
 }) => (
-  <fieldset className="flex flex-col gap-4 rounded-xl bg-gray-50 p-4">
-    <legend className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-      {legend}
-    </legend>
+  <section className="space-y-4 rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200">
+    <div className="flex items-start gap-2.5">
+      <span
+        className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {description && (
+          <p className="text-sm text-gray-500">{description}</p>
+        )}
+      </div>
+    </div>
     {children}
-  </fieldset>
+  </section>
+)
+
+// A sunken sub-surface for grouping related controls inside a card.
+const SubGroup = ({ children }: { children: ReactNode }) => (
+  <div className="rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200">
+    {children}
+  </div>
 )
 
 const ConfigTheme = () => {
@@ -197,7 +230,7 @@ const ConfigTheme = () => {
     </label>
   )
 
-  // Real <label>-wrapped file picker (spec §6: native control, not a fake button).
+  // Real <label>-wrapped file picker (native control, not a fake button).
   const uploadButton = (slot: ThemeSlot, accept: string) => {
     const uploading = pendingSlot === slot
 
@@ -222,181 +255,207 @@ const ConfigTheme = () => {
 
   // A "back to default" secondary action shared by logo + background slots.
   const resetSlotButton = (onClick: () => void) => (
-    <Button
-      variant="secondary"
-      size="sm"
-      type="button"
-      onClick={onClick}
-      className="text-xs"
-    >
+    <Button variant="secondary" size="sm" type="button" onClick={onClick}>
       {t("manager:theme.default")}
     </Button>
   )
 
+  // One asset row (logo / background slot): name + status + upload + reset.
+  const assetRow = ({
+    slot,
+    label,
+    value,
+    accept,
+    onReset,
+  }: {
+    slot: ThemeSlot
+    label: string
+    value: string | null | undefined
+    accept: string
+    onReset: () => void
+  }) => {
+    const slotError = slotErrors[slot]
+
+    return (
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+            {label}
+          </p>
+          <p className="truncate text-sm text-gray-500">
+            {value ?? t("manager:theme.default")}
+          </p>
+          {slotError && (
+            <p
+              className="truncate text-sm font-semibold text-red-600"
+              role="alert"
+            >
+              {t(slotError)}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {uploadButton(slot, accept)}
+          {value && resetSlotButton(onReset)}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <motion.div
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col bg-gray-50"
       initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       transition={
         reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
       }
     >
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto overscroll-contain p-0.5 lg:grid-cols-2">
-        {/* ── Branding ─────────────────────────────────────────────── */}
-        <Section legend={t("manager:theme.branding")}>
-          <Field label={t("manager:theme.appTitle")}>
-            <Input
-              value={draft.appTitle ?? ""}
-              maxLength={40}
-              placeholder="Razzia"
-              variant="sm"
-              onChange={(e) =>
-                preview({ ...draft, appTitle: e.target.value || null })
-              }
-              className="min-h-11 w-full rounded-lg"
-            />
-          </Field>
-
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                {t("manager:theme.logo")}
-              </p>
-              <p className="truncate text-sm text-gray-500">
-                {draft.logo ?? t("manager:theme.default")}
-              </p>
-              {slotErrors.logo && (
-                <p
-                  className="truncate text-sm font-semibold text-red-600"
-                  role="alert"
-                >
-                  {t(slotErrors.logo)}
-                </p>
-              )}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {uploadButton(
-                "logo",
-                "image/png,image/jpeg,image/webp,image/svg+xml",
-              )}
-              {draft.logo &&
-                resetSlotButton(() => setDraft((p) => ({ ...p, logo: null })))}
-            </div>
-          </div>
-
-          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
-            <input
-              type="checkbox"
-              checked={draft.showBranding}
-              onChange={(e) =>
-                preview({ ...draft, showBranding: e.target.checked })
-              }
-              className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-            />
-            {t("manager:theme.showFooter")}
-          </label>
-        </Section>
-
-        {/* ── UI-Farben ────────────────────────────────────────────── */}
-        <Section legend={t("manager:theme.uiColors")}>
-          <div className="flex flex-wrap gap-4">
-            {colorField(
-              t("manager:theme.colors.primary"),
-              draft.colorPrimary,
-              setColor("colorPrimary"),
-            )}
-            {colorField(
-              t("manager:theme.colors.background"),
-              draft.colorSecondary,
-              setColor("colorSecondary"),
-            )}
-            {colorField(
-              t("manager:theme.colors.accent"),
-              draft.accentColor,
-              setColor("accentColor"),
-            )}
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-6">
+        <header className="space-y-1">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {t("manager:theme.branding")}
+          </h2>
           <p className="text-sm text-gray-500">
             {t("manager:theme.contrastNote")}
           </p>
-        </Section>
+        </header>
 
-        {/* ── Antwort-Farben ───────────────────────────────────────── */}
-        <Section legend={t("manager:theme.answerColors")}>
-          <div className="flex flex-wrap items-end gap-4">
-            {draft.answerColors.map((color, index) => (
-              // oxlint-disable-next-line no-array-index-key
-              <div key={index}>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start">
+          {/* ── Branding ───────────────────────────────────────────── */}
+          <SectionCard
+            icon={<SwatchBook className="size-5" />}
+            title={t("manager:theme.branding")}
+          >
+            <Field label={t("manager:theme.appTitle")}>
+              <Input
+                value={draft.appTitle ?? ""}
+                maxLength={40}
+                placeholder="Razzia"
+                variant="sm"
+                onChange={(e) =>
+                  preview({ ...draft, appTitle: e.target.value || null })
+                }
+                className="min-h-11 w-full rounded-lg"
+              />
+            </Field>
+
+            <SubGroup>
+              {assetRow({
+                slot: "logo",
+                label: t("manager:theme.logo"),
+                value: draft.logo,
+                accept: "image/png,image/jpeg,image/webp,image/svg+xml",
+                onReset: () => setDraft((p) => ({ ...p, logo: null })),
+              })}
+            </SubGroup>
+
+            <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
+              <input
+                type="checkbox"
+                checked={draft.showBranding}
+                onChange={(e) =>
+                  preview({ ...draft, showBranding: e.target.checked })
+                }
+                className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              />
+              {t("manager:theme.showFooter")}
+            </label>
+          </SectionCard>
+
+          {/* ── UI-Farben ──────────────────────────────────────────── */}
+          <SectionCard
+            icon={<Palette className="size-5" />}
+            title={t("manager:theme.uiColors")}
+            description={t("manager:theme.contrastNote")}
+          >
+            <SubGroup>
+              <div className="flex flex-wrap justify-center gap-4 sm:justify-start">
                 {colorField(
-                  ["A", "B", "C", "D"][index] ?? "",
-                  color,
-                  setAnswer(index),
+                  t("manager:theme.colors.primary"),
+                  draft.colorPrimary,
+                  setColor("colorPrimary"),
+                )}
+                {colorField(
+                  t("manager:theme.colors.background"),
+                  draft.colorSecondary,
+                  setColor("colorSecondary"),
+                )}
+                {colorField(
+                  t("manager:theme.colors.accent"),
+                  draft.accentColor,
+                  setColor("accentColor"),
                 )}
               </div>
-            ))}
-            {colorField(
-              t("manager:theme.colors.text"),
-              draft.answerTextColor,
-              setColor("answerTextColor"),
-            )}
-          </div>
-        </Section>
+            </SubGroup>
+          </SectionCard>
 
-        {/* ── Hintergründe ─────────────────────────────────────────── */}
-        <Section legend={t("manager:theme.backgrounds")}>
-          <Field
-            label={t("manager:theme.scrim", { value: draft.scrim })}
-            htmlFor="theme-scrim"
+          {/* ── Antwort-Farben ─────────────────────────────────────── */}
+          <SectionCard
+            icon={<Type className="size-5" />}
+            title={t("manager:theme.answerColors")}
           >
-            <input
-              id="theme-scrim"
-              type="range"
-              min={0}
-              max={100}
-              value={draft.scrim}
-              onChange={(e) =>
-                preview({ ...draft, scrim: Number(e.target.value) })
-              }
-              className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-            />
-          </Field>
-
-          <div className="flex flex-col gap-3">
-            {BG_SLOTS.map(({ key, labelKey }) => {
-              const slotError = slotErrors[key]
-
-              return (
-                <div key={key} className="flex items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                      {t(labelKey)}
-                    </p>
-                    <p className="truncate text-sm text-gray-500">
-                      {draft.backgrounds[key] ?? t("manager:theme.default")}
-                    </p>
-                    {slotError && (
-                      <p
-                        className="truncate text-sm font-semibold text-red-600"
-                        role="alert"
-                      >
-                        {t(slotError)}
-                      </p>
+            <SubGroup>
+              <div className="flex flex-wrap items-end justify-center gap-4 sm:justify-start">
+                {draft.answerColors.map((color, index) => (
+                  // oxlint-disable-next-line no-array-index-key
+                  <div key={index}>
+                    {colorField(
+                      ["A", "B", "C", "D"][index] ?? "",
+                      color,
+                      setAnswer(index),
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {uploadButton(key, "image/png,image/jpeg,image/webp")}
-                    {draft.backgrounds[key] &&
-                      resetSlotButton(clearBackground(key))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </Section>
+                ))}
+                {colorField(
+                  t("manager:theme.colors.text"),
+                  draft.answerTextColor,
+                  setColor("answerTextColor"),
+                )}
+              </div>
+            </SubGroup>
+          </SectionCard>
+
+          {/* ── Hintergründe ───────────────────────────────────────── */}
+          <SectionCard
+            icon={<ImageIcon className="size-5" />}
+            title={t("manager:theme.backgrounds")}
+          >
+            <Field
+              label={t("manager:theme.scrim", { value: draft.scrim })}
+              htmlFor="theme-scrim"
+            >
+              <input
+                id="theme-scrim"
+                type="range"
+                min={0}
+                max={100}
+                value={draft.scrim}
+                onChange={(e) =>
+                  preview({ ...draft, scrim: Number(e.target.value) })
+                }
+                className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              />
+            </Field>
+
+            <div className="flex flex-col gap-3">
+              {BG_SLOTS.map(({ key, labelKey }) => (
+                <SubGroup key={key}>
+                  {assetRow({
+                    slot: key,
+                    label: t(labelKey),
+                    value: draft.backgrounds[key],
+                    accept: "image/png,image/jpeg,image/webp",
+                    onReset: clearBackground(key),
+                  })}
+                </SubGroup>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
       </div>
 
-      <div className="mt-4 flex shrink-0 gap-2 border-t border-gray-200 pt-4">
+      <div className="flex shrink-0 gap-2 border-t border-gray-200 bg-white p-4">
         <Button
           variant="primary"
           className="flex-1 rounded-xl"

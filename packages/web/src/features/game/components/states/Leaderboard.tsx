@@ -1,4 +1,5 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
+import Avatar from "@razzia/web/components/Avatar"
 import Fire from "@razzia/web/features/game/components/icons/Fire"
 import { AnimatePresence, motion, useSpring, useTransform } from "motion/react"
 import { useEffect, useState } from "react"
@@ -69,7 +70,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
       </h2>
       <div className="flex w-full flex-col gap-2">
         <AnimatePresence mode="popLayout">
-          {displayedLeaderboard.map(({ id, username, points, streak }) => (
+          {displayedLeaderboard.map(({ id, username, points, streak, avatar }) => (
             <motion.div
               key={id}
               layout
@@ -93,6 +94,7 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
               className="flex w-full justify-between rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]"
             >
               <span className="flex items-center gap-2 drop-shadow-md">
+                <Avatar src={avatar} name={username} size={36} />
                 {username}
                 <StreakBadge streak={streak} />
               </span>

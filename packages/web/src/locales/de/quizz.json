@@ -42,7 +42,13 @@
     "bonusQuestion": "Bonusfrage (doppelte Punkte)",
     "practiceQuestion": "Übungsfrage (0 Punkte)",
     "multipleSelect": "Mehrfachauswahl",
-    "typeAnswer": "Texteingabe"
+    "typeAnswer": "Texteingabe",
+    "choiceDesc": "Eine richtige Antwort",
+    "booleanDesc": "Wahr oder Falsch",
+    "sliderDesc": "Zahl auf einer Skala",
+    "pollDesc": "Stimmungsbild, keine Wertung",
+    "multipleSelectDesc": "Mehrere richtige Antworten",
+    "typeAnswerDesc": "Frei getippte Antwort"
   },
   "slider": {
     "min": "Min",
@@ -71,5 +77,9 @@
     "minAnswersRequired": "Mindestens eine Antwort erforderlich"
   },
   "addAnswerCountLabel": "Antwort hinzufügen",
-  "removeAnswerCountLabel": "Antwort entfernen"
+  "removeAnswerCountLabel": "Antwort entfernen",
+  "bulkSelected": "{{count}} ausgewählt",
+  "bulkDelete": "Löschen",
+  "bulkDeleteConfirm": "Die ausgewählten Fragen wirklich löschen?",
+  "bulkToCatalog": "In Katalog speichern"
 }

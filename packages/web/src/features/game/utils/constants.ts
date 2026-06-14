@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzia/common/constants"
 import Answers from "@razzia/web/features/game/components/states/Answers"
 import Leaderboard from "@razzia/web/features/game/components/states/Leaderboard"
+import Paused from "@razzia/web/features/game/components/states/Paused"
 import PlayerFinished from "@razzia/web/features/game/components/states/PlayerFinished"
 import Podium from "@razzia/web/features/game/components/states/Podium"
 import Prepared from "@razzia/web/features/game/components/states/Prepared"
@@ -42,6 +43,10 @@ export const GAME_STATE_COMPONENTS = {
   [STATUS.SHOW_RESULT]: Result,
   [STATUS.SHOW_PREPARED]: Prepared,
   [STATUS.FINISHED]: PlayerFinished,
+  // Host-triggered between-questions hold. Lives in the shared map so BOTH the
+  // player route (gates on `name in GAME_STATE_COMPONENTS`) and the manager
+  // presentation views (which spread this map) render the pause screen.
+  [STATUS.PAUSED]: Paused,
 }
 
 export const GAME_STATE_COMPONENTS_MANAGER = {
@@ -95,4 +100,7 @@ export const MANAGER_SKIP_BTN = {
   [STATUS.SHOW_LEADERBOARD]: "common:next",
   [STATUS.FINISHED]: "common:exit",
   [STATUS.WAIT]: null,
+  // No advance/skip CTA while paused — the host resumes via the QR overlay's
+  // Resume button instead.
+  [STATUS.PAUSED]: null,
 }

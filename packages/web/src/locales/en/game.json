@@ -50,5 +50,22 @@
     "autoOff": "off",
     "autoTitle": "Auto mode: advances automatically",
     "fullscreen": "Fullscreen"
-  }
+  },
+  "avatar": {
+    "title": "Your avatar",
+    "choose": "Choose avatar",
+    "upload": "Upload image",
+    "uploading": "Uploading…",
+    "uploaded": "Avatar uploaded",
+    "skip": "Skip",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pause",
+    "paused": "The game is paused",
+    "resumeHint": "You continue as soon as the host resumes",
+    "pauseGame": "Pause game",
+    "resumeGame": "Resume game"
+  },
+  "playerReconnected": "{{name}} is back online"
 }

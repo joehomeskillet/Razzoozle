@@ -1,5 +1,7 @@
+import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import { EVENTS } from "@razzia/common/constants"
 import type { Status } from "@razzia/common/types/game/status"
+import { STATUS } from "@razzia/common/types/game/status"
 import background from "@razzia/web/assets/background.webp"
 import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
@@ -17,10 +19,11 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
 import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
+import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import clsx from "clsx"
-import { LogOut, Maximize } from "lucide-react"
+import { LogOut, Maximize, Maximize2, Pause, Play, X } from "lucide-react"
 import QRCode from "@razzia/web/components/QRCode"
-import { type PropsWithChildren, useEffect, useState } from "react"
+import { type PropsWithChildren, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -48,6 +51,21 @@ const GameWrapper = ({
   const { t } = useTranslation()
   const [isDisabled, setIsDisabled] = useState(false)
   const [autoOn, setAutoOn] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
+  const qrContentRef = useRef<HTMLDivElement>(null)
+
+  useOnClickOutside({ ref: qrContentRef, handler: () => setQrOpen(false) })
+
+  // Pause is only meaningful between questions; the server rejects it mid-round
+  // (and emits an ERROR_MESSAGE that the existing toast surfaces). The button
+  // flips to Resume while the game is held in STATUS.PAUSED.
+  const isPaused = statusName === STATUS.PAUSED
+  const pauseGame = () => {
+    socket.emit(EVENTS.MANAGER.PAUSE_GAME, { gameId: gameId ?? undefined })
+  }
+  const resumeGame = () => {
+    socket.emit(EVENTS.MANAGER.RESUME_GAME, { gameId: gameId ?? undefined })
+  }
 
   const toggleAuto = () => {
     const nextAuto = !autoOn
@@ -82,6 +100,13 @@ const GameWrapper = ({
     setIsDisabled(false)
   })
 
+  // In-game reconnect feedback: when a dropped player rejoins mid-quiz the
+  // server pushes PLAYER_RECONNECTED so the host sees it on the live game
+  // screen (not just in the lobby roster).
+  useEvent(EVENTS.MANAGER.PLAYER_RECONNECTED, ({ username }) => {
+    toast.success(t("game:playerReconnected", { name: username }))
+  })
+
   useEffect(() => {
     setIsDisabled(false)
   }, [statusName])
@@ -112,21 +137,89 @@ const GameWrapper = ({
 
       {/* Host-screen rejoin badge: a player who dropped scans this QR (or types
           the PIN shown on the slide) to come straight back to the game — their
-          identity (points/place) is recovered via the durable clientId cookie. */}
+          identity (points/place) is recovered via the durable clientId cookie.
+          The whole badge is now a trigger: clicking it enlarges the QR (reusing
+          the Room.tsx AlertDialog pattern) and exposes the host's Pause/Resume
+          controls + a reconnect hint. */}
       {manager && inviteCode && (
-        <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
-          <div className="rounded bg-white p-1">
-            <QRCode value={buildJoinUrl(inviteCode)} size={56} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[10px] font-semibold uppercase opacity-70">
-              {t("game:rejoin")}
-            </div>
-            <div className="font-mono text-xl font-bold tracking-widest">
-              {inviteCode}
-            </div>
-          </div>
-        </div>
+        <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
+          <AlertDialog.Trigger asChild>
+            <button
+              type="button"
+              className="group fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex cursor-pointer items-center gap-2 rounded-lg bg-black/60 p-2 text-left text-white"
+              aria-label={t("game:rejoin")}
+            >
+              <div className="rounded bg-white p-1">
+                <QRCode value={buildJoinUrl(inviteCode)} size={56} />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[10px] font-semibold uppercase opacity-70">
+                  {t("game:rejoin")}
+                </div>
+                <div className="font-mono text-xl font-bold tracking-widest">
+                  {inviteCode}
+                </div>
+              </div>
+              <div className="ml-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <Maximize2 className="size-4" aria-hidden />
+              </div>
+            </button>
+          </AlertDialog.Trigger>
+
+          <AlertDialog.Portal>
+            <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+            <AlertDialog.Content
+              ref={qrContentRef}
+              className="fixed top-1/2 left-1/2 z-50 flex w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-5 rounded-2xl bg-white p-6 text-black"
+            >
+              <AlertDialog.Title className="text-2xl font-bold">
+                {t("game:rejoin")}
+              </AlertDialog.Title>
+              <button
+                type="button"
+                onClick={() => setQrOpen(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white p-1.5 shadow-md hover:bg-gray-100"
+                aria-label={t("common:cancel")}
+              >
+                <X className="size-6 text-gray-700" />
+              </button>
+              <QRCode
+                className="size-56 md:size-64"
+                size={300}
+                value={buildJoinUrl(inviteCode)}
+              />
+              <div className="font-mono text-3xl font-bold tracking-widest">
+                {inviteCode}
+              </div>
+              <p className="text-center text-sm text-gray-600">
+                {t("game:pause.resumeHint")}
+              </p>
+              <div className="flex w-full justify-center gap-3">
+                {isPaused ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="min-h-11 px-5"
+                    onClick={resumeGame}
+                  >
+                    <Play className="size-5" aria-hidden />
+                    {t("game:pause.resumeGame")}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-11 px-5"
+                    onClick={pauseGame}
+                  >
+                    <Pause className="size-5" aria-hidden />
+                    {t("game:pause.pauseGame")}
+                  </Button>
+                )}
+              </div>
+            </AlertDialog.Content>
+          </AlertDialog.Portal>
+        </AlertDialog.Root>
       )}
 
       <div className="z-10 flex w-full flex-1 flex-col justify-between">

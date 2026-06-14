@@ -87,7 +87,33 @@
     "results": "Results",
     "design": "Design",
     "satellite": "Satellite",
-    "submissions": "Suggestions"
+    "submissions": "Suggestions",
+    "media": "Media"
+  },
+  "media": {
+    "title": "Media library",
+    "intro": "Manage images, audio and generated content in one place.",
+    "empty": "No media yet.",
+    "emptyHeadline": "Library is empty",
+    "upload": "Upload",
+    "uploading": "Uploading…",
+    "uploaded": "Media uploaded",
+    "delete": "Delete",
+    "deleteConfirm": "Really delete this media item?",
+    "deleted": "Media deleted",
+    "search": "Search media",
+    "source": {
+      "upload": "Uploaded",
+      "ai": "AI",
+      "theme": "Design"
+    },
+    "category": {
+      "backgrounds": "Backgrounds",
+      "questions": "Questions",
+      "generated": "Generated",
+      "avatars": "Avatars",
+      "audio": "Audio"
+    }
   },
   "catalog": {
     "title": "Question catalog",
