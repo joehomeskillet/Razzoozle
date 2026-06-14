@@ -114,7 +114,11 @@ const ConsoleShell = ({
         reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }
       }
       className={clsx(
-        "z-10 m-2 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3 2xl:mx-auto 2xl:w-full 2xl:max-w-[110rem]",
+        // Fills the full-viewport frame with a UNIFORM margin on every side
+        // (m-2/sm:m-3) — flex `align-self: stretch` sizes the width, so no
+        // explicit w-full / max-width / mx-auto (those capped + centered on
+        // wide screens → unequal left/right vs top/bottom gaps).
+        "z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3",
         className,
       )}
     >
