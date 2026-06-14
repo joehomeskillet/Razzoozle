@@ -99,14 +99,14 @@ const QuestionEditorAnswers = () => {
             <div
               key={i}
               className={clsx(
-                "flex items-center gap-3 rounded-2xl px-4 py-6",
+                "flex items-center gap-3 rounded-2xl px-4 py-6 focus-within:ring-2 focus-within:ring-white/70 focus-within:ring-offset-0",
                 ANSWERS_COLORS[i],
               )}
             >
               <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-black/20 text-sm font-bold text-white md:size-8 md:text-base">
                 {label}
               </span>
-              <div className="flex flex-1 items-center justify-between gap-1.5 drop-shadow-md">
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5 drop-shadow-md">
                 <input
                   className="w-full bg-transparent font-semibold text-white placeholder-white/70 outline-none"
                   placeholder={t("quizz:addAnswerPlaceholder")}

@@ -191,7 +191,7 @@ const ConfigTheme = () => {
         className="size-11 cursor-pointer rounded-lg border border-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
       />
       {label}
-      <span className="font-mono text-[10px] tracking-tight text-gray-400 uppercase tabular-nums">
+      <span className="font-mono text-xs tracking-tight text-gray-500 uppercase tabular-nums">
         {value}
       </span>
     </label>

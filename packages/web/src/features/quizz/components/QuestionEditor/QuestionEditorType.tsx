@@ -125,7 +125,7 @@ const QuestionEditorType = () => {
 
   return (
     <div className="z-10 flex flex-col gap-3">
-      <div className="flex gap-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {TYPES.map((tp) => (
           <button
             key={tp.key}
@@ -133,7 +133,7 @@ const QuestionEditorType = () => {
             onClick={() => setType(tp.key)}
             aria-pressed={type === tp.key}
             className={clsx(
-              "focus-visible:outline-primary flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+              "focus-visible:outline-primary flex min-h-11 shrink-0 items-center rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
               type === tp.key
                 ? "bg-[var(--accent-contrast)] text-white"
                 : "bg-white text-gray-500 hover:bg-gray-100",
@@ -179,7 +179,7 @@ const QuestionEditorType = () => {
                 type="number"
                 value={currentQuestion[field] ?? ""}
                 onChange={setNum(field)}
-                className="rounded-lg border border-gray-200 px-2 py-1 text-gray-800 outline-none"
+                className="focus-visible:border-primary rounded-lg border border-gray-200 px-2 py-1 text-gray-800 focus-visible:outline-none"
               />
             </label>
           ))}
@@ -191,7 +191,7 @@ const QuestionEditorType = () => {
                 updateQuestion(currentIndex, { unit: e.target.value })
               }
               placeholder={t("quizz:slider.unitPlaceholder")}
-              className="rounded-lg border border-gray-200 px-2 py-1 text-gray-800 outline-none"
+              className="focus-visible:border-primary rounded-lg border border-gray-200 px-2 py-1 text-gray-800 focus-visible:outline-none"
             />
           </label>
         </div>

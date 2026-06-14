@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzia/common/constants"
 import type { SharedResult } from "@razzia/common/types/game"
 import Background from "@razzia/web/components/Background"
+import Button from "@razzia/web/components/Button"
 import Loader from "@razzia/web/components/Loader"
 import { useEvent, useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
@@ -200,7 +201,7 @@ const SharePage = ({ id }: Props) => {
                   ? undefined
                   : { duration: 0.5, ease: "easeOut", delay: 0.35 }
               }
-              className="flex flex-1 flex-col items-center gap-2"
+              className="flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "75%" }}
             >
               <p className="max-w-full truncate text-center text-sm font-bold text-white drop-shadow-md md:text-base px-1">
@@ -224,7 +225,7 @@ const SharePage = ({ id }: Props) => {
                   ? undefined
                   : { duration: 0.5, ease: "easeOut", delay: 0.6 }
               }
-              className="z-10 flex flex-1 flex-col items-center gap-2"
+              className="z-10 flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "90%" }}
             >
               <p className="max-w-full truncate text-center text-base font-bold text-white drop-shadow-md md:text-lg px-1">
@@ -248,7 +249,7 @@ const SharePage = ({ id }: Props) => {
                   ? undefined
                   : { duration: 0.5, ease: "easeOut", delay: 0.15 }
               }
-              className="flex flex-1 flex-col items-center gap-2"
+              className="flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "60%" }}
             >
               <p className="max-w-full truncate text-center text-xs font-bold text-white drop-shadow-md md:text-sm px-1">
@@ -295,13 +296,15 @@ const SharePage = ({ id }: Props) => {
           </div>
         )}
 
-        <button
+        <Button
+          variant="secondary"
+          size="lg"
           onClick={handleShareClick}
-          className="mt-8 flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-6 py-2.5 text-base font-bold text-[var(--accent-contrast)] shadow-lg transition-all hover:bg-white/90 active:scale-98 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] cursor-pointer"
+          className="mt-8 rounded-2xl"
         >
-          <Share2 className="size-5" />
+          <Share2 className="size-5" aria-hidden />
           <span>{t("results:share.copyLink")}</span>
-        </button>
+        </Button>
       </div>
     </Background>
   )

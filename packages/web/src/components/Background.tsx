@@ -10,7 +10,7 @@ const Background = ({ children }: PropsWithChildren) => {
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
-      <div className="absolute h-full max-h-svh w-full overflow-hidden">
+      <div className="fixed inset-0 overflow-hidden">
         {authBg ? (
           <img
             src={authBg}

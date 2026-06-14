@@ -293,7 +293,11 @@ const ConfigSubmissions = () => {
               transition={
                 reducedMotion
                   ? undefined
-                  : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+                  : {
+                      duration: 0.28,
+                      ease: "easeOut",
+                      delay: Math.min(index, 8) * 0.04,
+                    }
               }
             >
               {editingId === s.id ? (
@@ -305,7 +309,7 @@ const ConfigSubmissions = () => {
                   aria-label={t("manager:submissions.edit")}
                 />
               ) : (
-                <p className="truncate font-semibold text-gray-900">
+                <p className="line-clamp-2 font-semibold text-gray-900">
                   {s.question}
                 </p>
               )}

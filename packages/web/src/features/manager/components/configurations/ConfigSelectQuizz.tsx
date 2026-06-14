@@ -69,7 +69,11 @@ const ConfigSelectQuizz = () => {
             transition={
               reducedMotion
                 ? undefined
-                : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+                : {
+                    duration: 0.28,
+                    ease: "easeOut",
+                    delay: Math.min(index, 8) * 0.04,
+                  }
             }
           >
             <SelectableRow

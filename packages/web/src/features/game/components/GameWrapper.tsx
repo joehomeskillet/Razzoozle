@@ -114,7 +114,7 @@ const GameWrapper = ({
           the PIN shown on the slide) to come straight back to the game — their
           identity (points/place) is recovered via the durable clientId cookie. */}
       {manager && inviteCode && (
-        <div className="fixed bottom-3 left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
+        <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
           <div className="rounded bg-white p-1">
             <QRCodeSVG value={buildJoinUrl(inviteCode)} size={56} />
           </div>
@@ -155,8 +155,13 @@ const GameWrapper = ({
               </div>
             )}
 
-            <div className="flex w-full items-center justify-between gap-2 p-4">
-              <div className="flex flex-1 justify-start">
+            {/* Host control bar. On a narrow phone the right cluster holds up to
+                six >=44px controls, so the row must reflow rather than squeeze:
+                the bar wraps, the counter and Auto toggle keep their intrinsic
+                width (no rigid flex-1), and the right cluster grows to fill the
+                line and wraps its own buttons when it runs out of room. */}
+            <div className="flex w-full flex-wrap items-center justify-between gap-2 p-4">
+              <div className="flex shrink-0 justify-start">
                 {questionStates && (
                   <div className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black">
                     {`${questionStates.current} / ${questionStates.total}`}
@@ -165,19 +170,18 @@ const GameWrapper = ({
               </div>
 
               {manager && controls && (
-                <div className="flex flex-1 justify-center">
+                <div className="flex shrink-0 justify-center">
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={toggleAuto}
                     aria-pressed={autoOn}
-                    // ON state keeps an accent fill so the active mode is
-                    // unmistakable at a glance: white text on --accent-contrast
-                    // (computed to clear AA against white), with a matching
-                    // hover that stays on the accent rather than dropping to the
-                    // secondary gray hover.
+                    // ON = a quieter "active" treatment (NavItem-style: tinted
+                    // --accent-tint wash + accent text) rather than a solid fill,
+                    // so it reads as an enabled mode without competing with the
+                    // single solid-accent primary Next/Start CTA.
                     className={clsx("min-h-11", {
-                      "border-transparent bg-[var(--accent-contrast)] text-white shadow-sm hover:bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]":
+                      "border-[var(--accent-tint)] bg-[var(--accent-tint)] text-[var(--accent-contrast)] hover:bg-[var(--accent-tint)]":
                         autoOn,
                     })}
                     title={t("game:controls.autoTitle")}
@@ -185,7 +189,7 @@ const GameWrapper = ({
                     <span
                       className={clsx(
                         "relative h-5 w-9 rounded-full transition-colors",
-                        autoOn ? "bg-white/30" : "bg-gray-300",
+                        autoOn ? "bg-[var(--accent-contrast)]" : "bg-gray-300",
                       )}
                     >
                       <span
@@ -195,15 +199,21 @@ const GameWrapper = ({
                         )}
                       />
                     </span>
-                    {t("game:controls.autoMode")}{" "}
-                    {autoOn
-                      ? t("game:controls.autoOn")
-                      : t("game:controls.autoOff")}
+                    {/* Label collapses to the toggle pill alone under `sm` to
+                        keep the bar from overflowing on a host phone; the full
+                        label returns at `sm+`. aria-pressed + title carry the
+                        state for assistive tech when the text is hidden. */}
+                    <span className="hidden sm:inline">
+                      {t("game:controls.autoMode")}{" "}
+                      {autoOn
+                        ? t("game:controls.autoOn")
+                        : t("game:controls.autoOff")}
+                    </span>
                   </Button>
                 </div>
               )}
 
-              <div className="flex flex-1 justify-end gap-2">
+              <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
                 {/* Low-latency health widget. Self-hides unless the server emits
                     a health snapshot (i.e. low-latency mode is on), so it is
                     inert in normal mode. */}
@@ -263,7 +273,7 @@ const GameWrapper = ({
             </div>
 
             {!manager && (
-              <div className="z-50 flex items-center justify-between bg-white px-4 py-2 text-lg font-bold text-white">
+              <div className="z-50 flex items-center justify-between bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
                 <p className="text-gray-800">{player?.username}</p>
                 <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
                   {player?.points}

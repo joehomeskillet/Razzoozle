@@ -94,31 +94,28 @@ const QuestionEditorMedia = () => {
           />
           <div className="flex flex-wrap justify-center gap-2">
             <Button
+              variant="secondary"
               onClick={hadnleChangeMediaType("image")}
-              className={`bg-gray-200 text-gray-600 transition-colors hover:bg-gray-200`}
+              classNameContent="gap-1.5"
             >
-              <div className="flex items-center gap-1.5">
-                <Image className="size-6" />
-                <p>{t("quizz:question.media.image")}</p>
-              </div>
+              <Image className="size-6" />
+              <p>{t("quizz:question.media.image")}</p>
             </Button>
             <Button
+              variant="secondary"
               onClick={hadnleChangeMediaType("video")}
-              className={`bg-gray-200 text-gray-600 transition-colors hover:bg-gray-200`}
+              classNameContent="gap-1.5"
             >
-              <div className="flex items-center gap-1.5">
-                <Video className="size-6" />
-                <p>{t("quizz:question.media.video")}</p>
-              </div>
+              <Video className="size-6" />
+              <p>{t("quizz:question.media.video")}</p>
             </Button>
             <Button
+              variant="secondary"
               onClick={hadnleChangeMediaType("audio")}
-              className={`bg-gray-200 text-gray-600 transition-colors hover:bg-gray-200`}
+              classNameContent="gap-1.5"
             >
-              <div className="flex items-center gap-1.5">
-                <Music className="size-6" />
-                <p>{t("quizz:question.media.audio")}</p>
-              </div>
+              <Music className="size-6" />
+              <p>{t("quizz:question.media.audio")}</p>
             </Button>
           </div>
 
@@ -150,11 +147,8 @@ const QuestionEditorMedia = () => {
       )}
 
       {questionMedia?.type && (
-        <div className="absolute bottom-4">
-          <Button
-            className="rounded-sm bg-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-200"
-            onClick={handleRemoveMedia}
-          >
+        <div className="mt-2 flex justify-center">
+          <Button variant="secondary" onClick={handleRemoveMedia}>
             {t("common:delete")}
           </Button>
         </div>

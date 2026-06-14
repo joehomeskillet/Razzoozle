@@ -69,7 +69,7 @@ const QuizzEditorCard = ({
         ),
       )}
     >
-      <span className="absolute top-2 left-2 text-xs font-semibold text-gray-400">
+      <span className="absolute top-2 left-2 text-xs font-semibold text-gray-500">
         {index + 1}
       </span>
       <p className="truncate text-center text-xs font-semibold text-gray-700">
@@ -79,12 +79,12 @@ const QuizzEditorCard = ({
       <SlideMedia media={question.media} />
 
       {question.type === "slider" ? (
-        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-400">
+        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
           {question.min}–{question.max}
           {question.unit ? ` ${question.unit}` : ""}
         </div>
       ) : question.type === "type-answer" ? (
-        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-400">
+        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
           Aa
         </div>
       ) : (

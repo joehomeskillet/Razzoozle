@@ -221,7 +221,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
 
           <RevealSection index={1} label={t("submit:form.section.question")}>
             <QuestionEditorTitle />
-            <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm [&>div>div:first-child]:-mx-1 [&>div>div:first-child]:overflow-x-auto [&>div>div:first-child]:px-1 [&>div>div:first-child]:pb-1 [&>div>div:first-child>button]:min-h-11 [&>div>div:first-child>button]:shrink-0">
+            <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
               <QuestionEditorType />
             </div>
           </RevealSection>
