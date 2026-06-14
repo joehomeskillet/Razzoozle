@@ -50,5 +50,22 @@
     "autoOff": "disattiva",
     "autoTitle": "Modalità auto: avanza automaticamente",
     "fullscreen": "Schermo intero"
-  }
+  },
+  "avatar": {
+    "title": "Il tuo avatar",
+    "choose": "Scegli avatar",
+    "upload": "Carica immagine",
+    "uploading": "Caricamento…",
+    "uploaded": "Avatar caricato",
+    "skip": "Salta",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pausa",
+    "paused": "La partita è in pausa",
+    "resumeHint": "Riprendi non appena l'host riavvia",
+    "pauseGame": "Metti in pausa",
+    "resumeGame": "Riprendi la partita"
+  },
+  "playerReconnected": "{{name}} si è riconnesso"
 }

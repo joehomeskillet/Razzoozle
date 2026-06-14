@@ -25,7 +25,16 @@
     "notFound": "Aucun quizz trouvé",
     "pleaseCreate": "Veuillez d'abord créer un quizz",
     "pleaseSelect": "Veuillez sélectionner un quizz",
-    "startGame": "Démarrer la partie"
+    "startGame": "Démarrer la partie",
+    "archive": "Archiver",
+    "unarchive": "Restaurer",
+    "archived": "Archivé",
+    "archivedSection": "Archive",
+    "archivedHint": "Les quizz archivés sont masqués de la liste de jeu, mais conservés et toujours modifiables.",
+    "archivedToast": "Quizz archivé",
+    "unarchivedToast": "Quizz restauré",
+    "showArchived": "Afficher l'archive",
+    "hideArchived": "Masquer l'archive"
   },
   "result": {
     "aria": {
@@ -76,7 +85,10 @@
     "results": "Résultats",
     "design": "Apparence",
     "satellite": "Satellite",
-    "submissions": "Propositions"
+    "submissions": "Propositions",
+    "catalog": "Catalogue",
+    "ki": "IA",
+    "media": "Médias"
   },
   "satellite": {
     "title": "Écran satellite",
@@ -134,6 +146,16 @@
     "toast": {
       "imageUploaded": "Image envoyée",
       "saved": "Apparence enregistrée"
+    },
+    "templates": {
+      "title": "Modèles",
+      "save": "Enregistrer comme modèle",
+      "saved": "Modèle enregistré",
+      "namePrompt": "Nom du modèle",
+      "apply": "Appliquer",
+      "delete": "Supprimer",
+      "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
+      "none": "Aucun modèle enregistré pour l'instant"
     }
   },
   "submissions": {
@@ -151,6 +173,132 @@
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Chargement de l’aperçu …"
+    }
+  },
+  "media": {
+    "title": "Bibliothèque de médias",
+    "intro": "Gère images, audio et contenus générés au même endroit.",
+    "empty": "Aucun média pour l'instant.",
+    "emptyHeadline": "La bibliothèque est vide",
+    "upload": "Importer",
+    "uploading": "Envoi…",
+    "uploaded": "Média importé",
+    "delete": "Supprimer",
+    "deleteConfirm": "Veux-tu vraiment supprimer ce média ?",
+    "deleted": "Média supprimé",
+    "search": "Rechercher des médias",
+    "searchPlaceholder": "Rechercher des médias…",
+    "noResults": "Aucun média correspondant",
+    "tooLarge": "Le fichier est trop volumineux",
+    "uploadFailed": "Échec de l'envoi",
+    "filters": {
+      "all": "Tous",
+      "upload": "Importés",
+      "ai": "IA",
+      "theme": "Apparence"
+    },
+    "source": {
+      "upload": "Importés",
+      "ai": "IA",
+      "theme": "Apparence"
+    },
+    "category": {
+      "backgrounds": "Arrière-plans",
+      "questions": "Questions",
+      "generated": "Générés",
+      "avatars": "Avatars",
+      "audio": "Audio"
+    }
+  },
+  "catalog": {
+    "title": "Catalogue de questions",
+    "intro": "Rassemble des questions réutilisables et insère-les dans n'importe quel quizz.",
+    "empty": "Aucune question dans le catalogue pour l'instant.",
+    "emptyHeadline": "Le catalogue est vide",
+    "add": "Ajouter une question",
+    "addManual": "Créer une question",
+    "saveToCatalog": "Enregistrer dans le catalogue",
+    "saved": "Question enregistrée dans le catalogue",
+    "insert": "Insérer depuis le catalogue",
+    "insertTitle": "Choisis une question dans le catalogue",
+    "insertSuccess": "Question insérée",
+    "delete": "Retirer du catalogue",
+    "deleteConfirm": "Veux-tu vraiment retirer cette question du catalogue ?",
+    "deleted": "Question retirée",
+    "edit": "Modifier",
+    "updated": "Question du catalogue mise à jour",
+    "tags": "Mots-clés",
+    "tagsPlaceholder": "p. ex. géographie, facile",
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher dans le catalogue",
+    "noResults": "Aucune question correspondante",
+    "count": "{{count}} question",
+    "count_other": "{{count}} questions",
+    "preview": "Aperçu",
+    "source": {
+      "manual": "Manuelle",
+      "submission": "Proposition",
+      "editor": "Éditeur",
+      "ai": "IA"
+    },
+    "approveToCatalog": "Vers le catalogue plutôt que le quizz",
+    "approveToCatalogHint": "Place la question approuvée dans le catalogue plutôt que directement dans un quizz."
+  },
+  "ai": {
+    "title": "Paramètres IA",
+    "intro": "Connecte des fournisseurs pour la génération de texte et d'images. Les clés d'API restent sur le serveur et ne sont jamais envoyées au navigateur.",
+    "text": {
+      "title": "Génération de texte",
+      "description": "Choisis le fournisseur pour les questions, réponses et quizz entiers."
+    },
+    "image": {
+      "title": "Génération d'images",
+      "description": "Génération d'images locale via ComfyUI / Z-Image."
+    },
+    "provider": "Fournisseur",
+    "active": "Actif",
+    "off": "Désactivé",
+    "model": "Modèle",
+    "modelPlaceholder": "p. ex. llama3.2:3b",
+    "baseUrl": "URL de base",
+    "baseUrlPlaceholder": "https://…/v1",
+    "apiKey": "Clé d'API",
+    "apiKeyPlaceholder": "Saisis la clé…",
+    "keyConfigured": "Clé enregistrée",
+    "keyNotConfigured": "Aucune clé",
+    "keySaved": "Clé enregistrée",
+    "keyCleared": "Clé supprimée",
+    "saveKey": "Enregistrer la clé",
+    "clearKey": "Supprimer la clé",
+    "kind": {
+      "openai-compatible": "Compatible OpenAI",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "test": "Tester la connexion",
+    "testing": "Test…",
+    "testOk": "Connexion réussie",
+    "testFailed": "Échec de la connexion",
+    "save": "Enregistrer",
+    "saved": "Paramètres IA enregistrés",
+    "saveFailed": "Échec de l'enregistrement",
+    "generate": {
+      "title": "Générer avec l'IA",
+      "topic": "Thème",
+      "topicPlaceholder": "p. ex. géographie suisse",
+      "type": "Type de question",
+      "count": "Nombre de questions",
+      "question": "Générer une question",
+      "fromTopic": "Question à partir du thème",
+      "distractors": "Suggérer des réponses",
+      "quiz": "Générer un quizz",
+      "quizTitle": "Générer un quizz à partir du thème",
+      "generating": "Génération…",
+      "generated": "Généré",
+      "applied": "Appliqué",
+      "quizCreated": "Quizz créé",
+      "failed": "Échec de la génération",
+      "notConfigured": "Aucun fournisseur de texte configuré. Configure d'abord l'IA.",
+      "openInEditor": "Ouvrir dans l'éditeur"
     }
   }
 }

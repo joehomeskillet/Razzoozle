@@ -50,7 +50,13 @@
     "bonusQuestion": "Question bonus (points doublés)",
     "practiceQuestion": "Question d'entraînement (0 point)",
     "multipleSelect": "Choix multiple",
-    "typeAnswer": "Réponse texte"
+    "typeAnswer": "Réponse texte",
+    "choiceDesc": "Une seule bonne réponse",
+    "booleanDesc": "Vrai ou faux",
+    "sliderDesc": "Un nombre sur une échelle",
+    "pollDesc": "Sondage d'opinion, sans points",
+    "multipleSelectDesc": "Plusieurs bonnes réponses",
+    "typeAnswerDesc": "Réponse saisie librement"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
@@ -71,5 +77,13 @@
     "minAnswersRequired": "Au moins une réponse requise"
   },
   "addAnswerCountLabel": "Ajouter une réponse",
-  "removeAnswerCountLabel": "Supprimer une réponse"
+  "removeAnswerCountLabel": "Supprimer une réponse",
+  "bulkSelected": "{{count}} sélectionnées",
+  "bulkDelete": "Supprimer",
+  "bulkDeleteConfirm": "Vraiment supprimer les questions sélectionnées ?",
+  "bulkToCatalog": "Enregistrer dans le catalogue",
+  "themePicker": {
+    "label": "Apparence",
+    "global": "Apparence globale"
+  }
 }

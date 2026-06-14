@@ -25,7 +25,16 @@
     "notFound": "No se encontró ningún cuestionario",
     "pleaseCreate": "Por favor crea un cuestionario primero",
     "pleaseSelect": "Por favor selecciona un cuestionario",
-    "startGame": "Iniciar juego"
+    "startGame": "Iniciar juego",
+    "archive": "Archivar",
+    "unarchive": "Restaurar",
+    "archived": "Archivado",
+    "archivedSection": "Archivo",
+    "archivedHint": "Los cuestionarios archivados quedan ocultos de la lista de juego, pero se conservan y se pueden seguir editando.",
+    "archivedToast": "Cuestionario archivado",
+    "unarchivedToast": "Cuestionario restaurado",
+    "showArchived": "Mostrar archivo",
+    "hideArchived": "Ocultar archivo"
   },
   "result": {
     "aria": {
@@ -76,7 +85,10 @@
     "results": "Resultados",
     "design": "Diseño",
     "satellite": "Satélite",
-    "submissions": "Sugerencias"
+    "submissions": "Sugerencias",
+    "catalog": "Catálogo",
+    "ki": "IA",
+    "media": "Medios"
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -134,6 +146,16 @@
     "toast": {
       "imageUploaded": "Imagen subida",
       "saved": "Diseño guardado"
+    },
+    "templates": {
+      "title": "Plantillas",
+      "save": "Guardar como plantilla",
+      "saved": "Plantilla guardada",
+      "namePrompt": "Nombre de la plantilla",
+      "apply": "Aplicar",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
+      "none": "Aún no hay plantillas guardadas"
     }
   },
   "submissions": {
@@ -151,6 +173,132 @@
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Cargando vista previa …"
+    }
+  },
+  "media": {
+    "title": "Biblioteca de medios",
+    "intro": "Gestiona imágenes, audio y contenido generado en un solo lugar.",
+    "empty": "Aún no hay medios.",
+    "emptyHeadline": "La biblioteca está vacía",
+    "upload": "Subir",
+    "uploading": "Subiendo…",
+    "uploaded": "Medio subido",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Seguro que quieres eliminar este medio?",
+    "deleted": "Medio eliminado",
+    "search": "Buscar medios",
+    "searchPlaceholder": "Buscar medios…",
+    "noResults": "No hay medios que coincidan",
+    "tooLarge": "El archivo es demasiado grande",
+    "uploadFailed": "Error al subir",
+    "filters": {
+      "all": "Todos",
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "source": {
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "category": {
+      "backgrounds": "Fondos",
+      "questions": "Preguntas",
+      "generated": "Generados",
+      "avatars": "Avatares",
+      "audio": "Audio"
+    }
+  },
+  "catalog": {
+    "title": "Catálogo de preguntas",
+    "intro": "Reúne preguntas reutilizables e insértalas en cualquier cuestionario.",
+    "empty": "Aún no hay preguntas en el catálogo.",
+    "emptyHeadline": "El catálogo está vacío",
+    "add": "Añadir pregunta",
+    "addManual": "Crear pregunta nueva",
+    "saveToCatalog": "Guardar en el catálogo",
+    "saved": "Pregunta guardada en el catálogo",
+    "insert": "Insertar desde el catálogo",
+    "insertTitle": "Elige una pregunta del catálogo",
+    "insertSuccess": "Pregunta insertada",
+    "delete": "Quitar del catálogo",
+    "deleteConfirm": "¿Seguro que quieres quitar esta pregunta del catálogo?",
+    "deleted": "Pregunta eliminada",
+    "edit": "Editar",
+    "updated": "Pregunta del catálogo actualizada",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "p. ej. geografía, fácil",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar en el catálogo",
+    "noResults": "No hay preguntas que coincidan",
+    "count": "{{count}} pregunta",
+    "count_other": "{{count}} preguntas",
+    "preview": "Vista previa",
+    "source": {
+      "manual": "Manual",
+      "submission": "Sugerencia",
+      "editor": "Editor",
+      "ai": "IA"
+    },
+    "approveToCatalog": "Al catálogo en lugar del cuestionario",
+    "approveToCatalogHint": "Coloca la pregunta aprobada en el catálogo en vez de directamente en un cuestionario."
+  },
+  "ai": {
+    "title": "Ajustes de IA",
+    "intro": "Conecta proveedores para la generación de texto e imágenes. Las claves de API permanecen en el servidor y nunca se envían al navegador.",
+    "text": {
+      "title": "Generación de texto",
+      "description": "Elige el proveedor para preguntas, respuestas y cuestionarios completos."
+    },
+    "image": {
+      "title": "Generación de imágenes",
+      "description": "Generación local de imágenes mediante ComfyUI / Z-Image."
+    },
+    "provider": "Proveedor",
+    "active": "Activo",
+    "off": "Desactivado",
+    "model": "Modelo",
+    "modelPlaceholder": "p. ej. llama3.2:3b",
+    "baseUrl": "URL base",
+    "baseUrlPlaceholder": "https://…/v1",
+    "apiKey": "Clave de API",
+    "apiKeyPlaceholder": "Introduce la clave…",
+    "keyConfigured": "Clave configurada",
+    "keyNotConfigured": "Sin clave",
+    "keySaved": "Clave guardada",
+    "keyCleared": "Clave eliminada",
+    "saveKey": "Guardar clave",
+    "clearKey": "Borrar clave",
+    "kind": {
+      "openai-compatible": "Compatible con OpenAI",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "test": "Probar conexión",
+    "testing": "Probando…",
+    "testOk": "Conexión correcta",
+    "testFailed": "Conexión fallida",
+    "save": "Guardar",
+    "saved": "Ajustes de IA guardados",
+    "saveFailed": "Error al guardar",
+    "generate": {
+      "title": "Generar con IA",
+      "topic": "Tema",
+      "topicPlaceholder": "p. ej. geografía de Suiza",
+      "type": "Tipo de pregunta",
+      "count": "Número de preguntas",
+      "question": "Generar pregunta",
+      "fromTopic": "Pregunta a partir del tema",
+      "distractors": "Sugerir respuestas",
+      "quiz": "Generar cuestionario",
+      "quizTitle": "Generar cuestionario a partir del tema",
+      "generating": "Generando…",
+      "generated": "Generado",
+      "applied": "Aplicado",
+      "quizCreated": "Cuestionario creado",
+      "failed": "Error en la generación",
+      "notConfigured": "No hay proveedor de texto configurado. Configura primero la IA.",
+      "openInEditor": "Abrir en el editor"
     }
   }
 }

@@ -49,5 +49,23 @@
     "autoOff": "desactivado",
     "autoTitle": "Modo automático: avanza automáticamente",
     "fullscreen": "Pantalla completa"
-  }
+  },
+  "sending": "enviando…",
+  "avatar": {
+    "title": "Tu avatar",
+    "choose": "Elegir avatar",
+    "upload": "Subir imagen",
+    "uploading": "Subiendo…",
+    "uploaded": "Avatar subido",
+    "skip": "Omitir",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pausa",
+    "paused": "El juego está en pausa",
+    "resumeHint": "Continúas en cuanto el anfitrión reanude",
+    "pauseGame": "Pausar juego",
+    "resumeGame": "Reanudar juego"
+  },
+  "playerReconnected": "{{name}} se ha reconectado"
 }

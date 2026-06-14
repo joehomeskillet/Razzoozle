@@ -16,7 +16,16 @@
     "pleaseSelect": "Per favore seleziona un quiz",
     "startGame": "Inizia il gioco",
     "invalidJson": "File JSON non valido o incompleto",
-    "edit": "Modifica «{{name}}»"
+    "edit": "Modifica «{{name}}»",
+    "archive": "Archivia",
+    "unarchive": "Ripristina",
+    "archived": "Archiviato",
+    "archivedSection": "Archivio",
+    "archivedHint": "I quiz archiviati sono nascosti dall'elenco di gioco, ma restano conservati e modificabili.",
+    "archivedToast": "Quiz archiviato",
+    "unarchivedToast": "Quiz ripristinato",
+    "showArchived": "Mostra archivio",
+    "hideArchived": "Nascondi archivio"
   },
   "result": {
     "delete": "Elimina risultato",
@@ -67,7 +76,10 @@
     "results": "Risultati",
     "design": "Design",
     "satellite": "Satellite",
-    "submissions": "Proposte"
+    "submissions": "Proposte",
+    "catalog": "Catalogo",
+    "ki": "IA",
+    "media": "Media"
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -134,6 +146,16 @@
     "toast": {
       "imageUploaded": "Immagine caricata",
       "saved": "Design salvato"
+    },
+    "templates": {
+      "title": "Modelli",
+      "save": "Salva come modello",
+      "saved": "Modello salvato",
+      "namePrompt": "Nome del modello",
+      "apply": "Applica",
+      "delete": "Elimina",
+      "deleteConfirm": "Vuoi davvero eliminare il modello «{{name}}»",
+      "none": "Ancora nessun modello salvato"
     }
   },
   "submissions": {
@@ -151,6 +173,132 @@
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Caricamento anteprima …"
+    }
+  },
+  "media": {
+    "title": "Libreria multimediale",
+    "intro": "Gestisci immagini, audio e contenuti generati in un unico posto.",
+    "empty": "Ancora nessun media.",
+    "emptyHeadline": "La libreria è vuota",
+    "upload": "Carica",
+    "uploading": "Caricamento…",
+    "uploaded": "Media caricato",
+    "delete": "Elimina",
+    "deleteConfirm": "Vuoi davvero eliminare questo media?",
+    "deleted": "Media eliminato",
+    "search": "Cerca media",
+    "searchPlaceholder": "Cerca media…",
+    "noResults": "Nessun media corrispondente",
+    "tooLarge": "Il file è troppo grande",
+    "uploadFailed": "Caricamento non riuscito",
+    "filters": {
+      "all": "Tutti",
+      "upload": "Caricati",
+      "ai": "IA",
+      "theme": "Design"
+    },
+    "source": {
+      "upload": "Caricati",
+      "ai": "IA",
+      "theme": "Design"
+    },
+    "category": {
+      "backgrounds": "Sfondi",
+      "questions": "Domande",
+      "generated": "Generati",
+      "avatars": "Avatar",
+      "audio": "Audio"
+    }
+  },
+  "catalog": {
+    "title": "Catalogo delle domande",
+    "intro": "Raccogli domande riutilizzabili e inseriscile in qualsiasi quiz.",
+    "empty": "Ancora nessuna domanda nel catalogo.",
+    "emptyHeadline": "Il catalogo è vuoto",
+    "add": "Aggiungi domanda",
+    "addManual": "Crea nuova domanda",
+    "saveToCatalog": "Salva nel catalogo",
+    "saved": "Domanda salvata nel catalogo",
+    "insert": "Inserisci dal catalogo",
+    "insertTitle": "Scegli una domanda dal catalogo",
+    "insertSuccess": "Domanda inserita",
+    "delete": "Rimuovi dal catalogo",
+    "deleteConfirm": "Vuoi davvero rimuovere questa domanda dal catalogo?",
+    "deleted": "Domanda rimossa",
+    "edit": "Modifica",
+    "updated": "Domanda del catalogo aggiornata",
+    "tags": "Tag",
+    "tagsPlaceholder": "es. geografia, facile",
+    "search": "Cerca",
+    "searchPlaceholder": "Cerca nel catalogo",
+    "noResults": "Nessuna domanda corrispondente",
+    "count": "{{count}} domanda",
+    "count_other": "{{count}} domande",
+    "preview": "Anteprima",
+    "source": {
+      "manual": "Manuale",
+      "submission": "Proposta",
+      "editor": "Editor",
+      "ai": "IA"
+    },
+    "approveToCatalog": "Nel catalogo invece che nel quiz",
+    "approveToCatalogHint": "Metti la domanda approvata nel catalogo invece che direttamente in un quiz."
+  },
+  "ai": {
+    "title": "Impostazioni IA",
+    "intro": "Collega i provider per la generazione di testo e immagini. Le chiavi API restano sul server e non vengono mai inviate al browser.",
+    "text": {
+      "title": "Generazione di testo",
+      "description": "Scegli il provider per domande, risposte e quiz interi."
+    },
+    "image": {
+      "title": "Generazione di immagini",
+      "description": "Generazione di immagini in locale tramite ComfyUI / Z-Image."
+    },
+    "provider": "Provider",
+    "active": "Attivo",
+    "off": "Disattivato",
+    "model": "Modello",
+    "modelPlaceholder": "es. llama3.2:3b",
+    "baseUrl": "URL di base",
+    "baseUrlPlaceholder": "https://…/v1",
+    "apiKey": "Chiave API",
+    "apiKeyPlaceholder": "Inserisci la chiave…",
+    "keyConfigured": "Chiave impostata",
+    "keyNotConfigured": "Nessuna chiave",
+    "keySaved": "Chiave salvata",
+    "keyCleared": "Chiave rimossa",
+    "saveKey": "Salva chiave",
+    "clearKey": "Cancella chiave",
+    "kind": {
+      "openai-compatible": "Compatibile con OpenAI",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "test": "Prova connessione",
+    "testing": "Prova in corso…",
+    "testOk": "Connessione riuscita",
+    "testFailed": "Connessione non riuscita",
+    "save": "Salva",
+    "saved": "Impostazioni IA salvate",
+    "saveFailed": "Salvataggio non riuscito",
+    "generate": {
+      "title": "Genera con l'IA",
+      "topic": "Tema",
+      "topicPlaceholder": "es. geografia della Svizzera",
+      "type": "Tipo di domanda",
+      "count": "Numero di domande",
+      "question": "Genera domanda",
+      "fromTopic": "Domanda dal tema",
+      "distractors": "Suggerisci risposte",
+      "quiz": "Genera quiz",
+      "quizTitle": "Genera quiz dal tema",
+      "generating": "Generazione…",
+      "generated": "Generato",
+      "applied": "Applicato",
+      "quizCreated": "Quiz creato",
+      "failed": "Generazione non riuscita",
+      "notConfigured": "Nessun provider di testo configurato. Configura prima l'IA.",
+      "openInEditor": "Apri nell'editor"
     }
   }
 }

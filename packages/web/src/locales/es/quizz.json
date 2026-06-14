@@ -50,7 +50,13 @@
     "practiceQuestion": "Pregunta de práctica (0 puntos)",
     "slider": "Slider (número)",
     "multipleSelect": "Selección múltiple",
-    "typeAnswer": "Respuesta libre"
+    "typeAnswer": "Respuesta libre",
+    "choiceDesc": "Una respuesta correcta",
+    "booleanDesc": "Verdadero o falso",
+    "sliderDesc": "Un número en una escala",
+    "pollDesc": "Encuesta de opinión, sin puntuación",
+    "multipleSelectDesc": "Varias respuestas correctas",
+    "typeAnswerDesc": "Respuesta escrita libremente"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -71,5 +77,13 @@
     "minAnswersRequired": "Se requiere al menos una respuesta"
   },
   "addAnswerCountLabel": "Añadir respuesta",
-  "removeAnswerCountLabel": "Eliminar respuesta"
+  "removeAnswerCountLabel": "Eliminar respuesta",
+  "bulkSelected": "{{count}} seleccionadas",
+  "bulkDelete": "Eliminar",
+  "bulkDeleteConfirm": "¿Seguro que quieres eliminar las preguntas seleccionadas?",
+  "bulkToCatalog": "Guardar en el catálogo",
+  "themePicker": {
+    "label": "Diseño",
+    "global": "Diseño global"
+  }
 }

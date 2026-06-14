@@ -52,5 +52,27 @@
     "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",
     "notFound": "Proposta non trovata.",
     "quizzNotFound": "Quiz non trovato."
+  },
+  "display": {
+    "invalidCode": "Codice di abbinamento non valido o scaduto",
+    "notConnected": "Lo schermo satellite non è più connesso",
+    "notManager": "Solo il manager della partita può abbinare uno schermo"
+  },
+  "catalog": {
+    "notFound": "Domanda del catalogo non trovata.",
+    "saveFailed": "Impossibile salvare la domanda nel catalogo.",
+    "deleteFailed": "Impossibile rimuovere la domanda.",
+    "invalid": "La domanda è incompleta."
+  },
+  "ai": {
+    "notConfigured": "Nessun provider IA configurato.",
+    "noKey": "Nessuna chiave API impostata per questo provider.",
+    "generationFailed": "La generazione con IA non è riuscita.",
+    "invalidOutput": "La risposta dell'IA non era valida. Riprova.",
+    "providerError": "Il provider IA ha restituito un errore.",
+    "rateLimited": "Troppe richieste all'IA. Attendi un momento.",
+    "testFailed": "Impossibile connettersi al provider IA.",
+    "saveFailed": "Impossibile salvare le impostazioni IA.",
+    "unsupported": "Questa funzione non è supportata dal provider selezionato."
   }
 }

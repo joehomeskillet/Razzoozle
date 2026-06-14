@@ -52,5 +52,27 @@
     "rateLimited": "Has enviado demasiadas preguntas. Espera un momento.",
     "notFound": "Sugerencia no encontrada.",
     "quizzNotFound": "Quiz no encontrado."
+  },
+  "display": {
+    "invalidCode": "Código de vinculación inválido o caducado",
+    "notConnected": "La pantalla satélite ya no está conectada",
+    "notManager": "Solo el manager del juego puede vincular una pantalla"
+  },
+  "catalog": {
+    "notFound": "Pregunta del catálogo no encontrada.",
+    "saveFailed": "No se pudo guardar la pregunta en el catálogo.",
+    "deleteFailed": "No se pudo eliminar la pregunta.",
+    "invalid": "La pregunta está incompleta."
+  },
+  "ai": {
+    "notConfigured": "No hay proveedor de IA configurado.",
+    "noKey": "No hay clave de API configurada para este proveedor.",
+    "generationFailed": "La generación con IA ha fallado.",
+    "invalidOutput": "La respuesta de la IA no es válida. Inténtalo de nuevo.",
+    "providerError": "El proveedor de IA ha devuelto un error.",
+    "rateLimited": "Demasiadas solicitudes a la IA. Espera un momento.",
+    "testFailed": "No se pudo conectar con el proveedor de IA.",
+    "saveFailed": "No se pudieron guardar los ajustes de IA.",
+    "unsupported": "El proveedor seleccionado no admite esta función."
   }
 }

@@ -42,7 +42,13 @@
     "bonusQuestion": "Domanda bonus (punti doppi)",
     "practiceQuestion": "Domanda di prova (0 punti)",
     "multipleSelect": "Selezione multipla",
-    "typeAnswer": "Risposta testuale"
+    "typeAnswer": "Risposta testuale",
+    "choiceDesc": "Una sola risposta corretta",
+    "booleanDesc": "Vero o falso",
+    "sliderDesc": "Un numero su una scala",
+    "pollDesc": "Sondaggio d'opinione, senza punteggio",
+    "multipleSelectDesc": "Più risposte corrette",
+    "typeAnswerDesc": "Risposta scritta liberamente"
   },
   "slider": {
     "min": "Min",
@@ -71,5 +77,13 @@
     "minAnswersRequired": "È richiesta almeno una risposta"
   },
   "addAnswerCountLabel": "Aggiungi risposta",
-  "removeAnswerCountLabel": "Rimuovi risposta"
+  "removeAnswerCountLabel": "Rimuovi risposta",
+  "bulkSelected": "{{count}} selezionate",
+  "bulkDelete": "Elimina",
+  "bulkDeleteConfirm": "Vuoi davvero eliminare le domande selezionate?",
+  "bulkToCatalog": "Salva nel catalogo",
+  "themePicker": {
+    "label": "Design",
+    "global": "Design globale"
+  }
 }
