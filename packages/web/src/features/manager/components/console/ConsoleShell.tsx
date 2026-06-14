@@ -194,7 +194,7 @@ const ConsoleShell = ({
           aria-labelledby={`${baseId}-tab-${activeKey}`}
           tabIndex={0}
           className={clsx(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
+            "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
             "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
           )}
         >

@@ -19,7 +19,7 @@ import {
   QuizzEditorProvider,
   useQuizzEditor,
 } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
-import { BookOpen, Library, Pencil, Trash2, X } from "lucide-react"
+import { BookOpen, Library, Pencil, SearchX, Trash2, X } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
@@ -112,7 +112,7 @@ const CatalogQuestionForm = ({
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col bg-gray-50 p-4 sm:p-6">
         <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
           <section className="flex flex-col gap-2">
             <QuestionEditorTitle />
@@ -411,94 +411,102 @@ const ConfigCatalog = () => {
             }}
           />
         </div>
+      ) : filteredEntries.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          headline={t("manager:catalog.noResults")}
+          hint={t("manager:catalog.search")}
+        />
       ) : (
         <motion.div
-          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+          className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={
             reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
           }
         >
-          {filteredEntries.length === 0 ? (
-            <p className="rounded-xl bg-white p-4 text-sm text-gray-500 outline-2 -outline-offset-2 outline-gray-200">
-              {t("manager:catalog.noResults")}
-            </p>
-          ) : (
-            filteredEntries.map((entry, index) => {
-              const type = entry.question.type ?? "choice"
-              const source = entry.source ?? "manual"
+          {filteredEntries.map((entry, index) => {
+            const type = entry.question.type ?? "choice"
+            const source = entry.source ?? "manual"
 
-              return (
-                <motion.article
-                  key={entry.id}
-                  className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200"
-                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                  transition={
-                    reducedMotion
-                      ? undefined
-                      : {
-                          duration: 0.28,
-                          ease: "easeOut",
-                          delay: Math.min(index, 8) * 0.04,
-                        }
-                  }
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 font-semibold text-gray-900">
-                        {entry.question.question}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+            return (
+              <motion.article
+                key={entry.id}
+                className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200"
+                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={
+                  reducedMotion
+                    ? undefined
+                    : {
+                        duration: 0.28,
+                        ease: "easeOut",
+                        delay: Math.min(index, 8) * 0.04,
+                      }
+                }
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 font-semibold text-gray-900">
+                      {entry.question.question}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                        {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                        {t(`manager:catalog.source.${source}`)}
+                      </span>
+                      {(entry.tags ?? []).map((tag, tagIndex) => (
+                        <span
+                          key={`${tag}-${tagIndex}`}
+                          className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
+                        >
+                          {tag}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
-                          {t(`manager:catalog.source.${source}`)}
-                        </span>
-                        {(entry.tags ?? []).map((tag, tagIndex) => (
-                          <span
-                            key={`${tag}-${tagIndex}`}
-                            className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500">
-                        {formatDate(entry.addedAt)}
-                      </p>
+                      ))}
                     </div>
-
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => openEditModal(entry)}
-                      >
-                        <Pencil className="size-4" aria-hidden />
-                        {t("manager:catalog.edit")}
-                      </Button>
-                      <AlertDialog
-                        trigger={
-                          <Button type="button" variant="danger" size="sm">
-                            <Trash2 className="size-4" aria-hidden />
-                            {t("manager:catalog.delete")}
-                          </Button>
-                        }
-                        title={t("manager:catalog.delete")}
-                        description={t("manager:catalog.deleteConfirm")}
-                        confirmLabel={t("common:delete")}
-                        onConfirm={() => handleDelete(entry.id)}
-                      />
-                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {formatDate(entry.addedAt)}
+                    </p>
                   </div>
-                </motion.article>
-              )
-            })
-          )}
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditModal(entry)}
+                      aria-label={t("manager:catalog.edit")}
+                      title={t("manager:catalog.edit")}
+                      className="shrink-0 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                    >
+                      <Pencil className="size-5" aria-hidden />
+                    </Button>
+                    <AlertDialog
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={t("manager:catalog.delete")}
+                          title={t("manager:catalog.delete")}
+                          className="shrink-0 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="size-5" aria-hidden />
+                        </Button>
+                      }
+                      title={t("manager:catalog.delete")}
+                      description={t("manager:catalog.deleteConfirm")}
+                      confirmLabel={t("common:delete")}
+                      onConfirm={() => handleDelete(entry.id)}
+                    />
+                  </div>
+                </div>
+              </motion.article>
+            )
+          })}
         </motion.div>
       )}
 

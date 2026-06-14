@@ -278,6 +278,13 @@ const ConfigSubmissions = () => {
           icon={Inbox}
           headline={t("manager:submissions.emptyHeadline")}
           hint={t("manager:submissions.empty")}
+          action={{
+            label: t("manager:tabs.catalog"),
+            onClick: () =>
+              window.dispatchEvent(
+                new CustomEvent("manager:config-tab", { detail: "catalog" }),
+              ),
+          }}
         />
       </div>
     )
@@ -286,7 +293,7 @@ const ConfigSubmissions = () => {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <motion.div
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+        className="min-h-0 flex-1 space-y-3 p-0.5"
         initial={reducedMotion ? false : { opacity: 0, y: 12 }}
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={

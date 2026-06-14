@@ -9,10 +9,22 @@ import type { Quizz } from "@razzia/common/types/game"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
 import {
+  EmptyState,
+  Field,
+  SectionCard,
+  SubGroup,
+} from "@razzia/web/features/manager/components/console"
+import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
-import { Sparkles } from "lucide-react"
+import {
+  CheckCircle2,
+  ImagePlus,
+  Sparkles,
+  Wand2,
+  XCircle,
+} from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -31,9 +43,11 @@ const ConfigAI = () => {
   const [settings, setSettings] = useState<AISettingsPublic | null>(null)
   const [keyInput, setKeyInput] = useState("")
   const [testing, setTesting] = useState(false)
+  const [lastTest, setLastTest] = useState<"ok" | "failed" | null>(null)
   const [topic, setTopic] = useState("")
   const [count, setCount] = useState(5)
   const [generating, setGenerating] = useState(false)
+  const [generated, setGenerated] = useState(false)
 
   useEffect(() => {
     socket.emit(EVENTS.AI.GET_SETTINGS)
@@ -41,6 +55,7 @@ const ConfigAI = () => {
 
   useEffect(() => {
     setKeyInput("")
+    setLastTest(null)
   }, [settings?.text.activeProvider])
 
   useEvent(
@@ -53,6 +68,7 @@ const ConfigAI = () => {
     useCallback(
       (result: AITestResult) => {
         setTesting(false)
+        setLastTest(result.ok ? "ok" : "failed")
         if (result.ok) {
           toast.success(t(result.message))
         } else {
@@ -76,6 +92,7 @@ const ConfigAI = () => {
       ({ quizz }: { quizz: Quizz }) => {
         socket.emit(EVENTS.QUIZZ.SAVE, quizz)
         setGenerating(false)
+        setGenerated(true)
         toast.success(t("manager:ai.generate.quizCreated"))
       },
       [socket, t],
@@ -160,6 +177,7 @@ const ConfigAI = () => {
   }
 
   const testProvider = () => {
+    setLastTest(null)
     setTesting(true)
     socket.emit(EVENTS.AI.TEST_PROVIDER, {})
   }
@@ -171,6 +189,7 @@ const ConfigAI = () => {
       return
     }
 
+    setGenerated(false)
     setGenerating(true)
     socket.emit(EVENTS.AI.GENERATE_QUIZ, {
       topic: trimmedTopic,
@@ -180,10 +199,12 @@ const ConfigAI = () => {
 
   if (settings === null) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
-        <div className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200">
-          <p className="text-sm text-gray-500">{t("manager:ai.intro")}</p>
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <EmptyState
+          icon={Sparkles}
+          headline={t("manager:ai.title")}
+          hint={t("manager:ai.intro")}
+        />
       </div>
     )
   }
@@ -195,27 +216,16 @@ const ConfigAI = () => {
           (provider) => provider.id === settings.text.activeProvider,
         )
 
+  const textConfigured = Boolean(selectedProvider?.keyConfigured)
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-gray-50 p-6">
-      <header className="space-y-1">
-        <h2 className="text-lg font-semibold text-gray-900">
-          {t("manager:ai.title")}
-        </h2>
-        <p className="text-sm text-gray-500">{t("manager:ai.intro")}</p>
-      </header>
-
-      <section className="space-y-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200">
-        <div>
-          <h3 className="font-semibold text-gray-900">
-            {t("manager:ai.text.title")}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {t("manager:ai.text.description")}
-          </p>
-        </div>
-
-        <label className="block space-y-1 text-sm font-semibold text-gray-700">
-          <span>{t("manager:ai.provider")}</span>
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <SectionCard
+        icon={<Wand2 className="size-5" aria-hidden />}
+        title={t("manager:ai.text.title")}
+        description={t("manager:ai.text.description")}
+      >
+        <Field label={t("manager:ai.provider")}>
           <select
             value={settings.text.activeProvider}
             onChange={(event) => setActiveProvider(event.target.value)}
@@ -228,12 +238,11 @@ const ConfigAI = () => {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
         {selectedProvider && (
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block space-y-1 text-sm font-semibold text-gray-700">
-              <span>{t("manager:ai.model")}</span>
+            <Field label={t("manager:ai.model")}>
               <Input
                 value={selectedProvider.model}
                 placeholder={t("manager:ai.modelPlaceholder")}
@@ -244,11 +253,10 @@ const ConfigAI = () => {
                 }
                 className="w-full"
               />
-            </label>
+            </Field>
 
             {selectedProvider.kind === "openai-compatible" && (
-              <label className="block space-y-1 text-sm font-semibold text-gray-700">
-                <span>{t("manager:ai.baseUrl")}</span>
+              <Field label={t("manager:ai.baseUrl")}>
                 <Input
                   value={selectedProvider.baseUrl ?? ""}
                   placeholder={t("manager:ai.baseUrlPlaceholder")}
@@ -259,10 +267,10 @@ const ConfigAI = () => {
                   }
                   className="w-full"
                 />
-              </label>
+              </Field>
             )}
 
-            <div className="space-y-2 md:col-span-2">
+            <SubGroup className="space-y-2 md:col-span-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={providerStatusClass(
@@ -277,8 +285,7 @@ const ConfigAI = () => {
                   {t(`manager:ai.kind.${selectedProvider.kind}`)}
                 </span>
               </div>
-              <label className="block space-y-1 text-sm font-semibold text-gray-700">
-                <span>{t("manager:ai.apiKey")}</span>
+              <Field label={t("manager:ai.apiKey")}>
                 <Input
                   type="password"
                   value={keyInput}
@@ -286,7 +293,7 @@ const ConfigAI = () => {
                   onChange={(event) => setKeyInput(event.target.value)}
                   className="w-full"
                 />
-              </label>
+              </Field>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -305,62 +312,74 @@ const ConfigAI = () => {
                   {t("manager:ai.clearKey")}
                 </Button>
               </div>
-            </div>
+            </SubGroup>
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 border-t border-gray-200 pt-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={testProvider}
-            disabled={testing}
-          >
-            {testing ? t("manager:ai.testing") : t("manager:ai.test")}
-          </Button>
-          <Button type="button" onClick={saveSettings}>
-            {t("manager:ai.save")}
-          </Button>
-        </div>
-      </section>
-
-      <section className="space-y-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200">
-        <div>
-          <h3 className="font-semibold text-gray-900">
-            {t("manager:ai.image.title")}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {t("manager:ai.image.description")}
-          </p>
-        </div>
-        <div className="grid gap-2 md:grid-cols-2">
-          {settings.image.providers.map((provider) => (
-            <div
-              key={provider.id}
-              className="rounded-lg bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+        <div className="space-y-2 border-t border-gray-200 pt-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={testProvider}
+              disabled={testing}
             >
-              <p className="font-semibold text-gray-800">{provider.label}</p>
-              {provider.baseUrl && (
-                <p className="break-all text-sm text-gray-500">
-                  {provider.baseUrl}
-                </p>
-              )}
-            </div>
-          ))}
+              {testing ? t("manager:ai.testing") : t("manager:ai.test")}
+            </Button>
+            <Button type="button" onClick={saveSettings}>
+              {t("manager:ai.save")}
+            </Button>
+          </div>
+          <div aria-live="polite" className="min-h-5">
+            {testing && (
+              <p className="text-sm text-gray-500">{t("manager:ai.testing")}</p>
+            )}
+            {!testing && lastTest === "ok" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+                <CheckCircle2 className="size-3.5" aria-hidden />
+                {t("manager:ai.testOk")}
+              </span>
+            )}
+            {!testing && lastTest === "failed" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                <XCircle className="size-3.5" aria-hidden />
+                {t("manager:ai.testFailed")}
+              </span>
+            )}
+          </div>
         </div>
-      </section>
+      </SectionCard>
 
-      <section className="space-y-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-5 text-gray-600" aria-hidden />
-          <h3 className="font-semibold text-gray-900">
-            {t("manager:ai.generate.quizTitle")}
-          </h3>
-        </div>
+      <SectionCard
+        icon={<ImagePlus className="size-5" aria-hidden />}
+        title={t("manager:ai.image.title")}
+        description={t("manager:ai.image.description")}
+      >
+        <SubGroup>
+          <div className="grid gap-2 md:grid-cols-2">
+            {settings.image.providers.map((provider) => (
+              <div
+                key={provider.id}
+                className="rounded-lg bg-white p-3 outline-1 -outline-offset-1 outline-gray-200"
+              >
+                <p className="font-semibold text-gray-800">{provider.label}</p>
+                {provider.baseUrl && (
+                  <p className="break-all text-sm text-gray-500">
+                    {provider.baseUrl}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </SubGroup>
+      </SectionCard>
 
+      <SectionCard
+        icon={<Sparkles className="size-5" aria-hidden />}
+        title={t("manager:ai.generate.quizTitle")}
+      >
         <div className="grid gap-3 md:grid-cols-[1fr_8rem]">
-          <label className="block space-y-1 text-sm font-semibold text-gray-700">
-            <span>{t("manager:ai.generate.topic")}</span>
+          <Field label={t("manager:ai.generate.topic")}>
             <Input
               value={topic}
               maxLength={AI.TOPIC_MAX_LEN}
@@ -368,9 +387,8 @@ const ConfigAI = () => {
               onChange={(event) => setTopic(event.target.value)}
               className="w-full"
             />
-          </label>
-          <label className="block space-y-1 text-sm font-semibold text-gray-700">
-            <span>{t("manager:ai.generate.count")}</span>
+          </Field>
+          <Field label={t("manager:ai.generate.count")}>
             <Input
               type="number"
               min={AI.QUIZ_MIN_QUESTIONS}
@@ -381,7 +399,7 @@ const ConfigAI = () => {
               }
               className="w-full"
             />
-          </label>
+          </Field>
         </div>
 
         <Button
@@ -393,7 +411,29 @@ const ConfigAI = () => {
             ? t("manager:ai.generate.generating")
             : t("manager:ai.generate.quiz")}
         </Button>
-      </section>
+
+        <div aria-live="polite" className="min-h-5">
+          {generating && (
+            <p className="text-sm text-gray-500">
+              {t("manager:ai.generate.generating")}
+            </p>
+          )}
+          {!generating && !textConfigured && (
+            <p className="text-sm text-gray-500">
+              {t("manager:ai.generate.notConfigured")}
+            </p>
+          )}
+          {!generating && generated && (
+            <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+              <CheckCircle2 className="size-3.5" aria-hidden />
+              {t("manager:ai.generate.generated")}
+              <span className="font-medium text-green-800/80">
+                {t("manager:ai.generate.openInEditor")}
+              </span>
+            </span>
+          )}
+        </div>
+      </SectionCard>
     </div>
   )
 }

@@ -251,6 +251,7 @@
     "default": "Default",
     "showFooter": "Show \"Razzia\" footer",
     "upload": "Image",
+    "preview": "Preview",
     "uiColors": "UI colors",
     "colors": {
       "primary": "Primary",
@@ -281,6 +282,7 @@
       "apply": "Apply",
       "delete": "Delete",
       "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
+      "emptyHeadline": "No templates yet",
       "none": "No templates saved yet"
     }
   },
