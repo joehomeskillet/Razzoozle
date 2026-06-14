@@ -170,6 +170,18 @@ describe("BUG 1 — lobby disconnect grace", () => {
       (e) => e.event === EVENTS.GAME.RESET,
     )
     expect(reSocketResets.length).toBe(0)
+
+    expect(
+      ioEmitted.some(
+        (e) =>
+          e.target === "sock-manager" &&
+          e.event === EVENTS.MANAGER.PLAYER_RECONNECTED &&
+          (e.payload as { id?: string; username?: string }).id ===
+            "sock-alice-2" &&
+          (e.payload as { id?: string; username?: string }).username ===
+            "Alice",
+      ),
+    ).toBe(true)
   })
 
   it("a lobby player who never returns is removed after the grace window", () => {

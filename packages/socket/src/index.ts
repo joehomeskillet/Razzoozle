@@ -11,10 +11,14 @@ import { catalogSocketHandlers } from "@razzia/socket/handlers/catalog"
 import { displaySocketHandlers } from "@razzia/socket/handlers/display"
 import { gameSocketHandlers } from "@razzia/socket/handlers/game"
 import { managerSocketHandlers } from "@razzia/socket/handlers/manager"
+import { mediaSocketHandlers } from "@razzia/socket/handlers/media"
 import { quizzSocketHandlers } from "@razzia/socket/handlers/quizz"
 import { resultsSocketHandlers } from "@razzia/socket/handlers/results"
 import type { SocketHandler } from "@razzia/socket/handlers/types"
-import { initConfig } from "@razzia/socket/services/config"
+import {
+  cleanupStaleAvatars,
+  initConfig,
+} from "@razzia/socket/services/config"
 import Registry from "@razzia/socket/services/registry"
 import { createServer } from "http"
 import { Server as ServerIO } from "socket.io"
@@ -66,6 +70,12 @@ void registry
     console.error("loadSnapshot failed:", error)
   })
   .finally(() => {
+    try {
+      cleanupStaleAvatars(registry.getAllGames().map((game) => game.gameId))
+    } catch (error) {
+      console.error("cleanupStaleAvatars failed:", error)
+    }
+
     registry.startSnapshotTask()
   })
 
@@ -73,6 +83,7 @@ const socketHandlers: SocketHandler[] = [
   managerSocketHandlers,
   quizzSocketHandlers,
   catalogSocketHandlers,
+  mediaSocketHandlers,
   aiSocketHandlers,
   gameSocketHandlers,
   resultsSocketHandlers,

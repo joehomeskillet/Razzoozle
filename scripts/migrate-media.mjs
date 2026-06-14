@@ -1,0 +1,396 @@
+#!/usr/bin/env node
+import fs from "node:fs"
+import path from "node:path"
+
+const args = process.argv.slice(2)
+const dryRun = args.includes("--dry") || args.includes("--dry-run")
+const verbose = dryRun || args.includes("--verbose")
+
+const readArgValue = (name) => {
+  const index = args.indexOf(name)
+
+  if (index === -1) {
+    return undefined
+  }
+
+  return args[index + 1]
+}
+
+const configRoot = path.resolve(
+  readArgValue("--config") ?? process.env.CONFIG_PATH ?? "config",
+)
+
+const mediaRoot = path.join(configRoot, "media")
+const themeRoot = path.join(configRoot, "theme")
+const quizzRoot = path.join(configRoot, "quizz")
+const manifestPath = path.join(configRoot, "media-manifest.json")
+const mediaDirs = {
+  backgrounds: path.join(mediaRoot, "backgrounds"),
+  questions: path.join(mediaRoot, "questions"),
+  generated: path.join(mediaRoot, "generated"),
+  avatars: path.join(mediaRoot, "avatars"),
+  genericAvatars: path.join(mediaRoot, "avatars", "generic"),
+  audio: path.join(mediaRoot, "audio"),
+}
+
+const imageExts = new Set([".webp", ".png", ".jpg", ".jpeg"])
+const audioExts = new Set([".mp3", ".wav", ".ogg", ".m4a"])
+
+const timestamp = () =>
+  new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/u, "Z")
+
+const log = (message) => {
+  if (verbose) {
+    console.log(message)
+  }
+}
+
+const plan = (message, action) => {
+  log(`${dryRun ? "[dry] " : ""}${message}`)
+
+  if (!dryRun) {
+    action()
+  }
+}
+
+const ensureConfigExists = () => {
+  if (!fs.existsSync(configRoot)) {
+    throw new Error(`Config directory not found: ${configRoot}`)
+  }
+}
+
+const ensureDir = (dir) => {
+  plan(`mkdir -p ${dir}`, () => {
+    fs.mkdirSync(dir, { recursive: true })
+  })
+}
+
+const sameOrMissing = (src, dest) =>
+  fs.existsSync(src) && fs.existsSync(dest) && fs.statSync(src).ino === fs.statSync(dest).ino
+
+const moveFile = (src, dest) => {
+  if (!fs.existsSync(src)) {
+    return
+  }
+
+  if (sameOrMissing(src, dest)) {
+    return
+  }
+
+  if (fs.existsSync(dest)) {
+    plan(`remove duplicate legacy ${src}`, () => {
+      fs.unlinkSync(src)
+    })
+
+    return
+  }
+
+  ensureDir(path.dirname(dest))
+  plan(`move ${src} -> ${dest}`, () => {
+    try {
+      fs.renameSync(src, dest)
+    } catch (error) {
+      if (error && error.code === "EXDEV") {
+        fs.copyFileSync(src, dest)
+        fs.unlinkSync(src)
+
+        return
+      }
+
+      throw error
+    }
+  })
+}
+
+const listFiles = (dir) => {
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(dir, entry.name))
+}
+
+const walkFiles = (dir) => {
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  const out = []
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+
+    if (entry.isDirectory()) {
+      out.push(...walkFiles(full))
+    } else if (entry.isFile()) {
+      out.push(full)
+    }
+  }
+
+  return out
+}
+
+const isBackgroundAsset = (file) =>
+  /^(?:auth|managerGame|playerGame|logo)-.+\.webp$/u.test(path.basename(file))
+
+const isQuestionAsset = (file) =>
+  /^(?:q\d+|wu\d+).+\.webp$/iu.test(path.basename(file))
+
+const isAudioAsset = (file) => audioExts.has(path.extname(file).toLowerCase())
+
+const moveLegacyFiles = () => {
+  for (const file of listFiles(themeRoot)) {
+    const name = path.basename(file)
+
+    if (isBackgroundAsset(file)) {
+      moveFile(file, path.join(mediaDirs.backgrounds, name))
+    } else if (isQuestionAsset(file)) {
+      moveFile(file, path.join(mediaDirs.questions, name))
+    } else if (isAudioAsset(file)) {
+      moveFile(file, path.join(mediaDirs.audio, name))
+    }
+  }
+
+  for (const file of listFiles(mediaRoot)) {
+    const name = path.basename(file)
+
+    if (/^gen-.+\.webp$/u.test(name)) {
+      moveFile(file, path.join(mediaDirs.generated, name))
+    }
+  }
+}
+
+const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf-8"))
+
+const writeJsonIfChanged = (file, original, next) => {
+  const serialized = `${JSON.stringify(next, null, 2)}\n`
+
+  if (serialized === original) {
+    return
+  }
+
+  plan(`rewrite ${file}`, () => {
+    fs.writeFileSync(file, serialized)
+  })
+}
+
+const rewriteStrings = (value, rewrite) => {
+  if (typeof value === "string") {
+    return rewrite(value)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => rewriteStrings(item, rewrite))
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, rewriteStrings(item, rewrite)]),
+    )
+  }
+
+  return value
+}
+
+const themeRef = (value) => {
+  if (!value.startsWith("/theme/")) {
+    return value
+  }
+
+  return `/media/backgrounds/${path.basename(value)}`
+}
+
+const questionRef = (value) => {
+  const rewriteThemePath = (pathname) =>
+    pathname.startsWith("/theme/")
+      ? `/media/questions/${path.basename(pathname)}`
+      : undefined
+
+  if (value.startsWith("/theme/")) {
+    return rewriteThemePath(value) ?? value
+  }
+
+  if (/^\/media\/gen-[^/]+\.webp$/u.test(value)) {
+    return `/media/generated/${path.basename(value)}`
+  }
+
+  try {
+    const url = new URL(value)
+    const rewritten = rewriteThemePath(url.pathname)
+
+    return rewritten ?? value
+  } catch {
+    return value
+  }
+}
+
+const rewriteTheme = () => {
+  const file = path.join(themeRoot, "theme.json")
+
+  if (!fs.existsSync(file)) {
+    return
+  }
+
+  const original = fs.readFileSync(file, "utf-8")
+  const parsed = JSON.parse(original)
+  const next = rewriteStrings(parsed, themeRef)
+  writeJsonIfChanged(file, original, next)
+}
+
+const rewriteQuizzes = () => {
+  for (const file of listFiles(quizzRoot).filter((item) => item.endsWith(".json"))) {
+    const original = fs.readFileSync(file, "utf-8")
+    const parsed = JSON.parse(original)
+    const next = rewriteStrings(parsed, questionRef)
+    writeJsonIfChanged(file, original, next)
+  }
+}
+
+const deleteLegacyPngs = () => {
+  for (const file of walkFiles(configRoot)) {
+    if (path.extname(file).toLowerCase() !== ".png") {
+      continue
+    }
+
+    const stem = path.basename(file, ".png")
+    const sameDirWebp = path.join(path.dirname(file), `${stem}.webp`)
+    const migratedWebp = [
+      path.join(mediaDirs.questions, `${stem}.webp`),
+      path.join(mediaDirs.backgrounds, `${stem}.webp`),
+      path.join(mediaDirs.generated, `${stem}.webp`),
+    ].some((candidate) => fs.existsSync(candidate))
+
+    if (fs.existsSync(sameDirWebp) || migratedWebp) {
+      plan(`delete legacy png ${file}`, () => {
+        fs.unlinkSync(file)
+      })
+    }
+  }
+}
+
+const mediaType = (file) => {
+  const ext = path.extname(file).toLowerCase()
+
+  if (imageExts.has(ext)) {
+    return "image"
+  }
+
+  if (audioExts.has(ext)) {
+    return "audio"
+  }
+
+  return undefined
+}
+
+const safeId = (parts) => {
+  const id = parts
+    .join("-")
+    .replace(/\.[a-z0-9]+$/iu, "")
+    .replace(/[^A-Za-z0-9_-]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+
+  return id || "media"
+}
+
+const sourceFor = (category, file) => {
+  const name = path.basename(file)
+
+  if (category === "generated" && /^gen-/u.test(name)) {
+    return "ai"
+  }
+
+  if (
+    category === "backgrounds" ||
+    category === "questions" ||
+    category === "audio" ||
+    (category === "avatars" && file.includes(`${path.sep}generic${path.sep}`))
+  ) {
+    return "theme"
+  }
+
+  return "upload"
+}
+
+const buildManifest = () => {
+  const categories = ["backgrounds", "questions", "generated", "avatars", "audio"]
+  const seen = new Set()
+  const items = []
+
+  for (const category of categories) {
+    const dir = path.join(mediaRoot, category)
+
+    for (const file of walkFiles(dir)) {
+      const type = mediaType(file)
+
+      if (!type) {
+        continue
+      }
+
+      const rel = path.relative(path.join(mediaRoot, category), file).split(path.sep)
+      const url = `/media/${category}/${rel.join("/")}`
+      const baseId = safeId([category, ...rel])
+      let id = baseId
+      let suffix = 2
+
+      while (seen.has(id)) {
+        id = `${baseId}-${suffix}`
+        suffix += 1
+      }
+
+      seen.add(id)
+      items.push({
+        id,
+        filename: rel.join("/"),
+        url,
+        size: fs.statSync(file).size,
+        type,
+        category,
+        source: sourceFor(category, file),
+        uploadedAt: fs.statSync(file).mtime.toISOString(),
+      })
+    }
+  }
+
+  plan(`write ${manifestPath}`, () => {
+    fs.writeFileSync(manifestPath, `${JSON.stringify(items, null, 2)}\n`)
+  })
+}
+
+const backupConfig = () => {
+  const backup = `${configRoot}.bak-${timestamp()}`
+
+  plan(`backup ${configRoot} -> ${backup}`, () => {
+    fs.cpSync(configRoot, backup, {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+    })
+  })
+}
+
+const main = () => {
+  ensureConfigExists()
+  backupConfig()
+
+  for (const dir of Object.values(mediaDirs)) {
+    ensureDir(dir)
+  }
+
+  moveLegacyFiles()
+  rewriteTheme()
+  rewriteQuizzes()
+  deleteLegacyPngs()
+  buildManifest()
+
+  log("Migration plan complete.")
+}
+
+try {
+  main()
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exitCode = 1
+}

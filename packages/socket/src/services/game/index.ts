@@ -1,4 +1,4 @@
-import { BOT, EVENTS } from "@razzia/common/constants"
+import { AVATARS_GENERIC, BOT, EVENTS } from "@razzia/common/constants"
 import type { Player, QuestionResult, Quizz } from "@razzia/common/types/game"
 import type {
   MetricKind,
@@ -12,7 +12,13 @@ import {
   type StatusDataMap,
 } from "@razzia/common/types/game/status"
 import type { LowLatencyMode } from "@razzia/common/validators/game-config"
-import { getGameConfig, saveResult } from "@razzia/socket/services/config"
+import { setAvatarValidator } from "@razzia/common/validators/avatar"
+import {
+  deleteGameAvatars,
+  getGameConfig,
+  saveEphemeralAvatar,
+  saveResult,
+} from "@razzia/socket/services/config"
 import { BotManager } from "@razzia/socket/services/game/bot-manager"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
@@ -42,12 +48,15 @@ export interface GameSnapshot {
     leaderboard: Player[]
     questionsHistory: QuestionResult[]
     autoMode: boolean
+    paused: boolean
+    pausedState: { status: Status; data: StatusDataMap[Status] } | null
   }
   players: Array<{
     clientId: string
     username: string
     points: number
     streak: number
+    avatar?: string
   }>
 }
 
@@ -262,8 +271,77 @@ class Game {
 
   // Player actions
 
-  join(socket: Socket, username: string) {
-    this.playerManager.join(socket, username)
+  join(socket: Socket, username: string, avatar?: string) {
+    if (!avatar) {
+      this.playerManager.join(socket, username)
+
+      return
+    }
+
+    void (async () => {
+      const resolvedAvatar = await this.resolveAvatar(socket, avatar)
+
+      if (!resolvedAvatar) {
+        return
+      }
+
+      this.playerManager.join(socket, username, resolvedAvatar)
+    })()
+  }
+
+  async setAvatar(socket: Socket, avatar: unknown): Promise<void> {
+    const resolvedAvatar = await this.resolveAvatar(socket, avatar)
+
+    if (!resolvedAvatar) {
+      return
+    }
+
+    const clientId = socket.handshake.auth.clientId as string
+    const player = this.playerManager.setAvatar(clientId, resolvedAvatar)
+
+    if (player) {
+      this.playerManager.broadcastPlayerUpdate(player)
+    }
+  }
+
+  private async resolveAvatar(
+    socket: Socket,
+    avatar: unknown,
+  ): Promise<string | undefined> {
+    if (avatar === undefined || avatar === null || avatar === "") {
+      return undefined
+    }
+
+    const result = setAvatarValidator.safeParse({ avatar })
+
+    if (!result.success) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, result.error.issues[0].message)
+
+      return undefined
+    }
+
+    const value = result.data.avatar
+
+    if ((AVATARS_GENERIC as readonly string[]).includes(value)) {
+      return value
+    }
+
+    if (value.startsWith("data:")) {
+      try {
+        return await saveEphemeralAvatar(this.gameId, socket.id, value)
+      } catch (error) {
+        socket.emit(
+          EVENTS.GAME.ERROR_MESSAGE,
+          error instanceof Error ? error.message : "errors:avatar.invalid",
+        )
+
+        return undefined
+      }
+    }
+
+    socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:avatar.invalid")
+
+    return undefined
   }
 
   kickPlayer(socket: Socket, playerId: string) {
@@ -423,6 +501,10 @@ class Game {
       status,
       player: { username: player.username, points: player.points },
       ...(alreadyAnswered !== undefined ? { alreadyAnswered } : {}),
+    })
+    this.io.to(this._manager.id).emit(EVENTS.MANAGER.PLAYER_RECONNECTED, {
+      id: player.id,
+      username: player.username,
     })
     socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
 
@@ -645,6 +727,7 @@ class Game {
     // leaves a setTimeout retaining a dead Game (and bot state is dropped).
     this.botManager.removeAll()
 
+    deleteGameAvatars(this.gameId)
     metrics.clear(this.gameId)
   }
 
@@ -662,6 +745,14 @@ class Game {
 
   setAutoMode(on: boolean) {
     this.round.setAutoMode(on)
+  }
+
+  pause(): void {
+    this.round.pause()
+  }
+
+  resume(): void {
+    this.round.resume()
   }
 
   // ── Crash-recovery snapshot ──────────────────────────────────────────────

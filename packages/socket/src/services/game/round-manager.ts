@@ -95,6 +95,12 @@ export class RoundManager {
   // Sim mode: true while the SELECT_ANSWER window is open. Gates Game.addBots
   // (no mid-window bot injection) via isAnswerWindowOpen().
   private answerWindowOpen = false
+  private paused = false
+  private pauseState: { status: Status; data: StatusDataMap[Status] } | null =
+    null
+  private pausedState: { status: Status; data: StatusDataMap[Status] } | null =
+    null
+  private pauseWaiters: Array<() => void> = []
 
   // ── Low-latency mode state (only populated when enabled) ──────────────────
   private readonly ll: LowLatencyMode
@@ -128,6 +134,10 @@ export class RoundManager {
   }
 
   setAutoMode(on: boolean): void {
+    if (this.paused) {
+      return
+    }
+
     this.autoMode = on
 
     if (!on) {
@@ -161,6 +171,21 @@ export class RoundManager {
       }
 
       this.autoTimer = setTimeout(() => {
+        if (this.paused) {
+          void this.waitWhilePaused().then(() => {
+            if (!this.started || !this.autoMode) {
+              return
+            }
+
+            if (this.opts.quizz.questions[this.currentQuestion + 1]) {
+              this.currentQuestion += 1
+              void this.newQuestion()
+            }
+          })
+
+          return
+        }
+
         if (!this.started || !this.autoMode) {
           return
         }
@@ -171,6 +196,91 @@ export class RoundManager {
         }
       }, AUTO_LEADERBOARD_MS)
     }, AUTO_RESULT_MS)
+  }
+
+  private isPausableStatus(status: Status): boolean {
+    return (
+      status === STATUS.SHOW_LEADERBOARD ||
+      status === STATUS.SHOW_START ||
+      status === STATUS.SHOW_PREPARED ||
+      status === STATUS.WAIT ||
+      status === STATUS.SHOW_ROOM
+    )
+  }
+
+  private rememberPauseState<T extends Status>(
+    status: T,
+    data: StatusDataMap[T],
+  ): void {
+    this.pauseState = { status, data }
+  }
+
+  private broadcast<T extends Status>(
+    status: T,
+    data: StatusDataMap[T],
+  ): void {
+    this.rememberPauseState(status, data)
+    this.opts.broadcast(status, data)
+  }
+
+  private send<T extends Status>(
+    target: string,
+    status: T,
+    data: StatusDataMap[T],
+  ): void {
+    if (target === this.opts.getManagerId()) {
+      this.rememberPauseState(status, data)
+    }
+
+    this.opts.send(target, status, data)
+  }
+
+  private waitWhilePaused(): Promise<void> {
+    if (!this.paused) {
+      return Promise.resolve()
+    }
+
+    return new Promise((resolve) => {
+      this.pauseWaiters.push(resolve)
+    })
+  }
+
+  pause(): void {
+    if (this.paused) {
+      return
+    }
+
+    if (!this.pauseState || !this.isPausableStatus(this.pauseState.status)) {
+      console.log("Pause rejected: current status is not pausable")
+
+      return
+    }
+
+    this.paused = true
+    this.pausedState = this.pauseState
+    this.opts.broadcast(STATUS.PAUSED, { reason: "paused" })
+  }
+
+  resume(): void {
+    if (!this.paused) {
+      return
+    }
+
+    const state = this.pausedState
+    this.paused = false
+    this.pausedState = null
+
+    if (state) {
+      this.broadcast(state.status, state.data)
+    }
+
+    const waiters = this.pauseWaiters
+    this.pauseWaiters = []
+    waiters.forEach((resolve) => resolve())
+  }
+
+  isPaused(): boolean {
+    return this.paused
   }
 
   isStarted(): boolean {
@@ -193,6 +303,8 @@ export class RoundManager {
     leaderboard: Player[]
     questionsHistory: QuestionResult[]
     autoMode: boolean
+    paused: boolean
+    pausedState: { status: Status; data: StatusDataMap[Status] } | null
   } {
     // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
     // them from BOTH the leaderboard AND each question's playerAnswers — a
@@ -215,6 +327,8 @@ export class RoundManager {
         ),
       })),
       autoMode: this.autoMode,
+      paused: this.paused,
+      pausedState: this.pausedState,
     }
   }
 
@@ -229,6 +343,8 @@ export class RoundManager {
     leaderboard: Player[]
     questionsHistory: QuestionResult[]
     autoMode: boolean
+    paused?: boolean
+    pausedState?: { status: Status; data: StatusDataMap[Status] } | null
   }): void {
     this.started = snap.started
     this.currentQuestion = snap.currentQuestion
@@ -236,6 +352,9 @@ export class RoundManager {
     this.questionsHistory = snap.questionsHistory.map((q) => ({ ...q }))
     // Force OFF: never auto-advance a restored game regardless of saved value.
     this.autoMode = false
+    this.paused = snap.paused ?? false
+    this.pausedState = snap.pausedState ?? null
+    this.pauseState = snap.pausedState ?? null
 
     // No live question is resumed — drop partial answers + transient anchors.
     this.playersAnswers = []
@@ -248,6 +367,9 @@ export class RoundManager {
     this.seenMessageIds.clear()
     this.answerMeta.clear()
     this.answerCountThrottle.cancel()
+    const waiters = this.pauseWaiters
+    this.pauseWaiters = []
+    waiters.forEach((resolve) => resolve())
   }
 
   getReconnectInfo() {
@@ -274,14 +396,16 @@ export class RoundManager {
 
     this.started = true
 
-    this.opts.broadcast(STATUS.SHOW_START, {
+    this.broadcast(STATUS.SHOW_START, {
       time: 3,
       subject: this.opts.quizz.subject,
     })
 
     await sleep(3)
+    await this.waitWhilePaused()
 
     this.opts.io.to(this.opts.gameId).emit(EVENTS.GAME.START_COOLDOWN)
+    this.pauseState = null
     await this.opts.cooldown.start(3)
 
     void this.newQuestion()
@@ -293,6 +417,7 @@ export class RoundManager {
     }
 
     this.clearAuto()
+    await this.waitWhilePaused()
 
     const question = this.opts.quizz.questions[this.currentQuestion]
 
@@ -303,21 +428,23 @@ export class RoundManager {
       total: this.opts.quizz.questions.length,
     })
 
-    this.opts.broadcast(STATUS.SHOW_PREPARED, {
+    this.broadcast(STATUS.SHOW_PREPARED, {
       totalAnswers: question.answers?.length ?? 0,
       questionNumber: this.currentQuestion + 1,
     })
 
     await sleep(2)
+    await this.waitWhilePaused()
 
     if (!this.started) {
       return
     }
+    this.pauseState = null
 
     const imageMedia =
       question.media?.type === MEDIA_TYPES.IMAGE ? question.media : undefined
 
-    this.opts.broadcast(STATUS.SHOW_QUESTION, {
+    this.broadcast(STATUS.SHOW_QUESTION, {
       question: question.question,
       media: imageMedia,
       cooldown: question.cooldown,
@@ -362,7 +489,7 @@ export class RoundManager {
       }
     }
 
-    this.opts.broadcast(STATUS.SELECT_ANSWER, {
+    this.broadcast(STATUS.SELECT_ANSWER, {
       question: question.question,
       media: question.media,
       time: question.time,
@@ -616,7 +743,7 @@ export class RoundManager {
       const rank = index + 1
       const aheadPlayer = sortedPlayers[index - 1]
 
-      this.opts.send(player.id, STATUS.SHOW_RESULT, {
+      this.send(player.id, STATUS.SHOW_RESULT, {
         correct: player.lastCorrect,
         message: player.lastPoll
           ? "game:pollThanks"
@@ -641,7 +768,7 @@ export class RoundManager {
         ? Math.round(guesses.reduce((s, v) => s + v, 0) / guesses.length)
         : undefined
 
-    this.opts.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
+    this.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
       ...question,
       // Question is validator-inferred, so these are optional; the status
       // payload requires concrete arrays. Default to empty for slider/poll.
@@ -700,6 +827,10 @@ export class RoundManager {
     clientMessageId?: string,
     answerText?: string,
   ): void {
+    if (this.paused) {
+      return
+    }
+
     // SERVER receive timestamp — the only clock trusted for scoring. Captured
     // first thing so the value is unaffected by anything below it.
     const serverReceivedAtMs = Date.now()
@@ -858,7 +989,7 @@ export class RoundManager {
       })
     }
 
-    this.opts.send(socket.id, STATUS.WAIT, {
+    this.send(socket.id, STATUS.WAIT, {
       text: "game:waitingForAnswers",
     })
 
@@ -923,6 +1054,10 @@ export class RoundManager {
   }
 
   nextQuestion(socket: Socket): void {
+    if (this.paused) {
+      return
+    }
+
     if (!this.started) {
       return
     }
@@ -998,13 +1133,13 @@ export class RoundManager {
         })),
       })
 
-      this.opts.send(this.opts.getManagerId(), STATUS.FINISHED, {
+      this.send(this.opts.getManagerId(), STATUS.FINISHED, {
         subject: this.opts.quizz.subject,
         top,
       })
 
       this.leaderboard.forEach((player, index) => {
-        this.opts.send(player.id, STATUS.FINISHED, {
+        this.send(player.id, STATUS.FINISHED, {
           subject: this.opts.quizz.subject,
           top,
           rank: index + 1,
@@ -1016,7 +1151,7 @@ export class RoundManager {
 
     const oldLeaderboard = this.tempOldLeaderboard ?? this.leaderboard
 
-    this.opts.send(this.opts.getManagerId(), STATUS.SHOW_LEADERBOARD, {
+    this.send(this.opts.getManagerId(), STATUS.SHOW_LEADERBOARD, {
       oldLeaderboard: oldLeaderboard.slice(0, 5),
       leaderboard: this.leaderboard.slice(0, 5),
     })

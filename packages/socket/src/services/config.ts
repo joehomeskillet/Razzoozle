@@ -1,9 +1,12 @@
 import {
   AI_PROVIDER_OFF,
   AI_TEXT_PROVIDER_PRESETS,
+  AVATAR_MAX_BYTES,
   DEFAULT_MANAGER_PASSWORD,
   EXAMPLE_QUIZZ,
+  MEDIA_CATEGORIES,
   THEME_SLOTS,
+  type MediaCategory,
   type ThemeSlot,
 } from "@razzia/common/constants"
 import type {
@@ -35,13 +38,15 @@ import { gameResultValidator } from "@razzia/socket/services/validators"
 import { toWebp } from "@razzia/socket/services/webp"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { submissionRecordValidator } from "@razzia/common/validators/submission"
-import type { z } from "zod"
+import { z } from "zod"
 import type {
   Submission,
   SubmissionMeta,
 } from "@razzia/common/types/submission"
+import type { MediaMeta } from "@razzia/common/types/media"
 import fs from "fs"
-import { resolve } from "path"
+import { basename, extname, relative, resolve } from "path"
+import { nanoid } from "nanoid"
 
 export type { GameConfig } from "@razzia/common/validators/game-config"
 
@@ -59,6 +64,120 @@ export const assertSafeId = (id: string): void => {
   if (typeof id !== "string" || !SAFE_ID.test(id)) {
     throw new Error("Invalid id")
   }
+}
+
+const MEDIA_MANIFEST = "media-manifest.json"
+const MEDIA_ROOT = "media"
+const MEDIA_IMAGE_MIME = /^image\/(?:png|jpeg|webp)$/u
+const MEDIA_AUDIO_MIME = /^audio\/(?:mpeg|mp3|wav|ogg)$/u
+const DATA_URL_RE = /^data:([^;,]+);base64,(.+)$/u
+
+const ensureDir = (dir: string): void => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+}
+
+const ensureMediaDirs = (): void => {
+  ensureDir(getPath(MEDIA_ROOT))
+
+  for (const category of MEDIA_CATEGORIES) {
+    ensureDir(getPath(`${MEDIA_ROOT}/${category}`))
+  }
+
+  ensureDir(getPath(`${MEDIA_ROOT}/avatars/generic`))
+}
+
+const isMediaCategory = (value: string): value is MediaCategory =>
+  MEDIA_CATEGORIES.includes(value as MediaCategory)
+
+const safeAssetPath = (value: string): boolean => {
+  if (/^\/theme\/[\w.-]+$/u.test(value)) {
+    return true
+  }
+
+  if (!value.startsWith("/media/")) {
+    return false
+  }
+
+  const segments = value.slice("/media/".length).split("/")
+
+  return (
+    segments.length > 0 &&
+    segments.every(
+      (segment) =>
+        segment.length > 0 &&
+        segment !== "." &&
+        segment !== ".." &&
+        /^[A-Za-z0-9_.-]+$/u.test(segment),
+    )
+  )
+}
+
+const assetRef = z
+  .string()
+  .refine(safeAssetPath, "errors:theme.invalidAsset")
+  .nullable()
+
+const socketThemeValidator = z.object({
+  colorPrimary: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+  colorSecondary: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+  colorText: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor")
+    .default("#ffffff"),
+  answerColors: z.tuple([
+    z
+      .string()
+      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+    z
+      .string()
+      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+    z
+      .string()
+      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+    z
+      .string()
+      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+  ]),
+  answerTextColor: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor")
+    .default("#ffffff"),
+  accentColor: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor")
+    .default("#ff9900"),
+  radius: z.number().min(0).max(40).default(16),
+  scrim: z.number().min(0).max(100).default(40),
+  appTitle: z.string().max(40).nullable().default(null),
+  logo: assetRef.default(null),
+  showBranding: z.boolean().default(true),
+  backgrounds: z.object({
+    auth: assetRef,
+    managerGame: assetRef,
+    playerGame: assetRef,
+  }),
+})
+
+const parseTheme = (data: unknown): Theme => {
+  const commonResult = themeValidator.safeParse(data)
+
+  if (commonResult.success) {
+    return commonResult.data
+  }
+
+  const socketResult = socketThemeValidator.safeParse(data)
+
+  if (!socketResult.success) {
+    throw socketResult.error
+  }
+
+  return socketResult.data
 }
 
 export const initConfig = () => {
@@ -115,10 +234,10 @@ export const initConfig = () => {
     fs.mkdirSync(submissionsDir, { recursive: true })
   }
 
-  const mediaDir = getPath("media")
+  ensureMediaDirs()
 
-  if (!fs.existsSync(mediaDir)) {
-    fs.mkdirSync(mediaDir, { recursive: true })
+  if (!fs.existsSync(getPath(MEDIA_MANIFEST))) {
+    fs.writeFileSync(getPath(MEDIA_MANIFEST), "[]")
   }
 
   const catalogDir = getPath("catalog")
@@ -711,28 +830,333 @@ export const toPublicAISettings = (s: AISettings): AISettingsPublic => ({
   image: s.image,
 })
 
-// Persist ComfyUI-produced PNG bytes into config/media under a server-generated
-// name and return its public "/media/<file>" path (served by nginx from the
-// config volume, mirroring saveBackgroundImage's /theme/ mechanism). The bytes
-// are fetched over HTTP by the caller so the socket container never needs to
-// reach the ComfyUI host filesystem. `destName` is server-generated
+const manifestPath = () => getPath(MEDIA_MANIFEST)
+
+const readMediaManifest = (): MediaMeta[] => {
+  const file = manifestPath()
+
+  if (!fs.existsSync(file)) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf-8")) as unknown
+
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed.flatMap((item): MediaMeta[] => {
+      if (
+        typeof item !== "object" ||
+        item === null ||
+        !("id" in item) ||
+        !("filename" in item) ||
+        !("url" in item) ||
+        !("size" in item) ||
+        !("type" in item) ||
+        !("category" in item) ||
+        !("source" in item) ||
+        !("uploadedAt" in item)
+      ) {
+        return []
+      }
+
+      const candidate = item as Record<string, unknown>
+
+      if (
+        typeof candidate.id !== "string" ||
+        typeof candidate.filename !== "string" ||
+        typeof candidate.url !== "string" ||
+        typeof candidate.size !== "number" ||
+        (candidate.type !== "image" && candidate.type !== "audio") ||
+        typeof candidate.category !== "string" ||
+        !isMediaCategory(candidate.category) ||
+        (candidate.source !== "upload" &&
+          candidate.source !== "ai" &&
+          candidate.source !== "theme") ||
+        typeof candidate.uploadedAt !== "string"
+      ) {
+        return []
+      }
+
+      return [candidate as unknown as MediaMeta]
+    })
+  } catch {
+    return []
+  }
+}
+
+const writeMediaManifest = (items: MediaMeta[]): void => {
+  fs.writeFileSync(manifestPath(), JSON.stringify(items, null, 2))
+}
+
+export const getMediaList = (): MediaMeta[] => readMediaManifest()
+
+const normalizeMediaStem = (filename: string): string => {
+  const stem = basename(filename, extname(filename))
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/gu, "-")
+    .replace(/[^a-z0-9_-]/gu, "")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 64)
+
+  return stem || "media"
+}
+
+const extensionForMime = (mime: string): string => {
+  if (mime === "image/png" || mime === "image/jpeg" || mime === "image/webp") {
+    return ".webp"
+  }
+
+  if (mime === "audio/mpeg" || mime === "audio/mp3") {
+    return ".mp3"
+  }
+
+  if (mime === "audio/wav") {
+    return ".wav"
+  }
+
+  if (mime === "audio/ogg") {
+    return ".ogg"
+  }
+
+  throw new Error("errors:media.invalidDataUrl")
+}
+
+const decodeDataUrl = (
+  dataUrl: string,
+  accepted: RegExp,
+  invalidMessage: string,
+): { mime: string; buffer: Buffer } => {
+  const match = DATA_URL_RE.exec(dataUrl)
+
+  if (!match || !accepted.test(match[1])) {
+    throw new Error(invalidMessage)
+  }
+
+  return {
+    mime: match[1],
+    buffer: Buffer.from(match[2], "base64"),
+  }
+}
+
+const assertSafeFilename = (filename: string): void => {
+  if (filename.startsWith("/") || filename.includes("\\")) {
+    throw new Error("Invalid id")
+  }
+
+  for (const segment of filename.split("/")) {
+    if (!segment || segment === "." || segment === "..") {
+      throw new Error("Invalid id")
+    }
+
+    const stem = segment.replace(/\.[a-z0-9]+$/iu, "")
+    assertSafeId(stem)
+  }
+}
+
+const mediaFilePath = (category: MediaCategory, filename: string): string => {
+  assertSafeFilename(filename)
+
+  const mediaRoot = resolve(getPath(MEDIA_ROOT))
+  const target = resolve(mediaRoot, category, filename)
+  const rel = relative(mediaRoot, target)
+
+  if (rel.startsWith("..") || rel === "" || resolve(mediaRoot, rel) !== target) {
+    throw new Error("Invalid id")
+  }
+
+  return target
+}
+
+const upsertMediaMeta = (meta: MediaMeta): MediaMeta => {
+  const manifest = readMediaManifest().filter((item) => item.id !== meta.id)
+  writeMediaManifest([...manifest, meta])
+
+  return meta
+}
+
+const removeManifestWhere = (
+  predicate: (_item: MediaMeta) => boolean,
+): void => {
+  writeMediaManifest(readMediaManifest().filter((item) => !predicate(item)))
+}
+
+const createMediaMeta = (input: {
+  filename: string
+  category: MediaCategory
+  size: number
+  type: "image" | "audio"
+  source: MediaMeta["source"]
+}): MediaMeta => {
+  const id = `${input.category}-${input.filename.replace(/\.[a-z0-9]+$/iu, "")}`
+  assertSafeId(id)
+
+  return {
+    id,
+    filename: input.filename,
+    url: `/media/${input.category}/${input.filename}`,
+    size: input.size,
+    type: input.type,
+    category: input.category,
+    source: input.source,
+    uploadedAt: new Date().toISOString(),
+  }
+}
+
+export const saveMediaFile = async (
+  dataUrl: string,
+  filename: string,
+  category?: MediaCategory,
+): Promise<MediaMeta> => {
+  const { mime, buffer } = decodeDataUrl(
+    dataUrl,
+    /^(?:image|audio)\//u,
+    "errors:media.invalidDataUrl",
+  )
+  const inferredType = mime.startsWith("audio/") ? "audio" : "image"
+  const resolvedCategory = category ?? (inferredType === "audio" ? "audio" : "questions")
+
+  if (!isMediaCategory(resolvedCategory)) {
+    throw new Error("errors:media.invalidCategory")
+  }
+
+  if (inferredType === "image" && !MEDIA_IMAGE_MIME.test(mime)) {
+    throw new Error("errors:media.invalidDataUrl")
+  }
+
+  if (inferredType === "audio" && !MEDIA_AUDIO_MIME.test(mime)) {
+    throw new Error("errors:media.invalidDataUrl")
+  }
+
+  ensureMediaDirs()
+
+  const safeStem = normalizeMediaStem(filename)
+  const storedFilename = `${safeStem}-${nanoid(8)}${extensionForMime(mime)}`
+  const output =
+    inferredType === "image" ? await toWebp(buffer) : Buffer.from(buffer)
+  const target = mediaFilePath(resolvedCategory, storedFilename)
+  fs.writeFileSync(target, output)
+
+  return upsertMediaMeta(
+    createMediaMeta({
+      filename: storedFilename,
+      category: resolvedCategory,
+      size: output.byteLength,
+      type: inferredType,
+      source: "upload",
+    }),
+  )
+}
+
+export const deleteMediaFile = (id: string): void => {
+  assertSafeId(id)
+
+  const manifest = readMediaManifest()
+  const item = manifest.find((entry) => entry.id === id)
+
+  if (!item) {
+    throw new Error("errors:media.notFound")
+  }
+
+  const target = mediaFilePath(item.category, item.filename)
+
+  if (fs.existsSync(target)) {
+    fs.unlinkSync(target)
+  }
+
+  writeMediaManifest(manifest.filter((entry) => entry.id !== id))
+}
+
+export const saveEphemeralAvatar = async (
+  gameId: string,
+  playerId: string,
+  dataUrl: string,
+): Promise<string> => {
+  assertSafeId(gameId)
+  assertSafeId(playerId)
+
+  const { buffer } = decodeDataUrl(
+    dataUrl,
+    MEDIA_IMAGE_MIME,
+    "errors:avatar.invalid",
+  )
+
+  if (buffer.byteLength > AVATAR_MAX_BYTES) {
+    throw new Error("errors:avatar.tooLarge")
+  }
+
+  const webp = await toWebp(buffer)
+
+  if (webp.byteLength > AVATAR_MAX_BYTES) {
+    throw new Error("errors:avatar.tooLarge")
+  }
+
+  const dir = getPath(`${MEDIA_ROOT}/avatars/${gameId}`)
+  ensureDir(dir)
+  fs.writeFileSync(resolve(dir, `${playerId}.webp`), webp)
+
+  return `/media/avatars/${gameId}/${playerId}.webp`
+}
+
+export const deleteGameAvatars = (gameId: string): void => {
+  assertSafeId(gameId)
+  fs.rmSync(getPath(`${MEDIA_ROOT}/avatars/${gameId}`), {
+    recursive: true,
+    force: true,
+  })
+}
+
+export const cleanupStaleAvatars = (activeGameIds: Iterable<string>): void => {
+  const active = new Set(activeGameIds)
+  const root = getPath(`${MEDIA_ROOT}/avatars`)
+
+  if (!fs.existsSync(root)) {
+    return
+  }
+
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === "generic") {
+      continue
+    }
+
+    if (!active.has(entry.name)) {
+      fs.rmSync(resolve(root, entry.name), { recursive: true, force: true })
+    }
+  }
+}
+
+// Persist ComfyUI-produced WebP bytes into config/media/generated under a
+// server-generated name and return its public "/media/generated/<file>" path.
+// The bytes are fetched over HTTP by the caller so the socket container never
+// needs to reach the ComfyUI host filesystem. `destName` is server-generated
 // (gen-<nanoid>.webp) and re-checked with assertSafeId stem.
 export const saveGeneratedImageBytes = (
   buffer: Buffer,
   destName: string,
 ): string => {
-  // destName is server-generated; guard its stem so it can never escape /media.
-  assertSafeId(destName.replace(/\.[a-z0-9]+$/u, ""))
+  const stem = destName.replace(/\.[a-z0-9]+$/u, "")
+  assertSafeId(stem)
 
-  const mediaDir = getPath("media")
+  ensureMediaDirs()
+  const target = mediaFilePath("generated", destName)
+  fs.writeFileSync(target, buffer)
 
-  if (!fs.existsSync(mediaDir)) {
-    fs.mkdirSync(mediaDir, { recursive: true })
-  }
+  upsertMediaMeta(
+    createMediaMeta({
+      filename: destName,
+      category: "generated",
+      size: buffer.byteLength,
+      type: "image",
+      source: "ai",
+    }),
+  )
 
-  fs.writeFileSync(getPath(`media/${destName}`), buffer)
-
-  return `/media/${destName}`
+  return `/media/generated/${destName}`
 }
 
 export const saveQuizz = (data: unknown): { id: string } => {
@@ -762,16 +1186,7 @@ export const getTheme = (): Theme => {
   }
 
   try {
-    const data = JSON.parse(fs.readFileSync(filePath, "utf-8"))
-    const result = themeValidator.safeParse(data)
-
-    if (!result.success) {
-      console.warn("Invalid theme.json, using default:", result.error.issues)
-
-      return DEFAULT_THEME
-    }
-
-    return result.data
+    return parseTheme(JSON.parse(fs.readFileSync(filePath, "utf-8")))
   } catch (error) {
     console.error("Failed to read theme:", error)
 
@@ -780,10 +1195,16 @@ export const getTheme = (): Theme => {
 }
 
 export const setTheme = (data: unknown): Theme => {
-  const result = themeValidator.safeParse(data)
+  let theme: Theme
 
-  if (!result.success) {
-    throw new Error(result.error.issues[0].message)
+  try {
+    theme = parseTheme(data)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new Error(error.issues[0].message)
+    }
+
+    throw error
   }
 
   const themeDir = getPath("theme")
@@ -794,14 +1215,15 @@ export const setTheme = (data: unknown): Theme => {
 
   fs.writeFileSync(
     getPath("theme/theme.json"),
-    JSON.stringify(result.data, null, 2),
+    JSON.stringify(theme, null, 2),
   )
 
-  return result.data
+  return theme
 }
 
 // Persist an uploaded background image (data URL) for a slot and return its
-// public "/theme/<file>" path (served by nginx from the config volume).
+// public "/media/backgrounds/<file>" path (served by nginx from the config
+// volume).
 export const saveBackgroundImage = async (
   slot: ThemeSlot,
   dataUrl: string,
@@ -823,23 +1245,36 @@ export const saveBackgroundImage = async (
     throw new Error("errors:theme.imageTooLarge")
   }
 
-  const themeDir = getPath("theme")
-
-  if (!fs.existsSync(themeDir)) {
-    fs.mkdirSync(themeDir)
-  }
+  ensureMediaDirs()
+  const backgroundsDir = getPath(`${MEDIA_ROOT}/backgrounds`)
 
   // Remove previous files for this slot so the folder doesn't grow unbounded.
-  for (const file of fs.readdirSync(themeDir)) {
+  for (const file of fs.readdirSync(backgroundsDir)) {
     if (file.startsWith(`${slot}-`)) {
-      fs.unlinkSync(resolve(themeDir, file))
+      fs.unlinkSync(resolve(backgroundsDir, file))
     }
   }
+  removeManifestWhere(
+    (item) =>
+      item.category === "backgrounds" &&
+      item.source === "theme" &&
+      item.filename.startsWith(`${slot}-`),
+  )
 
   // Transcode every upload to WebP so served theme assets are WebP-only.
   const webp = await toWebp(buffer)
   const filename = `${slot}-${Date.now()}.webp`
-  fs.writeFileSync(resolve(themeDir, filename), webp)
+  fs.writeFileSync(mediaFilePath("backgrounds", filename), webp)
 
-  return `/theme/${filename}`
+  upsertMediaMeta(
+    createMediaMeta({
+      filename,
+      category: "backgrounds",
+      size: webp.byteLength,
+      type: "image",
+      source: "theme",
+    }),
+  )
+
+  return `/media/backgrounds/${filename}`
 }

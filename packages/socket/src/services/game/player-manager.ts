@@ -15,7 +15,7 @@ export class PlayerManager {
     this.getManagerId = getManagerId
   }
 
-  join(socket: Socket, username: string): void {
+  join(socket: Socket, username: string, avatar?: string): void {
     const clientId = socket.handshake.auth.clientId as string
 
     if (this.findByClientId(clientId)) {
@@ -44,6 +44,7 @@ export class PlayerManager {
       username,
       points: 0,
       streak: 0,
+      ...(avatar ? { avatar } : {}),
     }
 
     this.players.push(player)
@@ -114,6 +115,25 @@ export class PlayerManager {
     }
   }
 
+  setAvatar(clientId: string, avatar: string): Player | undefined {
+    const player = this.findByClientId(clientId)
+
+    if (!player) {
+      return undefined
+    }
+
+    player.avatar = avatar
+
+    return player
+  }
+
+  broadcastPlayerUpdate(player: Player): void {
+    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
+    this.io
+      .to(this.gameId)
+      .emit(EVENTS.PLAYER.UPDATE_LEADERBOARD, { leaderboard: this.players })
+  }
+
   replace(players: Player[]): void {
     this.players = players
   }
@@ -148,6 +168,7 @@ export class PlayerManager {
     username: string
     points: number
     streak: number
+    avatar?: string
   }> {
     // Filter sim-mode bots: they are a transient test aid and must NEVER persist
     // to a crash-recovery snapshot (a restore must not resurrect bot ghosts).
@@ -158,6 +179,7 @@ export class PlayerManager {
         username: p.username,
         points: p.points,
         streak: p.streak,
+        ...(p.avatar ? { avatar: p.avatar } : {}),
       }))
   }
 
@@ -170,6 +192,7 @@ export class PlayerManager {
       username: string
       points: number
       streak: number
+      avatar?: string
     }>,
   ): void {
     this.players = players.map((p) => ({
@@ -179,6 +202,7 @@ export class PlayerManager {
       username: p.username,
       points: p.points,
       streak: p.streak,
+      ...(p.avatar ? { avatar: p.avatar } : {}),
     }))
   }
 }

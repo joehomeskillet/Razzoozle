@@ -182,14 +182,14 @@ describe("saveBackgroundImage()", () => {
 
     const result = await config.saveBackgroundImage("auth", PNG_1PX)
 
-    expect(result).toMatch(/^\/theme\/auth-\d+\.webp$/)
+    expect(result).toMatch(/^\/media\/backgrounds\/auth-\d+\.webp$/)
     const onDisk = path.join(tmpDir, result.replace(/^\//, ""))
     expect(fs.existsSync(onDisk)).toBe(true)
   })
 
   it("removes the prior file for the same slot on re-upload", async () => {
     const config = await loadConfig()
-    const themeDir = path.join(tmpDir, "theme")
+    const themeDir = path.join(tmpDir, "media", "backgrounds")
 
     const first = await config.saveBackgroundImage("auth", PNG_1PX)
     const firstAbs = path.join(tmpDir, first.replace(/^\//, ""))
@@ -213,7 +213,7 @@ describe("saveBackgroundImage()", () => {
 
   it("does not touch a DIFFERENT slot's file when re-uploading", async () => {
     const config = await loadConfig()
-    const themeDir = path.join(tmpDir, "theme")
+    const themeDir = path.join(tmpDir, "media", "backgrounds")
 
     await config.saveBackgroundImage("auth", PNG_1PX)
     await config.saveBackgroundImage("managerGame", PNG_1PX)
@@ -235,7 +235,9 @@ describe("saveBackgroundImage()", () => {
 
     for (const slot of THEME_SLOTS) {
       const out = await config.saveBackgroundImage(slot, PNG_1PX)
-      expect(out).toMatch(new RegExp(`^/theme/${slot}-\\d+\\.webp$`))
+      expect(out).toMatch(
+        new RegExp(`^/media/backgrounds/${slot}-\\d+\\.webp$`),
+      )
     }
   })
 })

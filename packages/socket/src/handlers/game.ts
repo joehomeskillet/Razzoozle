@@ -1,8 +1,10 @@
 import { EVENTS } from "@razzia/common/constants"
 import { inviteCodeValidator } from "@razzia/common/validators/auth"
+import { setAvatarValidator } from "@razzia/common/validators/avatar"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import { getQuizz } from "@razzia/socket/services/config"
 import Game from "@razzia/socket/services/game"
+import managerAuth from "@razzia/socket/services/manager"
 import Registry from "@razzia/socket/services/registry"
 import {
   addBotsValidator,
@@ -114,8 +116,42 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   })
 
   socket.on(EVENTS.PLAYER.LOGIN, ({ gameId, data }) =>
-    withGame(gameId, socket, (game) => game.join(socket, data.username)),
+    withGame(gameId, socket, (game) => {
+      void game.join(socket, data.username, data.avatar)
+    }),
   )
+
+  socket.on(EVENTS.PLAYER.SET_AVATAR, (payload) => {
+    if (typeof payload !== "object" || payload === null) {
+      return
+    }
+
+    const raw = payload as {
+      gameId?: unknown
+      avatar?: unknown
+      data?: { avatar?: unknown }
+    }
+    const gameId = raw.gameId
+    const avatar = raw.avatar ?? raw.data?.avatar
+
+    if (typeof gameId !== "string") {
+      return
+    }
+
+    const result = setAvatarValidator.safeParse({ avatar })
+
+    if (!result.success) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, result.error.issues[0].message)
+
+      return
+    }
+
+    const game = registry.getPlayerGame(gameId, clientId)
+
+    if (game) {
+      void game.setAvatar(socket, result.data.avatar)
+    }
+  })
 
   socket.on(EVENTS.MANAGER.KICK_PLAYER, ({ gameId, playerId }) =>
     withGame(gameId, socket, (game) => game.kickPlayer(socket, playerId)),
@@ -127,6 +163,28 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
   socket.on(EVENTS.MANAGER.SET_AUTO, ({ gameId, auto }) =>
     withGame(gameId, socket, (game) => game.setAutoMode(auto)),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.PAUSE_GAME,
+    managerAuth.withAuth(socket, (payload: { gameId?: string } | undefined) => {
+      const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
+
+      if (game) {
+        game.pause()
+      }
+    }),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.RESUME_GAME,
+    managerAuth.withAuth(socket, (payload: { gameId?: string } | undefined) => {
+      const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
+
+      if (game) {
+        game.resume()
+      }
+    }),
   )
 
   // Sim mode: host adds N scripted bot opponents. Flat payload (matches
