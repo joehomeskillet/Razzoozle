@@ -81,5 +81,9 @@
   "bulkSelected": "{{count}} selected",
   "bulkDelete": "Delete",
   "bulkDeleteConfirm": "Really delete the selected questions?",
-  "bulkToCatalog": "Save to catalog"
+  "bulkToCatalog": "Save to catalog",
+  "themePicker": {
+    "label": "Design",
+    "global": "Global design"
+  }
 }

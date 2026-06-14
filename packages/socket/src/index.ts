@@ -14,6 +14,7 @@ import { managerSocketHandlers } from "@razzia/socket/handlers/manager"
 import { mediaSocketHandlers } from "@razzia/socket/handlers/media"
 import { quizzSocketHandlers } from "@razzia/socket/handlers/quizz"
 import { resultsSocketHandlers } from "@razzia/socket/handlers/results"
+import { themeTemplateSocketHandlers } from "@razzia/socket/handlers/theme-template"
 import type { SocketHandler } from "@razzia/socket/handlers/types"
 import {
   cleanupStaleAvatars,
@@ -88,6 +89,7 @@ const socketHandlers: SocketHandler[] = [
   gameSocketHandlers,
   resultsSocketHandlers,
   displaySocketHandlers,
+  themeTemplateSocketHandlers,
 ]
 
 io.on("connection", (socket) => {

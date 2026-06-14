@@ -272,6 +272,16 @@
     "toast": {
       "imageUploaded": "Image uploaded",
       "saved": "Design saved"
+    },
+    "templates": {
+      "title": "Templates",
+      "save": "Save as template",
+      "saved": "Template saved",
+      "namePrompt": "Template name",
+      "apply": "Apply",
+      "delete": "Delete",
+      "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
+      "none": "No templates saved yet"
     }
   },
   "submissions": {

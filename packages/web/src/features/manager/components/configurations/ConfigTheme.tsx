@@ -3,7 +3,12 @@ import {
   EVENTS,
   type ThemeSlot,
 } from "@razzia/common/constants"
-import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
+import {
+  DEFAULT_THEME,
+  type Theme,
+  type ThemeTemplate,
+} from "@razzia/common/types/theme"
+import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
 import {
@@ -14,16 +19,18 @@ import { Field } from "@razzia/web/features/manager/components/console"
 import { applyTheme } from "@razzia/web/features/theme/apply"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import {
+  BookMarked,
   Image as ImageIcon,
   LoaderCircle,
   Palette,
   RotateCcw,
   SwatchBook,
+  Trash2,
   Type,
   Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { type ReactNode, useState } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -101,6 +108,11 @@ const ConfigTheme = () => {
   const [slotErrors, setSlotErrors] = useState<
     Partial<Record<ThemeSlot, string>>
   >({})
+  // Named theme presets (full ThemeTemplate[] from THEME_TEMPLATE.DATA).
+  const [templates, setTemplates] = useState<ThemeTemplate[]>([])
+  const [templateName, setTemplateName] = useState("")
+  // The template id pending a delete confirmation; drives the AlertDialog.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const setSlotError = (slot: ThemeSlot, message: string | null) =>
     setSlotErrors((prev) => {
@@ -142,6 +154,22 @@ const ConfigTheme = () => {
     }
 
     toast.error(message)
+  })
+
+  // Request the saved templates once on mount.
+  useEffect(() => {
+    socket.emit(EVENTS.THEME_TEMPLATE.LIST)
+  }, [socket])
+
+  useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
+
+  useEvent(EVENTS.THEME_TEMPLATE.SAVE_SUCCESS, () => {
+    toast.success(t("manager:theme.templates.saved"))
+    setTemplateName("")
+  })
+
+  useEvent(EVENTS.THEME_TEMPLATE.ERROR, (message) => {
+    toast.error(t(message))
   })
 
   const preview = (next: Theme) => {
@@ -208,6 +236,29 @@ const ConfigTheme = () => {
 
   const handleSave = () => socket.emit(EVENTS.MANAGER.SET_THEME, draft)
   const handleReset = () => preview({ ...DEFAULT_THEME })
+
+  const handleSaveTemplate = () => {
+    const name = templateName.trim()
+
+    if (!name) {
+      return
+    }
+
+    socket.emit(EVENTS.THEME_TEMPLATE.SAVE, { name, theme: draft })
+  }
+
+  // Load a template into the editor so the admin can preview + save it.
+  const handleApplyTemplate = (template: ThemeTemplate) =>
+    preview({ ...DEFAULT_THEME, ...template.theme })
+
+  const handleDeleteTemplate = () => {
+    if (!pendingDeleteId) {
+      return
+    }
+
+    socket.emit(EVENTS.THEME_TEMPLATE.DELETE, { id: pendingDeleteId })
+    setPendingDeleteId(null)
+  }
 
   // One color swatch + label + hex readout, focus-ringed.
   const colorField = (
@@ -452,8 +503,89 @@ const ConfigTheme = () => {
               ))}
             </div>
           </SectionCard>
+
+          {/* ── Vorlagen ───────────────────────────────────────────── */}
+          <SectionCard
+            icon={<BookMarked className="size-5" />}
+            title={t("manager:theme.templates.title")}
+          >
+            <SubGroup>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={templateName}
+                  maxLength={60}
+                  placeholder={t("manager:theme.templates.namePrompt")}
+                  variant="sm"
+                  aria-label={t("manager:theme.templates.namePrompt")}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  className="min-h-11 flex-1 rounded-lg"
+                />
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  disabled={!templateName.trim()}
+                >
+                  {t("manager:theme.templates.save")}
+                </Button>
+              </div>
+            </SubGroup>
+
+            {templates.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                {t("manager:theme.templates.none")}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {templates.map((template) => (
+                  <SubGroup key={template.id}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
+                        {template.name}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          type="button"
+                          onClick={() => handleApplyTemplate(template)}
+                        >
+                          {t("manager:theme.templates.apply")}
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="icon"
+                          type="button"
+                          aria-label={t("manager:theme.templates.delete")}
+                          onClick={() => setPendingDeleteId(template.id)}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </Button>
+                      </div>
+                    </div>
+                  </SubGroup>
+                ))}
+              </div>
+            )}
+          </SectionCard>
         </div>
       </div>
+
+      <AlertDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDeleteId(null)
+          }
+        }}
+        title={t("manager:theme.templates.delete")}
+        description={t("manager:theme.templates.deleteConfirm", {
+          name:
+            templates.find((tpl) => tpl.id === pendingDeleteId)?.name ?? "",
+        })}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleDeleteTemplate}
+      />
 
       <div className="flex shrink-0 gap-2 border-t border-gray-200 bg-white p-4">
         <Button

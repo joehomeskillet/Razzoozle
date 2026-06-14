@@ -272,6 +272,16 @@
     "toast": {
       "imageUploaded": "Bild hochgeladen",
       "saved": "Design gespeichert"
+    },
+    "templates": {
+      "title": "Vorlagen",
+      "save": "Als Vorlage speichern",
+      "saved": "Vorlage gespeichert",
+      "namePrompt": "Name der Vorlage",
+      "apply": "Anwenden",
+      "delete": "Löschen",
+      "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
+      "none": "Noch keine Vorlagen gespeichert"
     }
   },
   "submissions": {

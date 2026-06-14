@@ -7,6 +7,7 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import { useNavigate } from "@tanstack/react-router"
 import { useState, type ChangeEvent } from "react"
@@ -17,8 +18,16 @@ const SUBJECT_INPUT_ID = "quizz-subject-input"
 const SUBJECT_ERROR_ID = "quizz-subject-error"
 
 const QuizzEditorHeader = () => {
-  const { quizzId, subject, setSubject, questions, setCurrentIndex } =
-    useQuizzEditor()
+  const {
+    quizzId,
+    subject,
+    setSubject,
+    themeId,
+    setThemeId,
+    questions,
+    setCurrentIndex,
+  } = useQuizzEditor()
+  const { themeTemplates } = useConfig()
   const { socket } = useSocket()
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -62,10 +71,17 @@ const QuizzEditorHeader = () => {
 
     setIsSaving(true)
 
+    const themeFields = themeId ? { themeId } : {}
+
     if (quizzId) {
-      socket.emit(EVENTS.QUIZZ.UPDATE, { id: quizzId, subject, questions })
+      socket.emit(EVENTS.QUIZZ.UPDATE, {
+        id: quizzId,
+        subject,
+        questions,
+        ...themeFields,
+      })
     } else {
-      socket.emit(EVENTS.QUIZZ.SAVE, { subject, questions })
+      socket.emit(EVENTS.QUIZZ.SAVE, { subject, questions, ...themeFields })
     }
   }
 
@@ -108,6 +124,22 @@ const QuizzEditorHeader = () => {
             {t(subjectError)}
           </span>
         )}
+
+        <label className="mt-1 flex items-center gap-2 text-xs font-medium text-gray-600">
+          {t("quizz:themePicker.label")}
+          <select
+            value={themeId}
+            onChange={(e) => setThemeId(e.target.value)}
+            className="min-h-9 rounded-lg border border-gray-300 bg-white px-2 text-sm text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          >
+            <option value="">{t("quizz:themePicker.global")}</option>
+            {(themeTemplates ?? []).map((tpl) => (
+              <option key={tpl.id} value={tpl.id}>
+                {tpl.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="flex shrink-0 gap-2">

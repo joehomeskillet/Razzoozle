@@ -6,6 +6,7 @@ import {
   getMediaList,
   getResultsMeta,
   getSubmissionsMeta,
+  getThemeTemplatesMeta,
 } from "@razzia/socket/services/config"
 
 const getClientId = (socket: SocketContext["socket"]) =>
@@ -17,6 +18,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     results: getResultsMeta(),
     submissions: getSubmissionsMeta(),
     media: getMediaList(),
+    themeTemplates: getThemeTemplatesMeta(),
   })
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi

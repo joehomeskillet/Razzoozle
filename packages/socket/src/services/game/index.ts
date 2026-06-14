@@ -16,6 +16,7 @@ import { setAvatarValidator } from "@razzia/common/validators/avatar"
 import {
   deleteGameAvatars,
   getGameConfig,
+  getThemeTemplateById,
   saveEphemeralAvatar,
   saveResult,
 } from "@razzia/socket/services/config"
@@ -221,6 +222,36 @@ class Game {
       console.log(
         `New game created: ${this.inviteCode} subject: ${quizz.subject}`,
       )
+
+      // Per-quiz theme (#28): if the quiz references a saved theme template,
+      // push it to the whole game room so the host/display/lobby apply it for
+      // THIS game (esp. the lobby-wait background). No-op when the quiz has no
+      // themeId or the template is missing. Fully crash-guarded.
+      this.applyQuizTheme(this.gameId)
+    }
+  }
+
+  // Look up the quiz's themeId → saved template and emit its Theme to `target`
+  // (the whole game room on create, or a single joining socket id). A no-op when
+  // the quiz carries no themeId or no matching template exists. Wrapped so a
+  // config/read error can never crash game creation or a player join.
+  private applyQuizTheme(target: string): void {
+    try {
+      const themeId = this.quizz.themeId
+
+      if (!themeId) {
+        return
+      }
+
+      const template = getThemeTemplateById(themeId)
+
+      if (!template) {
+        return
+      }
+
+      this.io.to(target).emit(EVENTS.MANAGER.THEME, template.theme)
+    } catch (error) {
+      console.error("applyQuizTheme failed:", error)
     }
   }
 
@@ -274,6 +305,11 @@ class Game {
   join(socket: Socket, username: string, avatar?: string) {
     if (!avatar) {
       this.playerManager.join(socket, username)
+      // Per-quiz theme (#28): a player joining mid-lobby must see the same
+      // themed lobby-wait background as everyone already in the room. No-op when
+      // the quiz has no themeId / no matching template. Emitted only to the
+      // joining socket.
+      this.applyQuizTheme(socket.id)
 
       return
     }
@@ -286,6 +322,7 @@ class Game {
       }
 
       this.playerManager.join(socket, username, resolvedAvatar)
+      this.applyQuizTheme(socket.id)
     })()
   }
 

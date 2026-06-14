@@ -15,6 +15,8 @@ interface QuizzEditorContextType {
   quizzId: string | null
   subject: string
   setSubject: (_subject: string) => void
+  themeId: string
+  setThemeId: (_themeId: string) => void
   questions: QuestionWithId[]
   currentIndex: number
   currentQuestion: QuestionWithId
@@ -53,6 +55,7 @@ export const QuizzEditorProvider = ({
   const [subject, setSubject] = useState(
     initialData?.subject ?? "Untitled Quizz",
   )
+  const [themeId, setThemeId] = useState(initialData?.themeId ?? "")
   const [questions, setQuestions] = useState<QuestionWithId[]>(
     initialData
       ? initialData.questions.map(toQuestionWithId)
@@ -151,6 +154,8 @@ export const QuizzEditorProvider = ({
         quizzId: initialData?.id ?? null,
         subject,
         setSubject,
+        themeId,
+        setThemeId,
         questions,
         currentIndex,
         currentQuestion,
