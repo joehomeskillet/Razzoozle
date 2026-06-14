@@ -3,7 +3,13 @@ import GithubIcon from "@razzia/web/components/GithubIcon"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import type { PropsWithChildren } from "react"
 
-const Background = ({ children }: PropsWithChildren) => {
+// `plain` forces the purple brand gradient and skips the themed photo wallpaper
+// — used by the manager console (/manager/config) which wants a clean solid
+// background, while login/lobby/submit/share keep the photo.
+const Background = ({
+  children,
+  plain = false,
+}: PropsWithChildren<{ plain?: boolean }>) => {
   const { theme } = useThemeStore()
   const authBg = theme.backgrounds.auth
   const appTitle = theme.appTitle?.trim()
@@ -11,7 +17,7 @@ const Background = ({ children }: PropsWithChildren) => {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
       <div className="fixed inset-0 overflow-hidden">
-        {authBg ? (
+        {authBg && !plain ? (
           <img
             src={authBg}
             alt="background"

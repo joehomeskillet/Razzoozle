@@ -32,7 +32,7 @@ const ManagerConfigPage = () => {
 
   if (!isConnected) {
     return (
-      <Background>
+      <Background plain>
         <Loader className="h-23" />
       </Background>
     )
@@ -43,7 +43,7 @@ const ManagerConfigPage = () => {
   }
 
   return (
-    <Background>
+    <Background plain>
       <Configurations data={config} />
     </Background>
   )
