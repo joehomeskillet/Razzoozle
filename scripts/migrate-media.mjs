@@ -36,6 +36,10 @@ const mediaDirs = {
 const imageExts = new Set([".webp", ".png", ".jpg", ".jpeg"])
 const audioExts = new Set([".mp3", ".wav", ".ogg", ".m4a"])
 
+// basename -> new /media/... reference path. Populated as files are moved so
+// rewrites only touch refs whose underlying file actually moved (no dangling).
+const moved = new Map()
+
 const timestamp = () =>
   new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/u, "Z")
 
@@ -133,37 +137,133 @@ const walkFiles = (dir) => {
   return out
 }
 
-const isBackgroundAsset = (file) =>
-  /^(?:auth|managerGame|playerGame|logo)-.+\.webp$/u.test(path.basename(file))
-
-const isQuestionAsset = (file) =>
-  /^(?:q\d+|wu\d+).+\.webp$/iu.test(path.basename(file))
-
 const isAudioAsset = (file) => audioExts.has(path.extname(file).toLowerCase())
 
-const moveLegacyFiles = () => {
-  for (const file of listFiles(themeRoot)) {
-    const name = path.basename(file)
+const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf-8"))
 
-    if (isBackgroundAsset(file)) {
-      moveFile(file, path.join(mediaDirs.backgrounds, name))
-    } else if (isQuestionAsset(file)) {
-      moveFile(file, path.join(mediaDirs.questions, name))
-    } else if (isAudioAsset(file)) {
-      moveFile(file, path.join(mediaDirs.audio, name))
+// Pull the basename out of a string that contains a /theme/<base> path,
+// whether it's relative ("/theme/x.webp") or absolute
+// ("https://host/theme/x.webp"). Returns undefined if there's no /theme/ ref.
+const themeBasenameOf = (value) => {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  if (value.startsWith("/theme/")) {
+    return path.basename(value)
+  }
+
+  try {
+    const url = new URL(value)
+
+    if (url.pathname.startsWith("/theme/")) {
+      return path.basename(url.pathname)
+    }
+  } catch {
+    return undefined
+  }
+
+  return undefined
+}
+
+const collectThemeBasenames = (value, acc) => {
+  if (typeof value === "string") {
+    const base = themeBasenameOf(value)
+
+    if (base) {
+      acc.add(base)
+    }
+
+    return
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectThemeBasenames(item, acc)
+    }
+
+    return
+  }
+
+  if (value && typeof value === "object") {
+    for (const item of Object.values(value)) {
+      collectThemeBasenames(item, acc)
+    }
+  }
+}
+
+// Move only the files that are actually referenced, recording where they went.
+// Backgrounds are derived from theme.json refs; questions from quiz refs.
+// Generated (gen-*.webp) and audio are kept as before but also recorded.
+const moveLegacyFiles = () => {
+  const recordMove = (basename, category, refPath) => {
+    // Don't double-move: if a basename is already mapped (e.g. moved to
+    // backgrounds), reuse that mapping for rewrites instead of moving again.
+    if (moved.has(basename)) {
+      return
+    }
+
+    const src = path.join(themeRoot, basename)
+
+    if (!fs.existsSync(src)) {
+      // Referenced but not present in /theme (already moved or external) —
+      // record nothing so the ref is left unchanged.
+      return
+    }
+
+    moveFile(src, path.join(mediaDirs[category], basename))
+    moved.set(basename, refPath)
+  }
+
+  // Backgrounds: every /theme/<base> referenced by theme.json.
+  const themeFile = path.join(themeRoot, "theme.json")
+
+  if (fs.existsSync(themeFile)) {
+    const bgBasenames = new Set()
+    collectThemeBasenames(readJson(themeFile), bgBasenames)
+
+    for (const basename of bgBasenames) {
+      recordMove(basename, "backgrounds", `/media/backgrounds/${basename}`)
     }
   }
 
+  // Questions: every /theme/<base> (relative or absolute) referenced by any quiz.
+  for (const file of listFiles(quizzRoot).filter((item) => item.endsWith(".json"))) {
+    const qBasenames = new Set()
+    collectThemeBasenames(readJson(file), qBasenames)
+
+    for (const basename of qBasenames) {
+      recordMove(basename, "questions", `/media/questions/${basename}`)
+    }
+  }
+
+  // Audio in /theme -> /media/audio (record mapping for rewrites).
+  for (const file of listFiles(themeRoot)) {
+    if (!isAudioAsset(file)) {
+      continue
+    }
+
+    const name = path.basename(file)
+
+    if (moved.has(name)) {
+      continue
+    }
+
+    moveFile(file, path.join(mediaDirs.audio, name))
+    moved.set(name, `/media/audio/${name}`)
+  }
+
+  // Generated assets already in /media -> /media/generated.
   for (const file of listFiles(mediaRoot)) {
     const name = path.basename(file)
 
     if (/^gen-.+\.webp$/u.test(name)) {
       moveFile(file, path.join(mediaDirs.generated, name))
+      // gen assets are referenced as /media/<name>; key by that ref's basename.
+      moved.set(name, `/media/generated/${name}`)
     }
   }
 }
-
-const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf-8"))
 
 const writeJsonIfChanged = (file, original, next) => {
   const serialized = `${JSON.stringify(next, null, 2)}\n`
@@ -195,36 +295,24 @@ const rewriteStrings = (value, rewrite) => {
   return value
 }
 
-const themeRef = (value) => {
-  if (!value.startsWith("/theme/")) {
-    return value
-  }
-
-  return `/media/backgrounds/${path.basename(value)}`
-}
-
-const questionRef = (value) => {
-  const rewriteThemePath = (pathname) =>
-    pathname.startsWith("/theme/")
-      ? `/media/questions/${path.basename(pathname)}`
-      : undefined
-
-  if (value.startsWith("/theme/")) {
-    return rewriteThemePath(value) ?? value
-  }
-
+// Reference-driven rewrite: only rewrite a string if its underlying file was
+// actually moved (tracked in `moved`). Anything unmoved is left UNCHANGED so it
+// keeps resolving via the kept nginx /theme/ alias — no dangling refs.
+// We always rewrite to the RELATIVE /media/... path to decouple from the domain.
+const rewriteRef = (value) => {
+  // /media/gen-*.webp -> /media/generated/<name> (basename keyed in `moved`).
   if (/^\/media\/gen-[^/]+\.webp$/u.test(value)) {
-    return `/media/generated/${path.basename(value)}`
+    const base = path.basename(value)
+    return moved.get(base) ?? value
   }
 
-  try {
-    const url = new URL(value)
-    const rewritten = rewriteThemePath(url.pathname)
+  const base = themeBasenameOf(value)
 
-    return rewritten ?? value
-  } catch {
-    return value
+  if (base && moved.has(base)) {
+    return moved.get(base)
   }
+
+  return value
 }
 
 const rewriteTheme = () => {
@@ -236,7 +324,7 @@ const rewriteTheme = () => {
 
   const original = fs.readFileSync(file, "utf-8")
   const parsed = JSON.parse(original)
-  const next = rewriteStrings(parsed, themeRef)
+  const next = rewriteStrings(parsed, rewriteRef)
   writeJsonIfChanged(file, original, next)
 }
 
@@ -244,7 +332,7 @@ const rewriteQuizzes = () => {
   for (const file of listFiles(quizzRoot).filter((item) => item.endsWith(".json"))) {
     const original = fs.readFileSync(file, "utf-8")
     const parsed = JSON.parse(original)
-    const next = rewriteStrings(parsed, questionRef)
+    const next = rewriteStrings(parsed, rewriteRef)
     writeJsonIfChanged(file, original, next)
   }
 }
