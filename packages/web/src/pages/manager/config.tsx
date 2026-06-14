@@ -43,9 +43,22 @@ const ManagerConfigPage = () => {
   }
 
   return (
-    <Background plain>
+    <div className="relative flex h-svh flex-col overflow-hidden">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: "var(--bg-scrim)" }}
+        />
+      </div>
       <Configurations data={config} />
-    </Background>
+    </div>
   )
 }
 
