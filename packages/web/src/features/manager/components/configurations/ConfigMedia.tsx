@@ -13,6 +13,7 @@ import {
   FileAudio,
   Filter,
   Images,
+  SearchX,
   Trash2,
   Upload,
 } from "lucide-react"
@@ -69,9 +70,9 @@ const ConfigMedia = () => {
 
   const [items, setItems] = useState<MediaMeta[]>([])
   const [search, setSearch] = useState("")
-  const [sourceFilter, setSourceFilter] = useState<
-    "all" | MediaMeta["source"]
-  >("all")
+  const [sourceFilter, setSourceFilter] = useState<"all" | MediaMeta["source"]>(
+    "all",
+  )
   const [uploading, setUploading] = useState(false)
 
   const requestMedia = useCallback(() => {
@@ -126,6 +127,11 @@ const ConfigMedia = () => {
 
   const openFilePicker = () => fileInputRef.current?.click()
 
+  const clearFilters = () => {
+    setSearch("")
+    setSourceFilter("all")
+  }
+
   const handleUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     // Allow re-selecting the same file after an error/completion.
@@ -162,13 +168,15 @@ const ConfigMedia = () => {
     socket.emit(EVENTS.MEDIA.DELETE, { id })
   }
 
-  const sourceFilters: Array<{ key: "all" | MediaMeta["source"]; label: string }> =
-    [
-      { key: "all", label: t("manager:media.filters.all") },
-      { key: "upload", label: t("manager:media.filters.upload") },
-      { key: "ai", label: t("manager:media.filters.ai") },
-      { key: "theme", label: t("manager:media.filters.theme") },
-    ]
+  const sourceFilters: Array<{
+    key: "all" | MediaMeta["source"]
+    label: string
+  }> = [
+    { key: "all", label: t("manager:media.filters.all") },
+    { key: "upload", label: t("manager:media.filters.upload") },
+    { key: "ai", label: t("manager:media.filters.ai") },
+    { key: "theme", label: t("manager:media.filters.theme") },
+  ]
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -250,98 +258,99 @@ const ConfigMedia = () => {
             }}
           />
         </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          headline={t("manager:media.noResults")}
+          hint={t("manager:media.search")}
+          action={{
+            label: t("manager:media.filters.all"),
+            onClick: clearFilters,
+          }}
+        />
       ) : (
         <motion.div
-          className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto overscroll-contain p-0.5 sm:grid-cols-3 xl:grid-cols-4"
+          className="grid auto-rows-min grid-cols-2 gap-3 p-0.5 sm:grid-cols-3 xl:grid-cols-4"
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={
             reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
           }
         >
-          {filtered.length === 0 ? (
-            <p className="col-span-full rounded-xl bg-white p-4 text-sm text-gray-500 outline-2 -outline-offset-2 outline-gray-200">
-              {t("manager:media.noResults")}
-            </p>
-          ) : (
-            filtered.map((item, index) => (
-              <motion.article
-                key={item.id}
-                className="flex flex-col overflow-hidden rounded-xl bg-white outline-2 -outline-offset-2 outline-gray-200"
-                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={
-                  reducedMotion
-                    ? undefined
-                    : {
-                        duration: 0.28,
-                        ease: "easeOut",
-                        delay: Math.min(index, 8) * 0.04,
-                      }
-                }
-              >
-                <div className="flex aspect-video items-center justify-center bg-gray-50">
-                  {item.type === "audio" ? (
-                    <FileAudio
-                      className="size-10 text-gray-300"
-                      aria-hidden
-                    />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.filename}
-                      loading="lazy"
-                      className="size-full object-cover"
-                    />
-                  )}
+          {filtered.map((item, index) => (
+            <motion.article
+              key={item.id}
+              className="flex flex-col overflow-hidden rounded-xl bg-white outline-2 -outline-offset-2 outline-gray-200"
+              initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={
+                reducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.28,
+                      ease: "easeOut",
+                      delay: Math.min(index, 8) * 0.04,
+                    }
+              }
+            >
+              <div className="flex aspect-video items-center justify-center bg-gray-50">
+                {item.type === "audio" ? (
+                  <FileAudio className="size-10 text-gray-300" aria-hidden />
+                ) : (
+                  <img
+                    src={item.url}
+                    alt={item.filename}
+                    loading="lazy"
+                    className="size-full object-cover"
+                  />
+                )}
+              </div>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
+                <p
+                  className="truncate text-sm font-semibold text-gray-900"
+                  title={item.filename}
+                >
+                  {item.filename}
+                </p>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                    {t(`manager:media.category.${item.category}`)}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                    {t(`manager:media.source.${item.source}`)}
+                  </span>
                 </div>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
-                  <p
-                    className="truncate text-sm font-semibold text-gray-900"
-                    title={item.filename}
-                  >
-                    {item.filename}
-                  </p>
+                <p className="text-xs text-gray-500">
+                  {formatSize(item.size)} · {formatDate(item.uploadedAt)}
+                </p>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                      {t(`manager:media.category.${item.category}`)}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
-                      {t(`manager:media.source.${item.source}`)}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    {formatSize(item.size)} · {formatDate(item.uploadedAt)}
-                  </p>
-
-                  <div className="mt-auto pt-1">
-                    <AlertDialog
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                          {t("manager:media.delete")}
-                        </Button>
-                      }
-                      title={t("manager:media.delete")}
-                      description={t("manager:media.deleteConfirm", {
-                        name: item.filename,
-                      })}
-                      confirmLabel={t("common:delete")}
-                      onConfirm={() => handleDelete(item.id)}
-                    />
-                  </div>
+                <div className="mt-auto pt-1">
+                  <AlertDialog
+                    trigger={
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                        {t("manager:media.delete")}
+                      </Button>
+                    }
+                    title={t("manager:media.delete")}
+                    description={t("manager:media.deleteConfirm", {
+                      name: item.filename,
+                    })}
+                    confirmLabel={t("common:delete")}
+                    onConfirm={() => handleDelete(item.id)}
+                  />
                 </div>
-              </motion.article>
-            ))
-          )}
+              </div>
+            </motion.article>
+          ))}
         </motion.div>
       )}
     </div>

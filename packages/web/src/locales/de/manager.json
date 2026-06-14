@@ -251,6 +251,7 @@
     "default": "Standard",
     "showFooter": "„Razzia\"-Footer zeigen",
     "upload": "Bild",
+    "preview": "Vorschau",
     "uiColors": "UI-Farben",
     "colors": {
       "primary": "Primär",
@@ -281,6 +282,7 @@
       "apply": "Anwenden",
       "delete": "Löschen",
       "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
+      "emptyHeadline": "Noch keine Vorlagen",
       "none": "Noch keine Vorlagen gespeichert"
     }
   },

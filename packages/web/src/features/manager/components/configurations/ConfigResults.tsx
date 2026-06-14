@@ -83,7 +83,7 @@ const ConfigResults = () => {
         </div>
       ) : (
         <motion.div
-          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-0.5"
+          className="min-h-0 flex-1 space-y-3 p-0.5"
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={
@@ -98,7 +98,11 @@ const ConfigResults = () => {
               transition={
                 reducedMotion
                   ? undefined
-                  : { duration: 0.28, ease: "easeOut", delay: index * 0.04 }
+                  : {
+                      duration: 0.28,
+                      ease: "easeOut",
+                      delay: Math.min(index, 8) * 0.04,
+                    }
               }
             >
               <ListRow

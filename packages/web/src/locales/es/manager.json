@@ -125,6 +125,7 @@
     "default": "Estándar",
     "showFooter": "Mostrar el pie de página «Razzia»",
     "upload": "Imagen",
+    "preview": "Vista previa",
     "uiColors": "Colores de la interfaz",
     "colors": {
       "primary": "Primario",
@@ -155,6 +156,7 @@
       "apply": "Aplicar",
       "delete": "Eliminar",
       "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
+      "emptyHeadline": "Aún no hay plantillas",
       "none": "Aún no hay plantillas guardadas"
     }
   },

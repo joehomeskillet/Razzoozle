@@ -125,6 +125,7 @@
     "default": "Par défaut",
     "showFooter": "Afficher le pied de page « Razzia »",
     "upload": "Image",
+    "preview": "Aperçu",
     "uiColors": "Couleurs de l'interface",
     "colors": {
       "primary": "Primaire",
@@ -155,6 +156,7 @@
       "apply": "Appliquer",
       "delete": "Supprimer",
       "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
+      "emptyHeadline": "Aucun modèle pour l’instant",
       "none": "Aucun modèle enregistré pour l'instant"
     }
   },
