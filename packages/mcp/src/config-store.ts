@@ -5,11 +5,22 @@
 // config volume. We re-implement (not import) the socket-only helpers
 // `normalizeFilename` / `assertSafeId` because they live in @razzia/socket,
 // which we do NOT bundle — the rules below are identical to those modules.
+import {
+  AI_PROVIDER_OFF,
+  AI_TEXT_PROVIDER_PRESETS,
+} from "@razzia/common/constants"
 import { gameConfigValidator } from "@razzia/common/validators/game-config"
 import type { GameConfig } from "@razzia/common/validators/game-config"
 import { quizzValidator } from "@razzia/common/validators/quizz"
 import { themeValidator } from "@razzia/common/validators/theme"
 import { submissionRecordValidator } from "@razzia/common/validators/submission"
+import {
+  catalogAddValidator,
+  catalogEntryValidator,
+} from "@razzia/common/validators/catalog"
+import { aiSettingsValidator } from "@razzia/common/validators/ai"
+import type { AISettings } from "@razzia/common/types/ai"
+import type { CatalogEntry } from "@razzia/common/types/catalog"
 import type {
   GameResult,
   GameResultMeta,
@@ -208,6 +219,30 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
   return { id }
 }
 
+// Archive toggle: flip the `archived` flag on a quizz without deleting it.
+// Reads the on-disk file through quizzValidator (so the rest of the record is
+// re-validated), sets the flag, and writes it back. assertSafeId guards the
+// path. Mirrors socket setQuizzArchived.
+export const setQuizzArchived = (id: string, archived: boolean): void => {
+  assertSafeId(id)
+
+  const file = getPath(`quizz/${id}.json`)
+
+  if (!fs.existsSync(file)) {
+    throw new Error(`Quizz "${id}" not found`)
+  }
+
+  const parsed = quizzValidator.safeParse(
+    JSON.parse(fs.readFileSync(file, "utf-8")),
+  )
+
+  if (!parsed.success) {
+    throw new Error(`Invalid quizz "${id}": ${parsed.error.issues[0].message}`)
+  }
+
+  fs.writeFileSync(file, JSON.stringify({ ...parsed.data, archived }, null, 2))
+}
+
 export const deleteQuizz = (id: string): void => {
   assertSafeId(id)
 
@@ -389,6 +424,182 @@ export const rejectSubmission = (id: string): void => {
   }
 
   saveSubmission({ ...submission, status: "rejected" })
+}
+
+// ── Catalog (reusable question bank) ─────────────────────────────────────────
+// Each entry is a config/catalog/<id>.json CatalogEntry. Mirrors the socket
+// config service: reads validate every file through catalogEntryValidator
+// (skipping invalid ones, like getSubmissions); writes re-validate the inbound
+// payload through catalogAddValidator so a hand-built object gets the SAME
+// superRefine guarantees as a wire ADD. Every path interpolation is guarded by
+// assertSafeId so a user-supplied id can never escape the catalog dir.
+
+export const getCatalog = (): CatalogEntry[] => {
+  const dir = getPath("catalog")
+
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .flatMap((file) => {
+      try {
+        const parsed = catalogEntryValidator.safeParse(
+          JSON.parse(fs.readFileSync(getPath(`catalog/${file}`), "utf-8")),
+        )
+
+        if (!parsed.success) {
+          return []
+        }
+
+        const id = file.replace(/\.json$/u, "")
+
+        return [{ ...parsed.data, id } as CatalogEntry]
+      } catch {
+        return []
+      }
+    })
+}
+
+export const getCatalogById = (id: string): CatalogEntry | null => {
+  assertSafeId(id)
+
+  const file = getPath(`catalog/${id}.json`)
+
+  if (!fs.existsSync(file)) {
+    return null
+  }
+
+  try {
+    const parsed = catalogEntryValidator.safeParse(
+      JSON.parse(fs.readFileSync(file, "utf-8")),
+    )
+
+    return parsed.success ? ({ ...parsed.data, id } as CatalogEntry) : null
+  } catch {
+    return null
+  }
+}
+
+export const saveCatalogEntry = (
+  payload: z.infer<typeof catalogAddValidator>,
+): CatalogEntry => {
+  // Re-validate the inbound payload so callers passing a hand-built object get
+  // the SAME superRefine guarantees as a wire ADD.
+  const parsed = catalogAddValidator.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message)
+  }
+
+  const dir = getPath("catalog")
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+
+  // Derive a safe id from the question text; dedupe with a -2/-3 suffix so two
+  // entries with identical text don't clobber each other.
+  const baseId = normalizeFilename(parsed.data.question.question)
+  let id = baseId
+  let suffix = 2
+
+  while (fs.existsSync(getPath(`catalog/${id}.json`))) {
+    id = `${baseId}-${suffix}`
+    suffix += 1
+  }
+
+  assertSafeId(id)
+
+  const entry: CatalogEntry = {
+    id,
+    question: parsed.data.question,
+    tags: parsed.data.tags,
+    source: parsed.data.source ?? "manual",
+    addedAt: new Date().toISOString(),
+  }
+
+  // Validate the fully-assembled entry before persisting.
+  const validated = catalogEntryValidator.safeParse(entry)
+
+  if (!validated.success) {
+    throw new Error(validated.error.issues[0].message)
+  }
+
+  fs.writeFileSync(getPath(`catalog/${id}.json`), JSON.stringify(entry, null, 2))
+
+  return entry
+}
+
+export const deleteCatalogEntry = (id: string): void => {
+  assertSafeId(id)
+
+  const file = getPath(`catalog/${id}.json`)
+
+  if (!fs.existsSync(file)) {
+    throw new Error("errors:catalog.notFound")
+  }
+
+  fs.unlinkSync(file)
+}
+
+// ── AI settings (config/ai-settings.json) ────────────────────────────────────
+// Never carries any secret (those live in ai-secrets.json). On a missing/corrupt
+// file we SEED from the constants presets so the active text provider defaults
+// to "off" (generation disabled). Mirrors socket getAISettings/seedAISettings.
+
+const seedAISettings = (): AISettings => {
+  const localOverride = process.env.RAHOOT_AI_LOCAL_URL
+
+  return {
+    text: {
+      activeProvider: AI_PROVIDER_OFF,
+      providers: AI_TEXT_PROVIDER_PRESETS.map((p) => ({
+        id: p.id,
+        label: p.label,
+        kind: p.kind,
+        // The "local" provider's baseUrl is overridable server-side so an
+        // operator can point Ollama elsewhere without editing the file.
+        baseUrl:
+          p.id === "local" && localOverride
+            ? localOverride
+            : "baseUrl" in p
+              ? p.baseUrl
+              : undefined,
+        model: p.model,
+      })),
+    },
+    image: {
+      activeProvider: "comfyui",
+      providers: [{ id: "comfyui", label: "ComfyUI / Z-Image" }],
+    },
+  }
+}
+
+export const getAISettings = (): AISettings => {
+  const file = getPath("ai-settings.json")
+
+  if (!fs.existsSync(file)) {
+    return seedAISettings()
+  }
+
+  // Mirror getGameConfig: never throw on a malformed file — fall back to the
+  // seed so generation just reports "off"/notConfigured rather than crashing.
+  try {
+    const parsed = aiSettingsValidator.safeParse(
+      JSON.parse(fs.readFileSync(file, "utf-8")),
+    )
+
+    if (parsed.success) {
+      return parsed.data
+    }
+  } catch {
+    // fall through to seed
+  }
+
+  return seedAISettings()
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────
