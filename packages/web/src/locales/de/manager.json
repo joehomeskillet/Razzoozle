@@ -102,6 +102,16 @@
     "deleteConfirm": "Dieses Medium wirklich löschen?",
     "deleted": "Medium gelöscht",
     "search": "Medien durchsuchen",
+    "searchPlaceholder": "Medien durchsuchen…",
+    "noResults": "Keine passenden Medien",
+    "tooLarge": "Datei ist zu gross",
+    "uploadFailed": "Hochladen fehlgeschlagen",
+    "filters": {
+      "all": "Alle",
+      "upload": "Hochgeladen",
+      "ai": "KI",
+      "theme": "Design"
+    },
     "source": {
       "upload": "Hochgeladen",
       "ai": "KI",

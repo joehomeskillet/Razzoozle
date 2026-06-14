@@ -102,6 +102,16 @@
     "deleteConfirm": "Really delete this media item?",
     "deleted": "Media deleted",
     "search": "Search media",
+    "searchPlaceholder": "Search media…",
+    "noResults": "No matching media",
+    "tooLarge": "File is too large",
+    "uploadFailed": "Upload failed",
+    "filters": {
+      "all": "All",
+      "upload": "Uploaded",
+      "ai": "AI",
+      "theme": "Design"
+    },
     "source": {
       "upload": "Uploaded",
       "ai": "AI",
