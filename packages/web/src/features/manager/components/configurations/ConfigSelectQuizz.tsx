@@ -88,6 +88,14 @@ const ConfigSelectQuizz = () => {
           >
             <SelectableRow
               title={quizz.subject}
+              meta={
+                quizz.questionCount != null
+                  ? t("manager:selectQuizz.meta.questions", {
+                      defaultValue: "{{count}} Fragen",
+                      count: quizz.questionCount,
+                    })
+                  : undefined
+              }
               selected={selected === quizz.id}
               onClick={handleSelect(quizz.id)}
             />

@@ -1,6 +1,6 @@
 import clsx from "clsx"
 import { Image as ImageIcon, LoaderCircle, Upload } from "lucide-react"
-import { type ChangeEvent, useEffect, useState } from "react"
+import { type ChangeEvent, type ReactNode, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import Button from "@razzia/web/components/Button"
 
@@ -33,6 +33,8 @@ export interface AssetPreviewProps {
   /** Text on the null/placeholder tile (e.g. t('manager:theme.default')). */
   defaultLabel: string
   className?: string
+  /** Optional overlay rendered inside the tile, on top of a shown image. */
+  overlay?: ReactNode
 }
 
 /**
@@ -56,6 +58,7 @@ const AssetPreview = ({
   onReset,
   defaultLabel,
   className,
+  overlay,
 }: AssetPreviewProps) => {
   const { t } = useTranslation()
   // Swap to the placeholder when the hosted file fails to load (e.g. 404).
@@ -115,6 +118,7 @@ const AssetPreview = ({
             <span className="text-xs font-medium">{defaultLabel}</span>
           </div>
         )}
+        {showImage && overlay}
       </div>
 
       <div className="flex items-end justify-between gap-3">

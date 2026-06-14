@@ -17,12 +17,15 @@ import {
 } from "@razzia/web/features/game/contexts/socket-context"
 import {
   AssetPreview,
-  ColorSwatch,
+  AssetPreviewCard,
+  ColorSwatchField,
   EmptyState,
   Field,
   SectionCard,
+  StickyActions,
   SubGroup,
 } from "@razzia/web/features/manager/components/console"
+import ThemePreviewPanel from "@razzia/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzia/web/features/theme/apply"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import {
@@ -44,10 +47,22 @@ import { useTranslation } from "react-i18next"
 // also guards client-side; this stays as a second line of defence.
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
-const BG_SLOTS: Array<{ key: BackgroundSlot; labelKey: string }> = [
-  { key: "auth", labelKey: "manager:theme.bgSlots.auth" },
-  { key: "managerGame", labelKey: "manager:theme.bgSlots.managerGame" },
-  { key: "playerGame", labelKey: "manager:theme.bgSlots.playerGame" },
+const BG_SLOTS: Array<{
+  key: BackgroundSlot
+  labelKey: string
+  aspect: string
+}> = [
+  { key: "auth", labelKey: "manager:theme.bgSlots.auth", aspect: "aspect-[16/10]" },
+  {
+    key: "managerGame",
+    labelKey: "manager:theme.bgSlots.managerGame",
+    aspect: "aspect-video",
+  },
+  {
+    key: "playerGame",
+    labelKey: "manager:theme.bgSlots.playerGame",
+    aspect: "aspect-[9/16]",
+  },
 ]
 
 const ConfigTheme = () => {
@@ -217,197 +232,228 @@ const ConfigTheme = () => {
       }
     >
       <div className="flex flex-col gap-4 pb-20">
-        <div className="grid grid-cols-1 gap-4 xl:auto-rows-fr xl:grid-cols-2">
-          {/* ── Branding ───────────────────────────────────────────── */}
-          <SectionCard
-            icon={<SwatchBook className="size-5" />}
-            title={t("manager:theme.branding")}
-          >
-            <Field label={t("manager:theme.appTitle")}>
-              <Input
-                value={draft.appTitle ?? ""}
-                maxLength={40}
-                placeholder="Razzia"
-                variant="sm"
-                onChange={(e) =>
-                  preview({ ...draft, appTitle: e.target.value || null })
-                }
-                className="min-h-11 w-full rounded-lg"
-              />
-            </Field>
-
-            <AssetPreview
-              label={t("manager:theme.logo")}
-              value={draft.logo ?? null}
-              fit="contain"
-              aspect="aspect-video"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              uploading={pendingSlot === "logo"}
-              error={slotErrors.logo ? t(slotErrors.logo) : undefined}
-              onUpload={handleUpload("logo")}
-              onReset={() => setDraft((p) => ({ ...p, logo: null }))}
-              defaultLabel={t("manager:theme.default")}
-            />
-
-            <SubGroup>
-              <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={draft.showBranding}
+        {/*
+          Cockpit: LEFT settings column (minmax(0,1fr)) + RIGHT sticky preview
+          column (minmax(320px,420px)) at xl; single column below. The whole
+          grid stays inside the ConsoleShell tabpanel scroller — no nested
+          overflow that would trap mobile scroll.
+        */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
+          {/* ── LEFT: settings ─────────────────────────────────────── */}
+          <div className="flex min-w-0 flex-col gap-4">
+            {/* ── Branding ─────────────────────────────────────────── */}
+            <SectionCard
+              icon={<SwatchBook className="size-5" />}
+              title={t("manager:theme.branding")}
+            >
+              <Field label={t("manager:theme.appTitle")}>
+                <Input
+                  value={draft.appTitle ?? ""}
+                  maxLength={40}
+                  placeholder="Razzia"
+                  variant="sm"
                   onChange={(e) =>
-                    preview({ ...draft, showBranding: e.target.checked })
+                    preview({ ...draft, appTitle: e.target.value || null })
                   }
-                  className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  className="min-h-11 w-full rounded-lg"
                 />
-                {t("manager:theme.showFooter")}
-              </label>
-            </SubGroup>
-          </SectionCard>
+              </Field>
 
-          {/* ── UI-Farben ──────────────────────────────────────────── */}
-          <SectionCard
-            icon={<Palette className="size-5" />}
-            title={t("manager:theme.uiColors")}
-            description={t("manager:theme.contrastNote")}
-          >
-            <SubGroup>
-              <div className="flex flex-wrap justify-center gap-4 sm:justify-start">
-                <ColorSwatch
-                  label={t("manager:theme.colors.primary")}
-                  value={draft.colorPrimary}
-                  onChange={setColorValue("colorPrimary")}
-                />
-                <ColorSwatch
-                  label={t("manager:theme.colors.background")}
-                  value={draft.colorSecondary}
-                  onChange={setColorValue("colorSecondary")}
-                />
-                <ColorSwatch
-                  label={t("manager:theme.colors.accent")}
-                  value={draft.accentColor}
-                  onChange={setColorValue("accentColor")}
-                />
-              </div>
-            </SubGroup>
-          </SectionCard>
+              <AssetPreview
+                label={t("manager:theme.logo")}
+                value={draft.logo ?? null}
+                fit="contain"
+                aspect="aspect-video"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                uploading={pendingSlot === "logo"}
+                error={slotErrors.logo ? t(slotErrors.logo) : undefined}
+                onUpload={handleUpload("logo")}
+                onReset={() => setDraft((p) => ({ ...p, logo: null }))}
+                defaultLabel={t("manager:theme.default")}
+              />
 
-          {/* ── Antwort-Farben ─────────────────────────────────────── */}
-          <SectionCard
-            icon={<Type className="size-5" />}
-            title={t("manager:theme.answerColors")}
-          >
-            <SubGroup>
-              <div className="flex flex-wrap items-end justify-center gap-4 sm:justify-start">
-                {draft.answerColors.map((color, index) => (
-                  // oxlint-disable-next-line no-array-index-key
-                  <ColorSwatch
-                    key={index}
-                    label={["A", "B", "C", "D"][index] ?? ""}
-                    value={color}
-                    onChange={setAnswerValue(index)}
+              <SubGroup>
+                <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={draft.showBranding}
+                    onChange={(e) =>
+                      preview({ ...draft, showBranding: e.target.checked })
+                    }
+                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                  {t("manager:theme.showFooter")}
+                </label>
+              </SubGroup>
+            </SectionCard>
+
+            {/* ── UI-Farben ────────────────────────────────────────── */}
+            <SectionCard
+              icon={<Palette className="size-5" />}
+              title={t("manager:theme.uiColors")}
+              description={t("manager:theme.contrastNote")}
+            >
+              <SubGroup>
+                <div className="flex flex-wrap items-start justify-center gap-4 sm:justify-start">
+                  <ColorSwatchField
+                    label={t("manager:theme.colors.primary")}
+                    value={draft.colorPrimary}
+                    contrastAgainst="#ffffff"
+                    onChange={setColorValue("colorPrimary")}
+                  />
+                  <ColorSwatchField
+                    label={t("manager:theme.colors.background")}
+                    value={draft.colorSecondary}
+                    onChange={setColorValue("colorSecondary")}
+                  />
+                  <ColorSwatchField
+                    label={t("manager:theme.colors.accent")}
+                    value={draft.accentColor}
+                    contrastAgainst="#ffffff"
+                    onChange={setColorValue("accentColor")}
+                  />
+                </div>
+              </SubGroup>
+            </SectionCard>
+
+            {/* ── Antwort-Farben ───────────────────────────────────── */}
+            <SectionCard
+              icon={<Type className="size-5" />}
+              title={t("manager:theme.answerColors")}
+            >
+              <SubGroup>
+                <div className="flex flex-wrap items-start justify-center gap-4 sm:justify-start">
+                  {draft.answerColors.map((color, index) => (
+                    // oxlint-disable-next-line no-array-index-key
+                    <ColorSwatchField
+                      key={index}
+                      label={["A", "B", "C", "D"][index] ?? ""}
+                      value={color}
+                      contrastAgainst={draft.answerTextColor}
+                      answerPreview={{
+                        text: draft.answerTextColor,
+                        label: ["A", "B", "C", "D"][index] ?? "",
+                      }}
+                      onChange={setAnswerValue(index)}
+                    />
+                  ))}
+                </div>
+              </SubGroup>
+
+              <SubGroup>
+                <div className="flex justify-center sm:justify-start">
+                  <ColorSwatchField
+                    label={t("manager:theme.colors.text")}
+                    value={draft.answerTextColor}
+                    onChange={setColorValue("answerTextColor")}
+                  />
+                </div>
+              </SubGroup>
+            </SectionCard>
+
+            {/* ── Hintergründe ─────────────────────────────────────── */}
+            <SectionCard
+              icon={<ImageIcon className="size-5" />}
+              title={t("manager:theme.backgrounds")}
+            >
+              <Field
+                label={t("manager:theme.scrim", { value: draft.scrim })}
+                htmlFor="theme-scrim"
+              >
+                <input
+                  id="theme-scrim"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={draft.scrim}
+                  onChange={(e) =>
+                    preview({ ...draft, scrim: Number(e.target.value) })
+                  }
+                  className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {BG_SLOTS.map(({ key, labelKey, aspect }) => (
+                  <AssetPreviewCard
+                    key={key}
+                    label={t(labelKey)}
+                    value={draft.backgrounds[key] ?? null}
+                    fit="cover"
+                    aspect={aspect}
+                    scrim={draft.scrim}
+                    accept="image/png,image/jpeg,image/webp"
+                    uploading={pendingSlot === key}
+                    error={
+                      slotErrors[key] ? t(slotErrors[key] as string) : undefined
+                    }
+                    onUpload={handleUpload(key)}
+                    onReset={clearBackground(key)}
+                    defaultLabel={t("manager:theme.default")}
                   />
                 ))}
               </div>
-            </SubGroup>
+            </SectionCard>
 
-            <SubGroup>
-              <div className="flex justify-center sm:justify-start">
-                <ColorSwatch
-                  label={t("manager:theme.colors.text")}
-                  value={draft.answerTextColor}
-                  onChange={setColorValue("answerTextColor")}
-                />
-              </div>
-            </SubGroup>
-          </SectionCard>
-
-          {/* ── Hintergründe ───────────────────────────────────────── */}
-          <SectionCard
-            className="xl:col-span-2"
-            icon={<ImageIcon className="size-5" />}
-            title={t("manager:theme.backgrounds")}
-          >
-            <Field
-              label={t("manager:theme.scrim", { value: draft.scrim })}
-              htmlFor="theme-scrim"
+            {/* ── Vorlagen ─────────────────────────────────────────── */}
+            <SectionCard
+              icon={<BookMarked className="size-5" />}
+              title={t("manager:theme.templates.title")}
             >
-              <input
-                id="theme-scrim"
-                type="range"
-                min={0}
-                max={100}
-                value={draft.scrim}
-                onChange={(e) =>
-                  preview({ ...draft, scrim: Number(e.target.value) })
-                }
-                className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              />
-            </Field>
+              <SubGroup>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    value={templateName}
+                    maxLength={60}
+                    placeholder={t("manager:theme.templates.namePrompt")}
+                    variant="sm"
+                    aria-label={t("manager:theme.templates.namePrompt")}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="min-h-11 flex-1 rounded-lg"
+                  />
+                  <Button
+                    variant="primary"
+                    type="button"
+                    onClick={handleSaveTemplate}
+                    disabled={!templateName.trim()}
+                  >
+                    {t("manager:theme.templates.save")}
+                  </Button>
+                </div>
+              </SubGroup>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {BG_SLOTS.map(({ key, labelKey }) => (
-                <AssetPreview
-                  key={key}
-                  label={t(labelKey)}
-                  value={draft.backgrounds[key] ?? null}
-                  fit="cover"
-                  aspect="aspect-video"
-                  accept="image/png,image/jpeg,image/webp"
-                  uploading={pendingSlot === key}
-                  error={
-                    slotErrors[key] ? t(slotErrors[key] as string) : undefined
-                  }
-                  onUpload={handleUpload(key)}
-                  onReset={clearBackground(key)}
-                  defaultLabel={t("manager:theme.default")}
+              {templates.length === 0 ? (
+                <EmptyState
+                  icon={BookMarked}
+                  headline={t("manager:theme.templates.emptyHeadline")}
+                  hint={t("manager:theme.templates.none")}
                 />
-              ))}
-            </div>
-          </SectionCard>
-
-          {/* ── Vorlagen ───────────────────────────────────────────── */}
-          <SectionCard
-            className="xl:col-span-2"
-            icon={<BookMarked className="size-5" />}
-            title={t("manager:theme.templates.title")}
-          >
-            <SubGroup>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  value={templateName}
-                  maxLength={60}
-                  placeholder={t("manager:theme.templates.namePrompt")}
-                  variant="sm"
-                  aria-label={t("manager:theme.templates.namePrompt")}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  className="min-h-11 flex-1 rounded-lg"
-                />
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={handleSaveTemplate}
-                  disabled={!templateName.trim()}
-                >
-                  {t("manager:theme.templates.save")}
-                </Button>
-              </div>
-            </SubGroup>
-
-            {templates.length === 0 ? (
-              <EmptyState
-                icon={BookMarked}
-                headline={t("manager:theme.templates.emptyHeadline")}
-                hint={t("manager:theme.templates.none")}
-              />
-            ) : (
-              <div className="flex flex-col gap-2">
-                {templates.map((template) => (
-                  <SubGroup key={template.id}>
-                    <div className="flex items-center justify-between gap-3">
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {templates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+                    >
                       <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
                         {template.name}
                       </p>
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-gray-200">
+                        {[
+                          template.theme.colorPrimary,
+                          template.theme.accentColor,
+                          ...template.theme.answerColors,
+                        ].map((color, index) => (
+                          <span
+                            // oxlint-disable-next-line no-array-index-key
+                            key={index}
+                            className="flex-1"
+                            style={{ backgroundColor: color }}
+                            aria-hidden
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -428,14 +474,19 @@ const ConfigTheme = () => {
                         </Button>
                       </div>
                     </div>
-                  </SubGroup>
-                ))}
-              </div>
-            )}
-          </SectionCard>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          {/* ── RIGHT: live preview (sticky) ───────────────────────── */}
+          <div className="xl:sticky xl:top-4">
+            <ThemePreviewPanel theme={draft} />
+          </div>
         </div>
 
-        <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex gap-2 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:-mx-6 sm:-mb-6 sm:px-6">
+        <StickyActions>
           <Button
             variant="primary"
             className="flex-1 rounded-xl"
@@ -452,7 +503,7 @@ const ConfigTheme = () => {
             <RotateCcw className="size-4" aria-hidden />
             {t("manager:theme.reset")}
           </Button>
-        </div>
+        </StickyActions>
       </div>
 
       <AlertDialog

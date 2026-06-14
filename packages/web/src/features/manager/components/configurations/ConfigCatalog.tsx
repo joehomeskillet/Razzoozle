@@ -8,7 +8,10 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
-import { EmptyState } from "@razzia/web/features/manager/components/console"
+import {
+  EmptyState,
+  ListRow,
+} from "@razzia/web/features/manager/components/console"
 import QuestionEditorAcceptedAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
@@ -279,6 +282,11 @@ const ConfigCatalog = () => {
   const [editingEntry, setEditingEntry] = useState<CatalogEntry | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingOp, setPendingOp] = useState<CatalogModalMode | null>(null)
+  // The catalog entry pending a delete confirmation; drives the AlertDialog.
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string
+    question: string
+  } | null>(null)
 
   const requestCatalog = useCallback(() => {
     socket.emit(EVENTS.CATALOG.LIST)
@@ -358,9 +366,14 @@ const ConfigCatalog = () => {
     setPendingOp(null)
   }, [])
 
-  const handleDelete = (id: string) => {
-    socket.emit(EVENTS.CATALOG.DELETE, { id })
+  const handleDelete = () => {
+    if (!pendingDelete) {
+      return
+    }
+
+    socket.emit(EVENTS.CATALOG.DELETE, { id: pendingDelete.id })
     toast.success(t("manager:catalog.deleted"))
+    setPendingDelete(null)
     requestCatalog()
   }
 
@@ -431,9 +444,8 @@ const ConfigCatalog = () => {
             const source = entry.source ?? "manual"
 
             return (
-              <motion.article
+              <motion.div
                 key={entry.id}
-                className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200"
                 initial={reducedMotion ? false : { opacity: 0, y: 10 }}
                 animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={
@@ -446,65 +458,52 @@ const ConfigCatalog = () => {
                       }
                 }
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 font-semibold text-gray-900">
-                      {entry.question.question}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                        {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
-                        {t(`manager:catalog.source.${source}`)}
-                      </span>
-                      {(entry.tags ?? []).map((tag, tagIndex) => (
-                        <span
-                          key={`${tag}-${tagIndex}`}
-                          className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
-                        >
-                          {tag}
+                <ListRow
+                  title={entry.question.question}
+                  meta={
+                    <span className="flex flex-col gap-2 whitespace-normal">
+                      <span className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
                         </span>
-                      ))}
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      {formatDate(entry.addedAt)}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditModal(entry)}
-                      aria-label={t("manager:catalog.edit")}
-                      title={t("manager:catalog.edit")}
-                      className="shrink-0 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                    >
-                      <Pencil className="size-5" aria-hidden />
-                    </Button>
-                    <AlertDialog
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t("manager:catalog.delete")}
-                          title={t("manager:catalog.delete")}
-                          className="shrink-0 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="size-5" aria-hidden />
-                        </Button>
-                      }
-                      title={t("manager:catalog.delete")}
-                      description={t("manager:catalog.deleteConfirm")}
-                      confirmLabel={t("common:delete")}
-                      onConfirm={() => handleDelete(entry.id)}
-                    />
-                  </div>
-                </div>
-              </motion.article>
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                          {t(`manager:catalog.source.${source}`)}
+                        </span>
+                        {(entry.tags ?? []).map((tag, tagIndex) => (
+                          <span
+                            key={`${tag}-${tagIndex}`}
+                            className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(entry.addedAt)}
+                      </span>
+                    </span>
+                  }
+                  actions={[
+                    {
+                      key: "edit",
+                      icon: Pencil,
+                      label: t("manager:catalog.edit"),
+                      onClick: () => openEditModal(entry),
+                    },
+                    {
+                      key: "delete",
+                      icon: Trash2,
+                      label: t("manager:catalog.delete"),
+                      destructive: true,
+                      onClick: () =>
+                        setPendingDelete({
+                          id: entry.id,
+                          question: entry.question.question,
+                        }),
+                    },
+                  ]}
+                />
+              </motion.div>
             )
           })}
         </motion.div>
@@ -516,6 +515,19 @@ const ConfigCatalog = () => {
         editingEntry={editingEntry}
         onClose={closeModal}
         onSaveStart={setPendingOp}
+      />
+
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null)
+          }
+        }}
+        title={t("manager:catalog.delete")}
+        description={t("manager:catalog.deleteConfirm")}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleDelete}
       />
     </div>
   )

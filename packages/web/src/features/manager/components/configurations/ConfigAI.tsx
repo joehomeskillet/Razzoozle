@@ -6,6 +6,7 @@ import type {
   AITestResult,
 } from "@razzia/common/types/ai"
 import type { Quizz } from "@razzia/common/types/game"
+import clsx from "clsx"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
 import {
@@ -218,12 +219,53 @@ const ConfigAI = () => {
 
   const textConfigured = Boolean(selectedProvider?.keyConfigured)
 
+  const textStatus: "off" | "ready" | "error" = !selectedProvider
+    ? "off"
+    : lastTest === "failed"
+      ? "error"
+      : textConfigured || lastTest === "ok"
+        ? "ready"
+        : "off"
+
+  const textStatusBadge = {
+    off: {
+      label: t("manager:ai.status.off", { defaultValue: "Aus" }),
+      pill: "bg-gray-100 text-gray-600",
+      dot: "bg-gray-400",
+    },
+    ready: {
+      label: t("manager:ai.status.ready", { defaultValue: "Bereit" }),
+      pill: "bg-green-100 text-green-700",
+      dot: "bg-green-500",
+    },
+    error: {
+      label: t("manager:ai.status.error", { defaultValue: "Fehler" }),
+      pill: "bg-red-100 text-red-700",
+      dot: "bg-red-500",
+    },
+  }[textStatus]
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <SectionCard
         icon={<Wand2 className="size-5" aria-hidden />}
         title={t("manager:ai.text.title")}
         description={t("manager:ai.text.description")}
+        actions={
+          <span
+            className={clsx(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+              textStatusBadge.pill,
+            )}
+            aria-label={textStatusBadge.label}
+          >
+            <span
+              className={clsx("size-2 rounded-full", textStatusBadge.dot)}
+              aria-hidden
+            />
+            {textStatusBadge.label}
+          </span>
+        }
       >
         <Field label={t("manager:ai.provider")}>
           <select

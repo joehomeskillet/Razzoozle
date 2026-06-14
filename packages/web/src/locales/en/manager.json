@@ -173,6 +173,11 @@
     "provider": "Provider",
     "active": "Active",
     "off": "Off",
+    "status": {
+      "off": "Off",
+      "ready": "Ready",
+      "error": "Error"
+    },
     "model": "Model",
     "modelPlaceholder": "e.g. llama3.2:3b",
     "baseUrl": "Base URL",
@@ -251,7 +256,16 @@
     "default": "Default",
     "showFooter": "Show \"Razzia\" footer",
     "upload": "Image",
-    "preview": "Preview",
+    "preview": {
+      "title": "Preview",
+      "join": "Join",
+      "question": "Question",
+      "leaderboard": "Leaderboard"
+    },
+    "contrast": {
+      "hint": "Contrast",
+      "fail": "Low contrast"
+    },
     "uiColors": "UI colors",
     "colors": {
       "primary": "Primary",
@@ -295,12 +309,19 @@
     "preview": "Preview",
     "hidePreview": "Hide preview",
     "selectQuizz": "Select quiz",
+    "submitLinkHint": "Public submission link",
+    "copyLink": "Copy link",
     "confirmReject": "Really reject this suggestion?",
     "submittedBy": "Submitted by {{name}}",
     "submittedAt": "on {{date}}",
     "previewLabels": {
       "cooldown": "Cooldown",
       "loading": "Loading preview …"
+    }
+  },
+  "selectQuizz": {
+    "meta": {
+      "questions": "{{count}} questions"
     }
   }
 }

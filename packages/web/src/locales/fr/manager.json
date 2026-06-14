@@ -125,7 +125,16 @@
     "default": "Par défaut",
     "showFooter": "Afficher le pied de page « Razzia »",
     "upload": "Image",
-    "preview": "Aperçu",
+    "preview": {
+      "title": "Aperçu",
+      "join": "Rejoindre",
+      "question": "Question",
+      "leaderboard": "Classement"
+    },
+    "contrast": {
+      "hint": "Contraste",
+      "fail": "Contraste faible"
+    },
     "uiColors": "Couleurs de l'interface",
     "colors": {
       "primary": "Primaire",
@@ -169,6 +178,8 @@
     "preview": "Aperçu",
     "hidePreview": "Masquer l’aperçu",
     "selectQuizz": "Choisir le quiz",
+    "submitLinkHint": "Lien public de proposition",
+    "copyLink": "Copier le lien",
     "confirmReject": "Vraiment rejeter cette proposition ?",
     "submittedBy": "Proposée par {{name}}",
     "submittedAt": "le {{date}}",
@@ -260,6 +271,11 @@
     "provider": "Fournisseur",
     "active": "Actif",
     "off": "Désactivé",
+    "status": {
+      "off": "Désactivé",
+      "ready": "Prêt",
+      "error": "Erreur"
+    },
     "model": "Modèle",
     "modelPlaceholder": "p. ex. llama3.2:3b",
     "baseUrl": "URL de base",
@@ -301,6 +317,11 @@
       "failed": "Échec de la génération",
       "notConfigured": "Aucun fournisseur de texte configuré. Configure d'abord l'IA.",
       "openInEditor": "Ouvrir dans l'éditeur"
+    }
+  },
+  "selectQuizz": {
+    "meta": {
+      "questions": "{{count}} questions"
     }
   }
 }

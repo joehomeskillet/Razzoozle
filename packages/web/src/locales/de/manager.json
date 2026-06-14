@@ -173,6 +173,11 @@
     "provider": "Anbieter",
     "active": "Aktiv",
     "off": "Aus",
+    "status": {
+      "off": "Aus",
+      "ready": "Bereit",
+      "error": "Fehler"
+    },
     "model": "Modell",
     "modelPlaceholder": "z. B. llama3.2:3b",
     "baseUrl": "Basis-URL",
@@ -251,7 +256,16 @@
     "default": "Standard",
     "showFooter": "„Razzia\"-Footer zeigen",
     "upload": "Bild",
-    "preview": "Vorschau",
+    "preview": {
+      "title": "Vorschau",
+      "join": "Beitritt",
+      "question": "Frage",
+      "leaderboard": "Rangliste"
+    },
+    "contrast": {
+      "hint": "Kontrast",
+      "fail": "Kontrast schwach"
+    },
     "uiColors": "UI-Farben",
     "colors": {
       "primary": "Primär",
@@ -295,12 +309,19 @@
     "preview": "Vorschau",
     "hidePreview": "Vorschau ausblenden",
     "selectQuizz": "Quizz auswählen",
+    "submitLinkHint": "Öffentlicher Einreichungs-Link",
+    "copyLink": "Link kopieren",
     "confirmReject": "Diesen Vorschlag wirklich ablehnen?",
     "submittedBy": "Eingereicht von {{name}}",
     "submittedAt": "am {{date}}",
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Vorschau wird geladen …"
+    }
+  },
+  "selectQuizz": {
+    "meta": {
+      "questions": "{{count}} Fragen"
     }
   }
 }

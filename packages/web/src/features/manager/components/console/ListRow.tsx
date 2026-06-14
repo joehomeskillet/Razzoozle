@@ -69,7 +69,12 @@ const ListRow = ({
       )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold text-gray-900">{title}</span>
-        {meta && <span className="truncate text-sm text-gray-500">{meta}</span>}
+        {meta &&
+          (typeof meta === "string" ? (
+            <span className="truncate text-sm text-gray-500">{meta}</span>
+          ) : (
+            <span className="text-sm text-gray-500">{meta}</span>
+          ))}
       </span>
     </>
   )

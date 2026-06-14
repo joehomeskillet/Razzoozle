@@ -125,7 +125,16 @@
     "default": "Predefinito",
     "showFooter": "Mostra footer «Razzia»",
     "upload": "Immagine",
-    "preview": "Anteprima",
+    "preview": {
+      "title": "Anteprima",
+      "join": "Partecipa",
+      "question": "Domanda",
+      "leaderboard": "Classifica"
+    },
+    "contrast": {
+      "hint": "Contrasto",
+      "fail": "Contrasto basso"
+    },
     "uiColors": "Colori dell'interfaccia",
     "colors": {
       "primary": "Primario",
@@ -169,6 +178,8 @@
     "preview": "Anteprima",
     "hidePreview": "Nascondi anteprima",
     "selectQuizz": "Seleziona quiz",
+    "submitLinkHint": "Link pubblico di invio",
+    "copyLink": "Copia link",
     "confirmReject": "Vuoi davvero rifiutare questa proposta?",
     "submittedBy": "Inviata da {{name}}",
     "submittedAt": "il {{date}}",
@@ -260,6 +271,11 @@
     "provider": "Provider",
     "active": "Attivo",
     "off": "Disattivato",
+    "status": {
+      "off": "Disattivato",
+      "ready": "Pronto",
+      "error": "Errore"
+    },
     "model": "Modello",
     "modelPlaceholder": "es. llama3.2:3b",
     "baseUrl": "URL di base",
@@ -301,6 +317,11 @@
       "failed": "Generazione non riuscita",
       "notConfigured": "Nessun provider di testo configurato. Configura prima l'IA.",
       "openInEditor": "Apri nell'editor"
+    }
+  },
+  "selectQuizz": {
+    "meta": {
+      "questions": "{{count}} domande"
     }
   }
 }

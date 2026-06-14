@@ -125,7 +125,16 @@
     "default": "Estándar",
     "showFooter": "Mostrar el pie de página «Razzia»",
     "upload": "Imagen",
-    "preview": "Vista previa",
+    "preview": {
+      "title": "Vista previa",
+      "join": "Unirse",
+      "question": "Pregunta",
+      "leaderboard": "Clasificación"
+    },
+    "contrast": {
+      "hint": "Contraste",
+      "fail": "Contraste bajo"
+    },
     "uiColors": "Colores de la interfaz",
     "colors": {
       "primary": "Primario",
@@ -169,6 +178,8 @@
     "preview": "Vista previa",
     "hidePreview": "Ocultar vista previa",
     "selectQuizz": "Seleccionar quiz",
+    "submitLinkHint": "Enlace público de envío",
+    "copyLink": "Copiar enlace",
     "confirmReject": "¿Seguro que quieres rechazar esta sugerencia?",
     "submittedBy": "Enviada por {{name}}",
     "submittedAt": "el {{date}}",
@@ -260,6 +271,11 @@
     "provider": "Proveedor",
     "active": "Activo",
     "off": "Desactivado",
+    "status": {
+      "off": "Desactivado",
+      "ready": "Listo",
+      "error": "Error"
+    },
     "model": "Modelo",
     "modelPlaceholder": "p. ej. llama3.2:3b",
     "baseUrl": "URL base",
@@ -301,6 +317,11 @@
       "failed": "Error en la generación",
       "notConfigured": "No hay proveedor de texto configurado. Configura primero la IA.",
       "openInEditor": "Abrir en el editor"
+    }
+  },
+  "selectQuizz": {
+    "meta": {
+      "questions": "{{count}} preguntas"
     }
   }
 }
