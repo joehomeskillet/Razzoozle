@@ -73,6 +73,15 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     const game = registry.getManagerGame(gameId, clientId)
 
     if (game) {
+      // A clientId that matches a game's stored manager.clientId is itself proof
+      // of prior authentication, so a manager who reconnects (or whose game was
+      // restored from a crash-recovery snapshot, where loggedClients is NOT
+      // persisted) must regain withAuth privileges. The loggedClients Set is
+      // in-memory and is wiped on every socket-server restart — without this the
+      // manager regains the withGame controls but pause/resume + every manager
+      // CRUD handler silently 401s (MANAGER.UNAUTHORIZED) until the host
+      // re-enters the password at /manager.
+      managerAuth.login(socket)
       game.reconnect(socket)
 
       return
