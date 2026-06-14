@@ -217,15 +217,6 @@ const ConfigTheme = () => {
       }
     >
       <div className="flex flex-col gap-4 pb-20">
-        <header className="space-y-1">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {t("manager:theme.branding")}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {t("manager:theme.contrastNote")}
-          </p>
-        </header>
-
         <div className="grid grid-cols-1 gap-4 xl:auto-rows-fr xl:grid-cols-2">
           {/* ── Branding ───────────────────────────────────────────── */}
           <SectionCard
