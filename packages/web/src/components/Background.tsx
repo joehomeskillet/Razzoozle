@@ -1,4 +1,3 @@
-import background from "@razzia/web/assets/background.webp"
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import GithubIcon from "@razzia/web/components/GithubIcon"
 import { useThemeStore } from "@razzia/web/features/theme/store"
@@ -6,7 +5,7 @@ import type { PropsWithChildren } from "react"
 
 const Background = ({ children }: PropsWithChildren) => {
   const { theme } = useThemeStore()
-  const authBg = theme.backgrounds.auth ?? background
+  const authBg = theme.backgrounds.auth
   const appTitle = theme.appTitle?.trim()
 
   return (
@@ -19,10 +18,13 @@ const Background = ({ children }: PropsWithChildren) => {
             className="pointer-events-none absolute h-full w-full object-cover select-none"
           />
         ) : (
-          <>
-            <div className="bg-primary/15 absolute top-[-70vmin] left-[-50vmin] min-h-[120vmin] min-w-[120vmin] rotate-20 rounded-4xl" />
-            <div className="bg-primary/15 absolute right-[-10vmin] bottom-[-45vmin] min-h-[75vmin] min-w-[75vmin] rotate-20 rounded-4xl" />
-          </>
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
+            }}
+          />
         )}
         <div
           className="pointer-events-none absolute inset-0 bg-black"

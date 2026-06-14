@@ -7,7 +7,7 @@ import {
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Maximize } from "lucide-react"
-import { QRCodeSVG } from "qrcode.react"
+import QRCode from "@razzia/web/components/QRCode"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -117,7 +117,7 @@ const DisplayRegisterPage = () => {
 
           <div className="mt-[1vh] flex flex-col items-center gap-[1.5vh]">
             <div className="rounded-2xl bg-white p-[1.4vh]">
-              <QRCodeSVG className="h-[16vh] w-[16vh]" value={joinUrl} />
+              <QRCode className="h-[16vh] w-[16vh]" size={320} value={joinUrl} />
             </div>
             <p className="text-[1.8vh] font-semibold break-all text-white/60">
               {joinUrl}

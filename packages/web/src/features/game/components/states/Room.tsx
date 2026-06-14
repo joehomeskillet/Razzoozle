@@ -10,7 +10,7 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
-import { QRCodeSVG } from "qrcode.react"
+import QRCode from "@razzia/web/components/QRCode"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -111,8 +111,9 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
           <AlertDialog.Trigger asChild>
             <div className="group relative flex h-40 shrink-0 cursor-pointer rounded-xl bg-white p-2">
-              <QRCodeSVG
+              <QRCode
                 className="h-auto w-auto"
+                size={144}
                 value={buildJoinUrl(inviteCode, webUrl)}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-xl opacity-0 transition-opacity group-hover:opacity-100">
@@ -138,8 +139,9 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               >
                 <X className="size-6 text-gray-700" />
               </button>
-              <QRCodeSVG
+              <QRCode
                 className="size-56 md:size-70 lg:size-95"
+                size={380}
                 value={buildJoinUrl(inviteCode, webUrl)}
               />
             </AlertDialog.Content>

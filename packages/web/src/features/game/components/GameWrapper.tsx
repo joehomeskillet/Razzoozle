@@ -19,7 +19,7 @@ import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import clsx from "clsx"
 import { LogOut, Maximize } from "lucide-react"
-import { QRCodeSVG } from "qrcode.react"
+import QRCode from "@razzia/web/components/QRCode"
 import { type PropsWithChildren, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -116,7 +116,7 @@ const GameWrapper = ({
       {manager && inviteCode && (
         <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex items-center gap-2 rounded-lg bg-black/60 p-2 text-white">
           <div className="rounded bg-white p-1">
-            <QRCodeSVG value={buildJoinUrl(inviteCode)} size={56} />
+            <QRCode value={buildJoinUrl(inviteCode)} size={56} />
           </div>
           <div className="leading-tight">
             <div className="text-[10px] font-semibold uppercase opacity-70">

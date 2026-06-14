@@ -16,8 +16,8 @@ export interface ThemeBackgrounds {
 export type Theme = z.infer<typeof themeValidator>
 
 export const DEFAULT_THEME: Theme = {
-  colorPrimary: "#ff9900",
-  colorSecondary: "#1a140b",
+  colorPrimary: "#7c3aed",
+  colorSecondary: "#2e1065",
   colorText: "#ffffff",
   answerColors: ["#E69F00", "#56B4E9", "#3DBFA0", "#CC79A7"],
   answerTextColor: "#ffffff",

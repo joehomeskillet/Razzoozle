@@ -1,4 +1,3 @@
-import background from "@razzia/web/assets/background.webp"
 import QuestionEditor from "@razzia/web/features/quizz/components/QuestionEditor"
 import QuestionEditorAIAssist from "@razzia/web/features/quizz/components/QuestionEditorAIAssist"
 import QuizzEditorHeader from "@razzia/web/features/quizz/components/QuizzEditorHeader"
@@ -24,18 +23,28 @@ import "@razzia/web/features/manager/components/console/tokens.css"
  */
 const QuizzEditorShell = () => {
   const { theme } = useThemeStore()
-  const authBg = theme.backgrounds.auth ?? background
+  const authBg = theme.backgrounds.auth
 
   return (
     <div className="relative flex h-svh flex-col overflow-hidden">
       {/* Themed background photo + dark scrim (same recipe as Background). */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <img
-          src={authBg}
-          alt=""
-          aria-hidden
-          className="pointer-events-none h-full w-full object-cover select-none"
-        />
+        {authBg ? (
+          <img
+            src={authBg}
+            alt=""
+            aria-hidden
+            className="pointer-events-none h-full w-full object-cover select-none"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
+            }}
+          />
+        )}
         <div
           className="pointer-events-none absolute inset-0 bg-black"
           style={{ opacity: "var(--bg-scrim)" }}
