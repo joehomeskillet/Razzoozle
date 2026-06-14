@@ -298,18 +298,32 @@ const rewriteStrings = (value, rewrite) => {
 // Reference-driven rewrite: only rewrite a string if its underlying file was
 // actually moved (tracked in `moved`). Anything unmoved is left UNCHANGED so it
 // keeps resolving via the kept nginx /theme/ alias — no dangling refs.
-// We always rewrite to the RELATIVE /media/... path to decouple from the domain.
+// PRESERVE the ref's original style: an ABSOLUTE source URL keeps its origin
+// (quiz media.url must stay an absolute URL — questionMediaValidator uses
+// zod z.url(), which REJECTS site-relative paths and would make the quiz vanish
+// from the list). A relative source ("/theme/x") stays relative.
 const rewriteRef = (value) => {
+  const toRef = (mappedRelative) => {
+    try {
+      // Absolute input → keep the same origin, swap only the path.
+      return new URL(value).origin + mappedRelative
+    } catch {
+      // Relative input → relative output.
+      return mappedRelative
+    }
+  }
+
   // /media/gen-*.webp -> /media/generated/<name> (basename keyed in `moved`).
   if (/^\/media\/gen-[^/]+\.webp$/u.test(value)) {
     const base = path.basename(value)
-    return moved.get(base) ?? value
+    const mapped = moved.get(base)
+    return mapped ? toRef(mapped) : value
   }
 
   const base = themeBasenameOf(value)
 
   if (base && moved.has(base)) {
-    return moved.get(base)
+    return toRef(moved.get(base))
   }
 
   return value
