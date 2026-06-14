@@ -18,8 +18,10 @@ import { QUESTION_TYPES } from "@razzia/common/constants"
 import { z } from "zod"
 import {
   approveSubmission,
+  deleteCatalogEntry,
   deleteQuizz,
   getAllQuizzes,
+  getCatalog,
   getConfigDir,
   getQuizzById,
   getQuizzMeta,
@@ -30,10 +32,17 @@ import {
   getSubmissionsMeta,
   getTheme,
   rejectSubmission,
+  saveCatalogEntry,
   saveQuizz,
+  setQuizzArchived,
   setTheme,
   updateQuizz,
 } from "./config-store.js"
+import {
+  generateDistractors,
+  generateQuestion,
+  generateQuiz,
+} from "./ai-provider.js"
 import { generateImage } from "./comfyui.js"
 import { buildQuestion, type BuildQuestionInput } from "./question-builder.js"
 import { gameController } from "./game-controller.js"
@@ -545,6 +554,220 @@ server.registerTool(
         pushed = true
       }
       return ok({ saved: true, broadcast: pushed, theme: saved })
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+// ── Catalog (reusable question bank) ─────────────────────────────────────────
+
+server.registerTool(
+  "list_catalog",
+  {
+    title: "List catalog (question bank) entries",
+    description:
+      "List reusable questions saved in config/catalog (id, question text, type, tags, source, addedAt). These can be dropped into a quiz as-is.",
+    inputSchema: {},
+  },
+  () => {
+    try {
+      return ok(
+        getCatalog().map((e) => ({
+          id: e.id,
+          question: e.question.question,
+          type: e.question.type,
+          tags: e.tags,
+          source: e.source,
+          addedAt: e.addedAt,
+        })),
+      )
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+server.registerTool(
+  "add_to_catalog",
+  {
+    title: "Add a question to the catalog",
+    description:
+      "Build a question (same fields as create_question) and store it in the reusable question bank (config/catalog/<id>.json). Re-validates the question before writing and returns the generated catalog entry id.",
+    inputSchema: {
+      ...questionInputShape,
+      tags: z
+        .array(z.string().min(1).max(40))
+        .max(20)
+        .optional()
+        .describe("Optional free-text tags (<=20, each 1-40 chars)."),
+      source: z
+        .enum(["manual", "submission", "editor", "ai"])
+        .optional()
+        .describe("Provenance chip (default manual)."),
+    },
+  },
+  (args) => {
+    try {
+      const { tags, source, ...rest } = args
+      const question = buildQuestion(toBuildInput(rest))
+      const entry = saveCatalogEntry({ question, tags, source })
+      return ok({
+        id: entry.id,
+        question: entry.question.question,
+        tags: entry.tags,
+        source: entry.source,
+      })
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+server.registerTool(
+  "delete_catalog_entry",
+  {
+    title: "Delete a catalog entry",
+    description: "Delete a reusable question from the catalog by id.",
+    inputSchema: {
+      id: z.string().describe("Catalog entry id (from list_catalog)."),
+    },
+  },
+  ({ id }) => {
+    try {
+      deleteCatalogEntry(id)
+      return ok({ deleted: id })
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+server.registerTool(
+  "archive_quiz",
+  {
+    title: "Archive / unarchive a quiz",
+    description:
+      "Flip a quiz's archived flag without deleting it. Archived quizzes are hidden from the host picker but kept on disk. Pass archived=false to restore.",
+    inputSchema: {
+      id: z.string().describe("Quiz id (from list_quizzes)."),
+      archived: z
+        .boolean()
+        .optional()
+        .describe("True to archive (default), false to restore."),
+    },
+  },
+  ({ id, archived }) => {
+    try {
+      const next = archived ?? true
+      setQuizzArchived(id, next)
+      return ok({ id, archived: next })
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+// ── AI text generation (active text provider from config/ai-settings.json) ───
+// These route to whatever text provider is active in config/ai-settings.json,
+// using the key from config/ai-secrets.json (anthropic always needs a key;
+// openai-compatible needs one unless the baseUrl is a local host). If no
+// provider is active the tool returns "errors:ai.notConfigured".
+
+server.registerTool(
+  "generate_question",
+  {
+    title: "AI-generate a single question",
+    description:
+      "Generate ONE validated question about a topic via the active AI text provider. Returns a question object you can pass to create_quiz / add_question / add_to_catalog. Requires an active text provider in config/ai-settings.json.",
+    inputSchema: {
+      topic: z.string().min(1).max(200).describe("What the question is about."),
+      type: z
+        .enum(["choice", "boolean", "multiple-select", "type-answer"])
+        .optional()
+        .describe("Question kind to author (default choice)."),
+      language: z
+        .string()
+        .min(2)
+        .max(8)
+        .optional()
+        .describe("BCP-47-ish language code (default de)."),
+    },
+  },
+  async ({ topic, type, language }) => {
+    try {
+      return ok(await generateQuestion(topic, type, language))
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+server.registerTool(
+  "generate_quiz",
+  {
+    title: "AI-generate a full quiz",
+    description:
+      "Generate a full validated quiz (subject + N multiple-choice questions) about a topic via the active AI text provider. Returns the quiz object — pass it to create_quiz to persist. Requires an active text provider.",
+    inputSchema: {
+      topic: z.string().min(1).max(200).describe("Quiz topic."),
+      count: z
+        .number()
+        .int()
+        .min(1)
+        .max(15)
+        .describe("Number of questions (1-15)."),
+      language: z
+        .string()
+        .min(2)
+        .max(8)
+        .optional()
+        .describe("Language code (default de)."),
+    },
+  },
+  async ({ topic, count, language }) => {
+    try {
+      return ok(await generateQuiz(topic, count, language))
+    } catch (e) {
+      return fail(e)
+    }
+  },
+)
+
+server.registerTool(
+  "generate_distractors",
+  {
+    title: "AI-generate distractor answers",
+    description:
+      "Generate up to 3 plausible WRONG answers (distractors) for a question + its correct answer, via the active AI text provider. Use these to fill out a choice question's answer options. Requires an active text provider.",
+    inputSchema: {
+      question: z.string().min(1).max(300).describe("The question text."),
+      correct: z.string().min(1).max(200).describe("The correct answer."),
+      count: z
+        .number()
+        .int()
+        .min(1)
+        .max(3)
+        .optional()
+        .describe("How many distractors (1-3, default 3)."),
+      language: z
+        .string()
+        .min(2)
+        .max(8)
+        .optional()
+        .describe("Language code (default de)."),
+    },
+  },
+  async ({ question, correct, count, language }) => {
+    try {
+      return ok({
+        distractors: await generateDistractors(
+          question,
+          correct,
+          count,
+          language,
+        ),
+      })
     } catch (e) {
       return fail(e)
     }
