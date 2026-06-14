@@ -1,5 +1,6 @@
 import background from "@razzia/web/assets/background.webp"
 import QuestionEditor from "@razzia/web/features/quizz/components/QuestionEditor"
+import QuestionEditorAIAssist from "@razzia/web/features/quizz/components/QuestionEditorAIAssist"
 import QuizzEditorHeader from "@razzia/web/features/quizz/components/QuizzEditorHeader"
 import QuizzEditorSidebar from "@razzia/web/features/quizz/components/QuizzEditorSidebar"
 import { useThemeStore } from "@razzia/web/features/theme/store"
@@ -46,7 +47,10 @@ const QuizzEditorShell = () => {
         <QuizzEditorHeader />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
           <QuizzEditorSidebar />
-          <QuestionEditor />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <QuestionEditorAIAssist />
+            <QuestionEditor />
+          </div>
         </div>
       </div>
     </div>
