@@ -1,7 +1,7 @@
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import GithubIcon from "@razzia/web/components/GithubIcon"
 import { useThemeStore } from "@razzia/web/features/theme/store"
-import type { PropsWithChildren } from "react"
+import { type PropsWithChildren, useState } from "react"
 
 // `plain` forces the purple brand gradient and skips the themed photo wallpaper
 // — used by the manager console (/manager/config) which wants a clean solid
@@ -13,14 +13,19 @@ const Background = ({
   const { theme } = useThemeStore()
   const authBg = theme.backgrounds.auth
   const appTitle = theme.appTitle?.trim()
+  // Silent media fallback (WP-C item 4): if the themed wallpaper URL fails to
+  // load (deleted asset, broken config, offline media volume), drop to the brand
+  // gradient instead of leaving a broken-image box. No crash, no console noise.
+  const [bgFailed, setBgFailed] = useState(false)
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
       <div className="fixed inset-0 overflow-hidden">
-        {authBg && !plain ? (
+        {authBg && !plain && !bgFailed ? (
           <img
             src={authBg}
             alt="background"
+            onError={() => setBgFailed(true)}
             className="pointer-events-none absolute h-full w-full object-cover select-none"
           />
         ) : (

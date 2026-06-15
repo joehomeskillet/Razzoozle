@@ -31,6 +31,54 @@
     "description": "The page you are looking for does not exist.",
     "title": "Page not found"
   },
+  "client": {
+    "back": "Go back home",
+    "description": "Something was off with the request. Please try again.",
+    "title": "That request went a little sideways"
+  },
+  "server": {
+    "back": "Go back home",
+    "description": "Something broke on the server. We're on it.",
+    "title": "The server needs a short break"
+  },
+  "generic": {
+    "back": "Go back home",
+    "description": "An unexpected error occurred. Please try again.",
+    "title": "Something went wrong"
+  },
+  "quotes": {
+    "notFound": [
+      "This page is in another castle.",
+      "Schroedinger's page: simultaneously here and not here.",
+      "This page logged out and never logged back in.",
+      "404 — just emptiness and a little cosmic dust over here.",
+      "We looked everywhere. Even behind the couch.",
+      "This page is on a journey to find itself."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, but we still like you.",
+      "Layer 8 problem detected.",
+      "That was syntactically bold.",
+      "The request was a little off — happens to the best of us.",
+      "Something slipped between chair and keyboard.",
+      "Almost right. Just not quite."
+    ],
+    "server": [
+      "The server clocked out early.",
+      "Have you tried turning it off and on again?",
+      "Stack Overflow (the bad kind).",
+      "The hamsters in the server wheel need a break.",
+      "Kernel panic — the server is counting to ten first.",
+      "It's not you, it's us. Really."
+    ],
+    "generic": [
+      "Something went wrong — we're not sure what either.",
+      "A wild error appeared. It wasn't very effective.",
+      "Houston, we have a small problem.",
+      "A bug crept in here. We're sweeping it out.",
+      "Unexpected, but not unfamiliar."
+    ]
+  },
   "quizz": {
     "answerEmpty": "An answer cannot be empty",
     "failedToDelete": "Failed to delete quiz",
@@ -91,5 +139,9 @@
   "back": "Go back home",
   "detail": {
     "toggle": "Technical details"
+  },
+  "connection": {
+    "lost": "Connection lost — trying to reconnect",
+    "restored": "Connection restored"
   }
 }

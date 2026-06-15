@@ -21,7 +21,10 @@ import { useTranslation } from "react-i18next"
 
 type Props = {
   variant: ErrorVariant
-  title: string
+  // Optional framing overrides. When omitted, both are sourced from i18n via the
+  // per-variant framing keys (errors:<variant>.{title,description}). Existing
+  // callers that pass explicit strings keep working unchanged.
+  title?: string
   description?: string
   // Technical text (e.g. error.message). Rendered DEZENT, behind a collapsible
   // — never as a dominant raw stacktrace.
@@ -229,8 +232,14 @@ const AnimatedErrorPage = ({
   const reduced = useReducedMotion() ?? false
 
   // Pick the quote once per mount so it stays stable across re-renders but is
-  // re-rolled on remount/navigation.
+  // re-rolled on remount/navigation. Sourced from i18n (active language) via
+  // pickQuote.
   const quote = useMemo(() => pickQuote(variant), [variant])
+
+  // Framing (title/description): explicit props win; otherwise fall back to the
+  // per-variant i18n framing keys so each variant shows localized copy.
+  const resolvedTitle = title ?? t(`errors:${variant}.title`)
+  const resolvedDescription = description ?? t(`errors:${variant}.description`)
 
   const headingRef = useRef<HTMLHeadingElement>(null)
   const headingId = useId()
@@ -271,10 +280,10 @@ const AnimatedErrorPage = ({
               tabIndex={-1}
               className="text-2xl font-bold text-gray-800 outline-none"
             >
-              {title}
+              {resolvedTitle}
             </h1>
-            {description && (
-              <p className="text-sm text-gray-500">{description}</p>
+            {resolvedDescription && (
+              <p className="text-sm text-gray-500">{resolvedDescription}</p>
             )}
           </div>
 

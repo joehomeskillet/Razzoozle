@@ -26,6 +26,54 @@
     "description": "La página que buscas no existe.",
     "title": "Página no encontrada"
   },
+  "client": {
+    "back": "Volver al inicio",
+    "description": "Algo no cuadró con la solicitud. Inténtalo de nuevo.",
+    "title": "Esa solicitud se torció un poco"
+  },
+  "server": {
+    "back": "Volver al inicio",
+    "description": "Algo falló en el servidor. Estamos en ello.",
+    "title": "El servidor necesita un respiro"
+  },
+  "generic": {
+    "back": "Volver al inicio",
+    "description": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
+    "title": "Algo salió mal"
+  },
+  "quotes": {
+    "notFound": [
+      "Esta página está en otro castillo.",
+      "Página de Schrödinger: a la vez aquí y no aquí.",
+      "Esta página cerró sesión y nunca volvió a entrar.",
+      "404 — aquí solo hay vacío y un poco de polvo cósmico.",
+      "Buscamos por todas partes. Incluso detrás del sofá.",
+      "Esta página se fue a un viaje para encontrarse a sí misma."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, pero igual nos caes bien.",
+      "Problema de capa 8 detectado.",
+      "Eso fue sintácticamente atrevido.",
+      "La solicitud salió un poco torcida — le pasa a cualquiera.",
+      "Algo se descolocó entre la silla y el teclado.",
+      "Casi bien. Solo que no del todo."
+    ],
+    "server": [
+      "El servidor fichó la salida antes de tiempo.",
+      "¿Ya probaste a apagarlo y volverlo a encender?",
+      "Stack Overflow (del malo).",
+      "Los hámsteres de la rueda del servidor necesitan un descanso.",
+      "Kernel panic — el servidor primero cuenta hasta diez.",
+      "No eres tú, somos nosotros. De verdad."
+    ],
+    "generic": [
+      "Algo salió mal — nosotros tampoco sabemos qué.",
+      "Apareció un error salvaje. No fue muy efectivo.",
+      "Houston, tenemos un pequeño problema.",
+      "Aquí se coló un bug. Lo estamos barriendo.",
+      "Inesperado, pero no desconocido."
+    ]
+  },
   "quizz": {
     "answerEmpty": "Una respuesta no puede estar vacía",
     "failedToDelete": "Error al eliminar el cuestionario",
@@ -91,5 +139,9 @@
   "back": "Volver al inicio",
   "detail": {
     "toggle": "Detalles técnicos"
+  },
+  "connection": {
+    "lost": "Conexión perdida — intentando reconectar",
+    "restored": "Conexión restablecida"
   }
 }

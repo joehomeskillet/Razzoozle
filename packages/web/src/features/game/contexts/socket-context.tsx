@@ -17,6 +17,8 @@ import React, {
   useRef,
   useState,
 } from "react"
+import toast from "react-hot-toast"
+import { useTranslation } from "react-i18next"
 import { io, Socket } from "socket.io-client"
 import { v7 as uuid } from "uuid"
 
@@ -148,6 +150,17 @@ export const socketClient: TypedSocket = io("/", {
     : {}),
 })
 
+// Number of consecutive failed connect/reconnect attempts before we surface the
+// "connection lost" notice. A single dropped frame on flaky wifi recovers within
+// one retry, so we wait for a few in a row to avoid flashing the banner on every
+// transient blip. The socket keeps retrying forever regardless (reconnection:
+// Infinity) — this only governs when the user-facing notice appears.
+const CONNECTION_NOTICE_THRESHOLD = 3
+
+// Stable toast id so repeated failures update the SAME loading toast instead of
+// stacking, and the reconnect handler can dismiss exactly this one.
+const CONNECTION_TOAST_ID = "connection-status"
+
 const SocketContext = createContext<SocketContextValue>({
   socket: socketClient,
   isConnected: false,
@@ -165,15 +178,89 @@ const SocketContext = createContext<SocketContextValue>({
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false)
+  const { t } = useTranslation()
+  // Counts consecutive failed connect/reconnect attempts; reset to 0 on any
+  // successful (re)connect. Tracked in a ref so the socket event handlers (bound
+  // once) read the live value without re-subscribing on every change.
+  const failedAttemptsRef = useRef(0)
+  // True once the "connection lost" notice has been shown, so we only emit the
+  // "restored" toast if we actually warned the user (no false "back online" pop
+  // after a clean first connect).
+  const noticeShownRef = useRef(false)
+
+  // Keep the latest translator in a ref so the once-bound socket handlers always
+  // format with the current language without re-binding listeners.
+  const tRef = useRef(t)
+  tRef.current = t
 
   useEffect(() => {
-    socketClient.on("connect", () => setIsConnected(true))
-    socketClient.on("disconnect", () => setIsConnected(false))
-    socketClient.on("connect_error", (err) => {
+    const showLostNotice = () => {
+      failedAttemptsRef.current += 1
+
+      if (
+        failedAttemptsRef.current < CONNECTION_NOTICE_THRESHOLD ||
+        noticeShownRef.current
+      ) {
+        return
+      }
+
+      noticeShownRef.current = true
+      // A persistent loading toast (spinner, no auto-dismiss) — non-blocking:
+      // the UI underneath stays interactive and the socket keeps retrying.
+      toast.loading(
+        tRef.current("errors:connection.lost", {
+          defaultValue: "Verbindung verloren — versuche neu zu verbinden",
+        }),
+        { id: CONNECTION_TOAST_ID },
+      )
+    }
+
+    const onConnect = () => {
+      setIsConnected(true)
+
+      // Only celebrate recovery if we had actually flagged a loss; a normal
+      // first connect should be silent.
+      if (noticeShownRef.current) {
+        toast.success(
+          tRef.current("errors:connection.restored", {
+            defaultValue: "Verbindung wiederhergestellt",
+          }),
+          { id: CONNECTION_TOAST_ID, duration: 3000 },
+        )
+      }
+
+      failedAttemptsRef.current = 0
+      noticeShownRef.current = false
+    }
+
+    const onDisconnect = () => {
+      setIsConnected(false)
+      // A clean server-initiated close still leaves reconnection running; treat
+      // the drop itself as the first failed "attempt" so a sustained outage
+      // crosses the threshold and surfaces the notice.
+      showLostNotice()
+    }
+
+    const onConnectError = (err: Error) => {
       console.error("Connection error:", err.message)
-    })
+      showLostNotice()
+    }
+
+    socketClient.on("connect", onConnect)
+    socketClient.on("disconnect", onDisconnect)
+    socketClient.on("connect_error", onConnectError)
+    // The socket.io Manager's own reconnection attempts also count toward the
+    // threshold so a slow-to-recover link surfaces the notice even if the very
+    // first connect_error was swallowed.
+    socketClient.io.on("reconnect_attempt", showLostNotice)
 
     return () => {
+      socketClient.off("connect", onConnect)
+      socketClient.off("disconnect", onDisconnect)
+      socketClient.off("connect_error", onConnectError)
+      socketClient.io.off("reconnect_attempt", showLostNotice)
+      // Dismiss any lingering notice so it doesn't outlive this provider.
+      toast.dismiss(CONNECTION_TOAST_ID)
       socketClient.disconnect()
     }
   }, [])

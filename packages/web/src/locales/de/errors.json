@@ -31,6 +31,54 @@
     "description": "Die gesuchte Seite existiert nicht.",
     "title": "Seite nicht gefunden"
   },
+  "client": {
+    "back": "Zurück zur Startseite",
+    "description": "Mit der Anfrage stimmte etwas nicht. Bitte versuche es erneut.",
+    "title": "Da ist etwas verrutscht"
+  },
+  "server": {
+    "back": "Zurück zur Startseite",
+    "description": "Auf dem Server ist etwas schiefgelaufen. Wir kümmern uns darum.",
+    "title": "Der Server braucht kurz eine Pause"
+  },
+  "generic": {
+    "back": "Zurück zur Startseite",
+    "description": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+    "title": "Etwas ist schiefgelaufen"
+  },
+  "quotes": {
+    "notFound": [
+      "Diese Seite ist in einem anderen Schloss.",
+      "Schroedingers Seite: gleichzeitig da und nicht da.",
+      "Diese Seite hat sich ausgeloggt und nie wieder eingeloggt.",
+      "404 — hier ist nur noch Leere und ein bisschen kosmischer Staub.",
+      "Wir haben ueberall gesucht. Sogar hinter der Couch.",
+      "Diese Seite ist auf einer Reise zu sich selbst."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, aber wir moegen dich trotzdem.",
+      "Layer-8-Problem erkannt.",
+      "Das war syntaktisch mutig.",
+      "Die Anfrage war ein bisschen daneben — passiert den Besten.",
+      "Irgendwas zwischen Stuhl und Tastatur ist verrutscht.",
+      "Fast richtig. Nur halt nicht ganz."
+    ],
+    "server": [
+      "Der Server hat kurz Feierabend gemacht.",
+      "Hast du es schon mit aus- und wieder einschalten versucht?",
+      "Stack Overflow (die schlechte Sorte).",
+      "Die Hamster im Serverrad brauchen eine Pause.",
+      "Kernel Panic — der Server zaehlt erst mal bis zehn.",
+      "Es liegt nicht an dir, es liegt an uns. Wirklich."
+    ],
+    "generic": [
+      "Etwas ist schiefgelaufen — wir wissen auch nicht genau was.",
+      "Ein wilder Fehler erschien. Es war nicht sehr effektiv.",
+      "Houston, wir haben ein kleines Problem.",
+      "Hier hat sich ein Bug eingeschlichen. Wir kehren ihn raus.",
+      "Unerwartet, aber nicht ungewohnt."
+    ]
+  },
   "quizz": {
     "answerEmpty": "Eine Antwort darf nicht leer sein",
     "failedToDelete": "Quiz konnte nicht gelöscht werden",
@@ -91,5 +139,9 @@
   "back": "Zurück zur Startseite",
   "detail": {
     "toggle": "Technische Details"
+  },
+  "connection": {
+    "lost": "Verbindung verloren — versuche neu zu verbinden",
+    "restored": "Verbindung wiederhergestellt"
   }
 }

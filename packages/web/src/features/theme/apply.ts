@@ -24,6 +24,11 @@ export const applyTheme = (theme: Theme) => {
 
 // Fetch the persisted theme from the served config volume; fall back to the
 // bundled default (and fill any missing fields) if missing or invalid.
+//
+// This NEVER rejects: any failure — network error, non-2xx response, malformed
+// or non-object JSON — resolves to the bundled DEFAULT_THEME. A theme-fetch
+// failure must never crash the app or surface an unhandled promise rejection,
+// so the worst case is simply that the default look is used (WP-C item 4).
 export const fetchTheme = async (): Promise<Theme> => {
   try {
     const res = await fetch("/theme/theme.json", { cache: "no-store" })
@@ -32,7 +37,19 @@ export const fetchTheme = async (): Promise<Theme> => {
       return DEFAULT_THEME
     }
 
-    return { ...DEFAULT_THEME, ...((await res.json()) as Partial<Theme>) }
+    const parsed: unknown = await res.json()
+
+    // Guard against valid-but-unexpected JSON (null, an array, a primitive):
+    // only spread when it's a plain object, otherwise keep the pure default.
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return DEFAULT_THEME
+    }
+
+    return { ...DEFAULT_THEME, ...(parsed as Partial<Theme>) }
   } catch {
     return DEFAULT_THEME
   }

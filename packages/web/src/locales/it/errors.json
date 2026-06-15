@@ -26,6 +26,54 @@
     "description": "La pagina che cerchi non esiste.",
     "title": "Pagina non trovata"
   },
+  "client": {
+    "back": "Torna alla home",
+    "description": "Qualcosa non andava nella richiesta. Riprova.",
+    "title": "Quella richiesta è andata un po' di traverso"
+  },
+  "server": {
+    "back": "Torna alla home",
+    "description": "Qualcosa si è rotto sul server. Ci stiamo lavorando.",
+    "title": "Il server ha bisogno di una pausa"
+  },
+  "generic": {
+    "back": "Torna alla home",
+    "description": "Si è verificato un errore imprevisto. Riprova.",
+    "title": "Qualcosa è andato storto"
+  },
+  "quotes": {
+    "notFound": [
+      "Questa pagina è in un altro castello.",
+      "Pagina di Schrödinger: contemporaneamente qui e non qui.",
+      "Questa pagina ha fatto logout e non è più rientrata.",
+      "404 — qui c'è solo vuoto e un po' di polvere cosmica.",
+      "Abbiamo cercato ovunque. Anche dietro il divano.",
+      "Questa pagina è partita per un viaggio alla ricerca di sé."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, ma ci stai simpatico lo stesso.",
+      "Rilevato problema al livello 8.",
+      "È stato sintatticamente audace.",
+      "La richiesta era un po' fuori bersaglio — capita ai migliori.",
+      "Qualcosa è scivolato tra la sedia e la tastiera.",
+      "Quasi giusto. Solo non del tutto."
+    ],
+    "server": [
+      "Il server ha staccato un po' in anticipo.",
+      "Hai già provato a spegnerlo e riaccenderlo?",
+      "Stack Overflow (quello brutto).",
+      "I criceti nella ruota del server hanno bisogno di una pausa.",
+      "Kernel panic — il server prima conta fino a dieci.",
+      "Non sei tu, siamo noi. Davvero."
+    ],
+    "generic": [
+      "Qualcosa è andato storto — non sappiamo bene neanche noi cosa.",
+      "È apparso un errore selvatico. Non è stato molto efficace.",
+      "Houston, abbiamo un piccolo problema.",
+      "Qui si è intrufolato un bug. Lo stiamo spazzando via.",
+      "Inaspettato, ma non insolito."
+    ]
+  },
   "quizz": {
     "answerEmpty": "Una risposta non può essere vuota",
     "failedToDelete": "Impossibile eliminare il quiz",
@@ -91,5 +139,9 @@
   "back": "Torna alla home",
   "detail": {
     "toggle": "Dettagli tecnici"
+  },
+  "connection": {
+    "lost": "Connessione persa — tentativo di riconnessione",
+    "restored": "Connessione ripristinata"
   }
 }

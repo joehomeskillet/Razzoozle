@@ -1,10 +1,15 @@
-// Curated nerd-humor quote banks, one per error variant. Primarily German
-// (the audience speaks "du"), with universal nerd references left in English
-// where that is the joke. Kept harmless and on-brand — no insults, no politics.
+// Curated nerd-humor quote banks, one per error variant. The canonical source
+// is i18n (locales/<lng>/errors.json → "errors:quotes.<variant>"), so the line
+// follows the active language. The German arrays below stay as a hard fallback
+// for the (unlikely) case where the i18n value is missing or not an array — e.g.
+// a stripped/partial bundle. Kept harmless and on-brand — no insults, no
+// politics.
 //
 // Picked at CALL time via pickQuote(variant), so a re-render after a "back"
 // navigation or a remount yields a fresh line. Math.random is fine here — the
 // reproducibility of the choice carries no weight.
+
+import i18n from "@razzia/web/i18n"
 
 export type ErrorVariant = "notFound" | "client" | "server" | "generic"
 
@@ -47,20 +52,37 @@ const generic = [
   "Unerwartet, aber nicht ungewohnt.",
 ] as const
 
-const BANKS: Record<ErrorVariant, readonly string[]> = {
+const FALLBACK_BANKS: Record<ErrorVariant, readonly string[]> = {
   notFound,
   client,
   server,
   generic,
 }
 
+// Read the localized bank for `variant` from i18n. Returns a non-empty
+// string[] or null if the resource is missing / not an array of strings.
+const i18nBank = (variant: ErrorVariant): string[] | null => {
+  const value = i18n.t(`errors:quotes.${variant}`, { returnObjects: true })
+  if (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((entry) => typeof entry === "string")
+  ) {
+    return value as string[]
+  }
+  return null
+}
+
 /**
- * Returns one random line from the bank matching `variant`. Called at render
- * time so each mount/remount can surface a different quote. Falls back to the
- * generic bank for any unexpected variant value.
+ * Returns one random line from the bank matching `variant`. The bank is sourced
+ * from i18n (active language) and falls back to the hardcoded German arrays when
+ * the i18n value is missing or not a non-empty string array. Called at render
+ * time so each mount/remount can surface a different quote, and so a language
+ * change before remount picks up the new locale. Falls back to the generic bank
+ * for any unexpected variant value.
  */
 export const pickQuote = (variant: ErrorVariant): string => {
-  const bank = BANKS[variant] ?? generic
+  const bank = i18nBank(variant) ?? FALLBACK_BANKS[variant] ?? generic
   return bank[Math.floor(Math.random() * bank.length)]
 }
 

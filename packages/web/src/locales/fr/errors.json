@@ -26,6 +26,54 @@
     "description": "La page que vous recherchez n'existe pas.",
     "title": "Page introuvable"
   },
+  "client": {
+    "back": "Retour à l'accueil",
+    "description": "Quelque chose clochait dans la requête. Réessaie.",
+    "title": "Cette requête a un peu dérapé"
+  },
+  "server": {
+    "back": "Retour à l'accueil",
+    "description": "Quelque chose a cassé côté serveur. On s'en occupe.",
+    "title": "Le serveur a besoin d'une petite pause"
+  },
+  "generic": {
+    "back": "Retour à l'accueil",
+    "description": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "title": "Une erreur est survenue"
+  },
+  "quotes": {
+    "notFound": [
+      "Cette page est dans un autre château.",
+      "Page de Schrödinger : à la fois là et pas là.",
+      "Cette page s'est déconnectée et n'est jamais revenue.",
+      "404 — il n'y a ici que du vide et un peu de poussière cosmique.",
+      "On a cherché partout. Même derrière le canapé.",
+      "Cette page est partie en voyage pour se retrouver."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, mais on t'aime bien quand même.",
+      "Problème de couche 8 détecté.",
+      "C'était syntaxiquement audacieux.",
+      "La requête était un peu à côté — ça arrive aux meilleurs.",
+      "Quelque chose a glissé entre la chaise et le clavier.",
+      "Presque juste. Mais pas tout à fait."
+    ],
+    "server": [
+      "Le serveur a pointé sa sortie un peu tôt.",
+      "As-tu essayé de l'éteindre et de le rallumer ?",
+      "Stack Overflow (le mauvais genre).",
+      "Les hamsters de la roue du serveur ont besoin d'une pause.",
+      "Kernel panic — le serveur compte d'abord jusqu'à dix.",
+      "Ce n'est pas toi, c'est nous. Vraiment."
+    ],
+    "generic": [
+      "Quelque chose a mal tourné — on ne sait pas trop quoi non plus.",
+      "Une erreur sauvage est apparue. Ce n'était pas très efficace.",
+      "Houston, on a un petit problème.",
+      "Un bug s'est glissé ici. On le balaie dehors.",
+      "Inattendu, mais pas inhabituel."
+    ]
+  },
   "quizz": {
     "answerEmpty": "Une réponse ne peut pas être vide",
     "failedToDelete": "Suppression du quizz a echoué",
@@ -91,5 +139,9 @@
   "back": "Retour à l'accueil",
   "detail": {
     "toggle": "Détails techniques"
+  },
+  "connection": {
+    "lost": "Connexion perdue — tentative de reconnexion",
+    "restored": "Connexion rétablie"
   }
 }

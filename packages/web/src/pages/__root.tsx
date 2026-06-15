@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzia/common/constants"
+import ErrorBoundary from "@razzia/web/components/ErrorBoundary"
 import ErrorPage from "@razzia/web/components/ErrorPage"
 import NotFound from "@razzia/web/components/NotFound"
 import {
@@ -53,7 +54,12 @@ const GameLayout = () => {
 export const Route = createRootRoute({
   component: () => (
     <SocketProvider>
-      <GameLayout />
+      {/* Top-level safety net for non-router render errors. The router's own
+          errorComponent (below) handles route render failures; this catches
+          anything that slips past it so the user never sees a white screen. */}
+      <ErrorBoundary>
+        <GameLayout />
+      </ErrorBoundary>
     </SocketProvider>
   ),
   errorComponent: ({ error }) => (
