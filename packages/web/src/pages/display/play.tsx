@@ -1,15 +1,15 @@
 import {
   DISPLAY_HEARTBEAT_INTERVAL_MS,
   EVENTS,
-} from "@razzia/common/constants"
-import Loader from "@razzia/web/components/Loader"
-import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
+} from "@razzoozle/common/constants"
+import Loader from "@razzoozle/web/components/Loader"
+import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"

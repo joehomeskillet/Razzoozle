@@ -1,11 +1,11 @@
-import { EVENTS } from "@razzia/common/constants"
-import Button from "@razzia/web/components/Button"
-import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
+import { EVENTS } from "@razzoozle/common/constants"
+import Button from "@razzoozle/web/components/Button"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
   SelectableRow,
-} from "@razzia/web/features/manager/components/console"
-import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
+} from "@razzoozle/web/features/manager/components/console"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
 import { Copy, ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"

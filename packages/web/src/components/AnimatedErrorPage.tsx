@@ -1,10 +1,10 @@
-import Background from "@razzia/web/components/Background"
-import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
+import Background from "@razzoozle/web/components/Background"
+import Button from "@razzoozle/web/components/Button"
+import Card from "@razzoozle/web/components/Card"
 import {
   type ErrorVariant,
   pickQuote,
-} from "@razzia/web/components/errorQuotes"
+} from "@razzoozle/web/components/errorQuotes"
 import { useNavigate } from "@tanstack/react-router"
 import clsx from "clsx"
 import { ChevronDown, Ghost, ServerCrash, Unplug, Bug } from "lucide-react"

@@ -1,4 +1,4 @@
-import type { MediaCategory } from "@razzia/common/constants"
+import type { MediaCategory } from "@razzoozle/common/constants"
 
 // A single media-library item tracked in config/media-manifest.json and shown
 // in the manager Media tab. `url` is same-origin relative (/media/<cat>/<file>).

@@ -1,5 +1,5 @@
 import * as RadixAlertDialog from "@radix-ui/react-alert-dialog"
-import Button from "@razzia/web/components/Button"
+import Button from "@razzoozle/web/components/Button"
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -36,7 +36,7 @@ const AlertDialog = ({
       <RadixAlertDialog.Portal>
         <RadixAlertDialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
 
-        <RadixAlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl">
+        <RadixAlertDialog.Content className="glass-3 fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl">
           <RadixAlertDialog.Title className="text-lg font-semibold text-gray-900">
             {title}
           </RadixAlertDialog.Title>

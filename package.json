@@ -1,6 +1,7 @@
 {
-  "name": "razzia",
-  "version": "3.0.0",
+  "name": "razzoozle",
+  "version": "1.0.0",
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "dev": "dotenv -e .env -- pnpm -r --parallel dev",
     "dev:web": "dotenv -e .env -- pnpm --filter web dev",
@@ -13,11 +14,6 @@
     "verify": "pnpm -r run types && oxlint && pnpm -r --if-present run test",
     "format": "pnpm -r --parallel run format",
     "format:fix": "pnpm -r --parallel run format:fix"
-  },
-  "pnpm": {
-    "overrides": {
-      "ws": "^8.20.1"
-    }
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "latest",

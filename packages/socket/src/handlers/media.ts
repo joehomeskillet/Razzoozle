@@ -1,15 +1,15 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS } from "@razzoozle/common/constants"
 import {
   mediaDeleteValidator,
   mediaUploadValidator,
-} from "@razzia/common/validators/media"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+} from "@razzoozle/common/validators/media"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteMediaFile,
   getMediaList,
   saveMediaFile,
-} from "@razzia/socket/services/config"
-import manager from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager from "@razzoozle/socket/services/manager"
 
 // Media manager. ALL events are auth-gated (manager only). LIST emits the
 // manifest. Mutations re-emit DATA so all manager clients can refresh from one

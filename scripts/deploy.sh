@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # deploy.sh — canonical, idempotent, health-gated, auto-rollback deploy for the
-# live self-hosted Rahoot app. Mirrors the manual runbook in docs/OPERATIONS.md §2.
+# live self-hosted Razzoozle app. Mirrors the manual runbook in docs/OPERATIONS.md §2.
 #
 # What it does:
 #   0. (unless SKIP_PULL=1) hard-reset source to origin/main
@@ -13,9 +13,9 @@
 #   6. Auto-rollback to the rollback tag if the health gate fails
 #
 # Env vars (with defaults):
-#   DEPLOY_DIR  base dir holding source/ + config/ + compose       (/nvmetank1/projects/rahoot)
-#   IMAGE       image tag built and run                            (rahoot:custom)
-#   CONTAINER   compose service container name to health-check     (razzia)
+#   DEPLOY_DIR  base dir holding source/ + config/ + compose       (repo root, auto-detected)
+#   IMAGE       image tag built and run                            (razzoozle:custom)
+#   CONTAINER   compose service container name to health-check     (razzoozle)
 #   HEALTH_URL  HTTP healthcheck endpoint                          (http://127.0.0.1:3010/healthz)
 #   SKIP_PULL   set to 1 to skip the git update step               (unset)
 #
@@ -25,9 +25,9 @@ set -euo pipefail
 
 log() { printf '[deploy] %s\n' "$*"; }
 
-DEPLOY_DIR="${DEPLOY_DIR:-/nvmetank1/projects/rahoot}"
-IMAGE="${IMAGE:-rahoot:custom}"
-CONTAINER="${CONTAINER:-razzia}"
+DEPLOY_DIR="${DEPLOY_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+IMAGE="${IMAGE:-razzoozle:custom}"
+CONTAINER="${CONTAINER:-razzoozle}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:3010/healthz}"
 
 # ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ fi
 # ---------------------------------------------------------------------------
 ROLLBACK=""
 if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  ROLLBACK="rahoot:rollback-$(date +%Y%m%d-%H%M%S)"
+  ROLLBACK="razzoozle:rollback-$(date +%Y%m%d-%H%M%S)"
   docker tag "$IMAGE" "$ROLLBACK"
   log "STEP 1: tagged current image as $ROLLBACK"
 else

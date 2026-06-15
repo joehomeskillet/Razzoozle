@@ -1,13 +1,13 @@
-import { EVENTS } from "@razzia/common/constants"
-import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
-import Loader from "@razzia/web/components/Loader"
-import PinInput from "@razzia/web/components/PinInput"
+import { EVENTS } from "@razzoozle/common/constants"
+import Button from "@razzoozle/web/components/Button"
+import Card from "@razzoozle/web/components/Card"
+import Loader from "@razzoozle/web/components/Loader"
+import PinInput from "@razzoozle/web/components/PinInput"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSearch } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -90,7 +90,7 @@ const Room = () => {
   useEffect(() => clearJoinTimeout, [clearJoinTimeout])
 
   return (
-    <Card>
+    <Card className="glass-2">
       <p className="mb-2 text-lg font-semibold">{t("game:pinLabel")}</p>
       <PinInput value={invitation} onChange={setInvitation} />
       <Button

@@ -2,11 +2,11 @@ import {
   AVATARS_GENERIC,
   AVATAR_MAX_BYTES,
   EVENTS,
-} from "@razzia/common/constants"
-import Avatar from "@razzia/web/components/Avatar"
-import Button from "@razzia/web/components/Button"
-import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+} from "@razzoozle/common/constants"
+import Avatar from "@razzoozle/web/components/Avatar"
+import Button from "@razzoozle/web/components/Button"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import clsx from "clsx"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -78,7 +78,7 @@ const AvatarPicker = ({ onDone }: Props) => {
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-4">
+    <div className="glass-2 flex w-full flex-col items-center gap-4">
       <p className="text-lg font-bold text-gray-800">{t("game:avatar.title")}</p>
 
       <div className="flex flex-wrap items-center justify-center gap-3">

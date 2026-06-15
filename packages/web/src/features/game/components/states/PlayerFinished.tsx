@@ -1,6 +1,6 @@
-import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
-import { rankKeyFor } from "@razzia/web/features/game/utils/rank"
+import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
 import { useTranslation } from "react-i18next"
 
 interface Props {

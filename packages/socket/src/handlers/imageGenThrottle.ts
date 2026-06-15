@@ -7,8 +7,8 @@
 // 10+10 hourly credits by using different event names. The cooldown / lifetime /
 // hourly numbers and ordering are kept byte-identical to the original
 // GENERATE_IMAGE logic — see tryConsumeImageGenCredit below.
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { checkImageGenHourlyLimit } from "@razzia/socket/services/submissionRateLimit"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { checkImageGenHourlyLimit } from "@razzoozle/socket/services/submissionRateLimit"
 
 // The durable client identity from the handshake — same value manager auth keys
 // on (see services/manager.ts#getClientId). Falls back to socket.id when absent

@@ -3,7 +3,7 @@
  * IDs must match the server's achievement catalog exactly.
  */
 
-import type { MergedAchievement } from "@razzia/common/achievements"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
 
 export type AchievementTier = "bronze" | "silver" | "gold" | "diamant"
 

@@ -1,8 +1,8 @@
-import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
+import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/answers"
+} from "@razzoozle/web/features/game/utils/answers"
 import clsx from "clsx"
 import { useTranslation } from "react-i18next"
 

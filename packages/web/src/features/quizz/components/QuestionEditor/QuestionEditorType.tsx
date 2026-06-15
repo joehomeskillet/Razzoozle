@@ -1,5 +1,5 @@
-import type { QuestionType } from "@razzia/common/types/game"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import type { QuestionType } from "@razzoozle/common/types/game"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
 import {
   BarChart3,

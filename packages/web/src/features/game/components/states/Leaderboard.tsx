@@ -1,10 +1,10 @@
-import type { MergedAchievement } from "@razzia/common/achievements"
-import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
-import Avatar from "@razzia/web/components/Avatar"
-import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
-import AnimatedPoints from "@razzia/web/features/game/components/AnimatedPoints"
-import Fire from "@razzia/web/features/game/components/icons/Fire"
-import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
+import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
+import Avatar from "@razzoozle/web/components/Avatar"
+import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
+import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
+import Fire from "@razzoozle/web/features/game/components/icons/Fire"
+import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
 import {
   ACHIEVEMENT_META,
   TIER_GRADIENT,
@@ -12,8 +12,8 @@ import {
   TIER_LABEL,
   getAchievementDisplay,
   loadAchievementMeta,
-} from "@razzia/web/features/game/utils/achievements"
-import type { AchievementTier } from "@razzia/web/features/game/utils/achievements"
+} from "@razzoozle/web/features/game/utils/achievements"
+import type { AchievementTier } from "@razzoozle/web/features/game/utils/achievements"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -292,7 +292,7 @@ const Leaderboard = ({
         <TeamLeaderboard standings={teamStandings} />
       )}
 
-      <div className="flex w-full flex-col gap-2">
+      <div className="glass-2 flex w-full flex-col gap-2">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(
             ({ id, username, points, streak, avatar, achievements }) => (
@@ -316,7 +316,7 @@ const Leaderboard = ({
                     damping: 25,
                   },
                 }}
-                className="flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]"
+                className="glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]"
               >
                 {/* Main row: avatar + name + streak + points */}
                 <div className="flex w-full items-center justify-between">

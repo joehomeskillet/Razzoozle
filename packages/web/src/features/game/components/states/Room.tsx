@@ -1,17 +1,17 @@
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
-import { EVENTS } from "@razzia/common/constants"
-import type { Player } from "@razzia/common/types/game"
-import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
-import Avatar from "@razzia/web/components/Avatar"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Player } from "@razzoozle/common/types/game"
+import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
+import Avatar from "@razzoozle/web/components/Avatar"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
-import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
+import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
-import QRCode from "@razzia/web/components/QRCode"
+import QRCode from "@razzoozle/web/components/QRCode"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -102,7 +102,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const handleCloseQrCode = () => setQrOpen(false)
 
   return (
-    <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-2">
+    <section className="glass-2 relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-2">
       <div className="mb-10 flex flex-col-reverse items-center gap-3 md:flex-row md:items-stretch">
         <div className="flex flex-col gap-3 md:flex-row">
           <div className="flex flex-col items-center justify-center rounded-xl bg-white px-6 py-4 md:flex-row">

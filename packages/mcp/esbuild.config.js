@@ -1,7 +1,7 @@
 // Bundle the MCP stdio server into a single self-contained CJS file, mirroring
-// packages/socket's build. `@razzia/common` subpaths (`@razzia/common/constants`
+// packages/socket's build. `@razzoozle/common` subpaths (`@razzoozle/common/constants`
 // etc.) resolve via the root tsconfig `paths` map, which esbuild reads from the
-// nearest tsconfig.json. Bundling inlines @razzia/common + socket.io-client +
+// nearest tsconfig.json. Bundling inlines @razzoozle/common + socket.io-client +
 // the MCP SDK so `node dist/index.cjs` runs with zero path-resolution concerns —
 // exactly the property we want for a stdio MCP server registered via `.mcp.json`.
 import esbuild from "esbuild"

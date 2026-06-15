@@ -6,7 +6,7 @@
 // Kept deliberately tiny: bounded ring buffers + a p50/p95 getter. No timers,
 // no I/O, no external deps. A room's metrics are dropped on demand via clear().
 
-import type { MetricsHealthSnapshot } from "@razzia/common/types/game/socket"
+import type { MetricsHealthSnapshot } from "@razzoozle/common/types/game/socket"
 
 const MAX_SAMPLES = 200
 

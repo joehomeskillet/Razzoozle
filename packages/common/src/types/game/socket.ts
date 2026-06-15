@@ -1,7 +1,7 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { SubmissionCategory, ThemeSlot } from "@razzia/common/constants"
-import type { AISettingsPublic, AITestResult } from "@razzia/common/types/ai"
-import type { CatalogEntry } from "@razzia/common/types/catalog"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { SubmissionCategory, ThemeSlot } from "@razzoozle/common/constants"
+import type { AISettingsPublic, AITestResult } from "@razzoozle/common/types/ai"
+import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import type {
   GameResult,
   GameUpdateQuestion,
@@ -10,12 +10,12 @@ import type {
   Quizz,
   QuizzWithId,
   SharedResult,
-} from "@razzia/common/types/game"
-import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
-import type { ManagerConfig } from "@razzia/common/types/manager"
-import type { Submission } from "@razzia/common/types/submission"
-import type { Theme, ThemeRevision, ThemeTemplate } from "@razzia/common/types/theme"
-import type { MediaMeta } from "@razzia/common/types/media"
+} from "@razzoozle/common/types/game"
+import type { Status, StatusDataMap } from "@razzoozle/common/types/game/status"
+import type { ManagerConfig } from "@razzoozle/common/types/manager"
+import type { Submission } from "@razzoozle/common/types/submission"
+import type { Theme, ThemeRevision, ThemeTemplate } from "@razzoozle/common/types/theme"
+import type { MediaMeta } from "@razzoozle/common/types/media"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>

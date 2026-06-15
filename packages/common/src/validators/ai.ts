@@ -2,7 +2,7 @@ import {
   AI,
   AI_PROVIDER_KINDS,
   AI_PROVIDER_OFF,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import { z } from "zod"
 
 // One configured text provider. NOTE: the API key is intentionally NOT part of

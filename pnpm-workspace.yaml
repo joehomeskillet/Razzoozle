@@ -1,6 +1,6 @@
 packages:
   - "packages/*"
-  # The MCP server (@razzia/mcp) is a host-only dev tool (project-scoped
+  # The MCP server (@razzoozle/mcp) is a host-only dev tool (project-scoped
   # .mcp.json → node packages/mcp/dist/index.cjs, esbuild-bundled + self-
   # contained). Excluded from the main workspace so it never drifts pnpm-lock or
   # the Docker frozen install — the runtime image ships only web + socket.

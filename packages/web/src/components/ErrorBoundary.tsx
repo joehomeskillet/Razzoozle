@@ -1,5 +1,5 @@
-import AnimatedErrorPage from "@razzia/web/components/AnimatedErrorPage"
-import { type ErrorVariant } from "@razzia/web/components/errorQuotes"
+import AnimatedErrorPage from "@razzoozle/web/components/AnimatedErrorPage"
+import { type ErrorVariant } from "@razzoozle/web/components/errorQuotes"
 import i18n from "i18next"
 import { Component, type ErrorInfo, type ReactNode } from "react"
 

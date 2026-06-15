@@ -1,7 +1,7 @@
 import {
   contrastRatio,
   wcagLevel,
-} from "@razzia/web/features/manager/components/console/contrast"
+} from "@razzoozle/web/features/manager/components/console/contrast"
 import clsx from "clsx"
 import { useId } from "react"
 import { useTranslation } from "react-i18next"

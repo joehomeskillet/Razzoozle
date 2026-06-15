@@ -1,4 +1,4 @@
-import AnimatedErrorPage from "@razzia/web/components/AnimatedErrorPage"
+import AnimatedErrorPage from "@razzoozle/web/components/AnimatedErrorPage"
 import { useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 

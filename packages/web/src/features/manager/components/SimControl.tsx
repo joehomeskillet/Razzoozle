@@ -1,12 +1,12 @@
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import Button from "@razzia/web/components/Button"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import Button from "@razzoozle/web/components/Button"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import clsx from "clsx"
 import { Bot } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"

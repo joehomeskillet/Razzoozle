@@ -5,7 +5,7 @@
 // boolean (see toPublicAISettings in services/config). The file path is derived
 // the same way as the rest of the config layer and every provider id is run
 // through assertSafeId before it touches a path or a record key.
-import { assertSafeId } from "@razzia/socket/services/config"
+import { assertSafeId } from "@razzoozle/socket/services/config"
 import fs from "fs"
 import { resolve } from "path"
 

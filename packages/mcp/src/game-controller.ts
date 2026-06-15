@@ -6,19 +6,19 @@
 //           -> GAME.CREATE(quizId)    -> [MANAGER.GAME_CREATED {gameId,inviteCode}]
 //           -> START_GAME / NEXT_QUESTION / SHOW_LEADERBOARD / ABORT_QUIZ / ADD_BOTS
 //
-// All event names + payload shapes come from @razzia/common (EVENTS + the typed
+// All event names + payload shapes come from @razzoozle/common (EVENTS + the typed
 // ClientToServer/ServerToClient maps) — nothing is hardcoded. A single
 // long-lived connection per MCP process holds the manager session so the
 // presenter/beamer (a socket client reflecting game state) stays paired to the
 // game this controller created. The manager password is read from game.json and
 // NEVER returned through a tool result or logged.
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS } from "@razzoozle/common/constants"
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-} from "@razzia/common/types/game/socket"
-import type { Player } from "@razzia/common/types/game"
-import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
+} from "@razzoozle/common/types/game/socket"
+import type { Player } from "@razzoozle/common/types/game"
+import type { Status, StatusDataMap } from "@razzoozle/common/types/game/status"
 import { io, type Socket } from "socket.io-client"
 import { v4 as uuidv4 } from "uuid"
 import { getManagerPassword } from "./config-store.js"

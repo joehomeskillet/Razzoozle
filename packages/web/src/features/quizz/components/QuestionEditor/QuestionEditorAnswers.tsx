@@ -1,9 +1,9 @@
-import Markdown from "@razzia/web/components/Markdown"
+import Markdown from "@razzoozle/web/components/Markdown"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-} from "@razzia/web/features/game/utils/constants"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+} from "@razzoozle/web/features/game/utils/constants"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
 import { Check, Minus, Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"

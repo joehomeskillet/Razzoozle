@@ -15,8 +15,8 @@
 // vi.useFakeTimers(). The real timer constants live in round-manager.ts:
 //   AUTO_RESULT_MS = 6000, AUTO_LEADERBOARD_MS = 5000.
 
-import type { Question, Quizz } from "@razzia/common/types/game"
-import { STATUS } from "@razzia/common/types/game/status"
+import type { Question, Quizz } from "@razzoozle/common/types/game"
+import { STATUS } from "@razzoozle/common/types/game/status"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { buildRound, DISABLED_LL, makePlayer } from "./helpers"
 

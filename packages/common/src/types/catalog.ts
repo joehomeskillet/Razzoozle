@@ -1,5 +1,5 @@
-import type { CatalogSource } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
+import type { CatalogSource } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
 
 // A reusable question stored in the catalog (question bank). `question` is a
 // fully-validated Question, so an entry can be inserted into a quiz as-is.

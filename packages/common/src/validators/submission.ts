@@ -1,4 +1,4 @@
-import { SUBMISSION_CATEGORIES } from "@razzia/common/constants"
+import { SUBMISSION_CATEGORIES } from "@razzoozle/common/constants"
 import { z } from "zod"
 import { usernameValidator } from "./auth"
 import { questionValidator } from "./quizz"

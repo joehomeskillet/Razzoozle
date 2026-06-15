@@ -9,7 +9,7 @@
 // navigation or a remount yields a fresh line. Math.random is fine here — the
 // reproducibility of the choice carries no weight.
 
-import i18n from "@razzia/web/i18n"
+import i18n from "@razzoozle/web/i18n"
 
 export type ErrorVariant = "notFound" | "client" | "server" | "generic"
 

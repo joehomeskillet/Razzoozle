@@ -11,10 +11,10 @@
 // All time is controlled with vi.useFakeTimers()/setSystemTime so Date.now()
 // inside timeToPoint is deterministic. We never trust a client timestamp.
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { AnswerAck } from "@razzia/common/types/game/socket"
-import { timeToPoint } from "@razzia/socket/utils/game"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { AnswerAck } from "@razzoozle/common/types/game/socket"
+import { timeToPoint } from "@razzoozle/socket/utils/game"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   answerCount,

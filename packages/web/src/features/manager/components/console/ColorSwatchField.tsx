@@ -1,11 +1,11 @@
 import clsx from "clsx"
 import { useTranslation } from "react-i18next"
 
-import ColorSwatch from "@razzia/web/features/manager/components/console/ColorSwatch"
+import ColorSwatch from "@razzoozle/web/features/manager/components/console/ColorSwatch"
 import {
   contrastRatio,
   wcagLevel,
-} from "@razzia/web/features/manager/components/console/contrast"
+} from "@razzoozle/web/features/manager/components/console/contrast"
 
 export interface ColorSwatchFieldProps {
   /** Visible label, also the input's accessible name. */

@@ -1,4 +1,4 @@
-import type { GameResult } from "@razzia/common/types/game"
+import type { GameResult } from "@razzoozle/common/types/game"
 
 // Quote a single CSV field per RFC 4180: wrap in double quotes and double any
 // embedded quote, so commas/quotes/newlines in a username can't break the grid.

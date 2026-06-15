@@ -7,14 +7,14 @@
 // Coverage: save → ring (cap at THEME_REVISIONS_MAX, newest-first) → restore round-trip
 // (setTheme captures the pre-overwrite theme) → missing-file → [] → invalid-entry skip.
 
-import { THEME_REVISIONS_MAX } from "@razzia/common/constants"
-import type { Theme } from "@razzia/common/types/theme"
+import { THEME_REVISIONS_MAX } from "@razzoozle/common/constants"
+import type { Theme } from "@razzoozle/common/types/theme"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
 import path from "path"
 
-type ConfigModule = typeof import("@razzia/socket/services/config")
+type ConfigModule = typeof import("@razzoozle/socket/services/config")
 
 let tmpDir: string
 let prevConfigPath: string | undefined
@@ -22,11 +22,12 @@ let prevConfigPath: string | undefined
 const loadConfig = async (): Promise<ConfigModule> => {
   vi.resetModules()
 
-  return import("@razzia/socket/services/config")
+  return import("@razzoozle/socket/services/config")
 }
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME: Theme = {
+  style: "flat",
   colorPrimary: "#ff9900",
   colorSecondary: "#1a140b",
   colorText: "#ffffff",

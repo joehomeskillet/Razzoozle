@@ -15,7 +15,7 @@
 //   - bonus question = points doubled,
 //   - leaderboard ordering / snapshot after results.
 //
-// We import the tuning constants from @razzia/common and assert against them
+// We import the tuning constants from @razzoozle/common and assert against them
 // (never hardcode 100 / 1000 / 0.1 …) so a constant change is reflected here.
 //
 // All time is controlled with vi.useFakeTimers()/setSystemTime so the points
@@ -27,11 +27,11 @@ import {
   SLIDER_TOLERANCE_FRACTION,
   STREAK_CAP,
   STREAK_STEP,
-} from "@razzia/common/constants"
-import type { Player, Question, Quizz } from "@razzia/common/types/game"
-import type { StatusDataMap } from "@razzia/common/types/game/status"
-import { STATUS } from "@razzia/common/types/game/status"
-import { timeToPoint } from "@razzia/socket/utils/game"
+} from "@razzoozle/common/constants"
+import type { Player, Question, Quizz } from "@razzoozle/common/types/game"
+import type { StatusDataMap } from "@razzoozle/common/types/game/status"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import { timeToPoint } from "@razzoozle/socket/utils/game"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   buildRound,

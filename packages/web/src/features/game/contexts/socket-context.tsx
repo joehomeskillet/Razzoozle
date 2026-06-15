@@ -1,14 +1,14 @@
 import {
   computeClockOffset,
   type ClockSample,
-} from "@razzia/common/utils/clock-sync"
-import { EVENTS } from "@razzia/common/constants"
+} from "@razzoozle/common/utils/clock-sync"
+import { EVENTS } from "@razzoozle/common/constants"
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-} from "@razzia/common/types/game/socket"
-import { useLowLatencyStore } from "@razzia/web/features/game/stores/lowLatency"
-import { monoNow } from "@razzia/web/features/game/utils/monoNow"
+} from "@razzoozle/common/types/game/socket"
+import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
+import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import React, {
   createContext,
   useCallback,

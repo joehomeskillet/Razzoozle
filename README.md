@@ -1,263 +1,147 @@
-<p align="center">
-  <img width="450" height="120" align="center" src=".github/logo.svg">
-  <br>
-  <div align="center">
-    <img alt="Status" src="https://img.shields.io/badge/status-live-FF9900?style=for-the-badge">
-    <img alt="Tests" src="https://img.shields.io/badge/tests-125%20passing-FF9900?style=for-the-badge">
-    <img alt="TypeScript" src="https://img.shields.io/badge/typecheck-green-FF9900?style=for-the-badge">
-    <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-FF9900?style=for-the-badge">
-  </div>
-</p>
+<div align="center">
 
-> **Südhang fork** of [Razzia](https://github.com/Ralex91/Razzia) — a hardened,
-> branded production deployment for the **Südhang Personalfest**. Live at
-> **[rahoot.joelduss.xyz](https://rahoot.joelduss.xyz)**. See
-> **[CHANGELOG.md](CHANGELOG.md)** for what this fork carries beyond upstream and
-> **[docs/OPERATIONS.md](docs/OPERATIONS.md)** for the deploy/ops runbook.
+<img src="docs/screenshots/hero.webp" width="640" alt="Razzoozle" />
 
-## 🧩 What is this project?
+# Razzoozle
 
-A self-hosted, open-source Kahoot-style live quiz: the host drives the game from
-`/manager` (shown big on a beamer), players join and answer on their phones. This
-fork adds native branding/theming, a beamer kiosk, a low-latency mode, five
-languages, an installable PWA, and crash-recovery on top of upstream Razzia.
+**A self-hosted, open-source live quiz platform — with a violet liquid-glass interface.**
 
-> **Disclaimer**: Razzia is an independent, open-source software project. It is not affiliated with, endorsed by, or sponsored by any third-party quiz platform or service. Any resemblance to other quiz platforms is purely incidental.
+🌐 **English** · [Deutsch](README.de.md) · [中文](README.zh.md)
 
-<p align="center">
-  <img width="30%" src=".github/previews/1.png" alt="Login">
-  <img width="30%" src=".github/previews/2.png" alt="Manager Room">
-  <img width="30%" src=".github/previews/3.png" alt="Question Screen">
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-149ECA?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
-## ✨ What this fork adds (beyond upstream Razzia)
+[Live demo](https://razzoozle.joelduss.xyz) · [Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)
 
-- **🎨 Native theming** — per-view backgrounds, colours, app title and logo, edited live from a **Design tab** in `/manager` (stored in `config/theme/`, applied via CSS variables; the whole UI recolours, no rebuild). Five languages: **de / en / es / fr / it**.
-- **📺 Beamer kiosk + satellite** — a `/display` route renders the game fullscreen for a projector/TV (vh-scaled type that reads across a 4K room), pairable from a phone; optional Raspberry-Pi satellite image.
-- **⚡ Low-latency mode** (opt-in) — clock-sync, instant local answer feedback, answer-ack, scoreboard throttle, smoother reconnects — server-authoritative scoring stays intact. See [docs/LOW-LATENCY-MODE.md](docs/LOW-LATENCY-MODE.md).
-- **🛡️ Event robustness** — **crash-recovery** (in-flight games are snapshotted to disk and restored on restart — a process crash or redeploy mid-quiz no longer kicks anyone), a `/healthz` endpoint + Docker **HEALTHCHECK** for auto-heal, graceful shutdown, host-blip lobby grace, and a mid-game reconnect banner.
-- **📦 Installable PWA** — precached app shell for instant load + add-to-home-screen, with a NetworkFirst HTML shell so deploys land on one reload.
-- **♿ Accessibility & polish** — focus rings, `tabular-nums` scores/timers, `prefers-reduced-motion`, ARIA dialogs/tabs, keyboard-reorderable quiz editor.
+</div>
 
-### 📊 Optimize pass — by the numbers
+---
 
-| Dimension               | Before  | After                                         |
-| ----------------------- | ------- | --------------------------------------------- |
-| TypeScript (3 packages) | ❌ red  | ✅ green                                      |
-| Test suite              | 21      | **125**                                       |
-| Player initial payload  | ~3.8 MB | **~1.1 MB** (WebP + route code-split)         |
-| Load tested             | —       | **600 concurrent players** @ <10% socket CPU  |
-| Crash recovery          | none    | **proven** (kill -9 → restart → state intact) |
+## 🧩 What is this?
 
-Plus a security pass (path-traversal fix, patched `ws` CVE). Full detail in [CHANGELOG.md](CHANGELOG.md).
+Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights: a host opens a game on the big screen, players join from their phones with a PIN, and everyone races to answer. It is a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), rebuilt around a distinctive **violet liquid-glass** look, a manager-driven theming system, gamification, solo play and local AI image generation.
+
+> Razzoozle is an independent open-source project. It is not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
+
+<div align="center">
+<img src="docs/screenshots/join.webp" width="32%" alt="Join screen" />
+<img src="docs/screenshots/solo-question.webp" width="22%" alt="Question screen" />
+<img src="docs/screenshots/leaderboard.webp" width="22%" alt="Leaderboard" />
+</div>
+
+---
+
+## ✦ What Razzoozle adds over Razzia
+
+A small, honest summary of what this fork brings on top of upstream Razzia:
+
+| | Feature |
+| --- | --- |
+| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (ships a violet **liquid-glass** preset + a flat default) and contrast-aware colour pickers. |
+| 🧊 | **Liquid-glass UI** — an opt-in glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
+| 🏆 | **Gamification** — 15 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |
+| 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
+| 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
+| ✍️ | **More question types** — multiple-select and type-the-answer, in addition to classic choice + slider. |
+| 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
+| 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
+| 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
+| 📺 | **Beamer kiosk + reliability** — a dedicated `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
+
+All of it is covered by **350+ automated tests** and a health-gated Docker deploy.
+
+---
 
 ## ⚙️ Prerequisites
 
-Choose one of the following deployment methods:
+**With Docker (recommended):** Docker + Docker Compose.
+**Without Docker:** Node 22+ and pnpm 11+.
 
-### Without Docker
+---
 
-- Node.js : version 22 or higher
-- PNPM : version 10.16 or higher (learn more [here](https://pnpm.io/))
+## 📖 Getting started
 
-### With Docker
-
-- Docker and Docker Compose
-
-## 📖 Getting Started
-
-Choose your deployment method:
-
-### 🐳 Using Docker (Recommended)
-
-Using Docker Compose (recommended):
-You can find the docker compose configuration in the repository:
-[docker-compose.yml](/compose.yml)
+### Docker (recommended)
 
 ```bash
+git clone https://github.com/joehomeskillet/Razzoozle.git
+cd Razzoozle
 docker compose up -d
 ```
 
-Or using Docker directly:
+This builds the image and starts the app on `http://127.0.0.1:3011` (nginx + the socket server in one container). Configuration and user data live in the `./config` volume, which is created and seeded on first boot.
+
+Put it behind your own reverse proxy (Caddy, nginx, Traefik…) for TLS and a public hostname.
+
+### Without Docker
 
 ```bash
-docker run -d \
-  -p 3000:3000 \
-  -v ./config:/app/config \
-  ralex91/razzia:latest
-```
-
-**Configuration Volume:**
-The `-v ./config:/app/config` option mounts a local `config` folder to persist your game settings and quizzes. This allows you to:
-
-- Edit your configuration files directly on your host machine
-- Keep your settings when updating the container
-- Easily backup your quizzes and game configuration
-
-The folder will be created automatically on first run with an example quiz to get you started.
-
-The application will be available at http://localhost:3000
-
-### 🛠️ Without Docker
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/Ralex91/Razzia.git
-cd ./Razzia
-```
-
-2. Install dependencies:
-
-```bash
+git clone https://github.com/joehomeskillet/Razzoozle.git
+cd Razzoozle
 pnpm install
-```
-
-3. Build and start the application:
-
-```bash
-# Development mode
-pnpm run dev
-
-# Production mode
-pnpm run build
+pnpm build
 pnpm start
 ```
 
+Dev mode (web + socket with hot reload): `pnpm dev`.
+
+---
+
+## 🎮 How to play
+
+1. Open `/manager` on the host machine and sign in with the manager password (`config/game.json`).
+2. Pick a quiz and start a game — a PIN appears on screen (show it on the beamer via `/display`).
+3. Players open the site on their phones, enter the PIN and a name.
+4. Answer as fast as you can — faster correct answers score more.
+5. Watch the leaderboard, medals and confetti between rounds.
+
+Prefer playing alone? Open any quiz's **solo** share link and practise at your own pace.
+
+---
+
 ## ⚙️ Configuration
 
-The configuration is split into two main parts:
+Runtime data lives in `config/` (git-ignored, seeded on first boot):
 
-### 1. Game Configuration (`config/game.json`)
+- `config/game.json` — game rules + the manager password.
+- `config/quizz/*.json` — your quizzes.
+- `config/theme/theme.json` — the active theme (or pick a preset in the Design tab).
+- `config/ai-settings.json` — AI provider selection (keys are stored separately, never sent to clients).
 
-Main game settings:
-
-```json
-{
-  "managerPassword": "PASSWORD"
-}
-```
-
-Options:
-
-- `managerPassword`: The master password for accessing the manager interface. **Must be changed from the default `"PASSWORD"` value**, otherwise manager access is blocked.
-
-#### Low-Latency Mode (optional, off by default)
-
-An opt-in mode that tightens timing fairness, gives players instant local answer
-feedback, smooths reconnects, and adds host-side observability — all on the
-existing socket.io transport, with **no rewrite**. It is **disabled by default**:
-when off, behaviour is byte-identical to a normal Razzia build, and an existing
-`game.json` that only has `managerPassword` keeps working unchanged.
-
-To enable it, add the `lowLatencyMode` block to `config/game.json` (every field
-is optional and defaulted, so you can set only the ones you want):
+A quiz is plain JSON — for example:
 
 ```jsonc
 {
-  "managerPassword": "PASSWORD",
-  "lowLatencyMode": {
-    "enabled": false, // master switch; OFF = today's behaviour
-    "clockSync": true, // UI-only client clock offset (never scoring)
-    "preloadNextQuestion": true, // prefetch the next question's media
-    "answerAck": true, // emit an answer ack to the client
-    "scoreboardBroadcastThrottleMs": 100, // coalesce scoreboard chatter (ms)
-    "maxLatencyCompensationMs": 150, // server-side, capped grace window (ms)
-  },
-}
-```
-
-Scoring always stays **server-authoritative** (the server's receive timestamp,
-never client time). See **[docs/LOW-LATENCY-MODE.md](docs/LOW-LATENCY-MODE.md)**
-for what it does and does not guarantee, why WebSocket/socket.io stays the
-default transport (and why WebTransport is not), the timing model, clock sync,
-answer idempotency/ack, preload, scoreboard throttle, reconnect/resume, and the
-observability metrics.
-
-### 2. Quiz Configuration (`config/quizz/*.json`)
-
-Quizzes can be created in two ways:
-
-- **Via the Quiz Editor** — use the built-in editor available in the manager dashboard (recommended)
-- **Via JSON files** — manually create files in the `config/quizz/` directory
-
-You can have multiple quiz files and select which one to use when starting a game.
-
-Example quiz configuration (`config/quizz/example.json`):
-
-```json
-{
-  "subject": "Example Quiz",
+  "subject": "General knowledge",
   "questions": [
     {
-      "question": "What is the correct answer?",
-      "answers": ["No", "Yes", "No", "No"],
-      "solutions": [1],
-      "cooldown": 5,
-      "time": 15
-    },
-    {
-      "question": "Which of these are primary colors?",
-      "answers": ["Red", "Green", "Blue", "Yellow"],
-      "solutions": [0, 2, 3],
-      "cooldown": 5,
-      "time": 20
-    },
-    {
-      "question": "What is the correct answer with an image?",
-      "answers": ["No", "Yes", "No", "No"],
-      "media": {
-        "type": "image",
-        "url": "https://placehold.co/600x400.png"
-      },
-      "solutions": [1],
-      "cooldown": 5,
-      "time": 20
+      "question": "What colour is the sky on a clear day?",
+      "type": "choice",
+      "answers": ["Green", "Blue", "Red", "Yellow"],
+      "solution": 1,
+      "time": 15,
+      "cooldown": 5
     }
   ]
 }
 ```
 
-Quiz Options:
+You can also build quizzes in the manager UI, generate images with AI, or accept community submissions.
 
-- `subject`: Title/topic of the quiz
-- `questions`: Array of question objects containing:
-  - `question`: The question text
-  - `answers`: Array of possible answers (2-4 options)
-  - `media`: Optional media object displayed with the question:
-    - `type`: `"image"`, `"video"`, or `"audio"`
-    - `url`: URL of the media
-  - `solutions`: Array of correct answer indices (0-based). Use multiple indices for multi-answer questions
-  - `cooldown`: Time in seconds before answers are revealed (3-15)
-  - `time`: Time in seconds allowed to answer (5-120)
+---
 
-## 🎮 How to Play
+## 🧱 Tech stack
 
-1. Access the manager interface at http://localhost:3000/manager
-2. Enter the manager password (defined in `config/game.json`)
-3. Share the game URL (http://localhost:3000) and room code with participants
-4. Wait for players to join
-5. Click the start button to begin the game
+A pnpm monorepo: **`@razzoozle/web`** (React + Vite + Tailwind v4, TanStack Router, PWA), **`@razzoozle/socket`** (Node + Socket.IO + Express), **`@razzoozle/common`** (shared Zod-validated types), and **`@razzoozle/mcp`** (an MCP server for AI-tool control). Ships as a single Docker image (nginx + node via supervisord).
 
-## 📺 Kiosk / Satellite Display
+---
 
-The `/satellite/<gameId>` route is a **display-only kiosk** view of the
-host/presentation screen, intended for a wall-mounted screen or a Raspberry Pi
-wired to a beamer/TV. It renders the manager presentation chrome with **no**
-control buttons — the game is still driven from `/manager` on another device.
+## 📝 Credits & license
 
-Because it has no password prompt, this route does **not** use the manager
-password. It authenticates over socket.io with a **token** supplied via the URL
-(`/satellite/<gameId>?satellite=true&token=<token>`) or a build-time
-`VITE_SATELLITE_TOKEN`, validated against the same `MANAGER.AUTH` path. Without a
-valid token the kiosk cannot connect.
+Razzoozle is a fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) — huge thanks to the upstream authors. Released under the **[MIT License](LICENSE)** (© 2024 Ralex, © 2026 Razzoozle contributors). The upstream MIT notice is retained.
 
-## 📝 Contributing
-
-Contributions are welcome! Please read the [CONTRIBUTING.md](.github/CONTRIBUTING.md) guide before submitting a pull request.
-
-For bug reports or feature requests on this fork, please [create an issue](https://git.joelduss.xyz/agent-claude/rahoot/issues).
-
-## 🙏 Credits
-
-Built on the excellent [Razzia](https://github.com/Ralex91/Razzia) by Ralex91 (open-source). This is the **Südhang fork** — see [CHANGELOG.md](CHANGELOG.md) for the full divergence and [docs/OPERATIONS.md](docs/OPERATIONS.md) for operations.
+Contributions welcome — open an issue or a pull request.

@@ -1,10 +1,10 @@
 import * as RadixDialog from "@radix-ui/react-dialog"
-import type { GameResult } from "@razzia/common/types/game"
-import ResultModalAnswers from "@razzia/web/features/manager/components/ResultModal/ResultModalAnswers"
-import ResultModalHeader from "@razzia/web/features/manager/components/ResultModal/ResultModalHeader"
-import ResultModalStats from "@razzia/web/features/manager/components/ResultModal/ResultModalStats"
-import ResultModalTable from "@razzia/web/features/manager/components/ResultModal/ResultModalTable"
-import { ResultModalProvider } from "@razzia/web/features/manager/contexts/result-modal-context"
+import type { GameResult } from "@razzoozle/common/types/game"
+import ResultModalAnswers from "@razzoozle/web/features/manager/components/ResultModal/ResultModalAnswers"
+import ResultModalHeader from "@razzoozle/web/features/manager/components/ResultModal/ResultModalHeader"
+import ResultModalStats from "@razzoozle/web/features/manager/components/ResultModal/ResultModalStats"
+import ResultModalTable from "@razzoozle/web/features/manager/components/ResultModal/ResultModalTable"
+import { ResultModalProvider } from "@razzoozle/web/features/manager/contexts/result-modal-context"
 
 // The dialog title (`result.subject`) is rendered inside ResultModalHeader; this
 // shared id wires Radix's `aria-labelledby` to that heading.

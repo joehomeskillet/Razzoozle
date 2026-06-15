@@ -1,28 +1,28 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { ManagerConfig } from "@razzia/common/types/manager"
-import LanguageSwitcher from "@razzia/web/components/LanguageSwitcher"
-import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import ConfigAI from "@razzia/web/features/manager/components/configurations/ConfigAI"
-import ConfigAchievements from "@razzia/web/features/manager/components/configurations/ConfigAchievements"
-import ConfigCatalog from "@razzia/web/features/manager/components/configurations/ConfigCatalog"
-import ConfigDisplay from "@razzia/web/features/manager/components/configurations/ConfigDisplay"
-import ConfigGameMode from "@razzia/web/features/manager/components/configurations/ConfigGameMode"
-import ConfigManageQuizz from "@razzia/web/features/manager/components/configurations/ConfigManageQuizz"
-import ConfigMedia from "@razzia/web/features/manager/components/configurations/ConfigMedia"
-import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
-import ConfigSelectQuizz from "@razzia/web/features/manager/components/configurations/ConfigSelectQuizz"
-import ConfigSubmissions from "@razzia/web/features/manager/components/configurations/ConfigSubmissions"
-import ConfigTheme from "@razzia/web/features/manager/components/configurations/ConfigTheme"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { ManagerConfig } from "@razzoozle/common/types/manager"
+import LanguageSwitcher from "@razzoozle/web/components/LanguageSwitcher"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import ConfigAI from "@razzoozle/web/features/manager/components/configurations/ConfigAI"
+import ConfigAchievements from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements"
+import ConfigCatalog from "@razzoozle/web/features/manager/components/configurations/ConfigCatalog"
+import ConfigDisplay from "@razzoozle/web/features/manager/components/configurations/ConfigDisplay"
+import ConfigGameMode from "@razzoozle/web/features/manager/components/configurations/ConfigGameMode"
+import ConfigManageQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigManageQuizz"
+import ConfigMedia from "@razzoozle/web/features/manager/components/configurations/ConfigMedia"
+import ConfigResults from "@razzoozle/web/features/manager/components/configurations/ConfigResults"
+import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
+import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
+import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
 import ConsoleShell, {
   type ConsoleNavItem,
-} from "@razzia/web/features/manager/components/console/ConsoleShell"
+} from "@razzoozle/web/features/manager/components/console/ConsoleShell"
 import {
   ConfigProvider,
   useConfig,
-} from "@razzia/web/features/manager/contexts/config-context"
-import { useThemeStore } from "@razzia/web/features/theme/store"
-import defaultLogo from "@razzia/web/assets/logo.svg"
+} from "@razzoozle/web/features/manager/contexts/config-context"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
+import defaultLogo from "@razzoozle/web/assets/logo.svg"
 import {
   Award,
   ClipboardList,

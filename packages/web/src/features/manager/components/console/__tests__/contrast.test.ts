@@ -11,7 +11,7 @@ import {
   hexToRgb,
   relativeLuminance,
   wcagLevel,
-} from "@razzia/web/features/manager/components/console/contrast"
+} from "@razzoozle/web/features/manager/components/console/contrast"
 import { describe, expect, it } from "vitest"
 
 describe("hexToRgb", () => {

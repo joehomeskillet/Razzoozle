@@ -1,11 +1,11 @@
-import QuestionEditor from "@razzia/web/features/quizz/components/QuestionEditor"
-import QuestionEditorAIAssist from "@razzia/web/features/quizz/components/QuestionEditorAIAssist"
-import QuizzEditorHeader from "@razzia/web/features/quizz/components/QuizzEditorHeader"
-import QuizzEditorSidebar from "@razzia/web/features/quizz/components/QuizzEditorSidebar"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+import QuestionEditor from "@razzoozle/web/features/quizz/components/QuestionEditor"
+import QuestionEditorAIAssist from "@razzoozle/web/features/quizz/components/QuestionEditorAIAssist"
+import QuizzEditorHeader from "@razzoozle/web/features/quizz/components/QuizzEditorHeader"
+import QuizzEditorSidebar from "@razzoozle/web/features/quizz/components/QuizzEditorSidebar"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 // Side-effect: defines `--accent-tint` / `--accent-contrast`, the derived theme
 // tokens the header band + active type pills consume. Shared with the console.
-import "@razzia/web/features/manager/components/console/tokens.css"
+import "@razzoozle/web/features/manager/components/console/tokens.css"
 
 /**
  * The editor frame: the themed background photo + a dark scrim behind, then a

@@ -1,4 +1,4 @@
-import type { PlayerStatusDataMap } from "@razzia/common/types/game/status"
+import type { PlayerStatusDataMap } from "@razzoozle/common/types/game/status"
 import { Pause } from "lucide-react"
 import { useTranslation } from "react-i18next"
 

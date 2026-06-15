@@ -1,4 +1,4 @@
-import { MEDIA_TYPES, QUESTION_TYPES } from "@razzia/common/constants"
+import { MEDIA_TYPES, QUESTION_TYPES } from "@razzoozle/common/constants"
 import { z } from "zod"
 
 export const questionMediaValidator = z.object({

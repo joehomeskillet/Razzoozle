@@ -1,17 +1,17 @@
-import { EVENTS } from "@razzia/common/constants"
-import { quizzValidator } from "@razzia/common/validators/quizz"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import { quizzValidator } from "@razzoozle/common/validators/quizz"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
   ListRow,
-} from "@razzia/web/features/manager/components/console"
-import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
+} from "@razzoozle/web/features/manager/components/console"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
 import {
   Archive,

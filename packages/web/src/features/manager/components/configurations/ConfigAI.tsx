@@ -4,32 +4,32 @@ import {
   EVENTS,
   IMAGE_RESOLUTION_DEFAULT,
   IMAGE_RESOLUTIONS,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import type {
   AIImageProviderConfig,
   AIProviderPublic,
   AISettings,
   AISettingsPublic,
   AITestResult,
-} from "@razzia/common/types/ai"
-import type { Quizz } from "@razzia/common/types/game"
+} from "@razzoozle/common/types/ai"
+import type { Quizz } from "@razzoozle/common/types/game"
 import clsx from "clsx"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   EmptyState,
   SectionCard,
   SubGroup,
-} from "@razzia/web/features/manager/components/console"
+} from "@razzoozle/web/features/manager/components/console"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   ActionFooter,
   FormSection,
   LabelRow,
-} from "@razzia/web/components/ui"
+} from "@razzoozle/web/components/ui"
 import {
   CheckCircle2,
   ImagePlus,

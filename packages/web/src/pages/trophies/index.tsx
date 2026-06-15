@@ -1,5 +1,5 @@
-import Background from "@razzia/web/components/Background"
-import TrophyGallery from "@razzia/web/features/game/components/TrophyGallery"
+import Background from "@razzoozle/web/components/Background"
+import TrophyGallery from "@razzoozle/web/features/game/components/TrophyGallery"
 import { createFileRoute } from "@tanstack/react-router"
 import { ArrowLeft } from "lucide-react"
 import { useTranslation } from "react-i18next"

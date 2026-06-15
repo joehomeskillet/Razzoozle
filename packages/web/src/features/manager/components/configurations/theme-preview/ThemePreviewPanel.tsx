@@ -1,4 +1,4 @@
-import type { Theme } from "@razzia/common/types/theme"
+import type { Theme } from "@razzoozle/common/types/theme"
 import clsx from "clsx"
 import { Eye, Trophy } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
@@ -119,7 +119,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               />
             ) : (
               <p className="text-center text-base font-extrabold tracking-tight drop-shadow">
-                {appTitle ?? "Razzia"}
+                {appTitle ?? "Razzoozle"}
               </p>
             )}
             <div className="rounded-md bg-white/90 px-3 py-1 text-sm font-bold tracking-widest text-gray-900">
@@ -133,7 +133,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
             </span>
             {theme.showBranding && (
               <span className="text-[10px] font-semibold text-white/50">
-                {appTitle ?? "Razzia"}
+                {appTitle ?? "Razzoozle"}
               </span>
             )}
           </MockCard>

@@ -1,20 +1,20 @@
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
-import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
   useClockSync,
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useAnswerStore } from "@razzia/web/features/game/stores/answer"
-import { useLowLatencyStore } from "@razzia/web/features/game/stores/lowLatency"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
-import { useQuestionStore } from "@razzia/web/features/game/stores/question"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
+import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import {
   GAME_STATE_COMPONENTS,
   isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzoozle/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useRef } from "react"
 import toast from "react-hot-toast"

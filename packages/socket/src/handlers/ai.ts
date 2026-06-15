@@ -1,4 +1,4 @@
-import { AI, EVENTS } from "@razzia/common/constants"
+import { AI, EVENTS } from "@razzoozle/common/constants"
 import {
   aiGenerateDistractorsValidator,
   aiGenerateQuestionValidator,
@@ -6,21 +6,21 @@ import {
   aiSetKeyValidator,
   aiSettingsValidator,
   aiTestValidator,
-} from "@razzia/common/validators/ai"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+} from "@razzoozle/common/validators/ai"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   generateDistractors,
   generateQuestion,
   generateQuiz,
   generateText,
-} from "@razzia/socket/services/ai-provider"
-import { setKey } from "@razzia/socket/services/ai-secrets"
+} from "@razzoozle/socket/services/ai-provider"
+import { setKey } from "@razzoozle/socket/services/ai-secrets"
 import {
   getAISettings,
   setAISettings,
   toPublicAISettings,
-} from "@razzia/socket/services/config"
-import manager from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager from "@razzoozle/socket/services/manager"
 
 // Per-socket text-generation throttle. Text gen can spend money via a cloud key
 // (handlers are auth-gated, but a logged-in manager could still hammer it), so

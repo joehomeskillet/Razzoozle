@@ -1,5 +1,5 @@
-import { CATALOG_SOURCES } from "@razzia/common/constants"
-import { questionValidator } from "@razzia/common/validators/quizz"
+import { CATALOG_SOURCES } from "@razzoozle/common/constants"
+import { questionValidator } from "@razzoozle/common/validators/quizz"
 import { z } from "zod"
 
 // A catalog entry wraps a full (validated) question with light metadata. The

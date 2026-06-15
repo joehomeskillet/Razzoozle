@@ -1,6 +1,6 @@
 // Minimal AI text-generation layer for the MCP server — a faithful port of
 // packages/socket/src/services/ai-provider.ts. Two transport shapes cover every
-// supported text backend (AI_PROVIDER_KINDS in @razzia/common/constants):
+// supported text backend (AI_PROVIDER_KINDS in @razzoozle/common/constants):
 //   - "openai-compatible": local Ollama/LM Studio, OpenAI, OpenRouter, ...
 //     (POST {baseUrl}/chat/completions)
 //   - "anthropic": Claude (POST {ANTHROPIC_BASE_URL}/messages)
@@ -11,13 +11,13 @@
 // secret-scanned (same patterns as the image handler) before it leaves this
 // module. Key policy: anthropic ALWAYS needs a key; openai-compatible needs a
 // key UNLESS the baseUrl is a local host (localhost/127.0.0.1/host.docker.internal).
-import { AI, AI_PROVIDER_OFF } from "@razzia/common/constants"
-import type { AIProviderConfig, AISettings } from "@razzia/common/types/ai"
-import type { Question, Quizz } from "@razzia/common/types/game"
+import { AI, AI_PROVIDER_OFF } from "@razzoozle/common/constants"
+import type { AIProviderConfig, AISettings } from "@razzoozle/common/types/ai"
+import type { Question, Quizz } from "@razzoozle/common/types/game"
 import {
   questionValidator,
   quizzValidator,
-} from "@razzia/common/validators/quizz"
+} from "@razzoozle/common/validators/quizz"
 import { getAISettings } from "./config-store.js"
 import { getKey } from "./ai-secrets.js"
 

@@ -1,13 +1,13 @@
-import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
-import Markdown from "@razzia/web/components/Markdown"
-import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
+import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
+import Markdown from "@razzoozle/web/components/Markdown"
+import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/answers"
-import { SFX } from "@razzia/web/features/game/utils/constants"
-import { calculatePercentages } from "@razzia/web/features/game/utils/score"
-import { matchAnswer } from "@razzia/web/features/game/utils/text-match"
+} from "@razzoozle/web/features/game/utils/answers"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { calculatePercentages } from "@razzoozle/web/features/game/utils/score"
+import { matchAnswer } from "@razzoozle/web/features/game/utils/text-match"
 import clsx from "clsx"
 import { Check } from "lucide-react"
 import { useEffect, useState } from "react"

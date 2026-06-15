@@ -1,14 +1,14 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS } from "@razzoozle/common/constants"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { useQuestionStore } from "@razzia/web/features/game/stores/question"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import {
   GAME_STATE_COMPONENTS_MANAGER,
   isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzoozle/web/features/game/utils/constants"
 import { useEffect } from "react"
 
 interface ManagerGameSessionOptions {

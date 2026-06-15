@@ -1,27 +1,27 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { CatalogEntry } from "@razzia/common/types/catalog"
-import type { QuizzWithId } from "@razzia/common/types/game"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { CatalogEntry } from "@razzoozle/common/types/catalog"
+import type { QuizzWithId } from "@razzoozle/common/types/game"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
   ListRow,
-} from "@razzia/web/features/manager/components/console"
-import QuestionEditorAcceptedAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
-import QuestionEditorAnswers from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
-import QuestionEditorConfig from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
-import QuestionEditorMedia from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
-import QuestionEditorTitle from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
-import QuestionEditorType from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorType"
+} from "@razzoozle/web/features/manager/components/console"
+import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
+import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
+import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
+import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
+import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
+import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import {
   QuizzEditorProvider,
   useQuizzEditor,
-} from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+} from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { BookOpen, Library, Pencil, SearchX, Trash2, X } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useState } from "react"

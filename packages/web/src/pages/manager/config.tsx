@@ -1,13 +1,13 @@
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
-import Background from "@razzia/web/components/Background"
-import Loader from "@razzia/web/components/Loader"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import Background from "@razzoozle/web/components/Background"
+import Loader from "@razzoozle/web/components/Loader"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import Configurations from "@razzia/web/features/manager/components/configurations"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import Configurations from "@razzoozle/web/features/manager/components/configurations"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 

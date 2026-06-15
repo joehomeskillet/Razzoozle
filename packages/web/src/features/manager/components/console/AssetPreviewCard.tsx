@@ -1,6 +1,6 @@
 import AssetPreview, {
   type AssetPreviewProps,
-} from "@razzia/web/features/manager/components/console/AssetPreview"
+} from "@razzoozle/web/features/manager/components/console/AssetPreview"
 
 export interface AssetPreviewCardProps extends AssetPreviewProps {
   /**

@@ -13,9 +13,9 @@
 // We reuse the helpers.ts fake-io pattern: a recorder that captures every
 // io.to(room).emit(event, payload) call without a real socket.io server.
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Server } from "@razzia/common/types/game/socket"
-import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Server } from "@razzoozle/common/types/game/socket"
+import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const GAME_ID = "test-game"

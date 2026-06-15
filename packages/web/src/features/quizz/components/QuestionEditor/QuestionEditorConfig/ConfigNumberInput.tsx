@@ -1,4 +1,4 @@
-import Input from "@razzia/web/components/Input"
+import Input from "@razzoozle/web/components/Input"
 import clsx from "clsx"
 import { useEffect, useId, useState } from "react"
 import { useTranslation } from "react-i18next"

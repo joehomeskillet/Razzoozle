@@ -1,13 +1,13 @@
-import { EVENTS } from "@razzia/common/constants"
-import Loader from "@razzia/web/components/Loader"
+import { EVENTS } from "@razzoozle/common/constants"
+import Loader from "@razzoozle/web/components/Loader"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Maximize } from "lucide-react"
-import QRCode from "@razzia/web/components/QRCode"
+import QRCode from "@razzoozle/web/components/QRCode"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -48,7 +48,7 @@ const DisplayRegisterPage = () => {
   }, [])
 
   // WP-15 — label this display for the manager status card. The app title is a
-  // friendly default ("Rahoot"); the server clamps/sanitises it anyway.
+  // friendly default ("Razzoozle"); the server clamps/sanitises it anyway.
   const displayName =
     appTitle?.trim() ||
     t("display:defaultName", { defaultValue: "Beamer" })
@@ -104,14 +104,14 @@ const DisplayRegisterPage = () => {
       </button>
 
       <h1 className="text-[6vh] leading-tight font-extrabold tracking-tight">
-        {appTitle?.trim() ?? "Rahoot"}
+        {appTitle?.trim() ?? "Razzoozle"}
       </h1>
 
       {pairingCode ? (
         <>
           <p className="text-[2.6vh] font-medium text-white/70">
             {t("display:enterCode", {
-              defaultValue: "Enter this code in the Rahoot admin on your phone",
+              defaultValue: "Enter this code in the Razzoozle admin on your phone",
             })}
           </p>
 

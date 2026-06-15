@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { BONUS_MAX } from "@razzia/common/achievements"
+import { BONUS_MAX } from "@razzoozle/common/achievements"
 
 // Persisted shape for config/achievements.json.
 // Each key is an achievement id; missing ids fall back to registry defaults

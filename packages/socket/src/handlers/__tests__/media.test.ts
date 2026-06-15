@@ -1,6 +1,6 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { Server } from "@razzia/common/types/game/socket"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Server } from "@razzoozle/common/types/game/socket"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
@@ -68,7 +68,7 @@ describe("media storage and socket handlers", () => {
   })
 
   it("saveMediaFile, getMediaList and deleteMediaFile round-trip an uploaded image", async () => {
-    const config = await import("@razzia/socket/services/config")
+    const config = await import("@razzoozle/socket/services/config")
 
     const saved = await config.saveMediaFile(
       PNG_1PX,
@@ -90,8 +90,8 @@ describe("media storage and socket handlers", () => {
   })
 
   it("MEDIA.UPLOAD emits UPLOAD_SUCCESS and fresh DATA; MEDIA.DELETE removes and re-emits DATA", async () => {
-    const { mediaSocketHandlers } = await import("@razzia/socket/handlers/media")
-    const { default: manager } = await import("@razzia/socket/services/manager")
+    const { mediaSocketHandlers } = await import("@razzoozle/socket/handlers/media")
+    const { default: manager } = await import("@razzoozle/socket/services/manager")
 
     const socket = makeFakeSocket()
     manager.login(socket as never)

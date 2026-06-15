@@ -19,9 +19,9 @@
 // we obtain it via getInstance() and reset it with cleanup() in before/afterEach
 // so each test starts clean (cleanup() also stops any armed interval).
 
-import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzia/common/constants"
-import type Game from "@razzia/socket/services/game"
-import Registry from "@razzia/socket/services/registry"
+import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzoozle/common/constants"
+import type Game from "@razzoozle/socket/services/game"
+import Registry from "@razzoozle/socket/services/registry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // A fixed epoch so dayjs().unix() math is stable. Aligned to a whole minute.

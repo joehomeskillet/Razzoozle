@@ -5,29 +5,29 @@
 // vs /messages), the key policy (off → notConfigured, remote-no-key → noKey),
 // and that generateQuestion validates its output (invalidOutput on bad JSON).
 
-import type { AIProviderConfig, AISettings } from "@razzia/common/types/ai"
+import type { AIProviderConfig, AISettings } from "@razzoozle/common/types/ai"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mutable holders the mocked modules read from, set per test.
 let activeSettings: AISettings
 const keyStore = new Map<string, string>()
 
-vi.mock("@razzia/socket/services/config", () => ({
+vi.mock("@razzoozle/socket/services/config", () => ({
   getAISettings: () => activeSettings,
 }))
 
-vi.mock("@razzia/socket/services/ai-secrets", () => ({
+vi.mock("@razzoozle/socket/services/ai-secrets", () => ({
   getKey: (id: string) => keyStore.get(id),
 }))
 
-type AIProviderModule = typeof import("@razzia/socket/services/ai-provider")
+type AIProviderModule = typeof import("@razzoozle/socket/services/ai-provider")
 let ai: AIProviderModule
 
 // vi.mock factories survive vi.resetModules(); re-import the SUT so it binds to
 // the mocked deps fresh per test.
 const loadAi = async (): Promise<void> => {
   vi.resetModules()
-  ai = await import("@razzia/socket/services/ai-provider")
+  ai = await import("@razzoozle/socket/services/ai-provider")
 }
 
 // Provider seeds.

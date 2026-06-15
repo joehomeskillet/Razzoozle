@@ -22,8 +22,8 @@
 // Exit code: 0 iff auth+create+start succeeded AND newPlayerEventsSeen === bots.
 // Any timeout, auth failure, or sim-mode-disabled gate -> non-zero with a clear
 // message. A structured JSON summary is always printed last to stdout.
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client"
 
 interface Args {

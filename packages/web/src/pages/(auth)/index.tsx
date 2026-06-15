@@ -1,10 +1,10 @@
-import Room from "@razzia/web/features/game/components/join/Room"
-import Username from "@razzia/web/features/game/components/join/Username"
+import Room from "@razzoozle/web/features/game/components/join/Room"
+import Username from "@razzoozle/web/features/game/components/join/Username"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect } from "react"
 import toast from "react-hot-toast"

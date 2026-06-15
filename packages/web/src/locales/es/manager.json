@@ -132,12 +132,12 @@
   "satellite": {
     "title": "Pantalla satélite",
     "description": "Conecta una Raspberry Pi o un PC con proyector como pantalla grande. El satélite muestra la vista del anfitrión (sala, preguntas, resultados) en la pantalla grande, mientras tú controlas todo el juego desde tu teléfono. No necesitas portátil.",
-    "howto": "Abre rahoot.joelduss.xyz/display en el proyector e introduce aquí el código que aparece.",
+    "howto": "Abre razzoozle.joelduss.xyz/display en el proyector e introduce aquí el código que aparece.",
     "codeLabel": "Código de vinculación",
     "codePlaceholder": "ABC123",
     "pair": "Vincular",
     "paired": "Pantalla vinculada",
-    "step1": "Conecta la Pi o el proyector a internet y abre rahoot.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
+    "step1": "Conecta la Pi o el proyector a internet y abre razzoozle.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
     "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
     "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
     "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager.",
@@ -145,7 +145,7 @@
     "step2Enter": "Inicia una partida y toca «Satélite» en la parte superior del encabezado del juego. Introduce ahí el código que aparece en la pantalla grande.",
     "step2Result": "Toca «Vincular» para probar la conexión. Si funciona, aparece «Pantalla vinculada».",
     "troubleCode": "«Código inválido o caducado»: el código es incorrecto o demasiado antiguo (solo es válido 5 minutos). Recarga la página /display en la pantalla grande —mostrará un código nuevo— y escríbelo exactamente como aparece.",
-    "troubleNotConnected": "«Pantalla no conectada»: el proyector o la Pi perdió la conexión. Comprueba que siga conectado a internet y recarga la página /display. En una red propia, un firewall puede bloquearlo; entonces deben abrirse los puertos para rahoot.joelduss.xyz.",
+    "troubleNotConnected": "«Pantalla no conectada»: el proyector o la Pi perdió la conexión. Comprueba que siga conectado a internet y recarga la página /display. En una red propia, un firewall puede bloquearlo; entonces deben abrirse los puertos para razzoozle.joelduss.xyz.",
     "troubleGame": "«Partida no encontrada» o «Contraseña inválida»: la vinculación solo funciona mientras tu partida está en curso y tú estás conectado como anfitrión. Reinicia la partida o vuelve a iniciar sesión y prueba de nuevo enseguida.",
     "troubleTitle": "Si la vinculación no funciona"
   },
@@ -179,7 +179,7 @@
     "appTitle": "Título de la app",
     "logo": "Logotipo",
     "default": "Estándar",
-    "showFooter": "Mostrar el pie de página «Razzia»",
+    "showFooter": "Mostrar el pie de página «Razzoozle»",
     "upload": "Imagen",
     "preview": {
       "title": "Vista previa",
@@ -231,6 +231,11 @@
       "restored": "Versión restaurada",
       "confirmRestore": "¿Restaurar esta versión? La actual se guardará como una nueva versión.",
       "savedAt": "Guardada {{when}}"
+    },
+    "style": {
+      "label": "Estilo",
+      "flat": "Plano",
+      "glass": "Cristal"
     }
   },
   "submissions": {

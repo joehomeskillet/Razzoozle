@@ -1,11 +1,11 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { MediaMeta } from "@razzia/common/types/media"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { MediaMeta } from "@razzoozle/common/types/media"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import { X } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"

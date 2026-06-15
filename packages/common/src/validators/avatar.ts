@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { AVATAR_MAX_BYTES } from "@razzia/common/constants"
+import { AVATAR_MAX_BYTES } from "@razzoozle/common/constants"
 
 // Accepts either a generic avatar id/URL (e.g. "/media/avatars/generic/generic-1.webp")
 // or a base64 data URL for an uploaded image. Upper bound roughly covers a

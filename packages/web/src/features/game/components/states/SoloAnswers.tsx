@@ -8,18 +8,18 @@
  *
  * Reuses AnswerButton, ANSWERS_COLORS, ANSWERS_LABELS from the shared game layer.
  */
-import type { SoloQuestion } from "@razzia/common/types/game"
-import Markdown from "@razzia/web/components/Markdown"
-import QuestionMedia from "@razzia/web/components/QuestionMedia"
-import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
-import RewardStack from "@razzia/web/features/game/components/RewardStack"
-import { useSoloStore } from "@razzia/web/features/game/stores/solo"
+import type { SoloQuestion } from "@razzoozle/common/types/game"
+import Markdown from "@razzoozle/web/components/Markdown"
+import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
+import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
+import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
+import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-} from "@razzia/web/features/game/utils/answers"
-import { SFX } from "@razzia/web/features/game/utils/constants"
-import { fireCenterSalvo } from "@razzia/web/features/game/utils/confetti"
+} from "@razzoozle/web/features/game/utils/answers"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"

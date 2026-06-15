@@ -1,8 +1,8 @@
 // Socket-local input validators. These guard hostile/malformed client payloads
 // and on-disk result files at the trust boundary. They intentionally live in the
-// socket package (not @razzia/common) because they describe server-side ingress
+// socket package (not @razzoozle/common) because they describe server-side ingress
 // rules, not shared wire shapes.
-import { BOT } from "@razzia/common/constants"
+import { BOT } from "@razzoozle/common/constants"
 import { z } from "zod"
 
 // SELECTED_ANSWER payload: answerKey must be a finite integer; the optional
@@ -29,7 +29,7 @@ export const addBotsValidator = z.object({
 })
 
 // Persisted GameResult shape. Mirrors the GameResult interface in
-// @razzia/common/types/game; used to validate result files on read instead of a
+// @razzoozle/common/types/game; used to validate result files on read instead of a
 // bare `as GameResult` cast, consistent with the quizz/theme readers.
 const gameResultPlayerValidator = z.object({
   username: z.string(),

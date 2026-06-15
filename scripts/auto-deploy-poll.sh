@@ -4,7 +4,7 @@ set -euo pipefail
 log() { printf '[auto-deploy-poll] %s\n' "$*"; }
 
 # --- Config (env-overridable) ---
-DEPLOY_DIR="${DEPLOY_DIR:-/nvmetank1/projects/rahoot}"
+DEPLOY_DIR="${DEPLOY_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 STATE_FILE="${STATE_FILE:-$DEPLOY_DIR/.last-deployed-sha}"
 
 # --- Prevent overlapping runs ---

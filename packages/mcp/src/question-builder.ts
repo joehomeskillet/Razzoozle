@@ -1,13 +1,13 @@
 // Build a valid `Question` for any of the 6 supported types with sensible
-// defaults, then validate it through @razzia/common's questionValidator so a
+// defaults, then validate it through @razzoozle/common's questionValidator so a
 // model can author quickly without knowing each type's per-field rules. The
 // type-specific superRefine rules (slider needs min/max/correct, multiple-select
 // needs >=2 solutions, type-answer needs acceptedAnswers, etc.) are the single
 // source of truth in the validator — we only supply ergonomic defaults here.
-import { MEDIA_TYPES, QUESTION_TYPES } from "@razzia/common/constants"
-import type { QuestionType } from "@razzia/common/constants"
-import type { Question, QuestionMedia } from "@razzia/common/types/game"
-import { questionValidator } from "@razzia/common/validators/quizz"
+import { MEDIA_TYPES, QUESTION_TYPES } from "@razzoozle/common/constants"
+import type { QuestionType } from "@razzoozle/common/constants"
+import type { Question, QuestionMedia } from "@razzoozle/common/types/game"
+import { questionValidator } from "@razzoozle/common/validators/quizz"
 
 export interface BuildQuestionInput {
   type: QuestionType

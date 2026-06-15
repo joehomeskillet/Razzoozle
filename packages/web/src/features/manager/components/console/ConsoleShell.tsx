@@ -9,8 +9,8 @@ import {
   useId,
   useRef,
 } from "react"
-import NavItem from "@razzia/web/features/manager/components/console/NavItem"
-import "@razzia/web/features/manager/components/console/tokens.css"
+import NavItem from "@razzoozle/web/features/manager/components/console/NavItem"
+import "@razzoozle/web/features/manager/components/console/tokens.css"
 
 export interface ConsoleNavItem {
   /** Stable key used for active comparison + React keys. */

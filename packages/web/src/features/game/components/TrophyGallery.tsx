@@ -7,8 +7,8 @@
  * Prefers server-provided name/description overrides when available.
  */
 
-import type { MergedAchievement } from "@razzia/common/achievements"
-import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
+import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import {
   ACHIEVEMENT_META,
   TIER_LABEL,
@@ -20,7 +20,7 @@ import {
   loadAchievementMeta,
   type AchievementMeta,
   type AchievementTier,
-} from "@razzia/web/features/game/utils/achievements"
+} from "@razzoozle/web/features/game/utils/achievements"
 import clsx from "clsx"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"

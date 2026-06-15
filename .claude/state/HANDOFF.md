@@ -12,7 +12,7 @@ reason: Long multi-feature session (config V2 → /submit redesign → KI-auth f
 - **Route hard-block:** the orchestrator's own Write/Edit on `packages/*` product code is blocked. Open a window for a sanctioned wave: `claude-route-override "<reason>" --ttl 3600` (auto-expires; `--clear`). Delegated workflow agents' Write/Edit also need it open. `.md`/`.claude/`/`memory/` are exempt.
 - **Manager password:** `VKfinuGRLVrIlvS6LiJ4` (in `config/game.json` as `managerPassword`).
 - **Deploy:** `cd /nvmetank1/projects/rahoot && bash source/scripts/deploy.sh` (resets to origin/main → builds `rahoot:custom` → smoke-tests socket bundle → health-gates → auto-rollback). So **commit + push first**.
-- **Gate (central, after a flood):** `corepack pnpm -r run types` · `corepack pnpm --filter @razzia/web run build` · `corepack pnpm --filter @razzia/socket run test`. (oxlint is NOT an enforced gate — 800+ pre-existing violations.)
+- **Gate (central, after a flood):** `corepack pnpm -r run types` · `corepack pnpm --filter @razzoozle/web run build` · `corepack pnpm --filter @razzoozle/socket run test`. (oxlint is NOT an enforced gate — 800+ pre-existing violations.)
 - **Repo:** `git.joelduss.xyz/agent-claude/rahoot` (MCP issue-creation works directly there). Live: `https://rahoot.joelduss.xyz`.
 
 ## State (git)

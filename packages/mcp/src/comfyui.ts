@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from "uuid"
 const COMFYUI_URL = process.env.COMFYUI_URL ?? "http://127.0.0.1:8188"
 const COMFYUI_WORKFLOW =
   process.env.COMFYUI_WORKFLOW ??
-  "/nvmetank1/AI/comfyui/workflows/txt2img-zimage-turbo.json"
+  "./workflows/txt2img-zimage-turbo.json"
 
 // Node ids in the workflow graph (see txt2img-zimage-turbo.json).
 const PROMPT_NODE = "6" // CLIPTextEncode (positive) — .inputs.text is the prompt
@@ -48,7 +48,7 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((r) => setTimeout(r, ms))
 
 // Transcode image bytes to WebP via cwebp (stdin -> stdout), q82. Port of
-// @razzia/socket/services/webp.ts.
+// @razzoozle/socket/services/webp.ts.
 const toWebp = (input: Buffer): Promise<Buffer> =>
   new Promise((resolvePromise, reject) => {
     const proc = spawn("cwebp", ["-quiet", "-q", "82", "-o", "-", "--", "-"])

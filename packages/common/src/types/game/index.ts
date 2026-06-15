@@ -1,16 +1,16 @@
-import type { MEDIA_TYPES } from "@razzia/common/constants"
+import type { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { z } from "zod"
 
 import type {
   questionValidator,
   quizzValidator,
-} from "@razzia/common/validators/quizz"
+} from "@razzoozle/common/validators/quizz"
 
 // Re-export the single-source question kinds so consumers can keep importing
 // `QuestionType` (and the runtime list) from `types/game`.
-export { QUESTION_TYPES } from "@razzia/common/constants"
+export { QUESTION_TYPES } from "@razzoozle/common/constants"
 
-export type { QuestionType } from "@razzia/common/constants"
+export type { QuestionType } from "@razzoozle/common/constants"
 
 export interface Player {
   id: string

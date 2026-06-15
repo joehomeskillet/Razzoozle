@@ -1,7 +1,7 @@
-import { MEDIA_TYPES } from "@razzia/common/constants"
-import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
-import Markdown from "@razzia/web/components/Markdown"
-import { SFX } from "@razzia/web/features/game/utils/constants"
+import { MEDIA_TYPES } from "@razzoozle/common/constants"
+import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import Markdown from "@razzoozle/web/components/Markdown"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -22,7 +22,7 @@ const Question = ({
 
   return (
     <section className="relative mx-auto flex h-full w-full max-w-7xl flex-1 flex-col items-center px-4 lg:max-w-[85vw]">
-      <div className="flex flex-1 flex-col items-center justify-center gap-5">
+      <div className="glass-3 flex flex-1 flex-col items-center justify-center gap-5">
         <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question}</Markdown>
         </h2>

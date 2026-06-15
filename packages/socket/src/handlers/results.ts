@@ -1,8 +1,8 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { SharedResult } from "@razzia/common/types/game"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { deleteResult, getResultById } from "@razzia/socket/services/config"
-import manager, { emitConfig } from "@razzia/socket/services/manager"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { SharedResult } from "@razzoozle/common/types/game"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { deleteResult, getResultById } from "@razzoozle/socket/services/config"
+import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 
 export const resultsSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(

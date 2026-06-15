@@ -5,6 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/bash /nvmetank1/projects/rahoot/source/scripts/auto-deploy-poll.sh
+ExecStart=/usr/bin/bash /opt/razzoozle/source/scripts/auto-deploy-poll.sh
 # deploy.sh builds, smoke-tests, health-gates and auto-rolls-back — give it room
 TimeoutStartSec=900

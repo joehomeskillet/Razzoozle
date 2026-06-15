@@ -28,20 +28,20 @@
 // questionValidator: type-answer requires >=1 acceptedAnswers; solutions/answers
 // not required; solutions stays undefined.
 
-import type { Player, Quizz } from "@razzia/common/types/game"
-import { STATUS } from "@razzia/common/types/game/status"
-import { questionValidator } from "@razzia/common/validators/quizz"
+import type { Player, Quizz } from "@razzoozle/common/types/game"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import { questionValidator } from "@razzoozle/common/validators/quizz"
 import {
   matchAnswer,
   normalizeText,
-} from "@razzia/socket/services/game/text-match"
+} from "@razzoozle/socket/services/game/text-match"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   buildRound,
   DISABLED_LL,
   makePlayer,
   makeSocket,
-} from "@razzia/socket/services/game/__tests__/helpers"
+} from "@razzoozle/socket/services/game/__tests__/helpers"
 
 // ── §6.1 text-match: normalizeText ───────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import ActionFooter from "@razzia/web/components/ui/ActionFooter"
+import ActionFooter from "@razzoozle/web/components/ui/ActionFooter"
 import type { ReactNode } from "react"
 
 export interface StickyActionsProps {

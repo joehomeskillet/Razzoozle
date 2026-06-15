@@ -9,20 +9,20 @@
 import {
   IMAGE_RESOLUTION_DEFAULT,
   type ImageResolution,
-} from "@razzia/common/constants"
-import type { AISettings } from "@razzia/common/types/ai"
+} from "@razzoozle/common/constants"
+import type { AISettings } from "@razzoozle/common/types/ai"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mutable holder the mocked config reads from, set per test.
 let activeSettings: AISettings
 
-vi.mock("@razzia/socket/services/config", () => ({
+vi.mock("@razzoozle/socket/services/config", () => ({
   getAISettings: () => activeSettings,
   // queueAndCollect persists via this; return a stable public URL.
   saveGeneratedImageBytes: () => "/media/generated/gen-test.webp",
 }))
 
-vi.mock("@razzia/socket/services/webp", () => ({
+vi.mock("@razzoozle/socket/services/webp", () => ({
   toWebp: async (b: Buffer) => b,
 }))
 
@@ -42,12 +42,12 @@ vi.mock("fs", () => ({
   readFileSync: () => workflowJson,
 }))
 
-type ComfyModule = typeof import("@razzia/socket/services/comfyui")
+type ComfyModule = typeof import("@razzoozle/socket/services/comfyui")
 let comfy: ComfyModule
 
 const loadComfy = async (): Promise<void> => {
   vi.resetModules()
-  comfy = await import("@razzia/socket/services/comfyui")
+  comfy = await import("@razzoozle/socket/services/comfyui")
 }
 
 const settingsWith = (resolution?: ImageResolution): AISettings => ({

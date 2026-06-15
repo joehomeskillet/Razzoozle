@@ -1,6 +1,6 @@
-import defaultLogo from "@razzia/web/assets/logo.svg"
-import GithubIcon from "@razzia/web/components/GithubIcon"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+import defaultLogo from "@razzoozle/web/assets/logo.svg"
+import GithubIcon from "@razzoozle/web/components/GithubIcon"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { type PropsWithChildren, useState } from "react"
 
 // `plain` forces the purple brand gradient and skips the themed photo wallpaper
@@ -63,14 +63,14 @@ const Background = ({
 
       {theme.showBranding && (
         <a
-          href="https://github.com/Ralex91/Razzia"
+          href="https://github.com/joehomeskillet/Razzoozle"
           target="_blank"
           rel="noopener noreferrer"
           className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 text-sm font-semibold text-white/50 transition-colors hover:text-white/80"
         >
           <GithubIcon size={14} />
           {/* oxlint-disable-next-line no-undef */}
-          Razzia - v{__APP_VERSION__}
+          Razzoozle - v{__APP_VERSION__}
         </a>
       )}
     </section>

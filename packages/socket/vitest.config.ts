@@ -2,8 +2,8 @@ import { fileURLToPath } from "node:url"
 import { defineConfig } from "vitest/config"
 
 // Vitest config for the socket package. The repo resolves the workspace
-// packages via path aliases (the `@razzia/common` package has no `exports`
-// field — subpaths like `@razzia/common/constants` map straight to the raw
+// packages via path aliases (the `@razzoozle/common` package has no `exports`
+// field — subpaths like `@razzoozle/common/constants` map straight to the raw
 // TypeScript sources under `../common/src`). We mirror exactly the alias map
 // used by `packages/web/vite.config.ts` so test imports resolve the same way
 // the production esbuild/vite builds do, with no extra dependency.
@@ -13,11 +13,11 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   resolve: {
     alias: {
-      "@razzia/common": fileURLToPath(
+      "@razzoozle/common": fileURLToPath(
         new URL("../common/src", import.meta.url),
       ),
-      "@razzia/socket": fileURLToPath(new URL("./src", import.meta.url)),
-      "@razzia/web": fileURLToPath(new URL("../web/src", import.meta.url)),
+      "@razzoozle/socket": fileURLToPath(new URL("./src", import.meta.url)),
+      "@razzoozle/web": fileURLToPath(new URL("../web/src", import.meta.url)),
     },
   },
   test: {

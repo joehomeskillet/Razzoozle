@@ -302,12 +302,12 @@
   "satellite": {
     "title": "Satelliten-Anzeige",
     "description": "Schliess einen Raspberry Pi oder einen Beamer-PC als grosse Anzeige an. Der Satellit zeigt die Host-Ansicht (Lobby, Fragen, Resultate) auf dem grossen Bildschirm – gesteuert wird das Spiel komplett von deinem Handy. Du brauchst keinen Laptop am Fest.",
-    "howto": "Öffne rahoot.joelduss.xyz/display auf dem Beamer und gib hier den Code ein, der dort angezeigt wird.",
+    "howto": "Öffne razzoozle.joelduss.xyz/display auf dem Beamer und gib hier den Code ein, der dort angezeigt wird.",
     "codePlaceholder": "ABC123",
     "codeLabel": "Kopplungscode",
     "pair": "Koppeln",
     "paired": "Anzeige gekoppelt",
-    "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne rahoot.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
+    "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne razzoozle.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
     "step2": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit», um den Code einzugeben.",
     "step3": "Dein Handy bleibt die Fernbedienung: Starten, Weiter und Auto-Modus steuerst du von hier.",
     "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort.",
@@ -315,7 +315,7 @@
     "step2Enter": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit». Gib dort den Code ein, der auf dem grossen Bildschirm steht.",
     "step2Result": "Tippe auf «Koppeln», um die Verbindung zu testen. Klappt es, erscheint «Anzeige gekoppelt».",
     "troubleCode": "«Ungültiger oder abgelaufener Code»: Der Code stimmt nicht oder ist zu alt (er gilt nur 5 Minuten). Lade die /display-Seite auf dem grossen Bildschirm neu – sie zeigt dann einen frischen Code – und tippe ihn genau so ab, wie er dort steht.",
-    "troubleNotConnected": "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für rahoot.joelduss.xyz freigegeben sein.",
+    "troubleNotConnected": "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für razzoozle.joelduss.xyz freigegeben sein.",
     "troubleGame": "«Spiel nicht gefunden» oder «Passwort ungültig»: Die Kopplung geht nur, solange dein Spiel läuft und du als Spielleiter angemeldet bist. Starte das Spiel neu oder melde dich erneut an und versuche es dann gleich noch einmal.",
     "troubleTitle": "Wenn die Kopplung nicht klappt"
   },
@@ -349,7 +349,7 @@
     "appTitle": "App-Titel",
     "logo": "Logo",
     "default": "Standard",
-    "showFooter": "„Razzia\"-Footer zeigen",
+    "showFooter": "„Razzoozle\"-Footer zeigen",
     "upload": "Bild",
     "preview": {
       "title": "Vorschau",
@@ -401,6 +401,11 @@
       "restored": "Version wiederhergestellt",
       "confirmRestore": "Diese Version wiederherstellen? Die aktuelle wird als neue Version gesichert.",
       "savedAt": "Gespeichert {{when}}"
+    },
+    "style": {
+      "label": "Stil",
+      "flat": "Flach",
+      "glass": "Glas"
     }
   },
   "submissions": {

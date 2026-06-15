@@ -1,7 +1,7 @@
 import {
   DEFAULT_MANAGER_PASSWORD,
   MAX_LATENCY_COMPENSATION_MS,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import { z } from "zod"
 
 // Low-latency mode feature flag. Master switch `enabled` defaults FALSE so the

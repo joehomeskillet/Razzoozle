@@ -1,17 +1,17 @@
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
-import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import { useQuestionStore } from "@razzia/web/features/game/stores/question"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import {
   MANAGER_SKIP_EVENTS,
   isKeyOf,
-} from "@razzia/web/features/game/utils/constants"
+} from "@razzoozle/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"

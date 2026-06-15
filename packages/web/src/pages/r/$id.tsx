@@ -1,4 +1,4 @@
-import SharePage from "@razzia/web/features/results/SharePage"
+import SharePage from "@razzoozle/web/features/results/SharePage"
 import { createFileRoute, useParams } from "@tanstack/react-router"
 
 const SharePageRoute = () => {

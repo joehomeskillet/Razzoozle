@@ -1,5 +1,5 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   assertSafeId,
   deleteQuizz,
@@ -7,8 +7,8 @@ import {
   saveQuizz,
   setQuizzArchived,
   updateQuizz,
-} from "@razzia/socket/services/config"
-import manager, { emitConfig } from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
 export const quizzSocketHandlers = ({ socket }: SocketContext) => {

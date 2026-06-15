@@ -6,10 +6,10 @@
 //
 // NOTE: submitMedia.enhance / submitMedia.upload / submitMedia.edit are created
 // by WP-1 / WP-2 / WP-3 respectively. WP-0 (this barrel) only references them.
-import { registerEditHandlers } from "@razzia/socket/handlers/submitMedia.edit"
-import { registerEnhanceHandlers } from "@razzia/socket/handlers/submitMedia.enhance"
-import { registerUploadHandlers } from "@razzia/socket/handlers/submitMedia.upload"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { registerEditHandlers } from "@razzoozle/socket/handlers/submitMedia.edit"
+import { registerEnhanceHandlers } from "@razzoozle/socket/handlers/submitMedia.enhance"
+import { registerUploadHandlers } from "@razzoozle/socket/handlers/submitMedia.upload"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 
 export const registerSubmitMediaHandlers = (ctx: SocketContext): void => {
   registerEnhanceHandlers(ctx)

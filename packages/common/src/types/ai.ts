@@ -1,4 +1,4 @@
-import type { AIProviderKind } from "@razzia/common/constants"
+import type { AIProviderKind } from "@razzoozle/common/constants"
 
 // A configured text provider (no secret — see ai-secrets server-side).
 export interface AIProviderConfig {

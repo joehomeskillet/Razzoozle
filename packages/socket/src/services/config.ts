@@ -9,65 +9,65 @@ import {
   THEME_SLOTS,
   type MediaCategory,
   type ThemeSlot,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import type {
   GameResult,
   GameResultMeta,
   QuizzMeta,
   QuizzWithId,
-} from "@razzia/common/types/game"
+} from "@razzoozle/common/types/game"
 import type {
   AIProviderPublic,
   AISettings,
   AISettingsPublic,
-} from "@razzia/common/types/ai"
-import type { CatalogEntry } from "@razzia/common/types/catalog"
-import { quizzValidator } from "@razzia/common/validators/quizz"
+} from "@razzoozle/common/types/ai"
+import type { CatalogEntry } from "@razzoozle/common/types/catalog"
+import { quizzValidator } from "@razzoozle/common/validators/quizz"
 import {
   catalogAddValidator,
   catalogEntryValidator,
-} from "@razzia/common/validators/catalog"
-import { aiSettingsValidator } from "@razzia/common/validators/ai"
+} from "@razzoozle/common/validators/catalog"
+import { aiSettingsValidator } from "@razzoozle/common/validators/ai"
 import {
   achievementsConfigValidator,
   type AchievementsConfig,
-} from "@razzia/common/validators/achievements"
+} from "@razzoozle/common/validators/achievements"
 import {
   mergeAchievementsConfig,
   type MergedAchievement,
-} from "@razzia/common/achievements"
+} from "@razzoozle/common/achievements"
 import {
   type GameConfig,
   gameConfigValidator,
-} from "@razzia/common/validators/game-config"
+} from "@razzoozle/common/validators/game-config"
 import {
   DEFAULT_THEME,
   type Theme,
   type ThemeRevision,
   type ThemeTemplate,
   type ThemeTemplateMeta,
-} from "@razzia/common/types/theme"
+} from "@razzoozle/common/types/theme"
 import {
   themeRevisionValidator,
   themeTemplateValidator,
   themeValidator,
-} from "@razzia/common/validators/theme"
-import { hasKey } from "@razzia/socket/services/ai-secrets"
-import { gameResultValidator } from "@razzia/socket/services/validators"
-import { toWebp, webpDimensions } from "@razzia/socket/services/webp"
-import { normalizeFilename } from "@razzia/socket/utils/game"
-import { submissionRecordValidator } from "@razzia/common/validators/submission"
+} from "@razzoozle/common/validators/theme"
+import { hasKey } from "@razzoozle/socket/services/ai-secrets"
+import { gameResultValidator } from "@razzoozle/socket/services/validators"
+import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
+import { normalizeFilename } from "@razzoozle/socket/utils/game"
+import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
 import { z } from "zod"
 import type {
   Submission,
   SubmissionMeta,
-} from "@razzia/common/types/submission"
-import type { MediaMeta } from "@razzia/common/types/media"
+} from "@razzoozle/common/types/submission"
+import type { MediaMeta } from "@razzoozle/common/types/media"
 import fs from "fs"
 import { basename, extname, relative, resolve } from "path"
 import { nanoid } from "nanoid"
 
-export type { GameConfig } from "@razzia/common/validators/game-config"
+export type { GameConfig } from "@razzoozle/common/validators/game-config"
 
 const inContainerPath = process.env.CONFIG_PATH
 
@@ -75,6 +75,18 @@ const getPath = (path = "") =>
   inContainerPath
     ? resolve(inContainerPath, path)
     : resolve(process.cwd(), "../../config", path)
+
+// Read-only seed assets baked into the image (presets + brand backgrounds/logo).
+// Mirrors getPath: BRANDING_PATH is set in Docker (=/app/branding via Dockerfile)
+// and falls back to the repo-relative `source/branding` in dev (the socket dev
+// process runs from packages/socket, so ../../branding === source/branding,
+// exactly like CONFIG_PATH's ../../config fallback).
+const brandingRoot = process.env.BRANDING_PATH
+
+const getBrandingPath = (path = "") =>
+  brandingRoot
+    ? resolve(brandingRoot, path)
+    : resolve(process.cwd(), "../../branding", path)
 
 // Quizz/result ids are server-generated uuids / safe slugs. Reject anything that
 // could escape the quizz/results dir (path traversal) before using it in a path.
@@ -139,6 +151,7 @@ const assetRef = z
   .nullable()
 
 const socketThemeValidator = z.object({
+  style: z.enum(["flat", "glass"]).default("flat"),
   colorPrimary: z
     .string()
     .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
@@ -197,6 +210,104 @@ const parseTheme = (data: unknown): Theme => {
   }
 
   return socketResult.data
+}
+
+// Copy a single file into place only when the destination is missing — never
+// overwrites existing user data. Returns true if a copy happened.
+const copyIfMissing = (src: string, dest: string): boolean => {
+  if (!fs.existsSync(src) || fs.existsSync(dest)) {
+    return false
+  }
+
+  ensureDir(resolve(dest, ".."))
+  fs.copyFileSync(src, dest)
+
+  return true
+}
+
+// One-time, idempotent seeding of the Razzoozle brand assets baked into the
+// image (source/branding → /app/branding via BRANDING_PATH). Every copy is
+// guarded by copyIfMissing, so re-running on an existing config volume is a
+// no-op and a manager's edits to a template/background/og/logo are never
+// clobbered. Does NOT touch the ACTIVE theme (config/theme/theme.json): presets
+// are merely offered in the picker; the live theme stays whatever exists
+// (Südhang default).
+const seedBrandingAssets = (): void => {
+  const brandingDir = getBrandingPath()
+
+  if (!fs.existsSync(brandingDir)) {
+    return
+  }
+
+  // 1. Theme presets → config/theme-templates/<id>.json (the picker reads these).
+  //    The id used for the on-disk filename is the preset's own `id` field, so a
+  //    manager who later edits/saves the same template overwrites the seed copy
+  //    instead of producing a duplicate.
+  const presetsDir = getBrandingPath("presets")
+
+  if (fs.existsSync(presetsDir)) {
+    for (const file of fs.readdirSync(presetsDir)) {
+      if (!file.endsWith(".json")) {
+        continue
+      }
+
+      try {
+        const raw = fs.readFileSync(resolve(presetsDir, file), "utf-8")
+        const parsed = themeTemplateValidator.safeParse(JSON.parse(raw))
+
+        if (!parsed.success) {
+          console.warn(`Skipping invalid brand preset "${file}":`, parsed.error.issues)
+
+          continue
+        }
+
+        const id = parsed.data.id
+
+        if (!id) {
+          continue
+        }
+
+        assertSafeId(id)
+        copyIfMissing(
+          resolve(presetsDir, file),
+          getPath(`theme-templates/${id}.json`),
+        )
+      } catch (error) {
+        console.warn(`Failed to seed brand preset "${file}":`, error)
+      }
+    }
+  }
+
+  // 2. Background images → config/media/backgrounds/<name> (referenced by the
+  //    preset `backgrounds` asset paths). WebP-only, matching the project policy.
+  const backgroundsSrcDir = getBrandingPath("backgrounds")
+
+  if (fs.existsSync(backgroundsSrcDir)) {
+    ensureDir(getPath(`${MEDIA_ROOT}/backgrounds`))
+
+    for (const file of fs.readdirSync(backgroundsSrcDir)) {
+      if (!file.endsWith(".webp")) {
+        continue
+      }
+
+      copyIfMissing(
+        resolve(backgroundsSrcDir, file),
+        getPath(`${MEDIA_ROOT}/backgrounds/${file}`),
+      )
+    }
+  }
+
+  // 3. Brand chrome served from /theme/: the OG share image + the wordmark SVG
+  //    (the preset's `logo` points at /theme/razzoozle-logo.svg).
+  ensureDir(getPath("theme"))
+  copyIfMissing(
+    getBrandingPath("razzoozle-og.webp"),
+    getPath("theme/razzoozle-og.webp"),
+  )
+  copyIfMissing(
+    getBrandingPath("razzoozle-logo.svg"),
+    getPath("theme/razzoozle-logo.svg"),
+  )
 }
 
 export const initConfig = () => {
@@ -284,6 +395,12 @@ export const initConfig = () => {
   if (!fs.existsSync(getPath("achievements.json"))) {
     fs.writeFileSync(getPath("achievements.json"), JSON.stringify({}, null, 2))
   }
+
+  // Seed the baked-in Razzoozle brand presets + assets last (the dirs above —
+  // theme-templates, media/backgrounds, theme — now exist). Fully idempotent:
+  // only writes targets that are missing, so it never overwrites user data and
+  // never changes the ACTIVE theme.
+  seedBrandingAssets()
 }
 
 export const getGameConfig = (): GameConfig => {
@@ -1488,7 +1605,7 @@ export const saveQuizz = (data: unknown): { id: string } => {
 }
 
 // ---- Theme (backgrounds + colors) ---------------------------------------
-// THEME_SLOTS / ThemeSlot are imported from @razzia/common (single source of
+// THEME_SLOTS / ThemeSlot are imported from @razzoozle/common (single source of
 // truth shared with the web client). The runtime guard below is unchanged.
 
 export const getTheme = (): Theme => {

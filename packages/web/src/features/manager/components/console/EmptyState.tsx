@@ -1,6 +1,6 @@
 import clsx from "clsx"
 import type { LucideIcon } from "lucide-react"
-import Button from "@razzia/web/components/Button"
+import Button from "@razzoozle/web/components/Button"
 
 export interface EmptyStateProps {
   icon: LucideIcon

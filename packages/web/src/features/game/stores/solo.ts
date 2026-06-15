@@ -7,8 +7,8 @@
  * No socket. All interaction is via REST (/api/quizz/:id/solo, /check-answer,
  * /solo-score).
  */
-import type { SoloCheckAnswerResponse, SoloQuestion, SoloScoreEntry } from "@razzia/common/types/game"
-import { mergeAchievementsConfig } from "@razzia/common/achievements"
+import type { SoloCheckAnswerResponse, SoloQuestion, SoloScoreEntry } from "@razzoozle/common/types/game"
+import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
 import { create } from "zustand"
 
 // BOUNDED solo badges only. Solo is offline/stateless with NO manager config,

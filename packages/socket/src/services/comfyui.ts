@@ -4,26 +4,26 @@
 // here. The generated PNG bytes are fetched over HTTP from ComfyUI's /view
 // endpoint and persisted into config/media via saveGeneratedImageBytes, then
 // served by nginx from the config volume at /media/<file> (mirrors /theme/).
-import { IMAGE_RESOLUTION_DEFAULT } from "@razzia/common/constants"
+import { IMAGE_RESOLUTION_DEFAULT } from "@razzoozle/common/constants"
 import {
   getAISettings,
   saveGeneratedImageBytes,
-} from "@razzia/socket/services/config"
-import { toWebp } from "@razzia/socket/services/webp"
+} from "@razzoozle/socket/services/config"
+import { toWebp } from "@razzoozle/socket/services/webp"
 import fs from "fs"
 import { nanoid } from "nanoid"
 
 const COMFYUI_URL = process.env.COMFYUI_URL ?? "http://127.0.0.1:8188"
 const COMFYUI_WORKFLOW =
   process.env.COMFYUI_WORKFLOW ??
-  "/nvmetank1/AI/comfyui/workflows/txt2img-zimage-turbo.json"
+  "./workflows/txt2img-zimage-turbo.json"
 
 // img2img (Z-Image Omni reference-conditioning) blueprint. Bundled into the
 // image (see Dockerfile) so the socket has no host-filesystem dependency; the
 // host path is only a dev fallback.
 const COMFYUI_IMG2IMG_WORKFLOW =
   process.env.COMFYUI_IMG2IMG_WORKFLOW ??
-  "/nvmetank1/AI/comfyui/workflows/sketch2img-zimage-turbo.json"
+  "./workflows/sketch2img-zimage-turbo.json"
 
 // Node ids in the txt2img workflow graph (see txt2img-zimage-turbo.json).
 const PROMPT_NODE = "6" // CLIPTextEncode (positive) — its .inputs.text is the prompt

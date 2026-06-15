@@ -4,20 +4,20 @@ import {
   WS_MAX_HTTP_BUFFER_BYTES,
   WS_PING_INTERVAL_MS,
   WS_PING_TIMEOUT_MS,
-} from "@razzia/common/constants"
-import type { Server } from "@razzia/common/types/game/socket"
-import { aiSocketHandlers } from "@razzia/socket/handlers/ai"
-import { catalogSocketHandlers } from "@razzia/socket/handlers/catalog"
-import { displaySocketHandlers } from "@razzia/socket/handlers/display"
-import { gameSocketHandlers } from "@razzia/socket/handlers/game"
-import { managerSocketHandlers } from "@razzia/socket/handlers/manager"
-import { mediaSocketHandlers } from "@razzia/socket/handlers/media"
-import { quizzSocketHandlers } from "@razzia/socket/handlers/quizz"
-import { resultsSocketHandlers } from "@razzia/socket/handlers/results"
-import { registerSubmitMediaHandlers } from "@razzia/socket/handlers/submitMedia"
-import { themeRevisionSocketHandlers } from "@razzia/socket/handlers/theme-revision"
-import { themeTemplateSocketHandlers } from "@razzia/socket/handlers/theme-template"
-import type { SocketHandler } from "@razzia/socket/handlers/types"
+} from "@razzoozle/common/constants"
+import type { Server } from "@razzoozle/common/types/game/socket"
+import { aiSocketHandlers } from "@razzoozle/socket/handlers/ai"
+import { catalogSocketHandlers } from "@razzoozle/socket/handlers/catalog"
+import { displaySocketHandlers } from "@razzoozle/socket/handlers/display"
+import { gameSocketHandlers } from "@razzoozle/socket/handlers/game"
+import { managerSocketHandlers } from "@razzoozle/socket/handlers/manager"
+import { mediaSocketHandlers } from "@razzoozle/socket/handlers/media"
+import { quizzSocketHandlers } from "@razzoozle/socket/handlers/quizz"
+import { resultsSocketHandlers } from "@razzoozle/socket/handlers/results"
+import { registerSubmitMediaHandlers } from "@razzoozle/socket/handlers/submitMedia"
+import { themeRevisionSocketHandlers } from "@razzoozle/socket/handlers/theme-revision"
+import { themeTemplateSocketHandlers } from "@razzoozle/socket/handlers/theme-template"
+import type { SocketHandler } from "@razzoozle/socket/handlers/types"
 import {
   assertSafeId,
   appendSoloResult,
@@ -26,15 +26,15 @@ import {
   getQuizzById,
   getSoloResults,
   initConfig,
-} from "@razzia/socket/services/config"
-import { mergeAchievementsConfig } from "@razzia/common/achievements"
-import { evaluateAnswer } from "@razzia/socket/services/game/answer-eval"
-import type { SoloCheckAnswerResponse } from "@razzia/common/types/game"
+} from "@razzoozle/socket/services/config"
+import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
+import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
+import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
 import {
   soloCheckAnswerRequestValidator,
   soloScoreSubmitValidator,
-} from "@razzia/common/validators/solo"
-import Registry from "@razzia/socket/services/registry"
+} from "@razzoozle/common/validators/solo"
+import Registry from "@razzoozle/socket/services/registry"
 import { createServer } from "http"
 import { Server as ServerIO } from "socket.io"
 

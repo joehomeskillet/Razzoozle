@@ -1,6 +1,6 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { Socket } from "@razzia/common/types/game/socket"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Socket } from "@razzoozle/common/types/game/socket"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   getGameConfig,
   getMergedAchievements,
@@ -9,7 +9,7 @@ import {
   getResultsMeta,
   getSubmissionsMeta,
   getThemeTemplatesMeta,
-} from "@razzia/socket/services/config"
+} from "@razzoozle/socket/services/config"
 
 const getClientId = (socket: SocketContext["socket"]) =>
   socket.handshake.auth.clientId as string

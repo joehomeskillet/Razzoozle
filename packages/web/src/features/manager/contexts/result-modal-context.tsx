@@ -2,8 +2,8 @@ import type {
   GameResult,
   PlayerAnswerRecord,
   QuestionResult,
-} from "@razzia/common/types/game"
-import { matchAnswer } from "@razzia/web/features/game/utils/text-match"
+} from "@razzoozle/common/types/game"
+import { matchAnswer } from "@razzoozle/web/features/game/utils/text-match"
 import {
   createContext,
   useContext,

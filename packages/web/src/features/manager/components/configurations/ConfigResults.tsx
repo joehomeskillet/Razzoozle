@@ -1,17 +1,17 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { GameResult } from "@razzia/common/types/game"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { GameResult } from "@razzoozle/common/types/game"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
   ListRow,
-} from "@razzia/web/features/manager/components/console"
-import ResultModal from "@razzia/web/features/manager/components/ResultModal"
-import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
+} from "@razzoozle/web/features/manager/components/console"
+import ResultModal from "@razzoozle/web/features/manager/components/ResultModal"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useMemo, useState } from "react"

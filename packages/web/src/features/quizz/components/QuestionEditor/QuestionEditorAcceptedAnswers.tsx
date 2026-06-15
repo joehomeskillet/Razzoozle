@@ -1,4 +1,4 @@
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { Minus, Plus } from "lucide-react"
 import { useId } from "react"
 import { useTranslation } from "react-i18next"

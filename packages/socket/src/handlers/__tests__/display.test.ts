@@ -29,14 +29,14 @@ import {
   DISPLAY_NAME_MAX_LEN,
   DISPLAY_STALE_MS,
   EVENTS,
-} from "@razzia/common/constants"
-import type Game from "@razzia/socket/services/game"
+} from "@razzoozle/common/constants"
+import type Game from "@razzoozle/socket/services/game"
 import {
   displaySocketHandlers,
   handlePair,
-} from "@razzia/socket/handlers/display"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import Registry from "@razzia/socket/services/registry"
+} from "@razzoozle/socket/handlers/display"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import Registry from "@razzoozle/socket/services/registry"
 import fs from "fs"
 import os from "os"
 import { resolve } from "path"

@@ -1,4 +1,4 @@
-import type { TeamStanding } from "@razzia/common/types/game"
+import type { TeamStanding } from "@razzoozle/common/types/game"
 import { AnimatePresence, motion } from "motion/react"
 import { useTranslation } from "react-i18next"
 

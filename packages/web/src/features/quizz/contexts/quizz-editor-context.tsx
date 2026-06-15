@@ -1,4 +1,4 @@
-import type { Question, QuizzWithId } from "@razzia/common/types/game"
+import type { Question, QuizzWithId } from "@razzoozle/common/types/game"
 import {
   createContext,
   useCallback,

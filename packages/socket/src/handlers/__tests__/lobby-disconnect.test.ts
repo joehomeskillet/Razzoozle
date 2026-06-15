@@ -12,13 +12,13 @@
 // instance + gameSocketHandlers. The Registry singleton is cleaned up between
 // tests.
 
-import { EVENTS, EXAMPLE_QUIZZ } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import { gameSocketHandlers } from "@razzia/socket/handlers/game"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import Game from "@razzia/socket/services/game"
-import Registry from "@razzia/socket/services/registry"
+import { EVENTS, EXAMPLE_QUIZZ } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import { gameSocketHandlers } from "@razzoozle/socket/handlers/game"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import Game from "@razzoozle/socket/services/game"
+import Registry from "@razzoozle/socket/services/registry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 interface FakeSocket {

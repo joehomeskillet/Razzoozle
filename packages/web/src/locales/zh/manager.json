@@ -302,12 +302,12 @@
   "satellite": {
     "title": "卫星显示屏",
     "description": "将树莓派或投影仪电脑作为大屏幕接入。卫星屏会在大屏幕上显示主持人视图（大厅、题目、结果），而你只需用手机操控整局游戏。聚会时无需笔记本电脑。",
-    "howto": "在投影仪上打开 rahoot.joelduss.xyz/display，并输入此处显示的代码。",
+    "howto": "在投影仪上打开 razzoozle.joelduss.xyz/display，并输入此处显示的代码。",
     "codePlaceholder": "ABC123",
     "codeLabel": "配对码",
     "pair": "配对",
     "paired": "显示屏已配对",
-    "step1": "将树莓派或投影仪连接到互联网并打开 rahoot.joelduss.xyz/display —— 大屏幕会显示一个配对码。",
+    "step1": "将树莓派或投影仪连接到互联网并打开 razzoozle.joelduss.xyz/display —— 大屏幕会显示一个配对码。",
     "step2": "开始一局游戏，然后点击游戏顶栏中的「卫星屏」来输入代码。",
     "step3": "你的手机仍是遥控器：开始、下一题和自动模式都在这里操控。",
     "hint": "只有在游戏运行时才能配对 —— 配对码需要实时进行的游戏和你的主持人密码。",
@@ -315,7 +315,7 @@
     "step2Enter": "开始一局游戏，然后点击游戏顶栏顶部的「卫星屏」。在那里输入大屏幕上显示的代码。",
     "step2Result": "点击「配对」来测试连接。如果成功，会出现「显示屏已配对」。",
     "troubleCode": "「代码无效或已过期」：代码错误或太旧（仅在 5 分钟内有效）。在大屏幕上重新加载 /display 页面 —— 它会显示一个新代码 —— 然后照着原样准确输入。",
-    "troubleNotConnected": "「显示屏未连接」：投影仪或树莓派失去了连接。请检查它是否仍在线，并重新加载 /display 页面。在你自己的网络中，防火墙可能会阻挡它 —— 此时必须为 rahoot.joelduss.xyz 开放相应端口。",
+    "troubleNotConnected": "「显示屏未连接」：投影仪或树莓派失去了连接。请检查它是否仍在线，并重新加载 /display 页面。在你自己的网络中，防火墙可能会阻挡它 —— 此时必须为 razzoozle.joelduss.xyz 开放相应端口。",
     "troubleGame": "「未找到游戏」或「密码无效」：只有在你的游戏运行中且你已以主持人身份登录时才能配对。请重启游戏或重新登录，然后立即再试一次。",
     "troubleTitle": "如果配对不成功"
   },
@@ -349,7 +349,7 @@
     "appTitle": "应用标题",
     "logo": "标志",
     "default": "默认",
-    "showFooter": "显示“Razzia”页脚",
+    "showFooter": "显示“Razzoozle”页脚",
     "upload": "图片",
     "preview": {
       "title": "预览",
@@ -401,6 +401,11 @@
       "restored": "版本已恢复",
       "confirmRestore": "恢复此版本？当前版本将另存为一个新版本。",
       "savedAt": "保存于 {{when}}"
+    },
+    "style": {
+      "label": "风格",
+      "flat": "扁平",
+      "glass": "玻璃"
     }
   },
   "submissions": {

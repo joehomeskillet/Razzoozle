@@ -4,15 +4,15 @@ import {
   Droppable,
   type DropResult,
 } from "@hello-pangea/dnd"
-import { EVENTS } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
-import CatalogPickerModal from "@razzia/web/features/quizz/components/CatalogPickerModal"
-import QuizzEditorCard from "@razzia/web/features/quizz/components/QuizzEditorCard"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
-import useScreenSize from "@razzia/web/hooks/useScreenSize"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import CatalogPickerModal from "@razzoozle/web/features/quizz/components/CatalogPickerModal"
+import QuizzEditorCard from "@razzoozle/web/features/quizz/components/QuizzEditorCard"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import {
   BookmarkPlus,

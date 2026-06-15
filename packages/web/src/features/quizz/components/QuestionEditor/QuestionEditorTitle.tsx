@@ -1,5 +1,5 @@
-import Markdown from "@razzia/web/components/Markdown"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import Markdown from "@razzoozle/web/components/Markdown"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import type { ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
 

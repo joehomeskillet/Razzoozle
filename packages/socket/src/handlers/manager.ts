@@ -4,19 +4,19 @@ import {
   PROMPT_MAX_LEN,
   SUBMISSION_CATEGORIES,
   type ThemeSlot,
-} from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
-import type { Submission } from "@razzia/common/types/submission"
-import { questionValidator } from "@razzia/common/validators/quizz"
-import { submissionValidator } from "@razzia/common/validators/submission"
+} from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
+import type { Submission } from "@razzoozle/common/types/submission"
+import { questionValidator } from "@razzoozle/common/validators/quizz"
+import { submissionValidator } from "@razzoozle/common/validators/submission"
 import {
   getClientId,
   SECRET_PATTERNS,
   tryConsumeImageGenCredit,
-} from "@razzia/socket/handlers/imageGenThrottle"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { enhancePrompt } from "@razzia/socket/services/ai-provider"
-import { generateImage } from "@razzia/socket/services/comfyui"
+} from "@razzoozle/socket/handlers/imageGenThrottle"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { enhancePrompt } from "@razzoozle/socket/services/ai-provider"
+import { generateImage } from "@razzoozle/socket/services/comfyui"
 import {
   assertSafeId,
   countPendingSubmissions,
@@ -33,14 +33,14 @@ import {
   toPublicAISettings,
   updateQuizz,
   updateSubmission,
-} from "@razzia/socket/services/config"
-import manager, { emitConfig } from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import {
   checkGlobalSubmissionRate,
   checkRateLimit,
   PENDING_QUEUE_CAP,
-} from "@razzia/socket/services/submissionRateLimit"
-import { normalizeFilename } from "@razzia/socket/utils/game"
+} from "@razzoozle/socket/services/submissionRateLimit"
+import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { z } from "zod"
 
 export const managerSocketHandlers = ({ socket }: SocketContext) => {

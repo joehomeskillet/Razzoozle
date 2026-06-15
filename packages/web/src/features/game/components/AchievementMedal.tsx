@@ -13,7 +13,7 @@ import {
   TIER_LABEL,
   TIER_RING,
   type AchievementTier,
-} from "@razzia/web/features/game/utils/achievements"
+} from "@razzoozle/web/features/game/utils/achievements"
 import { motion, useReducedMotion } from "motion/react"
 
 // ─── Size map ────────────────────────────────────────────────────────────────

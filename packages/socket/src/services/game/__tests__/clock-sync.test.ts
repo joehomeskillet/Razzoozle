@@ -14,14 +14,14 @@
 // constrained CI it fails fast rather than hanging — the unit tests above still
 // cover the core contract.
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { AnswerAck } from "@razzia/common/types/game/socket"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { AnswerAck } from "@razzoozle/common/types/game/socket"
 import {
   computeClockOffset,
   median,
   type ClockSample,
-} from "@razzia/common/utils/clock-sync"
+} from "@razzoozle/common/utils/clock-sync"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { buildRound, enabledLL, makePlayer } from "./helpers"
 

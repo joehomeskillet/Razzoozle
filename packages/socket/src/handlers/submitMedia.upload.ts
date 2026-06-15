@@ -24,15 +24,15 @@
 //
 // Errors emit EVENTS.MANAGER.IMAGE_ERROR with a string i18n key (mirrors
 // GENERATE_IMAGE / SUBMIT_QUESTION).
-import { EVENTS, MEDIA_UPLOAD_MAX_BYTES } from "@razzia/common/constants"
-import { publicUploadValidator } from "@razzia/common/validators/media"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getClientId } from "@razzia/socket/handlers/imageGenThrottle"
-import { saveMediaFile } from "@razzia/socket/services/config"
+import { EVENTS, MEDIA_UPLOAD_MAX_BYTES } from "@razzoozle/common/constants"
+import { publicUploadValidator } from "@razzoozle/common/validators/media"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { getClientId } from "@razzoozle/socket/handlers/imageGenThrottle"
+import { saveMediaFile } from "@razzoozle/socket/services/config"
 import {
   checkGlobalSubmissionRate,
   checkRateLimit,
-} from "@razzia/socket/services/submissionRateLimit"
+} from "@razzoozle/socket/services/submissionRateLimit"
 
 // Decode only the base64 portion of an image data URL to measure the real
 // payload size. Mirrors saveMediaFile's internal DATA_URL_RE (`data:<mime>;

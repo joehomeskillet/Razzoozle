@@ -1,10 +1,10 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { MetricsHealthSnapshot } from "@razzia/common/types/game/socket"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { MetricsHealthSnapshot } from "@razzoozle/common/types/game/socket"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import clsx from "clsx"
 import { Activity } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

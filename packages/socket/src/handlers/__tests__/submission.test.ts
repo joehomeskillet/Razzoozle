@@ -18,12 +18,12 @@
 // registry survives vi.resetModules(), so the dynamically re-imported
 // handlers/manager picks up the mocked generateImage.
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { Socket } from "@razzia/common/types/game/socket"
-import { STATUS } from "@razzia/common/types/game/status"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { submissionValidator } from "@razzia/common/validators/submission"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { Socket } from "@razzoozle/common/types/game/socket"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { submissionValidator } from "@razzoozle/common/validators/submission"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
@@ -33,14 +33,14 @@ import { buildRound, makePlayer } from "../../services/game/__tests__/helpers"
 // Mock the ComfyUI module so generateImage never performs a real op. A mutable
 // holder lets each test swap the resolved value / make it reject.
 const generateImageMock = vi.fn<(prompt: string) => Promise<string>>()
-vi.mock("@razzia/socket/services/comfyui", () => ({
+vi.mock("@razzoozle/socket/services/comfyui", () => ({
   generateImage: (prompt: string) => generateImageMock(prompt),
 }))
 
 // ── Module types (re-imported per test against the fresh CONFIG_PATH) ─────────
-type HandlersModule = typeof import("@razzia/socket/handlers/manager")
-type ConfigModule = typeof import("@razzia/socket/services/config")
-type ManagerModule = typeof import("@razzia/socket/services/manager")
+type HandlersModule = typeof import("@razzoozle/socket/handlers/manager")
+type ConfigModule = typeof import("@razzoozle/socket/services/config")
+type ManagerModule = typeof import("@razzoozle/socket/services/manager")
 
 // ── Lightweight socket fake (handlers/__tests__ style) ────────────────────────
 interface FakeSocket {
@@ -129,9 +129,9 @@ let managerMod: ManagerModule
 // handlers/manager + services/manager bind to the SAME fresh singletons.
 const loadGraph = async (): Promise<void> => {
   vi.resetModules()
-  config = await import("@razzia/socket/services/config")
-  managerMod = await import("@razzia/socket/services/manager")
-  handlers = await import("@razzia/socket/handlers/manager")
+  config = await import("@razzoozle/socket/services/config")
+  managerMod = await import("@razzoozle/socket/services/manager")
+  handlers = await import("@razzoozle/socket/handlers/manager")
 }
 
 beforeEach(async () => {

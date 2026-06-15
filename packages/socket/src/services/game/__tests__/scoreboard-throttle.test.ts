@@ -14,7 +14,7 @@
 // "emit" sink is a simple recorder, matching the fake-recorder style in
 // helpers.ts (we capture every value the throttle pushes through).
 
-import { ScoreboardThrottle } from "@razzia/socket/services/game/scoreboard-throttle"
+import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const START = 1_000_000_000_000

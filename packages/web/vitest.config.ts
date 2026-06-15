@@ -8,11 +8,11 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   resolve: {
     alias: {
-      "@razzia/web": fileURLToPath(new URL("./src", import.meta.url)),
-      "@razzia/common": fileURLToPath(
+      "@razzoozle/web": fileURLToPath(new URL("./src", import.meta.url)),
+      "@razzoozle/common": fileURLToPath(
         new URL("../common/src", import.meta.url),
       ),
-      "@razzia/socket": fileURLToPath(
+      "@razzoozle/socket": fileURLToPath(
         new URL("../socket/src", import.meta.url),
       ),
     },

@@ -1,5 +1,5 @@
 {
-  "name": "@razzia/socket",
+  "name": "@razzoozle/socket",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,7 +15,7 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@razzia/common": "workspace:*",
+    "@razzoozle/common": "workspace:*",
     "dayjs": "^1.11.20",
     "nanoid": "^5.1.11",
     "socket.io": "^4.8.3",

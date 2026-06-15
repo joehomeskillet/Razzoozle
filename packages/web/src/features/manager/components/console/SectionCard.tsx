@@ -30,7 +30,9 @@ const SectionCard = ({
 }: SectionCardProps) => (
   <section
     className={clsx(
-      "space-y-4 rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200",
+      // `glass-2` is a no-op unless [data-theme-style="glass"] is set on <html>
+      // (scoped in index.css), so the flat Südhang baseline is unchanged.
+      "glass-2 space-y-4 rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200",
       className,
     )}
   >

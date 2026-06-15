@@ -17,10 +17,10 @@
 // No real timers are involved in PlayerManager, but we restore timers in
 // afterEach defensively to match the suite's harness style.
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Player } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import { PlayerManager } from "@razzia/socket/services/game/player-manager"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Player } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { makePlayer } from "./helpers"
 

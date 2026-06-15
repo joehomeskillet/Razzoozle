@@ -1,8 +1,8 @@
-import type { GameResultMeta, QuizzMeta } from "@razzia/common/types/game"
-import type { SubmissionMeta } from "@razzia/common/types/submission"
-import type { MediaMeta } from "@razzia/common/types/media"
-import type { ThemeTemplateMeta } from "@razzia/common/types/theme"
-import type { MergedAchievement } from "@razzia/common/achievements"
+import type { GameResultMeta, QuizzMeta } from "@razzoozle/common/types/game"
+import type { SubmissionMeta } from "@razzoozle/common/types/submission"
+import type { MediaMeta } from "@razzoozle/common/types/media"
+import type { ThemeTemplateMeta } from "@razzoozle/common/types/theme"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
 
 export interface ManagerConfig {
   quizz: QuizzMeta[]

@@ -3,9 +3,9 @@ import {
   BONUS_MAX,
   TIER_BONUS_DEFAULT,
   type AchievementId,
-} from "@razzia/common/achievements"
-import { EVENTS } from "@razzia/common/constants"
-import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
+} from "@razzoozle/common/achievements"
+import { EVENTS } from "@razzoozle/common/constants"
+import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import {
   TIER_GRADIENT,
   TIER_LABEL,
@@ -13,12 +13,12 @@ import {
   TIER_RING,
   TIER_TEXT,
   type AchievementTier,
-} from "@razzia/web/features/game/utils/achievements"
-import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
-import { SectionCard } from "@razzia/web/features/manager/components/console"
-import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
-import { ActionFooter } from "@razzia/web/components/ui"
-import Button from "@razzia/web/components/Button"
+} from "@razzoozle/web/features/game/utils/achievements"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { SectionCard } from "@razzoozle/web/features/manager/components/console"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { ActionFooter } from "@razzoozle/web/components/ui"
+import Button from "@razzoozle/web/components/Button"
 import { Award, RotateCcw } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"

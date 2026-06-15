@@ -2,8 +2,8 @@
 // Covers each question type: choice, boolean, slider, multiple-select,
 // type-answer, poll. Pure functions — no I/O or socket mocking required.
 
-import { evaluateAnswer } from "@razzia/socket/services/game/answer-eval"
-import type { Question } from "@razzia/common/types/game"
+import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
+import type { Question } from "@razzoozle/common/types/game"
 import { describe, expect, it } from "vitest"
 
 // Minimal question builder to keep tests concise.

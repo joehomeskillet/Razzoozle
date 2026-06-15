@@ -1,6 +1,6 @@
-import type { Player, Quizz } from "@razzia/common/types/game"
-import type { Socket } from "@razzia/common/types/game/socket"
-import { STATUS } from "@razzia/common/types/game/status"
+import type { Player, Quizz } from "@razzoozle/common/types/game"
+import type { Socket } from "@razzoozle/common/types/game/socket"
+import { STATUS } from "@razzoozle/common/types/game/status"
 import { describe, expect, it, vi } from "vitest"
 import {
   answerCount,

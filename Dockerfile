@@ -1,6 +1,6 @@
 # ---- BASE ----
 FROM node:25-alpine AS base
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.5.1
 
 # ---- BUILDER ----
 FROM base AS builder
@@ -19,6 +19,11 @@ RUN pnpm build
 
 # ---- RUNNER ----
 FROM alpine:3.23 AS runner
+
+LABEL org.opencontainers.image.title="Razzoozle" \
+      org.opencontainers.image.description="Self-hosted live quiz platform — violet liquid-glass, a fork of Razzia" \
+      org.opencontainers.image.source="https://github.com/joehomeskillet/Razzoozle" \
+      org.opencontainers.image.licenses="MIT"
 
 # libwebp-tools provides `cwebp` — the socket converts AI-generated PNGs to WebP
 # before persisting them (2MB PNG -> ~150KB WebP), consistent with the project's
@@ -40,6 +45,12 @@ COPY docker/comfy-workflow.json /app/comfy-workflow.json
 # runtime. Baked in so the socket has no host-filesystem dependency.
 COPY docker/comfy-img2img-workflow.json /app/comfy-img2img-workflow.json
 
+# Brand seed assets (theme presets + WebP backgrounds + og/logo). Baked in so the
+# socket can seed a fresh config volume on boot with no host-filesystem
+# dependency. initConfig reads these via BRANDING_PATH and copies any missing
+# target into config/ (idempotent — never overwrites user data).
+COPY --from=builder /app/branding /app/branding
+
 # Health check the FULL chain: nginx (3000) proxying to the socket /healthz
 # (3001). If either is down the container is marked unhealthy. busybox wget.
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
@@ -59,5 +70,11 @@ ENV RAHOOT_SIM_MODE=0
 ENV COMFYUI_URL=http://host.docker.internal:8188
 ENV COMFYUI_WORKFLOW=/app/comfy-workflow.json
 ENV COMFYUI_IMG2IMG_WORKFLOW=/app/comfy-img2img-workflow.json
+
+# Read-only brand seed assets baked above. initConfig copies any missing preset/
+# background/og/logo from here into the config volume on boot (idempotent). The
+# socket process inherits this from the Dockerfile env (supervisord's per-program
+# `environment=` directive is additive, not a replacement).
+ENV BRANDING_PATH=/app/branding
 
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

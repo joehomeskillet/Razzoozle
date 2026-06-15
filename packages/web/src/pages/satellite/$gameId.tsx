@@ -1,10 +1,10 @@
-import { EVENTS } from "@razzia/common/constants"
-import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
+import { EVENTS } from "@razzoozle/common/constants"
+import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"

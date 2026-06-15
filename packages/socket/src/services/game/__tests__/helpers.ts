@@ -7,13 +7,13 @@
 // (Date.now() inside timeToPoint), which we control with vi.setSystemTime, so
 // these tests assert the real server-authoritative timing path.
 
-import type { Player, Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
-import type { LowLatencyMode } from "@razzia/common/validators/game-config"
-import type { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
-import type { PlayerManager } from "@razzia/socket/services/game/player-manager"
-import { RoundManager } from "@razzia/socket/services/game/round-manager"
+import type { Player, Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import type { Status, StatusDataMap } from "@razzoozle/common/types/game/status"
+import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
+import type { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
+import type { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
+import { RoundManager } from "@razzoozle/socket/services/game/round-manager"
 import { vi } from "vitest"
 
 export const DISABLED_LL: LowLatencyMode = {

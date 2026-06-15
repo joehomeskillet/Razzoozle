@@ -24,10 +24,10 @@
 // deterministic (the all-or-nothing scoring is independent of time, but the
 // shared harness assumes a fixed system clock).
 
-import type { Question, Quizz } from "@razzia/common/types/game"
-import { STATUS, type StatusDataMap } from "@razzia/common/types/game/status"
-import { questionValidator } from "@razzia/common/validators/quizz"
-import { selectedAnswerValidator } from "@razzia/socket/services/validators"
+import type { Question, Quizz } from "@razzoozle/common/types/game"
+import { STATUS, type StatusDataMap } from "@razzoozle/common/types/game/status"
+import { questionValidator } from "@razzoozle/common/validators/quizz"
+import { selectedAnswerValidator } from "@razzoozle/socket/services/validators"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   buildRound,

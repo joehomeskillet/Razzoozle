@@ -133,11 +133,11 @@
     "title": "Écran satellite",
     "codeLabel": "Code d'association",
     "description": "Branche un Raspberry Pi ou un PC-vidéoprojecteur comme grand écran. Le satellite affiche la vue hôte (salon, questions, résultats) sur le grand écran, pendant que tu pilotes toute la partie depuis ton téléphone. Pas besoin d'ordinateur portable.",
-    "howto": "Ouvre rahoot.joelduss.xyz/display sur le vidéoprojecteur et saisis ici le code qui s'affiche.",
+    "howto": "Ouvre razzoozle.joelduss.xyz/display sur le vidéoprojecteur et saisis ici le code qui s'affiche.",
     "codePlaceholder": "ABC123",
     "pair": "Associer",
     "paired": "Écran associé",
-    "step1": "Connecte le Pi ou le vidéoprojecteur à internet et ouvre rahoot.joelduss.xyz/display — le grand écran affiche un code d'association.",
+    "step1": "Connecte le Pi ou le vidéoprojecteur à internet et ouvre razzoozle.joelduss.xyz/display — le grand écran affiche un code d'association.",
     "step2": "Lance une partie et touche «Satellite» dans l'en-tête du jeu pour saisir le code.",
     "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
     "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager.",
@@ -145,7 +145,7 @@
     "step2Enter": "Lance une partie et touche « Satellite » en haut de l’en-tête du jeu. Saisis-y le code affiché sur le grand écran.",
     "step2Result": "Touche « Associer » pour tester la connexion. Si ça marche, « Écran associé » apparaît.",
     "troubleCode": "« Code invalide ou expiré » : le code est incorrect ou trop ancien (il n’est valable que 5 minutes). Recharge la page /display sur le grand écran — elle affiche alors un nouveau code — et saisis-le exactement comme indiqué.",
-    "troubleNotConnected": "« Écran non connecté » : le vidéoprojecteur ou le Pi a perdu la connexion. Vérifie qu’il est toujours en ligne et recharge la page /display. Sur ton propre réseau, un pare-feu peut bloquer ; il faut alors ouvrir les ports pour rahoot.joelduss.xyz.",
+    "troubleNotConnected": "« Écran non connecté » : le vidéoprojecteur ou le Pi a perdu la connexion. Vérifie qu’il est toujours en ligne et recharge la page /display. Sur ton propre réseau, un pare-feu peut bloquer ; il faut alors ouvrir les ports pour razzoozle.joelduss.xyz.",
     "troubleGame": "« Partie introuvable » ou « Mot de passe invalide » : l’association ne fonctionne que tant que ta partie est en cours et que tu es connecté en tant qu’hôte. Relance la partie ou reconnecte-toi, puis réessaie aussitôt.",
     "troubleTitle": "Si l’association ne fonctionne pas"
   },
@@ -179,7 +179,7 @@
     "appTitle": "Titre de l'application",
     "logo": "Logo",
     "default": "Par défaut",
-    "showFooter": "Afficher le pied de page « Razzia »",
+    "showFooter": "Afficher le pied de page « Razzoozle »",
     "upload": "Image",
     "preview": {
       "title": "Aperçu",
@@ -231,6 +231,11 @@
       "restored": "Version restaurée",
       "confirmRestore": "Restaurer cette version ? L’actuelle sera enregistrée comme nouvelle version.",
       "savedAt": "Enregistrée {{when}}"
+    },
+    "style": {
+      "label": "Style",
+      "flat": "Plat",
+      "glass": "Verre"
     }
   },
   "submissions": {

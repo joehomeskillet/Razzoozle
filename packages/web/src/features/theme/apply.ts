@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
+import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
 
 // Apply theme values as CSS custom properties on <html>. Tailwind v4 utilities
 // (bg-primary, etc.) reference --color-* via var(), so overriding them at runtime
@@ -17,8 +17,12 @@ export const applyTheme = (theme: Theme) => {
   style.setProperty("--radius-theme", `${t.radius}px`)
   style.setProperty("--bg-scrim", `${t.scrim / 100}`)
 
+  // data-theme-style drives all glass CSS in index.css. "flat" is the default and
+  // is a no-op (no glass rules match), so the Südhang look is preserved exactly.
+  document.documentElement.dataset.themeStyle = t.style ?? "flat"
+
   if (typeof document !== "undefined") {
-    document.title = t.appTitle?.trim() ?? "Razzia"
+    document.title = t.appTitle?.trim() ?? "Razzoozle"
   }
 }
 

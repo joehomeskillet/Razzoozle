@@ -2,34 +2,34 @@ import {
   type BackgroundSlot,
   EVENTS,
   type ThemeSlot,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import {
   DEFAULT_THEME,
   type Theme,
   type ThemeRevision,
   type ThemeTemplate,
-} from "@razzia/common/types/theme"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
-import ActionFooter from "@razzia/web/components/ui/ActionFooter"
-import ColorPickerField from "@razzia/web/components/ui/ColorPickerField"
-import FormSection from "@razzia/web/components/ui/FormSection"
-import LabelRow from "@razzia/web/components/ui/LabelRow"
+} from "@razzoozle/common/types/theme"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
+import ActionFooter from "@razzoozle/web/components/ui/ActionFooter"
+import ColorPickerField from "@razzoozle/web/components/ui/ColorPickerField"
+import FormSection from "@razzoozle/web/components/ui/FormSection"
+import LabelRow from "@razzoozle/web/components/ui/LabelRow"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   AssetPreview,
   AssetPreviewCard,
   EmptyState,
   SectionCard,
   SubGroup,
-} from "@razzia/web/features/manager/components/console"
-import ThemePreviewPanel from "@razzia/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
-import { applyTheme } from "@razzia/web/features/theme/apply"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+} from "@razzoozle/web/features/manager/components/console"
+import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
+import { applyTheme } from "@razzoozle/web/features/theme/apply"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   BookMarked,
   History,
@@ -303,7 +303,7 @@ const ConfigTheme = () => {
                   id="theme-app-title"
                   value={draft.appTitle ?? ""}
                   maxLength={40}
-                  placeholder="Razzia"
+                  placeholder="Razzoozle"
                   variant="sm"
                   onChange={(e) =>
                     preview({ ...draft, appTitle: e.target.value || null })
@@ -322,6 +322,51 @@ const ConfigTheme = () => {
                   }
                   className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 />
+              </LabelRow>
+
+              {/* Stil / Style — Flat (Südhang) vs. Glass (Liquid-Glass).
+                  Writes theme.style into the draft and live-previews via
+                  preview() → applyTheme(), which sets data-theme-style on
+                  <html> so the scoped glass CSS in index.css activates. */}
+              <LabelRow
+                label={t("manager:theme.style.label", { defaultValue: "Stil" })}
+                htmlFor="theme-style-flat"
+              >
+                <div
+                  role="radiogroup"
+                  aria-label={t("manager:theme.style.label", {
+                    defaultValue: "Stil",
+                  })}
+                  className="inline-flex rounded-lg bg-gray-100 p-1 outline-1 -outline-offset-1 outline-gray-200"
+                >
+                  {(
+                    [
+                      { value: "flat", fallback: "Flach" },
+                      { value: "glass", fallback: "Glas" },
+                    ] as const
+                  ).map(({ value: styleOption, fallback }) => {
+                    const active = (draft.style ?? "flat") === styleOption
+                    return (
+                      <button
+                        id={`theme-style-${styleOption}`}
+                        key={styleOption}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => preview({ ...draft, style: styleOption })}
+                        className={`min-h-9 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                          active
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        {t(`manager:theme.style.${styleOption}`, {
+                          defaultValue: fallback,
+                        })}
+                      </button>
+                    )
+                  })}
+                </div>
               </LabelRow>
             </FormSection>
 

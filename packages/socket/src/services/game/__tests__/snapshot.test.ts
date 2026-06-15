@@ -10,11 +10,11 @@
 // currentQuestion / started the same private-reflection way the project's other
 // tests do. No real socket.io is involved.
 
-import type { Player, Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import { STATUS } from "@razzia/common/types/game/status"
-import Game from "@razzia/socket/services/game"
-import Registry from "@razzia/socket/services/registry"
+import type { Player, Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import Game from "@razzoozle/socket/services/game"
+import Registry from "@razzoozle/socket/services/registry"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { makePlayer } from "./helpers"

@@ -82,7 +82,7 @@ export const BOT = {
 
 ### 2a. `addBotsValidator` — `src/services/validators.ts`
 ```ts
-import { BOT } from "@razzia/common/constants"
+import { BOT } from "@razzoozle/common/constants"
 export const addBotsValidator = z.object({ count: z.number().int().min(1).max(BOT.MAX_PER_REQUEST) })
 ```
 
@@ -259,9 +259,9 @@ Gate: `corepack pnpm -r run types` clean (common/socket/web); `pnpm --filter soc
 ## 5. E2E (after unit green)
 
 ```
-docker build -t rahoot:e2e -f Dockerfile .
+docker build -t razzoozle:e2e -f Dockerfile .
 docker run -d --name rahoot-e2e -e RAHOOT_SIM_MODE=1 -p 127.0.0.1:3120:3000 \
-  -v /nvmetank1/projects/rahoot/config:/app/config rahoot:e2e
+  -v ./config:/app/config razzoozle:e2e
 ```
 **First assert the env actually reached the process** (e.g. add N bots and confirm they appear, or log
 the flag at boot) BEFORE asserting histogram — a broken supervisord line would otherwise fail at a

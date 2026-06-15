@@ -1,11 +1,11 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   getThemeRevisionById,
   getThemeRevisions,
   setTheme,
-} from "@razzia/socket/services/config"
-import manager from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
 // Theme revisions (#12 WP-18). Per-save revision ring; ALL events are auth-gated

@@ -1,22 +1,22 @@
-import { EVENTS, MEDIA_TYPES } from "@razzia/common/constants"
-import type { QuestionMediaType } from "@razzia/common/types/game"
-import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
-import Markdown from "@razzia/web/components/Markdown"
-import QuestionMedia from "@razzia/web/components/QuestionMedia"
-import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
+import { EVENTS, MEDIA_TYPES } from "@razzoozle/common/constants"
+import type { QuestionMediaType } from "@razzoozle/common/types/game"
+import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import Markdown from "@razzoozle/web/components/Markdown"
+import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
+import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useAnswerStore } from "@razzia/web/features/game/stores/answer"
-import { useLowLatencyStore } from "@razzia/web/features/game/stores/lowLatency"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
+import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-} from "@razzia/web/features/game/utils/answers"
-import { SFX } from "@razzia/web/features/game/utils/constants"
-import { monoNow } from "@razzia/web/features/game/utils/monoNow"
+} from "@razzoozle/web/features/game/utils/answers"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"

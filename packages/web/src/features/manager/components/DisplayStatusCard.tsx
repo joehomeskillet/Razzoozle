@@ -1,10 +1,10 @@
 import {
   DISPLAY_STALE_MS,
   EVENTS,
-} from "@razzia/common/constants"
-import { useEvent } from "@razzia/web/features/game/contexts/socket-context"
-import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
-import Button from "@razzia/web/components/Button"
+} from "@razzoozle/common/constants"
+import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
+import Button from "@razzoozle/web/components/Button"
 import clsx from "clsx"
 import { Monitor } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

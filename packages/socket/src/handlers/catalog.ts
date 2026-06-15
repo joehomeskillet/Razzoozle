@@ -1,16 +1,16 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS } from "@razzoozle/common/constants"
 import {
   catalogAddValidator,
   catalogUpdateValidator,
-} from "@razzia/common/validators/catalog"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+} from "@razzoozle/common/validators/catalog"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteCatalogEntry,
   getCatalog,
   saveCatalogEntry,
   updateCatalogEntry,
-} from "@razzia/socket/services/config"
-import manager from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
 // Reusable question bank. ALL events are auth-gated (manager only). LIST emits

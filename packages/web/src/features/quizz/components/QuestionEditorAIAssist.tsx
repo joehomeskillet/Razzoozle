@@ -1,12 +1,12 @@
-import { AI, EVENTS } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import { AI, EVENTS } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
 import { CircleHelp, Sparkles } from "lucide-react"
 import { useCallback, useId, useState } from "react"

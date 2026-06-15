@@ -3,7 +3,7 @@ import type {
   QuestionMedia,
   QuestionType,
   TeamStanding,
-} from "@razzia/common/types/game"
+} from "@razzoozle/common/types/game"
 
 export const STATUS = {
   // NOTE: the literal type is widened to include "PAUSED" (runtime value is

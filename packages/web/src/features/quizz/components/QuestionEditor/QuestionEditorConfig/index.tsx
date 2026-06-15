@@ -1,7 +1,7 @@
-import ConfigField from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigField"
-import ConfigNumberInput from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigNumberInput"
-import ConfigSection from "@razzia/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigSection"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import ConfigField from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigField"
+import ConfigNumberInput from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigNumberInput"
+import ConfigSection from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigSection"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { Clock, Timer } from "lucide-react"
 import { useTranslation } from "react-i18next"
 

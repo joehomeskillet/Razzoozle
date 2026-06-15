@@ -2,11 +2,11 @@ import {
   DEFAULT_MANAGER_PASSWORD,
   DISPLAY_NAME_MAX_LEN,
   EVENTS,
-} from "@razzia/common/constants"
-import type { Server } from "@razzia/common/types/game/socket"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getGameConfig } from "@razzia/socket/services/config"
-import Registry from "@razzia/socket/services/registry"
+} from "@razzoozle/common/constants"
+import type { Server } from "@razzoozle/common/types/game/socket"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { getGameConfig } from "@razzoozle/socket/services/config"
+import Registry from "@razzoozle/socket/services/registry"
 import { randomInt } from "crypto"
 
 interface PairPayload {

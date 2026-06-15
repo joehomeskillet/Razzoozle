@@ -25,11 +25,11 @@ export default defineConfig({
       injectRegister: "auto",
       includeAssets: ["icon.svg"],
       manifest: {
-        name: "Südhang Quiz",
-        short_name: "Quiz",
+        name: "Razzoozle Quiz",
+        short_name: "Razzoozle",
         description: "Live quiz",
-        theme_color: "#ff9900",
-        background_color: "#1a140b",
+        theme_color: "#8B5CF6",
+        background_color: "#1E0B3B",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
@@ -86,11 +86,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@razzia/web": fileURLToPath(new URL("./src", import.meta.url)),
-      "@razzia/common": fileURLToPath(
+      "@razzoozle/web": fileURLToPath(new URL("./src", import.meta.url)),
+      "@razzoozle/common": fileURLToPath(
         new URL("../common/src", import.meta.url),
       ),
-      "@razzia/socket": fileURLToPath(
+      "@razzoozle/socket": fileURLToPath(
         new URL("../socket/src", import.meta.url),
       ),
     },

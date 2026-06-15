@@ -3,13 +3,13 @@
 // captures CONFIG_PATH ONCE at import time, so each test sets a fresh tmp dir in
 // beforeEach then vi.resetModules() + dynamic import() so the module re-reads it.
 
-import type { Question } from "@razzia/common/types/game"
+import type { Question } from "@razzoozle/common/types/game"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
 import path from "path"
 
-type ConfigModule = typeof import("@razzia/socket/services/config")
+type ConfigModule = typeof import("@razzoozle/socket/services/config")
 
 let tmpDir: string
 let prevConfigPath: string | undefined
@@ -17,7 +17,7 @@ let config: ConfigModule
 
 const loadConfig = async (): Promise<void> => {
   vi.resetModules()
-  config = await import("@razzia/socket/services/config")
+  config = await import("@razzoozle/socket/services/config")
 }
 
 // A valid choice question (passes questionValidator.superRefine). Typed as the
@@ -146,15 +146,15 @@ describe("catalog CRUD round-trip", () => {
     // collide; to exercise the collision-dedupe path we pin it to a constant
     // slug, then re-import config so it binds to the mocked util.
     vi.resetModules()
-    vi.doMock("@razzia/socket/utils/game", async () => {
+    vi.doMock("@razzoozle/socket/utils/game", async () => {
       const actual = await vi.importActual<
-        typeof import("@razzia/socket/utils/game")
-      >("@razzia/socket/utils/game")
+        typeof import("@razzoozle/socket/utils/game")
+      >("@razzoozle/socket/utils/game")
 
       return { ...actual, normalizeFilename: () => "fixed-slug" }
     })
 
-    const cfg = await import("@razzia/socket/services/config")
+    const cfg = await import("@razzoozle/socket/services/config")
     cfg.initConfig()
 
     const a = cfg.saveCatalogEntry({ question: validQuestion() })
@@ -166,7 +166,7 @@ describe("catalog CRUD round-trip", () => {
     expect(c.id).toBe("fixed-slug-3")
     expect(cfg.getCatalog()).toHaveLength(3)
 
-    vi.doUnmock("@razzia/socket/utils/game")
+    vi.doUnmock("@razzoozle/socket/utils/game")
   })
 
   it("rejects an invalid question via catalogAddValidator (superRefine)", () => {

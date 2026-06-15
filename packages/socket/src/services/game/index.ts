@@ -1,18 +1,18 @@
-import { AVATARS_GENERIC, BOT, EVENTS } from "@razzia/common/constants"
-import type { Player, QuestionResult, Quizz } from "@razzia/common/types/game"
+import { AVATARS_GENERIC, BOT, EVENTS } from "@razzoozle/common/constants"
+import type { Player, QuestionResult, Quizz } from "@razzoozle/common/types/game"
 import type {
   MetricKind,
   MetricsHealthSnapshot,
   Server,
   Socket,
-} from "@razzia/common/types/game/socket"
+} from "@razzoozle/common/types/game/socket"
 import {
   STATUS,
   type Status,
   type StatusDataMap,
-} from "@razzia/common/types/game/status"
-import type { LowLatencyMode } from "@razzia/common/validators/game-config"
-import { setAvatarValidator } from "@razzia/common/validators/avatar"
+} from "@razzoozle/common/types/game/status"
+import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
+import { setAvatarValidator } from "@razzoozle/common/validators/avatar"
 import {
   deleteGameAvatars,
   getGameConfig,
@@ -20,15 +20,15 @@ import {
   getThemeTemplateById,
   saveEphemeralAvatar,
   saveResult,
-} from "@razzia/socket/services/config"
-import type { MergedAchievement } from "@razzia/common/achievements"
-import { BotManager } from "@razzia/socket/services/game/bot-manager"
-import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
-import { PlayerManager } from "@razzia/socket/services/game/player-manager"
-import { RoundManager } from "@razzia/socket/services/game/round-manager"
-import { metrics } from "@razzia/socket/services/metrics"
-import Registry from "@razzia/socket/services/registry"
-import { createInviteCode } from "@razzia/socket/utils/game"
+} from "@razzoozle/socket/services/config"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
+import { BotManager } from "@razzoozle/socket/services/game/bot-manager"
+import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
+import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
+import { RoundManager } from "@razzoozle/socket/services/game/round-manager"
+import { metrics } from "@razzoozle/socket/services/metrics"
+import Registry from "@razzoozle/socket/services/registry"
+import { createInviteCode } from "@razzoozle/socket/utils/game"
 import { v7 as uuid } from "uuid"
 
 const registry = Registry.getInstance()

@@ -12,9 +12,9 @@
  * No server/type/schema change — purely presentational over the SHOW_RESULT payload.
  */
 
-import type { MergedAchievement } from "@razzia/common/achievements"
-import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
-import RewardRow from "@razzia/web/features/game/components/RewardRow"
+import type { MergedAchievement } from "@razzoozle/common/achievements"
+import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
+import RewardRow from "@razzoozle/web/features/game/components/RewardRow"
 import {
   ACHIEVEMENT_META,
   TIER_ACCENT,
@@ -23,7 +23,7 @@ import {
   getAchievementDisplay,
   loadAchievementMeta,
   type AchievementMeta,
-} from "@razzia/web/features/game/utils/achievements"
+} from "@razzoozle/web/features/game/utils/achievements"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Coins, Flame, Star, Zap } from "lucide-react"
 import type { ReactNode } from "react"

@@ -1,12 +1,12 @@
-import { EVENTS } from "@razzia/common/constants"
-import { themeTemplateValidator } from "@razzia/common/validators/theme"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import { themeTemplateValidator } from "@razzoozle/common/validators/theme"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteThemeTemplate,
   getThemeTemplates,
   saveThemeTemplate,
-} from "@razzia/socket/services/config"
-import manager, { emitConfig } from "@razzia/socket/services/manager"
+} from "@razzoozle/socket/services/config"
+import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
 // Named theme presets (#28). ALL events are auth-gated (manager only). LIST/DATA

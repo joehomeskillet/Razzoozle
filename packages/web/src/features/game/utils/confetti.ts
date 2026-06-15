@@ -8,7 +8,7 @@
 import {
   ACHIEVEMENT_META,
   highestTier,
-} from "@razzia/web/features/game/utils/achievements"
+} from "@razzoozle/web/features/game/utils/achievements"
 import confetti from "canvas-confetti"
 
 /**

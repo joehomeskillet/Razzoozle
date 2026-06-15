@@ -9,11 +9,11 @@
 // Registry singleton arms a cleanup interval at construction, so we call
 // registry.cleanup() in before/after to avoid a timer bleeding across tests.
 
-import type { Player, Question, Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import { BotManager } from "@razzia/socket/services/game/bot-manager"
-import Game from "@razzia/socket/services/game"
-import Registry from "@razzia/socket/services/registry"
+import type { Player, Question, Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import { BotManager } from "@razzoozle/socket/services/game/bot-manager"
+import Game from "@razzoozle/socket/services/game"
+import Registry from "@razzoozle/socket/services/registry"
 import {
   afterEach,
   beforeEach,
@@ -527,7 +527,7 @@ describe("addBots gates", () => {
 describe("ADD_BOTS handler payload (flat { gameId, count })", () => {
   it("the validator accepts a valid count and rejects a malformed one", async () => {
     const { addBotsValidator } = await import(
-      "@razzia/socket/services/validators"
+      "@razzoozle/socket/services/validators"
     )
     expect(addBotsValidator.safeParse({ count: 5 }).success).toBe(true)
     expect(addBotsValidator.safeParse({ count: 0 }).success).toBe(false)

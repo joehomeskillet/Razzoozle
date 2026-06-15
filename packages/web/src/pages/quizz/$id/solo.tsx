@@ -14,18 +14,18 @@
  */
 import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import background from "@razzia/web/assets/background.webp"
-import AnimatedPoints from "@razzia/web/features/game/components/AnimatedPoints"
-import SoloAnswers from "@razzia/web/features/game/components/states/SoloAnswers"
-import SoloLeaderboard from "@razzia/web/features/game/components/SoloLeaderboard"
-import { useSoloStore } from "@razzia/web/features/game/stores/solo"
-import { useThemeStore } from "@razzia/web/features/theme/store"
-import Question from "@razzia/web/features/game/components/states/Question"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+import background from "@razzoozle/web/assets/background.webp"
+import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
+import SoloAnswers from "@razzoozle/web/features/game/components/states/SoloAnswers"
+import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
+import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
+import Question from "@razzoozle/web/features/game/components/states/Question"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import Loader from "@razzia/web/components/Loader"
+import Loader from "@razzoozle/web/components/Loader"
 
 // ---------------------------------------------------------------------------
 // Minimal solo shell — replaces GameWrapper to avoid socket coupling
@@ -170,7 +170,7 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
             ? { duration: 0.3 }
             : { type: "spring", stiffness: 300, damping: 30 }
         }
-        className="relative z-10 mx-auto w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] rounded-3xl p-10"
+        className="glass-3 relative z-10 mx-auto w-full max-w-md rounded-3xl border border-white/20 bg-white/10 p-10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] backdrop-blur-xl"
       >
         <h1 className="mb-2 text-center text-4xl font-bold text-white drop-shadow-lg">
           {subject}
@@ -216,7 +216,7 @@ interface FinishedScreenProps {
   bgSrc: string
   subject: string
   totalPoints: number
-  leaderboard: import("@razzia/common/types/game").SoloScoreEntry[]
+  leaderboard: import("@razzoozle/common/types/game").SoloScoreEntry[]
   playerName: string
   onReplay: () => void
 }
@@ -288,13 +288,13 @@ const FinishedScreen = ({
           </button>
           <a
             href="/trophies"
-            className="flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl hover:bg-white/20 transition-colors"
+            className="glass-2 flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl transition-colors hover:bg-white/20"
           >
             {t("game:solo.trophies")}
           </a>
           <a
             href="/"
-            className="flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl hover:bg-white/20 transition-colors"
+            className="glass-2 flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl transition-colors hover:bg-white/20"
           >
             {t("common:exit")}
           </a>
@@ -429,7 +429,7 @@ const SoloPlayPage = () => {
   // answering/result → show SoloAnswers (answers + inline result feedback)
 
   // Synthesize a SHOW_QUESTION payload for the existing Question component.
-  const questionData: import("@razzia/common/types/game/status").CommonStatusDataMap["SHOW_QUESTION"] =
+  const questionData: import("@razzoozle/common/types/game/status").CommonStatusDataMap["SHOW_QUESTION"] =
     {
       question: currentQuestion.question,
       media: currentQuestion.media,

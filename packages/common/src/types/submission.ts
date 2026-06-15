@@ -1,5 +1,5 @@
-import type { SubmissionCategory } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
+import type { SubmissionCategory } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
 
 export type SubmissionStatus = "pending" | "approved" | "rejected"
 

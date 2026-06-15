@@ -1,14 +1,14 @@
-import { EVENTS } from "@razzia/common/constants"
-import type { MediaCategory } from "@razzia/common/constants"
-import type { MediaMeta } from "@razzia/common/types/media"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { MediaCategory } from "@razzoozle/common/constants"
+import type { MediaMeta } from "@razzoozle/common/types/media"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { EmptyState } from "@razzia/web/features/manager/components/console"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { EmptyState } from "@razzoozle/web/features/manager/components/console"
 import * as Dialog from "@radix-ui/react-dialog"
 import clsx from "clsx"
 import {

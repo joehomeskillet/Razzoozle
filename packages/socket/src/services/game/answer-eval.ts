@@ -8,11 +8,11 @@
 // This file MUST NOT be imported by round-manager (it owns its own closure).
 // Import direction: index.ts → answer-eval.ts (solo REST handlers only).
 
-import { SLIDER_TOLERANCE_FRACTION } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
+import { SLIDER_TOLERANCE_FRACTION } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
 import {
   matchAnswer,
-} from "@razzia/socket/services/game/text-match"
+} from "@razzoozle/socket/services/game/text-match"
 
 export interface EvalInput {
   answerId?: number

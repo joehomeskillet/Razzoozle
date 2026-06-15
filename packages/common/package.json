@@ -1,5 +1,5 @@
 {
-  "name": "@razzia/common",
+  "name": "@razzoozle/common",
   "type": "module",
   "scripts": {
     "types": "tsc --noEmit",

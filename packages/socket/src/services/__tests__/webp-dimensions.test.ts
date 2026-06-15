@@ -10,7 +10,7 @@
 // practice. A short/garbage buffer must return null so the caller (createMediaMeta
 // via saveMediaFile) simply omits width/height — the backward-compat contract.
 
-import { webpDimensions } from "@razzia/socket/services/webp"
+import { webpDimensions } from "@razzoozle/socket/services/webp"
 import { describe, expect, it } from "vitest"
 
 // Real `cwebp -q 82 -- 1x1.png` output → RIFF/WEBP "VP8 " (lossy) chunk.

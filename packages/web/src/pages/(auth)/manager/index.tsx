@@ -1,10 +1,10 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS } from "@razzoozle/common/constants"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzia/web/features/game/stores/manager"
-import ManagerPassword from "@razzia/web/features/manager/components/ManagerPassword"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import ManagerPassword from "@razzoozle/web/features/manager/components/ManagerPassword"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 

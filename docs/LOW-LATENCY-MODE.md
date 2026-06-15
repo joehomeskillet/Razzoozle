@@ -324,7 +324,7 @@ four optional anchors from §5.
   satisfy the 7-day `minimumReleaseAge` gate; the diff is purely the
   vitest + `socket.io-client` ecosystem, no churn on unrelated deps.
 - **Tests use Vitest, never Jest** (jest previously broke the pnpm lockfile).
-  `pnpm --filter @razzia/socket test` runs the suite: server-receive scoring
+  `pnpm --filter @razzoozle/socket test` runs the suite: server-receive scoring
   with fake timers, duplicate dedup by `clientId` **and** `clientMessageId`,
   just-before/grace/just-after-deadline, the 2000 ms compensation clamp, the
   flag-off byte-identical path, clock-offset median-of-5 + outlier rejection,

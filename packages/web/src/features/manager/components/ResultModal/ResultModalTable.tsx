@@ -1,8 +1,8 @@
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/answers"
-import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
+} from "@razzoozle/web/features/game/utils/answers"
+import { useResultModal } from "@razzoozle/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
 import { Check, Eye, EyeOff, X } from "lucide-react"
 import { useTranslation } from "react-i18next"

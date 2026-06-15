@@ -1,13 +1,13 @@
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
-import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
-import Input from "@razzia/web/components/Input"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import Button from "@razzoozle/web/components/Button"
+import Card from "@razzoozle/web/components/Card"
+import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 
 import { useNavigate } from "@tanstack/react-router"
 import { type KeyboardEvent, useRef, useState } from "react"
@@ -54,7 +54,7 @@ const Username = () => {
   })
 
   return (
-    <Card>
+    <Card className="glass-2">
       <label htmlFor="username" className="sr-only">
         {t("game:usernameLabel")}
       </label>

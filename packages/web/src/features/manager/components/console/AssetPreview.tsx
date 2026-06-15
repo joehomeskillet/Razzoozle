@@ -2,7 +2,7 @@ import clsx from "clsx"
 import { Image as ImageIcon, LoaderCircle, Upload } from "lucide-react"
 import { type ChangeEvent, type ReactNode, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import Button from "@razzia/web/components/Button"
+import Button from "@razzoozle/web/components/Button"
 
 // Match the server's hard cap in saveBackgroundImage so we reject oversized
 // files client-side before pushing megabytes over the socket (mirrors

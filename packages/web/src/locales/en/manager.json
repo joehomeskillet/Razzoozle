@@ -302,12 +302,12 @@
   "satellite": {
     "title": "Satellite Display",
     "description": "Attach a Raspberry Pi or a beamer PC as a big screen. The satellite shows the host view (lobby, questions, results) on the big screen, while you drive the whole game from your phone. No laptop needed at the party.",
-    "howto": "Open rahoot.joelduss.xyz/display on the beamer and enter the code it shows here.",
+    "howto": "Open razzoozle.joelduss.xyz/display on the beamer and enter the code it shows here.",
     "codePlaceholder": "ABC123",
     "codeLabel": "Pairing code",
     "pair": "Pair",
     "paired": "Display paired",
-    "step1": "Connect the Pi or beamer to the internet and open rahoot.joelduss.xyz/display — the big screen shows a pairing code.",
+    "step1": "Connect the Pi or beamer to the internet and open razzoozle.joelduss.xyz/display — the big screen shows a pairing code.",
     "step2": "Start a game and tap «Satellite» in the game header to enter the code.",
     "step3": "Your phone stays the remote: start, next and auto-mode are all driven from here.",
     "hint": "Pairing only works once a game is running — the code needs the live game and your manager password.",
@@ -315,7 +315,7 @@
     "step2Enter": "Start a game and tap «Satellite» at the top of the game header. Enter the code shown on the big screen there.",
     "step2Result": "Tap «Pair» to test the connection. If it works, «Display paired» appears.",
     "troubleCode": "«Invalid or expired code»: The code is wrong or too old (it is valid for only 5 minutes). Reload the /display page on the big screen — it then shows a fresh code — and type it exactly as shown.",
-    "troubleNotConnected": "«Display not connected»: The projector or Pi lost the connection. Check that it is still online and reload the /display page. On your own network a firewall may block it — then the ports for rahoot.joelduss.xyz must be opened.",
+    "troubleNotConnected": "«Display not connected»: The projector or Pi lost the connection. Check that it is still online and reload the /display page. On your own network a firewall may block it — then the ports for razzoozle.joelduss.xyz must be opened.",
     "troubleGame": "«Game not found» or «Invalid password»: Pairing only works while your game is running and you are signed in as the host. Restart the game or sign in again, then try once more right away.",
     "troubleTitle": "If pairing doesn’t work"
   },
@@ -349,7 +349,7 @@
     "appTitle": "App title",
     "logo": "Logo",
     "default": "Default",
-    "showFooter": "Show \"Razzia\" footer",
+    "showFooter": "Show \"Razzoozle\" footer",
     "upload": "Image",
     "preview": {
       "title": "Preview",
@@ -401,6 +401,11 @@
       "restored": "Version restored",
       "confirmRestore": "Restore this version? The current one will be saved as a new version.",
       "savedAt": "Saved {{when}}"
+    },
+    "style": {
+      "label": "Style",
+      "flat": "Flat",
+      "glass": "Glass"
     }
   },
   "submissions": {

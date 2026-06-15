@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, type Theme } from "@razzia/common/types/theme"
+import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
 import { create } from "zustand"
 
 interface ThemeState {

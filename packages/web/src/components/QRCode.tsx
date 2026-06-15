@@ -1,4 +1,4 @@
-import { useThemeStore } from "@razzia/web/features/theme/store"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import QRCodeStyling, { type Options } from "qr-code-styling"
 import { useEffect, useMemo, useRef } from "react"
 

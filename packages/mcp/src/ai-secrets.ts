@@ -3,14 +3,14 @@
 // config/ai-secrets.json (a flat Record<providerId, string>, file mode 0600).
 // A key is fetched ONLY at call time, attached to the outbound request, and is
 // NEVER returned through a tool result, logged, or echoed. We re-implement (not
-// import) the socket module because @razzia/socket is not bundled; the path
+// import) the socket module because @razzoozle/socket is not bundled; the path
 // derivation + assertSafeId guard are identical. The MCP server is an authoring
 // tool, so it only ever READS keys (key management stays in the live app).
 import type {
   AIProviderPublic,
   AISettings,
   AISettingsPublic,
-} from "@razzia/common/types/ai"
+} from "@razzoozle/common/types/ai"
 import { assertSafeId, getAISettings, getConfigDir } from "./config-store.js"
 import fs from "node:fs"
 import { resolve } from "node:path"

@@ -1,49 +1,49 @@
 // File-backed authoring + read layer for the MCP server. This deliberately
 // mirrors packages/socket/src/services/config.ts (same dir layout, same
-// validators from @razzia/common, same id/slug rules) so a quizz written here
+// validators from @razzoozle/common, same id/slug rules) so a quizz written here
 // is byte-compatible with what the live socket server reads from the mounted
 // config volume. We re-implement (not import) the socket-only helpers
-// `normalizeFilename` / `assertSafeId` because they live in @razzia/socket,
+// `normalizeFilename` / `assertSafeId` because they live in @razzoozle/socket,
 // which we do NOT bundle — the rules below are identical to those modules.
 import {
   AI_PROVIDER_OFF,
   AI_TEXT_PROVIDER_PRESETS,
-} from "@razzia/common/constants"
-import type { SubmissionCategory } from "@razzia/common/constants"
-import { gameConfigValidator } from "@razzia/common/validators/game-config"
-import type { GameConfig } from "@razzia/common/validators/game-config"
-import { quizzValidator } from "@razzia/common/validators/quizz"
-import { themeValidator } from "@razzia/common/validators/theme"
-import { submissionRecordValidator } from "@razzia/common/validators/submission"
+} from "@razzoozle/common/constants"
+import type { SubmissionCategory } from "@razzoozle/common/constants"
+import { gameConfigValidator } from "@razzoozle/common/validators/game-config"
+import type { GameConfig } from "@razzoozle/common/validators/game-config"
+import { quizzValidator } from "@razzoozle/common/validators/quizz"
+import { themeValidator } from "@razzoozle/common/validators/theme"
+import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
 import {
   catalogAddValidator,
   catalogEntryValidator,
-} from "@razzia/common/validators/catalog"
-import { aiSettingsValidator } from "@razzia/common/validators/ai"
-import type { AISettings } from "@razzia/common/types/ai"
-import type { CatalogEntry } from "@razzia/common/types/catalog"
+} from "@razzoozle/common/validators/catalog"
+import { aiSettingsValidator } from "@razzoozle/common/validators/ai"
+import type { AISettings } from "@razzoozle/common/types/ai"
+import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import type {
   GameResult,
   GameResultMeta,
   QuizzMeta,
   QuizzWithId,
-} from "@razzia/common/types/game"
+} from "@razzoozle/common/types/game"
 import type {
   Submission,
   SubmissionMeta,
-} from "@razzia/common/types/submission"
-import type { Theme } from "@razzia/common/types/theme"
-import { DEFAULT_THEME } from "@razzia/common/types/theme"
+} from "@razzoozle/common/types/submission"
+import type { Theme } from "@razzoozle/common/types/theme"
+import { DEFAULT_THEME } from "@razzoozle/common/types/theme"
 import fs from "node:fs"
 import { resolve } from "node:path"
 import { v4 as uuidv4 } from "uuid"
 import { z } from "zod"
 
 // Local mirror of the socket-only gameResultValidator (which lives in
-// @razzia/socket and which we do not bundle). Just enough to validate result
+// @razzoozle/socket and which we do not bundle). Just enough to validate result
 // files on read for `list_results` / `get_result` — questions are passed
 // through opaquely. Identical field semantics to the GameResult interface in
-// @razzia/common/types/game.
+// @razzoozle/common/types/game.
 const gameResultValidator = z.object({
   id: z.string(),
   subject: z.string(),
@@ -61,11 +61,11 @@ const gameResultValidator = z.object({
 // Root of the live config volume. Default matches the host bind-mount that the
 // `razzia` container reads, so writes here update the live app immediately.
 const CONFIG_DIR =
-  process.env.RAHOOT_CONFIG ?? "/nvmetank1/projects/rahoot/config"
+  process.env.RAHOOT_CONFIG ?? "./config"
 
 const getPath = (p = ""): string => resolve(CONFIG_DIR, p)
 
-// Mirror of @razzia/socket config: ids must be safe slugs/uuids so a caller can
+// Mirror of @razzoozle/socket config: ids must be safe slugs/uuids so a caller can
 // never escape the quizz/results/submissions dir via path traversal.
 const SAFE_ID = /^[A-Za-z0-9_-]+$/
 export const assertSafeId = (id: string): void => {
@@ -74,7 +74,7 @@ export const assertSafeId = (id: string): void => {
   }
 }
 
-// Mirror of @razzia/socket/utils/game normalizeFilename: a <=10-char slug of the
+// Mirror of @razzoozle/socket/utils/game normalizeFilename: a <=10-char slug of the
 // subject + a short unique suffix. We use a uuid stem (instead of nanoid) for
 // the suffix to avoid pulling a second id lib into the bundle; the output is
 // still SAFE_ID-conformant, which is all the app requires.
@@ -660,7 +660,7 @@ export const setTheme = (data: unknown): Theme => {
 
 // Persist WebP bytes into config/media under a server-generated name and return
 // its public "/media/<file>" path (served by nginx from the config volume,
-// mirroring saveGeneratedImageBytes in @razzia/socket).
+// mirroring saveGeneratedImageBytes in @razzoozle/socket).
 export const saveGeneratedImageBytes = (
   buffer: Buffer,
   destName: string,

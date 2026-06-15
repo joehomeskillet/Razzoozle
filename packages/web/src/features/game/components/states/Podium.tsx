@@ -1,8 +1,8 @@
-import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
-import Avatar from "@razzia/web/components/Avatar"
-import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
-import { SFX } from "@razzia/web/features/game/utils/constants"
-import useScreenSize from "@razzia/web/hooks/useScreenSize"
+import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
+import Avatar from "@razzoozle/web/components/Avatar"
+import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
@@ -155,7 +155,7 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
               >
                 {top[1].username}
               </p>
-              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+              <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={2} />
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[1].points}
@@ -189,7 +189,7 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
             >
               {top[0].username}
             </p>
-            <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+            <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
               <Medal rank={1} />
               <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                 {top[0].points}
@@ -222,7 +222,7 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
               >
                 {top[2].username}
               </p>
-              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+              <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <Medal rank={3} />
 
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">

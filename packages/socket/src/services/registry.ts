@@ -1,14 +1,14 @@
 import {
   DISPLAY_PAIRING_TTL_MINUTES,
   DISPLAY_STALE_MS,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 // `import type` (not a runtime import): registry only uses Game as a type. A
 // runtime import here creates a registry<->game import cycle, and esbuild's
 // init order then leaves `Registry` undefined when game/index.ts calls
 // Registry.getInstance() at module load — a startup crash that surfaces (when
 // minified) as a misleading zod "cyclical schemas" error. Type-only breaks it.
-import type Game from "@razzia/socket/services/game"
-import type { Server } from "@razzia/common/types/game/socket"
+import type Game from "@razzoozle/socket/services/game"
+import type { Server } from "@razzoozle/common/types/game/socket"
 import dayjs from "dayjs"
 import fs from "fs"
 import { resolve } from "path"
@@ -441,7 +441,7 @@ class Registry {
 
       // Dynamic import breaks the registry<->game import cycle (registry only
       // type-imports Game at the top). Resolves to the bundled module.
-      const { default: Game } = await import("@razzia/socket/services/game")
+      const { default: Game } = await import("@razzoozle/socket/services/game")
 
       let restored = 0
 

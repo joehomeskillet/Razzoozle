@@ -1,7 +1,7 @@
-import { AVATAR_MAX_BYTES, AVATARS_GENERIC, EVENTS } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { AVATAR_MAX_BYTES, AVATARS_GENERIC, EVENTS } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
@@ -101,7 +101,7 @@ describe("player avatars", () => {
   })
 
   afterEach(async () => {
-    const { default: Registry } = await import("@razzia/socket/services/registry")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
     Registry.getInstance().cleanup()
     vi.restoreAllMocks()
 
@@ -115,9 +115,9 @@ describe("player avatars", () => {
   })
 
   it("SET_AVATAR accepts a generic avatar, stores it and re-broadcasts player updates", async () => {
-    const { default: Game } = await import("@razzia/socket/services/game")
-    const { gameSocketHandlers } = await import("@razzia/socket/handlers/game")
-    const { default: Registry } = await import("@razzia/socket/services/registry")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
 
     const managerSocket = makeFakeSocket("manager-sock", "manager-client")
     const game = new Game(
@@ -153,9 +153,9 @@ describe("player avatars", () => {
   })
 
   it("SET_AVATAR stores a data URL as an ephemeral per-game WebP URL", async () => {
-    const { default: Game } = await import("@razzia/socket/services/game")
-    const { gameSocketHandlers } = await import("@razzia/socket/handlers/game")
-    const { default: Registry } = await import("@razzia/socket/services/registry")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
 
     const managerSocket = makeFakeSocket("manager-sock", "manager-client")
     const game = new Game(
@@ -186,9 +186,9 @@ describe("player avatars", () => {
   })
 
   it("rejects oversized uploaded avatars", async () => {
-    const { default: Game } = await import("@razzia/socket/services/game")
-    const { gameSocketHandlers } = await import("@razzia/socket/handlers/game")
-    const { default: Registry } = await import("@razzia/socket/services/registry")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
 
     const managerSocket = makeFakeSocket("manager-sock", "manager-client")
     const game = new Game(
@@ -223,8 +223,8 @@ describe("player avatars", () => {
   })
 
   it("disposeMetrics removes ephemeral avatar files for the game", async () => {
-    const { default: Game } = await import("@razzia/socket/services/game")
-    const { saveEphemeralAvatar } = await import("@razzia/socket/services/config")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { saveEphemeralAvatar } = await import("@razzoozle/socket/services/config")
 
     const managerSocket = makeFakeSocket("manager-sock", "manager-client")
     const game = new Game(

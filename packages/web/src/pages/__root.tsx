@@ -1,14 +1,14 @@
-import { EVENTS } from "@razzia/common/constants"
-import ErrorBoundary from "@razzia/web/components/ErrorBoundary"
-import ErrorPage from "@razzia/web/components/ErrorPage"
-import NotFound from "@razzia/web/components/NotFound"
+import { EVENTS } from "@razzoozle/common/constants"
+import ErrorBoundary from "@razzoozle/web/components/ErrorBoundary"
+import ErrorPage from "@razzoozle/web/components/ErrorPage"
+import NotFound from "@razzoozle/web/components/NotFound"
 import {
   SocketProvider,
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import { applyTheme, fetchTheme } from "@razzia/web/features/theme/apply"
-import { useThemeStore } from "@razzia/web/features/theme/store"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { applyTheme, fetchTheme } from "@razzoozle/web/features/theme/apply"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { createRootRoute, Outlet } from "@tanstack/react-router"
 import { useEffect } from "react"
 

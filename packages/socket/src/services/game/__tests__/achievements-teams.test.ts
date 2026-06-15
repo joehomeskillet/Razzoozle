@@ -9,10 +9,10 @@
 import {
   mergeAchievementsConfig,
   type MergedAchievement,
-} from "@razzia/common/achievements"
-import type { AchievementsConfig } from "@razzia/common/validators/achievements"
-import type { Player, Question, Quizz } from "@razzia/common/types/game"
-import { STATUS, type StatusDataMap } from "@razzia/common/types/game/status"
+} from "@razzoozle/common/achievements"
+import type { AchievementsConfig } from "@razzoozle/common/validators/achievements"
+import type { Player, Question, Quizz } from "@razzoozle/common/types/game"
+import { STATUS, type StatusDataMap } from "@razzoozle/common/types/game/status"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   buildRound,

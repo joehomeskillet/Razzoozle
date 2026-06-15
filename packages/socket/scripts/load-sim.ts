@@ -14,8 +14,8 @@
 //   -n         number of clients to spawn     (default 50)
 //   --correct  documented-only knob; clients have NO solutions so it is ignored
 //              for scoring (kept for parity with the server sim's CORRECT_RATE).
-import { EVENTS } from "@razzia/common/constants"
-import { STATUS } from "@razzia/common/types/game/status"
+import { EVENTS } from "@razzoozle/common/constants"
+import { STATUS } from "@razzoozle/common/types/game/status"
 import { nanoid } from "nanoid"
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client"
 

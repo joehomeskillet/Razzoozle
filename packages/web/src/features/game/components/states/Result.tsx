@@ -1,16 +1,16 @@
-import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
-import CricleCheck from "@razzia/web/features/game/components/icons/CricleCheck"
-import CricleXmark from "@razzia/web/features/game/components/icons/CricleXmark"
-import RewardStack from "@razzia/web/features/game/components/RewardStack"
-import { usePlayerStore } from "@razzia/web/features/game/stores/player"
-import { SFX } from "@razzia/web/features/game/utils/constants"
-import { playFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
-import { rankKeyFor } from "@razzia/web/features/game/utils/rank"
+import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleCheck"
+import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
+import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { playFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
+import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
 import {
   ACHIEVEMENT_META,
   highestTier,
-} from "@razzia/web/features/game/utils/achievements"
-import { fireTierConfetti } from "@razzia/web/features/game/utils/confetti"
+} from "@razzoozle/web/features/game/utils/achievements"
+import { fireTierConfetti } from "@razzoozle/web/features/game/utils/confetti"
 import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -107,7 +107,7 @@ const Result = ({
   const unlockedIds = achievements ?? []
 
   return (
-    <section className="anim-show relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
+    <section className="glass-3 anim-show relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
       {!poll &&
         (correct ? (
           <CricleCheck className="aspect-square max-h-60 w-full" />

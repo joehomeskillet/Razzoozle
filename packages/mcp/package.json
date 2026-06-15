@@ -1,5 +1,5 @@
 {
-  "name": "@razzia/mcp",
+  "name": "@razzoozle/mcp",
   "type": "module",
   "private": true,
   "description": "Project-scoped MCP (Model Context Protocol) stdio server for the Rahoot/Razzia quiz app: author quizzes (incl. AI images), control a live game, and act as game master.",
@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.25.3",
-    "@razzia/common": "workspace:*",
+    "@razzoozle/common": "workspace:*",
     "socket.io-client": "^4.8.3",
     "typescript": "^6.0.3",
     "uuid": "^14.0.0",

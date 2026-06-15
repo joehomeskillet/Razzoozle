@@ -123,11 +123,11 @@
   "satellite": {
     "title": "Schermo satellite",
     "description": "Collega un Raspberry Pi o un PC con proiettore come schermo grande. Il satellite mostra la vista host (sala, domande, risultati) sullo schermo grande, mentre tu controlli tutto il gioco dal telefono. Nessun laptop necessario.",
-    "howto": "Apri rahoot.joelduss.xyz/display sul proiettore e inserisci qui il codice mostrato.",
+    "howto": "Apri razzoozle.joelduss.xyz/display sul proiettore e inserisci qui il codice mostrato.",
     "codePlaceholder": "ABC123",
     "pair": "Abbina",
     "paired": "Schermo abbinato",
-    "step1": "Collega il Pi o il proiettore a internet e apri rahoot.joelduss.xyz/display — lo schermo grande mostra un codice di abbinamento.",
+    "step1": "Collega il Pi o il proiettore a internet e apri razzoozle.joelduss.xyz/display — lo schermo grande mostra un codice di abbinamento.",
     "step2": "Avvia una partita e tocca «Satellite» nell'intestazione del gioco per inserire il codice.",
     "step3": "Il telefono resta il telecomando: avvio, avanti e modalità automatica si controllano da qui.",
     "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager.",
@@ -136,7 +136,7 @@
     "step2Enter": "Avvia una partita e tocca «Satellite» in alto nell’intestazione del gioco. Inserisci lì il codice mostrato sul grande schermo.",
     "step2Result": "Tocca «Abbina» per testare la connessione. Se funziona, compare «Schermo abbinato».",
     "troubleCode": "«Codice non valido o scaduto»: il codice è errato o troppo vecchio (è valido solo 5 minuti). Ricarica la pagina /display sul grande schermo — mostrerà un codice nuovo — e digitalo esattamente come appare.",
-    "troubleNotConnected": "«Schermo non connesso»: il proiettore o il Pi ha perso la connessione. Controlla che sia ancora online e ricarica la pagina /display. Su una rete propria un firewall può bloccarlo; in tal caso vanno aperte le porte per rahoot.joelduss.xyz.",
+    "troubleNotConnected": "«Schermo non connesso»: il proiettore o il Pi ha perso la connessione. Controlla che sia ancora online e ricarica la pagina /display. Su una rete propria un firewall può bloccarlo; in tal caso vanno aperte le porte per razzoozle.joelduss.xyz.",
     "troubleGame": "«Partita non trovata» o «Password non valida»: l’abbinamento funziona solo finché la tua partita è in corso e sei connesso come conduttore. Riavvia la partita o accedi di nuovo, poi riprova subito.",
     "troubleTitle": "Se l’abbinamento non funziona"
   },
@@ -179,7 +179,7 @@
     "appTitle": "Titolo dell'app",
     "logo": "Logo",
     "default": "Predefinito",
-    "showFooter": "Mostra footer «Razzia»",
+    "showFooter": "Mostra footer «Razzoozle»",
     "upload": "Immagine",
     "preview": {
       "title": "Anteprima",
@@ -231,6 +231,11 @@
       "restored": "Versione ripristinata",
       "confirmRestore": "Ripristinare questa versione? Quella attuale verrà salvata come nuova versione.",
       "savedAt": "Salvata {{when}}"
+    },
+    "style": {
+      "label": "Stile",
+      "flat": "Piatto",
+      "glass": "Vetro"
     }
   },
   "submissions": {

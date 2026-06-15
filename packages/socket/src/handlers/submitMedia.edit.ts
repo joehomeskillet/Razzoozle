@@ -7,17 +7,17 @@
 // Throttle: shares the EXACT GENERATE_IMAGE GPU stack via tryConsumeImageGenCredit
 // against the SAME imageGenStore (see handlers/imageGenThrottle.ts) — so a client
 // can't get 5 text2img + 5 img2img + 10+10 hourly by using different event names.
-import { EVENTS } from "@razzia/common/constants"
-import { editImageValidator } from "@razzia/common/validators/media"
+import { EVENTS } from "@razzoozle/common/constants"
+import { editImageValidator } from "@razzoozle/common/validators/media"
 import {
   getClientId,
   SECRET_PATTERNS,
   tryConsumeImageGenCredit,
-} from "@razzia/socket/handlers/imageGenThrottle"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { enhancePrompt } from "@razzia/socket/services/ai-provider"
-import { generateImageFromBase } from "@razzia/socket/services/comfyui"
-import { assertSafeId } from "@razzia/socket/services/config"
+} from "@razzoozle/socket/handlers/imageGenThrottle"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { enhancePrompt } from "@razzoozle/socket/services/ai-provider"
+import { generateImageFromBase } from "@razzoozle/socket/services/comfyui"
+import { assertSafeId } from "@razzoozle/socket/services/config"
 import fs from "fs"
 import { relative, resolve } from "path"
 

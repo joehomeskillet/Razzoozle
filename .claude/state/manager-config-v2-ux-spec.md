@@ -62,4 +62,4 @@ The #10 wave already delivered most of #494's primitive/scroll/empty-state asks:
 
 ## Gate / deploy
 
-`corepack pnpm -r run types` · `pnpm --filter @razzia/web build` · `pnpm --filter @razzia/socket test` → adversarial review → orchestrator merge → `scripts/deploy.sh` (smoke + health) → live smoke on `/manager/config` (all tabs, design save/reset, asset preview + fallback, 0 new console errors, mobile no h-scroll) → re-enable `rahoot-deploy.timer`.
+`corepack pnpm -r run types` · `pnpm --filter @razzoozle/web build` · `pnpm --filter @razzoozle/socket test` → adversarial review → orchestrator merge → `scripts/deploy.sh` (smoke + health) → live smoke on `/manager/config` (all tabs, design save/reset, asset preview + fallback, 0 new console errors, mobile no h-scroll) → re-enable `rahoot-deploy.timer`.

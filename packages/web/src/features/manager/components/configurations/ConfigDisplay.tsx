@@ -69,7 +69,7 @@ const ConfigDisplay = () => {
       // → errors:display.notConnected (satellite socket gone).
       text: t("manager:satellite.troubleNotConnected", {
         defaultValue:
-          "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für rahoot.joelduss.xyz freigegeben sein.",
+          "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für razzoozle.joelduss.xyz freigegeben sein.",
       }),
     },
     {

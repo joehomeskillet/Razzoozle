@@ -1,5 +1,5 @@
 // Standardized AI text-generation interface. Two transport shapes cover every
-// supported backend (see AI_PROVIDER_KINDS in @razzia/common/constants):
+// supported backend (see AI_PROVIDER_KINDS in @razzoozle/common/constants):
 //   - "openai-compatible": local Ollama/LM Studio, OpenAI, OpenRouter, ...
 //     (POST {baseUrl}/chat/completions)
 //   - "anthropic": Claude (POST {ANTHROPIC_BASE_URL}/messages)
@@ -9,18 +9,18 @@
 // model-produced string is secret-scanned (same patterns as the image handler)
 // before it leaves this module — a model that echoes a key-shaped string is
 // rejected as invalid output rather than surfaced to the client.
-import { AI, AI_PROVIDER_OFF } from "@razzia/common/constants"
+import { AI, AI_PROVIDER_OFF } from "@razzoozle/common/constants"
 import type {
   AIProviderConfig,
   AISettings,
-} from "@razzia/common/types/ai"
-import type { Question, Quizz } from "@razzia/common/types/game"
+} from "@razzoozle/common/types/ai"
+import type { Question, Quizz } from "@razzoozle/common/types/game"
 import {
   questionValidator,
   quizzValidator,
-} from "@razzia/common/validators/quizz"
-import { getKey } from "@razzia/socket/services/ai-secrets"
-import { getAISettings } from "@razzia/socket/services/config"
+} from "@razzoozle/common/validators/quizz"
+import { getKey } from "@razzoozle/socket/services/ai-secrets"
+import { getAISettings } from "@razzoozle/socket/services/config"
 
 // Best-effort leaked-secret guard, identical to the set used in handlers/manager.ts
 // for image prompts. Applied to every model-produced string.

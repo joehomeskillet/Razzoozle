@@ -8,12 +8,12 @@ import {
   STREAK_CAP,
   STREAK_STEP,
   TEAMS,
-} from "@razzia/common/constants"
+} from "@razzoozle/common/constants"
 import {
   type AchievementId,
   type MergedAchievement,
   mergeAchievementsConfig,
-} from "@razzia/common/achievements"
+} from "@razzoozle/common/achievements"
 import type {
   Answer,
   GameResult,
@@ -22,29 +22,29 @@ import type {
   QuestionResult,
   Quizz,
   TeamStanding,
-} from "@razzia/common/types/game"
+} from "@razzoozle/common/types/game"
 import type {
   AnswerAck,
   AnswerAckReason,
   Server,
   Socket,
-} from "@razzia/common/types/game/socket"
+} from "@razzoozle/common/types/game/socket"
 import {
   type Status,
   STATUS,
   type StatusDataMap,
-} from "@razzia/common/types/game/status"
-import type { LowLatencyMode } from "@razzia/common/validators/game-config"
-import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
-import { PlayerManager } from "@razzia/socket/services/game/player-manager"
-import { ScoreboardThrottle } from "@razzia/socket/services/game/scoreboard-throttle"
+} from "@razzoozle/common/types/game/status"
+import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
+import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
+import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
+import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
 import {
   matchAnswer,
   normalizeText,
-} from "@razzia/socket/services/game/text-match"
-import { metrics } from "@razzia/socket/services/metrics"
-import { timeToPoint } from "@razzia/socket/utils/game"
-import sleep from "@razzia/socket/utils/sleep"
+} from "@razzoozle/socket/services/game/text-match"
+import { metrics } from "@razzoozle/socket/services/metrics"
+import { timeToPoint } from "@razzoozle/socket/utils/game"
+import sleep from "@razzoozle/socket/utils/sleep"
 import { nanoid } from "nanoid"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the

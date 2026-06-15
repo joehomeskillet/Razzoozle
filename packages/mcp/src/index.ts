@@ -3,10 +3,10 @@
 //
 // Two tool groups:
 //   1. AUTHORING — read/write quizz/result/submission/theme files in the live
-//      config volume (RAHOOT_CONFIG), validated with @razzia/common validators
+//      config volume (RAHOOT_CONFIG), validated with @razzoozle/common validators
 //      before every write, plus AI image generation via ComfyUI into config/media.
 //   2. GAME CONTROL — drive a LIVE game as a manager over socket.io-client
-//      (RAHOOT_SOCKET_URL, path /ws), reusing @razzia/common EVENTS. The
+//      (RAHOOT_SOCKET_URL, path /ws), reusing @razzoozle/common EVENTS. The
 //      presenter/beamer (a socket client reflecting game state) stays paired to
 //      whatever game start_game creates.
 //
@@ -14,7 +14,7 @@
 // controller and is NEVER echoed to a tool result, a log, or the server stderr.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { QUESTION_TYPES, SUBMISSION_CATEGORIES } from "@razzia/common/constants"
+import { QUESTION_TYPES, SUBMISSION_CATEGORIES } from "@razzoozle/common/constants"
 import { z } from "zod"
 import {
   approveSubmission,
@@ -73,7 +73,7 @@ const fail = (error: unknown) => ({
   isError: true as const,
 })
 
-// ── reusable zod input pieces (zod 4, same major as @razzia/common) ──────────
+// ── reusable zod input pieces (zod 4, same major as @razzoozle/common) ──────────
 
 // Loose question shape for create_question / add_question. The authoritative
 // validation is questionValidator (run inside buildQuestion / saveQuizz); this

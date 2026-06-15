@@ -1,17 +1,17 @@
-import { EVENTS, MEDIA_UPLOAD_MAX_BYTES } from "@razzia/common/constants"
-import type { QuestionMediaType } from "@razzia/common/types/game"
-import { questionMediaValidator } from "@razzia/common/validators/quizz"
-import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
-import Input from "@razzia/web/components/Input"
-import Loader from "@razzia/web/components/Loader"
-import QuestionMedia from "@razzia/web/components/QuestionMedia"
+import { EVENTS, MEDIA_UPLOAD_MAX_BYTES } from "@razzoozle/common/constants"
+import type { QuestionMediaType } from "@razzoozle/common/types/game"
+import { questionMediaValidator } from "@razzoozle/common/validators/quizz"
+import Button from "@razzoozle/web/components/Button"
+import Card from "@razzoozle/web/components/Card"
+import Input from "@razzoozle/web/components/Input"
+import Loader from "@razzoozle/web/components/Loader"
+import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
-import MediaPickerModal from "@razzia/web/features/quizz/components/MediaPickerModal"
-import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import MediaPickerModal from "@razzoozle/web/features/quizz/components/MediaPickerModal"
+import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import {
   Image,
   ImageOff,

@@ -1,4 +1,4 @@
-import type { ManagerConfig } from "@razzia/common/types/manager"
+import type { ManagerConfig } from "@razzoozle/common/types/manager"
 import { createContext, useContext, type ReactNode } from "react"
 
 const ConfigContext = createContext<ManagerConfig>({

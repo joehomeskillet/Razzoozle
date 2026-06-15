@@ -13,9 +13,9 @@
 import {
   BOT,
   SLIDER_TOLERANCE_FRACTION,
-} from "@razzia/common/constants"
-import type { Player, Question } from "@razzia/common/types/game"
-import type { Socket } from "@razzia/common/types/game/socket"
+} from "@razzoozle/common/constants"
+import type { Player, Question } from "@razzoozle/common/types/game"
+import type { Socket } from "@razzoozle/common/types/game/socket"
 import { nanoid } from "nanoid"
 
 import { BOT_NAMES } from "./bot-names"

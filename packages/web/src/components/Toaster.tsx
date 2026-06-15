@@ -7,6 +7,7 @@ const Toaster = () => (
       top: "calc(env(safe-area-inset-top, 0px) + 16px)",
     }}
     toastOptions={{
+      className: "glass-2",
       error: { duration: 6000 },
     }}
   >

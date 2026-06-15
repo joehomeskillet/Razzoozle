@@ -1,21 +1,21 @@
-import { EVENTS } from "@razzia/common/constants"
-import { inviteCodeValidator } from "@razzia/common/validators/auth"
-import { setAvatarValidator } from "@razzia/common/validators/avatar"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import { inviteCodeValidator } from "@razzoozle/common/validators/auth"
+import { setAvatarValidator } from "@razzoozle/common/validators/avatar"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   getQuizz,
   saveAchievementsConfig,
   updateGameConfig,
-} from "@razzia/socket/services/config"
-import type { AchievementsConfig } from "@razzia/common/validators/achievements"
-import Game from "@razzia/socket/services/game"
-import managerAuth, { emitConfig } from "@razzia/socket/services/manager"
-import Registry from "@razzia/socket/services/registry"
+} from "@razzoozle/socket/services/config"
+import type { AchievementsConfig } from "@razzoozle/common/validators/achievements"
+import Game from "@razzoozle/socket/services/game"
+import managerAuth, { emitConfig } from "@razzoozle/socket/services/manager"
+import Registry from "@razzoozle/socket/services/registry"
 import {
   addBotsValidator,
   selectedAnswerValidator,
-} from "@razzia/socket/services/validators"
-import { withGame } from "@razzia/socket/utils/game"
+} from "@razzoozle/socket/services/validators"
+import { withGame } from "@razzoozle/socket/utils/game"
 
 export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   const registry = Registry.getInstance()

@@ -21,18 +21,18 @@
 // rejection) we emit PROMPT_ENHANCED with the RAW prompt so the UI always gets a
 // usable value. The enhanced string is re-secret-scanned (a model could echo a
 // key-shaped token) and falls back to raw if it matches.
-import { EVENTS } from "@razzia/common/constants"
-import { enhancePromptValidator } from "@razzia/common/validators/media"
+import { EVENTS } from "@razzoozle/common/constants"
+import { enhancePromptValidator } from "@razzoozle/common/validators/media"
 import {
   getClientId,
   SECRET_PATTERNS,
-} from "@razzia/socket/handlers/imageGenThrottle"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import { enhancePrompt } from "@razzia/socket/services/ai-provider"
+} from "@razzoozle/socket/handlers/imageGenThrottle"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { enhancePrompt } from "@razzoozle/socket/services/ai-provider"
 import {
   checkGlobalSubmissionRate,
   checkRateLimit,
-} from "@razzia/socket/services/submissionRateLimit"
+} from "@razzoozle/socket/services/submissionRateLimit"
 
 export const registerEnhanceHandlers = ({ socket }: SocketContext): void => {
   socket.on(EVENTS.MANAGER.ENHANCE_PROMPT, (payload: unknown) => {

@@ -7,16 +7,16 @@
 // a matching on-disk template, then asserts MANAGER.THEME is emitted to the game
 // room with the template's theme (and that a quiz without a themeId emits none).
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { Theme } from "@razzia/common/types/theme"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { Theme } from "@razzoozle/common/types/theme"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
 import path from "path"
 
-type ConfigModule = typeof import("@razzia/socket/services/config")
+type ConfigModule = typeof import("@razzoozle/socket/services/config")
 
 let tmpDir: string
 let prevConfigPath: string | undefined
@@ -24,11 +24,12 @@ let prevConfigPath: string | undefined
 const loadConfig = async (): Promise<ConfigModule> => {
   vi.resetModules()
 
-  return import("@razzia/socket/services/config")
+  return import("@razzoozle/socket/services/config")
 }
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME: Theme = {
+  style: "flat",
   colorPrimary: "#ff9900",
   colorSecondary: "#1a140b",
   colorText: "#ffffff",
@@ -249,7 +250,7 @@ describe("per-quiz theme on game create", () => {
 
   afterEach(async () => {
     const { default: Registry } = await import(
-      "@razzia/socket/services/registry"
+      "@razzoozle/socket/services/registry"
     )
     Registry.getInstance().cleanup()
   })
@@ -261,9 +262,9 @@ describe("per-quiz theme on game create", () => {
       theme: VALID_THEME,
     })
 
-    const { default: Game } = await import("@razzia/socket/services/game")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
     const { default: Registry } = await import(
-      "@razzia/socket/services/registry"
+      "@razzoozle/socket/services/registry"
     )
 
     const socket = makeFakeSocket("mgr-sock", "mgr-client")
@@ -287,9 +288,9 @@ describe("per-quiz theme on game create", () => {
   it("emits NO MANAGER.THEME when the quiz has no themeId", async () => {
     await loadConfig()
 
-    const { default: Game } = await import("@razzia/socket/services/game")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
     const { default: Registry } = await import(
-      "@razzia/socket/services/registry"
+      "@razzoozle/socket/services/registry"
     )
 
     const socket = makeFakeSocket("mgr-sock", "mgr-client")
@@ -306,9 +307,9 @@ describe("per-quiz theme on game create", () => {
   it("emits NO MANAGER.THEME when the themeId has no matching template", async () => {
     await loadConfig()
 
-    const { default: Game } = await import("@razzia/socket/services/game")
+    const { default: Game } = await import("@razzoozle/socket/services/game")
     const { default: Registry } = await import(
-      "@razzia/socket/services/registry"
+      "@razzoozle/socket/services/registry"
     )
 
     const socket = makeFakeSocket("mgr-sock", "mgr-client")

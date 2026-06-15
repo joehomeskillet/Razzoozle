@@ -12,22 +12,22 @@
 // dir. comfyui#generateImage is mocked so no GPU/network op runs (the SUBMIT and
 // REJECT paths never call it, but the handler module imports it at load time).
 
-import { EVENTS } from "@razzia/common/constants"
-import type { Socket } from "@razzia/common/types/game/socket"
-import type { SocketContext } from "@razzia/socket/handlers/types"
+import { EVENTS } from "@razzoozle/common/constants"
+import type { Socket } from "@razzoozle/common/types/game/socket"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
 import os from "os"
 import path from "path"
 
 const generateImageMock = vi.fn<(prompt: string) => Promise<string>>()
-vi.mock("@razzia/socket/services/comfyui", () => ({
+vi.mock("@razzoozle/socket/services/comfyui", () => ({
   generateImage: (prompt: string) => generateImageMock(prompt),
 }))
 
-type HandlersModule = typeof import("@razzia/socket/handlers/manager")
-type ConfigModule = typeof import("@razzia/socket/services/config")
-type ManagerModule = typeof import("@razzia/socket/services/manager")
+type HandlersModule = typeof import("@razzoozle/socket/handlers/manager")
+type ConfigModule = typeof import("@razzoozle/socket/services/config")
+type ManagerModule = typeof import("@razzoozle/socket/services/manager")
 
 interface FakeSocket {
   id: string
@@ -102,9 +102,9 @@ let managerMod: ManagerModule
 
 const loadGraph = async (): Promise<void> => {
   vi.resetModules()
-  config = await import("@razzia/socket/services/config")
-  managerMod = await import("@razzia/socket/services/manager")
-  handlers = await import("@razzia/socket/handlers/manager")
+  config = await import("@razzoozle/socket/services/config")
+  managerMod = await import("@razzoozle/socket/services/manager")
+  handlers = await import("@razzoozle/socket/handlers/manager")
 }
 
 beforeEach(async () => {

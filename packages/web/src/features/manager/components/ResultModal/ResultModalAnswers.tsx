@@ -1,15 +1,15 @@
-import { MEDIA_TYPES } from "@razzia/common/constants"
-import type { QuestionMedia } from "@razzia/common/types/game"
-import Markdown from "@razzia/web/components/Markdown"
+import { MEDIA_TYPES } from "@razzoozle/common/constants"
+import type { QuestionMedia } from "@razzoozle/common/types/game"
+import Markdown from "@razzoozle/web/components/Markdown"
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/answers"
+} from "@razzoozle/web/features/game/utils/answers"
 import {
   matchAnswer,
   normalizeText,
-} from "@razzia/web/features/game/utils/text-match"
-import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
+} from "@razzoozle/web/features/game/utils/text-match"
+import { useResultModal } from "@razzoozle/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
 import { Check, Clock, ImageOff, Music, Video, X } from "lucide-react"
 import { useTranslation } from "react-i18next"

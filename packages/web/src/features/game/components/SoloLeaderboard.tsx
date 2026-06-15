@@ -2,8 +2,8 @@
  * SoloLeaderboard — shows the final solo-play results sorted by score.
  * Highlights the current player's entry.
  */
-import type { SoloScoreEntry } from "@razzia/common/types/game"
-import Avatar from "@razzia/web/components/Avatar"
+import type { SoloScoreEntry } from "@razzoozle/common/types/game"
+import Avatar from "@razzoozle/web/components/Avatar"
 import clsx from "clsx"
 import { Trophy } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"

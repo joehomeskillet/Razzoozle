@@ -17,15 +17,15 @@
 // Driven by the same lightweight fake sockets + fake IO harness as
 // lobby-disconnect.test.ts, against a real Game instance + gameSocketHandlers.
 
-import { EVENTS, EXAMPLE_QUIZZ } from "@razzia/common/constants"
-import type { Quizz } from "@razzia/common/types/game"
-import type { Server, Socket } from "@razzia/common/types/game/socket"
-import { STATUS } from "@razzia/common/types/game/status"
-import { gameSocketHandlers } from "@razzia/socket/handlers/game"
-import type { SocketContext } from "@razzia/socket/handlers/types"
-import Game from "@razzia/socket/services/game"
-import managerAuth from "@razzia/socket/services/manager"
-import Registry from "@razzia/socket/services/registry"
+import { EVENTS, EXAMPLE_QUIZZ } from "@razzoozle/common/constants"
+import type { Quizz } from "@razzoozle/common/types/game"
+import type { Server, Socket } from "@razzoozle/common/types/game/socket"
+import { STATUS } from "@razzoozle/common/types/game/status"
+import { gameSocketHandlers } from "@razzoozle/socket/handlers/game"
+import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import Game from "@razzoozle/socket/services/game"
+import managerAuth from "@razzoozle/socket/services/manager"
+import Registry from "@razzoozle/socket/services/registry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 interface FakeSocket {

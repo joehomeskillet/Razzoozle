@@ -1,7 +1,7 @@
 import {
   answerColor,
   answerLabel,
-} from "@razzia/web/features/game/utils/answers"
+} from "@razzoozle/web/features/game/utils/answers"
 import clsx from "clsx"
 import { Check, X } from "lucide-react"
 import type { ButtonHTMLAttributes, PropsWithChildren } from "react"
@@ -34,7 +34,7 @@ const AnswerButton = ({
   return (
     <button
       className={clsx(
-        "relative flex items-center gap-3 rounded-2xl px-3 py-3 text-left sm:py-5 lg:gap-6 lg:rounded-3xl lg:px-8 lg:py-10",
+        "glass-interactive relative flex items-center gap-3 rounded-2xl px-3 py-3 text-left sm:py-5 lg:gap-6 lg:rounded-3xl lg:px-8 lg:py-10",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
         colorIndex !== undefined && answerColor(colorIndex),
         className,

@@ -1,24 +1,24 @@
-import { EVENTS, SUBMISSION_CATEGORIES } from "@razzia/common/constants"
-import type { SubmissionCategory } from "@razzia/common/constants"
-import type { Question } from "@razzia/common/types/game"
+import { EVENTS, SUBMISSION_CATEGORIES } from "@razzoozle/common/constants"
+import type { SubmissionCategory } from "@razzoozle/common/constants"
+import type { Question } from "@razzoozle/common/types/game"
 import type {
   Submission,
   SubmissionStatus,
-} from "@razzia/common/types/submission"
-import AlertDialog from "@razzia/web/components/AlertDialog"
-import Button from "@razzia/web/components/Button"
-import Input from "@razzia/web/components/Input"
-import QuestionMedia from "@razzia/web/components/QuestionMedia"
+} from "@razzoozle/common/types/submission"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
+import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import {
   useEvent,
   useSocket,
-} from "@razzia/web/features/game/contexts/socket-context"
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-} from "@razzia/web/features/game/utils/constants"
-import { EmptyState } from "@razzia/web/features/manager/components/console"
-import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
+} from "@razzoozle/web/features/game/utils/constants"
+import { EmptyState } from "@razzoozle/web/features/manager/components/console"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import clsx from "clsx"
 import {
   Check,

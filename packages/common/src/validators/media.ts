@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { MEDIA_CATEGORIES, PROMPT_MAX_LEN } from "@razzia/common/constants"
+import { MEDIA_CATEGORIES, PROMPT_MAX_LEN } from "@razzoozle/common/constants"
 
 // Upload guard (server input + client pre-submit). dataUrl must be a base64
 // data URL for an image or audio asset; the server re-encodes/validates bytes.

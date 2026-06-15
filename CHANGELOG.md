@@ -3,7 +3,7 @@
 This is the **Südhang** fork of [Razzia](https://github.com/) (a Kahoot-style
 live quiz). It documents the changes this fork carries **beyond upstream** — it
 is not the upstream changelog. The fork runs as a single Docker image
-(nginx + node socket + supervisord) behind Caddy at `rahoot.joelduss.xyz`.
+(nginx + node socket + supervisord) behind Caddy at `razzoozle.joelduss.xyz`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
