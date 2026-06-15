@@ -48,16 +48,28 @@ export default function QuestionMarksField() {
   // Generate the field ONCE — Math.random is fine at browser runtime.
   const marks = useMemo<Mark[]>(
     () =>
-      Array.from({ length: COUNT }, () => ({
-        left: rand(4, 94),
-        top: rand(4, 92),
-        size: rand(1.6, 4.5),
-        color: pick(PALETTE),
-        delay: rand(0, 5),
-        duration: rand(2.8, 5.5),
-        repeatDelay: rand(0.4, 1.6),
-        rotate: rand(-18, 18),
-      })),
+      Array.from({ length: COUNT }, (_, i) => {
+        // Bias ~2/3 of the marks into the outer left/right columns so plenty
+        // stay visible in the side margins around the (wide) form surface
+        // instead of being hidden behind it; the rest spread freely.
+        const edgeBiased = i % 3 !== 0
+        const left = edgeBiased
+          ? Math.random() < 0.5
+            ? rand(0, 13)
+            : rand(87, 100)
+          : rand(4, 94)
+
+        return {
+          left,
+          top: rand(3, 95),
+          size: rand(1.6, 4.5),
+          color: pick(PALETTE),
+          delay: rand(0, 5),
+          duration: rand(2.8, 5.5),
+          repeatDelay: rand(0.4, 1.6),
+          rotate: rand(-18, 18),
+        }
+      }),
     [],
   )
 
