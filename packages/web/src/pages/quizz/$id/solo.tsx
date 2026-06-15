@@ -45,9 +45,9 @@ interface SoloShellProps {
    * and answer-music lifecycle.
    */
   phaseKey: number
-  /** Optional action rendered in the bottom bar next to the score — e.g. the
-   *  result-phase "next question" button, so it is always reachable without
-   *  scrolling and never crowds the answer content. */
+  // Optional action rendered in the bottom bar next to the score — e.g. the
+  // result-phase "next question" button, so it is always reachable without
+  // scrolling and never crowds the answer content.
   footerAction?: React.ReactNode
 }
 
