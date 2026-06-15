@@ -1,4 +1,6 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS, SUBMISSION_CATEGORIES } from "@razzia/common/constants"
+import type { SubmissionCategory } from "@razzia/common/constants"
+import { dropEmptyAnswers } from "@razzia/common/utils/dropEmptyAnswers"
 import { submissionValidator } from "@razzia/common/validators/submission"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
@@ -138,6 +140,9 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [submittedBy, setSubmittedBy] = useState("")
+  // WP-17 — optional public topic category; sibling of the question (not nested
+  // in it). "" means "no category" and is simply omitted from the payload.
+  const [category, setCategory] = useState<SubmissionCategory | "">("")
   const [status, setStatus] = useState<"idle" | "success">("idle")
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [invalidTarget, setInvalidTarget] = useState<InvalidTarget | null>(null)
@@ -157,8 +162,16 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
   })
 
   const handleSubmit = () => {
-    const { id: _id, ...question } = currentQuestion
-    const parsed = submissionValidator.safeParse({ submittedBy, question })
+    const { id: _id, ...rest } = currentQuestion
+    // Trim unfilled answer slots (the editor defaults to four) so a 2–3 answer
+    // question doesn't fail validation on the empty trailing slots.
+    const question = dropEmptyAnswers(rest)
+    const parsed = submissionValidator.safeParse({
+      submittedBy,
+      question,
+      // WP-17 — include the optional category only when chosen.
+      ...(category ? { category } : {}),
+    })
 
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0]
@@ -202,6 +215,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
 
   const handleReset = () => {
     setSubmittedBy("")
+    setCategory("")
     setStatus("idle")
     setFieldError(null)
     setInvalidTarget(null)
@@ -378,6 +392,38 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             <RevealSection index={4} label={t("submit:form.section.settings")}>
               <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
                 <QuestionEditorConfig />
+              </div>
+            </RevealSection>
+
+            {/* WP-17 — optional public topic category. A sibling of the
+                question, rides the submission payload (not the question). */}
+            <RevealSection
+              index={5}
+              label={t("submit:category.label", {
+                defaultValue: "Kategorie (optional)",
+              })}
+            >
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <label htmlFor="submit-category" className="sr-only">
+                  {t("submit:category.label", {
+                    defaultValue: "Kategorie (optional)",
+                  })}
+                </label>
+                <select
+                  id="submit-category"
+                  value={category}
+                  onChange={(e) =>
+                    setCategory(e.target.value as SubmissionCategory | "")
+                  }
+                  className="focus-visible:outline-primary min-h-11 w-full rounded-xl bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+                >
+                  <option value="">—</option>
+                  {SUBMISSION_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {t(`submit:category.${cat}`, { defaultValue: cat })}
+                    </option>
+                  ))}
+                </select>
               </div>
             </RevealSection>
           </div>

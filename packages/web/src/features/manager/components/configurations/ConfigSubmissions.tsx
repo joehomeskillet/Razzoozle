@@ -1,4 +1,5 @@
-import { EVENTS } from "@razzia/common/constants"
+import { EVENTS, SUBMISSION_CATEGORIES } from "@razzia/common/constants"
+import type { SubmissionCategory } from "@razzia/common/constants"
 import type { Question } from "@razzia/common/types/game"
 import type {
   Submission,
@@ -216,6 +217,13 @@ const ConfigSubmissions = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [previewId, setPreviewId] = useState<string | null>(null)
+  // WP-17 — moderator reject form: which card's reject panel is open + the
+  // optional reason note and optional category override captured before confirm.
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState("")
+  const [rejectCategory, setRejectCategory] = useState<SubmissionCategory | "">(
+    "",
+  )
   // Full submissions (with the complete question object) fetched over the
   // existing socket contract; the config-context list is meta-only (text).
   const [full, setFull] = useState<Submission[]>([])
@@ -240,6 +248,9 @@ const ConfigSubmissions = () => {
   )
 
   const fullById = (id: string) => full.find((s) => s.id === id)?.question
+  // WP-17 — the meta list (config-context) omits category/rejectionReason; read
+  // them from the full SUBMISSIONS_DATA record for the rejected-card display.
+  const recordById = (id: string) => full.find((s) => s.id === id)
 
   const pending = submissions.filter((s) => s.status === "pending")
   const approved = submissions.filter((s) => s.status === "approved")
@@ -341,8 +352,33 @@ const ConfigSubmissions = () => {
     setEditingId(null)
   }
 
+  const handleOpenReject = (id: string) => () => {
+    setApprovingId(null)
+    setApproveToCatalog(false)
+    setEditingId(null)
+    setRejectReason("")
+    setRejectCategory("")
+    setRejectingId((current) => (current === id ? null : id))
+  }
+
+  const handleCancelReject = () => {
+    setRejectingId(null)
+    setRejectReason("")
+    setRejectCategory("")
+  }
+
   const handleReject = (id: string) => () => {
-    socket.emit(EVENTS.MANAGER.REJECT_SUBMISSION, { id })
+    const trimmed = rejectReason.trim()
+    // WP-17 — only attach optional fields when set so an empty form never
+    // overwrites a previously-recorded reason/category with a blank value.
+    socket.emit(EVENTS.MANAGER.REJECT_SUBMISSION, {
+      id,
+      ...(trimmed ? { reason: trimmed } : {}),
+      ...(rejectCategory ? { category: rejectCategory } : {}),
+    })
+    setRejectingId(null)
+    setRejectReason("")
+    setRejectCategory("")
     setPreviewId(null)
     requestFull()
     toast.success(t("manager:submissions.reject"))
@@ -441,6 +477,7 @@ const ConfigSubmissions = () => {
                 setApprovingId(null)
                 setEditingId(null)
                 setPreviewId(null)
+                setRejectingId(null)
               }}
               aria-pressed={active}
               className={clsx(
@@ -516,8 +553,18 @@ const ConfigSubmissions = () => {
                 }
               >
                 {!isPending && (
-                  <div className="mb-2">
+                  <div className="mb-2 space-y-1.5">
                     <StatusBadge status={s.status} />
+                    {/* WP-17 — surface the moderator note on rejected cards. */}
+                    {s.status === "rejected" &&
+                      recordById(s.id)?.rejectionReason && (
+                        <p className="text-sm text-red-700">
+                          {t("manager:submissions.rejectedBecause", {
+                            reason: recordById(s.id)?.rejectionReason,
+                            defaultValue: "Abgelehnt: {{reason}}",
+                          })}
+                        </p>
+                      )}
                   </div>
                 )}
 
@@ -610,21 +657,15 @@ const ConfigSubmissions = () => {
                   )}
 
                   {isPending && (
-                    <AlertDialog
-                      trigger={
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="min-h-11"
-                        >
-                          {t("manager:submissions.reject")}
-                        </Button>
-                      }
-                      title={t("manager:submissions.reject")}
-                      description={t("manager:submissions.confirmReject")}
-                      confirmLabel={t("common:delete")}
-                      onConfirm={handleReject(s.id)}
-                    />
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="min-h-11"
+                      onClick={handleOpenReject(s.id)}
+                      aria-expanded={rejectingId === s.id}
+                    >
+                      {t("manager:submissions.reject")}
+                    </Button>
                   )}
                 </div>
 
@@ -693,6 +734,96 @@ const ConfigSubmissions = () => {
                         </Button>
                       ))
                     )}
+                  </div>
+                )}
+
+                {/* WP-17 — inline reject form: optional reason note + optional
+                    category override, then a confirm dialog. */}
+                {isPending && rejectingId === s.id && (
+                  <div className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor={`reject-reason-${s.id}`}
+                        className="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+                      >
+                        {t("manager:submissions.rejectReason.label", {
+                          defaultValue: "Begründung (optional)",
+                        })}
+                      </label>
+                      <textarea
+                        id={`reject-reason-${s.id}`}
+                        value={rejectReason}
+                        onChange={(event) =>
+                          setRejectReason(event.target.value)
+                        }
+                        rows={2}
+                        maxLength={500}
+                        placeholder={t(
+                          "manager:submissions.rejectReason.placeholder",
+                          {
+                            defaultValue:
+                              "Warum wird diese Frage abgelehnt?",
+                          },
+                        )}
+                        className="focus-visible:outline-primary w-full resize-y rounded-lg bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor={`reject-category-${s.id}`}
+                        className="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+                      >
+                        {t("manager:submissions.category.label", {
+                          defaultValue: "Kategorie",
+                        })}
+                      </label>
+                      <select
+                        id={`reject-category-${s.id}`}
+                        value={rejectCategory}
+                        onChange={(event) =>
+                          setRejectCategory(
+                            event.target.value as SubmissionCategory | "",
+                          )
+                        }
+                        className="focus-visible:outline-primary min-h-11 w-full rounded-lg bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+                      >
+                        <option value="">—</option>
+                        {SUBMISSION_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {t(`manager:submissions.category.${cat}`, {
+                              defaultValue: cat,
+                            })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <AlertDialog
+                        trigger={
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="min-h-11"
+                          >
+                            {t("manager:submissions.reject")}
+                          </Button>
+                        }
+                        title={t("manager:submissions.reject")}
+                        description={t("manager:submissions.confirmReject")}
+                        confirmLabel={t("common:delete")}
+                        onConfirm={handleReject(s.id)}
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={handleCancelReject}
+                      >
+                        {t("common:cancel")}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </motion.div>

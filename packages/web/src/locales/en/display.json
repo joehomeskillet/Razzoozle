@@ -2,5 +2,6 @@
   "enterCode": "Enter this code in the Rahoot admin on your phone",
   "registering": "Preparing display…",
   "waitingForManager": "Waiting for manager to pair…",
-  "waitingForGame": "Waiting for the game to start…"
+  "waitingForGame": "Waiting for the game to start…",
+  "defaultName": "Display"
 }

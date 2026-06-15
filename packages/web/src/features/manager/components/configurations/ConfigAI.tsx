@@ -1,5 +1,12 @@
-import { AI, AI_PROVIDER_OFF, EVENTS } from "@razzia/common/constants"
+import {
+  AI,
+  AI_PROVIDER_OFF,
+  EVENTS,
+  IMAGE_RESOLUTION_DEFAULT,
+  IMAGE_RESOLUTIONS,
+} from "@razzia/common/constants"
 import type {
+  AIImageProviderConfig,
   AIProviderPublic,
   AISettings,
   AISettingsPublic,
@@ -168,7 +175,7 @@ const ConfigAI = () => {
 
   const updateTextProvider = (
     providerId: string,
-    updates: Partial<Pick<AIProviderPublic, "baseUrl" | "model">>,
+    updates: Partial<Pick<AIProviderPublic, "baseUrl" | "model" | "temperature">>,
   ) => {
     setSettings((current) =>
       current
@@ -177,6 +184,27 @@ const ConfigAI = () => {
             text: {
               ...current.text,
               providers: current.text.providers.map((provider) =>
+                provider.id === providerId
+                  ? { ...provider, ...updates }
+                  : provider,
+              ),
+            },
+          }
+        : current,
+    )
+  }
+
+  const updateImageProvider = (
+    providerId: string,
+    updates: Partial<Pick<AIImageProviderConfig, "resolution">>,
+  ) => {
+    setSettings((current) =>
+      current
+        ? {
+            ...current,
+            image: {
+              ...current.image,
+              providers: current.image.providers.map((provider) =>
                 provider.id === providerId
                   ? { ...provider, ...updates }
                   : provider,
@@ -196,12 +224,15 @@ const ConfigAI = () => {
       text: {
         activeProvider: settings.text.activeProvider,
         providers: settings.text.providers.map(
-          ({ id, label, kind, baseUrl, model }) => ({
+          ({ id, label, kind, baseUrl, model, temperature }) => ({
             id,
             label,
             kind,
             baseUrl,
             model,
+            // WP-10 — carry the per-provider temperature, else the slider
+            // appears to work but never persists.
+            temperature,
           }),
         ),
       },
@@ -368,6 +399,46 @@ const ConfigAI = () => {
                   />
                 </Field>
 
+                {(() => {
+                  const temperature =
+                    selectedProvider.temperature ?? AI.TEMP_DEFAULT
+                  return (
+                    <Field
+                      label={t("manager:ai.temperature.label", {
+                        defaultValue: "Temperatur",
+                      })}
+                      htmlFor="ai-temperature"
+                      hint={t("manager:ai.temperature.help", {
+                        defaultValue: "Höher = kreativer, niedriger = präziser",
+                      })}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          id="ai-temperature"
+                          type="range"
+                          min={AI.TEMP_MIN}
+                          max={AI.TEMP_MAX}
+                          step={0.1}
+                          value={temperature}
+                          aria-valuetext={t("manager:ai.temperature.value", {
+                            defaultValue: "{{value}}",
+                            value: temperature.toFixed(1),
+                          })}
+                          onChange={(event) =>
+                            updateTextProvider(selectedProvider.id, {
+                              temperature: Number(event.target.value),
+                            })
+                          }
+                          className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                        />
+                        <span className="w-10 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+                          {temperature.toFixed(1)}
+                        </span>
+                      </div>
+                    </Field>
+                  )
+                })()}
+
                 {selectedProvider.kind === "openai-compatible" && (
                   <Field label={t("manager:ai.baseUrl")}>
                     <Input
@@ -505,6 +576,34 @@ const ConfigAI = () => {
                     {provider.baseUrl}
                   </p>
                 )}
+                <Field
+                  className="mt-3"
+                  label={t("manager:ai.resolution.label", {
+                    defaultValue: "Bildauflösung",
+                  })}
+                  hint={t("manager:ai.resolution.help", {
+                    defaultValue: "Kantenlänge des generierten Bildes",
+                  })}
+                >
+                  <select
+                    value={provider.resolution ?? IMAGE_RESOLUTION_DEFAULT}
+                    onChange={(event) =>
+                      updateImageProvider(provider.id, {
+                        resolution: Number(event.target.value),
+                      })
+                    }
+                    className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+                  >
+                    {IMAGE_RESOLUTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {t("manager:ai.resolution.option", {
+                          defaultValue: "{{size}} × {{size}}",
+                          size,
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
               </div>
             ))}
           </div>

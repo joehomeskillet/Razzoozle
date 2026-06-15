@@ -4,7 +4,11 @@
 // here. The generated PNG bytes are fetched over HTTP from ComfyUI's /view
 // endpoint and persisted into config/media via saveGeneratedImageBytes, then
 // served by nginx from the config volume at /media/<file> (mirrors /theme/).
-import { saveGeneratedImageBytes } from "@razzia/socket/services/config"
+import { IMAGE_RESOLUTION_DEFAULT } from "@razzia/common/constants"
+import {
+  getAISettings,
+  saveGeneratedImageBytes,
+} from "@razzia/socket/services/config"
 import { toWebp } from "@razzia/socket/services/webp"
 import fs from "fs"
 import { nanoid } from "nanoid"
@@ -25,6 +29,7 @@ const COMFYUI_IMG2IMG_WORKFLOW =
 const PROMPT_NODE = "6" // CLIPTextEncode (positive) — its .inputs.text is the prompt
 const SAMPLER_NODE = "3" // KSampler — randomize .inputs.seed for variety
 const SAVE_NODE = "9" // SaveImage — its history output carries images[0].filename
+const LATENT_NODE = "5" // EmptyLatentImage — set .inputs.width/height = resolution (WP-10)
 
 // Node ids in the img2img workflow graph (see comfy-img2img-workflow.json).
 // NOTE: distinct from the txt2img ids above — node 6 here is TextEncodeZImageOmni
@@ -180,6 +185,24 @@ export const generateImage = async (prompt: string): Promise<string> => {
   }
 
   promptNode.inputs.text = prompt
+
+  // WP-10 — square output resolution. Read from the active image provider's
+  // optional `resolution` (set in ConfigAI); default IMAGE_RESOLUTION_DEFAULT
+  // when unset (old config). Reading here (not via a new arg) keeps every caller
+  // — manager.ts GENERATE_IMAGE + the public submission path — unchanged.
+  const { image } = getAISettings()
+  const resolution =
+    image.providers.find((p) => p.id === image.activeProvider)?.resolution ??
+    IMAGE_RESOLUTION_DEFAULT
+
+  // Guard like the sampler-node set below: a bundled/Docker workflow that lacks
+  // node "5" (or differs) must no-op, not crash.
+  const latentNode = workflow[LATENT_NODE]
+
+  if (latentNode?.inputs) {
+    latentNode.inputs.width = resolution
+    latentNode.inputs.height = resolution
+  }
 
   // Randomize the seed so repeated prompts don't return an identical image.
   const samplerNode = workflow[SAMPLER_NODE]

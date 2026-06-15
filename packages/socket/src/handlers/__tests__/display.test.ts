@@ -25,7 +25,11 @@
 // codes (failedToReadConfig OR invalidPassword) and — load-bearingly — that the
 // display did NOT join, which holds regardless of whether a config file exists.
 
-import { EVENTS } from "@razzia/common/constants"
+import {
+  DISPLAY_NAME_MAX_LEN,
+  DISPLAY_STALE_MS,
+  EVENTS,
+} from "@razzia/common/constants"
 import type Game from "@razzia/socket/services/game"
 import {
   displaySocketHandlers,
@@ -33,6 +37,9 @@ import {
 } from "@razzia/socket/handlers/display"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import Registry from "@razzia/socket/services/registry"
+import fs from "fs"
+import os from "os"
+import { resolve } from "path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // ── Fakes (helpers.ts#makeSocket style, extended with join/rooms tracking) ───
@@ -73,15 +80,50 @@ const makeFakeSocket = (id: string): FakeDisplaySocket => {
   }
 }
 
+// A routed emit recorded by the fake io.to(room).emit(event, payload). WP-15's
+// broadcastStatus targets the manager's socket id as the "room".
+interface RoutedEmit {
+  room: string
+  event: string
+  payload: unknown
+}
+
 // A fake `io` whose `sockets.sockets` Map lets handlePair resolve a registered
-// display socket by id (io.sockets.sockets.get(pairing.socketId)).
+// display socket by id (io.sockets.sockets.get(pairing.socketId)). WP-15 also
+// uses io.to(room).emit(...), so the fake records routed emits in `routed`.
 const makeFakeIo = (sockets: FakeDisplaySocket[]) => {
   const map = new Map<string, FakeDisplaySocket>()
   sockets.forEach((s) => map.set(s.id, s))
 
+  const routed: RoutedEmit[] = []
+
   return {
     sockets: { sockets: map },
+    routed,
+    to: (room: string) => ({
+      emit: (event: string, payload?: unknown) => {
+        routed.push({ room, event, payload })
+
+        return true
+      },
+    }),
   }
+}
+
+// Pull the latest DISPLAY.STATUS routed to a given manager socket id.
+const lastStatusTo = (
+  io: ReturnType<typeof makeFakeIo>,
+  managerId: string,
+): { displays: { socketId: string; name: string; lastPingAt: number }[] } | undefined => {
+  const hits = io.routed.filter(
+    (r) => r.event === EVENTS.DISPLAY.STATUS && r.room === managerId,
+  )
+
+  return hits.length
+    ? (hits[hits.length - 1].payload as {
+        displays: { socketId: string; name: string; lastPingAt: number }[]
+      })
+    : undefined
 }
 
 const ctxOf = (socket: FakeDisplaySocket, io: ReturnType<typeof makeFakeIo>) =>
@@ -403,5 +445,185 @@ describe("handlePair — authorization", () => {
     // Load-bearing: the display never joined the room and the code is untouched.
     expect(display.joined).toEqual([])
     expect(registry.isPairingValid(code)).toBe(true)
+  })
+})
+
+// ── WP-15: heartbeat (register at pair / touch on ping / prune / disconnect) ──
+
+// Reflection shim for the private 60s-sweep display pruner (mirrors the
+// registry.test.ts private-method access pattern).
+const runCleanupDisplays = (r: Registry): void => {
+  ;(r as unknown as { cleanupDisplays: () => void }).cleanupDisplays()
+}
+
+// Drive a full pair so a heartbeat record exists, returning the display socket
+// id + the game id + the io (whose routed[] captured STATUS).
+const pairDisplay = (opts?: { registerName?: string }) => {
+  const display = makeFakeSocket("disp-1")
+  const manager = makeFakeSocket("mgr-sock")
+  const io = makeFakeIo([display, manager])
+
+  displaySocketHandlers(ctxOf(display, io))
+  // REGISTER may carry an up-front name (WP-15 widening).
+  display.handlers.get(EVENTS.DISPLAY.REGISTER)!(
+    opts?.registerName !== undefined ? { name: opts.registerName } : undefined,
+  )
+  const code = registeredCode(display)
+
+  registry.addGame(
+    fakeGame({
+      gameId: "game-A",
+      inviteCode: "INV123",
+      managerSocketId: "mgr-sock",
+    }),
+  )
+
+  handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+
+  return { display, manager, io, gameId: "game-A" }
+}
+
+describe("WP-15 display heartbeat — register at PAIR_SUCCESS", () => {
+  it("creates a heartbeat record on pair and broadcasts STATUS to the manager", () => {
+    const { display, io } = pairDisplay({ registerName: "Aula-Beamer" })
+
+    // Record exists for the game, labelled from the REGISTER name.
+    const rows = registry.getDisplaysByGame("game-A")
+    expect(rows).toHaveLength(1)
+    expect(rows[0].socketId).toBe(display.id)
+    expect(rows[0].name).toBe("Aula-Beamer")
+    expect(rows[0].lastPingAt).toBeGreaterThan(0)
+
+    // STATUS was routed to the CURRENT manager socket id with the row.
+    const status = lastStatusTo(io, "mgr-sock")
+    expect(status?.displays).toEqual([
+      {
+        socketId: "disp-1",
+        name: "Aula-Beamer",
+        lastPingAt: rows[0].lastPingAt,
+      },
+    ])
+  })
+
+  it("falls back to the default name when REGISTER supplied none", () => {
+    pairDisplay()
+    const rows = registry.getDisplaysByGame("game-A")
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe("Beamer")
+  })
+
+  it("clamps + sanitises an oversize / control-char REGISTER name", () => {
+    const dirty = ` \tRoom\n${"x".repeat(80)}`
+    pairDisplay({ registerName: dirty })
+    const rows = registry.getDisplaysByGame("game-A")
+    // Control chars stripped, trimmed, capped to DISPLAY_NAME_MAX_LEN.
+    expect(rows[0].name).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/u)
+    expect(rows[0].name.length).toBeLessThanOrEqual(DISPLAY_NAME_MAX_LEN)
+    expect(rows[0].name.startsWith("Room")).toBe(true)
+  })
+})
+
+describe("WP-15 display heartbeat — PING touches + re-broadcasts", () => {
+  it("bumps lastPingAt on PING and re-emits STATUS to the manager", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-06-04T12:00:00Z"))
+
+    const { display, io } = pairDisplay({ registerName: "Beamer-1" })
+    const before = registry.getDisplaysByGame("game-A")[0].lastPingAt
+
+    // 5s later the kiosk pings → lastPingAt advances, STATUS re-emitted.
+    vi.setSystemTime(new Date("2026-06-04T12:00:05Z"))
+    display.handlers.get(EVENTS.DISPLAY.PING)!({
+      gameId: "game-A",
+      name: "Beamer-1",
+    })
+
+    const after = registry.getDisplaysByGame("game-A")[0].lastPingAt
+    expect(after).toBeGreaterThan(before)
+
+    const status = lastStatusTo(io, "mgr-sock")
+    expect(status?.displays[0].lastPingAt).toBe(after)
+  })
+
+  it("ignores a PING from an unknown (unpaired) socket", () => {
+    const stray = makeFakeSocket("stray")
+    const io = makeFakeIo([stray])
+    displaySocketHandlers(ctxOf(stray, io))
+
+    // No game / no record → touch is a no-op and the (missing) game means the
+    // STATUS broadcast self-suppresses (no manager to route to). No throw.
+    expect(() =>
+      stray.handlers.get(EVENTS.DISPLAY.PING)!({ gameId: "nope" }),
+    ).not.toThrow()
+    expect(registry.getDisplayCount()).toBe(0)
+  })
+})
+
+describe("WP-15 display heartbeat — disconnect removes + re-broadcasts", () => {
+  it("removes the record on the display socket disconnect and re-emits STATUS", () => {
+    const { display, io } = pairDisplay({ registerName: "Beamer-1" })
+    expect(registry.getDisplaysByGame("game-A")).toHaveLength(1)
+
+    // Drop the display socket → record removed, empty STATUS re-broadcast.
+    display.handlers.get("disconnect")!()
+
+    expect(registry.getDisplaysByGame("game-A")).toEqual([])
+    const status = lastStatusTo(io, "mgr-sock")
+    expect(status?.displays).toEqual([])
+  })
+})
+
+describe("WP-15 display heartbeat — 60s sweep prunes stale records", () => {
+  it("prunes a display silent past DISPLAY_STALE_MS, keeps a fresh one", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-06-04T12:00:00Z"))
+
+    // Two paired displays in the same game.
+    registry.registerDisplay("disp-old", "game-A", "Old")
+    registry.registerDisplay("disp-new", "game-A", "New")
+    expect(registry.getDisplayCount()).toBe(2)
+
+    // Advance JUST past the staleness window, then refresh only the "new" one.
+    vi.setSystemTime(
+      new Date(Date.now() + DISPLAY_STALE_MS + 2000),
+    )
+    registry.touchDisplay("disp-new")
+
+    runCleanupDisplays(registry)
+
+    const rows = registry.getDisplaysByGame("game-A")
+    expect(rows.map((r) => r.socketId)).toEqual(["disp-new"])
+  })
+})
+
+describe("WP-15 display heartbeat — excluded from crash-recovery snapshot", () => {
+  it("registerDisplay state never appears in the persisted snapshot", () => {
+    const prevConfig = process.env.CONFIG_PATH
+    const tmp = fs.mkdtempSync(resolve(os.tmpdir(), "rahoot-disp-snap-"))
+    process.env.CONFIG_PATH = tmp
+
+    try {
+      // A paired display whose name is a unique sentinel we can grep the file for.
+      const SENTINEL = "SENTINEL-DISPLAY-NAME-zzz"
+      registry.registerDisplay("disp-snap", "game-A", SENTINEL)
+      expect(registry.getDisplayCount()).toBe(1)
+
+      // saveSnapshot writes config/state/registry.json. The display Map is NOT
+      // part of toSnapshot, so the sentinel must be absent from the file (and the
+      // file may legitimately not exist if there were no games worth saving).
+      registry.saveSnapshot()
+
+      const file = resolve(tmp, "state", "registry.json")
+      const raw = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : ""
+      expect(raw).not.toContain(SENTINEL)
+      expect(raw).not.toContain("disp-snap")
+    } finally {
+      if (prevConfig === undefined) {
+        delete process.env.CONFIG_PATH
+      } else {
+        process.env.CONFIG_PATH = prevConfig
+      }
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
   })
 })

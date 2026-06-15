@@ -18,6 +18,17 @@
   "media": {
     "enhanceHint": "L’IA affine ta description avant la génération."
   },
+  "category": {
+    "label": "Catégorie (optionnel)",
+    "general": "Général",
+    "history": "Histoire",
+    "science": "Science",
+    "geography": "Géographie",
+    "sports": "Sport",
+    "entertainment": "Divertissement",
+    "technology": "Technologie",
+    "other": "Autre"
+  },
   "cta": {
     "afterGame": "Le quiz t'a plu ? Propose ta propre question"
   },

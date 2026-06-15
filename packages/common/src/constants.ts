@@ -181,6 +181,18 @@ export const EVENTS = {
     PAIR_SUCCESS: "display:pairSuccess",
     PAIR_ERROR: "display:pairError",
     DISCONNECT: "display:disconnect",
+    PING: "display:ping", // WP-15 C2S periodic heartbeat
+    STATUS: "display:status", // WP-15 S2C manager-facing live status
+  },
+  // Theme revisions (#12 WP-18). Per-save revision ring; LIST/RESTORE are
+  // auth-gated (manager only). DATA carries full ThemeRevision[] so the picker
+  // restores without a 2nd fetch (mirrors THEME_TEMPLATE.DATA).
+  THEME_REVISION: {
+    LIST_REVISIONS: "themeRevision:list",
+    DATA: "themeRevision:data",
+    RESTORE_REVISION: "themeRevision:restore",
+    RESTORE_SUCCESS: "themeRevision:restoreSuccess",
+    ERROR: "themeRevision:error",
   },
 } as const
 
@@ -191,6 +203,16 @@ export const DEFAULT_MANAGER_PASSWORD = "PASSWORD"
 // then a manager pairs that code (with the manager password) so the display
 // joins the game room. Codes expire after this many minutes.
 export const DISPLAY_PAIRING_TTL_MINUTES = 5
+
+// WP-15 — display heartbeat. Client ping cadence (reuses the WS ping cadence) and
+// the staleness window past which the manager card marks a display offline.
+export const DISPLAY_HEARTBEAT_INTERVAL_MS = 10_000
+export const DISPLAY_STALE_MS = 30_000
+// Server-side hygiene clamp for the untrusted client-supplied display name.
+export const DISPLAY_NAME_MAX_LEN = 40
+
+// WP-18 — theme revision ring size N (server cap + client UI hint share this).
+export const THEME_REVISIONS_MAX = 10
 
 // Generic KI-generated avatar set (committed/seeded, persistent under config/media/avatars/generic/).
 export const AVATARS_GENERIC = [
@@ -219,6 +241,20 @@ export const MEDIA_CATEGORIES = [
 ] as const
 
 export type MediaCategory = (typeof MEDIA_CATEGORIES)[number]
+
+// WP-17 — public-submission topic categories. APPEND-ONLY (never rename/remove a
+// shipped member — a persisted submission carrying it would fail read-validation).
+export const SUBMISSION_CATEGORIES = [
+  "general",
+  "history",
+  "science",
+  "geography",
+  "sports",
+  "entertainment",
+  "technology",
+  "other",
+] as const
+export type SubmissionCategory = (typeof SUBMISSION_CATEGORIES)[number]
 
 export const MEDIA_TYPES = {
   IMAGE: "image",
@@ -300,7 +336,17 @@ export const AI = {
   // Anthropic API version pin (Messages API).
   ANTHROPIC_VERSION: "2023-06-01",
   ANTHROPIC_BASE_URL: "https://api.anthropic.com/v1",
+  // WP-10 — granular generation params (single source: server clamp + UI bounds)
+  TEMP_MIN: 0,
+  TEMP_MAX: 2,
+  TEMP_DEFAULT: 0.7,
 } as const
+
+// WP-10 — square image resolutions for the ComfyUI EmptyLatentImage node.
+// 1024 is the safe max for Z-Image-Turbo here (POLL_TIMEOUT_MS=180s).
+export const IMAGE_RESOLUTIONS = [512, 768, 1024] as const
+export type ImageResolution = (typeof IMAGE_RESOLUTIONS)[number]
+export const IMAGE_RESOLUTION_DEFAULT: ImageResolution = 1024
 
 // Catalog entry provenance — purely informational (shown as a chip in the UI).
 export const CATALOG_SOURCES = ["manual", "submission", "editor", "ai"] as const

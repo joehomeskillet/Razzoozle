@@ -1,4 +1,7 @@
-import { DISPLAY_PAIRING_TTL_MINUTES } from "@razzia/common/constants"
+import {
+  DISPLAY_PAIRING_TTL_MINUTES,
+  DISPLAY_STALE_MS,
+} from "@razzia/common/constants"
 // `import type` (not a runtime import): registry only uses Game as a type. A
 // runtime import here creates a registry<->game import cycle, and esbuild's
 // init order then leaves `Registry` undefined when game/index.ts calls
@@ -22,11 +25,26 @@ export interface DisplayPairing {
   createdAt: number
 }
 
+// WP-15 — a satellite display that HAS been paired to a game and is emitting a
+// periodic heartbeat (DISPLAY.PING). Tracked purely in memory and DELIBERATELY
+// excluded from the crash-recovery snapshot (ephemeral, re-established by the
+// client re-pinging after a restart — compare the bot-snapshot-exclusion rule).
+export interface PairedDisplay {
+  socketId: string
+  gameId: string
+  name: string
+  pairedAt: number // dayjs().unix()
+  lastPingAt: number // dayjs().unix()
+}
+
 class Registry {
   private static instance: Registry | null = null
   private games: Game[] = []
   private emptyGames: EmptyGame[] = []
   private pairings = new Map<string, DisplayPairing>()
+  // WP-15 — paired displays, keyed by socket.id. NON-snapshotted (see
+  // PairedDisplay note + toSnapshot/fromSnapshot deliberately skip this map).
+  private displays = new Map<string, PairedDisplay>()
   private cleanupInterval: ReturnType<typeof setTimeout> | null = null
   // Periodic crash-recovery snapshot task handle (null when not running). Set by
   // startSnapshotTask(), cleared in cleanup() so no timer leaks across restarts.
@@ -173,6 +191,58 @@ class Registry {
     return this.pairings.size
   }
 
+  // ── Paired-display heartbeat (WP-15) ──────────────────────────────────────
+  //
+  // A display becomes "paired" once a manager binds its kiosk to a game. From
+  // then on the kiosk pings periodically; the manager renders a live status
+  // card from getDisplaysByGame(gameId). All of this is in-memory only and is
+  // NOT persisted to the crash-recovery snapshot — after a restart the client
+  // simply re-pings and the record is recreated (no ghost displays).
+
+  registerDisplay(socketId: string, gameId: string, name: string): void {
+    const now = dayjs().unix()
+    this.displays.set(socketId, {
+      socketId,
+      gameId,
+      name,
+      pairedAt: now,
+      lastPingAt: now,
+    })
+  }
+
+  // Bump lastPingAt for a known display; optionally refresh its (already
+  // server-clamped) name. A ping from a socket we don't know about is a no-op
+  // (e.g. after a restart the manager re-pairs; until then nothing to update).
+  touchDisplay(socketId: string, name?: string): void {
+    const display = this.displays.get(socketId)
+
+    if (!display) {
+      return
+    }
+
+    display.lastPingAt = dayjs().unix()
+
+    if (name !== undefined) {
+      display.name = name
+    }
+  }
+
+  removeDisplay(socketId: string): boolean {
+    return this.displays.delete(socketId)
+  }
+
+  getDisplay(socketId: string): PairedDisplay | undefined {
+    return this.displays.get(socketId)
+  }
+
+  getDisplaysByGame(gameId: string): PairedDisplay[] {
+    return [...this.displays.values()].filter((d) => d.gameId === gameId)
+  }
+
+  getDisplayCount(): number {
+    return this.displays.size
+  }
+
   private cleanupPairings(): void {
     const now = dayjs()
     let removed = 0
@@ -190,6 +260,29 @@ class Registry {
     if (removed > 0) {
       console.log(
         `Removed ${removed} stale display pairing(s). Remaining: ${this.pairings.size}`,
+      )
+    }
+  }
+
+  // WP-15 — hard-prune paired displays that went silent past the staleness
+  // window. The manager card already shows such a display as "offline" (it
+  // compares lastPingAt client-side); this just frees the record so a dead
+  // kiosk can't leak across a long-lived server.
+  private cleanupDisplays(): void {
+    const now = dayjs().unix()
+    const staleSeconds = DISPLAY_STALE_MS / 1000
+    let removed = 0
+
+    for (const [socketId, display] of this.displays) {
+      if (now - display.lastPingAt > staleSeconds) {
+        this.displays.delete(socketId)
+        removed += 1
+      }
+    }
+
+    if (removed > 0) {
+      console.log(
+        `Removed ${removed} stale display(s). Remaining: ${this.displays.size}`,
       )
     }
   }
@@ -232,6 +325,7 @@ class Registry {
     this.cleanupInterval = setInterval(() => {
       this.cleanupEmptyGames()
       this.cleanupPairings()
+      this.cleanupDisplays()
     }, this.CLEANUP_INTERVAL_MS)
 
     console.log("Game cleanup task started")
@@ -403,6 +497,7 @@ class Registry {
     this.games = []
     this.emptyGames = []
     this.pairings.clear()
+    this.displays.clear()
     console.log("Registry cleaned up")
   }
 }

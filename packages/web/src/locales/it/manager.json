@@ -153,6 +153,16 @@
     "reconnects": "Riconnessioni",
     "rejected": "Risposte rifiutate"
   },
+  "display": {
+    "status": {
+      "title": "Schermi connessi",
+      "empty": "Ancora nessuno schermo connesso",
+      "lastSeen": "visto {{seconds}}s fa",
+      "online": "Online",
+      "stale": "Offline",
+      "unnamed": "Schermo"
+    }
+  },
   "kickPlayer": {
     "aria": "Rimuovi {{name}} dal gioco",
     "title": "Rimuovere il giocatore?",
@@ -211,6 +221,14 @@
       "deleteConfirm": "Vuoi davvero eliminare il modello «{{name}}»",
       "emptyHeadline": "Ancora nessun modello",
       "none": "Ancora nessun modello salvato"
+    },
+    "revisions": {
+      "title": "Versioni",
+      "restore": "Ripristina",
+      "empty": "Ancora nessuna versione salvata",
+      "restored": "Versione ripristinata",
+      "confirmRestore": "Ripristinare questa versione? Quella attuale verrà salvata come nuova versione.",
+      "savedAt": "Salvata {{when}}"
     }
   },
   "submissions": {
@@ -240,6 +258,22 @@
     "statusEmpty": {
       "headline": "Nessuna proposta in questa vista",
       "hint": "Scegli un altro stato per vedere altre proposte."
+    },
+    "rejectReason": {
+      "label": "Motivo (facoltativo)",
+      "placeholder": "Perché questa domanda viene rifiutata?"
+    },
+    "rejectedBecause": "Rifiutata: {{reason}}",
+    "category": {
+      "label": "Categoria",
+      "general": "Generale",
+      "history": "Storia",
+      "science": "Scienza",
+      "geography": "Geografia",
+      "sports": "Sport",
+      "entertainment": "Intrattenimento",
+      "technology": "Tecnologia",
+      "other": "Altro"
     }
   },
   "media": {
@@ -282,7 +316,8 @@
       "deleteConfirm": "Eliminare davvero {{count}} file?",
       "toggle": "Seleziona {{name}}"
     },
-    "dropHint": "Trascina qui i file per caricarli"
+    "dropHint": "Trascina qui i file per caricarli",
+    "dimensions": "{{w}} × {{h}} px"
   },
   "catalog": {
     "title": "Catalogo delle domande",
@@ -397,6 +432,16 @@
       "openai": "Invia i tuoi argomenti e testi delle domande a OpenAI. Consulta la loro informativa sulla privacy: https://openai.com/policies/privacy-policy",
       "openrouter": "Invia i tuoi argomenti e testi delle domande a OpenRouter e al modello scelto. Consulta la loro informativa sulla privacy: https://openrouter.ai/privacy",
       "external": "Invia i tuoi argomenti e testi delle domande a un servizio esterno. Controlla la sua informativa sulla privacy."
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "help": "Più alta = più creativa, più bassa = più precisa",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Risoluzione immagine",
+      "help": "Lunghezza del lato dell’immagine generata",
+      "option": "{{size}} × {{size}}"
     }
   },
   "selectQuizz": {

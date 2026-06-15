@@ -167,7 +167,8 @@
       "deleteConfirm": "{{count}} Medien wirklich löschen?",
       "toggle": "{{name}} auswählen"
     },
-    "dropHint": "Dateien hier ablegen zum Hochladen"
+    "dropHint": "Dateien hier ablegen zum Hochladen",
+    "dimensions": "{{w}} × {{h}} px"
   },
   "catalog": {
     "title": "Fragenkatalog",
@@ -282,6 +283,16 @@
       "openai": "Sendet deine Themen und Fragetexte an OpenAI. Siehe deren Datenschutzerklärung: https://openai.com/policies/privacy-policy",
       "openrouter": "Sendet deine Themen und Fragetexte an OpenRouter und das gewählte Modell. Siehe deren Datenschutzerklärung: https://openrouter.ai/privacy",
       "external": "Sendet deine Themen und Fragetexte an einen externen Dienst. Prüfe dessen Datenschutzbestimmungen."
+    },
+    "temperature": {
+      "label": "Temperatur",
+      "help": "Höher = kreativer, niedriger = präziser",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Bildauflösung",
+      "help": "Kantenlänge des generierten Bildes",
+      "option": "{{size}} × {{size}}"
     }
   },
   "satellite": {
@@ -318,6 +329,16 @@
     "answerAck": "Antwort-Bestätigung",
     "reconnects": "Reconnects",
     "rejected": "Abgelehnte Antworten"
+  },
+  "display": {
+    "status": {
+      "title": "Verbundene Displays",
+      "empty": "Noch kein Display verbunden",
+      "lastSeen": "zuletzt vor {{seconds}}s",
+      "online": "Online",
+      "stale": "Offline",
+      "unnamed": "Beamer"
+    }
   },
   "theme": {
     "branding": "Branding",
@@ -368,6 +389,14 @@
       "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
       "emptyHeadline": "Noch keine Vorlagen",
       "none": "Noch keine Vorlagen gespeichert"
+    },
+    "revisions": {
+      "title": "Versionen",
+      "restore": "Wiederherstellen",
+      "empty": "Noch keine gespeicherten Versionen",
+      "restored": "Version wiederhergestellt",
+      "confirmRestore": "Diese Version wiederherstellen? Die aktuelle wird als neue Version gesichert.",
+      "savedAt": "Gespeichert {{when}}"
     }
   },
   "submissions": {
@@ -397,6 +426,22 @@
     "statusEmpty": {
       "headline": "Keine Vorschläge in dieser Ansicht",
       "hint": "Wähle einen anderen Status, um weitere Vorschläge zu sehen."
+    },
+    "rejectReason": {
+      "label": "Begründung (optional)",
+      "placeholder": "Warum wird diese Frage abgelehnt?"
+    },
+    "rejectedBecause": "Abgelehnt: {{reason}}",
+    "category": {
+      "label": "Kategorie",
+      "general": "Allgemein",
+      "history": "Geschichte",
+      "science": "Wissenschaft",
+      "geography": "Geografie",
+      "sports": "Sport",
+      "entertainment": "Unterhaltung",
+      "technology": "Technik",
+      "other": "Sonstiges"
     }
   },
   "selectQuizz": {

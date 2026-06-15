@@ -167,7 +167,8 @@
       "deleteConfirm": "Really delete {{count}} media?",
       "toggle": "Select {{name}}"
     },
-    "dropHint": "Drop files here to upload"
+    "dropHint": "Drop files here to upload",
+    "dimensions": "{{w}} × {{h}} px"
   },
   "catalog": {
     "title": "Question catalog",
@@ -282,6 +283,16 @@
       "openai": "Sends your topics and question text to OpenAI. See their privacy policy: https://openai.com/policies/privacy-policy",
       "openrouter": "Sends your topics and question text to OpenRouter and the selected model. See their privacy policy: https://openrouter.ai/privacy",
       "external": "Sends your topics and question text to an external service. Check its privacy policy."
+    },
+    "temperature": {
+      "label": "Temperature",
+      "help": "Higher = more creative, lower = more precise",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Image resolution",
+      "help": "Edge length of the generated image",
+      "option": "{{size}} × {{size}}"
     }
   },
   "satellite": {
@@ -318,6 +329,16 @@
     "answerAck": "Answer ack",
     "reconnects": "Reconnects",
     "rejected": "Rejected answers"
+  },
+  "display": {
+    "status": {
+      "title": "Connected displays",
+      "empty": "No display connected yet",
+      "lastSeen": "last seen {{seconds}}s ago",
+      "online": "Online",
+      "stale": "Offline",
+      "unnamed": "Display"
+    }
   },
   "theme": {
     "branding": "Branding",
@@ -368,6 +389,14 @@
       "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
       "emptyHeadline": "No templates yet",
       "none": "No templates saved yet"
+    },
+    "revisions": {
+      "title": "Versions",
+      "restore": "Restore",
+      "empty": "No saved versions yet",
+      "restored": "Version restored",
+      "confirmRestore": "Restore this version? The current one will be saved as a new version.",
+      "savedAt": "Saved {{when}}"
     }
   },
   "submissions": {
@@ -397,6 +426,22 @@
     "statusEmpty": {
       "headline": "No suggestions in this view",
       "hint": "Choose a different status to see more suggestions."
+    },
+    "rejectReason": {
+      "label": "Reason (optional)",
+      "placeholder": "Why is this question being rejected?"
+    },
+    "rejectedBecause": "Rejected: {{reason}}",
+    "category": {
+      "label": "Category",
+      "general": "General",
+      "history": "History",
+      "science": "Science",
+      "geography": "Geography",
+      "sports": "Sports",
+      "entertainment": "Entertainment",
+      "technology": "Technology",
+      "other": "Other"
     }
   },
   "selectQuizz": {

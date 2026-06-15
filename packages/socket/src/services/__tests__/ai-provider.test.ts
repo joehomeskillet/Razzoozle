@@ -5,7 +5,7 @@
 // vs /messages), the key policy (off → notConfigured, remote-no-key → noKey),
 // and that generateQuestion validates its output (invalidOutput on bad JSON).
 
-import type { AISettings } from "@razzia/common/types/ai"
+import type { AIProviderConfig, AISettings } from "@razzia/common/types/ai"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mutable holders the mocked modules read from, set per test.
@@ -54,7 +54,7 @@ const claudeProvider = {
 
 const settingsWith = (
   activeProvider: string,
-  providers = [localProvider, openaiProvider, claudeProvider],
+  providers: AIProviderConfig[] = [localProvider, openaiProvider, claudeProvider],
 ): AISettings => ({
   text: { activeProvider, providers },
   image: {
@@ -200,6 +200,70 @@ describe("generateText routing", () => {
     await expect(ai.generateText({ prompt: "ping" })).rejects.toThrow(
       "errors:ai.invalidOutput",
     )
+  })
+})
+
+// ── WP-10: temperature pass-through + clamp ──────────────────────────────────
+
+describe("generateText temperature (WP-10)", () => {
+  // Pull the request body the SUT POSTed (it always JSON.stringifies it).
+  const sentBody = (): Record<string, unknown> => {
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    return JSON.parse(init.body as string) as Record<string, unknown>
+  }
+
+  it("openai-compatible defaults to AI.TEMP_DEFAULT (0.7) when unset", async () => {
+    activeSettings = settingsWith("local") // localProvider has no temperature
+    fetchMock.mockResolvedValueOnce(jsonResponse(openAIReply("pong")))
+
+    await ai.generateText({ prompt: "ping" })
+
+    expect(sentBody().temperature).toBe(0.7)
+  })
+
+  it("openai-compatible passes the configured per-provider temperature", async () => {
+    activeSettings = settingsWith("local", [
+      { ...localProvider, temperature: 0.2 },
+    ])
+    fetchMock.mockResolvedValueOnce(jsonResponse(openAIReply("pong")))
+
+    await ai.generateText({ prompt: "ping" })
+
+    expect(sentBody().temperature).toBe(0.2)
+  })
+
+  it("anthropic includes temperature in the body (default 0.7 when unset)", async () => {
+    activeSettings = settingsWith("claude") // claudeProvider has no temperature
+    keyStore.set("claude", "sk-ant-test-key")
+    fetchMock.mockResolvedValueOnce(jsonResponse(anthropicReply("pong")))
+
+    await ai.generateText({ prompt: "ping" })
+
+    expect(sentBody().temperature).toBe(0.7)
+  })
+
+  it("anthropic passes the configured per-provider temperature", async () => {
+    activeSettings = settingsWith("claude", [
+      { ...claudeProvider, temperature: 1.5 },
+    ])
+    keyStore.set("claude", "sk-ant-test-key")
+    fetchMock.mockResolvedValueOnce(jsonResponse(anthropicReply("pong")))
+
+    await ai.generateText({ prompt: "ping" })
+
+    expect(sentBody().temperature).toBe(1.5)
+  })
+
+  it("clamps an out-of-range temperature to [TEMP_MIN, TEMP_MAX]", async () => {
+    activeSettings = settingsWith("local", [
+      { ...localProvider, temperature: 99 },
+    ])
+    fetchMock.mockResolvedValueOnce(jsonResponse(openAIReply("pong")))
+
+    await ai.generateText({ prompt: "ping" })
+
+    // AI.TEMP_MAX is 2 — a runaway value is clamped, not passed through.
+    expect(sentBody().temperature).toBe(2)
   })
 })
 

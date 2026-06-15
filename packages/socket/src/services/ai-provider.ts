@@ -88,6 +88,7 @@ const callOpenAICompatible = async (
   key: string | undefined,
   messages: OpenAIMessage[],
   json: boolean,
+  temperature: number,
 ): Promise<string> => {
   const baseUrl = provider.baseUrl
 
@@ -113,7 +114,7 @@ const callOpenAICompatible = async (
     body: JSON.stringify({
       model: provider.model,
       messages,
-      temperature: 0.7,
+      temperature,
       response_format: json ? { type: "json_object" } : undefined,
     }),
   })
@@ -141,6 +142,7 @@ const callAnthropic = async (
   prompt: string,
   json: boolean,
   maxTokens: number | undefined,
+  temperature: number,
 ): Promise<string> => {
   const res = await fetchWithTimeout(`${AI.ANTHROPIC_BASE_URL}/messages`, {
     method: "POST",
@@ -152,6 +154,7 @@ const callAnthropic = async (
     body: JSON.stringify({
       model: provider.model,
       max_tokens: maxTokens ?? 1024,
+      temperature,
       system,
       messages: [
         {
@@ -204,6 +207,14 @@ export const generateText = async ({
 
   const key = getKey(provider.id)
 
+  // WP-10 — per-provider text temperature. Defaults to AI.TEMP_DEFAULT when
+  // unset (old config / no slider value), then clamped to [TEMP_MIN, TEMP_MAX]
+  // server-side (defense in depth — the validator already bounds it on write).
+  const temperature = Math.max(
+    AI.TEMP_MIN,
+    Math.min(AI.TEMP_MAX, provider.temperature ?? AI.TEMP_DEFAULT),
+  )
+
   let raw: string
 
   if (provider.kind === "anthropic") {
@@ -219,6 +230,7 @@ export const generateText = async ({
       prompt,
       !!json,
       maxTokens,
+      temperature,
     )
   } else {
     // openai-compatible: a key is required UNLESS the baseUrl is a local host
@@ -240,7 +252,7 @@ export const generateText = async ({
         : prompt,
     })
 
-    raw = await callOpenAICompatible(provider, key, messages, !!json)
+    raw = await callOpenAICompatible(provider, key, messages, !!json, temperature)
   }
 
   assertNoSecret(raw)

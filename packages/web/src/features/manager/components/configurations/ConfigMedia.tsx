@@ -593,6 +593,9 @@ const ConfigMedia = () => {
 
                   <p className="text-xs text-gray-500">
                     {formatSize(item.size)} · {formatDate(item.uploadedAt)}
+                    {item.type === "image" && item.width && item.height
+                      ? ` · ${item.width}×${item.height}`
+                      : ""}
                   </p>
 
                   <div className="mt-auto pt-1">

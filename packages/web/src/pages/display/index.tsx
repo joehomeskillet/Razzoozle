@@ -47,6 +47,12 @@ const DisplayRegisterPage = () => {
     })
   }, [])
 
+  // WP-15 — label this display for the manager status card. The app title is a
+  // friendly default ("Rahoot"); the server clamps/sanitises it anyway.
+  const displayName =
+    appTitle?.trim() ||
+    t("display:defaultName", { defaultValue: "Beamer" })
+
   // Register as a display as soon as the socket is connected. The server replies
   // with a pairing code. Re-runs on reconnect so a flaky network re-registers.
   useEffect(() => {
@@ -54,14 +60,14 @@ const DisplayRegisterPage = () => {
       return
     }
 
-    socket.emit(EVENTS.DISPLAY.REGISTER)
-  }, [socket, isConnected])
+    socket.emit(EVENTS.DISPLAY.REGISTER, { name: displayName })
+  }, [socket, isConnected, displayName])
 
   // Some server builds hand the pairing code back synchronously in the ack of
   // the very first connect rather than waiting for `isConnected` to flip, so we
   // also (re)register on the raw connect event.
   useEvent("connect", () => {
-    socket.emit(EVENTS.DISPLAY.REGISTER)
+    socket.emit(EVENTS.DISPLAY.REGISTER, { name: displayName })
   })
 
   // The server assigns this display a short pairing code to show on the beamer.

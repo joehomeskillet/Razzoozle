@@ -11,4 +11,6 @@ export interface MediaMeta {
   category: MediaCategory
   source: "upload" | "ai" | "theme"
   uploadedAt: string
+  width?: number // WP-6 — image-only; absent on audio + on pre-existing manifest rows
+  height?: number // WP-6 — image-only; absent on audio + on pre-existing manifest rows
 }

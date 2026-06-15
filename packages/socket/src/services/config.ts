@@ -5,6 +5,7 @@ import {
   DEFAULT_MANAGER_PASSWORD,
   EXAMPLE_QUIZZ,
   MEDIA_CATEGORIES,
+  THEME_REVISIONS_MAX,
   THEME_SLOTS,
   type MediaCategory,
   type ThemeSlot,
@@ -34,16 +35,18 @@ import {
 import {
   DEFAULT_THEME,
   type Theme,
+  type ThemeRevision,
   type ThemeTemplate,
   type ThemeTemplateMeta,
 } from "@razzia/common/types/theme"
 import {
+  themeRevisionValidator,
   themeTemplateValidator,
   themeValidator,
 } from "@razzia/common/validators/theme"
 import { hasKey } from "@razzia/socket/services/ai-secrets"
 import { gameResultValidator } from "@razzia/socket/services/validators"
-import { toWebp } from "@razzia/socket/services/webp"
+import { toWebp, webpDimensions } from "@razzia/socket/services/webp"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { submissionRecordValidator } from "@razzia/common/validators/submission"
 import { z } from "zod"
@@ -1052,12 +1055,31 @@ const readMediaManifest = (): MediaMeta[] => {
         (candidate.source !== "upload" &&
           candidate.source !== "ai" &&
           candidate.source !== "theme") ||
-        typeof candidate.uploadedAt !== "string"
+        typeof candidate.uploadedAt !== "string" ||
+        // WP-6 — width/height are optional; only reject when present-but-not-number
+        // (pre-existing rows without them MUST still load — no new required key).
+        (candidate.width !== undefined &&
+          typeof candidate.width !== "number") ||
+        (candidate.height !== undefined &&
+          typeof candidate.height !== "number")
       ) {
         return []
       }
 
-      return [candidate as unknown as MediaMeta]
+      // Strip any dims off the carried row, then re-attach only when BOTH are
+      // numbers — so a pre-existing row keeps loading and a stray single dim never
+      // leaks back out on a re-write (matches existing cast-through style here).
+      const { width: _w, height: _h, ...rest } = candidate
+      const base = rest as unknown as MediaMeta
+
+      // WP-6 — copy dims through only when both are numbers (clean JSON, no
+      // undefined keys leaking back out on a re-write).
+      return [
+        typeof candidate.width === "number" &&
+        typeof candidate.height === "number"
+          ? { ...base, width: candidate.width, height: candidate.height }
+          : base,
+      ]
     })
   } catch {
     return []
@@ -1169,6 +1191,9 @@ const createMediaMeta = (input: {
   size: number
   type: "image" | "audio"
   source: MediaMeta["source"]
+  // WP-6 — optional image dimensions; only written when both are present.
+  width?: number
+  height?: number
 }): MediaMeta => {
   const id = `${input.category}-${input.filename.replace(/\.[a-z0-9]+$/iu, "")}`
   assertSafeId(id)
@@ -1182,6 +1207,10 @@ const createMediaMeta = (input: {
     category: input.category,
     source: input.source,
     uploadedAt: new Date().toISOString(),
+    // WP-6 — only set dims when both are provided (no undefined keys in the JSON).
+    ...(input.width !== undefined && input.height !== undefined
+      ? { width: input.width, height: input.height }
+      : {}),
   }
 }
 
@@ -1219,6 +1248,10 @@ export const saveMediaFile = async (
   const target = mediaFilePath(resolvedCategory, storedFilename)
   fs.writeFileSync(target, output)
 
+  // WP-6 — for images, probe the WebP output buffer for its pixel dimensions.
+  // Pure-JS parse; null on an unrecognized buffer → dims are simply omitted.
+  const dims = inferredType === "image" ? webpDimensions(output) : null
+
   return upsertMediaMeta(
     createMediaMeta({
       filename: storedFilename,
@@ -1226,6 +1259,8 @@ export const saveMediaFile = async (
       size: output.byteLength,
       type: inferredType,
       source: "upload",
+      width: dims?.width,
+      height: dims?.height,
     }),
   )
 }
@@ -1371,7 +1406,10 @@ export const getTheme = (): Theme => {
   }
 }
 
-export const setTheme = (data: unknown): Theme => {
+export const setTheme = (
+  data: unknown,
+  opts?: { snapshot?: boolean },
+): Theme => {
   let theme: Theme
 
   try {
@@ -1382,6 +1420,16 @@ export const setTheme = (data: unknown): Theme => {
     }
 
     throw error
+  }
+
+  // WP-18 — capture the CURRENT on-disk theme as a revision BEFORE overwriting it.
+  // Defaults to true: the only callsite is the auth-gated admin SET_THEME path,
+  // so every admin save (and every restore) is snapshotted and undoable. A
+  // future non-admin auto-apply callsite must pass { snapshot: false } to avoid
+  // polluting the ring. parseTheme already validated `data`, so the snapshot
+  // happens only on a save we know will succeed.
+  if (opts?.snapshot ?? true) {
+    saveThemeRevision(getTheme())
   }
 
   const themeDir = getPath("theme")
@@ -1396,6 +1444,68 @@ export const setTheme = (data: unknown): Theme => {
   )
 
   return theme
+}
+
+// ---- Theme revisions (per-save version ring) ------------------------------
+// A single rolling config/theme-revisions.json array (newest-first), capped at
+// THEME_REVISIONS_MAX. Each prior theme is snapshotted before an admin SET_THEME
+// (see setTheme). Reads validate every entry via themeRevisionValidator and drop
+// invalid ones (like getThemeTemplates); a missing file yields []. No per-file id
+// slugging → no extra path-traversal surface (single fixed filename).
+
+const themeRevisionsFile = () => getPath("theme-revisions.json")
+
+export const getThemeRevisions = (): ThemeRevision[] => {
+  const file = themeRevisionsFile()
+
+  if (!fs.existsSync(file)) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf-8")) as unknown
+    // Tolerate both a bare array and a { revisions: [...] } wrapper.
+    const arr = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray((parsed as { revisions?: unknown })?.revisions)
+        ? (parsed as { revisions: unknown[] }).revisions
+        : []
+
+    return arr.flatMap((entry) => {
+      const result = themeRevisionValidator.safeParse(entry)
+
+      if (!result.success) {
+        console.warn("Invalid theme revision entry:", result.error.issues)
+
+        return []
+      }
+
+      return [result.data as ThemeRevision]
+    })
+  } catch (error) {
+    console.error("Failed to read theme revisions:", error)
+
+    return []
+  }
+}
+
+export const getThemeRevisionById = (id: string): ThemeRevision | null =>
+  getThemeRevisions().find((rev) => rev.id === id) ?? null
+
+export const saveThemeRevision = (theme: Theme): { id: string } => {
+  const id = `rev-${Date.now()}`
+  const record: ThemeRevision = {
+    id,
+    createdAt: new Date().toISOString(),
+    theme,
+  }
+
+  // unshift newest, cap at THEME_REVISIONS_MAX (oldest dropped).
+  const next = [record, ...getThemeRevisions()].slice(0, THEME_REVISIONS_MAX)
+
+  fs.writeFileSync(themeRevisionsFile(), JSON.stringify(next, null, 2))
+
+  return { id }
 }
 
 // Persist an uploaded background image (data URL) for a slot and return its

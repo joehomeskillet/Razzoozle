@@ -7,6 +7,7 @@ export interface AIProviderConfig {
   kind: AIProviderKind
   baseUrl?: string
   model: string
+  temperature?: number // WP-10 — per-provider text temperature (0..2); server defaults to AI.TEMP_DEFAULT when absent
 }
 
 export interface AIImageProviderConfig {
@@ -14,6 +15,7 @@ export interface AIImageProviderConfig {
   label: string
   baseUrl?: string
   workflow?: string
+  resolution?: number // WP-10 — square latent size; one of IMAGE_RESOLUTIONS; server defaults to IMAGE_RESOLUTION_DEFAULT
 }
 
 // Persisted on the server (config/ai-settings.json). Never carries keys.

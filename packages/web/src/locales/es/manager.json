@@ -162,6 +162,16 @@
     "reconnects": "Reconexiones",
     "rejected": "Respuestas rechazadas"
   },
+  "display": {
+    "status": {
+      "title": "Pantallas conectadas",
+      "empty": "Aún no hay ninguna pantalla conectada",
+      "lastSeen": "visto hace {{seconds}}s",
+      "online": "En línea",
+      "stale": "Desconectada",
+      "unnamed": "Pantalla"
+    }
+  },
   "theme": {
     "branding": "Identidad de marca",
     "appTitle": "Título de la app",
@@ -211,6 +221,14 @@
       "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
       "emptyHeadline": "Aún no hay plantillas",
       "none": "Aún no hay plantillas guardadas"
+    },
+    "revisions": {
+      "title": "Versiones",
+      "restore": "Restaurar",
+      "empty": "Aún no hay versiones guardadas",
+      "restored": "Versión restaurada",
+      "confirmRestore": "¿Restaurar esta versión? La actual se guardará como una nueva versión.",
+      "savedAt": "Guardada {{when}}"
     }
   },
   "submissions": {
@@ -240,6 +258,22 @@
     "statusEmpty": {
       "headline": "No hay sugerencias en esta vista",
       "hint": "Elige otro estado para ver más sugerencias."
+    },
+    "rejectReason": {
+      "label": "Motivo (opcional)",
+      "placeholder": "¿Por qué se rechaza esta pregunta?"
+    },
+    "rejectedBecause": "Rechazada: {{reason}}",
+    "category": {
+      "label": "Categoría",
+      "general": "General",
+      "history": "Historia",
+      "science": "Ciencia",
+      "geography": "Geografía",
+      "sports": "Deportes",
+      "entertainment": "Entretenimiento",
+      "technology": "Tecnología",
+      "other": "Otros"
     }
   },
   "media": {
@@ -282,7 +316,8 @@
       "deleteConfirm": "¿Eliminar realmente {{count}} archivos?",
       "toggle": "Seleccionar {{name}}"
     },
-    "dropHint": "Suelta los archivos aquí para subirlos"
+    "dropHint": "Suelta los archivos aquí para subirlos",
+    "dimensions": "{{w}} × {{h}} px"
   },
   "catalog": {
     "title": "Catálogo de preguntas",
@@ -397,6 +432,16 @@
       "openai": "Envía tus temas y textos de preguntas a OpenAI. Consulta su política de privacidad: https://openai.com/policies/privacy-policy",
       "openrouter": "Envía tus temas y textos de preguntas a OpenRouter y al modelo seleccionado. Consulta su política de privacidad: https://openrouter.ai/privacy",
       "external": "Envía tus temas y textos de preguntas a un servicio externo. Revisa su política de privacidad."
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "help": "Más alta = más creativa, más baja = más precisa",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Resolución de imagen",
+      "help": "Longitud del borde de la imagen generada",
+      "option": "{{size}} × {{size}}"
     }
   },
   "selectQuizz": {

@@ -158,6 +158,10 @@ export const registerEditHandlers = ({ socket }: SocketContext): void => {
       }
 
       try {
+        // WP-10 — img2img DELIBERATELY ignores the configured image resolution:
+        // forcing a square latent on generateImageFromBase distorts/discards the
+        // base aspect (Z-Image Omni conditions on reference_latents). Resolution
+        // applies to txt2img (generateImage) only.
         const url = await generateImageFromBase(baseBytes, finalPrompt)
         socket.emit(EVENTS.MANAGER.IMAGE_GENERATED, { url })
       } catch (error) {

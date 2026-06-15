@@ -9,6 +9,7 @@ import {
   AI_PROVIDER_OFF,
   AI_TEXT_PROVIDER_PRESETS,
 } from "@razzia/common/constants"
+import type { SubmissionCategory } from "@razzia/common/constants"
 import { gameConfigValidator } from "@razzia/common/validators/game-config"
 import type { GameConfig } from "@razzia/common/validators/game-config"
 import { quizzValidator } from "@razzia/common/validators/quizz"
@@ -414,7 +415,11 @@ export const approveSubmission = (
   return { quizzId }
 }
 
-export const rejectSubmission = (id: string): void => {
+export const rejectSubmission = (
+  id: string,
+  reason?: string,
+  category?: SubmissionCategory,
+): void => {
   assertSafeId(id)
 
   const submission = getSubmissionById(id)
@@ -423,7 +428,15 @@ export const rejectSubmission = (id: string): void => {
     throw new Error(`Submission "${id}" not found`)
   }
 
-  saveSubmission({ ...submission, status: "rejected" })
+  // WP-17 — persist the optional moderator note + category override identically
+  // to the socket REJECT_SUBMISSION path. Only set fields that are present so an
+  // absent value never overwrites an existing one with undefined.
+  saveSubmission({
+    ...submission,
+    status: "rejected",
+    ...(reason !== undefined ? { rejectionReason: reason } : {}),
+    ...(category !== undefined ? { category } : {}),
+  })
 }
 
 // ── Catalog (reusable question bank) ─────────────────────────────────────────

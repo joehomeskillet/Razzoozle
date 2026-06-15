@@ -2,6 +2,7 @@ import {
   DEFAULT_MANAGER_PASSWORD,
   EVENTS,
   PROMPT_MAX_LEN,
+  SUBMISSION_CATEGORIES,
   type ThemeSlot,
 } from "@razzia/common/constants"
 import type { Question } from "@razzia/common/types/game"
@@ -162,6 +163,10 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
       submittedAt: new Date().toISOString(),
       status: "pending",
       question: result.data.question,
+      // WP-17 — a publicly-supplied category persists with the submission.
+      ...(result.data.category !== undefined
+        ? { category: result.data.category }
+        : {}),
     }
 
     try {
@@ -376,7 +381,12 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MANAGER.REJECT_SUBMISSION,
     manager.withAuth(socket, (payload: unknown) => {
-      const schema = z.object({ id: z.string() })
+      // WP-17 — widened: optional moderator reason + optional category override.
+      const schema = z.object({
+        id: z.string(),
+        reason: z.string().max(500).optional(),
+        category: z.enum(SUBMISSION_CATEGORIES).optional(),
+      })
       const result = schema.safeParse(payload)
 
       if (!result.success) {
@@ -390,7 +400,19 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
 
       try {
         assertSafeId(result.data.id)
-        updateSubmission(result.data.id, { status: "rejected" })
+        // Only set fields that are present so an absent reason/category never
+        // overwrites an existing value with undefined.
+        const update: Partial<Submission> = { status: "rejected" }
+
+        if (result.data.reason !== undefined) {
+          update.rejectionReason = result.data.reason
+        }
+
+        if (result.data.category !== undefined) {
+          update.category = result.data.category
+        }
+
+        updateSubmission(result.data.id, update)
         emitConfig(socket)
       } catch (error) {
         socket.emit(

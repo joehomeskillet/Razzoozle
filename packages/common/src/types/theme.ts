@@ -49,3 +49,11 @@ export interface ThemeTemplateMeta {
   id: string
   name: string
 }
+
+// WP-18 — a captured prior theme. id is a timestamp-derived safe slug
+// (e.g. `rev-${Date.now()}`); passes assertSafeId. createdAt is ISO.
+export interface ThemeRevision {
+  id: string
+  createdAt: string
+  theme: Theme
+}

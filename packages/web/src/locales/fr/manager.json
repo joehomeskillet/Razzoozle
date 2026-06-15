@@ -162,6 +162,16 @@
     "reconnects": "Reconnexions",
     "rejected": "Réponses rejetées"
   },
+  "display": {
+    "status": {
+      "title": "Écrans connectés",
+      "empty": "Aucun écran connecté pour l’instant",
+      "lastSeen": "vu il y a {{seconds}}s",
+      "online": "En ligne",
+      "stale": "Hors ligne",
+      "unnamed": "Écran"
+    }
+  },
   "theme": {
     "branding": "Image de marque",
     "appTitle": "Titre de l'application",
@@ -211,6 +221,14 @@
       "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
       "emptyHeadline": "Aucun modèle pour l’instant",
       "none": "Aucun modèle enregistré pour l'instant"
+    },
+    "revisions": {
+      "title": "Versions",
+      "restore": "Restaurer",
+      "empty": "Aucune version enregistrée pour l’instant",
+      "restored": "Version restaurée",
+      "confirmRestore": "Restaurer cette version ? L’actuelle sera enregistrée comme nouvelle version.",
+      "savedAt": "Enregistrée {{when}}"
     }
   },
   "submissions": {
@@ -240,6 +258,22 @@
     "statusEmpty": {
       "headline": "Aucune proposition dans cette vue",
       "hint": "Choisis un autre statut pour voir d’autres propositions."
+    },
+    "rejectReason": {
+      "label": "Motif (facultatif)",
+      "placeholder": "Pourquoi cette question est-elle rejetée ?"
+    },
+    "rejectedBecause": "Rejetée : {{reason}}",
+    "category": {
+      "label": "Catégorie",
+      "general": "Général",
+      "history": "Histoire",
+      "science": "Science",
+      "geography": "Géographie",
+      "sports": "Sport",
+      "entertainment": "Divertissement",
+      "technology": "Technologie",
+      "other": "Autre"
     }
   },
   "media": {
@@ -282,7 +316,8 @@
       "deleteConfirm": "Supprimer vraiment {{count}} médias ?",
       "toggle": "Sélectionner {{name}}"
     },
-    "dropHint": "Déposez les fichiers ici pour les envoyer"
+    "dropHint": "Déposez les fichiers ici pour les envoyer",
+    "dimensions": "{{w}} × {{h}} px"
   },
   "catalog": {
     "title": "Catalogue de questions",
@@ -397,6 +432,16 @@
       "openai": "Envoie tes sujets et tes textes de questions à OpenAI. Consulte leur politique de confidentialité : https://openai.com/policies/privacy-policy",
       "openrouter": "Envoie tes sujets et tes textes de questions à OpenRouter et au modèle choisi. Consulte leur politique de confidentialité : https://openrouter.ai/privacy",
       "external": "Envoie tes sujets et tes textes de questions à un service externe. Vérifie sa politique de confidentialité."
+    },
+    "temperature": {
+      "label": "Température",
+      "help": "Plus haut = plus créatif, plus bas = plus précis",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Résolution d’image",
+      "help": "Longueur du bord de l’image générée",
+      "option": "{{size}} × {{size}}"
     }
   },
   "selectQuizz": {

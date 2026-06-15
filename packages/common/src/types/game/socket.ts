@@ -1,5 +1,5 @@
 import { EVENTS } from "@razzia/common/constants"
-import type { ThemeSlot } from "@razzia/common/constants"
+import type { SubmissionCategory, ThemeSlot } from "@razzia/common/constants"
 import type { AISettingsPublic, AITestResult } from "@razzia/common/types/ai"
 import type { CatalogEntry } from "@razzia/common/types/catalog"
 import type {
@@ -14,7 +14,7 @@ import type {
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
 import type { ManagerConfig } from "@razzia/common/types/manager"
 import type { Submission } from "@razzia/common/types/submission"
-import type { Theme, ThemeTemplate } from "@razzia/common/types/theme"
+import type { Theme, ThemeRevision, ThemeTemplate } from "@razzia/common/types/theme"
 import type { MediaMeta } from "@razzia/common/types/media"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
@@ -210,6 +210,18 @@ export interface ServerToClientEvents {
   [EVENTS.DISPLAY.PAIR_SUCCESS]: (_data: { gameId: string }) => void
   [EVENTS.DISPLAY.PAIR_ERROR]: (_message: string) => void
 
+  // WP-15 — display live status (manager-facing). lastPingAt is epoch seconds
+  // (dayjs().unix()), matching DisplayPairing.createdAt; manager renders relative.
+  [EVENTS.DISPLAY.STATUS]: (_data: {
+    displays: { socketId: string; name: string; lastPingAt: number }[]
+  }) => void
+
+  // WP-18 — theme revisions. DATA carries full revisions; RESTORE_SUCCESS carries
+  // the restored Theme so the UI can preview() it immediately (mirrors SET_THEME_SUCCESS).
+  [EVENTS.THEME_REVISION.DATA]: (_r: ThemeRevision[]) => void
+  [EVENTS.THEME_REVISION.RESTORE_SUCCESS]: (_theme: Theme) => void
+  [EVENTS.THEME_REVISION.ERROR]: (_m: string) => void
+
   // Low-latency mode: UI-only clock sync. Server echoes the client's monotonic
   // send timestamp and adds its own wall clock so the client can derive offset.
   [EVENTS.CLOCK.PONG]: (_data: {
@@ -271,16 +283,28 @@ export interface ClientToServerEvents {
     quizzId?: string
     toCatalog?: boolean
   }) => void
-  [EVENTS.MANAGER.REJECT_SUBMISSION]: (_payload: { id: string }) => void
+  // WP-17 — widen REJECT_SUBMISSION (was { id: string })
+  [EVENTS.MANAGER.REJECT_SUBMISSION]: (_payload: {
+    id: string
+    reason?: string
+    category?: SubmissionCategory
+  }) => void
 
   // Display (satellite) actions
-  [EVENTS.DISPLAY.REGISTER]: () => void
+  // WP-15 — let the display supply a label up-front (was () => void)
+  [EVENTS.DISPLAY.REGISTER]: (_data?: { name?: string }) => void
   [EVENTS.DISPLAY.PAIR]: (_data: {
     code: string
     managerPassword: string
     gameId: string
   }) => void
   [EVENTS.DISPLAY.DISCONNECT]: (_data: { code: string }) => void
+  // WP-15 — display heartbeat (C2S). name optional; clamped server-side.
+  [EVENTS.DISPLAY.PING]: (_data: { gameId: string; name?: string }) => void
+
+  // WP-18 — theme revision actions (auth-gated server-side)
+  [EVENTS.THEME_REVISION.LIST_REVISIONS]: () => void
+  [EVENTS.THEME_REVISION.RESTORE_REVISION]: (_p: { id: string }) => void
 
   // Theme actions
   [EVENTS.MANAGER.GET_THEME]: () => void

@@ -15,6 +15,7 @@ import { mediaSocketHandlers } from "@razzia/socket/handlers/media"
 import { quizzSocketHandlers } from "@razzia/socket/handlers/quizz"
 import { resultsSocketHandlers } from "@razzia/socket/handlers/results"
 import { registerSubmitMediaHandlers } from "@razzia/socket/handlers/submitMedia"
+import { themeRevisionSocketHandlers } from "@razzia/socket/handlers/theme-revision"
 import { themeTemplateSocketHandlers } from "@razzia/socket/handlers/theme-template"
 import type { SocketHandler } from "@razzia/socket/handlers/types"
 import {
@@ -91,6 +92,7 @@ const socketHandlers: SocketHandler[] = [
   resultsSocketHandlers,
   displaySocketHandlers,
   themeTemplateSocketHandlers,
+  themeRevisionSocketHandlers,
   // #23 public /submit media pipeline (enhance preview + upload + img2img edit).
   registerSubmitMediaHandlers,
 ]

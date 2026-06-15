@@ -1,8 +1,15 @@
-import { EVENTS } from "@razzia/common/constants"
+import {
+  DISPLAY_HEARTBEAT_INTERVAL_MS,
+  EVENTS,
+} from "@razzia/common/constants"
 import Loader from "@razzia/web/components/Loader"
 import GameWrapper from "@razzia/web/features/game/components/GameWrapper"
-import { socketClient } from "@razzia/web/features/game/contexts/socket-context"
+import {
+  socketClient,
+  useSocket,
+} from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerGameSession } from "@razzia/web/features/game/hooks/useManagerGameSession"
+import { useThemeStore } from "@razzia/web/features/theme/store"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
@@ -30,6 +37,8 @@ const searchSchema = z.object({
 const DisplayPlayPage = () => {
   const { gameId: gameIdParam } = useSearch({ from: "/display/play" })
   const { t } = useTranslation()
+  const { socket } = useSocket()
+  const appTitle = useThemeStore((s) => s.theme.appTitle)
 
   // Best-effort fullscreen for the beamer (kiosk Chromium already covers this).
   useEffect(() => {
@@ -37,6 +46,29 @@ const DisplayPlayPage = () => {
       /* Ignore: fullscreen needs a gesture outside kiosk mode */
     })
   }, [])
+
+  // WP-15 — once paired, the display heartbeats so the manager's live status
+  // card shows it as online + the relative "last seen". The server records the
+  // display at PAIR_SUCCESS and bumps lastPingAt on each ping; missing the
+  // window flips the card to offline and the 60s sweep prunes a dead kiosk.
+  // Cleared on unmount (e.g. navigating away) so no orphaned interval.
+  useEffect(() => {
+    if (!gameIdParam) {
+      return
+    }
+
+    const name =
+      appTitle?.trim() ||
+      t("display:defaultName", { defaultValue: "Beamer" })
+
+    const id = setInterval(() => {
+      socket.emit(EVENTS.DISPLAY.PING, { gameId: gameIdParam, name })
+    }, DISPLAY_HEARTBEAT_INTERVAL_MS)
+
+    return () => {
+      clearInterval(id)
+    }
+  }, [socket, gameIdParam, appTitle, t])
 
   // Join the paired game. We reconnect as a manager-equivalent display; the
   // socket was already authenticated during the display pairing handshake.

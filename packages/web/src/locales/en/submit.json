@@ -18,6 +18,17 @@
   "media": {
     "enhanceHint": "The AI refines your description before generating."
   },
+  "category": {
+    "label": "Category (optional)",
+    "general": "General",
+    "history": "History",
+    "science": "Science",
+    "geography": "Geography",
+    "sports": "Sports",
+    "entertainment": "Entertainment",
+    "technology": "Technology",
+    "other": "Other"
+  },
   "cta": {
     "afterGame": "Enjoyed the quiz? Suggest your own question"
   },

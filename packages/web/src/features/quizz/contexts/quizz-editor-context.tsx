@@ -48,7 +48,9 @@ const QuizzEditorContext = createContext<QuizzEditorContextType | null>(null)
 const defaultQuestion = (): QuestionWithId => ({
   id: uuid(),
   question: "",
-  answers: ["", ""],
+  // Default to four answer slots (A–D), the classic quiz layout. The editor
+  // caps answers at [2,4]; "Remove answer" drops unwanted slots down to 2.
+  answers: ["", "", "", ""],
   solutions: [0],
   cooldown: 5,
   time: 20,

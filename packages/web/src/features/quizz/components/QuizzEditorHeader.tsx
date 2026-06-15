@@ -1,5 +1,6 @@
 import * as RadixAlertDialog from "@radix-ui/react-alert-dialog"
 import { EVENTS } from "@razzia/common/constants"
+import { dropEmptyAnswers } from "@razzia/common/utils/dropEmptyAnswers"
 import { quizzValidator } from "@razzia/common/validators/quizz"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
@@ -61,7 +62,14 @@ const QuizzEditorHeader = () => {
 
     setSubjectError(null)
 
-    const result = quizzValidator.safeParse({ subject, questions })
+    // Trim unfilled answer slots (editor defaults to four) before validation AND
+    // before emit so a 2–3 answer question doesn't trip errors:quizz.answerEmpty
+    // here or on the server's re-validation.
+    const trimmedQuestions = questions.map(dropEmptyAnswers)
+    const result = quizzValidator.safeParse({
+      subject,
+      questions: trimmedQuestions,
+    })
 
     if (!result.success) {
       const firstIssue = result.error.issues[0]
@@ -92,11 +100,15 @@ const QuizzEditorHeader = () => {
       socket.emit(EVENTS.QUIZZ.UPDATE, {
         id: quizzId,
         subject,
-        questions,
+        questions: trimmedQuestions,
         ...themeFields,
       })
     } else {
-      socket.emit(EVENTS.QUIZZ.SAVE, { subject, questions, ...themeFields })
+      socket.emit(EVENTS.QUIZZ.SAVE, {
+        subject,
+        questions: trimmedQuestions,
+        ...themeFields,
+      })
     }
   }, [isSaving, subject, questions, themeId, quizzId, socket, setCurrentIndex, t])
 

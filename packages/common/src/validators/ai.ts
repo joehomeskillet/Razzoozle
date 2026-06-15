@@ -15,6 +15,8 @@ export const aiProviderValidator = z.object({
   kind: z.enum(AI_PROVIDER_KINDS),
   baseUrl: z.url().optional(),
   model: z.string().min(1).max(120),
+  // WP-10 — per-provider text temperature, optional for backward-compat.
+  temperature: z.number().min(AI.TEMP_MIN).max(AI.TEMP_MAX).optional(),
 })
 
 export const aiImageProviderValidator = z.object({
@@ -22,6 +24,11 @@ export const aiImageProviderValidator = z.object({
   label: z.string().min(1).max(60),
   baseUrl: z.url().optional(),
   workflow: z.string().max(300).optional(),
+  // WP-10 — accept any of the allowed square sizes; optional for backward-compat.
+  // Use a z.union of numeric literals (NOT z.enum, which is string-only).
+  resolution: z
+    .union([z.literal(512), z.literal(768), z.literal(1024)])
+    .optional(),
 })
 
 // Persisted AI settings (no secrets). activeProvider is a provider id or "off".

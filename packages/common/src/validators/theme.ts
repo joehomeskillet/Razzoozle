@@ -43,3 +43,11 @@ export const themeTemplateValidator = z.object({
   name: z.string().min(1).max(60),
   theme: themeValidator,
 })
+
+// WP-18 — on-disk theme revision validator (reuses themeValidator). Lenient
+// id/createdAt (free strings) so a persisted revision never fails read-validation.
+export const themeRevisionValidator = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  theme: themeValidator,
+})

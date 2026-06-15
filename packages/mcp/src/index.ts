@@ -14,7 +14,7 @@
 // controller and is NEVER echoed to a tool result, a log, or the server stderr.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { QUESTION_TYPES } from "@razzia/common/constants"
+import { QUESTION_TYPES, SUBMISSION_CATEGORIES } from "@razzia/common/constants"
 import { z } from "zod"
 import {
   approveSubmission,
@@ -466,12 +466,26 @@ server.registerTool(
   "reject_submission",
   {
     title: "Reject a submission",
-    description: "Mark a pending submission as rejected.",
-    inputSchema: { id: z.string().describe("Submission id.") },
+    description:
+      "Mark a pending submission as rejected, optionally with a moderator reason and a category override.",
+    inputSchema: {
+      id: z.string().describe("Submission id."),
+      // WP-17 — optional moderator note + optional category override, mirroring
+      // the socket REJECT_SUBMISSION payload.
+      reason: z
+        .string()
+        .max(500)
+        .optional()
+        .describe("Optional moderator note for why it was rejected."),
+      category: z
+        .enum(SUBMISSION_CATEGORIES)
+        .optional()
+        .describe("Optional topic category override."),
+    },
   },
-  ({ id }) => {
+  ({ id, reason, category }) => {
     try {
-      rejectSubmission(id)
+      rejectSubmission(id, reason, category)
       return ok({ rejected: id })
     } catch (e) {
       return fail(e)

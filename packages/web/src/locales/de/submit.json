@@ -18,6 +18,17 @@
   "media": {
     "enhanceHint": "Die KI verfeinert deine Beschreibung vor dem Generieren."
   },
+  "category": {
+    "label": "Kategorie (optional)",
+    "general": "Allgemein",
+    "history": "Geschichte",
+    "science": "Wissenschaft",
+    "geography": "Geografie",
+    "sports": "Sport",
+    "entertainment": "Unterhaltung",
+    "technology": "Technik",
+    "other": "Sonstiges"
+  },
   "cta": {
     "afterGame": "Hat dir das Quiz gefallen? Reich eine eigene Frage ein"
   },
