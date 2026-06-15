@@ -272,9 +272,8 @@ const ConfigTheme = () => {
   }
 
   return (
-    <>
-      <motion.div
-        className="flex min-h-0 flex-1 flex-col"
+    <motion.div
+      className="flex min-h-0 flex-1 flex-col"
       initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       transition={
@@ -570,7 +569,6 @@ const ConfigTheme = () => {
           </div>
         </div>
       </div>
-      </motion.div>
 
       <ActionFooter>
         <Button
@@ -619,7 +617,7 @@ const ConfigTheme = () => {
         confirmLabel={t("manager:theme.revisions.restore")}
         onConfirm={handleRestore}
       />
-    </>
+    </motion.div>
   )
 }
 
