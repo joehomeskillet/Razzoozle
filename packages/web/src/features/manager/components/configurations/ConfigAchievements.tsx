@@ -12,12 +12,7 @@ import {
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import { SectionCard } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
-import {
-  ActionFooter,
-  FormSection,
-  LabelRow,
-  ToggleField,
-} from "@razzia/web/components/ui"
+import { ActionFooter } from "@razzia/web/components/ui"
 import { Award } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
@@ -77,6 +72,18 @@ const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
 const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
 
+// German fallback explanations of what each threshold value controls — keyed by
+// the registry threshold key. Overridable per locale via
+// manager:achievementsConfig.thresholdHint.<key>.
+const THRESHOLD_HINTS: Record<string, string> = {
+  lastPercent: "Richtig in den letzten X % des Zeitfensters",
+  maxMs: "Maximale Antwortzeit in Millisekunden",
+  streak: "Anzahl richtiger Antworten in Folge",
+  minAccuracyPct: "Mindest-Genauigkeit beim Schieberegler (%)",
+  minRanksUp: "Plätze, die man in der Rangliste hochklettern muss",
+  minPointsAhead: "Punktevorsprung der überholten Person",
+}
+
 // ---------------------------------------------------------------------------
 // Achievement badge editor card
 // ---------------------------------------------------------------------------
@@ -86,11 +93,12 @@ interface BadgeRowProps {
   tier: AchievementTier
   state: RowState
   defaultName: string
+  defaultDesc: string
   thresholdUnit?: string
   thresholdMin?: number
   thresholdMax?: number
+  thresholdHint?: string
   onChange: (id: AchievementId, patch: Partial<RowState>) => void
-  t: ReturnType<typeof useTranslation>["t"]
   reduced: boolean
 }
 
@@ -99,13 +107,15 @@ const BadgeRow = ({
   tier,
   state,
   defaultName,
+  defaultDesc,
   thresholdUnit,
   thresholdMin,
   thresholdMax,
+  thresholdHint,
   onChange,
-  t,
   reduced,
 }: BadgeRowProps) => {
+  const { t } = useTranslation()
   const hasThreshold =
     thresholdUnit !== undefined &&
     thresholdMin !== undefined &&
@@ -119,77 +129,74 @@ const BadgeRow = ({
     <motion.div
       layout={!reduced}
       initial={{ opacity: 0, y: reduced ? 0 : 6 }}
-      animate={{ opacity: state.enabled ? 1 : 0.55, y: 0 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      className={`rounded-xl px-4 py-4 ring-1 transition-colors ${
-        state.enabled
-          ? "bg-gray-50 ring-gray-200"
-          : "bg-gray-50/50 ring-gray-100"
+      animate={{ opacity: state.enabled ? 1 : 0.6, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`rounded-lg px-3 py-2.5 ring-1 transition-colors ${
+        state.enabled ? "bg-white ring-gray-200" : "bg-gray-50 ring-gray-100"
       }`}
     >
-      {/* Medal preview header */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="flex shrink-0 items-center justify-center">
-          <AchievementMedal id={id} tier={tier} size="md" />
-        </span>
-        <span className="truncate text-sm font-semibold text-gray-800">
-          {defaultName}
-        </span>
+      {/* Header: medal + name/description + enable toggle */}
+      <div className="flex items-start gap-2.5">
+        <AchievementMedal id={id} tier={tier} size="sm" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-gray-800">
+            {defaultName}
+          </p>
+          <p className="text-xs leading-snug text-gray-500">{defaultDesc}</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={state.enabled}
+          aria-label={t("manager:achievementsConfig.enabled")}
+          onClick={() => onChange(id, { enabled: !state.enabled })}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+            state.enabled ? "bg-[var(--color-primary)]" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+              state.enabled ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
       </div>
 
-      {/* Name & Beschreibung */}
-      <FormSection title={t("manager:achievementsConfig.sectionNameDesc", { defaultValue: "Name & Beschreibung" })}>
-        <LabelRow label={t("manager:achievementsConfig.name")} htmlFor={nameId}>
-          <input
-            id={nameId}
-            type="text"
-            className={inputCls}
-            placeholder={defaultName}
-            value={state.name}
-            onChange={(e) => onChange(id, { name: e.target.value })}
-          />
-        </LabelRow>
-        <LabelRow
-          label={t("manager:achievementsConfig.description")}
-          htmlFor={descId}
-        >
-          <input
-            id={descId}
-            type="text"
-            className={inputCls}
-            placeholder="—"
-            value={state.description}
-            onChange={(e) => onChange(id, { description: e.target.value })}
-          />
-        </LabelRow>
-      </FormSection>
-
-      {/* Sichtbarkeit */}
-      <FormSection title={t("manager:achievementsConfig.sectionVisibility", { defaultValue: "Sichtbarkeit" })}>
-        <ToggleField
-          label={t("manager:achievementsConfig.enabled")}
-          checked={state.enabled}
-          onChange={(v) => onChange(id, { enabled: v })}
+      {/* Compact name + description override inputs */}
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <input
+          id={nameId}
+          type="text"
+          className={inputCls}
+          placeholder={defaultName}
+          aria-label={t("manager:achievementsConfig.name")}
+          value={state.name}
+          onChange={(e) => onChange(id, { name: e.target.value })}
         />
-      </FormSection>
+        <input
+          id={descId}
+          type="text"
+          className={inputCls}
+          placeholder={defaultDesc || "—"}
+          aria-label={t("manager:achievementsConfig.description")}
+          value={state.description}
+          onChange={(e) => onChange(id, { description: e.target.value })}
+        />
+      </div>
 
-      {/* Schwellenwert — only for badges that have one */}
+      {/* Threshold + explanation of what the value controls */}
       {hasThreshold && state.threshold !== null && (
-        <FormSection
-          title={t("manager:achievementsConfig.sectionThreshold", { defaultValue: "Schwellenwert" })}
-          className="mb-0"
-        >
-          <LabelRow
-            label={t("manager:achievementsConfig.threshold")}
-            htmlFor={threshId}
-            suffix={thresholdUnit}
-          >
+        <div className="mt-2">
+          <div className="flex items-center gap-2">
             <input
               id={threshId}
               type="number"
               min={thresholdMin}
               max={thresholdMax}
-              className={`${inputCls} tabular-nums`}
+              className={`${inputCls} max-w-28 tabular-nums`}
+              aria-label={
+                thresholdHint ?? t("manager:achievementsConfig.threshold")
+              }
               value={state.threshold}
               onChange={(e) => {
                 const raw = Number(e.target.value)
@@ -203,8 +210,14 @@ const BadgeRow = ({
                 }
               }}
             />
-          </LabelRow>
-        </FormSection>
+            <span className="text-xs font-medium text-gray-500">
+              {thresholdUnit}
+            </span>
+          </div>
+          {thresholdHint && (
+            <p className="mt-1 text-xs text-gray-500">{thresholdHint}</p>
+          )}
+        </div>
       )}
     </motion.div>
   )
@@ -359,6 +372,19 @@ const ConfigAchievements = () => {
                         `game:achievements.${entry.id}.name`,
                         { defaultValue: entry.id },
                       )
+                      const defaultDesc = t(
+                        `game:achievements.${entry.id}.desc`,
+                        { defaultValue: "" },
+                      )
+                      const thresholdHint = thresholdDef
+                        ? t(
+                            `manager:achievementsConfig.thresholdHint.${thresholdDef.key}`,
+                            {
+                              defaultValue:
+                                THRESHOLD_HINTS[thresholdDef.key] ?? "",
+                            },
+                          )
+                        : undefined
                       return (
                         <BadgeRow
                           key={entry.id}
@@ -366,11 +392,12 @@ const ConfigAchievements = () => {
                           tier={tier}
                           state={local[entry.id as AchievementId]}
                           defaultName={defaultName}
+                          defaultDesc={defaultDesc}
                           thresholdUnit={thresholdDef?.unit}
                           thresholdMin={thresholdDef?.min}
                           thresholdMax={thresholdDef?.max}
+                          thresholdHint={thresholdHint}
                           onChange={handleChange}
-                          t={t}
                           reduced={reduced}
                         />
                       )

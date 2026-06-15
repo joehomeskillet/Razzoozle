@@ -470,6 +470,14 @@
     "save": "Salva",
     "saved": "Salvato",
     "reset": "Ripristina valori predefiniti",
-    "resetDone": "Valori predefiniti ripristinati"
+    "resetDone": "Valori predefiniti ripristinati",
+    "thresholdHint": {
+      "lastPercent": "Ultimi % del tempo",
+      "maxMs": "Tempo di risposta max (ms)",
+      "streak": "Risposte corrette di fila",
+      "minAccuracyPct": "Precisione min del cursore (%)",
+      "minRanksUp": "Posizioni scalate in classifica",
+      "minPointsAhead": "Vantaggio punti del superato"
+    }
   }
 }

@@ -470,6 +470,14 @@
     "save": "Save",
     "saved": "Saved",
     "reset": "Reset to defaults",
-    "resetDone": "Reset to defaults"
+    "resetDone": "Reset to defaults",
+    "thresholdHint": {
+      "lastPercent": "Last % of the time window",
+      "maxMs": "Max answer time (ms)",
+      "streak": "Correct answers in a row",
+      "minAccuracyPct": "Min slider accuracy (%)",
+      "minRanksUp": "Ranks climbed in the leaderboard",
+      "minPointsAhead": "Point lead of the overtaken player"
+    }
   }
 }

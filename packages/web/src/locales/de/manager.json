@@ -462,7 +462,15 @@
     "save": "Speichern",
     "saved": "Gespeichert",
     "reset": "Auf Standard zurücksetzen",
-    "resetDone": "Auf Standard zurückgesetzt"
+    "resetDone": "Auf Standard zurückgesetzt",
+    "thresholdHint": {
+      "lastPercent": "Letzte % des Zeitfensters",
+      "maxMs": "Maximale Antwortzeit (ms)",
+      "streak": "Richtige Antworten in Folge",
+      "minAccuracyPct": "Mindest-Genauigkeit Schieberegler (%)",
+      "minRanksUp": "Plätze nach oben in der Rangliste",
+      "minPointsAhead": "Punktevorsprung der überholten Person"
+    }
   },
   "gameMode": {
     "title": "Spielmodus",

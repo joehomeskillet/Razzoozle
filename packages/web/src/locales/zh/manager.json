@@ -470,6 +470,14 @@
     "save": "保存",
     "saved": "已保存",
     "reset": "重置为默认值",
-    "resetDone": "已重置为默认值"
+    "resetDone": "已重置为默认值",
+    "thresholdHint": {
+      "lastPercent": "时间窗口的最后百分比",
+      "maxMs": "最长答题时间（毫秒）",
+      "streak": "连续答对次数",
+      "minAccuracyPct": "滑块最低精确度（%）",
+      "minRanksUp": "排行榜上升名次",
+      "minPointsAhead": "被超越玩家的分数领先"
+    }
   }
 }
