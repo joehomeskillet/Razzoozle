@@ -197,7 +197,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
       </header>
 
       {/* Body — sunken gray surface so the white form cards read clearly. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 [scrollbar-width:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
         <p className="mb-4 text-sm leading-6 text-gray-600">
           {t("submit:form.subtitle")}
         </p>
