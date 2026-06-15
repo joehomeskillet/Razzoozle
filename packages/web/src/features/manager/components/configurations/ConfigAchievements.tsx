@@ -323,14 +323,15 @@ const ConfigAchievements = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-1 flex-col gap-4 pb-20">
       <SectionCard
         icon={<Award className="size-5" aria-hidden />}
         title={t("manager:achievementsConfig.title")}
         description={t("manager:achievementsConfig.hint")}
       >
         {/* Extra bottom padding so last badge card isn't hidden behind ActionFooter */}
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col gap-6">
           {TIER_ORDER.map((tier) => {
             const tierEntries = ACHIEVEMENTS_REGISTRY.filter(
               (e) => e.tier === tier,
@@ -381,30 +382,32 @@ const ConfigAchievements = () => {
           })}
         </div>
 
-        <ActionFooter>
-          {/* Reset button */}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
-          >
-            {t("manager:achievementsConfig.reset", {
-              defaultValue: "Auf Standard zurücksetzen",
-            })}
-          </button>
-
-          {/* Save button */}
-          <button
-            type="button"
-            onClick={handleSave}
-            className="min-h-[44px] w-full rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
-          >
-            {saved
-              ? t("manager:achievementsConfig.saved")
-              : t("manager:achievementsConfig.save")}
-          </button>
-        </ActionFooter>
       </SectionCard>
+      </div>
+
+      <ActionFooter>
+        {/* Reset button */}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
+        >
+          {t("manager:achievementsConfig.reset", {
+            defaultValue: "Auf Standard zurücksetzen",
+          })}
+        </button>
+
+        {/* Save button */}
+        <button
+          type="button"
+          onClick={handleSave}
+          className="min-h-[44px] w-full rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
+        >
+          {saved
+            ? t("manager:achievementsConfig.saved")
+            : t("manager:achievementsConfig.save")}
+        </button>
+      </ActionFooter>
     </div>
   )
 }

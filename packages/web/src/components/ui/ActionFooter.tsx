@@ -21,12 +21,13 @@ export interface ActionFooterProps {
 const ActionFooter = ({ children, className }: ActionFooterProps) => (
   <div
     className={clsx(
-      // Bleed to panel edges (ConsoleShell tabpanel: p-4 sm:p-6)
-      "sticky bottom-0 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6",
-      // Surface
-      "border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80",
-      // Shadow
-      "shadow-[0_-1px_4px_rgba(0,0,0,0.06)]",
+      // Bleed to panel edges (ConsoleShell tabpanel: p-4 sm:p-6) and round the
+      // bottom corners to sit flush inside the rounded-2xl console card.
+      "sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl sm:-mx-6 sm:-mb-6",
+      // Surface — fully opaque so scrolled content never bleeds through.
+      "border-t border-gray-200 bg-white",
+      // Shadow lifting it off the content.
+      "shadow-[0_-2px_8px_rgba(0,0,0,0.08)]",
       // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area
       "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
       // Button row: right-aligned on ≥sm, stacked full-width below sm

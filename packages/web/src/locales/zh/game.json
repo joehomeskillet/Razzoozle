@@ -1,0 +1,150 @@
+{
+  "correct": "漂亮！",
+  "gamePinLabel": "游戏 PIN：",
+  "hud": {
+    "answers": "答案",
+    "time": "时间"
+  },
+  "joinInstruction": "在此加入游戏",
+  "joinTimeout": "未能及时加入。请重试",
+  "leaderboard": "排行榜",
+  "pinLabel": "PIN 码",
+  "playersJoined": "已加入玩家： ",
+  "questionPrefix": "第 # 题",
+  "rejoin": "重新加入",
+  "sending": "发送中…",
+  "rank": {
+    "1": "第 1 名",
+    "2": "第 2 名",
+    "3": "第 3 名",
+    "other": "第 {{rank}} 名"
+  },
+  "rankSuffix": " 名",
+  "resultBehind": "，落后于 ",
+  "resultTop": "你的最终排名是 ",
+  "startGame": "开始游戏",
+  "streak": {
+    "streak": "{{count}} 连击 (+{{percent}}%)",
+    "bonus": "奖励 ×2",
+    "firstCorrect": "最快 +100"
+  },
+  "usernameLabel": "昵称",
+  "usernamePlaceholder": "在此输入用户名",
+  "usernameRequired": "请输入昵称",
+  "waitingForAnswers": "等待玩家作答",
+  "waitingForPlayers": "等待玩家",
+  "wrong": "很遗憾",
+  "slider": {
+    "submit": "确认",
+    "submitted": "已发送",
+    "correctAnswer": "正确答案",
+    "averageGuess": "平均猜测：{{value}}"
+  },
+  "pollThanks": "感谢你的投票",
+  "submittedBy": "由 {{name}} 提交",
+  "typeAnswerPlaceholder": "输入你的答案…",
+  "submitAnswer": "提交",
+  "controls": {
+    "autoMode": "自动模式",
+    "autoOn": "开",
+    "autoOff": "关",
+    "autoTitle": "自动模式：自动进入下一题",
+    "fullscreen": "全屏"
+  },
+  "avatar": {
+    "title": "你的头像",
+    "choose": "选择头像",
+    "upload": "上传图片",
+    "uploading": "上传中…",
+    "uploaded": "头像已上传",
+    "skip": "跳过",
+    "genericLabel": "头像"
+  },
+  "pause": {
+    "title": "暂停",
+    "paused": "游戏已暂停",
+    "resumeHint": "主持人恢复后你将继续",
+    "pauseGame": "暂停游戏",
+    "resumeGame": "继续游戏"
+  },
+  "playerReconnected": "{{name}} 已重新上线",
+  "achievements": {
+    "gallery": {
+      "title": "奖杯",
+      "empty": "还没有奖杯 —— 玩一局来赢取你的第一个奖杯吧。"
+    },
+    "first_correct": {
+      "name": "首中",
+      "desc": "你在游戏中第一个答对的题目。"
+    },
+    "participation": {
+      "name": "全勤",
+      "desc": "回答了每一道题 —— 一题都没漏。"
+    },
+    "lucky_guess": {
+      "name": "幸运一猜",
+      "desc": "在最后一秒答对了。"
+    },
+    "speed_demon": {
+      "name": "速度狂魔",
+      "desc": "在一秒内答对。"
+    },
+    "streak_3": {
+      "name": "三连击",
+      "desc": "连续答对三题。"
+    },
+    "sharpshooter": {
+      "name": "神枪手",
+      "desc": "以超过 95% 的精度解答了一道滑块题。"
+    },
+    "climber": {
+      "name": "攀登者",
+      "desc": "在排名中上升了三名或更多。"
+    },
+    "first_responder": {
+      "name": "抢先作答",
+      "desc": "本轮第一个答对。"
+    },
+    "streak_5": {
+      "name": "五连火",
+      "desc": "连续答对五题。"
+    },
+    "underdog": {
+      "name": "黑马",
+      "desc": "反超了领先 2000 分的对手。"
+    },
+    "perfect_round": {
+      "name": "完美一轮",
+      "desc": "本轮表现完美无瑕。"
+    },
+    "streak_10": {
+      "name": "十连击",
+      "desc": "连续答对十题 —— 令人惊叹。"
+    },
+    "speedy_gonzales": {
+      "name": "闪电快手",
+      "desc": "在 0.4 秒内答对。"
+    },
+    "perfect_game": {
+      "name": "完美一局",
+      "desc": "所有题目全部答对。"
+    }
+  },
+  "teams": {
+    "chooseTeam": "选择你的队伍",
+    "teamLeaderboard": "队伍排行榜",
+    "red": "红队",
+    "blue": "蓝队",
+    "green": "绿队",
+    "yellow": "黄队"
+  },
+  "solo": {
+    "play": "单人游玩",
+    "yourScore": "你的得分",
+    "soloLeaderboard": "排行榜",
+    "enterName": "你的名字",
+    "next": "下一题",
+    "finish": "完成",
+    "rank": "第 {{rank}} 名"
+  }
+}

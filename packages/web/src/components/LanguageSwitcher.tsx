@@ -8,6 +8,7 @@ const LANGUAGES = [
   { code: "es", label: "common:language.es" },
   { code: "fr", label: "common:language.fr" },
   { code: "it", label: "common:language.it" },
+  { code: "zh", label: "common:language.zh" },
 ]
 
 const LanguageSwitcher = () => {

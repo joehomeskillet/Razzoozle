@@ -281,7 +281,7 @@ const ConfigTheme = () => {
       }
     >
       {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
-      <div className="flex flex-col gap-4 pb-24">
+      <div className="flex flex-col gap-4 pb-20">
         {/*
           Cockpit: LEFT settings column (minmax(0,1fr)) + RIGHT sticky preview
           column (minmax(320px,420px)) at xl; single column below. The whole

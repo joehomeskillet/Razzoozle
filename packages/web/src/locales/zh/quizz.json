@@ -1,0 +1,104 @@
+{
+  "addAnswerPlaceholder": "添加一个答案…",
+  "addQuestion": "添加题目",
+  "answerInputLabel": "答案 {{label}}",
+  "answersCountSuffix": " 个答案",
+  "deleteQuestion": "删除题目",
+  "markAnswerCorrectLabel": "将答案 {{label}} 标记为正确",
+  "noQuestionYet": "尚无题目",
+  "question": {
+    "addMediaHint": "为你的题目添加图片、视频或音频",
+    "config": {
+      "answerTime": "作答时间",
+      "answerTimeHint": "玩家作答的时间（{{min}}–{{max}} 秒）。",
+      "questionDisplay": "题目展示",
+      "questionDisplayHint": "答案出现前的时间（{{min}}–{{max}} 秒）。",
+      "timings": "时间设置",
+      "rangeMin": "至少 {{min}} 秒。",
+      "rangeMax": "最多 {{max}} 秒。"
+    },
+    "deleteQuestion": "删除题目",
+    "deleteQuestionConfirm": "确定要删除这道题目吗？",
+    "inputLabel": "题目",
+    "media": {
+      "audio": "音频",
+      "image": "图片",
+      "video": "视频",
+      "aiGenerate": "使用 AI 生成",
+      "aiPromptPlaceholder": "描述这张图片…",
+      "uploadButton": "上传图片",
+      "uploading": "上传中",
+      "tabUrl": "网址",
+      "tabUpload": "上传",
+      "tabAi": "AI",
+      "tabEdit": "编辑",
+      "enhanceButton": "改进预览",
+      "enhancing": "优化中",
+      "enhancedLabel": "将如何生成",
+      "rawLabel": "你的输入",
+      "editPromptPlaceholder": "描述对图片的修改",
+      "editButton": "用文本编辑图片",
+      "editing": "编辑中"
+    },
+    "mediaUrlPlaceholder": "输入网址…",
+    "placeholder": "开始输入你的题目…"
+  },
+  "quizzSaved": "测验保存成功",
+  "quizzUpdated": "测验更新成功",
+  "reorderSlideLabel": "重新排序幻灯片 {{index}}",
+  "slideLabel": "幻灯片 {{index}}",
+  "slider": {
+    "min": "最小值",
+    "max": "最大值",
+    "correct": "正确值",
+    "step": "步长",
+    "unit": "单位",
+    "unitPlaceholder": "例如：kWh"
+  },
+  "subjectInputLabel": "测验标题",
+  "titleQuizzPlaceholder": "测验标题…",
+  "type": {
+    "choice": "选择题",
+    "boolean": "判断题",
+    "slider": "滑块（数字）",
+    "poll": "投票",
+    "bonusQuestion": "奖励题（双倍分数）",
+    "practiceQuestion": "练习题（0 分）",
+    "multipleSelect": "多选题",
+    "typeAnswer": "填空题",
+    "choiceDesc": "一个正确答案",
+    "booleanDesc": "对或错",
+    "sliderDesc": "刻度上的一个数字",
+    "pollDesc": "意见投票，不计分",
+    "multipleSelectDesc": "多个正确答案",
+    "typeAnswerDesc": "自由输入的答案"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "至少标记 2 个正确答案",
+    "submitButton": "提交答案",
+    "selectHint": "选择所有适用项"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "可接受的答案",
+    "addAcceptedAnswer": "添加答案",
+    "acceptedAnswerPlaceholder": "例如：巴黎",
+    "removeAcceptedAnswer": "移除答案 {{index}}",
+    "matchMode": {
+      "label": "匹配模式",
+      "exact": "精确",
+      "normalized": "规范化（推荐）",
+      "fuzzy": "模糊（容许拼写错误）"
+    },
+    "minAnswersRequired": "至少需要一个答案"
+  },
+  "addAnswerCountLabel": "添加答案",
+  "removeAnswerCountLabel": "移除答案",
+  "bulkSelected": "已选择 {{count}} 项",
+  "bulkDelete": "删除",
+  "bulkDeleteConfirm": "确定要删除所选的题目吗？",
+  "bulkToCatalog": "保存到题库",
+  "themePicker": {
+    "label": "设计",
+    "global": "全局设计"
+  }
+}
