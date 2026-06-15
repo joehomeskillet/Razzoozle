@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useCallback,
+  useEffect,
   useId,
   useRef,
 } from "react"
@@ -65,6 +66,14 @@ const ConsoleShell = ({
   const reducedMotion = useReducedMotion()
   const baseId = useId()
   const tablistRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Reset the content scroll to the top when the active section changes — the
+  // single tabpanel is reused across tabs, so without this a switch would
+  // inherit the previous tab's scroll offset. Instant (not smooth) to stay calm.
+  useEffect(() => {
+    panelRef.current?.scrollTo({ top: 0 })
+  }, [activeKey])
 
   const focusItemAt = useCallback((index: number) => {
     const list = tablistRef.current
@@ -192,6 +201,7 @@ const ConsoleShell = ({
         </nav>
 
         <div
+          ref={panelRef}
           role="tabpanel"
           id={`${baseId}-panel`}
           aria-labelledby={`${baseId}-tab-${activeKey}`}

@@ -448,6 +448,7 @@
     }
   },
   "selectQuizz": {
+    "copySoloLink": "Solo-Link kopieren",
     "meta": {
       "questions": "{{count}} Fragen"
     }

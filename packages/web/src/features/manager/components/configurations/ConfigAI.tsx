@@ -594,10 +594,7 @@ const ConfigAI = () => {
         title={t("manager:ai.image.title")}
         description={t("manager:ai.image.description")}
       >
-        <FormSection
-          title={t("manager:ai.image.title")}
-          className="mb-0"
-        >
+        <div className="space-y-4">
           <SubGroup>
             <div className="grid gap-2 md:grid-cols-2">
               {settings.image.providers.map((provider) => (
@@ -646,7 +643,7 @@ const ConfigAI = () => {
               ))}
             </div>
           </SubGroup>
-        </FormSection>
+        </div>
       </SectionCard>
 
       {/* ── Quiz-Generierung ────────────────────────────────────── */}
@@ -654,10 +651,7 @@ const ConfigAI = () => {
         icon={<Sparkles className="size-5" aria-hidden />}
         title={t("manager:ai.generate.quizTitle")}
       >
-        <FormSection
-          title={t("manager:ai.generate.quizTitle")}
-          className="mb-0"
-        >
+        <div className="space-y-4">
           <LabelRow
             label={t("manager:ai.generate.topic")}
             htmlFor="ai-quiz-topic"
@@ -701,7 +695,7 @@ const ConfigAI = () => {
               </span>
             </div>
           </LabelRow>
-        </FormSection>
+        </div>
 
         <Button
           type="button"
@@ -740,7 +734,12 @@ const ConfigAI = () => {
 
       {/* ── Sticky save footer ──────────────────────────────────── */}
       <ActionFooter>
-        <Button type="button" onClick={saveSettings}>
+        <Button
+          variant="primary"
+          type="button"
+          className="flex-1 rounded-xl sm:flex-none"
+          onClick={saveSettings}
+        >
           {t("manager:ai.save")}
         </Button>
       </ActionFooter>

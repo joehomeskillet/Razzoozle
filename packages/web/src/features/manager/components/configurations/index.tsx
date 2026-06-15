@@ -152,12 +152,30 @@ interface Props {
   data: ManagerConfig
 }
 
+// Persist the open section across reloads so a refresh doesn't dump the manager
+// back on the first tab. Client-only; falls back to the first tab when the
+// stored key is missing or renamed.
+const TAB_STORAGE_KEY = "rahoot_manager_tab"
+
 const Configurations = ({ data }: Props) => {
-  const [activeKey, setActiveKey] = useState(tabs[0].key)
+  const [activeKey, setActiveKey] = useState<string>(() => {
+    if (typeof window === "undefined") return tabs[0].key
+    const saved = window.localStorage.getItem(TAB_STORAGE_KEY)
+    return saved && tabs.some((tab) => tab.key === saved) ? saved : tabs[0].key
+  })
+
+  const handleSelect = (key: string) => {
+    setActiveKey(key)
+    try {
+      window.localStorage.setItem(TAB_STORAGE_KEY, key)
+    } catch {
+      // Ignore storage failures (private mode / quota).
+    }
+  }
 
   return (
     <ConfigProvider data={data}>
-      <ConsoleBody activeKey={activeKey} onSelect={setActiveKey} />
+      <ConsoleBody activeKey={activeKey} onSelect={handleSelect} />
     </ConfigProvider>
   )
 }

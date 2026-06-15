@@ -448,6 +448,7 @@
     }
   },
   "selectQuizz": {
+    "copySoloLink": "复制单人链接",
     "meta": {
       "questions": "{{count}} 道题目"
     }

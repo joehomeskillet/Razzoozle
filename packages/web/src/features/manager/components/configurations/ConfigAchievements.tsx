@@ -137,7 +137,7 @@ const BadgeRow = ({
       }`}
     >
       {/* Header: medal + name/description + enable toggle */}
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-center gap-2.5">
         <AchievementMedal id={id} tier={tier} size="sm" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-gray-800">
@@ -145,22 +145,24 @@ const BadgeRow = ({
           </p>
           <p className="text-xs leading-snug text-gray-500">{defaultDesc}</p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={state.enabled}
-          aria-label={t("manager:achievementsConfig.enabled")}
-          onClick={() => onChange(id, { enabled: !state.enabled })}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-            state.enabled ? "bg-[var(--color-primary)]" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
-              state.enabled ? "translate-x-5" : "translate-x-0.5"
+        <div className="flex min-h-11 shrink-0 items-center">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={state.enabled}
+            aria-label={t("manager:achievementsConfig.enabled")}
+            onClick={() => onChange(id, { enabled: !state.enabled })}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+              state.enabled ? "bg-[var(--color-primary)]" : "bg-gray-300"
             }`}
-          />
-        </button>
+          >
+            <span
+              className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+                state.enabled ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Compact name + description override inputs */}
@@ -364,7 +366,7 @@ const ConfigAchievements = () => {
                 />
 
                 {/* Badge editor cards for this tier */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                   <AnimatePresence initial={false}>
                     {tierEntries.map((entry) => {
                       const thresholdDef =

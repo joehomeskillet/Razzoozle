@@ -7,9 +7,10 @@ import {
 } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { ListChecks, Play } from "lucide-react"
+import { Copy, ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useEffect, useMemo, useState } from "react"
+import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const ConfigSelectQuizz = () => {
@@ -39,6 +40,21 @@ const ConfigSelectQuizz = () => {
     }
 
     socket.emit(EVENTS.GAME.CREATE, selected)
+  }
+
+  const handleCopySoloLink = async () => {
+    if (!selected) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/quizz/${selected}/solo`,
+      )
+      toast.success(t("common:copied", { defaultValue: "Kopiert" }))
+    } catch {
+      toast.error(t("manager:result.share.copyFailed"))
+    }
   }
 
   if (list.length === 0) {
@@ -103,7 +119,7 @@ const ConfigSelectQuizz = () => {
         ))}
       </motion.div>
 
-      <div className="shrink-0 pt-4">
+      <div className="shrink-0 space-y-2 pt-4">
         <Button
           variant="primary"
           size="lg"
@@ -114,6 +130,24 @@ const ConfigSelectQuizz = () => {
         >
           <Play className="size-5" aria-hidden strokeWidth={2.5} />
           <span>{t("manager:quizz.startGame")}</span>
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          type="button"
+          className="w-full rounded-xl"
+          onClick={() => {
+            void handleCopySoloLink()
+          }}
+          disabled={!selected}
+          title={selected ? undefined : t("manager:quizz.pleaseSelect")}
+        >
+          <Copy className="size-5" aria-hidden />
+          <span>
+            {t("manager:selectQuizz.copySoloLink", {
+              defaultValue: "Solo-Link kopieren",
+            })}
+          </span>
         </Button>
       </div>
     </div>
