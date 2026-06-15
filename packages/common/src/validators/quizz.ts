@@ -5,7 +5,18 @@ export const questionMediaValidator = z.object({
   type: z
     .enum([MEDIA_TYPES.IMAGE, MEDIA_TYPES.VIDEO, MEDIA_TYPES.AUDIO])
     .optional(),
-  url: z.url("errors:quizz.invalidMediaUrl"),
+  // Accept an absolute external URL OR a site-relative app asset path
+  // (/media, /theme). AI-generated and uploaded media are stored relative
+  // (e.g. "/media/gen-<id>.webp"), which z.url() wrongly rejected.
+  url: z
+    .string()
+    .min(1, "errors:quizz.invalidMediaUrl")
+    .refine(
+      (value) =>
+        /^https?:\/\/\S+$/.test(value) ||
+        (/^\/(media|theme)\/[^\s]+$/.test(value) && !value.includes("..")),
+      "errors:quizz.invalidMediaUrl",
+    ),
 })
 
 export const questionValidator = z
@@ -18,8 +29,12 @@ export const questionValidator = z
       .min(2, "errors:quizz.tooFewAnswers")
       .max(4, "errors:quizz.tooManyAnswers")
       .optional(),
+    // Lenient at the base (an empty array is allowed here) so the per-type
+    // superRefine below owns the friendly, localized messages — e.g. a choice
+    // question with no correct answer marked gets "noSolution", not Zod's raw
+    // "Too small: expected array to have >=1 items".
     solutions: z
-      .union([z.number().int().min(0), z.array(z.number().int().min(0)).min(1)])
+      .union([z.number().int().min(0), z.array(z.number().int().min(0))])
       .transform((v) => (Array.isArray(v) ? v : [v]))
       .optional(),
     // Slider
@@ -34,9 +49,10 @@ export const questionValidator = z
     bonus: z.boolean().optional(),
     submittedBy: z.string().optional(),
     // Type-answer: free-text accepted answers + how they're compared.
+    // Lenient at the base; the type-answer branch of the superRefine enforces
+    // the >=1 requirement with the friendly "acceptedAnswersMin" message.
     acceptedAnswers: z
       .array(z.string().min(1).max(200))
-      .min(1)
       .max(20)
       .optional(),
     matchMode: z.enum(["exact", "normalized", "fuzzy"]).optional(),
