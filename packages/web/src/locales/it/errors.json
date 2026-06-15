@@ -46,12 +46,20 @@
   },
   "theme": {
     "imageTooLarge": "L'immagine è troppo grande (max 8 MB)",
-    "uploadFailed": "Impossibile caricare l'immagine"
+    "uploadFailed": "Impossibile caricare l'immagine",
+    "saveFailed": "Impossibile salvare il design"
   },
   "submission": {
     "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",
     "notFound": "Proposta non trovata.",
-    "quizzNotFound": "Quiz non trovato."
+    "quizzNotFound": "Quiz non trovato.",
+    "queueFull": "Ci sono troppe proposte in moderazione al momento. Riprova più tardi.",
+    "imageLimitReached": "Hai raggiunto il limite orario di immagini IA. Riprova più tardi.",
+    "imageRateLimited": "Stai generando immagini IA troppo in fretta. Attendi un momento.",
+    "imageGenFailed": "Impossibile creare l’immagine IA. Riprova più tardi.",
+    "promptInvalid": "La descrizione dell’immagine non è valida. Modificala.",
+    "promptRejected": "La descrizione dell’immagine è stata rifiutata. Riformulala.",
+    "saveFailed": "Impossibile salvare la proposta. Riprova più tardi."
   },
   "display": {
     "invalidCode": "Codice di abbinamento non valido o scaduto",
@@ -74,5 +82,9 @@
     "testFailed": "Impossibile connettersi al provider IA.",
     "saveFailed": "Impossibile salvare le impostazioni IA.",
     "unsupported": "Questa funzione non è supportata dal provider selezionato."
+  },
+  "back": "Torna alla home",
+  "detail": {
+    "toggle": "Dettagli tecnici"
   }
 }

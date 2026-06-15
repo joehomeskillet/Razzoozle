@@ -59,7 +59,12 @@
     "noResultsHint": "Adjust your search term.",
     "duplicateTitle": "Duplicate quiz",
     "duplicateConfirm": "A copy of “{{name}}” will be created with the suffix “(Copy)”.",
-    "duplicateAction": "Duplicate"
+    "duplicateAction": "Duplicate",
+    "bulkSelected": "{{count}} selected",
+    "bulkDelete": "Delete",
+    "bulkDeleteTitle": "Delete quizzes",
+    "bulkDeleteConfirm": "{{count}} selected quizzes will be permanently deleted.",
+    "selectQuiz": "Select “{{name}}”"
   },
   "result": {
     "delete": "Delete result",
@@ -86,7 +91,8 @@
       "correctIncorrect": "Correct / Incorrect",
       "incorrect": " Incorrect",
       "player": "Player",
-      "points": "Points"
+      "points": "Points",
+      "rank": "Rank"
     },
     "playerCount": "{{count}} player(s)",
     "timeLimitSuffix": "s time limit",
@@ -154,7 +160,14 @@
       "generated": "Generated",
       "avatars": "Avatars",
       "audio": "Audio"
-    }
+    },
+    "bulk": {
+      "selected": "{{count}} selected",
+      "delete": "Delete",
+      "deleteConfirm": "Really delete {{count}} media?",
+      "toggle": "Select {{name}}"
+    },
+    "dropHint": "Drop files here to upload"
   },
   "catalog": {
     "title": "Question catalog",
@@ -249,7 +262,26 @@
       "quizCreated": "Quiz created",
       "failed": "Generation failed",
       "notConfigured": "No text provider configured. Set up the AI first.",
-      "openInEditor": "Open in editor"
+      "openInEditor": "Open in editor",
+      "countValue": "Questions: {{count}}",
+      "help": {
+        "aria": "Help with the AI features",
+        "text": "“Question from topic” creates a complete question with answers. “Distractors” fills empty answer fields with plausible wrong options. You always see a preview first and decide with “Apply” or “Discard”."
+      },
+      "preview": {
+        "label": "Preview",
+        "noQuestion": "(No question)",
+        "emptyAnswer": "(empty)",
+        "apply": "Apply",
+        "discard": "Discard"
+      }
+    },
+    "privacy": {
+      "local": "Local model on your server. Your inputs never leave the server.",
+      "claude": "Sends your topics and question text to Anthropic (Claude). See their privacy policy: https://www.anthropic.com/legal/privacy",
+      "openai": "Sends your topics and question text to OpenAI. See their privacy policy: https://openai.com/policies/privacy-policy",
+      "openrouter": "Sends your topics and question text to OpenRouter and the selected model. See their privacy policy: https://openrouter.ai/privacy",
+      "external": "Sends your topics and question text to an external service. Check its privacy policy."
     }
   },
   "satellite": {
@@ -263,7 +295,14 @@
     "step1": "Connect the Pi or beamer to the internet and open rahoot.joelduss.xyz/display — the big screen shows a pairing code.",
     "step2": "Start a game and tap «Satellite» in the game header to enter the code.",
     "step3": "Your phone stays the remote: start, next and auto-mode are all driven from here.",
-    "hint": "Pairing only works once a game is running — the code needs the live game and your manager password."
+    "hint": "Pairing only works once a game is running — the code needs the live game and your manager password.",
+    "step1Result": "The big screen then shows a 6-digit code like «ABC123».",
+    "step2Enter": "Start a game and tap «Satellite» at the top of the game header. Enter the code shown on the big screen there.",
+    "step2Result": "Tap «Pair» to test the connection. If it works, «Display paired» appears.",
+    "troubleCode": "«Invalid or expired code»: The code is wrong or too old (it is valid for only 5 minutes). Reload the /display page on the big screen — it then shows a fresh code — and type it exactly as shown.",
+    "troubleNotConnected": "«Display not connected»: The projector or Pi lost the connection. Check that it is still online and reload the /display page. On your own network a firewall may block it — then the ports for rahoot.joelduss.xyz must be opened.",
+    "troubleGame": "«Game not found» or «Invalid password»: Pairing only works while your game is running and you are signed in as the host. Restart the game or sign in again, then try once more right away.",
+    "troubleTitle": "If pairing doesn’t work"
   },
   "sim": {
     "button": "Bots (Sim)",
@@ -348,6 +387,16 @@
     "previewLabels": {
       "cooldown": "Cooldown",
       "loading": "Loading preview …"
+    },
+    "statusFilter": {
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "pending": "Open",
+      "label": "Filter by status"
+    },
+    "statusEmpty": {
+      "headline": "No suggestions in this view",
+      "hint": "Choose a different status to see more suggestions."
     }
   },
   "selectQuizz": {

@@ -51,12 +51,20 @@
   },
   "theme": {
     "imageTooLarge": "Image is too large (max 8 MB)",
-    "uploadFailed": "Image upload failed"
+    "uploadFailed": "Image upload failed",
+    "saveFailed": "Could not save the design"
   },
   "submission": {
     "rateLimited": "You've submitted too many questions. Please wait a moment.",
     "notFound": "Suggestion not found.",
-    "quizzNotFound": "Quiz not found."
+    "quizzNotFound": "Quiz not found.",
+    "queueFull": "There are currently too many suggestions in moderation. Please try again later.",
+    "imageLimitReached": "You've reached the hourly limit for AI images. Please try again later.",
+    "imageRateLimited": "You're generating AI images too quickly. Please wait a moment.",
+    "imageGenFailed": "The AI image could not be created. Please try again later.",
+    "promptInvalid": "The image description is invalid. Please adjust it.",
+    "promptRejected": "The image description was rejected. Please rephrase it.",
+    "saveFailed": "The suggestion could not be saved. Please try again later."
   },
   "catalog": {
     "notFound": "Catalog question not found.",
@@ -74,5 +82,9 @@
     "testFailed": "Could not connect to the AI provider.",
     "saveFailed": "Could not save the AI settings.",
     "unsupported": "This capability is not supported by the selected provider."
+  },
+  "back": "Go back home",
+  "detail": {
+    "toggle": "Technical details"
   }
 }

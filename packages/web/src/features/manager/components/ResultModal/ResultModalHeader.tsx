@@ -1,70 +1,29 @@
 import * as RadixDialog from "@radix-ui/react-dialog"
 import { RESULT_MODAL_TITLE_ID } from "@razzia/web/features/manager/components/ResultModal"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
+import { exportResultCsv } from "@razzia/web/features/manager/utils/resultExport"
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-// Quote a single CSV field per RFC 4180: wrap in double quotes and double any
-// embedded quote, so commas/quotes/newlines in a username can't break the grid.
-// Also neutralise CSV/formula injection: a value beginning with =,+,-,@,tab or
-// CR is treated as a formula by Excel/Sheets, so prefix it with a single quote.
-const csvField = (value: string | number) => {
-  let s = String(value)
-  if (/^[=+\-@\t\r]/.test(s)) {
-    s = `'${s}`
-  }
-  return `"${s.replace(/"/g, '""')}"`
-}
-
-// Build a deterministic, spreadsheet-friendly filename from the game subject +
-// date. Strips anything that isn't a safe path char so the download never
-// produces a slash/colon that confuses the OS.
-const csvFilename = (subject: string, date: string) => {
-  const slug = (s: string) =>
-    s
-      .normalize("NFKD")
-      .replace(/[^\w-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase()
-  const day = new Date(date).toISOString().slice(0, 10)
-  const base = [slug(subject), day].filter(Boolean).join("-") || "ergebnis"
-
-  return `${base}.csv`
-}
-
 const ResultModalHeader = () => {
-  const { result, questionIndex, total, goNext, goPrev } = useResultModal()
+  const { result, questionIndex, total, goNext, goPrev, displayName } =
+    useResultModal()
   const { t } = useTranslation()
 
-  // Dependency-free CSV export of the final ranking: header row + one row per
-  // player (rank, username, points), built client-side from the already-loaded
-  // GameResult and downloaded via a transient object-URL anchor.
+  // Dependency-free CSV export of the final ranking (rank, player, points),
+  // built client-side from the already-loaded GameResult. `displayName` honours
+  // the anonymise toggle, so masked names export as "Spieler N".
   const handleExportCsv = () => {
-    const header = [
-      t("manager:result.table.player"),
-      t("manager:result.table.points"),
-    ]
-    const rows = [...result.players]
-      .sort((a, b) => a.rank - b.rank)
-      .map((p) => [p.rank, p.username, p.points])
-    // Prepend the rank column header; "#" reads as "rank" across all locales
-    // and keeps the grid aligned with the data rows below.
-    const lines = [["#", ...header], ...rows].map((cols) =>
-      cols.map(csvField).join(","),
+    exportResultCsv(
+      result,
+      {
+        rank: t("manager:result.table.rank", { defaultValue: "Rang" }),
+        player: t("manager:result.table.player"),
+        points: t("manager:result.table.points"),
+      },
+      displayName,
     )
-    // Leading BOM so Excel opens UTF-8 names (umlauts/accents) correctly.
-    const csv = `﻿${lines.join("\r\n")}\r\n`
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = csvFilename(result.subject, result.date)
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
 
     toast.success(t("manager:result.export.done"))
   }

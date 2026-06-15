@@ -508,6 +508,11 @@ export const deleteResult = (id: string): void => {
 // path interpolation is guarded by assertSafeId so a user-supplied id cannot
 // escape the submissions dir.
 
+// Cached count of submissions still awaiting moderation. Initialized lazily
+// (one-time O(N) scan) and then kept in sync incrementally by save/update/delete
+// so the hot public SUBMIT path no longer re-scans the whole submissions dir.
+let pendingCount: number | null = null
+
 export const saveSubmission = (data: Submission): void => {
   assertSafeId(data.id)
 
@@ -521,6 +526,12 @@ export const saveSubmission = (data: Submission): void => {
     getPath(`submissions/${data.id}.json`),
     JSON.stringify(data, null, 2),
   )
+
+  // A fresh public submission is always "pending". Keep the cached counter in
+  // sync only once it has been initialized (null = not yet primed).
+  if (pendingCount !== null && data.status === "pending") {
+    pendingCount += 1
+  }
 }
 
 export const getSubmissions = (): Submission[] => {
@@ -549,6 +560,18 @@ export const getSubmissions = (): Submission[] => {
         return []
       }
     })
+}
+
+// Count submissions still awaiting moderation. Used by the public SUBMIT path
+// to enforce a hard pending-queue cap so the moderation backlog cannot be
+// flooded. The first call primes the cache with a one-time O(N) disk scan;
+// every later call is O(1) because save/update/delete keep the counter in sync.
+export const countPendingSubmissions = (): number => {
+  if (pendingCount === null) {
+    pendingCount = getSubmissions().filter((s) => s.status === "pending").length
+  }
+
+  return pendingCount
 }
 
 export const getSubmissionsMeta = (): SubmissionMeta[] =>
@@ -591,8 +614,30 @@ export const updateSubmission = (
     throw new Error(`Submission "${id}" not found`)
   }
 
+  const merged = { ...existing, ...data, id }
+
+  // Adjust the cached pending counter by the status TRANSITION (old → new).
+  // saveSubmission below only increments when it writes a fresh "pending"
+  // record (existing record never primes the cache twice), so apply the delta
+  // here against the old status and skip saveSubmission's own bump.
+  if (pendingCount !== null) {
+    const wasPending = existing.status === "pending"
+    const isPending = merged.status === "pending"
+
+    if (wasPending && !isPending) {
+      pendingCount = Math.max(0, pendingCount - 1)
+    } else if (!wasPending && isPending) {
+      pendingCount += 1
+    }
+  }
+
   // Force the id back to the validated one so a Partial can never repoint it.
-  saveSubmission({ ...existing, ...data, id })
+  // Write directly (not via saveSubmission) so its own pending++ does not
+  // double-count on top of the transition delta applied above.
+  fs.writeFileSync(
+    getPath(`submissions/${id}.json`),
+    JSON.stringify(merged, null, 2),
+  )
 }
 
 export const deleteSubmission = (id: string): void => {
@@ -600,9 +645,20 @@ export const deleteSubmission = (id: string): void => {
 
   const filePath = getPath(`submissions/${id}.json`)
 
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath)
+  if (!fs.existsSync(filePath)) {
+    return
   }
+
+  // Decrement the cached counter if the record being removed was pending.
+  if (pendingCount !== null) {
+    const existing = getSubmissionById(id)
+
+    if (existing?.status === "pending") {
+      pendingCount = Math.max(0, pendingCount - 1)
+    }
+  }
+
+  fs.unlinkSync(filePath)
 }
 
 // ---- Catalog (reusable question bank) -------------------------------------

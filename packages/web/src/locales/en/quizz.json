@@ -10,10 +10,12 @@
     "addMediaHint": "Add an image, video or audio to your question",
     "config": {
       "answerTime": "Answer time",
-      "answerTimeHint": "Time players have to answer",
+      "answerTimeHint": "Time players have to answer ({{min}}–{{max}} sec).",
       "questionDisplay": "Question display",
-      "questionDisplayHint": "Duration before answers appear",
-      "timings": "Timings"
+      "questionDisplayHint": "Time before answers appear ({{min}}–{{max}} sec).",
+      "timings": "Timings",
+      "rangeMin": "At least {{min}} seconds.",
+      "rangeMax": "At most {{max}} seconds."
     },
     "deleteQuestion": "Delete question",
     "deleteQuestionConfirm": "Are you sure you want to delete this question?",

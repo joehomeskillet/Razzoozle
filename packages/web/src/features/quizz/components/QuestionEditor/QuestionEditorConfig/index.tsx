@@ -5,6 +5,14 @@ import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor
 import { Clock, Timer } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
+// Mirror the authoritative server bounds (packages/common quizz validator:
+// cooldown 3–15, time 5–120) so the editor clamps before save and never
+// produces a value the backend would reject.
+const COOLDOWN_MIN = 3
+const COOLDOWN_MAX = 15
+const TIME_MIN = 5
+const TIME_MAX = 120
+
 const QuestionEditorConfig = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
@@ -23,11 +31,16 @@ const QuestionEditorConfig = () => {
           />
           <ConfigNumberInput
             value={currentQuestion.cooldown}
-            min={3}
+            min={COOLDOWN_MIN}
+            max={COOLDOWN_MAX}
             onChange={handleUpdateQuestion("cooldown")}
           />
           <ConfigField.Description>
-            {t("quizz:question.config.questionDisplayHint")}
+            {t("quizz:question.config.questionDisplayHint", {
+              defaultValue: "Dauer bevor Antworten erscheinen ({{min}}–{{max}} Sek.).",
+              min: COOLDOWN_MIN,
+              max: COOLDOWN_MAX,
+            })}
           </ConfigField.Description>
         </ConfigField>
 
@@ -38,11 +51,16 @@ const QuestionEditorConfig = () => {
           />
           <ConfigNumberInput
             value={currentQuestion.time}
-            min={5}
+            min={TIME_MIN}
+            max={TIME_MAX}
             onChange={handleUpdateQuestion("time")}
           />
           <ConfigField.Description>
-            {t("quizz:question.config.answerTimeHint")}
+            {t("quizz:question.config.answerTimeHint", {
+              defaultValue: "Zeit, die Spieler zum Antworten haben ({{min}}–{{max}} Sek.).",
+              min: TIME_MIN,
+              max: TIME_MAX,
+            })}
           </ConfigField.Description>
         </ConfigField>
       </ConfigSection>

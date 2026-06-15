@@ -50,7 +50,12 @@
     "noResultsHint": "Modifica il termine di ricerca.",
     "duplicateTitle": "Duplica quiz",
     "duplicateConfirm": "Verrà creata una copia di «{{name}}» con il suffisso «(Copia)».",
-    "duplicateAction": "Duplica"
+    "duplicateAction": "Duplica",
+    "bulkSelected": "{{count}} selezionati",
+    "bulkDelete": "Elimina",
+    "bulkDeleteTitle": "Elimina quiz",
+    "bulkDeleteConfirm": "{{count}} quiz selezionati verranno eliminati definitivamente.",
+    "selectQuiz": "Seleziona «{{name}}»"
   },
   "result": {
     "delete": "Elimina risultato",
@@ -77,7 +82,8 @@
       "correctIncorrect": "Corretta / Errata",
       "incorrect": " Errata",
       "player": "Giocatore",
-      "points": "Punti"
+      "points": "Punti",
+      "rank": "Posizione"
     },
     "playerCount": "{{count}} giocatore/i",
     "timeLimitSuffix": "s limite di tempo",
@@ -123,7 +129,14 @@
     "step2": "Avvia una partita e tocca «Satellite» nell'intestazione del gioco per inserire il codice.",
     "step3": "Il telefono resta il telecomando: avvio, avanti e modalità automatica si controllano da qui.",
     "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager.",
-    "codeLabel": "Codice di abbinamento"
+    "codeLabel": "Codice di abbinamento",
+    "step1Result": "Il grande schermo mostra quindi un codice di 6 cifre come «ABC123».",
+    "step2Enter": "Avvia una partita e tocca «Satellite» in alto nell’intestazione del gioco. Inserisci lì il codice mostrato sul grande schermo.",
+    "step2Result": "Tocca «Abbina» per testare la connessione. Se funziona, compare «Schermo abbinato».",
+    "troubleCode": "«Codice non valido o scaduto»: il codice è errato o troppo vecchio (è valido solo 5 minuti). Ricarica la pagina /display sul grande schermo — mostrerà un codice nuovo — e digitalo esattamente come appare.",
+    "troubleNotConnected": "«Schermo non connesso»: il proiettore o il Pi ha perso la connessione. Controlla che sia ancora online e ricarica la pagina /display. Su una rete propria un firewall può bloccarlo; in tal caso vanno aperte le porte per rahoot.joelduss.xyz.",
+    "troubleGame": "«Partita non trovata» o «Password non valida»: l’abbinamento funziona solo finché la tua partita è in corso e sei connesso come conduttore. Riavvia la partita o accedi di nuovo, poi riprova subito.",
+    "troubleTitle": "Se l’abbinamento non funziona"
   },
   "sim": {
     "button": "Bots (Sim)",
@@ -217,6 +230,16 @@
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Caricamento anteprima …"
+    },
+    "statusFilter": {
+      "approved": "Approvata",
+      "rejected": "Rifiutata",
+      "pending": "In attesa",
+      "label": "Filtra per stato"
+    },
+    "statusEmpty": {
+      "headline": "Nessuna proposta in questa vista",
+      "hint": "Scegli un altro stato per vedere altre proposte."
     }
   },
   "media": {
@@ -252,7 +275,14 @@
       "generated": "Generati",
       "avatars": "Avatar",
       "audio": "Audio"
-    }
+    },
+    "bulk": {
+      "selected": "{{count}} selezionati",
+      "delete": "Elimina",
+      "deleteConfirm": "Eliminare davvero {{count}} file?",
+      "toggle": "Seleziona {{name}}"
+    },
+    "dropHint": "Trascina qui i file per caricarli"
   },
   "catalog": {
     "title": "Catalogo delle domande",
@@ -347,7 +377,26 @@
       "quizCreated": "Quiz creato",
       "failed": "Generazione non riuscita",
       "notConfigured": "Nessun provider di testo configurato. Configura prima l'IA.",
-      "openInEditor": "Apri nell'editor"
+      "openInEditor": "Apri nell'editor",
+      "countValue": "Domande: {{count}}",
+      "help": {
+        "aria": "Aiuto sulle funzioni IA",
+        "text": "«Domanda dal tema» crea una domanda completa con le risposte. «Distrattori» riempie i campi risposta vuoti con opzioni sbagliate plausibili. Vedi sempre prima un’anteprima e decidi con «Applica» o «Scarta»."
+      },
+      "preview": {
+        "label": "Anteprima",
+        "noQuestion": "(Nessuna domanda)",
+        "emptyAnswer": "(vuoto)",
+        "apply": "Applica",
+        "discard": "Scarta"
+      }
+    },
+    "privacy": {
+      "local": "Modello locale sul tuo server. I tuoi input non lasciano mai il server.",
+      "claude": "Invia i tuoi argomenti e testi delle domande ad Anthropic (Claude). Consulta la loro informativa sulla privacy: https://www.anthropic.com/legal/privacy",
+      "openai": "Invia i tuoi argomenti e testi delle domande a OpenAI. Consulta la loro informativa sulla privacy: https://openai.com/policies/privacy-policy",
+      "openrouter": "Invia i tuoi argomenti e testi delle domande a OpenRouter e al modello scelto. Consulta la loro informativa sulla privacy: https://openrouter.ai/privacy",
+      "external": "Invia i tuoi argomenti e testi delle domande a un servizio esterno. Controlla la sua informativa sulla privacy."
     }
   },
   "selectQuizz": {

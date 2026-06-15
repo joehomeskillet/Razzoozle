@@ -31,10 +31,60 @@ interface SubmitInnerProps {
   onReset: () => void
 }
 
+// Stable element ids so a validation failure can scroll+focus the offending
+// field. The name input is owned here; the question/answers fields live in
+// child editor components, so we anchor on their section containers.
+const NAME_INPUT_ID = "submit-submitted-by"
+const NAME_ERROR_ID = "submit-submitted-by-error"
+const QUESTION_SECTION_ID = "submit-section-question"
+const ANSWERS_SECTION_ID = "submit-section-answers"
+
+// Which on-page target a failing validator path maps to. The submission
+// validator parses `{ submittedBy, question }`, so issue paths start with
+// "submittedBy" (the name field) or "question" (the editor sub-fields).
+type InvalidTarget = "name" | "question" | "answers"
+
+// questionValidator's superRefine emits answer-shape errors with path
+// ["question"] (no index) and a known i18n message key, so a path-only check
+// strands them on the question section. Match those messages (and "solutions")
+// so they land on the ANSWERS section where the offending control lives.
+const ANSWER_ERROR_MESSAGES = new Set([
+  "errors:quizz.tooFewAnswers",
+  "errors:quizz.tooManyAnswers",
+  "errors:quizz.noSolution",
+  "errors:quizz.solutionsMin2",
+  "errors:quizz.answerEmpty",
+  "errors:quizz.acceptedAnswersMin",
+])
+
+const resolveInvalidTarget = (
+  path: PropertyKey[],
+  message: string,
+): InvalidTarget => {
+  if (path[0] === "submittedBy") {
+    return "name"
+  }
+
+  // path[0] === "question": answer-shape paths ("answers"/"acceptedAnswers"/
+  // "solutions") AND the message-keyed superRefine answer errors → answers
+  // section. Everything else (question text, slider refine issues) → question.
+  if (
+    path[1] === "answers" ||
+    path[1] === "acceptedAnswers" ||
+    path[1] === "solutions" ||
+    ANSWER_ERROR_MESSAGES.has(message)
+  ) {
+    return "answers"
+  }
+
+  return "question"
+}
+
 interface RevealSectionProps {
   children: ReactNode
   index: number
   label: string
+  id?: string
 }
 
 // Mirrors the console header brand (logo → appTitle → bundled logo).
@@ -59,11 +109,12 @@ const SubmitBrand = () => {
   return <img src={defaultLogo} alt="logo" className="h-7 w-auto shrink-0" />
 }
 
-const RevealSection = ({ children, index, label }: RevealSectionProps) => {
+const RevealSection = ({ children, index, label, id }: RevealSectionProps) => {
   const reducedMotion = useReducedMotion()
 
   return (
     <motion.section
+      id={id}
       initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       transition={
@@ -89,6 +140,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
   const [submittedBy, setSubmittedBy] = useState("")
   const [status, setStatus] = useState<"idle" | "success">("idle")
   const [fieldError, setFieldError] = useState<string | null>(null)
+  const [invalidTarget, setInvalidTarget] = useState<InvalidTarget | null>(null)
   const [awaiting, setAwaiting] = useState(false)
 
   const isSlider = currentQuestion.type === "slider"
@@ -109,14 +161,41 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
     const parsed = submissionValidator.safeParse({ submittedBy, question })
 
     if (!parsed.success) {
-      const message = parsed.error.issues[0].message
-      setFieldError(message)
-      toast.error(t(message))
+      const firstIssue = parsed.error.issues[0]
+      const target = resolveInvalidTarget(firstIssue.path, firstIssue.message)
+
+      setFieldError(firstIssue.message)
+      setInvalidTarget(target)
+
+      // Scroll+focus the first invalid field so the user lands on it. The name
+      // input can take focus directly; the editor sub-fields live in child
+      // components we don't own, so we scroll their section into view and let
+      // focus-within highlight the control inside.
+      if (target === "name") {
+        const nameInput = document.getElementById(NAME_INPUT_ID)
+        nameInput?.scrollIntoView({ behavior: "smooth", block: "center" })
+        nameInput?.focus()
+      } else {
+        const sectionId =
+          target === "answers" ? ANSWERS_SECTION_ID : QUESTION_SECTION_ID
+        const section = document.getElementById(sectionId)
+        section?.scrollIntoView({ behavior: "smooth", block: "center" })
+        // Move focus to the first focusable control inside the section so
+        // keyboard users land on the offending field, not just see it.
+        section
+          ?.querySelector<HTMLElement>(
+            "input, textarea, [contenteditable='true']",
+          )
+          ?.focus()
+      }
+
+      toast.error(t(firstIssue.message))
 
       return
     }
 
     setFieldError(null)
+    setInvalidTarget(null)
     setAwaiting(true)
     socket.emit(EVENTS.MANAGER.SUBMIT_QUESTION, parsed.data)
   }
@@ -125,9 +204,23 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
     setSubmittedBy("")
     setStatus("idle")
     setFieldError(null)
+    setInvalidTarget(null)
     setAwaiting(false)
     onReset()
   }
+
+  // Clear a standing name error as soon as the user edits the field, mirroring
+  // the subject-field pattern in QuizzEditorHeader.
+  const handleNameChange = (value: string) => {
+    setSubmittedBy(value)
+
+    if (invalidTarget === "name") {
+      setFieldError(null)
+      setInvalidTarget(null)
+    }
+  }
+
+  const nameInvalid = invalidTarget === "name"
 
   if (status === "success") {
     return (
@@ -216,21 +309,35 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             <RevealSection index={0} label={t("submit:form.section.name")}>
               <div className="rounded-2xl bg-white p-4 shadow-sm">
-                <label htmlFor="submit-submitted-by" className="sr-only">
+                <label htmlFor={NAME_INPUT_ID} className="sr-only">
                   {t("submit:form.namePlaceholder")}
                 </label>
                 <Input
-                  id="submit-submitted-by"
+                  id={NAME_INPUT_ID}
                   value={submittedBy}
-                  onChange={(e) => setSubmittedBy(e.target.value)}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   placeholder={t("submit:form.namePlaceholder")}
                   className="min-h-11 w-full rounded-xl"
                   autoComplete="name"
+                  aria-invalid={nameInvalid ? true : undefined}
+                  aria-describedby={nameInvalid ? NAME_ERROR_ID : undefined}
                 />
+                {nameInvalid && fieldError && (
+                  <p
+                    id={NAME_ERROR_ID}
+                    className="mt-1.5 text-xs font-semibold text-red-600"
+                  >
+                    {t(fieldError)}
+                  </p>
+                )}
               </div>
             </RevealSection>
 
-            <RevealSection index={1} label={t("submit:form.section.question")}>
+            <RevealSection
+              id={QUESTION_SECTION_ID}
+              index={1}
+              label={t("submit:form.section.question")}
+            >
               <QuestionEditorTitle />
               <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
                 <QuestionEditorType />
@@ -238,7 +345,11 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             </RevealSection>
 
             {!isSlider && !isTypeAnswer && (
-              <RevealSection index={2} label={t("submit:form.section.answers")}>
+              <RevealSection
+                id={ANSWERS_SECTION_ID}
+                index={2}
+                label={t("submit:form.section.answers")}
+              >
                 <div className="w-full overflow-hidden [&>div>div:nth-child(2)]:grid-cols-1 sm:[&>div>div:nth-child(2)]:grid-cols-2">
                   <QuestionEditorAnswers />
                 </div>
@@ -246,7 +357,11 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
             )}
 
             {isTypeAnswer && (
-              <RevealSection index={2} label={t("submit:form.section.answers")}>
+              <RevealSection
+                id={ANSWERS_SECTION_ID}
+                index={2}
+                label={t("submit:form.section.answers")}
+              >
                 <QuestionEditorAcceptedAnswers />
               </RevealSection>
             )}

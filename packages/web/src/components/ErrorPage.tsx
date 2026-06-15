@@ -1,36 +1,46 @@
-import Background from "@razzia/web/components/Background"
-import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
-import { useRouter } from "@tanstack/react-router"
-import { CircleX } from "lucide-react"
+import AnimatedErrorPage from "@razzia/web/components/AnimatedErrorPage"
+import { type ErrorVariant } from "@razzia/web/components/errorQuotes"
+import { useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
+
+// Best-effort extraction of an HTTP status code from a thrown error. Router /
+// fetch errors carry the code under varying property names; we probe the common
+// ones before giving up.
+const extractStatus = (error: unknown): number | undefined => {
+  if (typeof error !== "object" || error === null) return undefined
+  const candidate = error as Record<string, unknown>
+  for (const key of ["status", "statusCode", "httpStatus", "code"]) {
+    const value = candidate[key]
+    if (typeof value === "number" && Number.isFinite(value)) return value
+    if (typeof value === "string") {
+      const parsed = Number.parseInt(value, 10)
+      if (Number.isFinite(parsed)) return parsed
+    }
+  }
+  return undefined
+}
+
+// 4xx → client (the request was off), 5xx → server (we broke), else generic.
+const variantFromError = (error: unknown): ErrorVariant => {
+  const status = extractStatus(error)
+  if (status === undefined) return "generic"
+  if (status >= 400 && status < 500) return "client"
+  if (status >= 500 && status < 600) return "server"
+  return "generic"
+}
 
 const ErrorPage = ({ error }: { error: Error }) => {
   const { t } = useTranslation()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   return (
-    <Background>
-      <Card className="max-w-md gap-4 text-center">
-        <CircleX className="mx-auto size-12 text-red-500" />
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-gray-800">
-            {t("errors:route.title")}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {t("errors:route.description")}
-          </p>
-        </div>
-        {error.message && (
-          <pre className="max-h-60 overflow-auto rounded-md bg-gray-200 px-3 py-2 text-left font-mono text-sm wrap-break-word">
-            {error.message}
-          </pre>
-        )}
-        <Button onClick={() => router.navigate({ to: "/" })}>
-          {t("errors:route.back")}
-        </Button>
-      </Card>
-    </Background>
+    <AnimatedErrorPage
+      variant={variantFromError(error)}
+      title={t("errors:route.title")}
+      description={t("errors:route.description")}
+      detail={error.message || undefined}
+      onBack={() => navigate({ to: "/" })}
+    />
   )
 }
 

@@ -22,6 +22,8 @@ import {
 import {
   CheckCircle2,
   ImagePlus,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Wand2,
   XCircle,
@@ -38,6 +40,47 @@ const providerStatusClass = (configured: boolean) =>
     ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
     : "rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600"
 
+// Static privacy/help copy per provider. Local stays on-host; the cloud
+// providers transmit topic + question text to an external service. Custom
+// openai-compatible providers fall back to a generic external-service notice.
+const PROVIDER_PRIVACY: Record<
+  string,
+  { key: string; defaultValue: string; external: boolean }
+> = {
+  local: {
+    key: "manager:ai.privacy.local",
+    defaultValue:
+      "Lokales Modell auf deinem Server. Deine Eingaben verlassen den Server nicht.",
+    external: false,
+  },
+  claude: {
+    key: "manager:ai.privacy.claude",
+    defaultValue:
+      "Sendet deine Themen und Fragetexte an Anthropic (Claude). Siehe deren Datenschutzerklärung: https://www.anthropic.com/legal/privacy",
+    external: true,
+  },
+  openai: {
+    key: "manager:ai.privacy.openai",
+    defaultValue:
+      "Sendet deine Themen und Fragetexte an OpenAI. Siehe deren Datenschutzerklärung: https://openai.com/policies/privacy-policy",
+    external: true,
+  },
+  openrouter: {
+    key: "manager:ai.privacy.openrouter",
+    defaultValue:
+      "Sendet deine Themen und Fragetexte an OpenRouter und das gewählte Modell. Siehe deren Datenschutzerklärung: https://openrouter.ai/privacy",
+    external: true,
+  },
+}
+
+const providerPrivacy = (id: string) =>
+  PROVIDER_PRIVACY[id] ?? {
+    key: "manager:ai.privacy.external",
+    defaultValue:
+      "Sendet deine Themen und Fragetexte an einen externen Dienst. Prüfe dessen Datenschutzbestimmungen.",
+    external: true,
+  }
+
 const ConfigAI = () => {
   const { socket } = useSocket()
   const { t } = useTranslation()
@@ -45,6 +88,7 @@ const ConfigAI = () => {
   const [keyInput, setKeyInput] = useState("")
   const [testing, setTesting] = useState(false)
   const [lastTest, setLastTest] = useState<"ok" | "failed" | null>(null)
+  const [lastTestMessage, setLastTestMessage] = useState<string | null>(null)
   const [topic, setTopic] = useState("")
   const [count, setCount] = useState(5)
   const [generating, setGenerating] = useState(false)
@@ -57,6 +101,7 @@ const ConfigAI = () => {
   useEffect(() => {
     setKeyInput("")
     setLastTest(null)
+    setLastTestMessage(null)
   }, [settings?.text.activeProvider])
 
   useEvent(
@@ -70,6 +115,7 @@ const ConfigAI = () => {
       (result: AITestResult) => {
         setTesting(false)
         setLastTest(result.ok ? "ok" : "failed")
+        setLastTestMessage(t(result.message))
         if (result.ok) {
           toast.success(t(result.message))
         } else {
@@ -179,6 +225,7 @@ const ConfigAI = () => {
 
   const testProvider = () => {
     setLastTest(null)
+    setLastTestMessage(null)
     setTesting(true)
     socket.emit(EVENTS.AI.TEST_PROVIDER, {})
   }
@@ -282,81 +329,106 @@ const ConfigAI = () => {
           </select>
         </Field>
 
-        {selectedProvider && (
-          <div className="grid gap-3 md:grid-cols-2">
-            <Field label={t("manager:ai.model")}>
-              <Input
-                value={selectedProvider.model}
-                placeholder={t("manager:ai.modelPlaceholder")}
-                onChange={(event) =>
-                  updateTextProvider(selectedProvider.id, {
-                    model: event.target.value,
-                  })
-                }
-                className="w-full"
-              />
-            </Field>
-
-            {selectedProvider.kind === "openai-compatible" && (
-              <Field label={t("manager:ai.baseUrl")}>
-                <Input
-                  value={selectedProvider.baseUrl ?? ""}
-                  placeholder={t("manager:ai.baseUrlPlaceholder")}
-                  onChange={(event) =>
-                    updateTextProvider(selectedProvider.id, {
-                      baseUrl: event.target.value,
-                    })
-                  }
-                  className="w-full"
-                />
-              </Field>
-            )}
-
-            <SubGroup className="space-y-2 md:col-span-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={providerStatusClass(
-                    selectedProvider.keyConfigured,
+        {selectedProvider &&
+          (() => {
+            const privacy = providerPrivacy(selectedProvider.id)
+            return (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div
+                  className={clsx(
+                    "flex items-start gap-2 rounded-lg p-3 text-sm md:col-span-2",
+                    privacy.external
+                      ? "bg-amber-50 text-amber-800 outline-1 -outline-offset-1 outline-amber-200"
+                      : "bg-green-50 text-green-800 outline-1 -outline-offset-1 outline-green-200",
                   )}
                 >
-                  {selectedProvider.keyConfigured
-                    ? t("manager:ai.keyConfigured")
-                    : t("manager:ai.keyNotConfigured")}
-                </span>
-                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
-                  {t(`manager:ai.kind.${selectedProvider.kind}`)}
-                </span>
+                  {privacy.external ? (
+                    <ShieldAlert
+                      className="mt-0.5 size-4 shrink-0"
+                      aria-hidden
+                    />
+                  ) : (
+                    <ShieldCheck
+                      className="mt-0.5 size-4 shrink-0"
+                      aria-hidden
+                    />
+                  )}
+                  <p>{t(privacy.key, { defaultValue: privacy.defaultValue })}</p>
+                </div>
+                <Field label={t("manager:ai.model")}>
+                  <Input
+                    value={selectedProvider.model}
+                    placeholder={t("manager:ai.modelPlaceholder")}
+                    onChange={(event) =>
+                      updateTextProvider(selectedProvider.id, {
+                        model: event.target.value,
+                      })
+                    }
+                    className="w-full"
+                  />
+                </Field>
+
+                {selectedProvider.kind === "openai-compatible" && (
+                  <Field label={t("manager:ai.baseUrl")}>
+                    <Input
+                      value={selectedProvider.baseUrl ?? ""}
+                      placeholder={t("manager:ai.baseUrlPlaceholder")}
+                      onChange={(event) =>
+                        updateTextProvider(selectedProvider.id, {
+                          baseUrl: event.target.value,
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </Field>
+                )}
+
+                <SubGroup className="space-y-2 md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={providerStatusClass(
+                        selectedProvider.keyConfigured,
+                      )}
+                    >
+                      {selectedProvider.keyConfigured
+                        ? t("manager:ai.keyConfigured")
+                        : t("manager:ai.keyNotConfigured")}
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                      {t(`manager:ai.kind.${selectedProvider.kind}`)}
+                    </span>
+                  </div>
+                  <Field label={t("manager:ai.apiKey")}>
+                    <Input
+                      type="password"
+                      value={keyInput}
+                      placeholder={t("manager:ai.apiKeyPlaceholder")}
+                      onChange={(event) => setKeyInput(event.target.value)}
+                      className="w-full"
+                    />
+                  </Field>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => saveKey(selectedProvider.id)}
+                      disabled={!keyInput.trim()}
+                    >
+                      {t("manager:ai.saveKey")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => clearKey(selectedProvider.id)}
+                    >
+                      {t("manager:ai.clearKey")}
+                    </Button>
+                  </div>
+                </SubGroup>
               </div>
-              <Field label={t("manager:ai.apiKey")}>
-                <Input
-                  type="password"
-                  value={keyInput}
-                  placeholder={t("manager:ai.apiKeyPlaceholder")}
-                  onChange={(event) => setKeyInput(event.target.value)}
-                  className="w-full"
-                />
-              </Field>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => saveKey(selectedProvider.id)}
-                  disabled={!keyInput.trim()}
-                >
-                  {t("manager:ai.saveKey")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => clearKey(selectedProvider.id)}
-                >
-                  {t("manager:ai.clearKey")}
-                </Button>
-              </div>
-            </SubGroup>
-          </div>
-        )}
+            )
+          })()}
 
         <div className="space-y-2 border-t border-gray-200 pt-3">
           <div className="flex flex-wrap gap-2">
@@ -377,16 +449,39 @@ const ConfigAI = () => {
               <p className="text-sm text-gray-500">{t("manager:ai.testing")}</p>
             )}
             {!testing && lastTest === "ok" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
-                <CheckCircle2 className="size-3.5" aria-hidden />
-                {t("manager:ai.testOk")}
-              </span>
+              <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 outline-1 -outline-offset-1 outline-green-200">
+                <CheckCircle2
+                  className="mt-0.5 size-5 shrink-0 text-green-600"
+                  aria-hidden
+                />
+                <div>
+                  <p className="text-sm font-semibold text-green-800">
+                    {t("manager:ai.testOk")}
+                  </p>
+                  {lastTestMessage && (
+                    <p className="text-sm text-green-700">{lastTestMessage}</p>
+                  )}
+                </div>
+              </div>
             )}
             {!testing && lastTest === "failed" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
-                <XCircle className="size-3.5" aria-hidden />
-                {t("manager:ai.testFailed")}
-              </span>
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg bg-red-50 p-3 outline-1 -outline-offset-1 outline-red-200"
+              >
+                <XCircle
+                  className="mt-0.5 size-5 shrink-0 text-red-600"
+                  aria-hidden
+                />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">
+                    {t("manager:ai.testFailed")}
+                  </p>
+                  {lastTestMessage && (
+                    <p className="text-sm text-red-700">{lastTestMessage}</p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -420,7 +515,7 @@ const ConfigAI = () => {
         icon={<Sparkles className="size-5" aria-hidden />}
         title={t("manager:ai.generate.quizTitle")}
       >
-        <div className="grid gap-3 md:grid-cols-[1fr_8rem]">
+        <div className="grid gap-3">
           <Field label={t("manager:ai.generate.topic")}>
             <Input
               value={topic}
@@ -430,17 +525,34 @@ const ConfigAI = () => {
               className="w-full"
             />
           </Field>
-          <Field label={t("manager:ai.generate.count")}>
-            <Input
-              type="number"
-              min={AI.QUIZ_MIN_QUESTIONS}
-              max={AI.QUIZ_MAX_QUESTIONS}
-              value={count}
-              onChange={(event) =>
-                setCount(clampQuizCount(Number(event.target.value)))
-              }
-              className="w-full"
-            />
+          <Field
+            label={t("manager:ai.generate.countValue", {
+              defaultValue: "Fragen: {{count}}",
+              count,
+            })}
+            htmlFor="ai-quiz-count"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                id="ai-quiz-count"
+                type="range"
+                min={AI.QUIZ_MIN_QUESTIONS}
+                max={AI.QUIZ_MAX_QUESTIONS}
+                step={1}
+                value={count}
+                aria-valuetext={t("manager:ai.generate.countValue", {
+                  defaultValue: "Fragen: {{count}}",
+                  count,
+                })}
+                onChange={(event) =>
+                  setCount(clampQuizCount(Number(event.target.value)))
+                }
+                className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              />
+              <span className="w-8 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+                {count}
+              </span>
+            </div>
           </Field>
         </div>
 

@@ -7,35 +7,45 @@ import {
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
-import { Sparkles } from "lucide-react"
+import clsx from "clsx"
+import { CircleHelp, Sparkles } from "lucide-react"
 import { useCallback, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+import { motion, useReducedMotion } from "motion/react"
+
+// The AI server returns its payload WITHOUT persisting it (see
+// AI.QUESTION_GENERATED / AI.DISTRACTORS_GENERATED). We hold the result in a
+// local `pendingResult` so the manager can review a small preview and decide
+// to apply ("Übernehmen") or discard ("Verwerfen") before it touches the form.
+type PendingResult =
+  | { kind: "question"; question: Question }
+  | { kind: "distractors"; distractors: string[]; merged: string[] }
 
 const QuestionEditorAIAssist = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { socket } = useSocket()
   const { t } = useTranslation()
+  const reduceMotion = useReducedMotion()
   const [topic, setTopic] = useState("")
   const [genQuestion, setGenQuestion] = useState(false)
   const [genDistractors, setGenDistractors] = useState(false)
+  const [pendingResult, setPendingResult] = useState<PendingResult | null>(null)
 
   useEvent(
     EVENTS.AI.QUESTION_GENERATED,
-    useCallback(
-      ({ question }: { question: Question }) => {
-        updateQuestion(currentIndex, question)
-        setGenQuestion(false)
-        toast.success(t("manager:ai.generate.applied"))
-      },
-      [currentIndex, updateQuestion, t],
-    ),
+    useCallback(({ question }: { question: Question }) => {
+      setPendingResult({ kind: "question", question })
+      setGenQuestion(false)
+    }, []),
   )
 
   useEvent(
     EVENTS.AI.DISTRACTORS_GENERATED,
     useCallback(
       ({ distractors }: { distractors: string[] }) => {
+        // Compute the merge preview here so the manager sees exactly what would
+        // be written; the same shape is committed on "Übernehmen".
         const existing = currentQuestion.answers ?? []
         const merged = [...existing]
         const solutions = Array.isArray(currentQuestion.solutions)
@@ -48,10 +58,7 @@ const QuestionEditorAIAssist = () => {
           i < merged.length && distractorIndex < distractors.length;
           i++
         ) {
-          if (
-            !solutions.includes(i) &&
-            (!merged[i] || !merged[i].trim())
-          ) {
+          if (!solutions.includes(i) && (!merged[i] || !merged[i].trim())) {
             merged[i] = distractors[distractorIndex++]
           }
         }
@@ -60,11 +67,10 @@ const QuestionEditorAIAssist = () => {
           merged.push(distractors[distractorIndex++])
         }
 
-        updateQuestion(currentIndex, { answers: merged })
+        setPendingResult({ kind: "distractors", distractors, merged })
         setGenDistractors(false)
-        toast.success(t("manager:ai.generate.applied"))
       },
-      [currentQuestion, currentIndex, updateQuestion, t],
+      [currentQuestion],
     ),
   )
 
@@ -79,6 +85,25 @@ const QuestionEditorAIAssist = () => {
       [t],
     ),
   )
+
+  const applyPending = () => {
+    if (!pendingResult) {
+      return
+    }
+
+    if (pendingResult.kind === "question") {
+      updateQuestion(currentIndex, pendingResult.question)
+    } else {
+      updateQuestion(currentIndex, { answers: pendingResult.merged })
+    }
+
+    setPendingResult(null)
+    toast.success(t("manager:ai.generate.applied"))
+  }
+
+  const discardPending = () => {
+    setPendingResult(null)
+  }
 
   const generateQuestion = () => {
     const trimmedTopic = topic.trim()
@@ -101,6 +126,7 @@ const QuestionEditorAIAssist = () => {
       ? (currentQuestion.type as (typeof supportedTypes)[number])
       : "choice"
 
+    setPendingResult(null)
     setGenQuestion(true)
     socket.emit(EVENTS.AI.GENERATE_QUESTION, {
       topic: trimmedTopic,
@@ -122,12 +148,28 @@ const QuestionEditorAIAssist = () => {
           : 0) ?? 0
       ] ?? ""
 
+    setPendingResult(null)
     setGenDistractors(true)
     socket.emit(EVENTS.AI.GENERATE_DISTRACTORS, {
       question,
       correct,
     })
   }
+
+  const previewAnswers =
+    pendingResult?.kind === "question"
+      ? (pendingResult.question.answers ?? [])
+      : pendingResult?.kind === "distractors"
+        ? pendingResult.merged
+        : []
+
+  const previewSolutions =
+    pendingResult?.kind === "question" &&
+    Array.isArray(pendingResult.question.solutions)
+      ? pendingResult.question.solutions
+      : Array.isArray(currentQuestion.solutions)
+        ? currentQuestion.solutions
+        : []
 
   return (
     <section className="m-4 space-y-3 rounded-2xl bg-white p-3 shadow-sm outline-1 -outline-offset-1 outline-gray-200">
@@ -136,6 +178,30 @@ const QuestionEditorAIAssist = () => {
         <h2 className="text-sm font-semibold">
           {t("manager:ai.generate.title")}
         </h2>
+
+        {/* Inline "?" help — explains both actions. CSS-only hover/focus tooltip
+            (no portal); the group wraps the trigger so keyboard focus reveals
+            it too. */}
+        <span className="group relative ml-auto inline-flex">
+          <button
+            type="button"
+            className="flex size-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 focus-visible:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            aria-label={t("manager:ai.generate.help.aria", {
+              defaultValue: "Hilfe zu den KI-Funktionen",
+            })}
+          >
+            <CircleHelp className="size-4" aria-hidden />
+          </button>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute top-full right-0 z-20 mt-1 w-60 rounded-lg bg-gray-900 px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+          >
+            {t("manager:ai.generate.help.text", {
+              defaultValue:
+                "„Frage aus Thema“ erzeugt eine komplette Frage mit Antworten. „Distraktoren“ füllt leere Antwortfelder mit plausiblen falschen Optionen. Du siehst immer zuerst eine Vorschau und entscheidest mit „Übernehmen“ oder „Verwerfen“.",
+            })}
+          </span>
+        </span>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -170,6 +236,76 @@ const QuestionEditorAIAssist = () => {
           ? t("manager:ai.generate.generating")
           : t("manager:ai.generate.distractors")}
       </Button>
+
+      {pendingResult ? (
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }
+          }
+          className="space-y-2 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+        >
+          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+            {t("manager:ai.generate.preview.label", {
+              defaultValue: "Vorschau",
+            })}
+          </p>
+
+          {pendingResult.kind === "question" ? (
+            <p className="text-sm font-medium break-words text-gray-800">
+              {pendingResult.question.question?.trim() ||
+                t("manager:ai.generate.preview.noQuestion", {
+                  defaultValue: "(Keine Fragestellung)",
+                })}
+            </p>
+          ) : null}
+
+          {previewAnswers.length > 0 ? (
+            <ul className="space-y-1">
+              {previewAnswers.map((answer, index) => (
+                <li
+                  key={index}
+                  className={clsx(
+                    "flex items-start gap-2 rounded-md px-2 py-1 text-sm break-words",
+                    previewSolutions.includes(index)
+                      ? "bg-green-50 font-medium text-green-800"
+                      : "text-gray-700",
+                  )}
+                >
+                  <span className="text-gray-400 tabular-nums">
+                    {index + 1}.
+                  </span>
+                  <span className="min-w-0">
+                    {answer?.trim() ||
+                      t("manager:ai.generate.preview.emptyAnswer", {
+                        defaultValue: "(leer)",
+                      })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+            <Button type="button" size="sm" onClick={applyPending}>
+              {t("manager:ai.generate.preview.apply", {
+                defaultValue: "Übernehmen",
+              })}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={discardPending}
+            >
+              {t("manager:ai.generate.preview.discard", {
+                defaultValue: "Verwerfen",
+              })}
+            </Button>
+          </div>
+        </motion.div>
+      ) : null}
     </section>
   )
 }

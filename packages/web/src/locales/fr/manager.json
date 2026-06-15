@@ -59,7 +59,12 @@
     "noResultsHint": "Ajuste ton terme de recherche.",
     "duplicateTitle": "Dupliquer le quizz",
     "duplicateConfirm": "Une copie de « {{name}} » sera créée avec le suffixe « (Copie) ».",
-    "duplicateAction": "Dupliquer"
+    "duplicateAction": "Dupliquer",
+    "bulkSelected": "{{count}} sélectionnés",
+    "bulkDelete": "Supprimer",
+    "bulkDeleteTitle": "Supprimer les quizz",
+    "bulkDeleteConfirm": "{{count}} quizz sélectionnés seront définitivement supprimés.",
+    "selectQuiz": "Sélectionner « {{name}} »"
   },
   "result": {
     "aria": {
@@ -91,7 +96,8 @@
       "correctIncorrect": "Correct / Incorrect",
       "incorrect": " Incorrect",
       "player": "Joueur",
-      "points": "Points"
+      "points": "Points",
+      "rank": "Rang"
     },
     "playerCount": "{{count}} joueur(s)",
     "timeLimitSuffix": "s limite",
@@ -132,7 +138,14 @@
     "step1": "Connecte le Pi ou le vidéoprojecteur à internet et ouvre rahoot.joelduss.xyz/display — le grand écran affiche un code d'association.",
     "step2": "Lance une partie et touche «Satellite» dans l'en-tête du jeu pour saisir le code.",
     "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
-    "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager."
+    "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager.",
+    "step1Result": "Le grand écran affiche alors un code à 6 chiffres comme « ABC123 ».",
+    "step2Enter": "Lance une partie et touche « Satellite » en haut de l’en-tête du jeu. Saisis-y le code affiché sur le grand écran.",
+    "step2Result": "Touche « Associer » pour tester la connexion. Si ça marche, « Écran associé » apparaît.",
+    "troubleCode": "« Code invalide ou expiré » : le code est incorrect ou trop ancien (il n’est valable que 5 minutes). Recharge la page /display sur le grand écran — elle affiche alors un nouveau code — et saisis-le exactement comme indiqué.",
+    "troubleNotConnected": "« Écran non connecté » : le vidéoprojecteur ou le Pi a perdu la connexion. Vérifie qu’il est toujours en ligne et recharge la page /display. Sur ton propre réseau, un pare-feu peut bloquer ; il faut alors ouvrir les ports pour rahoot.joelduss.xyz.",
+    "troubleGame": "« Partie introuvable » ou « Mot de passe invalide » : l’association ne fonctionne que tant que ta partie est en cours et que tu es connecté en tant qu’hôte. Relance la partie ou reconnecte-toi, puis réessaie aussitôt.",
+    "troubleTitle": "Si l’association ne fonctionne pas"
   },
   "sim": {
     "button": "Bots (Sim)",
@@ -217,6 +230,16 @@
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Chargement de l’aperçu …"
+    },
+    "statusFilter": {
+      "approved": "Acceptée",
+      "rejected": "Refusée",
+      "pending": "En attente",
+      "label": "Filtrer par statut"
+    },
+    "statusEmpty": {
+      "headline": "Aucune proposition dans cette vue",
+      "hint": "Choisis un autre statut pour voir d’autres propositions."
     }
   },
   "media": {
@@ -252,7 +275,14 @@
       "generated": "Générés",
       "avatars": "Avatars",
       "audio": "Audio"
-    }
+    },
+    "bulk": {
+      "selected": "{{count}} sélectionnés",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer vraiment {{count}} médias ?",
+      "toggle": "Sélectionner {{name}}"
+    },
+    "dropHint": "Déposez les fichiers ici pour les envoyer"
   },
   "catalog": {
     "title": "Catalogue de questions",
@@ -347,7 +377,26 @@
       "quizCreated": "Quizz créé",
       "failed": "Échec de la génération",
       "notConfigured": "Aucun fournisseur de texte configuré. Configure d'abord l'IA.",
-      "openInEditor": "Ouvrir dans l'éditeur"
+      "openInEditor": "Ouvrir dans l'éditeur",
+      "countValue": "Questions : {{count}}",
+      "help": {
+        "aria": "Aide sur les fonctions IA",
+        "text": "« Question à partir du sujet » crée une question complète avec ses réponses. « Distracteurs » remplit les champs de réponse vides avec des options fausses plausibles. Tu vois toujours d’abord un aperçu et tu décides avec « Appliquer » ou « Ignorer »."
+      },
+      "preview": {
+        "label": "Aperçu",
+        "noQuestion": "(Pas de question)",
+        "emptyAnswer": "(vide)",
+        "apply": "Appliquer",
+        "discard": "Ignorer"
+      }
+    },
+    "privacy": {
+      "local": "Modèle local sur ton serveur. Tes saisies ne quittent jamais le serveur.",
+      "claude": "Envoie tes sujets et tes textes de questions à Anthropic (Claude). Consulte leur politique de confidentialité : https://www.anthropic.com/legal/privacy",
+      "openai": "Envoie tes sujets et tes textes de questions à OpenAI. Consulte leur politique de confidentialité : https://openai.com/policies/privacy-policy",
+      "openrouter": "Envoie tes sujets et tes textes de questions à OpenRouter et au modèle choisi. Consulte leur politique de confidentialité : https://openrouter.ai/privacy",
+      "external": "Envoie tes sujets et tes textes de questions à un service externe. Vérifie sa politique de confidentialité."
     }
   },
   "selectQuizz": {

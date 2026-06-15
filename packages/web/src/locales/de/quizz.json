@@ -10,10 +10,12 @@
     "addMediaHint": "Füge ein Bild, Video oder Audio zu deiner Frage hinzu",
     "config": {
       "answerTime": "Antwortzeit",
-      "answerTimeHint": "Zeit, die Spieler zum Antworten haben",
+      "answerTimeHint": "Zeit, die Spieler zum Antworten haben ({{min}}–{{max}} Sek.).",
       "questionDisplay": "Frageanzeige",
-      "questionDisplayHint": "Dauer bevor Antworten erscheinen",
-      "timings": "Zeiten"
+      "questionDisplayHint": "Dauer bevor Antworten erscheinen ({{min}}–{{max}} Sek.).",
+      "timings": "Zeiten",
+      "rangeMin": "Mindestens {{min}} Sekunden.",
+      "rangeMax": "Höchstens {{max}} Sekunden."
     },
     "deleteQuestion": "Frage löschen",
     "deleteQuestionConfirm": "Möchtest du diese Frage wirklich löschen?",

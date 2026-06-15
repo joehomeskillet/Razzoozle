@@ -59,7 +59,12 @@
     "noResultsHint": "Passe deinen Suchbegriff an.",
     "duplicateTitle": "Quiz duplizieren",
     "duplicateConfirm": "Eine Kopie von „{{name}}“ wird mit dem Zusatz „(Kopie)“ erstellt.",
-    "duplicateAction": "Duplizieren"
+    "duplicateAction": "Duplizieren",
+    "bulkSelected": "{{count}} ausgewählt",
+    "bulkDelete": "Löschen",
+    "bulkDeleteTitle": "Quizze löschen",
+    "bulkDeleteConfirm": "{{count}} ausgewählte Quizze werden dauerhaft gelöscht.",
+    "selectQuiz": "„{{name}}“ auswählen"
   },
   "result": {
     "delete": "Ergebnis löschen",
@@ -86,7 +91,8 @@
       "correctIncorrect": "Richtig / Falsch",
       "incorrect": " Falsch",
       "player": "Spieler",
-      "points": "Punkte"
+      "points": "Punkte",
+      "rank": "Rang"
     },
     "playerCount": "{{count}} Spieler",
     "timeLimitSuffix": "s Zeitlimit",
@@ -154,7 +160,14 @@
       "generated": "Generiert",
       "avatars": "Avatare",
       "audio": "Audio"
-    }
+    },
+    "bulk": {
+      "selected": "{{count}} ausgewählt",
+      "delete": "Löschen",
+      "deleteConfirm": "{{count}} Medien wirklich löschen?",
+      "toggle": "{{name}} auswählen"
+    },
+    "dropHint": "Dateien hier ablegen zum Hochladen"
   },
   "catalog": {
     "title": "Fragenkatalog",
@@ -249,7 +262,26 @@
       "quizCreated": "Quiz erstellt",
       "failed": "Generierung fehlgeschlagen",
       "notConfigured": "Kein Text-Anbieter konfiguriert. Richte zuerst die KI ein.",
-      "openInEditor": "Im Editor öffnen"
+      "openInEditor": "Im Editor öffnen",
+      "countValue": "Fragen: {{count}}",
+      "help": {
+        "aria": "Hilfe zu den KI-Funktionen",
+        "text": "„Frage aus Thema“ erzeugt eine komplette Frage mit Antworten. „Distraktoren“ füllt leere Antwortfelder mit plausiblen falschen Optionen. Du siehst immer zuerst eine Vorschau und entscheidest mit „Übernehmen“ oder „Verwerfen“."
+      },
+      "preview": {
+        "label": "Vorschau",
+        "noQuestion": "(Keine Fragestellung)",
+        "emptyAnswer": "(leer)",
+        "apply": "Übernehmen",
+        "discard": "Verwerfen"
+      }
+    },
+    "privacy": {
+      "local": "Lokales Modell auf deinem Server. Deine Eingaben verlassen den Server nicht.",
+      "claude": "Sendet deine Themen und Fragetexte an Anthropic (Claude). Siehe deren Datenschutzerklärung: https://www.anthropic.com/legal/privacy",
+      "openai": "Sendet deine Themen und Fragetexte an OpenAI. Siehe deren Datenschutzerklärung: https://openai.com/policies/privacy-policy",
+      "openrouter": "Sendet deine Themen und Fragetexte an OpenRouter und das gewählte Modell. Siehe deren Datenschutzerklärung: https://openrouter.ai/privacy",
+      "external": "Sendet deine Themen und Fragetexte an einen externen Dienst. Prüfe dessen Datenschutzbestimmungen."
     }
   },
   "satellite": {
@@ -263,7 +295,14 @@
     "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne rahoot.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
     "step2": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit», um den Code einzugeben.",
     "step3": "Dein Handy bleibt die Fernbedienung: Starten, Weiter und Auto-Modus steuerst du von hier.",
-    "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort."
+    "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort.",
+    "step1Result": "Du siehst dann auf dem grossen Bildschirm einen 6-stelligen Code wie «ABC123».",
+    "step2Enter": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit». Gib dort den Code ein, der auf dem grossen Bildschirm steht.",
+    "step2Result": "Tippe auf «Koppeln», um die Verbindung zu testen. Klappt es, erscheint «Anzeige gekoppelt».",
+    "troubleCode": "«Ungültiger oder abgelaufener Code»: Der Code stimmt nicht oder ist zu alt (er gilt nur 5 Minuten). Lade die /display-Seite auf dem grossen Bildschirm neu – sie zeigt dann einen frischen Code – und tippe ihn genau so ab, wie er dort steht.",
+    "troubleNotConnected": "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für rahoot.joelduss.xyz freigegeben sein.",
+    "troubleGame": "«Spiel nicht gefunden» oder «Passwort ungültig»: Die Kopplung geht nur, solange dein Spiel läuft und du als Spielleiter angemeldet bist. Starte das Spiel neu oder melde dich erneut an und versuche es dann gleich noch einmal.",
+    "troubleTitle": "Wenn die Kopplung nicht klappt"
   },
   "sim": {
     "button": "Bots (Sim)",
@@ -348,6 +387,16 @@
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Vorschau wird geladen …"
+    },
+    "statusFilter": {
+      "approved": "Angenommen",
+      "rejected": "Abgelehnt",
+      "pending": "Offen",
+      "label": "Nach Status filtern"
+    },
+    "statusEmpty": {
+      "headline": "Keine Vorschläge in dieser Ansicht",
+      "hint": "Wähle einen anderen Status, um weitere Vorschläge zu sehen."
     }
   },
   "selectQuizz": {

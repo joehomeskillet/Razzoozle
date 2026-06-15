@@ -10,10 +10,12 @@
     "addMediaHint": "Ajoutez une image, une vidéo ou un audio à votre question",
     "config": {
       "answerTime": "Temps de réponse",
-      "answerTimeHint": "Temps accordé aux joueurs pour répondre",
+      "answerTimeHint": "Temps dont disposent les joueurs pour répondre ({{min}}–{{max}} s).",
       "questionDisplay": "Affichage de la question",
-      "questionDisplayHint": "Délai avant l'apparition des réponses",
-      "timings": "Durées"
+      "questionDisplayHint": "Délai avant l’apparition des réponses ({{min}}–{{max}} s).",
+      "timings": "Durées",
+      "rangeMin": "Au moins {{min}} secondes.",
+      "rangeMax": "Au plus {{max}} secondes."
     },
     "deleteQuestion": "Supprimer la question",
     "deleteQuestionConfirm": "Êtes-vous sûr de vouloir supprimer cette question ?",

@@ -11,6 +11,7 @@ import type { SocketContext } from "@razzia/socket/handlers/types"
 import { generateImage } from "@razzia/socket/services/comfyui"
 import {
   assertSafeId,
+  countPendingSubmissions,
   getAISettings,
   getGameConfig,
   getQuizzById,
@@ -27,15 +28,26 @@ import {
 } from "@razzia/socket/services/config"
 import manager, { emitConfig } from "@razzia/socket/services/manager"
 import {
+  checkGlobalSubmissionRate,
+  checkImageGenHourlyLimit,
   checkRateLimit,
-  clearRateLimit,
+  PENDING_QUEUE_CAP,
 } from "@razzia/socket/services/submissionRateLimit"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { z } from "zod"
 
-// AI-gen is a public, unauthenticated GPU op (venue submit). The ONLY DoS guard
-// is this hard per-socket throttle: at most 1 request / 30 s AND at most 5 over
-// the socket's lifetime. State is keyed by socket.id and GC'd on disconnect.
+// The durable client identity from the handshake — same value manager auth keys
+// on (see services/manager.ts#getClientId). Falls back to socket.id when absent
+// so a client that never sends a clientId is still throttled (fail-safe: a
+// missing id must never mean "unlimited").
+const getClientId = (socket: SocketContext["socket"]): string =>
+  (socket.handshake.auth.clientId as string | undefined) ?? socket.id
+
+// AI-gen is a public, unauthenticated GPU op (venue submit). Guards: a short
+// cooldown (1 / 30 s) AND a per-client lifetime cap, PLUS a durable hourly cap
+// (services/submissionRateLimit#checkImageGenHourlyLimit). State is keyed by the
+// DURABLE clientId (not socket.id) so a reconnect does NOT reset the cooldown,
+// and entries self-expire by time window rather than on disconnect.
 interface ImageGenState {
   last: number
   total: number
@@ -45,6 +57,18 @@ const imageGenStore = new Map<string, ImageGenState>()
 const IMAGE_GEN_COOLDOWN_MS = 30_000
 const IMAGE_GEN_MAX_PER_SOCKET = 5
 const PROMPT_MAX_LEN = 300
+
+// Lazy GC for the per-client cooldown/lifetime store: drop entries whose last
+// activity is older than the hourly window so the Map cannot grow unbounded
+// across many distinct clients (no per-socket leak, no disconnect cleanup).
+const IMAGE_GEN_GC_MS = 3_600_000
+const sweepImageGenStore = (now: number): void => {
+  for (const [key, state] of imageGenStore) {
+    if (now - state.last > IMAGE_GEN_GC_MS) {
+      imageGenStore.delete(key)
+    }
+  }
+}
 
 // Reject prompts that look like leaked secrets (best-effort, intentionally
 // simple — the real guard is that prompts never touch secret stores).
@@ -108,7 +132,22 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
   // superRefine), assertSafeId on the persisted id. solutions are stored but
   // never broadcast to clients.
   socket.on(EVENTS.MANAGER.SUBMIT_QUESTION, (payload: unknown) => {
-    if (!checkRateLimit(socket.id)) {
+    // Coarse server-wide ceiling FIRST: it has no per-user side effect, whereas
+    // the per-client check below increments the user's counter. Checking the
+    // global ceiling first means tripping it never burns a legit user's personal
+    // 3/60s budget (defense-in-depth against many distinct clients flooding).
+    if (!checkGlobalSubmissionRate()) {
+      socket.emit(
+        EVENTS.MANAGER.SUBMISSION_ERROR,
+        "errors:submission.rateLimited",
+      )
+
+      return
+    }
+
+    // Per-client throttle keyed by the DURABLE clientId so a reconnect does NOT
+    // reset the quota (socket.id changed on every reconnect → trivial bypass).
+    if (!checkRateLimit(getClientId(socket))) {
       socket.emit(
         EVENTS.MANAGER.SUBMISSION_ERROR,
         "errors:submission.rateLimited",
@@ -126,6 +165,23 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
       )
 
       return
+    }
+
+    // Hard stop: if the moderation backlog is already at the cap, reject cleanly
+    // instead of persisting. Fail-safe — if the count cannot be read we allow the
+    // save (a counter bug must not lock out legitimate users). The cap is the
+    // only place we hard-block on uncertainty-free, observed state.
+    try {
+      if (countPendingSubmissions() >= PENDING_QUEUE_CAP) {
+        socket.emit(
+          EVENTS.MANAGER.SUBMISSION_ERROR,
+          "errors:submission.queueFull",
+        )
+
+        return
+      }
+    } catch {
+      // Could not read the queue — allow on uncertainty.
     }
 
     // normalizeFilename always produces SAFE_ID-conformant output; saveSubmission
@@ -177,9 +233,17 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         return
       }
 
+      // Keyed by the DURABLE clientId (not socket.id) so a reconnect does NOT
+      // reset the cooldown / lifetime cap.
+      const clientId = getClientId(socket)
       const now = Date.now()
-      const state = imageGenStore.get(socket.id)
+      sweepImageGenStore(now)
+      const state = imageGenStore.get(clientId)
 
+      // Cooldown + per-client lifetime cap FIRST (these reject WITHOUT touching
+      // the hourly counter). Burning hourly credits inside the 30s cooldown let
+      // a spamming client self-lock the 10/h cap with zero successful gens, so
+      // the durable hourly credit is consumed only on the dispatch path below.
       if (state) {
         if (now - state.last < IMAGE_GEN_COOLDOWN_MS) {
           socket.emit(
@@ -198,11 +262,26 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
 
           return
         }
+      }
 
+      // Durable hourly cap (GPU is expensive): keyed by clientId, survives
+      // reconnect, self-expires after the hour. Consumed only here, on the path
+      // that will actually dispatch, so a cooldown-rejected request never spends
+      // an hourly credit.
+      if (!checkImageGenHourlyLimit(clientId)) {
+        socket.emit(
+          EVENTS.MANAGER.IMAGE_ERROR,
+          "errors:submission.imageLimitReached",
+        )
+
+        return
+      }
+
+      if (state) {
         state.last = now
         state.total += 1
       } else {
-        imageGenStore.set(socket.id, { last: now, total: 1 })
+        imageGenStore.set(clientId, { last: now, total: 1 })
       }
 
       try {
@@ -373,10 +452,11 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     }),
   )
 
-  socket.on("disconnect", () => {
-    clearRateLimit(socket.id)
-    imageGenStore.delete(socket.id)
-  })
+  // NB: rate-limit / image-gen state is deliberately NOT cleared on disconnect.
+  // Clearing it on disconnect was the reconnect-bypass (disconnect+reconnect
+  // reset every quota). State is keyed by the durable clientId and self-expires
+  // by time window (see services/submissionRateLimit + sweepImageGenStore), so
+  // there is no per-socket leak and the quota survives a reconnect.
 
   socket.on(EVENTS.MANAGER.LOGOUT, () => {
     manager.logout(socket)

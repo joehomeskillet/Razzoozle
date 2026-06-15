@@ -46,12 +46,20 @@
   },
   "theme": {
     "imageTooLarge": "L'image est trop volumineuse (max. 8 Mo)",
-    "uploadFailed": "Échec de l'envoi de l'image"
+    "uploadFailed": "Échec de l'envoi de l'image",
+    "saveFailed": "Impossible d’enregistrer le design"
   },
   "submission": {
     "rateLimited": "Tu as envoyé trop de questions. Attends un instant.",
     "notFound": "Proposition non trouvée.",
-    "quizzNotFound": "Quiz non trouvé."
+    "quizzNotFound": "Quiz non trouvé.",
+    "queueFull": "Il y a actuellement trop de propositions en modération. Réessaie plus tard.",
+    "imageLimitReached": "Tu as atteint la limite horaire d’images IA. Réessaie plus tard.",
+    "imageRateLimited": "Tu génères des images IA trop vite. Patiente un instant.",
+    "imageGenFailed": "L’image IA n’a pas pu être créée. Réessaie plus tard.",
+    "promptInvalid": "La description de l’image est invalide. Modifie-la.",
+    "promptRejected": "La description de l’image a été refusée. Reformule-la.",
+    "saveFailed": "La proposition n’a pas pu être enregistrée. Réessaie plus tard."
   },
   "display": {
     "invalidCode": "Code d'association invalide ou expiré",
@@ -74,5 +82,9 @@
     "testFailed": "Impossible de se connecter au fournisseur d'IA.",
     "saveFailed": "Impossible d'enregistrer les paramètres IA.",
     "unsupported": "Cette fonction n'est pas prise en charge par le fournisseur sélectionné."
+  },
+  "back": "Retour à l'accueil",
+  "detail": {
+    "toggle": "Détails techniques"
   }
 }

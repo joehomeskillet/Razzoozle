@@ -1,5 +1,7 @@
 import Input from "@razzia/web/components/Input"
-import { useEffect, useState } from "react"
+import clsx from "clsx"
+import { useEffect, useId, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   value: number
@@ -9,36 +11,65 @@ interface Props {
 }
 
 const ConfigNumberInput = ({ value, min, max, onChange }: Props) => {
+  const { t } = useTranslation()
+  const hintId = useId()
   const [input, setInput] = useState(String(value))
 
   useEffect(() => {
     setInput(String(value))
   }, [value])
 
+  const num = Number(input)
+  const hasValue = input !== "" && !isNaN(num)
+  const belowMin = hasValue && min !== undefined && num < min
+  const aboveMax = hasValue && max !== undefined && num > max
+  const isInvalid = belowMin || aboveMax
+
+  const hint = belowMin
+    ? t("quizz:question.config.rangeMin", {
+        defaultValue: "Mindestens {{min}} Sekunden.",
+        min,
+      })
+    : aboveMax
+      ? t("quizz:question.config.rangeMax", {
+          defaultValue: "Höchstens {{max}} Sekunden.",
+          max,
+        })
+      : null
+
   const handleChange = (raw: string) => {
     setInput(raw)
 
-    const num = Number(raw)
+    const parsed = Number(raw)
 
-    if (raw === "" || isNaN(num)) {
+    if (raw === "" || isNaN(parsed)) {
       return
     }
 
-    const clamped = Math.min(max ?? num, Math.max(min ?? num, num))
+    const clamped = Math.min(max ?? parsed, Math.max(min ?? parsed, parsed))
     onChange(clamped)
   }
 
   return (
-    <Input
-      variant="sm"
-      type="number"
-      min={min}
-      max={max}
-      value={input}
-      onChange={(e) => handleChange(e.target.value)}
-      onBlur={() => setInput(String(value))}
-      className="w-full"
-    />
+    <div className="flex flex-col gap-1">
+      <Input
+        variant="sm"
+        type="number"
+        min={min}
+        max={max}
+        value={input}
+        aria-invalid={isInvalid}
+        aria-describedby={hint ? hintId : undefined}
+        onChange={(e) => handleChange(e.target.value)}
+        onBlur={() => setInput(String(value))}
+        className={clsx("w-full", isInvalid && "border-red-400")}
+      />
+      {hint && (
+        <p id={hintId} role="alert" className="text-xs font-medium text-red-500">
+          {hint}
+        </p>
+      )}
+    </div>
   )
 }
 

@@ -21,6 +21,15 @@ const resources = Object.entries(modules).reduce<Resource>(
   {},
 )
 
+const baseLang = (lng?: string) => (lng ?? "en").split("-")[0]
+
+const syncHtmlLang = (lng?: string) => {
+  if (typeof document === "undefined") {
+    return
+  }
+  document.documentElement.lang = baseLang(lng)
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -34,5 +43,10 @@ i18n
     },
     interpolation: { escapeValue: false },
   })
+
+syncHtmlLang(i18n.resolvedLanguage ?? i18n.language)
+i18n.on("languageChanged", (lng) => {
+  syncHtmlLang(lng)
+})
 
 export default i18n

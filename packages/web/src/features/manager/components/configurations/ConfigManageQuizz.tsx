@@ -22,9 +22,10 @@ import {
   SquarePen,
   Trash2,
   Upload,
+  X,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { type ChangeEvent, useMemo, useRef, useState } from "react"
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -52,6 +53,9 @@ const ConfigManageQuizz = () => {
     id: string
     subject: string
   } | null>(null)
+  // Multi-select state keyed by quiz id (indices would break under filter/sort).
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   // Live search + sort applied to both the active and archived sections.
   const { activeQuizz, archivedQuizz, hasMatches } = useMemo(() => {
@@ -91,6 +95,53 @@ const ConfigManageQuizz = () => {
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
     toast.error(t(message))
   })
+
+  const clearSelection = () => setSelected(new Set())
+
+  // Drop ids that are no longer SELECTABLE — only active (non-archived) rows
+  // carry a checkbox, so prune against that set (not the full list). This means
+  // archiving a selected quiz removes it from the selection, preventing a later
+  // bulk-delete from silently deleting a now-hidden archived quiz.
+  useEffect(() => {
+    setSelected((prev) => {
+      if (prev.size === 0) {
+        return prev
+      }
+
+      const selectable = new Set(
+        quizz.filter((q) => !q.archived).map((q) => q.id),
+      )
+      const next = new Set([...prev].filter((id) => selectable.has(id)))
+
+      return next.size === prev.size ? prev : next
+    })
+  }, [quizz])
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+
+      return next
+    })
+  }
+
+  const handleBulkDelete = () => {
+    selected.forEach((id) => {
+      socket.emit(EVENTS.QUIZZ.DELETE, id)
+    })
+    toast.success(t("manager:quizz.deleted"))
+    clearSelection()
+    setBulkDeleteOpen(false)
+  }
+
+  const selectionCount = selected.size
+  const selectionActive = selectionCount > 0
 
   const handleDelete = () => {
     if (!pendingDelete) {
@@ -236,6 +287,47 @@ const ConfigManageQuizz = () => {
         </div>
       )}
 
+      {selectionActive && (
+        <div
+          role="toolbar"
+          aria-label={t("manager:quizz.bulkSelected", {
+            count: selectionCount,
+            defaultValue: "{{count}} ausgewählt",
+          })}
+          className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl bg-gray-50 p-2 pl-3"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={clearSelection}
+              aria-label={t("common:cancel")}
+              title={t("common:cancel")}
+              className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <X className="size-5" aria-hidden />
+            </button>
+            <span className="min-w-0 truncate text-sm font-semibold text-gray-700">
+              {t("manager:quizz.bulkSelected", {
+                count: selectionCount,
+                defaultValue: "{{count}} ausgewählt",
+              })}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="danger"
+            className="rounded-lg"
+            onClick={() => setBulkDeleteOpen(true)}
+            classNameContent="min-w-0 gap-1"
+          >
+            <Trash2 className="size-4 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate">
+              {t("manager:quizz.bulkDelete", { defaultValue: "Löschen" })}
+            </span>
+          </Button>
+        </div>
+      )}
+
       {quizz.length === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col justify-center">
           <EmptyState
@@ -284,48 +376,65 @@ const ConfigManageQuizz = () => {
                     }
               }
             >
-              <ListRow
-                title={q.subject}
-                meta={
-                  q.questionCount != null
-                    ? t("manager:catalog.count", { count: q.questionCount })
-                    : undefined
-                }
-                actions={[
-                  {
-                    key: "edit",
-                    icon: SquarePen,
-                    label: t("manager:quizz.edit", { name: q.subject }),
-                    onClick: () => {
-                      void navigate({
-                        to: "/manager/quizz/$quizzId",
-                        params: { quizzId: q.id },
-                      })
+              <div className="flex items-center gap-2">
+                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100">
+                  <span className="sr-only">
+                    {t("manager:quizz.selectQuiz", {
+                      name: q.subject,
+                      defaultValue: '„{{name}}“ auswählen',
+                    })}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(q.id)}
+                    onChange={() => toggleSelect(q.id)}
+                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                </label>
+                <ListRow
+                  title={q.subject}
+                  className="min-w-0 flex-1"
+                  meta={
+                    q.questionCount != null
+                      ? t("manager:catalog.count", { count: q.questionCount })
+                      : undefined
+                  }
+                  actions={[
+                    {
+                      key: "edit",
+                      icon: SquarePen,
+                      label: t("manager:quizz.edit", { name: q.subject }),
+                      onClick: () => {
+                        void navigate({
+                          to: "/manager/quizz/$quizzId",
+                          params: { quizzId: q.id },
+                        })
+                      },
                     },
-                  },
-                  {
-                    key: "duplicate",
-                    icon: Copy,
-                    label: t("manager:quizz.duplicate", { name: q.subject }),
-                    onClick: () =>
-                      setPendingDuplicate({ id: q.id, subject: q.subject }),
-                  },
-                  {
-                    key: "archive",
-                    icon: Archive,
-                    label: t("manager:quizz.archive"),
-                    onClick: () => handleArchived(q.id, true),
-                  },
-                  {
-                    key: "delete",
-                    icon: Trash2,
-                    label: t("manager:quizz.delete"),
-                    destructive: true,
-                    onClick: () =>
-                      setPendingDelete({ id: q.id, subject: q.subject }),
-                  },
-                ]}
-              />
+                    {
+                      key: "duplicate",
+                      icon: Copy,
+                      label: t("manager:quizz.duplicate", { name: q.subject }),
+                      onClick: () =>
+                        setPendingDuplicate({ id: q.id, subject: q.subject }),
+                    },
+                    {
+                      key: "archive",
+                      icon: Archive,
+                      label: t("manager:quizz.archive"),
+                      onClick: () => handleArchived(q.id, true),
+                    },
+                    {
+                      key: "delete",
+                      icon: Trash2,
+                      label: t("manager:quizz.delete"),
+                      destructive: true,
+                      onClick: () =>
+                        setPendingDelete({ id: q.id, subject: q.subject }),
+                    },
+                  ]}
+                />
+              </div>
             </motion.div>
           ))}
 
@@ -434,6 +543,21 @@ const ConfigManageQuizz = () => {
         })}
         confirmLabel={t("common:delete")}
         onConfirm={handleDelete}
+      />
+
+      <AlertDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={t("manager:quizz.bulkDeleteTitle", {
+          defaultValue: "Quizze löschen",
+        })}
+        description={t("manager:quizz.bulkDeleteConfirm", {
+          count: selectionCount,
+          defaultValue:
+            "{{count}} ausgewählte Quizze werden dauerhaft gelöscht.",
+        })}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleBulkDelete}
       />
 
       <AlertDialog

@@ -59,7 +59,12 @@
     "noResultsHint": "Ajusta tu término de búsqueda.",
     "duplicateTitle": "Duplicar cuestionario",
     "duplicateConfirm": "Se creará una copia de «{{name}}» con el sufijo «(Copia)».",
-    "duplicateAction": "Duplicar"
+    "duplicateAction": "Duplicar",
+    "bulkSelected": "{{count}} seleccionados",
+    "bulkDelete": "Eliminar",
+    "bulkDeleteTitle": "Eliminar cuestionarios",
+    "bulkDeleteConfirm": "Se eliminarán permanentemente {{count}} cuestionarios seleccionados.",
+    "selectQuiz": "Seleccionar «{{name}}»"
   },
   "result": {
     "aria": {
@@ -96,7 +101,8 @@
       "correctIncorrect": "Correcta / Incorrecta",
       "incorrect": " Incorrecta",
       "player": "Jugador",
-      "points": "Puntos"
+      "points": "Puntos",
+      "rank": "Puesto"
     },
     "playerCount": "{{count}} jugador(es)",
     "timeLimitSuffix": "s de tiempo límite",
@@ -132,7 +138,14 @@
     "step1": "Conecta la Pi o el proyector a internet y abre rahoot.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
     "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
     "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
-    "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager."
+    "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager.",
+    "step1Result": "Entonces la pantalla grande muestra un código de 6 dígitos como «ABC123».",
+    "step2Enter": "Inicia una partida y toca «Satélite» en la parte superior del encabezado del juego. Introduce ahí el código que aparece en la pantalla grande.",
+    "step2Result": "Toca «Vincular» para probar la conexión. Si funciona, aparece «Pantalla vinculada».",
+    "troubleCode": "«Código inválido o caducado»: el código es incorrecto o demasiado antiguo (solo es válido 5 minutos). Recarga la página /display en la pantalla grande —mostrará un código nuevo— y escríbelo exactamente como aparece.",
+    "troubleNotConnected": "«Pantalla no conectada»: el proyector o la Pi perdió la conexión. Comprueba que siga conectado a internet y recarga la página /display. En una red propia, un firewall puede bloquearlo; entonces deben abrirse los puertos para rahoot.joelduss.xyz.",
+    "troubleGame": "«Partida no encontrada» o «Contraseña inválida»: la vinculación solo funciona mientras tu partida está en curso y tú estás conectado como anfitrión. Reinicia la partida o vuelve a iniciar sesión y prueba de nuevo enseguida.",
+    "troubleTitle": "Si la vinculación no funciona"
   },
   "sim": {
     "button": "Bots (Sim)",
@@ -217,6 +230,16 @@
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Cargando vista previa …"
+    },
+    "statusFilter": {
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "pending": "Pendiente",
+      "label": "Filtrar por estado"
+    },
+    "statusEmpty": {
+      "headline": "No hay sugerencias en esta vista",
+      "hint": "Elige otro estado para ver más sugerencias."
     }
   },
   "media": {
@@ -252,7 +275,14 @@
       "generated": "Generados",
       "avatars": "Avatares",
       "audio": "Audio"
-    }
+    },
+    "bulk": {
+      "selected": "{{count}} seleccionados",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar realmente {{count}} archivos?",
+      "toggle": "Seleccionar {{name}}"
+    },
+    "dropHint": "Suelta los archivos aquí para subirlos"
   },
   "catalog": {
     "title": "Catálogo de preguntas",
@@ -347,7 +377,26 @@
       "quizCreated": "Cuestionario creado",
       "failed": "Error en la generación",
       "notConfigured": "No hay proveedor de texto configurado. Configura primero la IA.",
-      "openInEditor": "Abrir en el editor"
+      "openInEditor": "Abrir en el editor",
+      "countValue": "Preguntas: {{count}}",
+      "help": {
+        "aria": "Ayuda sobre las funciones de IA",
+        "text": "«Pregunta a partir del tema» crea una pregunta completa con respuestas. «Distractores» rellena los campos de respuesta vacíos con opciones falsas plausibles. Siempre ves primero una vista previa y decides con «Aplicar» o «Descartar»."
+      },
+      "preview": {
+        "label": "Vista previa",
+        "noQuestion": "(Sin pregunta)",
+        "emptyAnswer": "(vacío)",
+        "apply": "Aplicar",
+        "discard": "Descartar"
+      }
+    },
+    "privacy": {
+      "local": "Modelo local en tu servidor. Tus entradas nunca salen del servidor.",
+      "claude": "Envía tus temas y textos de preguntas a Anthropic (Claude). Consulta su política de privacidad: https://www.anthropic.com/legal/privacy",
+      "openai": "Envía tus temas y textos de preguntas a OpenAI. Consulta su política de privacidad: https://openai.com/policies/privacy-policy",
+      "openrouter": "Envía tus temas y textos de preguntas a OpenRouter y al modelo seleccionado. Consulta su política de privacidad: https://openrouter.ai/privacy",
+      "external": "Envía tus temas y textos de preguntas a un servicio externo. Revisa su política de privacidad."
     }
   },
   "selectQuizz": {
