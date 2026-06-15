@@ -4,6 +4,7 @@ import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
+import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
   useSocket,
@@ -396,10 +397,13 @@ const Answers = ({
           </div>
         )}
 
-        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
-          <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
-            <span className="translate-y-1 text-sm">{t("game:hud.time")}</span>
-            <span className="tabular-nums">{cooldown}</span>
+        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
+          {/* Kahoot-style circular countdown. `cooldown` is the remaining
+              seconds (driven by the normal-mode broadcast OR the low-latency
+              server-clock path above); `time` is the question's total time. */}
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm">{t("game:hud.time")}</span>
+            <CircularTimer seconds={cooldown} total={time} size={72} />
           </div>
           <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
             <span className="translate-y-1 text-sm">

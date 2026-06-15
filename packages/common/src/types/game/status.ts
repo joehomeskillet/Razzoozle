@@ -30,6 +30,9 @@ export interface CommonStatusDataMap {
   SHOW_PREPARED: { totalAnswers: number; questionNumber: number }
   SHOW_QUESTION: {
     question: string
+    // Answer TEXTS only (no solutions/correct — anti-cheat). Display-only for the
+    // presenter big-screen tiles; absent for slider questions (no discrete answers).
+    answers?: string[]
     media?: QuestionMedia
     cooldown: number
     submittedBy?: string

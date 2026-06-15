@@ -1,5 +1,16 @@
-<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="rz-mark-title">
+  <title id="rz-mark-title">Razzoozle</title>
+  <!-- Squircle tile: 1E0B3B plate, then frosted-violet overlay (mirrors glass-fill). -->
+  <rect x="2" y="2" width="60" height="60" rx="20" fill="#1E0B3B"/>
+  <rect x="2" y="2" width="60" height="60" rx="20" fill="#8B5CF6" fill-opacity="0.18"/>
+  <!-- 1px top-inner highlight stroke = the glass edge (mirrors glass-highlight). -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="19.5" fill="none"
+        stroke="#F5F3FF" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Heavy R: cyan under-stroke (nudged +1px) then near-white face. -->
   <g>
-    <path d="M12.872 73C12.168 73 11.56 72.744 11.048 72.232C10.536 71.72 10.28 71.112 10.28 70.408V8.392C10.28 7.688 10.536 7.08 11.048 6.568C11.56 6.056 12.168 5.8 12.872 5.8H41.288C50.504 5.8 57.704 7.88 62.888 12.04C68.072 16.2 70.664 21.896 70.664 29.128C70.664 33.416 69.672 37.16 67.688 40.36C65.768 43.496 63.304 46.024 60.296 47.944L72.104 69.832C72.296 70.216 72.392 70.568 72.392 70.888C72.392 71.464 72.168 71.976 71.72 72.424C71.336 72.808 70.856 73 70.28 73H50.6C49.32 73 48.36 72.68 47.72 72.04C47.08 71.4 46.664 70.856 46.472 70.408L38.216 52.072H34.28V70.408C34.28 71.112 34.024 71.72 33.512 72.232C33 72.744 32.392 73 31.688 73H12.872ZM34.28 33.832H41.288C42.76 33.832 43.848 33.352 44.552 32.392C45.32 31.368 45.704 30.216 45.704 28.936C45.704 27.656 45.352 26.472 44.648 25.384C44.008 24.232 42.888 23.656 41.288 23.656H34.28V33.832Z" fill="#FF9900"/>
+    <path transform="translate(0,1)" fill="#22D3EE" fill-opacity="0.9"
+          d="M19 16 h17 a13 13 0 0 1 4 25 l9 11 h-13 l-7-9 h-1 v9 h-12 z M31 27 h-12 v7 h12 a3.5 3.5 0 0 0 0-7 z"/>
+    <path fill="#F5F3FF"
+          d="M19 16 h17 a13 13 0 0 1 4 25 l9 11 h-13 l-7-9 h-1 v9 h-12 z M31 27 h-12 v7 h12 a3.5 3.5 0 0 0 0-7 z"/>
   </g>
 </svg>

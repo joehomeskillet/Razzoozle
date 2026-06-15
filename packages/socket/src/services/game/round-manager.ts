@@ -530,6 +530,12 @@ export class RoundManager {
       question: question.question,
       media: imageMedia,
       cooldown: question.cooldown,
+      // Answer TEXTS only, so the presenter big-screen can render the Kahoot-style
+      // colored answer tiles during the question phase. Slider questions have no
+      // discrete answers (only min/max), so we omit them there — mirrors the
+      // SELECT_ANSWER guard below. Carries NO solutions/correct (anti-cheat):
+      // identical to what SELECT_ANSWER already broadcasts to all clients next.
+      ...(question.type === "slider" ? {} : { answers: question.answers }),
       // Display-only attribution; undefined for non-submitted questions. Carries
       // NO correct-answer data — solutions stay server-side (anti-cheat).
       submittedBy: question.submittedBy,
