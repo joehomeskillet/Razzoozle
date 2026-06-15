@@ -1,6 +1,5 @@
 import { EVENTS } from "@razzia/common/constants"
 import { submissionValidator } from "@razzia/common/validators/submission"
-import Background from "@razzia/web/components/Background"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
 import LanguageSwitcher from "@razzia/web/components/LanguageSwitcher"
@@ -19,6 +18,7 @@ import {
   QuizzEditorProvider,
   useQuizzEditor,
 } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
+import QuestionMarksField from "@razzia/web/features/submission/QuestionMarksField"
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import { CheckCircle2 } from "lucide-react"
@@ -137,7 +137,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
         transition={
           reducedMotion ? undefined : { duration: 0.28, ease: "easeOut" }
         }
-        className="z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 rounded-2xl bg-white p-8 text-center shadow-lg"
+        className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-5 rounded-3xl bg-white p-8 text-center shadow-2xl"
       >
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, scale: 0.7 }}
@@ -175,7 +175,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
       transition={
         reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }
       }
-      className="z-10 mx-auto flex max-h-[88svh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg xl:max-w-5xl"
+      className="relative z-10 flex max-h-[92svh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl"
     >
       {/* Branded header band — same treatment as the /manager/config console. */}
       <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
@@ -284,11 +284,30 @@ const SubmitPage = () => {
   const [formKey, setFormKey] = useState(0)
 
   return (
-    <Background>
+    <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden p-3 sm:p-5">
+      {/* Purple brand gradient + scrim behind everything (mirrors Background's
+          `plain` recipe), so the surface's own header band carries the brand. */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: "var(--bg-scrim)" }}
+        />
+      </div>
+
+      {/* Playful field of popping "?" glyphs — sits behind the form surface. */}
+      <QuestionMarksField />
+
       <QuizzEditorProvider key={formKey}>
         <SubmitInner onReset={() => setFormKey((k) => k + 1)} />
       </QuizzEditorProvider>
-    </Background>
+    </div>
   )
 }
 
