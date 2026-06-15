@@ -2,6 +2,7 @@ import type { MergedAchievement } from "@razzia/common/achievements"
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import Avatar from "@razzia/web/components/Avatar"
 import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
+import AnimatedPoints from "@razzia/web/features/game/components/AnimatedPoints"
 import Fire from "@razzia/web/features/game/components/icons/Fire"
 import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
 import {
@@ -13,37 +14,12 @@ import {
   loadAchievementMeta,
 } from "@razzia/web/features/game/utils/achievements"
 import type { AchievementTier } from "@razzia/web/features/game/utils/achievements"
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
   data: ManagerStatusDataMap["SHOW_LEADERBOARD"]
-}
-
-// ─── Animated point counter ───────────────────────────────────────────────────
-
-const AnimatedPoints = ({ from, to }: { from: number; to: number }) => {
-  const spring = useSpring(from, { stiffness: 1000, damping: 30 })
-  const display = useTransform(spring, (value) => Math.round(value))
-  const [displayValue, setDisplayValue] = useState(from)
-
-  useEffect(() => {
-    spring.set(to)
-    const unsubscribe = display.on("change", (latest) => {
-      setDisplayValue(latest)
-    })
-
-    return unsubscribe
-  }, [to, spring, display])
-
-  return <span className="tabular-nums drop-shadow-md">{displayValue}</span>
 }
 
 // ─── Streak badge ─────────────────────────────────────────────────────────────

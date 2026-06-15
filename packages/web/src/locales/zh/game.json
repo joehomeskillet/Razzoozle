@@ -146,7 +146,9 @@
     "enterName": "你的名字",
     "next": "下一题",
     "finish": "完成",
-    "rank": "第 {{rank}} 名"
+    "rank": "第 {{rank}} 名",
+    "replay": "再玩一次",
+    "trophies": "我的奖杯"
   },
   "reward": {
     "bonusPoints": "奖励",

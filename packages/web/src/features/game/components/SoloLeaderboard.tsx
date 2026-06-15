@@ -6,6 +6,7 @@ import type { SoloScoreEntry } from "@razzia/common/types/game"
 import Avatar from "@razzia/web/components/Avatar"
 import clsx from "clsx"
 import { Trophy } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -27,14 +28,16 @@ const formatDate = (iso: string): string => {
   }
 }
 
-const MEDAL_COLORS = [
-  "text-yellow-300",   // 1st
-  "text-slate-300",    // 2nd
-  "text-amber-600",    // 3rd
+// Top-3 medal gradients (gold / silver / bronze) for the rank badge.
+const MEDAL_GRADIENT = [
+  "from-yellow-400 to-yellow-600", // 1st
+  "from-gray-300 to-gray-500",     // 2nd
+  "from-amber-600 to-amber-800",   // 3rd
 ]
 
 const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
   const { t } = useTranslation()
+  const reduced = useReducedMotion() ?? false
 
   // Sort descending by score (the server should return them sorted, but be safe).
   const sorted = [...leaderboard].sort((a, b) => b.score - a.score)
@@ -63,8 +66,9 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
         <ol className="flex flex-col gap-2">
           {sorted.map((entry, i) => {
             const isMe = i === myIndex
+            const isMedal = i < 3
             return (
-              <li
+              <motion.li
                 key={`${entry.playerName}-${entry.answeredAt}-${i}`}
                 className={clsx(
                   "flex items-center gap-3 rounded-xl px-4 py-3 text-white",
@@ -73,15 +77,28 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                     : "bg-black/30",
                 )}
                 aria-current={isMe ? "true" : undefined}
+                animate={
+                  isMe && !reduced
+                    ? { scale: [1, 1.02, 1] }
+                    : undefined
+                }
+                transition={
+                  isMe && !reduced
+                    ? { repeat: Infinity, duration: 2, ease: "easeInOut" }
+                    : undefined
+                }
               >
                 {/* Rank */}
                 <span
                   className={clsx(
-                    "w-8 shrink-0 text-center text-xl font-bold",
-                    i < 3 ? MEDAL_COLORS[i] : "text-white/60",
+                    "shrink-0 text-center font-bold",
+                    isMedal
+                      ? "flex size-8 items-center justify-center rounded-full bg-gradient-to-br text-base text-white shadow"
+                      : "w-8 text-xl text-white/60",
+                    isMedal && MEDAL_GRADIENT[i],
                   )}
                 >
-                  {i + 1}.
+                  {i + 1}{isMedal ? "" : "."}
                 </span>
 
                 {/* Avatar */}
@@ -104,7 +121,7 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                 <span className="shrink-0 rounded-lg bg-black/40 px-3 py-1 font-mono text-lg font-bold tabular-nums">
                   {entry.score}
                 </span>
-              </li>
+              </motion.li>
             )
           })}
         </ol>

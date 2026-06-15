@@ -146,7 +146,9 @@
     "enterName": "Dein Name",
     "next": "Weiter",
     "finish": "Beenden",
-    "rank": "Platz {{rank}}"
+    "rank": "Platz {{rank}}",
+    "replay": "Nochmal spielen",
+    "trophies": "Meine Trophäen"
   },
   "reward": {
     "bonusPoints": "Bonus",

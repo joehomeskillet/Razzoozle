@@ -13,8 +13,9 @@
  *   POST /api/quizz/:id/solo-score
  */
 import React from "react"
-import { motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import background from "@razzia/web/assets/background.webp"
+import AnimatedPoints from "@razzia/web/features/game/components/AnimatedPoints"
 import SoloAnswers from "@razzia/web/features/game/components/states/SoloAnswers"
 import SoloLeaderboard from "@razzia/web/features/game/components/SoloLeaderboard"
 import { useSoloStore } from "@razzia/web/features/game/stores/solo"
@@ -37,6 +38,13 @@ interface SoloShellProps {
   playerName: string
   totalPoints: number
   bgSrc: string
+  /**
+   * Key for the AnimatePresence transition around the content slot. Keyed on
+   * the question index (NOT the phase) so SoloAnswers stays mounted across the
+   * answering→result transition — remounting it would restart its countdown
+   * and answer-music lifecycle.
+   */
+  phaseKey: number
 }
 
 const SoloShell = ({
@@ -46,7 +54,10 @@ const SoloShell = ({
   playerName,
   totalPoints,
   bgSrc,
+  phaseKey,
 }: SoloShellProps) => {
+  const reduced = useReducedMotion() ?? false
+
   return (
     <section className="relative flex min-h-dvh">
       <div className="fixed top-0 left-0 h-full w-full">
@@ -66,9 +77,15 @@ const SoloShell = ({
         <div className="flex w-full items-center justify-between gap-2 p-4">
           <div className="flex shrink-0 justify-start">
             {questionCurrent != null && questionTotal != null && (
-              <div className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black">
+              <motion.div
+                key={questionCurrent}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black"
+              >
                 {`${questionCurrent} / ${questionTotal}`}
-              </div>
+              </motion.div>
             )}
           </div>
           <div className="shrink-0 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white/80">
@@ -77,8 +94,23 @@ const SoloShell = ({
         </div>
 
         {/* Content */}
-        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-24 lg:pb-4">
-          {children}
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-4 pt-2 pb-24 lg:pb-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={phaseKey}
+              className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden"
+              initial={
+                reduced ? { opacity: 0 } : { opacity: 0, y: 20 }
+              }
+              animate={
+                reduced ? { opacity: 1 } : { opacity: 1, y: 0 }
+              }
+              exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Bottom bar: player name + points */}
@@ -106,6 +138,7 @@ interface NameScreenProps {
 const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
   const [name, setName] = useState("")
   const { t } = useTranslation()
+  const reduced = useReducedMotion() ?? false
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
@@ -122,10 +155,14 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="relative z-10 mx-auto w-full max-w-md px-6"
+        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }}
+        animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={
+          reduced
+            ? { duration: 0.3 }
+            : { type: "spring", stiffness: 300, damping: 30 }
+        }
+        className="relative z-10 mx-auto w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] rounded-3xl p-10"
       >
         <h1 className="mb-2 text-center text-4xl font-bold text-white drop-shadow-lg">
           {subject}
@@ -149,11 +186,11 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
             placeholder={t("game:solo.enterName")}
             autoFocus
             autoComplete="off"
-            className="w-full rounded-xl border-2 border-white/40 bg-white/20 px-5 py-4 text-xl font-semibold text-white placeholder-white/50 outline-none focus:border-white"
+            className="w-full bg-white/5 border-2 border-white/20 text-white placeholder-white/40 focus:bg-white/20 focus:border-primary focus:ring-4 focus:ring-primary/30 transition-all duration-300 rounded-2xl px-6 py-4 text-2xl text-center font-bold outline-none"
           />
           <button
             type="submit"
-            className="bg-primary rounded-xl px-8 py-4 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-transform"
+            className="bg-gradient-to-r from-primary to-purple-500 hover:brightness-110 shadow-lg shadow-primary/40 hover:scale-105 active:scale-95 transition-all rounded-2xl px-8 py-4 text-2xl font-black text-white"
           >
             {t("game:startGame")}
           </button>
@@ -185,6 +222,7 @@ const FinishedScreen = ({
   onReplay,
 }: FinishedScreenProps) => {
   const { t } = useTranslation()
+  const reduced = useReducedMotion() ?? false
 
   return (
     <section className="relative flex min-h-dvh flex-col">
@@ -202,9 +240,13 @@ const FinishedScreen = ({
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto px-4 py-10">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+          animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+          transition={
+            reduced
+              ? { duration: 0.3 }
+              : { type: "spring", stiffness: 300, damping: 25 }
+          }
           className="text-center"
         >
           <h1 className="text-4xl font-bold text-white drop-shadow-lg">
@@ -214,9 +256,10 @@ const FinishedScreen = ({
             {t("game:solo.yourScore")}
           </p>
           <div className="mt-3 inline-block rounded-2xl bg-black/40 px-8 py-3">
-            <span className="text-4xl font-bold text-white tabular-nums">
-              {totalPoints}
-            </span>
+            <AnimatedPoints
+              to={totalPoints}
+              className="text-6xl font-black tabular-nums text-yellow-300 drop-shadow-[0_2px_8px_rgba(250,204,21,0.5)]"
+            />
             <span className="ml-2 text-lg text-white/60">pts</span>
           </div>
         </motion.div>
@@ -231,13 +274,19 @@ const FinishedScreen = ({
           <button
             type="button"
             onClick={onReplay}
-            className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-transform"
+            className="bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/40 rounded-full px-10 py-3 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-all"
           >
-            {t("game:solo.play")}
+            {t("game:solo.replay")}
           </button>
           <a
+            href="/trophies"
+            className="flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl hover:bg-white/20 transition-colors"
+          >
+            {t("game:solo.trophies")}
+          </a>
+          <a
             href="/"
-            className="flex items-center justify-center rounded-xl border-2 border-white/40 px-8 py-3 text-xl font-bold text-white hover:bg-white/10 transition-colors"
+            className="flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl hover:bg-white/20 transition-colors"
           >
             {t("common:exit")}
           </a>
@@ -257,6 +306,7 @@ const SoloPlayPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { updatePoints } = usePlayerStore()
+  const reduced = useReducedMotion() ?? false
 
   const {
     phase,
@@ -386,6 +436,7 @@ const SoloPlayPage = () => {
       questionTotal={questions.length}
       playerName={playerName}
       totalPoints={totalPoints}
+      phaseKey={currentIndex}
     >
       {phase === "question" && (
         <div className="flex flex-1 flex-col">
@@ -404,17 +455,39 @@ const SoloPlayPage = () => {
 
           {/* Continue button shown once result is ready */}
           {phase === "result" && (
-            <div className="mx-auto mb-6 mt-4 flex w-full max-w-7xl justify-center px-2 lg:max-w-[85vw]">
+            <motion.div
+              initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                ...(reduced ? {} : { scale: [1, 1.04, 1] }),
+              }}
+              transition={
+                reduced
+                  ? { delay: 0.4, duration: 0.3 }
+                  : {
+                      opacity: { delay: 0.4, duration: 0.3 },
+                      y: { delay: 0.4, duration: 0.3 },
+                      scale: {
+                        delay: 0.4,
+                        duration: 1.6,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
+                    }
+              }
+              className="mx-auto mb-6 mt-4 flex w-full max-w-7xl justify-center px-2 lg:max-w-[85vw]"
+            >
               <button
                 type="button"
                 onClick={nextQuestion}
-                className="bg-primary rounded-xl px-10 py-4 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-transform"
+                className="bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/40 rounded-2xl px-12 py-5 text-2xl font-black text-white hover:brightness-110 active:scale-95 transition-all"
               >
                 {currentIndex + 1 < questions.length
                   ? t("game:solo.next")
                   : t("game:solo.finish")}
               </button>
-            </div>
+            </motion.div>
           )}
         </div>
       )}

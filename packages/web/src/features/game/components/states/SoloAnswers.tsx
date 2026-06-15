@@ -17,6 +17,8 @@ import {
   ANSWERS_LABELS,
 } from "@razzia/web/features/game/utils/answers"
 import { SFX } from "@razzia/web/features/game/utils/constants"
+import { fireCenterSalvo } from "@razzia/web/features/game/utils/confetti"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -30,6 +32,7 @@ interface Props {
 const SoloAnswers = ({ quizzId, question }: Props) => {
   const { submitAnswer, lastResult, phase } = useSoloStore()
   const { t } = useTranslation()
+  const reduced = useReducedMotion() ?? false
 
   const [selectedKey, setSelectedKey] = useState<number | null>(null)
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
@@ -39,6 +42,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [sfxPop] = useSound(SFX.ANSWERS.SOUND, { volume: 0.1 })
+  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, { volume: 0.2 })
+  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, { volume: 0.3 })
   const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
     volume: 0.2,
     interrupt: true,
@@ -84,6 +89,27 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   useEffect(() => {
     if (submitted) stopMusic()
   }, [submitted, stopMusic])
+
+  // On the result transition: fire the chime + confetti once. Guarded by a ref
+  // so a re-render (or the AnimatePresence float) cannot replay them.
+  const resultFiredRef = useRef(false)
+  useEffect(() => {
+    if (phase !== "result" || lastResult === null || resultFiredRef.current) {
+      return
+    }
+    resultFiredRef.current = true
+
+    // Ensure the answer music is silenced before the chime plays.
+    stopMusic()
+
+    if (lastResult.correct) {
+      sfxCorrect()
+      fireCenterSalvo(reduced)
+    } else {
+      sfxWrong()
+    }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, lastResult])
 
   // Auto-submit when time runs out (if not already submitted)
   const hasAutoSubmittedRef = useRef(false)
@@ -160,8 +186,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const resultReady = phase === "result" && lastResult !== null
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-between">
-      <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
+    <div className="flex h-full flex-1 flex-col justify-between">
+      <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           {question.question}
         </h2>
@@ -227,21 +253,51 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               {t("quizz:multipleSelect.selectHint")}
             </p>
             <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-              {(question.answers ?? []).map((answer, key) => (
-                <AnswerButton
-                  key={key}
-                  className={clsx(
-                    ANSWERS_COLORS[key],
-                    submitted && "opacity-50",
-                    multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
-                  )}
-                  label={ANSWERS_LABELS[key]}
-                  disabled={submitted}
-                  onClick={handleMultiAnswer(key)}
-                >
-                  {answer}
-                </AnswerButton>
-              ))}
+              {(question.answers ?? []).map((answer, key) => {
+                const isPicked = multiSelectedKeys.includes(key)
+                return (
+                  <motion.div
+                    key={key}
+                    initial={
+                      reduced ? { opacity: 0 } : { opacity: 0, y: 50 }
+                    }
+                    animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    transition={
+                      reduced
+                        ? { duration: 0.2 }
+                        : {
+                            delay: key * 0.1,
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 24,
+                          }
+                    }
+                    className="flex"
+                  >
+                    <AnswerButton
+                      className={clsx(
+                        "w-full",
+                        ANSWERS_COLORS[key],
+                        !reduced &&
+                          !submitted &&
+                          "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
+                        submitted && "opacity-50",
+                        isPicked && "ring-4 ring-white/80",
+                        resultReady &&
+                          isPicked &&
+                          (lastResult.correct
+                            ? "!bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                            : "!bg-red-500"),
+                      )}
+                      label={ANSWERS_LABELS[key]}
+                      disabled={submitted}
+                      onClick={handleMultiAnswer(key)}
+                    >
+                      {answer}
+                    </AnswerButton>
+                  </motion.div>
+                )
+              })}
             </div>
             <button
               type="button"
@@ -288,24 +344,72 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
           </div>
         ) : (
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-            {(question.answers ?? []).map((answer, key) => (
-              <AnswerButton
-                key={key}
-                className={clsx(
-                  ANSWERS_COLORS[key],
-                  submitted &&
-                    selectedKey !== null &&
-                    selectedKey !== key &&
-                    "opacity-40",
-                  submitted && selectedKey === key && "ring-4 ring-white/80",
-                )}
-                label={ANSWERS_LABELS[key]}
-                disabled={submitted}
-                onClick={handleAnswer(key)}
-              >
-                {answer}
-              </AnswerButton>
-            ))}
+            {(question.answers ?? []).map((answer, key) => {
+              const isPicked = selectedKey === key
+              return (
+                <motion.div
+                  key={key}
+                  initial={
+                    reduced ? { opacity: 0 } : { opacity: 0, y: 50 }
+                  }
+                  animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  transition={
+                    reduced
+                      ? { duration: 0.2 }
+                      : {
+                          delay: key * 0.1,
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 24,
+                        }
+                  }
+                  className="relative flex"
+                >
+                  <AnswerButton
+                    className={clsx(
+                      "w-full",
+                      ANSWERS_COLORS[key],
+                      !reduced &&
+                        !submitted &&
+                        "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
+                      submitted &&
+                        selectedKey !== null &&
+                        selectedKey !== key &&
+                        "opacity-40",
+                      submitted && isPicked && "ring-4 ring-white/80",
+                      resultReady &&
+                        isPicked &&
+                        (lastResult.correct
+                          ? "!bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                          : "!bg-red-500"),
+                    )}
+                    label={ANSWERS_LABELS[key]}
+                    disabled={submitted}
+                    onClick={handleAnswer(key)}
+                  >
+                    {answer}
+                  </AnswerButton>
+
+                  {/* Floating +points on a correct pick */}
+                  <AnimatePresence>
+                    {resultReady &&
+                      isPicked &&
+                      lastResult.correct &&
+                      lastResult.points > 0 && (
+                        <motion.span
+                          key="floating-points"
+                          initial={{ opacity: 0, y: 0 }}
+                          animate={{ opacity: [0, 1, 0], y: -60 }}
+                          transition={{ duration: 1.2 }}
+                          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-black text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
+                        >
+                          +{lastResult.points}
+                        </motion.span>
+                      )}
+                  </AnimatePresence>
+                </motion.div>
+              )
+            })}
           </div>
         )}
       </div>

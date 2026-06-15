@@ -10,10 +10,10 @@ import {
   ACHIEVEMENT_META,
   highestTier,
 } from "@razzia/web/features/game/utils/achievements"
+import { fireTierConfetti } from "@razzia/web/features/game/utils/confetti"
 import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
-import confetti from "canvas-confetti"
 import { useReducedMotion } from "motion/react"
 
 interface Props {
@@ -34,47 +34,6 @@ function persistAchievements(ids: string[]): void {
     localStorage.setItem(LS_KEY, JSON.stringify(stored))
   } catch {
     // localStorage unavailable — silently skip
-  }
-}
-
-/** Fire a confetti burst. Two-sided stream for diamant tier. */
-function fireConfetti(
-  achievementIds: string[],
-  reduced: boolean,
-): void {
-  if (reduced || achievementIds.length === 0) return
-
-  const tiers = achievementIds
-    .map((id) => ACHIEVEMENT_META[id]?.tier)
-    .filter((t): t is NonNullable<typeof t> => t !== undefined)
-
-  const top = highestTier(tiers)
-  if (!top) return
-
-  if (top === "diamant") {
-    // Two-sided stream
-    const baseOpts = {
-      particleCount: 80,
-      spread: 70,
-      startVelocity: 55,
-      ticks: 200,
-      colors: ["#22d3ee", "#a855f7", "#ec4899", "#f0f", "#0ff"],
-    }
-    void confetti({ ...baseOpts, origin: { x: 0, y: 0.6 }, angle: 60 })
-    void confetti({ ...baseOpts, origin: { x: 1, y: 0.6 }, angle: 120 })
-  } else {
-    const colorMap: Record<string, string[]> = {
-      bronze: ["#d97706", "#f59e0b", "#fcd34d"],
-      silver: ["#94a3b8", "#cbd5e1", "#e2e8f0"],
-      gold: ["#eab308", "#facc15", "#fef08a"],
-    }
-    void confetti({
-      particleCount: 60,
-      spread: 60,
-      origin: { x: 0.5, y: 0.65 },
-      colors: colorMap[top] ?? [],
-      ticks: 160,
-    })
   }
 }
 
@@ -138,7 +97,7 @@ const Result = ({
 
     // Small delay so the popup animation starts first
     const timer = setTimeout(() => {
-      fireConfetti(ids, reduced)
+      fireTierConfetti(ids, reduced)
     }, 300)
 
     return () => clearTimeout(timer)
