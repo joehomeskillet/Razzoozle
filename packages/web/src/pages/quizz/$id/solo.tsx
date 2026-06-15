@@ -59,7 +59,7 @@ const SoloShell = ({
   const reduced = useReducedMotion() ?? false
 
   return (
-    <section className="relative flex min-h-dvh">
+    <section className="relative flex h-dvh overflow-hidden">
       <div className="fixed top-0 left-0 h-full w-full">
         <img
           className="pointer-events-none h-full w-full object-cover select-none"
@@ -94,7 +94,7 @@ const SoloShell = ({
         </div>
 
         {/* Content */}
-        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-4 pt-2 pb-24 lg:pb-4">
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-4 pt-2 pb-3">
           <AnimatePresence mode="wait">
             <motion.div
               key={phaseKey}

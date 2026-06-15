@@ -36,7 +36,7 @@ const Question = ({
           <img
             alt={question}
             src={media.url}
-            className="max-h-60 w-auto rounded-md sm:max-h-[40vh]"
+            className="max-h-[26vh] w-auto rounded-md"
           />
         )}
       </div>
