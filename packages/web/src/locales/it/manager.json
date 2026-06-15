@@ -469,6 +469,8 @@
     "name": "Nome",
     "description": "Descrizione",
     "threshold": "Soglia",
+    "bonus": "Punti bonus",
+    "bonusHint": "Punti extra allo sblocco",
     "save": "Salva",
     "saved": "Salvato",
     "reset": "Ripristina valori predefiniti",

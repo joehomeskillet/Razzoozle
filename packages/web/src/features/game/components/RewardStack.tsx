@@ -25,7 +25,7 @@ import {
   type AchievementMeta,
 } from "@razzia/web/features/game/utils/achievements"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { Flame, Star, Zap } from "lucide-react"
+import { Coins, Flame, Star, Zap } from "lucide-react"
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -47,6 +47,8 @@ interface Props {
   firstCorrect?: boolean
   achievementIds: string[]
   visible: boolean
+  // Sum of achievement bonus points unlocked this round (already in myPoints).
+  bonusPoints?: number
 }
 
 const RewardStack = ({
@@ -56,6 +58,7 @@ const RewardStack = ({
   firstCorrect,
   achievementIds,
   visible,
+  bonusPoints,
 }: Props) => {
   const reduced = useReducedMotion() ?? false
   const { t } = useTranslation()
@@ -103,6 +106,18 @@ const RewardStack = ({
     }
 
     // Bonus rows
+    // Achievement bonus points (Wave B) — shown when the round unlocked badges
+    // that carry a manager-configured bonus. Flows through the same RewardRow.
+    if (bonusPoints && bonusPoints > 0) {
+      result.push({
+        id: "bonus_achievement",
+        icon: <Coins className="size-6 text-white" aria-hidden="true" />,
+        title: t("game:reward.bonusPoints"),
+        value: `+${bonusPoints}`,
+        accent: "var(--color-primary)",
+        durationMs: 4000,
+      })
+    }
     if (streakBonus && streak) {
       result.push({
         id: "bonus_streak",
@@ -137,7 +152,15 @@ const RewardStack = ({
     return result
     // mergedList drives server overrides; t is stable
     // oxlint-disable-next-line
-  }, [achievementIds, mergedList, streak, streakBonus, bonus, firstCorrect])
+  }, [
+    achievementIds,
+    mergedList,
+    streak,
+    streakBonus,
+    bonus,
+    firstCorrect,
+    bonusPoints,
+  ])
 
   // Dismissed ids — a row stays dismissed even after `items` re-populates
   // (loadAchievementMeta resolves asynchronously, which would otherwise resurrect

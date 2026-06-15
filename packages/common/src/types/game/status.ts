@@ -69,6 +69,9 @@ export interface CommonStatusDataMap {
     firstCorrect?: boolean
     poll?: boolean
     achievements?: string[]
+    // Sum of per-achievement bonus points unlocked this round (already folded
+    // into `myPoints`). Present only when > 0; absent/0 in the shipped default.
+    bonusPoints?: number
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }

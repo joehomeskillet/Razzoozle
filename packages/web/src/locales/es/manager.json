@@ -469,6 +469,8 @@
     "name": "Nombre",
     "description": "Descripción",
     "threshold": "Umbral",
+    "bonus": "Puntos de bonificación",
+    "bonusHint": "Puntos adicionales al desbloquear",
     "save": "Guardar",
     "saved": "Guardado",
     "reset": "Restablecer valores predeterminados",

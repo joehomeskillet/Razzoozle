@@ -461,6 +461,8 @@
     "name": "Name",
     "description": "Beschreibung",
     "threshold": "Schwellenwert",
+    "bonus": "Bonuspunkte",
+    "bonusHint": "Punkte zusätzlich beim Freischalten",
     "save": "Speichern",
     "saved": "Gespeichert",
     "reset": "Auf Standard zurücksetzen",

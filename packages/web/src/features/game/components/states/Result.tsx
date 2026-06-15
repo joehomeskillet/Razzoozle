@@ -92,6 +92,7 @@ const Result = ({
     firstCorrect,
     poll,
     achievements,
+    bonusPoints,
   },
 }: Props) => {
   const player = usePlayerStore()
@@ -175,6 +176,7 @@ const Result = ({
         firstCorrect={firstCorrect}
         achievementIds={unlockedIds}
         visible={true}
+        bonusPoints={bonusPoints}
       />
     </section>
   )

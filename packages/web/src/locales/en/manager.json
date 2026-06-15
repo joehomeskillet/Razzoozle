@@ -469,6 +469,8 @@
     "name": "Name",
     "description": "Description",
     "threshold": "Threshold",
+    "bonus": "Bonus points",
+    "bonusHint": "Extra points when unlocked",
     "save": "Save",
     "saved": "Saved",
     "reset": "Reset to defaults",

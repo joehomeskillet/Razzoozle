@@ -1,4 +1,9 @@
-import { ACHIEVEMENTS_REGISTRY, type AchievementId } from "@razzia/common/achievements"
+import {
+  ACHIEVEMENTS_REGISTRY,
+  BONUS_MAX,
+  TIER_BONUS_DEFAULT,
+  type AchievementId,
+} from "@razzia/common/achievements"
 import { EVENTS } from "@razzia/common/constants"
 import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
 import {
@@ -29,6 +34,9 @@ interface RowState {
   name: string
   description: string
   threshold: number | null
+  // Bonus points awarded when this badge unlocks. Always present (every badge
+  // can carry a bonus, unlike the optional threshold).
+  bonus: number
 }
 
 type LocalState = Record<AchievementId, RowState>
@@ -125,6 +133,7 @@ const BadgeRow = ({
   const nameId = `ach-name-${id}`
   const descId = `ach-desc-${id}`
   const threshId = `ach-thresh-${id}`
+  const bonusId = `ach-bonus-${id}`
 
   return (
     <motion.div
@@ -222,6 +231,35 @@ const BadgeRow = ({
           )}
         </div>
       )}
+
+      {/* Bonus points awarded when the badge unlocks — shown for every badge */}
+      <div className="mt-2">
+        <div className="flex items-center gap-2">
+          <input
+            id={bonusId}
+            type="number"
+            min={0}
+            max={BONUS_MAX}
+            className={`${inputCls} max-w-28 tabular-nums`}
+            aria-label={t("manager:achievementsConfig.bonus")}
+            value={state.bonus}
+            onChange={(e) => {
+              const raw = Number(e.target.value)
+              if (!Number.isNaN(raw)) {
+                onChange(id, {
+                  bonus: Math.min(Math.max(raw, 0), BONUS_MAX),
+                })
+              }
+            }}
+          />
+          <span className="text-xs font-medium text-gray-500">
+            {t("manager:achievementsConfig.bonus")}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-gray-500">
+          {t("manager:achievementsConfig.bonusHint")}
+        </p>
+      </div>
     </motion.div>
   )
 }
@@ -257,6 +295,7 @@ const ConfigAchievements = () => {
           thresholdDef !== undefined
             ? (served?.threshold ?? thresholdDef.default)
             : null,
+        bonus: served?.bonus ?? TIER_BONUS_DEFAULT[entry.tier],
       }
     }
     return result
@@ -272,6 +311,7 @@ const ConfigAchievements = () => {
         name: "",
         description: "",
         threshold: thresholdDef !== undefined ? thresholdDef.default : null,
+        bonus: TIER_BONUS_DEFAULT[entry.tier],
       }
     }
     return result
@@ -302,6 +342,7 @@ const ConfigAchievements = () => {
         name?: string
         description?: string
         threshold?: number
+        bonus?: number
       }
     > = {}
     for (const entry of ACHIEVEMENTS_REGISTRY) {
@@ -311,6 +352,7 @@ const ConfigAchievements = () => {
         name: row.name || undefined,
         description: row.description || undefined,
         threshold: row.threshold !== null ? row.threshold : undefined,
+        bonus: row.bonus,
       }
     }
     return configPatch

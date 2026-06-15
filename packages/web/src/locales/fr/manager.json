@@ -469,6 +469,8 @@
     "name": "Nom",
     "description": "Description",
     "threshold": "Seuil",
+    "bonus": "Points bonus",
+    "bonusHint": "Points supplémentaires lors du déblocage",
     "save": "Enregistrer",
     "saved": "Enregistré",
     "reset": "Réinitialiser les valeurs par défaut",

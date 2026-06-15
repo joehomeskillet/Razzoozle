@@ -469,6 +469,8 @@
     "name": "名称",
     "description": "描述",
     "threshold": "阈值",
+    "bonus": "奖励分",
+    "bonusHint": "解锁时额外获得的分数",
     "save": "保存",
     "saved": "已保存",
     "reset": "重置为默认值",

@@ -149,6 +149,7 @@
     "rank": "Posto {{rank}}"
   },
   "reward": {
+    "bonusPoints": "Bonus",
     "dismiss": "Chiudi"
   }
 }

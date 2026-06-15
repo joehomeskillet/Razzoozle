@@ -149,6 +149,7 @@
     "rank": "Rank {{rank}}"
   },
   "reward": {
+    "bonusPoints": "Bonus",
     "dismiss": "Dismiss"
   }
 }

@@ -625,6 +625,14 @@ export class RoundManager {
     return this.achievementsConfig.get(id)?.threshold ?? fallback
   }
 
+  // Per-badge bonus points awarded when the badge unlocks. Falls back to 0 when
+  // the merged config carries no number for it (registry holds no per-id bonus),
+  // so an empty/missing config reproduces the previous scoring exactly. Merged
+  // config already clamped the value to [0, BONUS_MAX], so this is read-only.
+  private achievementBonus(id: AchievementId): number {
+    return this.achievementsConfig.get(id)?.bonus ?? 0
+  }
+
   private showResults(question: Question): void {
     // Sim mode: the window is closing — cancel pending bot timers first so no
     // late bot answer can land after results are computed.
@@ -1076,6 +1084,57 @@ export class RoundManager {
       }
     })
 
+    // ── Achievements: award configurable BONUS POINTS (Wave B) ────────────────
+    // Second pass over the scored rows: sum each client's per-badge bonus over
+    // the ids it just unlocked. When the sum > 0 we (1) add it to the LIVE player
+    // object's `points` so any subsequent read of the roster stays consistent,
+    // (2) fold it into the row's `points` + `lastPoints` so the SHOW_RESULT
+    // payload (myPoints / +points) and the round leaderboard reflect the bonus,
+    // and (3) record it in bonusByClient for the per-player SHOW_RESULT field.
+    // Default bonus is 0 (registry holds no per-id bonus), so a config without
+    // any bonus override leaves scoring byte-identical to the shipped behaviour.
+    const bonusByClient = new Map<string, number>()
+
+    for (const row of sortedPlayers) {
+      // Bots never earn achievements (and so never any bonus) — skip entirely.
+      if (row.isBot) {
+        continue
+      }
+
+      const unlocked = achievementsByClient.get(row.clientId)
+
+      if (!unlocked || unlocked.length === 0) {
+        continue
+      }
+
+      const bonus = unlocked.reduce(
+        (sum, id) => sum + this.achievementBonus(id as AchievementId),
+        0,
+      )
+
+      if (bonus > 0) {
+        // (1) LIVE player object — find by durable clientId among the players
+        // whose `points` was just mutated in the scoring map above.
+        const livePlayer = currentPlayers.find(
+          (p) => p.clientId === row.clientId,
+        )
+
+        if (livePlayer) {
+          livePlayer.points += bonus
+        }
+
+        // (2) Row totals feeding SHOW_RESULT + the round leaderboard.
+        row.points += bonus
+        row.lastPoints += bonus
+
+        // (3) Per-player bonus, surfaced as SHOW_RESULT.bonusPoints when > 0.
+        bonusByClient.set(row.clientId, bonus)
+      }
+    }
+
+    // RE-SORT after folding the bonus in so rank / aheadOf reflect the new totals.
+    sortedPlayers.sort((a, b) => b.points - a.points)
+
     // Persist the freshly-unlocked badges onto the live player objects so they
     // are visible in the roster / leaderboard payloads too. We DROP the internal
     // achievement-intermediate (aXxx) fields here so they never reach the wire.
@@ -1113,6 +1172,7 @@ export class RoundManager {
       const rank = index + 1
       const aheadPlayer = cleanedSorted[index - 1]
       const unlocked = achievementsByClient.get(player.clientId)
+      const bonusPoints = bonusByClient.get(player.clientId) ?? 0
 
       this.send(player.id, STATUS.SHOW_RESULT, {
         correct: player.lastCorrect,
@@ -1131,6 +1191,7 @@ export class RoundManager {
         firstCorrect: player.lastFirstCorrect,
         poll: player.lastPoll,
         ...(unlocked ? { achievements: unlocked } : {}),
+        ...(bonusPoints > 0 ? { bonusPoints } : {}),
       })
     })
 

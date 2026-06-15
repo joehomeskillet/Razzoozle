@@ -105,6 +105,23 @@ export interface MergedAchievement {
   name: string | null
   description: string | null
   threshold: number | null
+  // Bonus points awarded to a player when this badge is unlocked. Resolves to 0
+  // when the config carries no per-id override (the registry holds no per-badge
+  // bonus), so the SHIPPED scoring stays byte-identical until a manager sets it.
+  bonus: number
+}
+
+// Upper clamp for the per-badge bonus points (mirrors the threshold clamp).
+export const BONUS_MAX = 5000
+
+// Suggested per-tier default bonus, surfaced ONLY in the manager UI as a seed
+// value. The merge below deliberately does NOT use this — an unset bonus always
+// resolves to 0 so existing server scoring tests stay green.
+export const TIER_BONUS_DEFAULT: Record<AchievementTier, number> = {
+  bronze: 50,
+  silver: 100,
+  gold: 200,
+  diamant: 400,
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -120,6 +137,7 @@ export function mergeAchievementsConfig(
           name?: string
           description?: string
           threshold?: number
+          bonus?: number
         }
       >
     | undefined,
@@ -140,6 +158,9 @@ export function mergeAchievementsConfig(
             thresholdDef.max,
           )
         : null,
+      // Registry carries no per-id bonus → resolves to 0 when unset. Clamped to
+      // [0, BONUS_MAX]. Tier defaults are a UI suggestion only (see above).
+      bonus: clamp(override?.bonus ?? 0, 0, BONUS_MAX),
     }
   })
 }
