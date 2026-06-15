@@ -24,9 +24,10 @@
   "resultTop": "你的最终排名是 ",
   "startGame": "开始游戏",
   "streak": {
-    "streak": "{{count}} 连击 (+{{percent}}%)",
     "bonus": "奖励 ×2",
-    "firstCorrect": "最快 +100"
+    "firstCorrect": "最快 +100",
+    "streakTitle": "连击",
+    "streakValue": "+{{percent}}%"
   },
   "usernameLabel": "昵称",
   "usernamePlaceholder": "在此输入用户名",
@@ -146,5 +147,8 @@
     "next": "下一题",
     "finish": "完成",
     "rank": "第 {{rank}} 名"
+  },
+  "reward": {
+    "dismiss": "关闭"
   }
 }

@@ -33,9 +33,10 @@
     "averageGuess": "Moyenne des estimations : {{value}}"
   },
   "streak": {
-    "streak": "Série de {{count}} (+{{percent}}%)",
     "bonus": "Bonus ×2",
-    "firstCorrect": "Le plus rapide +100"
+    "firstCorrect": "Le plus rapide +100",
+    "streakTitle": "Série",
+    "streakValue": "+{{percent}}%"
   },
   "usernameLabel": "Pseudo",
   "usernameRequired": "Saisis un pseudo",
@@ -146,5 +147,8 @@
     "next": "Suivant",
     "finish": "Terminer",
     "rank": "Place {{rank}}"
+  },
+  "reward": {
+    "dismiss": "Fermer"
   }
 }

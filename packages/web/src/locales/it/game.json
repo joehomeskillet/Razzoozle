@@ -37,9 +37,10 @@
   "joinTimeout": "Impossibile entrare in tempo. Riprova",
   "rejoin": "Rientra",
   "streak": {
-    "streak": "Serie da {{count}} (+{{percent}}%)",
     "bonus": "Bonus ×2",
-    "firstCorrect": "Più veloce +100"
+    "firstCorrect": "Più veloce +100",
+    "streakTitle": "Serie",
+    "streakValue": "+{{percent}}%"
   },
   "submittedBy": "inviata da {{name}}",
   "typeAnswerPlaceholder": "Scrivi la tua risposta...",
@@ -146,5 +147,8 @@
     "next": "Avanti",
     "finish": "Fine",
     "rank": "Posto {{rank}}"
+  },
+  "reward": {
+    "dismiss": "Chiudi"
   }
 }

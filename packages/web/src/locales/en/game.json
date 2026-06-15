@@ -24,9 +24,10 @@
   "resultTop": "You finished ",
   "startGame": "Start Game",
   "streak": {
-    "streak": "{{count}} streak (+{{percent}}%)",
     "bonus": "Bonus ×2",
-    "firstCorrect": "Fastest +100"
+    "firstCorrect": "Fastest +100",
+    "streakTitle": "Streak",
+    "streakValue": "+{{percent}}%"
   },
   "usernameLabel": "Nickname",
   "usernamePlaceholder": "Username here",
@@ -146,5 +147,8 @@
     "next": "Next",
     "finish": "Finish",
     "rank": "Rank {{rank}}"
+  },
+  "reward": {
+    "dismiss": "Dismiss"
   }
 }

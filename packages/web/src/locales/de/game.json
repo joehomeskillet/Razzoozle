@@ -37,9 +37,10 @@
   },
   "pollThanks": "Danke für deine Stimme",
   "streak": {
-    "streak": "{{count}}er-Serie (+{{percent}}%)",
     "bonus": "Bonus ×2",
-    "firstCorrect": "Schnellste +100"
+    "firstCorrect": "Schnellste +100",
+    "streakTitle": "Serie",
+    "streakValue": "+{{percent}}%"
   },
   "submittedBy": "eingereicht von {{name}}",
   "typeAnswerPlaceholder": "Antwort eingeben...",
@@ -146,5 +147,8 @@
     "next": "Weiter",
     "finish": "Beenden",
     "rank": "Platz {{rank}}"
+  },
+  "reward": {
+    "dismiss": "Schließen"
   }
 }

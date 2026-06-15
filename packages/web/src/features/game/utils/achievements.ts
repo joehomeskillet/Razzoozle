@@ -207,6 +207,14 @@ export const TIER_LABEL: Record<AchievementTier, string> = {
   diamant: TIER_STYLES.diamant.label,
 }
 
+/** Solid accent color (hex) per tier — used for reward-row left borders + washes. */
+export const TIER_ACCENT: Record<AchievementTier, string> = {
+  bronze: "#d97706",
+  silver: "#94a3b8",
+  gold: "#facc15",
+  diamant: "#a855f7",
+}
+
 export { TIER_ORDER }
 
 // ─── Server-merged achievement meta (with manager overrides) ──────────────────

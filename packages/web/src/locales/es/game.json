@@ -25,7 +25,8 @@
   "streak": {
     "bonus": "Bonus ×2",
     "firstCorrect": "Más rápido +100",
-    "streak": "Racha de {{count}} (+{{percent}}%)"
+    "streakTitle": "Racha",
+    "streakValue": "+{{percent}}%"
   },
   "usernameLabel": "Apodo",
   "usernamePlaceholder": "Nombre de usuario aquí",
@@ -146,5 +147,8 @@
     "next": "Siguiente",
     "finish": "Finalizar",
     "rank": "Puesto {{rank}}"
+  },
+  "reward": {
+    "dismiss": "Cerrar"
   }
 }

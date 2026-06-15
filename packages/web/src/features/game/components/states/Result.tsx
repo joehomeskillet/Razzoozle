@@ -1,7 +1,7 @@
 import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
 import CricleCheck from "@razzia/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzia/web/features/game/components/icons/CricleXmark"
-import AchievementPopup from "@razzia/web/features/game/components/AchievementPopup"
+import RewardStack from "@razzia/web/features/game/components/RewardStack"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import { playFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
@@ -10,7 +10,6 @@ import {
   ACHIEVEMENT_META,
   highestTier,
 } from "@razzia/web/features/game/utils/achievements"
-import { Flame, Star, Zap } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -164,39 +163,18 @@ const Result = ({
         {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
       </p>
       {!poll && correct && (
-        <span className="mt-2 rounded-lg bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg">
+        <span className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg">
           +{points}
         </span>
       )}
-      {(streakBonus ?? bonus ?? firstCorrect) && (
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          {streakBonus && streak ? (
-            <span className="bg-primary/90 inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Flame className="size-4" aria-hidden="true" />{" "}
-              {t("game:streak.streak", {
-                count: streak,
-                percent: 10 * Math.min(streak - 1, 5),
-              })}
-            </span>
-          ) : null}
-          {bonus && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-4)] px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Star className="size-4" aria-hidden="true" />{" "}
-              {t("game:streak.bonus")}
-            </span>
-          )}
-          {firstCorrect && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--answer-2)] px-3 py-1 text-sm font-bold text-white drop-shadow">
-              <Zap className="size-4" aria-hidden="true" />{" "}
-              {t("game:streak.firstCorrect")}
-            </span>
-          )}
-        </div>
-      )}
 
-      <AchievementPopup
+      <RewardStack
+        streak={streak}
+        streakBonus={streakBonus}
+        bonus={bonus}
+        firstCorrect={firstCorrect}
         achievementIds={unlockedIds}
-        visible={unlockedIds.length > 0}
+        visible={true}
       />
     </section>
   )
