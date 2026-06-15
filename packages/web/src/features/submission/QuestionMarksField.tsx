@@ -14,7 +14,7 @@ const PALETTE = [
   "#C084FC",
 ]
 
-const COUNT = 20
+const COUNT = 36
 
 interface Mark {
   left: number
@@ -68,7 +68,7 @@ export default function QuestionMarksField() {
         className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
         aria-hidden
       >
-        {marks.slice(0, 6).map((mark, i) => (
+        {marks.slice(0, 10).map((mark, i) => (
           <span
             key={i}
             className="absolute font-extrabold select-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)]"
