@@ -13,7 +13,8 @@ import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import { SectionCard } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
 import { ActionFooter } from "@razzia/web/components/ui"
-import { Award } from "lucide-react"
+import Button from "@razzia/web/components/Button"
+import { Award, RotateCcw } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
@@ -131,8 +132,8 @@ const BadgeRow = ({
       initial={{ opacity: 0, y: reduced ? 0 : 6 }}
       animate={{ opacity: state.enabled ? 1 : 0.6, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`rounded-lg px-3 py-2.5 ring-1 transition-colors ${
-        state.enabled ? "bg-white ring-gray-200" : "bg-gray-50 ring-gray-100"
+      className={`rounded-xl px-3 py-2.5 outline-2 -outline-offset-2 transition-colors ${
+        state.enabled ? "bg-white outline-gray-200" : "bg-gray-50 outline-gray-100"
       }`}
     >
       {/* Header: medal + name/description + enable toggle */}
@@ -413,27 +414,27 @@ const ConfigAchievements = () => {
       </div>
 
       <ActionFooter>
-        {/* Reset button */}
-        <button
+        <Button
+          variant="secondary"
           type="button"
           onClick={handleReset}
-          className="min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
+          className="rounded-xl"
         >
+          <RotateCcw className="size-4" aria-hidden />
           {t("manager:achievementsConfig.reset", {
             defaultValue: "Auf Standard zurücksetzen",
           })}
-        </button>
-
-        {/* Save button */}
-        <button
+        </Button>
+        <Button
+          variant="primary"
           type="button"
+          className="flex-1 rounded-xl sm:flex-none"
           onClick={handleSave}
-          className="min-h-[44px] w-full rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
         >
           {saved
             ? t("manager:achievementsConfig.saved")
             : t("manager:achievementsConfig.save")}
-        </button>
+        </Button>
       </ActionFooter>
     </>
   )
