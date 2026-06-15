@@ -202,55 +202,70 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
           {t("submit:form.subtitle")}
         </p>
 
-        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
-          <RevealSection index={0} label={t("submit:form.section.name")}>
-            <div className="rounded-2xl bg-white p-4 shadow-sm">
-              <label htmlFor="submit-submitted-by" className="sr-only">
-                {t("submit:form.namePlaceholder")}
-              </label>
-              <Input
-                id="submit-submitted-by"
-                value={submittedBy}
-                onChange={(e) => setSubmittedBy(e.target.value)}
-                placeholder={t("submit:form.namePlaceholder")}
-                className="min-h-11 w-full rounded-xl"
-                autoComplete="name"
-              />
-            </div>
-          </RevealSection>
-
-          <RevealSection index={1} label={t("submit:form.section.question")}>
-            <QuestionEditorTitle />
-            <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
-              <QuestionEditorType />
-            </div>
-          </RevealSection>
-
-          <RevealSection index={2} label={t("submit:form.section.media")}>
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full [&>div]:min-h-0">
-              <QuestionEditorMedia />
-            </div>
-          </RevealSection>
-
-          {!isSlider && !isTypeAnswer && (
-            <RevealSection index={3} label={t("submit:form.section.answers")}>
-              <div className="w-full overflow-hidden [&>div>div:nth-child(2)]:grid-cols-1 sm:[&>div>div:nth-child(2)]:grid-cols-2">
-                <QuestionEditorAnswers />
+        {/*
+          Two INDEPENDENT columns at xl (not a row-aligned grid): the old
+          grid tied each row's height to the tallest cell, stranding the short
+          "Name" card with a huge gap before "Media" and reflowing that shared
+          row on every question-type switch. Independent flex columns size on
+          their own content, so there is no cross-column gap and the secondary
+          column never jumps when the answers reflow. Mobile stacks them in
+          logical order: name → question → answers → media → settings.
+        */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
+          {/* Primary column — the question itself. */}
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <RevealSection index={0} label={t("submit:form.section.name")}>
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <label htmlFor="submit-submitted-by" className="sr-only">
+                  {t("submit:form.namePlaceholder")}
+                </label>
+                <Input
+                  id="submit-submitted-by"
+                  value={submittedBy}
+                  onChange={(e) => setSubmittedBy(e.target.value)}
+                  placeholder={t("submit:form.namePlaceholder")}
+                  className="min-h-11 w-full rounded-xl"
+                  autoComplete="name"
+                />
               </div>
             </RevealSection>
-          )}
 
-          {isTypeAnswer && (
-            <RevealSection index={3} label={t("submit:form.section.answers")}>
-              <QuestionEditorAcceptedAnswers />
+            <RevealSection index={1} label={t("submit:form.section.question")}>
+              <QuestionEditorTitle />
+              <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
+                <QuestionEditorType />
+              </div>
             </RevealSection>
-          )}
 
-          <RevealSection index={4} label={t("submit:form.section.settings")}>
-            <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
-              <QuestionEditorConfig />
-            </div>
-          </RevealSection>
+            {!isSlider && !isTypeAnswer && (
+              <RevealSection index={2} label={t("submit:form.section.answers")}>
+                <div className="w-full overflow-hidden [&>div>div:nth-child(2)]:grid-cols-1 sm:[&>div>div:nth-child(2)]:grid-cols-2">
+                  <QuestionEditorAnswers />
+                </div>
+              </RevealSection>
+            )}
+
+            {isTypeAnswer && (
+              <RevealSection index={2} label={t("submit:form.section.answers")}>
+                <QuestionEditorAcceptedAnswers />
+              </RevealSection>
+            )}
+          </div>
+
+          {/* Secondary column — media + settings (stable across type switches). */}
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <RevealSection index={3} label={t("submit:form.section.media")}>
+              <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full [&>div]:min-h-0">
+                <QuestionEditorMedia />
+              </div>
+            </RevealSection>
+
+            <RevealSection index={4} label={t("submit:form.section.settings")}>
+              <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
+                <QuestionEditorConfig />
+              </div>
+            </RevealSection>
+          </div>
         </div>
       </div>
 
