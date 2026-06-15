@@ -9,6 +9,7 @@
  * Reuses AnswerButton, ANSWERS_COLORS, ANSWERS_LABELS from the shared game layer.
  */
 import type { SoloQuestion } from "@razzia/common/types/game"
+import Markdown from "@razzia/web/components/Markdown"
 import QuestionMedia from "@razzia/web/components/QuestionMedia"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
 import { useSoloStore } from "@razzia/web/features/game/stores/solo"
@@ -189,7 +190,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
-          {question.question}
+          <Markdown>{question.question}</Markdown>
         </h2>
 
         <QuestionMedia media={question.media} alt={question.question} />
@@ -293,7 +294,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                       disabled={submitted}
                       onClick={handleMultiAnswer(key)}
                     >
-                      {answer}
+                      <Markdown>{answer}</Markdown>
                     </AnswerButton>
                   </motion.div>
                 )
@@ -387,7 +388,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                     disabled={submitted}
                     onClick={handleAnswer(key)}
                   >
-                    {answer}
+                    <Markdown>{answer}</Markdown>
                   </AnswerButton>
 
                   {/* Floating +points on a correct pick */}

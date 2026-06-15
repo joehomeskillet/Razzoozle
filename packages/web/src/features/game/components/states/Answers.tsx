@@ -1,6 +1,7 @@
 import { EVENTS, MEDIA_TYPES } from "@razzia/common/constants"
 import type { QuestionMediaType } from "@razzia/common/types/game"
 import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
+import Markdown from "@razzia/web/components/Markdown"
 import QuestionMedia from "@razzia/web/components/QuestionMedia"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
 import {
@@ -374,7 +375,7 @@ const Answers = ({
     <div className="flex min-h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
-          {question}
+          <Markdown>{question}</Markdown>
         </h2>
 
         <QuestionMedia media={media} alt={question} />
@@ -456,7 +457,7 @@ const Answers = ({
                   disabled={submitted}
                   onClick={handleMultiAnswer(key)}
                 >
-                  {answer}
+                  <Markdown>{answer}</Markdown>
                 </AnswerButton>
               ))}
             </div>
@@ -523,7 +524,7 @@ const Answers = ({
                 disabled={choiceLocked}
                 onClick={handleAnswer(key)}
               >
-                {answer}
+                <Markdown>{answer}</Markdown>
               </AnswerButton>
             ))}
           </div>

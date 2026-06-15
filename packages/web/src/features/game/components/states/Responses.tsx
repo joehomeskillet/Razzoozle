@@ -1,4 +1,5 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
+import Markdown from "@razzia/web/components/Markdown"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
 import {
   answerColor,
@@ -75,7 +76,7 @@ const Responses = ({
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
-          {question}
+          <Markdown>{question}</Markdown>
         </h2>
 
         {isTypeAnswer ? (
@@ -180,7 +181,7 @@ const Responses = ({
                 label={answerLabel(key)}
                 correct={solutionList.includes(key)}
               >
-                {answer}
+                <Markdown>{answer}</Markdown>
               </AnswerButton>
             ))}
           </div>

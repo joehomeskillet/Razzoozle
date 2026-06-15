@@ -1,3 +1,4 @@
+import Markdown from "@razzia/web/components/Markdown"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import type { ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -19,6 +20,11 @@ const QuestionEditorTitle = () => {
         value={currentQuestion.question}
         onChange={handleChangeQuestion}
       />
+      {currentQuestion.question.trim() !== "" && (
+        <div className="px-4 pb-3 text-center text-sm text-gray-500">
+          <Markdown>{currentQuestion.question}</Markdown>
+        </div>
+      )}
     </div>
   )
 }

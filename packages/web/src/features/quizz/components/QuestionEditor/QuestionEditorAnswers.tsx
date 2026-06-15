@@ -1,3 +1,4 @@
+import Markdown from "@razzia/web/components/Markdown"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
@@ -99,7 +100,7 @@ const QuestionEditorAnswers = () => {
             <div
               key={i}
               className={clsx(
-                "flex items-center gap-3 rounded-2xl px-4 py-6 focus-within:ring-2 focus-within:ring-white/70 focus-within:ring-offset-0",
+                "flex flex-wrap items-center gap-3 rounded-2xl px-4 py-6 focus-within:ring-2 focus-within:ring-white/70 focus-within:ring-offset-0",
                 ANSWERS_COLORS[i],
               )}
             >
@@ -131,6 +132,11 @@ const QuestionEditorAnswers = () => {
                   </button>
                 )}
               </div>
+              {answer.trim() !== "" && (
+                <div className="basis-full text-sm text-white/80 drop-shadow-md">
+                  <Markdown>{answer}</Markdown>
+                </div>
+              )}
             </div>
           )
         })}

@@ -151,6 +151,32 @@ export default defineConfig({
           if (id.includes("/i18next/") || id.includes("/react-i18next/")) {
             return "vendor-i18n"
           }
+          if (
+            id.includes("/react-markdown/") ||
+            id.includes("/remark-gfm/") ||
+            id.includes("/remark-") ||
+            id.includes("/micromark") ||
+            id.includes("/mdast-util-") ||
+            id.includes("/hast-util-") ||
+            id.includes("/unist-util-") ||
+            id.includes("/unified/") ||
+            id.includes("/vfile") ||
+            id.includes("/property-information/") ||
+            id.includes("/html-url-attributes/") ||
+            id.includes("/comma-separated-tokens/") ||
+            id.includes("/space-separated-tokens/") ||
+            id.includes("/decode-named-character-reference/") ||
+            id.includes("/character-entities") ||
+            id.includes("/markdown-table/") ||
+            id.includes("/longest-streak/") ||
+            id.includes("/zwitch/") ||
+            id.includes("/trough/") ||
+            id.includes("/bail/") ||
+            id.includes("/ccount/") ||
+            id.includes("/devlop/")
+          ) {
+            return "vendor-markdown"
+          }
           return "vendor"
         },
       },

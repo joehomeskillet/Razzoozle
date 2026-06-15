@@ -1,5 +1,6 @@
 import { MEDIA_TYPES } from "@razzia/common/constants"
 import type { QuestionMedia } from "@razzia/common/types/game"
+import Markdown from "@razzia/web/components/Markdown"
 import {
   answerColor,
   answerLabel,
@@ -145,7 +146,7 @@ const ResultModalAnswers = () => {
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden px-4 py-3 md:gap-2 md:px-5 md:py-4">
         <p className="text-md mb-1 font-semibold text-gray-800">
-          {questionResult.question}
+          <Markdown>{questionResult.question}</Markdown>
         </p>
 
         {isTypeAnswer ? (
@@ -232,7 +233,7 @@ const ResultModalAnswers = () => {
                   "text-gray-400": !row.color,
                 })}
               >
-                {row.label}
+                <Markdown>{row.label}</Markdown>
               </span>
 
               {!isPoll && (
