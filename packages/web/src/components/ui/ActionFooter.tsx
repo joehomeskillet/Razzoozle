@@ -22,10 +22,13 @@ const ActionFooter = ({ children, className }: ActionFooterProps) => (
   <div
     className={clsx(
       // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
-      // bar sits flush at the very bottom. The console card's
-      // `overflow-hidden rounded-2xl` clips the bottom-RIGHT corner to the card
-      // radius while the bottom-LEFT stays square (it abuts the nav rail).
-      "sticky bottom-0 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6",
+      // bar sits flush at the very bottom. `sticky bottom` pins the BORDER edge
+      // to the container's PADDING edge, so a negative bottom (= -padding) is
+      // needed to reach the panel's border bottom — `bottom-0` alone leaves a
+      // padding-sized gap. The card's `overflow-hidden rounded-2xl` clips the
+      // bottom-RIGHT corner to the card radius; the bottom-LEFT stays square
+      // (it abuts the nav rail).
+      "sticky -bottom-4 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-bottom-6 sm:-mb-6",
       // Surface — fully opaque so scrolled content never bleeds through.
       "border-t border-gray-200 bg-white",
       // Shadow lifting it off the content.
