@@ -27,7 +27,9 @@ import {
   getSoloResults,
   initConfig,
 } from "@razzia/socket/services/config"
+import { mergeAchievementsConfig } from "@razzia/common/achievements"
 import { evaluateAnswer } from "@razzia/socket/services/game/answer-eval"
+import type { SoloCheckAnswerResponse } from "@razzia/common/types/game"
 import {
   soloCheckAnswerRequestValidator,
   soloScoreSubmitValidator,
@@ -198,7 +200,35 @@ const httpServer = createServer((req, res) => {
         })
         const points = correct ? Math.round(1000 * base) : 0
 
-        jsonOk(res, { correct, points })
+        // BOUNDED solo badges — server side only contributes `sharpshooter`
+        // (slider accuracy), the single honestly-computable, non-spoofable
+        // badge on this stateless path. NO timing/streak/multiplayer badge is
+        // computed here (no trustworthy time, no session). `base` for a slider
+        // IS the accuracy fraction (0..1) — the SAME value round-manager uses
+        // for its sharpshooter check (`base > minAccuracyPct/100`).
+        //
+        // Solo is offline/stateless and has NO manager config, so the enabled
+        // gate + threshold come from the registry defaults
+        // (mergeAchievementsConfig({})). Per-badge manager enable/threshold
+        // overrides are deliberately ignored on the solo path.
+        const response: SoloCheckAnswerResponse = { correct, points }
+
+        if (question.type === "slider") {
+          response.accuracy = base
+          const sharp = mergeAchievementsConfig({}).find(
+            (a) => a.id === "sharpshooter",
+          )
+          const minPct = sharp?.threshold ?? 95
+          if (
+            (sharp?.enabled ?? true) &&
+            correct &&
+            base * 100 >= minPct
+          ) {
+            response.achievements = ["sharpshooter"]
+          }
+        }
+
+        jsonOk(res, response)
       } catch (err) {
         const status =
           err instanceof Error && (err as NodeJS.ErrnoException & { status?: number }).status === 413

@@ -114,6 +114,36 @@ const achievementsFor = (
   return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.achievements
 }
 
+// The last SHOW_RESULT `myPoints` (running total, bonus already folded in) for a
+// player socket id — mirrors achievementsFor's reverse-find pattern.
+const myPointsFor = (
+  ctx: CapturedRound,
+  playerSocketId: string,
+): number | undefined => {
+  const found = [...ctx.sends]
+    .reverse()
+    .find(
+      (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
+    )
+
+  return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.myPoints
+}
+
+// The last SHOW_RESULT `bonusPoints` for a player socket id — undefined when the
+// field is absent (sum of per-badge bonuses was 0).
+const bonusPointsFor = (
+  ctx: CapturedRound,
+  playerSocketId: string,
+): number | undefined => {
+  const found = [...ctx.sends]
+    .reverse()
+    .find(
+      (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
+    )
+
+  return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.bonusPoints
+}
+
 // The live roster row (players.getAll()) for a clientId — this is what
 // players.replace() persisted after the last showResults().
 const rosterRowFor = (
@@ -413,6 +443,74 @@ describe("achievements — configurable gating + thresholds", () => {
     expect(
       achievementsFor(makeCtx({ speed_demon: { threshold: 500 } }), "a") ?? [],
     ).not.toContain("speed_demon")
+  })
+})
+
+// ── Manager config: per-achievement BONUS POINTS (Wave B) ────────────────────
+
+describe("achievements — configurable bonus points", () => {
+  // A fresh round per test: player.points accrues on the LIVE player object, so
+  // a shared round would leak the bonus into a later test's running total.
+  //
+  // A lone player who answers correctly at 3s on a single-question quiz answers
+  // in 3s (>1000ms → no speed badge) with streak starting at 0 (→ 1 after, no
+  // streak badge). On the only/last scored question with 100% correct that
+  // unlocks exactly: first_correct, first_responder, participation, perfect_game
+  // (verified in BONUS AWARDED below via achievementsFor). We attach the bonus to
+  // ONE of those ids (first_correct) and assert the delta is exactly that bonus —
+  // the other three carry the default bonus of 0.
+  const correctKey = choiceQuizz().questions[0].solutions![0] // 1
+
+  const playFirstCorrect = (config: AchievementsConfig): CapturedRound => {
+    const ctx = buildRound({
+      quizz: choiceQuizz(1),
+      players: [makePlayer("a")],
+      lowLatency: DISABLED_LL,
+    })
+    applyAchievementsConfig(ctx, config)
+    setCurrentQuestion(ctx, 0)
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+    answerAt(ctx, "a", correctKey, QUESTION_START + 3_000) // 3s → no timing/streak badge
+    callShowResults(ctx)
+
+    return ctx
+  }
+
+  it("BASELINE: default config awards no bonus (bonusPoints absent)", () => {
+    const ctx = playFirstCorrect({})
+    expect(bonusPointsFor(ctx, "a")).toBeUndefined()
+    // Sanity: a lone 3s correct still unlocks the expected badges.
+    expect(achievementsFor(ctx, "a")).toContain("first_correct")
+  })
+
+  it("a configured bonus is folded into myPoints AND surfaced as bonusPoints", () => {
+    const base = myPointsFor(playFirstCorrect({}), "a")
+    expect(base).toBeDefined()
+
+    const ctx = playFirstCorrect({ first_correct: { bonus: 250 } })
+    // The bonus rides on first_correct only — confirm it is actually unlocked so
+    // the 250 is summed (the other unlocked ids keep their default 0 bonus).
+    expect(achievementsFor(ctx, "a")).toContain("first_correct")
+
+    expect(myPointsFor(ctx, "a")).toBe(base! + 250)
+    expect(bonusPointsFor(ctx, "a")).toBe(250)
+  })
+
+  it("a DISABLED badge awards no bonus even with a configured bonus", () => {
+    const base = myPointsFor(playFirstCorrect({}), "a")
+    expect(base).toBeDefined()
+
+    const ctx = playFirstCorrect({
+      first_correct: { enabled: false, bonus: 250 },
+    })
+    // first_correct is disabled → not unlocked → its 250 bonus is never summed.
+    expect(achievementsFor(ctx, "a") ?? []).not.toContain("first_correct")
+    expect(bonusPointsFor(ctx, "a")).toBeUndefined()
+    expect(myPointsFor(ctx, "a")).toBe(base)
   })
 })
 

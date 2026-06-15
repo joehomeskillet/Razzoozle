@@ -12,6 +12,7 @@ import type { SoloQuestion } from "@razzia/common/types/game"
 import Markdown from "@razzia/web/components/Markdown"
 import QuestionMedia from "@razzia/web/components/QuestionMedia"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
+import RewardStack from "@razzia/web/features/game/components/RewardStack"
 import { useSoloStore } from "@razzia/web/features/game/stores/solo"
 import {
   ANSWERS_COLORS,
@@ -31,7 +32,7 @@ interface Props {
 }
 
 const SoloAnswers = ({ quizzId, question }: Props) => {
-  const { submitAnswer, lastResult, phase } = useSoloStore()
+  const { submitAnswer, lastResult, lastAchievements, phase } = useSoloStore()
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
 
@@ -220,6 +221,16 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               <span>{t("game:wrong")}</span>
             )}
           </div>
+        )}
+
+        {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
+            self-fetches meta + honors reduced-motion. ids = server sharpshooter
+            ∪ client-derived streak badges (merged + deduped in the solo store). */}
+        {resultReady && lastAchievements.length > 0 && (
+          <RewardStack
+            achievementIds={lastAchievements}
+            visible={resultReady}
+          />
         )}
 
         {isTypeAnswer ? (

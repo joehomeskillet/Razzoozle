@@ -117,6 +117,15 @@ export interface SoloCheckAnswerRequest {
 export interface SoloCheckAnswerResponse {
   correct: boolean
   points: number
+  // BOUNDED solo badges only. Server contributes the honestly-computable,
+  // non-spoofable badge(s) — currently `sharpshooter` for a slider answer whose
+  // accuracy clears the registry threshold. NO timing/streak/multiplayer badge
+  // is computed server-side. Client merges client-derived streak badges on top.
+  achievements?: string[]
+  // Slider accuracy fraction (0..1) the server used to decide `sharpshooter`.
+  // Absent for non-slider questions. Informational; the same value drives the
+  // server badge decision so the client never has to recompute it.
+  accuracy?: number
 }
 
 export interface SoloScoreEntry {
