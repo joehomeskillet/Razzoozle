@@ -1,11 +1,32 @@
 # Changelog
 
-This is the **Südhang** fork of [Razzia](https://github.com/) (a Kahoot-style
-live quiz). It documents the changes this fork carries **beyond upstream** — it
-is not the upstream changelog. The fork runs as a single Docker image
-(nginx + node socket + supervisord) behind Caddy at `razzoozle.joelduss.xyz`.
+This is **Razzoozle**, a fork of [Razzia](https://github.com/Ralex91/Razzia) (a
+Kahoot-style live quiz). It documents the changes this fork carries **beyond
+upstream** — it is not the upstream changelog. Razzoozle runs as a single Docker
+image (nginx + node socket + supervisord) behind a reverse proxy; the reference
+deployment is `razzoozle.joelduss.xyz`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [1.0.0] — 2026-06-15
+
+First public Razzoozle release — [github.com/joehomeskillet/Razzoozle](https://github.com/joehomeskillet/Razzoozle).
+
+### Added
+
+- **Violet liquid-glass theme** — an opt-in glassmorphism style variant plus a
+  live manager "Design" cockpit (colours, per-view backgrounds, logo, a
+  Flat ⇄ Glass toggle, presets, contrast-aware pickers). The flat "Südhang"
+  preset stays the default and renders byte-identical to before.
+- **Kahoot-faithful game screens** — answer tiles with shape icons
+  (triangle / diamond / circle / square), a circular countdown timer and an
+  answers-received counter, on the presenter, player phone and desktop.
+- Own npm scope `@razzoozle/*`, EN/DE/中文 README, renamed container, v1.0.0.
+
+### Changed
+
+- More spacing between manager-config nav items and Design-tab sections.
+- Razzoozle branding throughout (no upstream logo flash on load).
 
 ## [Südhang lobby + mobile bugfixes] — 2026-06-13
 
