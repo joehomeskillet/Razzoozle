@@ -25,7 +25,20 @@
       "image": "Bild",
       "video": "Video",
       "aiGenerate": "Mit KI generieren",
-      "aiPromptPlaceholder": "Beschreibe das Bild..."
+      "aiPromptPlaceholder": "Beschreibe das Bild...",
+      "uploadButton": "Bild hochladen",
+      "uploading": "Wird hochgeladen",
+      "tabUrl": "URL",
+      "tabUpload": "Hochladen",
+      "tabAi": "KI",
+      "tabEdit": "Bearbeiten",
+      "enhanceButton": "Vorschau verbessern",
+      "enhancing": "Wird optimiert",
+      "enhancedLabel": "So wird generiert",
+      "rawLabel": "Deine Eingabe",
+      "editPromptPlaceholder": "Beschreibe die Änderung am Bild",
+      "editButton": "Bild per Text ändern",
+      "editing": "Wird bearbeitet"
     },
     "mediaUrlPlaceholder": "URL eingeben...",
     "placeholder": "Beginne deine Frage zu tippen..."

@@ -35,6 +35,11 @@ COPY --from=builder /app/packages/socket/dist/index.cjs /app/socket/index.cjs
 # no host-filesystem dependency; node "6" positive prompt is set at runtime.
 COPY docker/comfy-workflow.json /app/comfy-workflow.json
 
+# img2img edit blueprint (Z-Image Omni reference-conditioning). Same loaders as
+# the txt2img blueprint above; node "6" prompt + node "12" LoadImage are set at
+# runtime. Baked in so the socket has no host-filesystem dependency.
+COPY docker/comfy-img2img-workflow.json /app/comfy-img2img-workflow.json
+
 # Health check the FULL chain: nginx (3000) proxying to the socket /healthz
 # (3001). If either is down the container is marked unhealthy. busybox wget.
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
@@ -53,5 +58,6 @@ ENV RAHOOT_SIM_MODE=0
 # Defaults must exist so supervisord's %(ENV_*)s expansion never fails.
 ENV COMFYUI_URL=http://host.docker.internal:8188
 ENV COMFYUI_WORKFLOW=/app/comfy-workflow.json
+ENV COMFYUI_IMG2IMG_WORKFLOW=/app/comfy-img2img-workflow.json
 
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

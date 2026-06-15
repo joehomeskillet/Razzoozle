@@ -1,13 +1,20 @@
 import {
   DEFAULT_MANAGER_PASSWORD,
   EVENTS,
+  PROMPT_MAX_LEN,
   type ThemeSlot,
 } from "@razzia/common/constants"
 import type { Question } from "@razzia/common/types/game"
 import type { Submission } from "@razzia/common/types/submission"
 import { questionValidator } from "@razzia/common/validators/quizz"
 import { submissionValidator } from "@razzia/common/validators/submission"
+import {
+  getClientId,
+  SECRET_PATTERNS,
+  tryConsumeImageGenCredit,
+} from "@razzia/socket/handlers/imageGenThrottle"
 import type { SocketContext } from "@razzia/socket/handlers/types"
+import { enhancePrompt } from "@razzia/socket/services/ai-provider"
 import { generateImage } from "@razzia/socket/services/comfyui"
 import {
   assertSafeId,
@@ -29,50 +36,11 @@ import {
 import manager, { emitConfig } from "@razzia/socket/services/manager"
 import {
   checkGlobalSubmissionRate,
-  checkImageGenHourlyLimit,
   checkRateLimit,
   PENDING_QUEUE_CAP,
 } from "@razzia/socket/services/submissionRateLimit"
 import { normalizeFilename } from "@razzia/socket/utils/game"
 import { z } from "zod"
-
-// The durable client identity from the handshake — same value manager auth keys
-// on (see services/manager.ts#getClientId). Falls back to socket.id when absent
-// so a client that never sends a clientId is still throttled (fail-safe: a
-// missing id must never mean "unlimited").
-const getClientId = (socket: SocketContext["socket"]): string =>
-  (socket.handshake.auth.clientId as string | undefined) ?? socket.id
-
-// AI-gen is a public, unauthenticated GPU op (venue submit). Guards: a short
-// cooldown (1 / 30 s) AND a per-client lifetime cap, PLUS a durable hourly cap
-// (services/submissionRateLimit#checkImageGenHourlyLimit). State is keyed by the
-// DURABLE clientId (not socket.id) so a reconnect does NOT reset the cooldown,
-// and entries self-expire by time window rather than on disconnect.
-interface ImageGenState {
-  last: number
-  total: number
-}
-
-const imageGenStore = new Map<string, ImageGenState>()
-const IMAGE_GEN_COOLDOWN_MS = 30_000
-const IMAGE_GEN_MAX_PER_SOCKET = 5
-const PROMPT_MAX_LEN = 300
-
-// Lazy GC for the per-client cooldown/lifetime store: drop entries whose last
-// activity is older than the hourly window so the Map cannot grow unbounded
-// across many distinct clients (no per-socket leak, no disconnect cleanup).
-const IMAGE_GEN_GC_MS = 3_600_000
-const sweepImageGenStore = (now: number): void => {
-  for (const [key, state] of imageGenStore) {
-    if (now - state.last > IMAGE_GEN_GC_MS) {
-      imageGenStore.delete(key)
-    }
-  }
-}
-
-// Reject prompts that look like leaked secrets (best-effort, intentionally
-// simple — the real guard is that prompts never touch secret stores).
-const SECRET_PATTERNS = [/sk-/i, /AKIA/, /BEGIN PRIVATE KEY/i]
 
 export const managerSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
@@ -233,59 +201,40 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         return
       }
 
-      // Keyed by the DURABLE clientId (not socket.id) so a reconnect does NOT
-      // reset the cooldown / lifetime cap.
-      const clientId = getClientId(socket)
-      const now = Date.now()
-      sweepImageGenStore(now)
-      const state = imageGenStore.get(clientId)
+      // Cooldown + per-client lifetime + durable hourly check, consuming a
+      // credit on the dispatch path. Keyed by the DURABLE clientId (not
+      // socket.id) so a reconnect does NOT reset the limits. SHARES the same
+      // store as EDIT_IMAGE (see handlers/imageGenThrottle.ts) — behaviour is
+      // byte-identical to the previous inline logic.
+      const credit = tryConsumeImageGenCredit(getClientId(socket))
 
-      // Cooldown + per-client lifetime cap FIRST (these reject WITHOUT touching
-      // the hourly counter). Burning hourly credits inside the 30s cooldown let
-      // a spamming client self-lock the 10/h cap with zero successful gens, so
-      // the durable hourly credit is consumed only on the dispatch path below.
-      if (state) {
-        if (now - state.last < IMAGE_GEN_COOLDOWN_MS) {
-          socket.emit(
-            EVENTS.MANAGER.IMAGE_ERROR,
-            "errors:submission.imageRateLimited",
-          )
-
-          return
-        }
-
-        if (state.total >= IMAGE_GEN_MAX_PER_SOCKET) {
-          socket.emit(
-            EVENTS.MANAGER.IMAGE_ERROR,
-            "errors:submission.imageLimitReached",
-          )
-
-          return
-        }
-      }
-
-      // Durable hourly cap (GPU is expensive): keyed by clientId, survives
-      // reconnect, self-expires after the hour. Consumed only here, on the path
-      // that will actually dispatch, so a cooldown-rejected request never spends
-      // an hourly credit.
-      if (!checkImageGenHourlyLimit(clientId)) {
+      if (!credit.ok) {
         socket.emit(
           EVENTS.MANAGER.IMAGE_ERROR,
-          "errors:submission.imageLimitReached",
+          credit.errorKey ?? "errors:submission.imageLimitReached",
         )
 
         return
       }
 
-      if (state) {
-        state.last = now
-        state.total += 1
-      } else {
-        imageGenStore.set(clientId, { last: now, total: 1 })
+      // Server-internal prompt-enhance (#23 §1.2): rewrite the raw idea into an
+      // optimized Z-Image prompt BEFORE generation. Enhancement must NEVER block
+      // image-gen — on ANY failure (provider Off, timeout, missing model, secret
+      // output) fall back to the raw prompt. Re-secret-scan the enhanced string
+      // (a model could echo a key-shaped token); fall back to raw if it does.
+      let finalPrompt = prompt
+      try {
+        finalPrompt = await enhancePrompt(prompt)
+
+        if (SECRET_PATTERNS.some((re) => re.test(finalPrompt))) {
+          finalPrompt = prompt
+        }
+      } catch {
+        finalPrompt = prompt
       }
 
       try {
-        const url = await generateImage(prompt)
+        const url = await generateImage(finalPrompt)
         socket.emit(EVENTS.MANAGER.IMAGE_GENERATED, { url })
       } catch (error) {
         socket.emit(

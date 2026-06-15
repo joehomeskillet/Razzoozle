@@ -25,7 +25,20 @@
       "image": "Imagen",
       "video": "Video",
       "aiGenerate": "Generar con IA",
-      "aiPromptPlaceholder": "Describe la imagen..."
+      "aiPromptPlaceholder": "Describe la imagen...",
+      "uploadButton": "Subir imagen",
+      "uploading": "Subiendo",
+      "tabUrl": "URL",
+      "tabUpload": "Subir",
+      "tabAi": "IA",
+      "tabEdit": "Editar",
+      "enhanceButton": "Mejorar vista previa",
+      "enhancing": "Optimizando",
+      "enhancedLabel": "Cómo se generará",
+      "rawLabel": "Tu entrada",
+      "editPromptPlaceholder": "Describe el cambio en la imagen",
+      "editButton": "Editar imagen con texto",
+      "editing": "Editando"
     },
     "mediaUrlPlaceholder": "Introduce la URL...",
     "placeholder": "Empieza a escribir tu pregunta..."

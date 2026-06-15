@@ -15,6 +15,9 @@
       "settings": "Ajustes"
     }
   },
+  "media": {
+    "enhanceHint": "La IA refina tu descripción antes de generar."
+  },
   "cta": {
     "afterGame": "¿Te gustó el quiz? Sugiere tu propia pregunta"
   },

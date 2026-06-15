@@ -54,6 +54,11 @@
     "uploadFailed": "Image upload failed",
     "saveFailed": "Could not save the design"
   },
+  "media": {
+    "tooLarge": "The image is too large. Maximum 8 MB.",
+    "invalidDataUrl": "This image format is not supported.",
+    "invalidUrl": "This image source is invalid."
+  },
   "submission": {
     "rateLimited": "You've submitted too many questions. Please wait a moment.",
     "notFound": "Suggestion not found.",

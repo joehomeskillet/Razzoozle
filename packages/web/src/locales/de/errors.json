@@ -54,6 +54,11 @@
     "uploadFailed": "Bild konnte nicht hochgeladen werden",
     "saveFailed": "Design konnte nicht gespeichert werden"
   },
+  "media": {
+    "tooLarge": "Das Bild ist zu groß. Maximal 8 MB.",
+    "invalidDataUrl": "Dieses Bildformat wird nicht unterstützt.",
+    "invalidUrl": "Diese Bildquelle ist ungültig."
+  },
   "submission": {
     "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",
     "notFound": "Vorschlag nicht gefunden.",

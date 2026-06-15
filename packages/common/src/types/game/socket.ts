@@ -176,6 +176,10 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.SUBMIT_SUCCESS]: () => void
   [EVENTS.MANAGER.IMAGE_GENERATED]: (_data: { url: string }) => void
   [EVENTS.MANAGER.IMAGE_ERROR]: (_message: string) => void
+  // #23 media pipeline (server -> client). EDIT_IMAGE + SUBMIT_UPLOAD_IMAGE
+  // success reuse IMAGE_GENERATED {url}; errors reuse IMAGE_ERROR (string).
+  [EVENTS.MANAGER.UPLOAD_IMAGE_SUCCESS]: (_data: { url: string }) => void
+  [EVENTS.MANAGER.PROMPT_ENHANCED]: (_data: { prompt: string }) => void
 
   // Quizz events
   [EVENTS.QUIZZ.SAVE_SUCCESS]: (_data: { id: string }) => void
@@ -248,6 +252,16 @@ export interface ClientToServerEvents {
   // Question-submission actions (feature #5)
   [EVENTS.MANAGER.SUBMIT_QUESTION]: (_payload: unknown) => void
   [EVENTS.MANAGER.GENERATE_IMAGE]: (_payload: { prompt: string }) => void
+  // #23 media pipeline (client -> server, public).
+  [EVENTS.MANAGER.EDIT_IMAGE]: (_payload: {
+    baseUrl: string
+    prompt: string
+  }) => void
+  [EVENTS.MANAGER.SUBMIT_UPLOAD_IMAGE]: (_payload: {
+    filename: string
+    dataUrl: string
+  }) => void
+  [EVENTS.MANAGER.ENHANCE_PROMPT]: (_payload: { prompt: string }) => void
   [EVENTS.MANAGER.LIST_SUBMISSIONS]: () => void
   [EVENTS.MANAGER.EDIT_SUBMISSION]: (_payload: unknown) => void
   // Approve a submission either into a quiz (quizzId) OR into the catalog

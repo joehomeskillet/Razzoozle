@@ -15,6 +15,9 @@
       "settings": "Settings"
     }
   },
+  "media": {
+    "enhanceHint": "The AI refines your description before generating."
+  },
   "cta": {
     "afterGame": "Enjoyed the quiz? Suggest your own question"
   },

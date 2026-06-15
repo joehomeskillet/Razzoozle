@@ -49,6 +49,11 @@
     "uploadFailed": "Échec de l'envoi de l'image",
     "saveFailed": "Impossible d’enregistrer le design"
   },
+  "media": {
+    "tooLarge": "L’image est trop volumineuse. Maximum 8 Mo.",
+    "invalidDataUrl": "Ce format d’image n’est pas pris en charge.",
+    "invalidUrl": "Cette source d’image est invalide."
+  },
   "submission": {
     "rateLimited": "Tu as envoyé trop de questions. Attends un instant.",
     "notFound": "Proposition non trouvée.",

@@ -85,6 +85,12 @@ export const EVENTS = {
     GENERATE_IMAGE: "manager:generateImage",
     IMAGE_GENERATED: "manager:imageGenerated",
     IMAGE_ERROR: "manager:imageError",
+    // #23 media pipeline (public, hard-throttled — mirrors GENERATE_IMAGE)
+    EDIT_IMAGE: "manager:editImage", // C2S {baseUrl, prompt} -> reuses IMAGE_GENERATED/IMAGE_ERROR
+    SUBMIT_UPLOAD_IMAGE: "manager:submitUploadImage", // C2S {filename, dataUrl} (public upload)
+    UPLOAD_IMAGE_SUCCESS: "manager:uploadImageSuccess", // S2C {url}
+    ENHANCE_PROMPT: "manager:enhancePrompt", // C2S {prompt} (optional preview)
+    PROMPT_ENHANCED: "manager:promptEnhanced", // S2C {prompt}
     PLAYER_RECONNECTED: "manager:playerReconnected",
     PAUSE_GAME: "manager:pauseGame",
     RESUME_GAME: "manager:resumeGame",
@@ -197,6 +203,12 @@ export const AVATARS_GENERIC = [
 // Max decoded size for an uploaded ephemeral player avatar.
 export const AVATAR_MAX_BYTES = 4_000_000
 
+// Max decoded size for a public /submit image upload (8 MB, matching the
+// background cap). Enforced server-side before saveMediaFile; mirrored client-side
+// as a pre-emit guard. saveMediaFile/mediaUploadValidator enforce NO size on their
+// own, so this is the byte cap for the public upload path (#23).
+export const MEDIA_UPLOAD_MAX_BYTES = 8_000_000
+
 // Media-manager storage categories (subdirs under config/media/).
 export const MEDIA_CATEGORIES = [
   "backgrounds",
@@ -273,6 +285,11 @@ export const AI_TEXT_PROVIDER_PRESETS = [
 // "off" sentinel = no provider selected (generation disabled).
 export const AI_PROVIDER_OFF = "off"
 
+// Max length of an image-generation / prompt-enhance prompt. Single source of
+// truth: the GENERATE_IMAGE / EDIT_IMAGE / ENHANCE_PROMPT handlers and the
+// media validators (validators/media.ts) all key off this (#23 contract).
+export const PROMPT_MAX_LEN = 300
+
 // Generation guard-rails (shared by server throttle + client UI hints).
 export const AI = {
   TOPIC_MAX_LEN: 200,
@@ -333,7 +350,15 @@ export const WS_PING_INTERVAL_MS = 10000
 
 export const WS_PING_TIMEOUT_MS = 8000
 
-export const WS_MAX_HTTP_BUFFER_BYTES = 1_000_000
+// Inbound WS frame ceiling. socket.io severs the connection (1009 Message Too
+// Big) on any frame above this BEFORE the handler runs, so it must exceed the
+// base64-encoded form of the largest upload payload (a data URL is ~4/3 the
+// decoded bytes plus the "data:image/...;base64," envelope). Derive it from the
+// public-upload cap (the biggest: 8 MB > AVATAR_MAX_BYTES 4 MB) so the byte cap
+// in submitMedia.upload.ts is reachable and oversize uploads get a graceful
+// errors:media.tooLarge instead of a hard disconnect.
+export const WS_MAX_HTTP_BUFFER_BYTES =
+  Math.ceil(MEDIA_UPLOAD_MAX_BYTES * (4 / 3)) + 256_000
 
 export const WS_DEFLATE_THRESHOLD_BYTES = 1024
 

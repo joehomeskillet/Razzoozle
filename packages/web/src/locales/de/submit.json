@@ -15,6 +15,9 @@
       "settings": "Einstellungen"
     }
   },
+  "media": {
+    "enhanceHint": "Die KI verfeinert deine Beschreibung vor dem Generieren."
+  },
   "cta": {
     "afterGame": "Hat dir das Quiz gefallen? Reich eine eigene Frage ein"
   },

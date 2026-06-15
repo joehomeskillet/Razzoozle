@@ -248,6 +248,33 @@ export const generateText = async ({
   return raw
 }
 
+// Z-Image prompt-enhance system prompt (#23). Photographic, concise, on-brand.
+// Z-Image-Turbo does NOT need quality tags — forbidding them is load-bearing.
+const ENHANCE_SYSTEM_PROMPT =
+  "You rewrite a rough quiz-image idea into a single optimized prompt for Z-Image-Turbo.\n" +
+  "Output ONLY the final prompt text: one natural-language paragraph, max 80 words, no quotes,\n" +
+  "no markdown, no commentary. Start with a concise photographic style frame (clean, well-lit,\n" +
+  "neutral studio or contextual setting, balanced composition, realistic). Describe subject +\n" +
+  "setting + composition concisely. Do NOT add quality tags like masterpiece, best quality, 8k,\n" +
+  "ultra-detailed, hyperrealistic. Keep it safe-for-work and suitable as a quiz question\n" +
+  "illustration. The idea may be German; produce an English prompt."
+
+// Rewrite a rough image idea into an optimized Z-Image prompt via the active
+// text provider. Throws on provider Off / missing key / provider error / secret
+// output (assertNoSecret inside generateText) — the caller is expected to wrap
+// this in try/catch and fall back to the raw idea (enhancement must NEVER block
+// image generation, #23 §1.2).
+export const enhancePrompt = async (rawIdea: string): Promise<string> => {
+  const enhanced = await generateText({
+    system: ENHANCE_SYSTEM_PROMPT,
+    prompt: rawIdea,
+    json: false,
+    maxTokens: 150,
+  })
+
+  return enhanced.trim()
+}
+
 // Strip a ```json ... ``` (or bare ```) fence some models wrap JSON in, so
 // JSON.parse succeeds on otherwise-valid output.
 const stripCodeFence = (s: string): string => {
