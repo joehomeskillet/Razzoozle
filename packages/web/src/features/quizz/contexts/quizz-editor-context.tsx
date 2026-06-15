@@ -1,7 +1,9 @@
 import type { Question, QuizzWithId } from "@razzia/common/types/game"
 import {
   createContext,
+  useCallback,
   useContext,
+  useMemo,
   useState,
   type PropsWithChildren,
 } from "react"
@@ -13,6 +15,12 @@ export type QuestionWithId = Question & {
 
 interface QuizzEditorContextType {
   quizzId: string | null
+  /**
+   * True for manager-side editor mounts, false for the public /submit page.
+   * Gates manager-only affordances (e.g. the media-library picker, which
+   * relies on the withAuth-gated MEDIA.LIST event).
+   */
+  isManager: boolean
   subject: string
   setSubject: (_subject: string) => void
   themeId: string
@@ -26,6 +34,13 @@ interface QuizzEditorContextType {
   removeQuestions: (_indices: number[]) => void
   reorderQuestions: (_from: number, _to: number) => void
   updateQuestion: (_index: number, _updates: Partial<QuestionWithId>) => void
+  /** True when the editor state diverges from the last-saved snapshot. */
+  isDirty: boolean
+  /**
+   * Re-baseline the dirty snapshot to the current state. Call after a
+   * successful save so the editor is considered "clean" again.
+   */
+  markSaved: () => void
 }
 
 const QuizzEditorContext = createContext<QuizzEditorContextType | null>(null)
@@ -44,13 +59,31 @@ const toQuestionWithId = (q: Question): QuestionWithId => ({
   id: uuid(),
 })
 
+/**
+ * Stable serialization of the editor state used for dirty-tracking. The
+ * editor-local `id` on each question is regenerated on load and carries no
+ * persisted meaning, so it is stripped to avoid false-positive dirtiness.
+ */
+const snapshotOf = (
+  subject: string,
+  themeId: string,
+  questions: QuestionWithId[],
+): string =>
+  JSON.stringify({
+    subject,
+    themeId,
+    questions: questions.map(({ id: _id, ...rest }) => rest),
+  })
+
 type QuizzEditorProviderProps = PropsWithChildren<{
   initialData?: QuizzWithId
+  isManager?: boolean
 }>
 
 export const QuizzEditorProvider = ({
   children,
   initialData,
+  isManager = true,
 }: QuizzEditorProviderProps) => {
   const [subject, setSubject] = useState(
     initialData?.subject ?? "Untitled Quizz",
@@ -62,6 +95,28 @@ export const QuizzEditorProvider = ({
       : [defaultQuestion()],
   )
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  // Last-saved baseline. Seeded from initialData (or the default new-quizz
+  // state) on first render and re-baselined on save-success via markSaved().
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    snapshotOf(
+      initialData?.subject ?? "Untitled Quizz",
+      initialData?.themeId ?? "",
+      initialData
+        ? initialData.questions.map(toQuestionWithId)
+        : [defaultQuestion()],
+    ),
+  )
+
+  const isDirty = useMemo(
+    () => snapshotOf(subject, themeId, questions) !== savedSnapshot,
+    [subject, themeId, questions, savedSnapshot],
+  )
+
+  const markSaved = useCallback(() => {
+    setSavedSnapshot(snapshotOf(subject, themeId, questions))
+  }, [subject, themeId, questions])
+
   // Clamp at read so currentQuestion is NEVER undefined, even during an
   // intermediate render where questions has shrunk (delete) but currentIndex
   // hasn't caught up yet — consumers read currentQuestion.type directly.
@@ -152,6 +207,7 @@ export const QuizzEditorProvider = ({
     <QuizzEditorContext.Provider
       value={{
         quizzId: initialData?.id ?? null,
+        isManager,
         subject,
         setSubject,
         themeId,
@@ -165,6 +221,8 @@ export const QuizzEditorProvider = ({
         removeQuestions,
         reorderQuestions,
         updateQuestion,
+        isDirty,
+        markSaved,
       }}
     >
       {children}

@@ -11,6 +11,20 @@
     "description": "Are you sure you want to remove “{{name}}” from the game?",
     "confirm": "Remove"
   },
+  "editor": {
+    "unsavedChanges": "Unsaved changes",
+    "leaveTitle": "Unsaved changes",
+    "leaveDescription": "You have changes that haven't been saved yet. Do you want to save them before leaving the quiz?",
+    "discard": "Discard"
+  },
+  "mediaPicker": {
+    "title": "Choose from library",
+    "search": "Search",
+    "searchPlaceholder": "Search images …",
+    "empty": "No images in the library yet. Upload some in the Media tab.",
+    "noResults": "No matching images found.",
+    "openButton": "From library"
+  },
   "quizz": {
     "create": "Create Quiz",
     "delete": "Delete quiz",
@@ -34,7 +48,18 @@
     "archivedToast": "Quiz archived",
     "unarchivedToast": "Quiz restored",
     "showArchived": "Show archive",
-    "hideArchived": "Hide archive"
+    "hideArchived": "Hide archive",
+    "search": "Search quizzes",
+    "searchPlaceholder": "Search by topic …",
+    "sort": "Sort",
+    "sortNameAsc": "Name A–Z",
+    "sortCountDesc": "Most questions",
+    "sortCountAsc": "Fewest questions",
+    "noResults": "No matches",
+    "noResultsHint": "Adjust your search term.",
+    "duplicateTitle": "Duplicate quiz",
+    "duplicateConfirm": "A copy of “{{name}}” will be created with the suffix “(Copy)”.",
+    "duplicateAction": "Duplicate"
   },
   "result": {
     "delete": "Delete result",
@@ -45,6 +70,12 @@
     "emptyHeadline": "No results yet",
     "open": "Open result for \"{{name}}\"",
     "paginationOf": " of ",
+    "searchPlaceholder": "Search results",
+    "dateFilter": "Filter by date",
+    "noResults": "No matching results",
+    "noResultsHint": "Adjust the search or date filter.",
+    "showNames": "Show names",
+    "anonymizedPlayer": "Player {{index}}",
     "stats": {
       "correctAnswers": "Correct answers",
       "playersAnswered": "Players answered"

@@ -7,9 +7,11 @@ import { matchAnswer } from "@razzia/web/features/game/utils/text-match"
 import {
   createContext,
   useContext,
+  useMemo,
   useState,
   type PropsWithChildren,
 } from "react"
+import { useTranslation } from "react-i18next"
 
 interface ResultModalContextType {
   result: GameResult
@@ -23,6 +25,15 @@ interface ResultModalContextType {
   maxAnswerCount: number
   isAnswerCorrect: (_pa: PlayerAnswerRecord) => boolean
   getPlayerPoints: (_name: string) => number
+  // Privacy toggle (default OFF → anonymized). When off, `displayName` masks the
+  // real player name as "Spieler N"; when on, it returns the real name.
+  showNames: boolean
+  toggleShowNames: () => void
+  // Maps a real player name to its display label, honoring `showNames`. The index
+  // is stable across the whole result (derived once from the canonical roster),
+  // so the same player reads as the same "Spieler N" in the table AND the
+  // per-question answer breakdown.
+  displayName: (_name: string) => string
   goNext: () => void
   goPrev: () => void
   onClose: () => void
@@ -37,6 +48,9 @@ type Props = PropsWithChildren<{
 
 export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   const [questionIndex, setQuestionIndex] = useState(0)
+  // Default OFF → names start anonymized; the manager opts in to reveal them.
+  const [showNames, setShowNames] = useState(false)
+  const { t } = useTranslation()
 
   const questionResult = result.questions[questionIndex]
   const total = result.questions.length
@@ -135,6 +149,45 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   const getPlayerPoints = (name: string) =>
     result.players.find((p) => p.username === name)?.points ?? 0
 
+  // Stable real-name → 1-based index, derived once from the canonical roster so
+  // every view masks the same player to the same "Spieler N". Any name that
+  // only shows up in per-question answers (not in the roster) is appended so the
+  // masking stays total and collision-free.
+  const nameIndex = useMemo(() => {
+    const map = new Map<string, number>()
+
+    for (const player of result.players) {
+      if (!map.has(player.username)) {
+        map.set(player.username, map.size + 1)
+      }
+    }
+
+    for (const question of result.questions) {
+      for (const pa of question.playerAnswers) {
+        if (!map.has(pa.playerName)) {
+          map.set(pa.playerName, map.size + 1)
+        }
+      }
+    }
+
+    return map
+  }, [result])
+
+  const toggleShowNames = () => setShowNames((v) => !v)
+
+  const displayName = (name: string) => {
+    if (showNames) {
+      return name
+    }
+
+    const index = nameIndex.get(name) ?? nameIndex.size + 1
+
+    return t("manager:result.anonymizedPlayer", {
+      defaultValue: "Spieler {{index}}",
+      index,
+    })
+  }
+
   const goNext = () => setQuestionIndex((i) => Math.min(i + 1, total - 1))
 
   const goPrev = () => setQuestionIndex((i) => Math.max(i - 1, 0))
@@ -153,6 +206,9 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
         maxAnswerCount,
         isAnswerCorrect,
         getPlayerPoints,
+        showNames,
+        toggleShowNames,
+        displayName,
         goNext,
         goPrev,
         onClose,

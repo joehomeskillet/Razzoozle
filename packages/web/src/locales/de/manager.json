@@ -11,6 +11,20 @@
   },
   "logout": "Abmelden",
   "passwordPlaceholder": "Passwort",
+  "editor": {
+    "unsavedChanges": "Ungespeicherte Änderungen",
+    "leaveTitle": "Ungespeicherte Änderungen",
+    "leaveDescription": "Du hast Änderungen, die noch nicht gespeichert wurden. Möchtest du sie speichern, bevor du das Quiz verlässt?",
+    "discard": "Verwerfen"
+  },
+  "mediaPicker": {
+    "title": "Aus Bibliothek wählen",
+    "search": "Suchen",
+    "searchPlaceholder": "Bilder durchsuchen …",
+    "empty": "Noch keine Bilder in der Bibliothek. Lade welche im Medien-Tab hoch.",
+    "noResults": "Keine passenden Bilder gefunden.",
+    "openButton": "Aus Bibliothek"
+  },
   "quizz": {
     "create": "Quiz erstellen",
     "delete": "Quiz löschen",
@@ -34,7 +48,18 @@
     "archivedToast": "Quiz archiviert",
     "unarchivedToast": "Quiz wiederhergestellt",
     "showArchived": "Archiv anzeigen",
-    "hideArchived": "Archiv ausblenden"
+    "hideArchived": "Archiv ausblenden",
+    "search": "Quiz suchen",
+    "searchPlaceholder": "Nach Thema suchen …",
+    "sort": "Sortieren",
+    "sortNameAsc": "Name A–Z",
+    "sortCountDesc": "Meiste Fragen",
+    "sortCountAsc": "Wenigste Fragen",
+    "noResults": "Keine Treffer",
+    "noResultsHint": "Passe deinen Suchbegriff an.",
+    "duplicateTitle": "Quiz duplizieren",
+    "duplicateConfirm": "Eine Kopie von „{{name}}“ wird mit dem Zusatz „(Kopie)“ erstellt.",
+    "duplicateAction": "Duplizieren"
   },
   "result": {
     "delete": "Ergebnis löschen",
@@ -45,6 +70,12 @@
     "emptyHeadline": "Noch keine Ergebnisse",
     "open": "Ergebnis für „{{name}}\" öffnen",
     "paginationOf": " von ",
+    "searchPlaceholder": "Ergebnisse durchsuchen",
+    "dateFilter": "Nach Datum filtern",
+    "noResults": "Keine passenden Ergebnisse",
+    "noResultsHint": "Suche oder Datumsfilter anpassen.",
+    "showNames": "Namen anzeigen",
+    "anonymizedPlayer": "Spieler {{index}}",
     "stats": {
       "correctAnswers": "Richtige Antworten",
       "playersAnswered": "Spieler haben geantwortet"

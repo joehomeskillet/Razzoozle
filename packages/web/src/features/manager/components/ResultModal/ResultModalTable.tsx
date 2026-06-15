@@ -4,15 +4,59 @@ import {
 } from "@razzia/web/features/game/utils/answers"
 import { useResultModal } from "@razzia/web/features/manager/contexts/result-modal-context"
 import clsx from "clsx"
-import { Check, X } from "lucide-react"
+import { Check, Eye, EyeOff, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 const ResultModalTable = () => {
-  const { questionResult, isAnswerCorrect, getPlayerPoints } = useResultModal()
+  const {
+    questionResult,
+    isAnswerCorrect,
+    getPlayerPoints,
+    displayName,
+    showNames,
+    toggleShowNames,
+  } = useResultModal()
   const { t } = useTranslation()
 
   return (
-    <table className="w-full text-sm">
+    <>
+      {/* Privacy toggle — masks player names as "Spieler N" across the table and
+          answer breakdown. Default OFF; the manager opts in to reveal real
+          names. role=switch so screen readers announce the on/off state. */}
+      <div className="flex items-center justify-end border-b border-gray-100 px-5 py-2">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showNames}
+          onClick={toggleShowNames}
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+        >
+          {showNames ? (
+            <Eye className="size-4 text-gray-500" aria-hidden />
+          ) : (
+            <EyeOff className="size-4 text-gray-400" aria-hidden />
+          )}
+          <span>
+            {t("manager:result.showNames", { defaultValue: "Namen anzeigen" })}
+          </span>
+          <span
+            aria-hidden
+            className={clsx(
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+              showNames ? "bg-[var(--color-primary)]" : "bg-gray-300",
+            )}
+          >
+            <span
+              className={clsx(
+                "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                showNames ? "translate-x-4" : "translate-x-0.5",
+              )}
+            />
+          </span>
+        </button>
+      </div>
+
+      <table className="w-full text-sm">
       <thead className="sticky top-0 shadow-sm">
         <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
           <th className="px-5 py-2.5">{t("manager:result.table.player")}</th>
@@ -35,7 +79,9 @@ const ResultModalTable = () => {
 
           return (
             <tr key={i} className="hover:bg-gray-50">
-              <td className="px-5 py-2.5 font-medium">{pa.playerName}</td>
+              <td className="px-5 py-2.5 font-medium">
+                {displayName(pa.playerName)}
+              </td>
               <td className="px-4 py-2.5">
                 {pa.answerText != null ? (
                   // Type-answer: render the submitted free-text
@@ -109,7 +155,8 @@ const ResultModalTable = () => {
           )
         })}
       </tbody>
-    </table>
+      </table>
+    </>
   )
 }
 

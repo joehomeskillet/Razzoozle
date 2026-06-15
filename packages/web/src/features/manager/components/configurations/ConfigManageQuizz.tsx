@@ -2,6 +2,7 @@ import { EVENTS } from "@razzia/common/constants"
 import { quizzValidator } from "@razzia/common/validators/quizz"
 import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
+import Input from "@razzia/web/components/Input"
 import {
   useEvent,
   useSocket,
@@ -17,14 +18,19 @@ import {
   ArchiveRestore,
   Copy,
   ListChecks,
+  SearchX,
   SquarePen,
   Trash2,
   Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { type ChangeEvent, useRef, useState } from "react"
+import { type ChangeEvent, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+// Sort options offered above the quiz list. "created date" is intentionally
+// omitted: QuizzMeta carries no timestamp, so there is no field to sort on.
+type SortKey = "name-asc" | "count-desc" | "count-asc"
 
 const ConfigManageQuizz = () => {
   const { quizz } = useConfig()
@@ -34,13 +40,53 @@ const ConfigManageQuizz = () => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [showArchived, setShowArchived] = useState(false)
-  // The quiz pending a delete confirmation; drives the AlertDialog.
+  const [search, setSearch] = useState("")
+  const [sortKey, setSortKey] = useState<SortKey>("name-asc")
+  // The quiz pending a delete confirmation; drives the delete AlertDialog.
   const [pendingDelete, setPendingDelete] = useState<{
     id: string
     subject: string
   } | null>(null)
-  const activeQuizz = quizz.filter((q) => !q.archived)
-  const archivedQuizz = quizz.filter((q) => q.archived)
+  // The quiz pending a duplicate confirmation; drives the duplicate AlertDialog.
+  const [pendingDuplicate, setPendingDuplicate] = useState<{
+    id: string
+    subject: string
+  } | null>(null)
+
+  // Live search + sort applied to both the active and archived sections.
+  const { activeQuizz, archivedQuizz, hasMatches } = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    const matchesSearch = (subject: string) =>
+      query.length === 0 || subject.toLowerCase().includes(query)
+
+    const sortFn = (
+      a: { subject: string; questionCount?: number },
+      b: { subject: string; questionCount?: number },
+    ) => {
+      if (sortKey === "name-asc") {
+        return a.subject.localeCompare(b.subject)
+      }
+
+      const countA = a.questionCount ?? 0
+      const countB = b.questionCount ?? 0
+
+      return sortKey === "count-asc" ? countA - countB : countB - countA
+    }
+
+    const active = quizz
+      .filter((q) => !q.archived && matchesSearch(q.subject))
+      .sort(sortFn)
+    const archived = quizz
+      .filter((q) => q.archived && matchesSearch(q.subject))
+      .sort(sortFn)
+
+    return {
+      activeQuizz: active,
+      archivedQuizz: archived,
+      hasMatches: active.length > 0 || archived.length > 0,
+    }
+  }, [quizz, search, sortKey])
 
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
     toast.error(t(message))
@@ -56,9 +102,14 @@ const ConfigManageQuizz = () => {
     setPendingDelete(null)
   }
 
-  const handleDuplicate = (id: string) => {
-    socket.emit(EVENTS.QUIZZ.DUPLICATE, id)
+  const handleDuplicate = () => {
+    if (!pendingDuplicate) {
+      return
+    }
+
+    socket.emit(EVENTS.QUIZZ.DUPLICATE, pendingDuplicate.id)
     toast.success(t("manager:quizz.duplicated"))
+    setPendingDuplicate(null)
   }
 
   const handleArchived = (id: string, archived: boolean) => {
@@ -136,6 +187,55 @@ const ConfigManageQuizz = () => {
         />
       </div>
 
+      {quizz.length > 0 && (
+        <div className="mb-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <label htmlFor="quizz-search" className="sr-only">
+              {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
+            </label>
+            <Input
+              id="quizz-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t("manager:quizz.searchPlaceholder", {
+                defaultValue: "Nach Thema suchen …",
+              })}
+              className="min-h-11 w-full rounded-xl"
+            />
+          </div>
+          <div className="shrink-0">
+            <label htmlFor="quizz-sort" className="sr-only">
+              {t("manager:quizz.sort", { defaultValue: "Sortieren" })}
+            </label>
+            <select
+              id="quizz-sort"
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as SortKey)}
+              aria-label={t("manager:quizz.sort", {
+                defaultValue: "Sortieren",
+              })}
+              className="focus-visible:border-primary min-h-11 w-full rounded-xl border-2 border-gray-300 p-2 font-semibold focus-visible:outline-none sm:w-auto"
+            >
+              <option value="name-asc">
+                {t("manager:quizz.sortNameAsc", {
+                  defaultValue: "Name A–Z",
+                })}
+              </option>
+              <option value="count-desc">
+                {t("manager:quizz.sortCountDesc", {
+                  defaultValue: "Meiste Fragen",
+                })}
+              </option>
+              <option value="count-asc">
+                {t("manager:quizz.sortCountAsc", {
+                  defaultValue: "Wenigste Fragen",
+                })}
+              </option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {quizz.length === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col justify-center">
           <EmptyState
@@ -150,6 +250,16 @@ const ConfigManageQuizz = () => {
             }}
           />
         </div>
+      ) : !hasMatches ? (
+        <EmptyState
+          icon={SearchX}
+          headline={t("manager:quizz.noResults", {
+            defaultValue: "Keine Treffer",
+          })}
+          hint={t("manager:quizz.noResultsHint", {
+            defaultValue: "Passe deinen Suchbegriff an.",
+          })}
+        />
       ) : (
         <motion.div
           className="min-h-0 flex-1 space-y-3 p-0.5"
@@ -197,7 +307,8 @@ const ConfigManageQuizz = () => {
                     key: "duplicate",
                     icon: Copy,
                     label: t("manager:quizz.duplicate", { name: q.subject }),
-                    onClick: () => handleDuplicate(q.id),
+                    onClick: () =>
+                      setPendingDuplicate({ id: q.id, subject: q.subject }),
                   },
                   {
                     key: "archive",
@@ -323,6 +434,27 @@ const ConfigManageQuizz = () => {
         })}
         confirmLabel={t("common:delete")}
         onConfirm={handleDelete}
+      />
+
+      <AlertDialog
+        open={pendingDuplicate !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDuplicate(null)
+          }
+        }}
+        title={t("manager:quizz.duplicateTitle", {
+          defaultValue: "Quiz duplizieren",
+        })}
+        description={t("manager:quizz.duplicateConfirm", {
+          name: pendingDuplicate?.subject ?? "",
+          defaultValue:
+            'Eine Kopie von „{{name}}“ wird mit dem Zusatz „(Kopie)“ erstellt.',
+        })}
+        confirmLabel={t("manager:quizz.duplicateAction", {
+          defaultValue: "Duplizieren",
+        })}
+        onConfirm={handleDuplicate}
       />
     </div>
   )

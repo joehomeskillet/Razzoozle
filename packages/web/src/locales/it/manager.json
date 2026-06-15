@@ -2,6 +2,20 @@
   "configurationsTitle": "Configurazioni",
   "logout": "Disconnetti",
   "passwordPlaceholder": "Password",
+  "editor": {
+    "unsavedChanges": "Modifiche non salvate",
+    "leaveTitle": "Modifiche non salvate",
+    "leaveDescription": "Hai modifiche che non sono ancora state salvate. Vuoi salvarle prima di uscire dal quiz?",
+    "discard": "Scarta"
+  },
+  "mediaPicker": {
+    "title": "Scegli dalla libreria",
+    "search": "Cerca",
+    "searchPlaceholder": "Cerca immagini …",
+    "empty": "Ancora nessuna immagine nella libreria. Caricane qualcuna nella scheda Media.",
+    "noResults": "Nessuna immagine corrispondente trovata.",
+    "openButton": "Dalla libreria"
+  },
   "quizz": {
     "create": "Crea quiz",
     "delete": "Elimina quiz",
@@ -25,7 +39,18 @@
     "archivedToast": "Quiz archiviato",
     "unarchivedToast": "Quiz ripristinato",
     "showArchived": "Mostra archivio",
-    "hideArchived": "Nascondi archivio"
+    "hideArchived": "Nascondi archivio",
+    "search": "Cerca quiz",
+    "searchPlaceholder": "Cerca per argomento …",
+    "sort": "Ordina",
+    "sortNameAsc": "Nome A–Z",
+    "sortCountDesc": "Più domande",
+    "sortCountAsc": "Meno domande",
+    "noResults": "Nessuna corrispondenza",
+    "noResultsHint": "Modifica il termine di ricerca.",
+    "duplicateTitle": "Duplica quiz",
+    "duplicateConfirm": "Verrà creata una copia di «{{name}}» con il suffisso «(Copia)».",
+    "duplicateAction": "Duplica"
   },
   "result": {
     "delete": "Elimina risultato",
@@ -36,6 +61,12 @@
     "emptyHeadline": "Nessun risultato ancora",
     "open": "Apri il risultato di \"{{name}}\"",
     "paginationOf": " di ",
+    "searchPlaceholder": "Cerca risultati",
+    "dateFilter": "Filtra per data",
+    "noResults": "Nessun risultato corrispondente",
+    "noResultsHint": "Modifica la ricerca o il filtro data.",
+    "showNames": "Mostra nomi",
+    "anonymizedPlayer": "Giocatore {{index}}",
     "stats": {
       "correctAnswers": "Risposte corrette",
       "playersAnswered": "Giocatori che hanno risposto"

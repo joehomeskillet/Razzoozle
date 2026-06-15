@@ -319,7 +319,7 @@ const SubmitPage = () => {
       {/* Playful field of popping "?" glyphs — sits behind the form surface. */}
       <QuestionMarksField />
 
-      <QuizzEditorProvider key={formKey}>
+      <QuizzEditorProvider key={formKey} isManager={false}>
         <SubmitInner onReset={() => setFormKey((k) => k + 1)} />
       </QuizzEditorProvider>
     </div>

@@ -11,6 +11,20 @@
   },
   "logout": "Cerrar sesión",
   "passwordPlaceholder": "Contraseña",
+  "editor": {
+    "unsavedChanges": "Cambios sin guardar",
+    "leaveTitle": "Cambios sin guardar",
+    "leaveDescription": "Tienes cambios que aún no se han guardado. ¿Quieres guardarlos antes de salir del cuestionario?",
+    "discard": "Descartar"
+  },
+  "mediaPicker": {
+    "title": "Elegir de la biblioteca",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar imágenes …",
+    "empty": "Aún no hay imágenes en la biblioteca. Sube algunas en la pestaña Medios.",
+    "noResults": "No se encontraron imágenes que coincidan.",
+    "openButton": "De la biblioteca"
+  },
   "quizz": {
     "create": "Crear cuestionario",
     "delete": "Eliminar cuestionario",
@@ -34,7 +48,18 @@
     "archivedToast": "Cuestionario archivado",
     "unarchivedToast": "Cuestionario restaurado",
     "showArchived": "Mostrar archivo",
-    "hideArchived": "Ocultar archivo"
+    "hideArchived": "Ocultar archivo",
+    "search": "Buscar cuestionarios",
+    "searchPlaceholder": "Buscar por tema …",
+    "sort": "Ordenar",
+    "sortNameAsc": "Nombre A–Z",
+    "sortCountDesc": "Más preguntas",
+    "sortCountAsc": "Menos preguntas",
+    "noResults": "Sin coincidencias",
+    "noResultsHint": "Ajusta tu término de búsqueda.",
+    "duplicateTitle": "Duplicar cuestionario",
+    "duplicateConfirm": "Se creará una copia de «{{name}}» con el sufijo «(Copia)».",
+    "duplicateAction": "Duplicar"
   },
   "result": {
     "aria": {
@@ -50,6 +75,12 @@
     "emptyHeadline": "Aún no hay resultados",
     "open": "Abrir el resultado de \"{{name}}\"",
     "paginationOf": " de ",
+    "searchPlaceholder": "Buscar resultados",
+    "dateFilter": "Filtrar por fecha",
+    "noResults": "No hay resultados que coincidan",
+    "noResultsHint": "Ajusta la búsqueda o el filtro de fecha.",
+    "showNames": "Mostrar nombres",
+    "anonymizedPlayer": "Jugador {{index}}",
     "slider": {
       "average": "Media de las estimaciones:",
       "correctAnswer": "Respuesta correcta:",

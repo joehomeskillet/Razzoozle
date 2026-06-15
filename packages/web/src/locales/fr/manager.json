@@ -11,6 +11,20 @@
   },
   "logout": "Déconnexion",
   "passwordPlaceholder": "Mot de passe",
+  "editor": {
+    "unsavedChanges": "Modifications non enregistrées",
+    "leaveTitle": "Modifications non enregistrées",
+    "leaveDescription": "Tu as des modifications qui n'ont pas encore été enregistrées. Veux-tu les enregistrer avant de quitter le quizz ?",
+    "discard": "Ignorer"
+  },
+  "mediaPicker": {
+    "title": "Choisir dans la bibliothèque",
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher des images …",
+    "empty": "Aucune image dans la bibliothèque pour l'instant. Importes-en dans l'onglet Médias.",
+    "noResults": "Aucune image correspondante trouvée.",
+    "openButton": "Depuis la bibliothèque"
+  },
   "quizz": {
     "create": "Créer un quizz",
     "delete": "Supprimer le quizz",
@@ -34,7 +48,18 @@
     "archivedToast": "Quizz archivé",
     "unarchivedToast": "Quizz restauré",
     "showArchived": "Afficher l'archive",
-    "hideArchived": "Masquer l'archive"
+    "hideArchived": "Masquer l'archive",
+    "search": "Rechercher des quizz",
+    "searchPlaceholder": "Rechercher par thème …",
+    "sort": "Trier",
+    "sortNameAsc": "Nom A–Z",
+    "sortCountDesc": "Plus de questions",
+    "sortCountAsc": "Moins de questions",
+    "noResults": "Aucun résultat",
+    "noResultsHint": "Ajuste ton terme de recherche.",
+    "duplicateTitle": "Dupliquer le quizz",
+    "duplicateConfirm": "Une copie de « {{name}} » sera créée avec le suffixe « (Copie) ».",
+    "duplicateAction": "Dupliquer"
   },
   "result": {
     "aria": {
@@ -50,6 +75,12 @@
     "emptyHeadline": "Aucun résultat pour l'instant",
     "open": "Ouvrir le résultat de \"{{name}}\"",
     "paginationOf": " sur ",
+    "searchPlaceholder": "Rechercher des résultats",
+    "dateFilter": "Filtrer par date",
+    "noResults": "Aucun résultat correspondant",
+    "noResultsHint": "Ajuste la recherche ou le filtre de date.",
+    "showNames": "Afficher les noms",
+    "anonymizedPlayer": "Joueur {{index}}",
     "stats": {
       "correctAnswers": "Bonnes réponses",
       "playersAnswered": "Joueurs ayant répondu"

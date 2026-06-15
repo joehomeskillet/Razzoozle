@@ -10,19 +10,26 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import MediaPickerModal from "@razzia/web/features/quizz/components/MediaPickerModal"
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
-import { Image, ImageOff, Music, Sparkles, Video } from "lucide-react"
+import { Image, ImageOff, Library, Music, Sparkles, Video } from "lucide-react"
 import { useState, type ChangeEvent } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const QuestionEditorMedia = () => {
-  const { updateQuestion, currentIndex, currentQuestion } = useQuizzEditor()
+  const { updateQuestion, currentIndex, currentQuestion, isManager } =
+    useQuizzEditor()
   const { socket } = useSocket()
   const questionMedia = currentQuestion.media
   const { t } = useTranslation()
   const [aiPrompt, setAiPrompt] = useState("")
   const [generating, setGenerating] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const handleSelectFromLibrary = (url: string) => {
+    updateQuestion(currentIndex, { media: { type: "image", url } })
+  }
 
   useEvent(EVENTS.MANAGER.IMAGE_GENERATED, ({ url }) => {
     updateQuestion(currentIndex, { media: { type: "image", url } })
@@ -120,6 +127,27 @@ const QuestionEditorMedia = () => {
           </div>
 
           <div className="mt-2 flex w-full max-w-md flex-col items-center gap-2 border-t border-gray-200 pt-3">
+            {/*
+              The media-library picker is manager-only: it relies on the
+              withAuth-gated MEDIA.LIST event, which never resolves on the
+              public /submit page (isManager=false), so hide it entirely there.
+            */}
+            {isManager && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="min-h-11"
+                onClick={() => setPickerOpen(true)}
+                classNameContent="gap-1.5"
+              >
+                <Library className="size-5" />
+                <p>
+                  {t("manager:mediaPicker.openButton", {
+                    defaultValue: "Aus Bibliothek",
+                  })}
+                </p>
+              </Button>
+            )}
             <Input
               variant="sm"
               className="w-full"
@@ -152,6 +180,14 @@ const QuestionEditorMedia = () => {
             {t("common:delete")}
           </Button>
         </div>
+      )}
+
+      {isManager && (
+        <MediaPickerModal
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={handleSelectFromLibrary}
+        />
       )}
     </div>
   )
