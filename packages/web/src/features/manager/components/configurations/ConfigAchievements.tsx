@@ -10,11 +10,14 @@ import {
   type AchievementTier,
 } from "@razzia/web/features/game/utils/achievements"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
-import {
-  SectionCard,
-  StickyActions,
-} from "@razzia/web/features/manager/components/console"
+import { SectionCard } from "@razzia/web/features/manager/components/console"
 import { useConfig } from "@razzia/web/features/manager/contexts/config-context"
+import {
+  ActionFooter,
+  FormSection,
+  LabelRow,
+  ToggleField,
+} from "@razzia/web/components/ui"
 import { Award } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
@@ -68,35 +71,6 @@ const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
 }
 
 // ---------------------------------------------------------------------------
-// Toggle switch (same visual language as ConfigGameMode)
-// ---------------------------------------------------------------------------
-
-interface ToggleProps {
-  checked: boolean
-  onChange: (value: boolean) => void
-  label: string
-}
-
-const Toggle = ({ checked, onChange, label }: ToggleProps) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
-    aria-label={label}
-    onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-      checked ? "bg-[var(--color-primary)]" : "bg-gray-300"
-    }`}
-  >
-    <span
-      className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
-        checked ? "translate-x-6" : "translate-x-1"
-      }`}
-    />
-  </button>
-)
-
-// ---------------------------------------------------------------------------
 // Input style shared across rows
 // ---------------------------------------------------------------------------
 
@@ -104,7 +78,7 @@ const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
 
 // ---------------------------------------------------------------------------
-// Achievement badge row
+// Achievement badge editor card
 // ---------------------------------------------------------------------------
 
 interface BadgeRowProps {
@@ -137,92 +111,100 @@ const BadgeRow = ({
     thresholdMin !== undefined &&
     thresholdMax !== undefined
 
+  const nameId = `ach-name-${id}`
+  const descId = `ach-desc-${id}`
+  const threshId = `ach-thresh-${id}`
+
   return (
     <motion.div
       layout={!reduced}
       initial={{ opacity: 0, y: reduced ? 0 : 6 }}
       animate={{ opacity: state.enabled ? 1 : 0.55, y: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className={`flex flex-col gap-3 rounded-xl px-4 py-3 ring-1 transition-colors ${
+      className={`rounded-xl px-4 py-4 ring-1 transition-colors ${
         state.enabled
           ? "bg-gray-50 ring-gray-200"
           : "bg-gray-50/50 ring-gray-100"
       }`}
     >
-      {/* Top bar: medal preview + badge name + toggle */}
-      <div className="flex items-center gap-3">
-        {/* Medal icon — min touch 44px via padding wrapper */}
+      {/* Medal preview header */}
+      <div className="mb-4 flex items-center gap-3">
         <span className="flex shrink-0 items-center justify-center">
           <AchievementMedal id={id} tier={tier} size="md" />
         </span>
-
-        {/* Name + toggle */}
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-          <span className="truncate font-semibold text-gray-800 text-sm">
-            {defaultName}
-          </span>
-          <Toggle
-            checked={state.enabled}
-            onChange={(v) => onChange(id, { enabled: v })}
-            label={t("manager:achievementsConfig.enabled")}
-          />
-        </div>
+        <span className="truncate text-sm font-semibold text-gray-800">
+          {defaultName}
+        </span>
       </div>
 
-      {/* Editable fields — always visible so the manager can pre-configure */}
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            {t("manager:achievementsConfig.name")}
-          </label>
+      {/* Name & Beschreibung */}
+      <FormSection title={t("manager:achievementsConfig.sectionNameDesc", { defaultValue: "Name & Beschreibung" })}>
+        <LabelRow label={t("manager:achievementsConfig.name")} htmlFor={nameId}>
           <input
+            id={nameId}
             type="text"
             className={inputCls}
             placeholder={defaultName}
             value={state.name}
             onChange={(e) => onChange(id, { name: e.target.value })}
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            {t("manager:achievementsConfig.description")}
-          </label>
+        </LabelRow>
+        <LabelRow
+          label={t("manager:achievementsConfig.description")}
+          htmlFor={descId}
+        >
           <input
+            id={descId}
             type="text"
             className={inputCls}
             placeholder="—"
             value={state.description}
             onChange={(e) => onChange(id, { description: e.target.value })}
           />
-        </div>
-      </div>
+        </LabelRow>
+      </FormSection>
 
-      {/* Threshold input — only for badges that have one */}
+      {/* Sichtbarkeit */}
+      <FormSection title={t("manager:achievementsConfig.sectionVisibility", { defaultValue: "Sichtbarkeit" })}>
+        <ToggleField
+          label={t("manager:achievementsConfig.enabled")}
+          checked={state.enabled}
+          onChange={(v) => onChange(id, { enabled: v })}
+        />
+      </FormSection>
+
+      {/* Schwellenwert — only for badges that have one */}
       {hasThreshold && state.threshold !== null && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 shrink-0">
-            {t("manager:achievementsConfig.threshold")}
-          </label>
-          <input
-            type="number"
-            min={thresholdMin}
-            max={thresholdMax}
-            className={`${inputCls} w-28 tabular-nums`}
-            value={state.threshold}
-            onChange={(e) => {
-              const raw = Number(e.target.value)
-              if (!Number.isNaN(raw)) {
-                onChange(id, {
-                  threshold: Math.min(
-                    Math.max(raw, thresholdMin!),
-                    thresholdMax!,
-                  ),
-                })
-              }
-            }}
-          />
-          <span className="text-sm text-gray-500">{thresholdUnit}</span>
-        </div>
+        <FormSection
+          title={t("manager:achievementsConfig.sectionThreshold", { defaultValue: "Schwellenwert" })}
+          className="mb-0"
+        >
+          <LabelRow
+            label={t("manager:achievementsConfig.threshold")}
+            htmlFor={threshId}
+            suffix={thresholdUnit}
+          >
+            <input
+              id={threshId}
+              type="number"
+              min={thresholdMin}
+              max={thresholdMax}
+              className={`${inputCls} tabular-nums`}
+              value={state.threshold}
+              onChange={(e) => {
+                const raw = Number(e.target.value)
+                if (!Number.isNaN(raw)) {
+                  onChange(id, {
+                    threshold: Math.min(
+                      Math.max(raw, thresholdMin!),
+                      thresholdMax!,
+                    ),
+                  })
+                }
+              }}
+            />
+          </LabelRow>
+        </FormSection>
       )}
     </motion.div>
   )
@@ -347,7 +329,8 @@ const ConfigAchievements = () => {
         title={t("manager:achievementsConfig.title")}
         description={t("manager:achievementsConfig.hint")}
       >
-        <div className="flex flex-col gap-6">
+        {/* Extra bottom padding so last badge card isn't hidden behind ActionFooter */}
+        <div className="flex flex-col gap-6 pb-24">
           {TIER_ORDER.map((tier) => {
             const tierEntries = ACHIEVEMENTS_REGISTRY.filter(
               (e) => e.tier === tier,
@@ -365,8 +348,8 @@ const ConfigAchievements = () => {
                   totalCount={tierEntries.length}
                 />
 
-                {/* Badge rows for this tier */}
-                <div className="flex flex-col gap-2">
+                {/* Badge editor cards for this tier */}
+                <div className="flex flex-col gap-4">
                   <AnimatePresence initial={false}>
                     {tierEntries.map((entry) => {
                       const thresholdDef =
@@ -398,12 +381,12 @@ const ConfigAchievements = () => {
           })}
         </div>
 
-        <StickyActions>
+        <ActionFooter>
           {/* Reset button */}
           <button
             type="button"
             onClick={handleReset}
-            className="min-h-[44px] rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
           >
             {t("manager:achievementsConfig.reset", {
               defaultValue: "Auf Standard zurücksetzen",
@@ -414,13 +397,13 @@ const ConfigAchievements = () => {
           <button
             type="button"
             onClick={handleSave}
-            className="min-h-[44px] rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="min-h-[44px] w-full rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
           >
             {saved
               ? t("manager:achievementsConfig.saved")
               : t("manager:achievementsConfig.save")}
           </button>
-        </StickyActions>
+        </ActionFooter>
       </SectionCard>
     </div>
   )

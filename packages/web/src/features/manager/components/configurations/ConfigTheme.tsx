@@ -12,6 +12,10 @@ import {
 import AlertDialog from "@razzia/web/components/AlertDialog"
 import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
+import ActionFooter from "@razzia/web/components/ui/ActionFooter"
+import ColorPickerField from "@razzia/web/components/ui/ColorPickerField"
+import FormSection from "@razzia/web/components/ui/FormSection"
+import LabelRow from "@razzia/web/components/ui/LabelRow"
 import {
   useEvent,
   useSocket,
@@ -19,11 +23,8 @@ import {
 import {
   AssetPreview,
   AssetPreviewCard,
-  ColorSwatchField,
   EmptyState,
-  Field,
   SectionCard,
-  StickyActions,
   SubGroup,
 } from "@razzia/web/features/manager/components/console"
 import ThemePreviewPanel from "@razzia/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
@@ -33,11 +34,8 @@ import {
   BookMarked,
   History,
   Image as ImageIcon,
-  Palette,
   RotateCcw,
-  SwatchBook,
   Trash2,
-  Type,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
@@ -185,7 +183,7 @@ const ConfigTheme = () => {
     toast.error(t(message))
   })
 
-  // ColorSwatch hands back the hex string directly (not a change event).
+  // ColorPickerField hands back the hex string directly (not a change event).
   const setColorValue =
     (
       key:
@@ -282,7 +280,8 @@ const ConfigTheme = () => {
         reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
       }
     >
-      <div className="flex flex-col gap-4 pb-20">
+      {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
+      <div className="flex flex-col gap-4 pb-24">
         {/*
           Cockpit: LEFT settings column (minmax(0,1fr)) + RIGHT sticky preview
           column (minmax(320px,420px)) at xl; single column below. The whole
@@ -291,14 +290,16 @@ const ConfigTheme = () => {
         */}
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
           {/* ── LEFT: settings ─────────────────────────────────────── */}
-          <div className="flex min-w-0 flex-col gap-4">
-            {/* ── Branding ─────────────────────────────────────────── */}
-            <SectionCard
-              icon={<SwatchBook className="size-5" />}
-              title={t("manager:theme.branding")}
-            >
-              <Field label={t("manager:theme.appTitle")}>
+          <div className="flex min-w-0 flex-col">
+
+            {/* ── App-Titel & Beschreibung ──────────────────────────── */}
+            <FormSection title={t("manager:theme.branding")}>
+              <LabelRow
+                label={t("manager:theme.appTitle")}
+                htmlFor="theme-app-title"
+              >
                 <Input
+                  id="theme-app-title"
                   value={draft.appTitle ?? ""}
                   maxLength={40}
                   placeholder="Razzia"
@@ -308,8 +309,61 @@ const ConfigTheme = () => {
                   }
                   className="min-h-11 w-full rounded-lg"
                 />
-              </Field>
+              </LabelRow>
 
+              <LabelRow label={t("manager:theme.showFooter")} htmlFor="theme-show-branding">
+                <input
+                  id="theme-show-branding"
+                  type="checkbox"
+                  checked={draft.showBranding}
+                  onChange={(e) =>
+                    preview({ ...draft, showBranding: e.target.checked })
+                  }
+                  className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                />
+              </LabelRow>
+            </FormSection>
+
+            {/* ── Farben ───────────────────────────────────────────── */}
+            <FormSection
+              title={t("manager:theme.uiColors")}
+              description={t("manager:theme.contrastNote")}
+            >
+              <ColorPickerField
+                label={t("manager:theme.colors.primary")}
+                value={draft.colorPrimary}
+                onChange={setColorValue("colorPrimary")}
+              />
+              <ColorPickerField
+                label={t("manager:theme.colors.background")}
+                value={draft.colorSecondary}
+                onChange={setColorValue("colorSecondary")}
+              />
+              <ColorPickerField
+                label={t("manager:theme.colors.accent")}
+                value={draft.accentColor}
+                onChange={setColorValue("accentColor")}
+              />
+              <ColorPickerField
+                label={t("manager:theme.colors.text")}
+                value={draft.answerTextColor}
+                onChange={setColorValue("answerTextColor")}
+              />
+
+              {/* Answer colors — one row each */}
+              {draft.answerColors.map((color, index) => (
+                // oxlint-disable-next-line no-array-index-key
+                <ColorPickerField
+                  key={index}
+                  label={`${t("manager:theme.answerColors")} ${["A", "B", "C", "D"][index] ?? ""}`}
+                  value={color}
+                  onChange={setAnswerValue(index)}
+                />
+              ))}
+            </FormSection>
+
+            {/* ── Logo ─────────────────────────────────────────────── */}
+            <FormSection title={t("manager:theme.logo")}>
               <AssetPreview
                 label={t("manager:theme.logo")}
                 value={draft.logo ?? null}
@@ -322,92 +376,14 @@ const ConfigTheme = () => {
                 onReset={() => setDraft((p) => ({ ...p, logo: null }))}
                 defaultLabel={t("manager:theme.default")}
               />
-
-              <SubGroup>
-                <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={draft.showBranding}
-                    onChange={(e) =>
-                      preview({ ...draft, showBranding: e.target.checked })
-                    }
-                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                  />
-                  {t("manager:theme.showFooter")}
-                </label>
-              </SubGroup>
-            </SectionCard>
-
-            {/* ── UI-Farben ────────────────────────────────────────── */}
-            <SectionCard
-              icon={<Palette className="size-5" />}
-              title={t("manager:theme.uiColors")}
-              description={t("manager:theme.contrastNote")}
-            >
-              <SubGroup>
-                <div className="flex flex-wrap items-start justify-center gap-4 sm:justify-start">
-                  <ColorSwatchField
-                    label={t("manager:theme.colors.primary")}
-                    value={draft.colorPrimary}
-                    contrastAgainst="#ffffff"
-                    onChange={setColorValue("colorPrimary")}
-                  />
-                  <ColorSwatchField
-                    label={t("manager:theme.colors.background")}
-                    value={draft.colorSecondary}
-                    onChange={setColorValue("colorSecondary")}
-                  />
-                  <ColorSwatchField
-                    label={t("manager:theme.colors.accent")}
-                    value={draft.accentColor}
-                    contrastAgainst="#ffffff"
-                    onChange={setColorValue("accentColor")}
-                  />
-                </div>
-              </SubGroup>
-            </SectionCard>
-
-            {/* ── Antwort-Farben ───────────────────────────────────── */}
-            <SectionCard
-              icon={<Type className="size-5" />}
-              title={t("manager:theme.answerColors")}
-            >
-              <SubGroup>
-                <div className="flex flex-wrap items-start justify-center gap-4 sm:justify-start">
-                  {draft.answerColors.map((color, index) => (
-                    // oxlint-disable-next-line no-array-index-key
-                    <ColorSwatchField
-                      key={index}
-                      label={["A", "B", "C", "D"][index] ?? ""}
-                      value={color}
-                      contrastAgainst={draft.answerTextColor}
-                      answerPreview={{
-                        text: draft.answerTextColor,
-                        label: ["A", "B", "C", "D"][index] ?? "",
-                      }}
-                      onChange={setAnswerValue(index)}
-                    />
-                  ))}
-                </div>
-              </SubGroup>
-
-              <SubGroup>
-                <div className="flex justify-center sm:justify-start">
-                  <ColorSwatchField
-                    label={t("manager:theme.colors.text")}
-                    value={draft.answerTextColor}
-                    onChange={setColorValue("answerTextColor")}
-                  />
-                </div>
-              </SubGroup>
-            </SectionCard>
+            </FormSection>
 
             {/* ── Hintergründe ─────────────────────────────────────── */}
             <SectionCard
               icon={<ImageIcon className="size-5" />}
               title={t("manager:theme.backgrounds")}
             >
-              <Field
+              <LabelRow
                 label={t("manager:theme.scrim", { value: draft.scrim })}
                 htmlFor="theme-scrim"
               >
@@ -422,7 +398,7 @@ const ConfigTheme = () => {
                   }
                   className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 />
-              </Field>
+              </LabelRow>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {BG_SLOTS.map(({ key, labelKey, aspect }) => (
@@ -587,26 +563,26 @@ const ConfigTheme = () => {
             <ThemePreviewPanel theme={draft} />
           </div>
         </div>
-
-        <StickyActions>
-          <Button
-            variant="primary"
-            className="flex-1 rounded-xl"
-            onClick={handleSave}
-          >
-            {t("manager:theme.save")}
-          </Button>
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={handleReset}
-            className="rounded-xl"
-          >
-            <RotateCcw className="size-4" aria-hidden />
-            {t("manager:theme.reset")}
-          </Button>
-        </StickyActions>
       </div>
+
+      <ActionFooter>
+        <Button
+          variant="secondary"
+          type="button"
+          onClick={handleReset}
+          className="rounded-xl"
+        >
+          <RotateCcw className="size-4" aria-hidden />
+          {t("manager:theme.reset")}
+        </Button>
+        <Button
+          variant="primary"
+          className="flex-1 rounded-xl sm:flex-none"
+          onClick={handleSave}
+        >
+          {t("manager:theme.save")}
+        </Button>
+      </ActionFooter>
 
       <AlertDialog
         open={pendingDeleteId !== null}

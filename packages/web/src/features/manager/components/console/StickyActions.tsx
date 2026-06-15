@@ -1,4 +1,4 @@
-import clsx from "clsx"
+import ActionFooter from "@razzia/web/components/ui/ActionFooter"
 import type { ReactNode } from "react"
 
 export interface StickyActionsProps {
@@ -8,20 +8,12 @@ export interface StickyActionsProps {
 }
 
 /**
- * A sticky action bar (spec §A1) pinned to the bottom of a scrollable console
- * panel. Translucent `bg-white/95` surface with a top border and backdrop
- * blur, bleeding into the panel padding via negative margins. Presentational;
- * the action buttons are passed in as children.
+ * Thin delegate — renders via {@link ActionFooter} so all callers
+ * (ConfigTheme, ConfigAchievements, …) get the gapless footer automatically.
+ * The public props/exports are unchanged; callers need no updates.
  */
 const StickyActions = ({ children, className }: StickyActionsProps) => (
-  <div
-    className={clsx(
-      "sticky bottom-0 z-10 -mx-4 -mb-4 flex gap-2 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:-mx-6 sm:-mb-6 sm:px-6",
-      className,
-    )}
-  >
-    {children}
-  </div>
+  <ActionFooter className={className}>{children}</ActionFooter>
 )
 
 export default StickyActions
