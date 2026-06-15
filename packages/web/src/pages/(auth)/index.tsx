@@ -29,7 +29,18 @@ const PlayerAuthPage = () => {
     return <Username />
   }
 
-  return <Room />
+  return (
+    <>
+      <Room />
+      {/* Full navigation to the trophies page (route.gen.ts auto-regens on build) */}
+      <a
+        href="/trophies"
+        className="text-primary focus-visible:ring-primary/40 mt-3 block text-center text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      >
+        🏆 {t("game:achievements.gallery.title", "Trophäen")}
+      </a>
+    </>
+  )
 }
 
 export const Route = createFileRoute("/(auth)/")({

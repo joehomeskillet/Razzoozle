@@ -16,6 +16,15 @@ import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
+// Team indicator colours for the manager lobby (inline dot on player card).
+// Kept consistent with the player-side picker and TeamLeaderboard.
+const TEAM_DOT: Record<string, string> = {
+  red: "bg-red-500",
+  blue: "bg-blue-500",
+  green: "bg-green-500",
+  yellow: "bg-yellow-400",
+}
+
 interface Props {
   data: ManagerStatusDataMap["SHOW_ROOM"]
 }
@@ -58,15 +67,21 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   useOnClickOutside({ ref: qrContentRef, handler: () => setQrOpen(false) })
 
   useEvent(EVENTS.MANAGER.NEW_PLAYER, (player) => {
-    setPlayerList([...playerList, player])
+    setPlayerList((prev) => {
+      const i = prev.findIndex((p) => p.id === player.id)
+      if (i === -1) return [...prev, player]
+      const next = [...prev]
+      next[i] = player
+      return next
+    })
   })
 
   useEvent(EVENTS.MANAGER.REMOVE_PLAYER, (playerId) => {
-    setPlayerList(playerList.filter((p) => p.id !== playerId))
+    setPlayerList((prev) => prev.filter((p) => p.id !== playerId))
   })
 
   useEvent(EVENTS.MANAGER.PLAYER_KICKED, (playerId) => {
-    setPlayerList(playerList.filter((p) => p.id !== playerId))
+    setPlayerList((prev) => prev.filter((p) => p.id !== playerId))
   })
 
   useEvent(EVENTS.GAME.TOTAL_PLAYERS, (total) => {
@@ -188,6 +203,13 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
             key={player.id}
             className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
           >
+            {player.teamId && TEAM_DOT[player.teamId] && (
+              <span
+                className={`size-4 shrink-0 rounded-full ${TEAM_DOT[player.teamId]} ring-2 ring-white/40`}
+                aria-label={player.teamId}
+                title={player.teamId}
+              />
+            )}
             <Avatar src={player.avatar} name={player.username} size={40} />
             <span className="text-3xl drop-shadow-sm">{player.username}</span>
             <AlertDialog.Root>

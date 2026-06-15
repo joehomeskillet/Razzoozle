@@ -51,6 +51,11 @@ export interface GameSnapshot {
     autoMode: boolean
     paused: boolean
     pausedState: { status: Status; data: StatusDataMap[Status] } | null
+    // Per-player achievement counters keyed by clientId (survive restore).
+    gameCounters?: Record<
+      string,
+      { answered: number; correct: number; ever: boolean }
+    >
   }
   players: Array<{
     clientId: string
@@ -58,6 +63,7 @@ export interface GameSnapshot {
     points: number
     streak: number
     avatar?: string
+    teamId?: string
   }>
 }
 
@@ -85,6 +91,10 @@ class Game {
   // config edit can't change behaviour for a running game. enabled=false =>
   // every LL branch in this game is skipped (normal mode).
   private readonly lowLatency: LowLatencyMode
+  // Team mode config snapshot, read ONCE at game creation (like lowLatency) so a
+  // mid-game config edit can't change behaviour for a running game. false =>
+  // every team branch in the round is skipped (normal mode).
+  private readonly teamMode: boolean
   // Health-snapshot push throttle (low-latency observability). Coalesces bursts
   // of client metric reports into at most one HEALTH emit per window so a busy
   // room can't spam the host. null when no emit is currently scheduled.
@@ -166,6 +176,16 @@ class Game {
       }
     })()
 
+    // Read teamMode once. Crash-guarded like lowLatency — a config error falls
+    // back to false (normal mode, no team aggregation).
+    this.teamMode = (() => {
+      try {
+        return getGameConfig().teamMode
+      } catch {
+        return false
+      }
+    })()
+
     this.cooldown = new CooldownTimer(io, this.gameId)
 
     this.playerManager = new PlayerManager(
@@ -207,6 +227,7 @@ class Game {
         this.botManager.cancelPending()
       },
       lowLatency: this.lowLatency,
+      teamMode: this.teamMode,
     })
 
     // Restore path: no live socket — skip the room join + GAME_CREATED emit +
@@ -310,6 +331,7 @@ class Game {
       // the quiz has no themeId / no matching template. Emitted only to the
       // joining socket.
       this.applyQuizTheme(socket.id)
+      this.sendLobbyWait(socket)
 
       return
     }
@@ -323,7 +345,19 @@ class Game {
 
       this.playerManager.join(socket, username, resolvedAvatar)
       this.applyQuizTheme(socket.id)
+      this.sendLobbyWait(socket)
     })()
+  }
+
+  // Push the lobby WAIT status to the joining player carrying the game's
+  // teamMode flag, so the player lobby only shows the team picker in team-mode
+  // games (the client's own SUCCESS_JOIN-driven WAIT has no teamMode). Read once
+  // at game creation, so this is byte-stable for the running game.
+  private sendLobbyWait(socket: Socket): void {
+    this.sendStatus(socket.id, STATUS.WAIT, {
+      text: "game:waitingForPlayers",
+      teamMode: this.teamMode,
+    })
   }
 
   async setAvatar(socket: Socket, avatar: unknown): Promise<void> {
@@ -335,6 +369,18 @@ class Game {
 
     const clientId = socket.handshake.auth.clientId as string
     const player = this.playerManager.setAvatar(clientId, resolvedAvatar)
+
+    if (player) {
+      this.playerManager.broadcastPlayerUpdate(player)
+    }
+  }
+
+  // Player picks a team (team mode only). The round validates the teamId against
+  // the TEAMS enum and ignores the request when team mode is off; on success we
+  // re-broadcast the updated player so the host roster + lobby reflect the pick.
+  selectTeam(socket: Socket, teamId: string): void {
+    const clientId = socket.handshake.auth.clientId as string
+    const player = this.round.selectTeam(clientId, teamId)
 
     if (player) {
       this.playerManager.broadcastPlayerUpdate(player)

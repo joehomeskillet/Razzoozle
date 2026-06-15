@@ -1,0 +1,129 @@
+import type { TeamStanding } from "@razzia/common/types/game"
+import { AnimatePresence, motion } from "motion/react"
+import { useTranslation } from "react-i18next"
+
+// Team color map — one tint per fixed team id. Consistent with the player-side
+// team picker swatches so the same colours appear everywhere.
+const TEAM_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
+  red: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    bar: "bg-red-500",
+  },
+  blue: {
+    bg: "bg-blue-100",
+    text: "text-blue-800",
+    bar: "bg-blue-500",
+  },
+  green: {
+    bg: "bg-green-100",
+    text: "text-green-800",
+    bar: "bg-green-500",
+  },
+  yellow: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-900",
+    bar: "bg-yellow-400",
+  },
+}
+
+const fallback = {
+  bg: "bg-gray-100",
+  text: "text-gray-800",
+  bar: "bg-gray-400",
+}
+
+interface Props {
+  standings: TeamStanding[]
+}
+
+const TeamLeaderboard = ({ standings }: Props) => {
+  const { t } = useTranslation()
+
+  if (standings.length === 0) {
+    return null
+  }
+
+  // Highest points for proportional bar width calculation.
+  const maxPoints = standings[0]?.points ?? 1
+
+  return (
+    <div className="mb-6 w-full max-w-4xl">
+      <h3 className="mb-3 text-2xl font-bold text-white drop-shadow-md lg:text-3xl">
+        {t("game:teamLeaderboard", { defaultValue: "Teams" })}
+      </h3>
+      <div className="flex flex-col gap-2">
+        <AnimatePresence mode="popLayout">
+          {standings.map((standing, rank) => {
+            const colors = TEAM_COLORS[standing.teamId] ?? fallback
+            const barWidth =
+              maxPoints > 0
+                ? Math.max(4, Math.round((standing.points / maxPoints) * 100))
+                : 4
+
+            return (
+              <motion.div
+                key={standing.teamId}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+                transition={{
+                  layout: { type: "spring", stiffness: 400, damping: 28 },
+                  opacity: { duration: 0.25 },
+                  y: { duration: 0.25 },
+                }}
+                className={`flex items-center gap-3 overflow-hidden rounded-xl p-3 ${colors.bg}`}
+              >
+                {/* Rank badge */}
+                <span
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-full text-base font-bold ${colors.bar} text-white`}
+                >
+                  {rank + 1}
+                </span>
+
+                {/* Team name */}
+                <span
+                  className={`min-w-[4.5rem] shrink-0 text-lg font-bold ${colors.text}`}
+                >
+                  {t(`game:teams.${standing.teamId}`, {
+                    defaultValue:
+                      standing.teamId.charAt(0).toUpperCase() +
+                      standing.teamId.slice(1),
+                  })}
+                </span>
+
+                {/* Progress bar */}
+                <div className="flex-1 overflow-hidden rounded-full bg-black/10">
+                  <motion.div
+                    className={`h-3 rounded-full ${colors.bar}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${barWidth}%` }}
+                    transition={{ type: "spring", stiffness: 200, damping: 30 }}
+                  />
+                </div>
+
+                {/* Points + player count */}
+                <div className="shrink-0 text-right">
+                  <span
+                    className={`block text-lg font-bold tabular-nums ${colors.text}`}
+                  >
+                    {standing.points.toLocaleString()}
+                  </span>
+                  <span className={`block text-xs font-medium ${colors.text} opacity-70`}>
+                    {t("game:teamLeaderboard.players", {
+                      defaultValue: "{{count}} Spieler",
+                      count: standing.playerCount,
+                    })}
+                  </span>
+                </div>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+export default TeamLeaderboard

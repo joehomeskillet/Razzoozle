@@ -6,6 +6,7 @@ import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import ConfigAI from "@razzia/web/features/manager/components/configurations/ConfigAI"
 import ConfigCatalog from "@razzia/web/features/manager/components/configurations/ConfigCatalog"
 import ConfigDisplay from "@razzia/web/features/manager/components/configurations/ConfigDisplay"
+import ConfigGameMode from "@razzia/web/features/manager/components/configurations/ConfigGameMode"
 import ConfigManageQuizz from "@razzia/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigMedia from "@razzia/web/features/manager/components/configurations/ConfigMedia"
 import ConfigResults from "@razzia/web/features/manager/components/configurations/ConfigResults"
@@ -33,6 +34,7 @@ import {
   Play,
   Sparkles,
   Trophy,
+  Users,
 } from "lucide-react"
 import { type ComponentType, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -50,6 +52,7 @@ interface TabDef {
 const tabs: TabDef[] = [
   { key: "play", nameKey: "manager:tabs.play", icon: Play, component: ConfigSelectQuizz },
   { key: "quizz", nameKey: "manager:tabs.quizz", icon: ListChecks, component: ConfigManageQuizz },
+  { key: "gamemode", nameKey: "manager:tabs.gamemode", icon: Users, component: ConfigGameMode },
   { key: "catalog", nameKey: "manager:tabs.catalog", icon: Library, component: ConfigCatalog },
   { key: "media", nameKey: "manager:tabs.media", icon: Images, component: ConfigMedia },
   { key: "ki", nameKey: "manager:tabs.ki", icon: Sparkles, component: ConfigAI },

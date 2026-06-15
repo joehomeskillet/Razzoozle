@@ -125,7 +125,8 @@
     "design": "Design",
     "satellite": "Satellit",
     "submissions": "Vorschläge",
-    "media": "Medien"
+    "media": "Medien",
+    "gamemode": "Modus"
   },
   "media": {
     "title": "Medienbibliothek",
@@ -449,5 +450,13 @@
     "meta": {
       "questions": "{{count}} Fragen"
     }
+  },
+  "gameMode": {
+    "title": "Spielmodus",
+    "description": "Im Team-Modus werden Punkte pro Team aufsummiert und eine Team-Rangliste angezeigt.",
+    "teamMode": "Team-Modus",
+    "teamModeHint": "Spieler wählen ein Team (Rot, Blau, Grün, Gelb). Erfordert einen Neustart des Spiels.",
+    "teamModeEnabled": "Team-Modus aktiviert",
+    "teamModeDisabled": "Team-Modus deaktiviert"
   }
 }

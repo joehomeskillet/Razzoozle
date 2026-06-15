@@ -2,6 +2,7 @@ import type {
   Player,
   QuestionMedia,
   QuestionType,
+  TeamStanding,
 } from "@razzia/common/types/game"
 
 export const STATUS = {
@@ -67,10 +68,16 @@ export interface CommonStatusDataMap {
     bonus?: boolean
     firstCorrect?: boolean
     poll?: boolean
+    achievements?: string[]
   }
-  WAIT: { text: string }
+  WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }
-  FINISHED: { subject: string; top: Player[]; rank?: number }
+  FINISHED: {
+    subject: string
+    top: Player[]
+    rank?: number
+    teamStandings?: TeamStanding[]
+  }
 }
 
 interface ManagerExtraStatus {
@@ -92,7 +99,11 @@ interface ManagerExtraStatus {
     acceptedAnswers?: string[]
     matchMode?: "exact" | "normalized" | "fuzzy"
   }
-  SHOW_LEADERBOARD: { oldLeaderboard: Player[]; leaderboard: Player[] }
+  SHOW_LEADERBOARD: {
+    oldLeaderboard: Player[]
+    leaderboard: Player[]
+    teamStandings?: TeamStanding[]
+  }
 }
 
 export type PlayerStatusDataMap = CommonStatusDataMap

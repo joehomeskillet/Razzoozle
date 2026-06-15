@@ -71,6 +71,12 @@ export const SFX = {
   RESULTS_SOUND: "/sounds/results.mp3",
   SHOW_SOUND: "/sounds/show.mp3",
   BOUMP_SOUND: "/sounds/boump.mp3",
+  TIERS: {
+    BRONZE: "/sounds/bronze.mp3",
+    SILVER: "/sounds/silver.mp3",
+    GOLD: "/sounds/gold.mp3",
+    DIAMANT: "/sounds/diamant.mp3",
+  },
 } as const
 
 export const MANAGER_SKIP_EVENTS = {

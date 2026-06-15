@@ -15,4 +15,8 @@ export interface ManagerConfig {
   // Optional so the contract WP keeps the types gate green before the socket WP
   // populates it (emitConfig). The socket layer sends it once that WP lands.
   themeTemplates?: ThemeTemplateMeta[]
+  // Persisted team-mode flag, round-tripped so the manager's game-mode toggle
+  // reflects the saved value instead of always defaulting to off. Optional for
+  // back-compat: an old emitConfig payload (or a missing config) reads as off.
+  teamMode?: boolean
 }

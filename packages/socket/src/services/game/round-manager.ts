@@ -7,6 +7,7 @@ import {
   SLIDER_TOLERANCE_FRACTION,
   STREAK_CAP,
   STREAK_STEP,
+  TEAMS,
 } from "@razzia/common/constants"
 import type {
   Answer,
@@ -15,6 +16,7 @@ import type {
   Question,
   QuestionResult,
   Quizz,
+  TeamStanding,
 } from "@razzia/common/types/game"
 import type {
   AnswerAck,
@@ -79,6 +81,11 @@ export interface RoundManagerOptions {
   // Low-latency mode config (already defaulted by the zod validator). When
   // `enabled` is false every branch below is skipped => normal mode unchanged.
   lowLatency: LowLatencyMode
+  // Team mode: read ONCE at game creation (like lowLatency). When false the
+  // team-standings aggregation in showLeaderboard/FINISHED is skipped entirely
+  // (the optional `teamStandings` field stays undefined). OPTIONAL — absent in
+  // unit-test fakes => treated as false (normal, no-teams behaviour).
+  teamMode?: boolean
 }
 
 export class RoundManager {
@@ -115,6 +122,21 @@ export class RoundManager {
   private answerDeadlineAtServerMs = 0
   // Leading+trailing throttle for the live answered-count broadcast.
   private readonly answerCountThrottle: ScoreboardThrottle<number>
+
+  // ── Achievements bookkeeping ──────────────────────────────────────────────
+  // Server-receive timestamp per clientId for the CURRENT question, for ALL
+  // modes (LL mode also tracks this in answerMeta, but achievements need it even
+  // in normal mode). Cleared at each newQuestion()/showResults boundary. Used to
+  // derive responseTimeMs = received - this.startTime for the timing badges.
+  private answerReceivedAt = new Map<string, number>()
+  // Per-player game counters that SURVIVE across rounds (and snapshot/restore),
+  // keyed by the durable clientId: how many scored questions they answered, how
+  // many they got right, and whether they have EVER answered correctly. Drives
+  // participation / perfect_game / first_correct.
+  private gameCounters = new Map<
+    string,
+    { answered: number; correct: number; ever: boolean }
+  >()
 
   constructor(opts: RoundManagerOptions) {
     this.opts = opts
@@ -305,6 +327,13 @@ export class RoundManager {
     autoMode: boolean
     paused: boolean
     pausedState: { status: Status; data: StatusDataMap[Status] } | null
+    // Per-player achievement counters keyed by clientId. Survives restore so a
+    // resumed game keeps participation / perfect_game / first_correct accurate.
+    // Serialized as a plain object (a Map can't be structured-cloned to JSON).
+    gameCounters?: Record<
+      string,
+      { answered: number; correct: number; ever: boolean }
+    >
   } {
     // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
     // them from BOTH the leaderboard AND each question's playerAnswers — a
@@ -315,6 +344,21 @@ export class RoundManager {
     const botUsernames = new Set(
       this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
     )
+    // Drop bot clientIds from the persisted counters (a restored game must not
+    // resurrect bot achievement state). Bots are identified via the leaderboard.
+    const botClientIds = new Set(
+      this.leaderboard.filter((p) => p.isBot).map((p) => p.clientId),
+    )
+    const gameCounters: Record<
+      string,
+      { answered: number; correct: number; ever: boolean }
+    > = {}
+
+    for (const [clientId, counter] of this.gameCounters) {
+      if (!botClientIds.has(clientId)) {
+        gameCounters[clientId] = { ...counter }
+      }
+    }
 
     return {
       started: this.started,
@@ -329,6 +373,7 @@ export class RoundManager {
       autoMode: this.autoMode,
       paused: this.paused,
       pausedState: this.pausedState,
+      gameCounters,
     }
   }
 
@@ -345,6 +390,10 @@ export class RoundManager {
     autoMode: boolean
     paused?: boolean
     pausedState?: { status: Status; data: StatusDataMap[Status] } | null
+    gameCounters?: Record<
+      string,
+      { answered: number; correct: number; ever: boolean }
+    >
   }): void {
     this.started = snap.started
     this.currentQuestion = snap.currentQuestion
@@ -361,6 +410,17 @@ export class RoundManager {
     this.startTime = 0
     this.tempOldLeaderboard = null
     this.answerDeadlineAtServerMs = 0
+
+    // Rebuild the per-player achievement counters so a resumed game keeps an
+    // accurate participation / perfect_game / first_correct picture. The
+    // per-question answerReceivedAt is transient and starts empty.
+    this.gameCounters = new Map(
+      Object.entries(snap.gameCounters ?? {}).map(([clientId, counter]) => [
+        clientId,
+        { ...counter },
+      ]),
+    )
+    this.answerReceivedAt.clear()
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
@@ -461,6 +521,11 @@ export class RoundManager {
 
     this.startTime = Date.now()
 
+    // Achievements: reset the per-question receive-time map (ALL modes) so a
+    // stale timestamp from a prior question can never leak into this round's
+    // timing badges (speed_demon / lucky_guess / speedy_gonzales).
+    this.answerReceivedAt.clear()
+
     // Low-latency mode: reset per-question dedup bookkeeping and stamp the
     // server-authoritative timing anchors. All guarded by `enabled` so normal
     // mode neither computes nor emits any of this (the optional status fields
@@ -538,6 +603,45 @@ export class RoundManager {
 
       return this.leaderboard.map((p) => ({ ...p }))
     })()
+
+    // ── Achievements pre-round snapshot ───────────────────────────────────────
+    // A prior round exists iff this.leaderboard was populated (round >= 1). The
+    // `climber` badge needs the FULL pre-round ranking (not the top-5 slice), so
+    // we rank EVERY current player by their points BEFORE this round's scoring.
+    const hasPriorRound = this.leaderboard.length > 0
+    const pointsBefore = new Map<string, number>()
+
+    for (const p of currentPlayers) {
+      pointsBefore.set(p.clientId, p.points)
+    }
+
+    // rankBefore: 1-based index over all players sorted by pre-round points desc.
+    // Only meaningful when a prior round exists (else every climb is spurious).
+    const rankBefore = new Map<string, number>()
+
+    if (hasPriorRound) {
+      const preRanked = [...currentPlayers].sort(
+        (a, b) => b.points - a.points,
+      )
+      preRanked.forEach((p, index) => {
+        rankBefore.set(p.clientId, index + 1)
+      })
+    }
+
+    // Scored = the questions that actually count toward participation / 100%:
+    // non-poll AND non-practice. Counted once for the whole quiz.
+    const totalScoredQuestions = this.opts.quizz.questions.filter(
+      (q) => q.type !== "poll" && !q.practice,
+    ).length
+    // participation / perfect_game must fire on the last SCORED question — not
+    // the literal last question. If the quiz ends on a poll/practice round, the
+    // counters never reach their total inside the `aScored` branch (poll/practice
+    // rows are skipped), so we anchor on the index of the final scored question.
+    const lastScoredIndex = this.opts.quizz.questions.reduce(
+      (last, q, i) => (q.type !== "poll" && !q.practice ? i : last),
+      -1,
+    )
+    const isLastScoredRound = this.currentQuestion === lastScoredIndex
 
     const totalType = this.playersAnswers.reduce(
       (acc: Record<number, number>, answer) => {
@@ -663,7 +767,8 @@ export class RoundManager {
           (a) => a.clientId === player.clientId,
         )
 
-        // Poll: opinion vote — neutral, no points, streak untouched.
+        // Poll: opinion vote — neutral, no points, streak untouched. No
+        // achievement is ever awarded on a poll (gated below via aScored=false).
         if (isPoll) {
           return {
             ...player,
@@ -674,6 +779,15 @@ export class RoundManager {
             lastStreakBonus: false,
             lastBonus: false,
             lastFirstCorrect: false,
+            // Achievement intermediates (internal, stripped before the wire).
+            aScored: false,
+            aIsCorrect: false,
+            aBaseFactor: 0,
+            aStreakAfter: player.streak,
+            aGotFirst: false,
+            aResponseTimeMs: null as number | null,
+            aPointsBefore: player.points,
+            aPointsAfter: player.points,
           }
         }
 
@@ -691,6 +805,19 @@ export class RoundManager {
           baseFactor = ev.base
           rawPoints = ev.base * playerAnswer.points
         }
+
+        // Achievements: server-receive response time for this player this round
+        // (ALL modes). null when the player did not answer. Clamped to >= 0 so a
+        // clock skew can't produce a negative "faster than instant" badge.
+        const receivedAt = this.answerReceivedAt.get(player.clientId)
+        const responseTimeMs =
+          receivedAt !== undefined
+            ? Math.max(0, receivedAt - this.startTime)
+            : null
+
+        // pointsBefore is captured BEFORE the mutation below (from the snapshot
+        // taken before this map ran), so it is the player's pre-round total.
+        const myPointsBefore = pointsBefore.get(player.clientId) ?? player.points
 
         const streakBefore = player.streak
         // Streak multiplier: +10% per consecutive correct, capped at +50%.
@@ -733,15 +860,202 @@ export class RoundManager {
           lastStreakBonus: isCorrect && streakBefore > 0 && !question.practice,
           lastBonus: Boolean(question.bonus) && isCorrect && !question.practice,
           lastFirstCorrect: gotFirst,
+          // Achievement intermediates (internal, stripped before the wire). A
+          // scored question is one that counts toward streaks/points: non-poll,
+          // non-practice. Practice answers never unlock anything.
+          aScored: !question.practice,
+          aIsCorrect: isCorrect,
+          aBaseFactor: baseFactor,
+          aStreakAfter: player.streak,
+          aGotFirst: gotFirst,
+          aResponseTimeMs: responseTimeMs,
+          aPointsBefore: myPointsBefore,
+          aPointsAfter: player.points,
         }
       })
       .sort((a, b) => b.points - a.points)
 
-    this.opts.players.replace(sortedPlayers)
+    // ── Achievements: compute per player AFTER points/streak are finalized ────
+    // rankAfter = 1-based index in the just-sorted list (FULL list, not top-5).
+    // underdog needs every player's before/after totals, so we resolve them from
+    // the sorted rows. Counters (answered/correct/everCorrect) are updated here,
+    // surviving across rounds via this.gameCounters (+ snapshot/restore).
+    const achievementsByClient = new Map<string, string[]>()
 
-    sortedPlayers.forEach((player, index) => {
+    sortedPlayers.forEach((row, index) => {
+      // Bots never earn achievements and must not mutate the persistent
+      // gameCounters (per the sim-mode contract: bots are excluded from
+      // counters and badges in live play). Short-circuit before any mutation.
+      if (row.isBot) {
+        return
+      }
+
+      const rankAfter = index + 1
+      const unlocked: string[] = []
+
+      // Only a SCORED answer (non-poll, non-practice) can unlock anything. Poll/
+      // practice rows still get the persistent counters left untouched.
+      if (row.aScored) {
+        const counter = this.gameCounters.get(row.clientId) ?? {
+          answered: 0,
+          correct: 0,
+          ever: false,
+        }
+        const answeredThisRound = this.answerReceivedAt.has(row.clientId)
+        // Count this round into the persistent per-player totals.
+        const everBefore = counter.ever
+        const nextCounter = {
+          answered: counter.answered + (answeredThisRound ? 1 : 0),
+          correct: counter.correct + (row.aIsCorrect ? 1 : 0),
+          ever: counter.ever || row.aIsCorrect,
+        }
+        this.gameCounters.set(row.clientId, nextCounter)
+
+        const rt = row.aResponseTimeMs
+
+        // ── Bronze ────────────────────────────────────────────────────────────
+        // first_correct: this player's FIRST EVER correct answer in the game.
+        if (row.aIsCorrect && !everBefore) {
+          unlocked.push("first_correct")
+        }
+
+        // lucky_guess: correct AND answered in the last 5% of the time window.
+        if (
+          row.aIsCorrect &&
+          rt !== null &&
+          rt >= 0.95 * question.time * 1000
+        ) {
+          unlocked.push("lucky_guess")
+        }
+
+        // participation: answered EVERY scored question. Awarded on the last
+        // scored round once the running answered count reaches the scored total.
+        if (
+          isLastScoredRound &&
+          totalScoredQuestions > 0 &&
+          nextCounter.answered === totalScoredQuestions
+        ) {
+          unlocked.push("participation")
+        }
+
+        // ── Silver ────────────────────────────────────────────────────────────
+        // speed_demon: correct in under 1s.
+        if (row.aIsCorrect && rt !== null && rt < 1000) {
+          unlocked.push("speed_demon")
+        }
+
+        // streak_3: streak hit exactly 3 this round.
+        if (row.aStreakAfter === 3) {
+          unlocked.push("streak_3")
+        }
+
+        // sharpshooter: slider question, correct, accuracy > 95%.
+        if (
+          question.type === "slider" &&
+          row.aIsCorrect &&
+          row.aBaseFactor > 0.95
+        ) {
+          unlocked.push("sharpshooter")
+        }
+
+        // climber: moved up >= 3 ranks vs the prior round (skip round 1).
+        if (hasPriorRound) {
+          const before = rankBefore.get(row.clientId)
+
+          if (before !== undefined && before - rankAfter >= 3) {
+            unlocked.push("climber")
+          }
+        }
+
+        // ── Gold ──────────────────────────────────────────────────────────────
+        // first_responder: the round's first correct answer (by arrival order).
+        if (firstCorrectId !== null && row.clientId === firstCorrectId) {
+          unlocked.push("first_responder")
+        }
+
+        // streak_5 + perfect_round both fire at exactly 5 (per spec).
+        if (row.aStreakAfter === 5) {
+          unlocked.push("streak_5")
+          unlocked.push("perfect_round")
+        }
+
+        // underdog: beat someone who was > 2000 pts ahead pre-round and now
+        // sits below this player.
+        const isUnderdog = sortedPlayers.some(
+          (other) =>
+            other.clientId !== row.clientId &&
+            other.aPointsBefore - row.aPointsBefore > 2000 &&
+            row.aPointsAfter > other.aPointsAfter,
+        )
+
+        if (isUnderdog) {
+          unlocked.push("underdog")
+        }
+
+        // ── Diamant ───────────────────────────────────────────────────────────
+        // streak_10: streak hit exactly 10 this round.
+        if (row.aStreakAfter === 10) {
+          unlocked.push("streak_10")
+        }
+
+        // speedy_gonzales: correct in under 0.4s.
+        if (row.aIsCorrect && rt !== null && rt < 400) {
+          unlocked.push("speedy_gonzales")
+        }
+
+        // perfect_game: 100% correct over all scored questions (last scored round).
+        if (
+          isLastScoredRound &&
+          totalScoredQuestions > 0 &&
+          nextCounter.correct === totalScoredQuestions
+        ) {
+          unlocked.push("perfect_game")
+        }
+      }
+
+      if (unlocked.length > 0) {
+        // Defensive cap: never emit an unbounded list (≤ 20 per the spec).
+        achievementsByClient.set(row.clientId, unlocked.slice(0, 20))
+      }
+    })
+
+    // Persist the freshly-unlocked badges onto the live player objects so they
+    // are visible in the roster / leaderboard payloads too. We DROP the internal
+    // achievement-intermediate (aXxx) fields here so they never reach the wire.
+    const cleanedSorted = sortedPlayers.map((row) => {
+      const {
+        aScored: _aScored,
+        aIsCorrect: _aIsCorrect,
+        aBaseFactor: _aBaseFactor,
+        aStreakAfter: _aStreakAfter,
+        aGotFirst: _aGotFirst,
+        aResponseTimeMs: _aResponseTimeMs,
+        aPointsBefore: _aPointsBefore,
+        aPointsAfter: _aPointsAfter,
+        ...rest
+      } = row
+      const unlocked = achievementsByClient.get(row.clientId)
+
+      if (unlocked) {
+        return { ...rest, achievements: unlocked }
+      }
+
+      // No fresh unlock this round: STRIP any prior-round `achievements` so a
+      // stale badge can't ride into SHOW_LEADERBOARD / FINISHED / the roster
+      // (rest is spread from persisted player objects that may still carry an
+      // earlier round's achievements). Per-player SHOW_RESULT reads fresh from
+      // achievementsByClient, so it is unaffected.
+      const { achievements: _dropStale, ...cleanRest } = rest
+
+      return cleanRest
+    })
+
+    this.opts.players.replace(cleanedSorted)
+
+    cleanedSorted.forEach((player, index) => {
       const rank = index + 1
-      const aheadPlayer = sortedPlayers[index - 1]
+      const aheadPlayer = cleanedSorted[index - 1]
+      const unlocked = achievementsByClient.get(player.clientId)
 
       this.send(player.id, STATUS.SHOW_RESULT, {
         correct: player.lastCorrect,
@@ -759,6 +1073,7 @@ export class RoundManager {
         bonus: player.lastBonus,
         firstCorrect: player.lastFirstCorrect,
         poll: player.lastPoll,
+        ...(unlocked ? { achievements: unlocked } : {}),
       })
     })
 
@@ -807,7 +1122,10 @@ export class RoundManager {
       }),
     })
 
-    this.leaderboard = sortedPlayers
+    // Use the cleaned rows (avatar/achievements preserved, internal aXxx fields
+    // dropped) as the round leaderboard so the between-questions SHOW_LEADERBOARD
+    // rows carry `avatar` (bug #4 fix) without leaking achievement intermediates.
+    this.leaderboard = cleanedSorted
     this.tempOldLeaderboard = oldLeaderboard
     this.playersAnswers = []
 
@@ -974,6 +1292,11 @@ export class RoundManager {
       points: timeToPoint(this.startTime, question.time),
     })
 
+    // Achievements (ALL modes): stamp the server receive time so showResults can
+    // derive responseTimeMs for the timing badges. Independent of LL mode's
+    // answerMeta (which only exists when LL is enabled).
+    this.answerReceivedAt.set(clientId, serverReceivedAtMs)
+
     if (this.ll.enabled) {
       this.answerMeta.set(clientId, { serverReceivedAtMs, clientMessageId })
 
@@ -1095,6 +1418,64 @@ export class RoundManager {
     return this.answerWindowOpen
   }
 
+  // ── Teams ──────────────────────────────────────────────────────────────────
+  // Assign a player to one of the fixed teams. No-op when team mode is off or the
+  // teamId is not a valid TEAMS member (anti-tamper). Re-broadcasts the player so
+  // the host roster + lobby reflect the choice. Returns the updated player (or
+  // undefined when nothing changed) so the caller can decide whether to emit.
+  selectTeam(clientId: string, teamId: string): Player | undefined {
+    if (!this.opts.teamMode) {
+      return undefined
+    }
+
+    if (!(TEAMS as readonly string[]).includes(teamId)) {
+      return undefined
+    }
+
+    const player = this.opts.players.findByClientId(clientId)
+
+    if (!player) {
+      return undefined
+    }
+
+    player.teamId = teamId
+
+    return player
+  }
+
+  // Aggregate team points = SUM of member `points`, with member counts, sorted by
+  // points desc. Returns undefined when team mode is off (so the optional payload
+  // field stays absent in normal mode). Only players WITH a teamId contribute —
+  // bots never have one, so they are naturally excluded.
+  private computeTeamStandings(): TeamStanding[] | undefined {
+    if (!this.opts.teamMode) {
+      return undefined
+    }
+
+    const byTeam = new Map<string, { points: number; playerCount: number }>()
+
+    for (const player of this.opts.players.getAll()) {
+      const teamId = player.teamId
+
+      if (!teamId || !(TEAMS as readonly string[]).includes(teamId)) {
+        continue
+      }
+
+      const entry = byTeam.get(teamId) ?? { points: 0, playerCount: 0 }
+      entry.points += player.points
+      entry.playerCount += 1
+      byTeam.set(teamId, entry)
+    }
+
+    return [...byTeam.entries()]
+      .map(([teamId, { points, playerCount }]) => ({
+        teamId,
+        points,
+        playerCount,
+      }))
+      .sort((a, b) => b.points - a.points)
+  }
+
   showLeaderboard(): void {
     const isLastRound =
       this.currentQuestion + 1 === this.opts.quizz.questions.length
@@ -1133,9 +1514,14 @@ export class RoundManager {
         })),
       })
 
+      // Team mode: final team standings (undefined when team mode is off, so the
+      // optional payload field is simply absent in normal mode).
+      const finalTeamStandings = this.computeTeamStandings()
+
       this.send(this.opts.getManagerId(), STATUS.FINISHED, {
         subject: this.opts.quizz.subject,
         top,
+        ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
       })
 
       this.leaderboard.forEach((player, index) => {
@@ -1143,6 +1529,7 @@ export class RoundManager {
           subject: this.opts.quizz.subject,
           top,
           rank: index + 1,
+          ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
         })
       })
 
@@ -1150,10 +1537,13 @@ export class RoundManager {
     }
 
     const oldLeaderboard = this.tempOldLeaderboard ?? this.leaderboard
+    // Team mode: between-questions team standings (undefined when off → absent).
+    const teamStandings = this.computeTeamStandings()
 
     this.send(this.opts.getManagerId(), STATUS.SHOW_LEADERBOARD, {
       oldLeaderboard: oldLeaderboard.slice(0, 5),
       leaderboard: this.leaderboard.slice(0, 5),
+      ...(teamStandings ? { teamStandings } : {}),
     })
 
     this.tempOldLeaderboard = null

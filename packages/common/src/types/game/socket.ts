@@ -352,6 +352,7 @@ export interface ClientToServerEvents {
   ) => void
   // Player avatar selection/upload (generic id or data URL)
   [EVENTS.PLAYER.SET_AVATAR]: (_payload: unknown) => void
+  [EVENTS.PLAYER.SELECT_TEAM]: (_payload: { teamId: string }) => void
   [EVENTS.PLAYER.RECONNECT]: (_message: {
     gameId: string
     // Low-latency mode: last server sequence the client saw, so resume can
@@ -390,6 +391,8 @@ export interface ClientToServerEvents {
   // Pause/resume (manager-owned, between-questions only — enforced server-side)
   [EVENTS.MANAGER.PAUSE_GAME]: (_message: { gameId?: string }) => void
   [EVENTS.MANAGER.RESUME_GAME]: (_message: { gameId?: string }) => void
+  // Partial game-config patch (manager-auth-gated server-side)
+  [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean }) => void
   // Media-manager actions (client -> server, all auth-gated server-side)
   [EVENTS.MEDIA.LIST]: () => void
   [EVENTS.MEDIA.UPLOAD]: (_payload: unknown) => void

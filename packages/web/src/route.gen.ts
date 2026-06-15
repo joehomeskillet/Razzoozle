@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as DisplayLayoutRouteImport } from './pages/display/layout'
 import { Route as authLayoutRouteImport } from './pages/(auth)/layout'
+import { Route as TrophiesIndexRouteImport } from './pages/trophies/index'
 import { Route as SubmitIndexRouteImport } from './pages/submit/index'
 import { Route as DisplayIndexRouteImport } from './pages/display/index'
 import { Route as authIndexRouteImport } from './pages/(auth)/index'
@@ -22,6 +23,7 @@ import { Route as DisplayPlayRouteImport } from './pages/display/play'
 import { Route as ManagerQuizzLayoutRouteImport } from './pages/manager/quizz/layout'
 import { Route as ManagerQuizzIndexRouteImport } from './pages/manager/quizz/index'
 import { Route as authManagerIndexRouteImport } from './pages/(auth)/manager/index'
+import { Route as QuizzIdSoloRouteImport } from './pages/quizz/$id/solo'
 import { Route as PartyManagerGameIdRouteImport } from './pages/party/manager/$gameId'
 import { Route as ManagerQuizzQuizzIdRouteImport } from './pages/manager/quizz/$quizzId'
 
@@ -32,6 +34,11 @@ const DisplayLayoutRoute = DisplayLayoutRouteImport.update({
 } as any)
 const authLayoutRoute = authLayoutRouteImport.update({
   id: '/(auth)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrophiesIndexRoute = TrophiesIndexRouteImport.update({
+  id: '/trophies/',
+  path: '/trophies/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubmitIndexRoute = SubmitIndexRouteImport.update({
@@ -89,6 +96,11 @@ const authManagerIndexRoute = authManagerIndexRouteImport.update({
   path: '/manager/',
   getParentRoute: () => authLayoutRoute,
 } as any)
+const QuizzIdSoloRoute = QuizzIdSoloRouteImport.update({
+  id: '/quizz/$id/solo',
+  path: '/quizz/$id/solo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PartyManagerGameIdRoute = PartyManagerGameIdRouteImport.update({
   id: '/party/manager/$gameId',
   path: '/party/manager/$gameId',
@@ -111,8 +123,10 @@ export interface FileRoutesByFullPath {
   '/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
   '/submit/': typeof SubmitIndexRoute
+  '/trophies/': typeof TrophiesIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/solo': typeof QuizzIdSoloRoute
   '/manager/': typeof authManagerIndexRoute
   '/manager/quizz/': typeof ManagerQuizzIndexRoute
 }
@@ -125,8 +139,10 @@ export interface FileRoutesByTo {
   '/': typeof authIndexRoute
   '/display': typeof DisplayIndexRoute
   '/submit': typeof SubmitIndexRoute
+  '/trophies': typeof TrophiesIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/solo': typeof QuizzIdSoloRoute
   '/manager': typeof authManagerIndexRoute
   '/manager/quizz': typeof ManagerQuizzIndexRoute
 }
@@ -143,8 +159,10 @@ export interface FileRoutesById {
   '/(auth)/': typeof authIndexRoute
   '/display/': typeof DisplayIndexRoute
   '/submit/': typeof SubmitIndexRoute
+  '/trophies/': typeof TrophiesIndexRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/solo': typeof QuizzIdSoloRoute
   '/(auth)/manager/': typeof authManagerIndexRoute
   '/manager/quizz/': typeof ManagerQuizzIndexRoute
 }
@@ -161,8 +179,10 @@ export interface FileRouteTypes {
     | '/'
     | '/display/'
     | '/submit/'
+    | '/trophies/'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/solo'
     | '/manager/'
     | '/manager/quizz/'
   fileRoutesByTo: FileRoutesByTo
@@ -175,8 +195,10 @@ export interface FileRouteTypes {
     | '/'
     | '/display'
     | '/submit'
+    | '/trophies'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/solo'
     | '/manager'
     | '/manager/quizz'
   id:
@@ -192,8 +214,10 @@ export interface FileRouteTypes {
     | '/(auth)/'
     | '/display/'
     | '/submit/'
+    | '/trophies/'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/solo'
     | '/(auth)/manager/'
     | '/manager/quizz/'
   fileRoutesById: FileRoutesById
@@ -207,7 +231,9 @@ export interface RootRouteChildren {
   RIdRoute: typeof RIdRoute
   SatelliteGameIdRoute: typeof SatelliteGameIdRoute
   SubmitIndexRoute: typeof SubmitIndexRoute
+  TrophiesIndexRoute: typeof TrophiesIndexRoute
   PartyManagerGameIdRoute: typeof PartyManagerGameIdRoute
+  QuizzIdSoloRoute: typeof QuizzIdSoloRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -224,6 +250,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof authLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trophies/': {
+      id: '/trophies/'
+      path: '/trophies'
+      fullPath: '/trophies/'
+      preLoaderRoute: typeof TrophiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/submit/': {
@@ -303,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authManagerIndexRouteImport
       parentRoute: typeof authLayoutRoute
     }
+    '/quizz/$id/solo': {
+      id: '/quizz/$id/solo'
+      path: '/quizz/$id/solo'
+      fullPath: '/quizz/$id/solo'
+      preLoaderRoute: typeof QuizzIdSoloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/party/manager/$gameId': {
       id: '/party/manager/$gameId'
       path: '/party/manager/$gameId'
@@ -370,7 +410,9 @@ const rootRouteChildren: RootRouteChildren = {
   RIdRoute: RIdRoute,
   SatelliteGameIdRoute: SatelliteGameIdRoute,
   SubmitIndexRoute: SubmitIndexRoute,
+  TrophiesIndexRoute: TrophiesIndexRoute,
   PartyManagerGameIdRoute: PartyManagerGameIdRoute,
+  QuizzIdSoloRoute: QuizzIdSoloRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

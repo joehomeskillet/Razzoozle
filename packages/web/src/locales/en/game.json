@@ -67,5 +67,84 @@
     "pauseGame": "Pause game",
     "resumeGame": "Resume game"
   },
-  "playerReconnected": "{{name}} is back online"
+  "playerReconnected": "{{name}} is back online",
+  "achievements": {
+    "gallery": {
+      "title": "Trophies",
+      "empty": "No trophies yet — play a round to earn your first one."
+    },
+    "first_correct": {
+      "name": "First Hit",
+      "desc": "Your very first correct answer in the game."
+    },
+    "participation": {
+      "name": "Full House",
+      "desc": "Answered every question — not a single one missed."
+    },
+    "lucky_guess": {
+      "name": "Lucky Guess",
+      "desc": "Got it right in the last second."
+    },
+    "speed_demon": {
+      "name": "Speed Demon",
+      "desc": "Answered correctly in under one second."
+    },
+    "streak_3": {
+      "name": "Triple Streak",
+      "desc": "Three correct answers in a row."
+    },
+    "sharpshooter": {
+      "name": "Sharpshooter",
+      "desc": "Solved a slider question with over 95% accuracy."
+    },
+    "climber": {
+      "name": "Climber",
+      "desc": "Climbed three or more places in the ranking."
+    },
+    "first_responder": {
+      "name": "First Responder",
+      "desc": "First to answer correctly in this round."
+    },
+    "streak_5": {
+      "name": "Five on Fire",
+      "desc": "Five correct answers in a row."
+    },
+    "underdog": {
+      "name": "Underdog",
+      "desc": "Overtook someone with a 2000-point lead."
+    },
+    "perfect_round": {
+      "name": "Perfect Round",
+      "desc": "Flawless round performance."
+    },
+    "streak_10": {
+      "name": "Ten-Streak",
+      "desc": "Ten correct answers in a row — impressive."
+    },
+    "speedy_gonzales": {
+      "name": "Speedy Gonzales",
+      "desc": "Answered correctly in under 0.4 seconds."
+    },
+    "perfect_game": {
+      "name": "Perfect Game",
+      "desc": "All questions answered correctly."
+    }
+  },
+  "teams": {
+    "chooseTeam": "Choose your team",
+    "teamLeaderboard": "Team Leaderboard",
+    "red": "Red",
+    "blue": "Blue",
+    "green": "Green",
+    "yellow": "Yellow"
+  },
+  "solo": {
+    "play": "Play Solo",
+    "yourScore": "Your Score",
+    "soloLeaderboard": "Leaderboard",
+    "enterName": "Your name",
+    "next": "Next",
+    "finish": "Finish",
+    "rank": "Rank {{rank}}"
+  }
 }

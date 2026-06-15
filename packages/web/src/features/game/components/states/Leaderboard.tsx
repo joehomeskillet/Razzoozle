@@ -1,6 +1,7 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import Avatar from "@razzia/web/components/Avatar"
 import Fire from "@razzia/web/features/game/components/icons/Fire"
+import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
 import { AnimatePresence, motion, useSpring, useTransform } from "motion/react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -43,7 +44,7 @@ const StreakBadge = ({ streak }: { streak: number }) => (
   </AnimatePresence>
 )
 
-const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
+const Leaderboard = ({ data: { oldLeaderboard, leaderboard, teamStandings } }: Props) => {
   const [displayedLeaderboard, setDisplayedLeaderboard] =
     useState(oldLeaderboard)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -68,6 +69,12 @@ const Leaderboard = ({ data: { oldLeaderboard, leaderboard } }: Props) => {
       <h2 className="mb-6 text-5xl font-bold text-white drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
         {t("game:leaderboard")}
       </h2>
+
+      {/* Team standings — rendered above the per-player list when present. */}
+      {teamStandings && teamStandings.length > 0 && (
+        <TeamLeaderboard standings={teamStandings} />
+      )}
+
       <div className="flex w-full flex-col gap-2">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(({ id, username, points, streak, avatar }) => (

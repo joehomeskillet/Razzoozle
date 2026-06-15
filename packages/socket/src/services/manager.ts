@@ -2,6 +2,7 @@ import { EVENTS } from "@razzia/common/constants"
 import type { Socket } from "@razzia/common/types/game/socket"
 import type { SocketContext } from "@razzia/socket/handlers/types"
 import {
+  getGameConfig,
   getQuizzMeta,
   getMediaList,
   getResultsMeta,
@@ -19,6 +20,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     submissions: getSubmissionsMeta(),
     media: getMediaList(),
     themeTemplates: getThemeTemplatesMeta(),
+    teamMode: getGameConfig().teamMode,
   })
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi

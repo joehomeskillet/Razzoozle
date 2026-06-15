@@ -2,9 +2,9 @@ import { EVENTS } from "@razzia/common/constants"
 import { inviteCodeValidator } from "@razzia/common/validators/auth"
 import { setAvatarValidator } from "@razzia/common/validators/avatar"
 import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getQuizz } from "@razzia/socket/services/config"
+import { getQuizz, updateGameConfig } from "@razzia/socket/services/config"
 import Game from "@razzia/socket/services/game"
-import managerAuth from "@razzia/socket/services/manager"
+import managerAuth, { emitConfig } from "@razzia/socket/services/manager"
 import Registry from "@razzia/socket/services/registry"
 import {
   addBotsValidator,
@@ -162,6 +162,24 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }
   })
 
+  // Player picks a team (team mode). No gameId in the payload — resolve the
+  // socket's own game by membership. The teamId is validated server-side
+  // (against the TEAMS enum) and ignored when team mode is off, so a malformed
+  // or hostile payload is a harmless no-op.
+  socket.on(EVENTS.PLAYER.SELECT_TEAM, (payload: unknown) => {
+    const teamId = (payload as { teamId?: unknown } | null | undefined)?.teamId
+
+    if (typeof teamId !== "string") {
+      return
+    }
+
+    const game = resolveOwnGame()
+
+    if (game) {
+      game.selectTeam(socket, teamId)
+    }
+  })
+
   socket.on(EVENTS.MANAGER.KICK_PLAYER, ({ gameId, playerId }) =>
     withGame(gameId, socket, (game) => game.kickPlayer(socket, playerId)),
   )
@@ -299,6 +317,30 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       game.subscribeMetrics(socket)
     }
   })
+
+  // Persist a partial game-config patch (auth-gated — mirrors PAUSE_GAME /
+  // RESUME_GAME). Only `teamMode` is accepted; malformed or missing payloads
+  // are silently dropped (no error event, consistent with other no-op guards).
+  socket.on(
+    EVENTS.MANAGER.SET_GAME_CONFIG,
+    managerAuth.withAuth(socket, (payload: unknown) => {
+      const teamMode = (payload as { teamMode?: unknown } | null | undefined)
+        ?.teamMode
+
+      if (typeof teamMode !== "boolean") {
+        return
+      }
+
+      try {
+        updateGameConfig({ teamMode })
+        // Round-trip the saved value back so the manager's toggle reflects the
+        // persisted config rather than its optimistic local state.
+        emitConfig(socket)
+      } catch {
+        // Validation failure is non-fatal for the socket session.
+      }
+    }),
+  )
 
   socket.on(EVENTS.MANAGER.ABORT_QUIZ, ({ gameId }) =>
     withGame(gameId, socket, (game) => game.abortRound(socket)),

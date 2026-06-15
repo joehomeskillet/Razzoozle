@@ -116,7 +116,8 @@
     "submissions": "Proposte",
     "catalog": "Catalogo",
     "ki": "IA",
-    "media": "Media"
+    "media": "Media",
+    "gamemode": "Modalità"
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -449,5 +450,13 @@
     "meta": {
       "questions": "{{count}} domande"
     }
+  },
+  "gameMode": {
+    "title": "Modalità di gioco",
+    "description": "In modalità squadre, i punti vengono sommati per squadra e viene mostrata una classifica a squadre.",
+    "teamMode": "Modalità squadre",
+    "teamModeHint": "I giocatori scelgono una squadra (rosso, blu, verde, giallo). Richiede il riavvio della partita.",
+    "teamModeEnabled": "Modalità squadre attivata",
+    "teamModeDisabled": "Modalità squadre disattivata"
   }
 }

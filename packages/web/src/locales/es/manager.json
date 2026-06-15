@@ -125,7 +125,8 @@
     "submissions": "Sugerencias",
     "catalog": "Catálogo",
     "ki": "IA",
-    "media": "Medios"
+    "media": "Medios",
+    "gamemode": "Modo"
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -449,5 +450,13 @@
     "meta": {
       "questions": "{{count}} preguntas"
     }
+  },
+  "gameMode": {
+    "title": "Modo de juego",
+    "description": "En el modo por equipos, los puntos se suman por equipo y se muestra una clasificación por equipos.",
+    "teamMode": "Modo por equipos",
+    "teamModeHint": "Los jugadores eligen un equipo (rojo, azul, verde, amarillo). Requiere reiniciar la partida.",
+    "teamModeEnabled": "Modo por equipos activado",
+    "teamModeDisabled": "Modo por equipos desactivado"
   }
 }

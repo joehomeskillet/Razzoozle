@@ -23,6 +23,7 @@ export const EVENTS = {
     // Low-latency mode: optional server ack for a submitted answer.
     ANSWER_ACK: "player:answerAck",
     SET_AVATAR: "player:setAvatar",
+    SELECT_TEAM: "player:selectTeam",
   },
   // Low-latency mode: UI-only clock sync (never a scoring input).
   CLOCK: {
@@ -94,6 +95,7 @@ export const EVENTS = {
     PLAYER_RECONNECTED: "manager:playerReconnected",
     PAUSE_GAME: "manager:pauseGame",
     RESUME_GAME: "manager:resumeGame",
+    SET_GAME_CONFIG: "manager:setGameConfig",
   },
   QUIZZ: {
     GET: "quizz:get",
@@ -221,6 +223,10 @@ export const AVATARS_GENERIC = [
   "/media/avatars/generic/generic-3.webp",
   "/media/avatars/generic/generic-4.webp",
 ] as const
+
+// Fixed team set for team mode (labels/colors are client-side).
+export const TEAMS = ["red", "blue", "green", "yellow"] as const
+export type Team = (typeof TEAMS)[number]
 
 // Max decoded size for an uploaded ephemeral player avatar.
 export const AVATAR_MAX_BYTES = 4_000_000

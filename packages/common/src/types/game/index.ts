@@ -27,6 +27,8 @@ export interface Player {
   // ephemeral uploaded URL under /media/avatars/<gameId>/. Optional for
   // back-compat and snapshot restore.
   avatar?: string
+  achievements?: string[]
+  teamId?: string
 }
 
 export interface Answer {
@@ -97,6 +99,36 @@ export interface GameResult {
   date: string
   players: GameResultPlayer[]
   questions: QuestionResult[]
+}
+
+// Solo play / team mode contracts.
+export type SoloQuestion = Omit<
+  Question,
+  "solutions" | "correct" | "acceptedAnswers"
+>
+
+export interface SoloCheckAnswerRequest {
+  questionIndex: number
+  answerId?: number
+  answerIds?: number[]
+  answerText?: string
+}
+
+export interface SoloCheckAnswerResponse {
+  correct: boolean
+  points: number
+}
+
+export interface SoloScoreEntry {
+  playerName: string
+  score: number
+  answeredAt: string
+}
+
+export interface TeamStanding {
+  teamId: string
+  points: number
+  playerCount: number
 }
 
 export interface GameResultMeta {

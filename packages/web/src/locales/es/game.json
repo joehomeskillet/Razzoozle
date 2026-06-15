@@ -67,5 +67,84 @@
     "pauseGame": "Pausar juego",
     "resumeGame": "Reanudar juego"
   },
-  "playerReconnected": "{{name}} se ha reconectado"
+  "playerReconnected": "{{name}} se ha reconectado",
+  "achievements": {
+    "gallery": {
+      "title": "Trofeos",
+      "empty": "Aún sin trofeos — juega una partida para ganar el primero."
+    },
+    "first_correct": {
+      "name": "Primer acierto",
+      "desc": "Tu primera respuesta correcta en el juego."
+    },
+    "participation": {
+      "name": "Casa llena",
+      "desc": "Respondiste todas las preguntas sin excepción."
+    },
+    "lucky_guess": {
+      "name": "Golpe de suerte",
+      "desc": "Acertaste en el último segundo."
+    },
+    "speed_demon": {
+      "name": "Demonio veloz",
+      "desc": "Respondiste correctamente en menos de un segundo."
+    },
+    "streak_3": {
+      "name": "Racha de tres",
+      "desc": "Tres respuestas correctas seguidas."
+    },
+    "sharpshooter": {
+      "name": "Tirador certero",
+      "desc": "Pregunta deslizante resuelta con más del 95 % de precisión."
+    },
+    "climber": {
+      "name": "Escalador",
+      "desc": "Subiste tres o más puestos en la clasificación."
+    },
+    "first_responder": {
+      "name": "Respuesta rápida",
+      "desc": "Primero en responder correctamente en esta ronda."
+    },
+    "streak_5": {
+      "name": "Cinco seguidos",
+      "desc": "Cinco respuestas correctas consecutivas."
+    },
+    "underdog": {
+      "name": "El rezagado",
+      "desc": "Superaste a alguien con 2000 puntos de ventaja."
+    },
+    "perfect_round": {
+      "name": "Ronda perfecta",
+      "desc": "Ronda impecable."
+    },
+    "streak_10": {
+      "name": "Racha de diez",
+      "desc": "Diez respuestas correctas seguidas — impresionante."
+    },
+    "speedy_gonzales": {
+      "name": "Speedy González",
+      "desc": "Respondiste correctamente en menos de 0,4 segundos."
+    },
+    "perfect_game": {
+      "name": "Juego perfecto",
+      "desc": "Todas las preguntas respondidas correctamente."
+    }
+  },
+  "teams": {
+    "chooseTeam": "Elige tu equipo",
+    "teamLeaderboard": "Clasificación por equipos",
+    "red": "Rojo",
+    "blue": "Azul",
+    "green": "Verde",
+    "yellow": "Amarillo"
+  },
+  "solo": {
+    "play": "Jugar en solitario",
+    "yourScore": "Tu puntuación",
+    "soloLeaderboard": "Clasificación",
+    "enterName": "Tu nombre",
+    "next": "Siguiente",
+    "finish": "Finalizar",
+    "rank": "Puesto {{rank}}"
+  }
 }

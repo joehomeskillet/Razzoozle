@@ -36,6 +36,7 @@ export const gameConfigValidator = z.object({
   // The existing manager-password gate. Passed through unchanged so the auth
   // check (managerPassword === "PASSWORD" by default) keeps working.
   managerPassword: z.string().default(DEFAULT_MANAGER_PASSWORD),
+  teamMode: z.boolean().default(false),
   lowLatencyMode: lowLatencyModeValidator,
 })
 

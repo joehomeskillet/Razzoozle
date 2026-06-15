@@ -1,5 +1,6 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import Avatar from "@razzia/web/components/Avatar"
+import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
@@ -97,7 +98,7 @@ const Medal = ({ rank }: { rank: number }) => {
   )
 }
 
-const Podium = ({ data: { subject, top } }: Props) => {
+const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
   const apparition = usePodiumAnimation(top.length)
 
   const { width, height } = useScreenSize()
@@ -122,6 +123,10 @@ const Podium = ({ data: { subject, top } }: Props) => {
         <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
           {subject}
         </h2>
+
+        {teamStandings && teamStandings.length > 0 && (
+          <TeamLeaderboard standings={teamStandings} />
+        )}
 
         <div
           style={{ gridTemplateColumns: `repeat(${top.length}, 1fr)` }}

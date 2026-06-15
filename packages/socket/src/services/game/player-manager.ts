@@ -169,6 +169,7 @@ export class PlayerManager {
     points: number
     streak: number
     avatar?: string
+    teamId?: string
   }> {
     // Filter sim-mode bots: they are a transient test aid and must NEVER persist
     // to a crash-recovery snapshot (a restore must not resurrect bot ghosts).
@@ -180,6 +181,8 @@ export class PlayerManager {
         points: p.points,
         streak: p.streak,
         ...(p.avatar ? { avatar: p.avatar } : {}),
+        // Persist team membership so a restored game keeps team standings intact.
+        ...(p.teamId ? { teamId: p.teamId } : {}),
       }))
   }
 
@@ -193,6 +196,7 @@ export class PlayerManager {
       points: number
       streak: number
       avatar?: string
+      teamId?: string
     }>,
   ): void {
     this.players = players.map((p) => ({
@@ -203,6 +207,7 @@ export class PlayerManager {
       points: p.points,
       streak: p.streak,
       ...(p.avatar ? { avatar: p.avatar } : {}),
+      ...(p.teamId ? { teamId: p.teamId } : {}),
     }))
   }
 }
