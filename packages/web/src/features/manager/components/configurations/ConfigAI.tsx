@@ -18,7 +18,6 @@ import Button from "@razzia/web/components/Button"
 import Input from "@razzia/web/components/Input"
 import {
   EmptyState,
-  Field,
   SectionCard,
   SubGroup,
 } from "@razzia/web/features/manager/components/console"
@@ -26,6 +25,11 @@ import {
   useEvent,
   useSocket,
 } from "@razzia/web/features/game/contexts/socket-context"
+import {
+  ActionFooter,
+  FormSection,
+  LabelRow,
+} from "@razzia/web/components/ui"
 import {
   CheckCircle2,
   ImagePlus,
@@ -324,7 +328,8 @@ const ConfigAI = () => {
   }[textStatus]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-24">
+      {/* ── Text-Provider ───────────────────────────────────────── */}
       <SectionCard
         icon={<Wand2 className="size-5" aria-hidden />}
         title={t("manager:ai.text.title")}
@@ -345,29 +350,35 @@ const ConfigAI = () => {
           </span>
         }
       >
-        <Field label={t("manager:ai.provider")}>
-          <select
-            value={settings.text.activeProvider}
-            onChange={(event) => setActiveProvider(event.target.value)}
-            className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
-          >
-            <option value={AI_PROVIDER_OFF}>{t("manager:ai.off")}</option>
-            {settings.text.providers.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {/* Group: Provider-Auswahl */}
+        <FormSection title={t("manager:ai.provider")}>
+          <LabelRow label={t("manager:ai.provider")} htmlFor="ai-text-provider">
+            <select
+              id="ai-text-provider"
+              value={settings.text.activeProvider}
+              onChange={(event) => setActiveProvider(event.target.value)}
+              className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+            >
+              <option value={AI_PROVIDER_OFF}>{t("manager:ai.off")}</option>
+              {settings.text.providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+          </LabelRow>
+        </FormSection>
 
         {selectedProvider &&
           (() => {
             const privacy = providerPrivacy(selectedProvider.id)
+            const temperature = selectedProvider.temperature ?? AI.TEMP_DEFAULT
             return (
-              <div className="grid gap-3 md:grid-cols-2">
+              <>
+                {/* Privacy notice */}
                 <div
                   className={clsx(
-                    "flex items-start gap-2 rounded-lg p-3 text-sm md:col-span-2",
+                    "flex items-start gap-2 rounded-lg p-3 text-sm",
                     privacy.external
                       ? "bg-amber-50 text-amber-800 outline-1 -outline-offset-1 outline-amber-200"
                       : "bg-green-50 text-green-800 outline-1 -outline-offset-1 outline-green-200",
@@ -386,125 +397,142 @@ const ConfigAI = () => {
                   )}
                   <p>{t(privacy.key, { defaultValue: privacy.defaultValue })}</p>
                 </div>
-                <Field label={t("manager:ai.model")}>
-                  <Input
-                    value={selectedProvider.model}
-                    placeholder={t("manager:ai.modelPlaceholder")}
-                    onChange={(event) =>
-                      updateTextProvider(selectedProvider.id, {
-                        model: event.target.value,
-                      })
-                    }
-                    className="w-full"
-                  />
-                </Field>
 
-                {(() => {
-                  const temperature =
-                    selectedProvider.temperature ?? AI.TEMP_DEFAULT
-                  return (
-                    <Field
-                      label={t("manager:ai.temperature.label", {
-                        defaultValue: "Temperatur",
-                      })}
-                      htmlFor="ai-temperature"
-                      hint={t("manager:ai.temperature.help", {
-                        defaultValue: "Höher = kreativer, niedriger = präziser",
-                      })}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          id="ai-temperature"
-                          type="range"
-                          // Field auto-wires aria-describedby only for a single
-                          // child; the slider lives beside a value span, so link
-                          // the hint explicitly (Field renders it as #*-hint).
-                          aria-describedby="ai-temperature-hint"
-                          min={AI.TEMP_MIN}
-                          max={AI.TEMP_MAX}
-                          step={0.1}
-                          value={temperature}
-                          aria-valuetext={t("manager:ai.temperature.value", {
-                            defaultValue: "{{value}}",
-                            value: temperature.toFixed(1),
-                          })}
-                          onChange={(event) =>
-                            updateTextProvider(selectedProvider.id, {
-                              temperature: Number(event.target.value),
-                            })
-                          }
-                          className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                        />
-                        <span className="w-10 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
-                          {temperature.toFixed(1)}
-                        </span>
-                      </div>
-                    </Field>
-                  )
-                })()}
-
-                {selectedProvider.kind === "openai-compatible" && (
-                  <Field label={t("manager:ai.baseUrl")}>
+                {/* Group: Modell-Einstellungen */}
+                <FormSection
+                  title={t("manager:ai.model")}
+                  className="mb-0"
+                >
+                  <LabelRow
+                    label={t("manager:ai.model")}
+                    htmlFor="ai-model-input"
+                  >
                     <Input
-                      value={selectedProvider.baseUrl ?? ""}
-                      placeholder={t("manager:ai.baseUrlPlaceholder")}
+                      id="ai-model-input"
+                      value={selectedProvider.model}
+                      placeholder={t("manager:ai.modelPlaceholder")}
                       onChange={(event) =>
                         updateTextProvider(selectedProvider.id, {
-                          baseUrl: event.target.value,
+                          model: event.target.value,
                         })
                       }
                       className="w-full"
                     />
-                  </Field>
-                )}
+                  </LabelRow>
 
-                <SubGroup className="space-y-2 md:col-span-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={providerStatusClass(
-                        selectedProvider.keyConfigured,
-                      )}
+                  <LabelRow
+                    label={t("manager:ai.temperature.label", {
+                      defaultValue: "Temperatur",
+                    })}
+                    htmlFor="ai-temperature"
+                    description={t("manager:ai.temperature.help", {
+                      defaultValue: "Höher = kreativer, niedriger = präziser",
+                    })}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="ai-temperature"
+                        type="range"
+                        aria-describedby="ai-temperature-hint"
+                        min={AI.TEMP_MIN}
+                        max={AI.TEMP_MAX}
+                        step={0.1}
+                        value={temperature}
+                        aria-valuetext={t("manager:ai.temperature.value", {
+                          defaultValue: "{{value}}",
+                          value: temperature.toFixed(1),
+                        })}
+                        onChange={(event) =>
+                          updateTextProvider(selectedProvider.id, {
+                            temperature: Number(event.target.value),
+                          })
+                        }
+                        className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                      />
+                      <span className="w-10 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+                        {temperature.toFixed(1)}
+                      </span>
+                    </div>
+                  </LabelRow>
+
+                  {selectedProvider.kind === "openai-compatible" && (
+                    <LabelRow
+                      label={t("manager:ai.baseUrl")}
+                      htmlFor="ai-base-url"
                     >
-                      {selectedProvider.keyConfigured
-                        ? t("manager:ai.keyConfigured")
-                        : t("manager:ai.keyNotConfigured")}
-                    </span>
-                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
-                      {t(`manager:ai.kind.${selectedProvider.kind}`)}
-                    </span>
-                  </div>
-                  <Field label={t("manager:ai.apiKey")}>
-                    <Input
-                      type="password"
-                      value={keyInput}
-                      placeholder={t("manager:ai.apiKeyPlaceholder")}
-                      onChange={(event) => setKeyInput(event.target.value)}
-                      className="w-full"
-                    />
-                  </Field>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => saveKey(selectedProvider.id)}
-                      disabled={!keyInput.trim()}
+                      <Input
+                        id="ai-base-url"
+                        value={selectedProvider.baseUrl ?? ""}
+                        placeholder={t("manager:ai.baseUrlPlaceholder")}
+                        onChange={(event) =>
+                          updateTextProvider(selectedProvider.id, {
+                            baseUrl: event.target.value,
+                          })
+                        }
+                        className="w-full"
+                      />
+                    </LabelRow>
+                  )}
+                </FormSection>
+
+                {/* Group: API-Schlüssel */}
+                <FormSection
+                  title={t("manager:ai.apiKey")}
+                  className="mb-0"
+                >
+                  <SubGroup className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={providerStatusClass(
+                          selectedProvider.keyConfigured,
+                        )}
+                      >
+                        {selectedProvider.keyConfigured
+                          ? t("manager:ai.keyConfigured")
+                          : t("manager:ai.keyNotConfigured")}
+                      </span>
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                        {t(`manager:ai.kind.${selectedProvider.kind}`)}
+                      </span>
+                    </div>
+                    <LabelRow
+                      label={t("manager:ai.apiKey")}
+                      htmlFor="ai-api-key"
                     >
-                      {t("manager:ai.saveKey")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => clearKey(selectedProvider.id)}
-                    >
-                      {t("manager:ai.clearKey")}
-                    </Button>
-                  </div>
-                </SubGroup>
-              </div>
+                      <Input
+                        id="ai-api-key"
+                        type="password"
+                        value={keyInput}
+                        placeholder={t("manager:ai.apiKeyPlaceholder")}
+                        onChange={(event) => setKeyInput(event.target.value)}
+                        className="w-full"
+                      />
+                    </LabelRow>
+                    <div className="flex flex-wrap gap-2 sm:pl-44">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => saveKey(selectedProvider.id)}
+                        disabled={!keyInput.trim()}
+                      >
+                        {t("manager:ai.saveKey")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => clearKey(selectedProvider.id)}
+                      >
+                        {t("manager:ai.clearKey")}
+                      </Button>
+                    </div>
+                  </SubGroup>
+                </FormSection>
+              </>
             )
           })()}
 
+        {/* Test result feedback */}
         <div className="space-y-2 border-t border-gray-200 pt-3">
           <div className="flex flex-wrap gap-2">
             <Button
@@ -514,9 +542,6 @@ const ConfigAI = () => {
               disabled={testing}
             >
               {testing ? t("manager:ai.testing") : t("manager:ai.test")}
-            </Button>
-            <Button type="button" onClick={saveSettings}>
-              {t("manager:ai.save")}
             </Button>
           </div>
           <div aria-live="polite" className="min-h-5">
@@ -562,73 +587,91 @@ const ConfigAI = () => {
         </div>
       </SectionCard>
 
+      {/* ── Bild-Generierung ────────────────────────────────────── */}
       <SectionCard
         icon={<ImagePlus className="size-5" aria-hidden />}
         title={t("manager:ai.image.title")}
         description={t("manager:ai.image.description")}
       >
-        <SubGroup>
-          <div className="grid gap-2 md:grid-cols-2">
-            {settings.image.providers.map((provider) => (
-              <div
-                key={provider.id}
-                className="rounded-lg bg-white p-3 outline-1 -outline-offset-1 outline-gray-200"
-              >
-                <p className="font-semibold text-gray-800">{provider.label}</p>
-                {provider.baseUrl && (
-                  <p className="break-all text-sm text-gray-500">
-                    {provider.baseUrl}
-                  </p>
-                )}
-                <Field
-                  className="mt-3"
-                  label={t("manager:ai.resolution.label", {
-                    defaultValue: "Bildauflösung",
-                  })}
-                  hint={t("manager:ai.resolution.help", {
-                    defaultValue: "Kantenlänge des generierten Bildes",
-                  })}
+        <FormSection
+          title={t("manager:ai.image.title")}
+          className="mb-0"
+        >
+          <SubGroup>
+            <div className="grid gap-2 md:grid-cols-2">
+              {settings.image.providers.map((provider) => (
+                <div
+                  key={provider.id}
+                  className="rounded-lg bg-white p-3 outline-1 -outline-offset-1 outline-gray-200"
                 >
-                  <select
-                    value={provider.resolution ?? IMAGE_RESOLUTION_DEFAULT}
-                    onChange={(event) =>
-                      updateImageProvider(provider.id, {
-                        resolution: Number(event.target.value),
-                      })
-                    }
-                    className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
-                  >
-                    {IMAGE_RESOLUTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {t("manager:ai.resolution.option", {
-                          defaultValue: "{{size}} × {{size}}",
-                          size,
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-            ))}
-          </div>
-        </SubGroup>
+                  <p className="font-semibold text-gray-800">{provider.label}</p>
+                  {provider.baseUrl && (
+                    <p className="break-all text-sm text-gray-500">
+                      {provider.baseUrl}
+                    </p>
+                  )}
+                  <div className="mt-3">
+                    <LabelRow
+                      label={t("manager:ai.resolution.label", {
+                        defaultValue: "Bildauflösung",
+                      })}
+                      htmlFor={`ai-resolution-${provider.id}`}
+                      description={t("manager:ai.resolution.help", {
+                        defaultValue: "Kantenlänge des generierten Bildes",
+                      })}
+                    >
+                      <select
+                        id={`ai-resolution-${provider.id}`}
+                        value={provider.resolution ?? IMAGE_RESOLUTION_DEFAULT}
+                        onChange={(event) =>
+                          updateImageProvider(provider.id, {
+                            resolution: Number(event.target.value),
+                          })
+                        }
+                        className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+                      >
+                        {IMAGE_RESOLUTIONS.map((size) => (
+                          <option key={size} value={size}>
+                            {t("manager:ai.resolution.option", {
+                              defaultValue: "{{size}} × {{size}}",
+                              size,
+                            })}
+                          </option>
+                        ))}
+                      </select>
+                    </LabelRow>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SubGroup>
+        </FormSection>
       </SectionCard>
 
+      {/* ── Quiz-Generierung ────────────────────────────────────── */}
       <SectionCard
         icon={<Sparkles className="size-5" aria-hidden />}
         title={t("manager:ai.generate.quizTitle")}
       >
-        <div className="grid gap-3">
-          <Field label={t("manager:ai.generate.topic")}>
+        <FormSection
+          title={t("manager:ai.generate.quizTitle")}
+          className="mb-0"
+        >
+          <LabelRow
+            label={t("manager:ai.generate.topic")}
+            htmlFor="ai-quiz-topic"
+          >
             <Input
+              id="ai-quiz-topic"
               value={topic}
               maxLength={AI.TOPIC_MAX_LEN}
               placeholder={t("manager:ai.generate.topicPlaceholder")}
               onChange={(event) => setTopic(event.target.value)}
               className="w-full"
             />
-          </Field>
-          <Field
+          </LabelRow>
+
+          <LabelRow
             label={t("manager:ai.generate.countValue", {
               defaultValue: "Fragen: {{count}}",
               count,
@@ -656,8 +699,8 @@ const ConfigAI = () => {
                 {count}
               </span>
             </div>
-          </Field>
-        </div>
+          </LabelRow>
+        </FormSection>
 
         <Button
           type="button"
@@ -691,6 +734,13 @@ const ConfigAI = () => {
           )}
         </div>
       </SectionCard>
+
+      {/* ── Sticky save footer ──────────────────────────────────── */}
+      <ActionFooter>
+        <Button type="button" onClick={saveSettings}>
+          {t("manager:ai.save")}
+        </Button>
+      </ActionFooter>
     </div>
   )
 }

@@ -351,15 +351,20 @@ const ConfigTheme = () => {
               />
 
               {/* Answer colors — one row each */}
-              {draft.answerColors.map((color, index) => (
-                // oxlint-disable-next-line no-array-index-key
-                <ColorPickerField
-                  key={index}
-                  label={`${t("manager:theme.answerColors")} ${["A", "B", "C", "D"][index] ?? ""}`}
-                  value={color}
-                  onChange={setAnswerValue(index)}
-                />
-              ))}
+              {draft.answerColors.map((color, index) => {
+                const letter = ["A", "B", "C", "D"][index] ?? ""
+                return (
+                  // oxlint-disable-next-line no-array-index-key
+                  <ColorPickerField
+                    key={index}
+                    label={`${t("manager:theme.answerColors")} ${letter}`}
+                    value={color}
+                    onChange={setAnswerValue(index)}
+                    contrastAgainst={draft.answerTextColor}
+                    answerPreview={{ text: draft.answerTextColor, label: letter }}
+                  />
+                )
+              })}
             </FormSection>
 
             {/* ── Logo ─────────────────────────────────────────────── */}
