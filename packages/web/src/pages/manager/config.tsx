@@ -9,12 +9,25 @@ import {
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import Configurations from "@razzia/web/features/manager/components/configurations"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 
 const ManagerConfigPage = () => {
-  const { isConnected } = useSocket()
-  const { setGameId, setInviteCode, setStatus, setConfig, config } =
+  const { socket, isConnected } = useSocket()
+  const { setGameId, setInviteCode, setStatus, setConfig, config, password } =
     useManagerStore()
   const navigate = useNavigate()
+
+  // Re-authenticate on every (re)connect. The manager auth lives only in the
+  // server's in-memory loggedClients set, so a server restart (deploy) wipes it
+  // and otherwise silently 401s every withAuth handler — the visible symptom is
+  // an empty KI tab after a deploy. The password is held in-memory in the store
+  // from login; on re-auth the server re-adds the client and re-pushes config +
+  // AI settings, so open tabs heal without a reload.
+  useEffect(() => {
+    if (isConnected && password) {
+      socket.emit(EVENTS.MANAGER.AUTH, password)
+    }
+  }, [isConnected, password, socket])
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)

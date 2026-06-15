@@ -11,6 +11,7 @@ import type { SocketContext } from "@razzia/socket/handlers/types"
 import { generateImage } from "@razzia/socket/services/comfyui"
 import {
   assertSafeId,
+  getAISettings,
   getGameConfig,
   getQuizzById,
   getSubmissionById,
@@ -20,6 +21,7 @@ import {
   saveCatalogEntry,
   saveSubmission,
   setTheme,
+  toPublicAISettings,
   updateQuizz,
   updateSubmission,
 } from "@razzia/socket/services/config"
@@ -404,6 +406,10 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
 
       manager.login(socket)
       emitConfig(socket)
+      // Re-push AI settings on every successful auth (login + reconnect re-auth)
+      // so the open KI tab repopulates after a server restart without the client
+      // racing a withAuth GET_SETTINGS against re-auth. Public shape — no keys.
+      socket.emit(EVENTS.AI.SETTINGS, toPublicAISettings(getAISettings()))
     } catch (error) {
       console.error("Failed to read game config:", error)
       socket.emit(EVENTS.MANAGER.ERROR_MESSAGE, "errors:failedToReadConfig")
