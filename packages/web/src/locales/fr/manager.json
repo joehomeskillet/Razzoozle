@@ -126,7 +126,8 @@
     "catalog": "Catalogue",
     "ki": "IA",
     "media": "Médias",
-    "gamemode": "Mode"
+    "gamemode": "Mode",
+    "achievements": "Succès"
   },
   "satellite": {
     "title": "Écran satellite",
@@ -458,5 +459,15 @@
     "teamModeHint": "Les joueurs choisissent une équipe (rouge, bleu, vert, jaune). Nécessite un redémarrage de la partie.",
     "teamModeEnabled": "Mode équipe activé",
     "teamModeDisabled": "Mode équipe désactivé"
+  },
+  "achievementsConfig": {
+    "title": "Configurer les succès",
+    "hint": "Active ou désactive les badges, personnalise leurs noms et descriptions, et ajuste les seuils numériques.",
+    "enabled": "Activé",
+    "name": "Nom",
+    "description": "Description",
+    "threshold": "Seuil",
+    "save": "Enregistrer",
+    "saved": "Enregistré"
   }
 }

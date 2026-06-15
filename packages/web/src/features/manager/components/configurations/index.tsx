@@ -4,6 +4,7 @@ import LanguageSwitcher from "@razzia/web/components/LanguageSwitcher"
 import { useSocket } from "@razzia/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import ConfigAI from "@razzia/web/features/manager/components/configurations/ConfigAI"
+import ConfigAchievements from "@razzia/web/features/manager/components/configurations/ConfigAchievements"
 import ConfigCatalog from "@razzia/web/features/manager/components/configurations/ConfigCatalog"
 import ConfigDisplay from "@razzia/web/features/manager/components/configurations/ConfigDisplay"
 import ConfigGameMode from "@razzia/web/features/manager/components/configurations/ConfigGameMode"
@@ -23,6 +24,7 @@ import {
 import { useThemeStore } from "@razzia/web/features/theme/store"
 import defaultLogo from "@razzia/web/assets/logo.svg"
 import {
+  Award,
   ClipboardList,
   Images,
   Library,
@@ -56,6 +58,7 @@ const tabs: TabDef[] = [
   { key: "catalog", nameKey: "manager:tabs.catalog", icon: Library, component: ConfigCatalog },
   { key: "media", nameKey: "manager:tabs.media", icon: Images, component: ConfigMedia },
   { key: "ki", nameKey: "manager:tabs.ki", icon: Sparkles, component: ConfigAI },
+  { key: "achievements", nameKey: "manager:tabs.achievements", icon: Award, component: ConfigAchievements },
   { key: "results", nameKey: "manager:tabs.results", icon: Trophy, component: ConfigResults },
   { key: "design", nameKey: "manager:tabs.design", icon: Palette, component: ConfigTheme },
   { key: "satellite", nameKey: "manager:tabs.satellite", icon: Monitor, component: ConfigDisplay },

@@ -1,17 +1,22 @@
+import type { MergedAchievement } from "@razzia/common/achievements"
 import {
   ACHIEVEMENT_META,
   TIER_STYLES,
+  getAchievementDisplay,
+  loadAchievementMeta,
   type AchievementMeta,
   type AchievementTier,
 } from "@razzia/web/features/game/utils/achievements"
 import type { TargetAndTransition, Transition } from "motion/react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 interface SingleBadgeProps {
   meta: AchievementMeta
   index: number
   reduced: boolean
+  mergedList: MergedAchievement[]
 }
 
 const tierAnimVariants: Record<
@@ -70,10 +75,21 @@ const DiamantGlow = ({ reduced }: { reduced: boolean }) => {
   )
 }
 
-const AchievementBadge = ({ meta, index, reduced }: SingleBadgeProps) => {
+const AchievementBadge = ({
+  meta,
+  index,
+  reduced,
+  mergedList,
+}: SingleBadgeProps) => {
   const { t } = useTranslation()
   const style = TIER_STYLES[meta.tier]
   const anim = tierAnimVariants[meta.tier]
+
+  const merged = mergedList.find((m) => m.id === meta.id)
+  const display = getAchievementDisplay(meta.id, merged, {
+    name: t(`${meta.i18nKey}.name`, meta.id),
+    desc: t(`${meta.i18nKey}.desc`, ""),
+  })
 
   return (
     <motion.div
@@ -90,7 +106,7 @@ const AchievementBadge = ({ meta, index, reduced }: SingleBadgeProps) => {
       }
       exit={{ opacity: 0, scale: 0.8 }}
       role="status"
-      aria-label={t(meta.i18nKey + ".name", meta.id)}
+      aria-label={display.name}
       className="relative"
     >
       {meta.tier === "diamant" && <DiamantGlow reduced={reduced} />}
@@ -103,12 +119,12 @@ const AchievementBadge = ({ meta, index, reduced }: SingleBadgeProps) => {
         </span>
         <div className="relative z-10">
           <p className={`text-sm font-extrabold leading-tight ${style.textColor}`}>
-            {t(`${meta.i18nKey}.name`, meta.id)}
+            {display.name}
           </p>
           <p
             className={`text-xs leading-snug opacity-85 ${style.textColor}`}
           >
-            {t(`${meta.i18nKey}.desc`, "")}
+            {display.description}
           </p>
         </div>
         <span
@@ -129,9 +145,17 @@ interface Props {
 /**
  * Stacked achievement badge overlay. Renders on top of the Result screen.
  * Each badge slides in with a tier-specific spring animation.
+ * Prefers server-provided name/description overrides when available.
  */
 const AchievementPopup = ({ achievementIds, visible }: Props) => {
   const reduced = useReducedMotion() ?? false
+  const [mergedList, setMergedList] = useState<MergedAchievement[]>([])
+
+  useEffect(() => {
+    loadAchievementMeta().then((list) => {
+      if (list.length > 0) setMergedList(list)
+    })
+  }, [])
 
   const metas = achievementIds
     .map((id) => ACHIEVEMENT_META[id])
@@ -154,6 +178,7 @@ const AchievementPopup = ({ achievementIds, visible }: Props) => {
               meta={meta}
               index={i}
               reduced={reduced}
+              mergedList={mergedList}
             />
           ))}
         </motion.div>

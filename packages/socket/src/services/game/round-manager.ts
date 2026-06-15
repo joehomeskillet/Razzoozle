@@ -9,6 +9,11 @@ import {
   STREAK_STEP,
   TEAMS,
 } from "@razzia/common/constants"
+import {
+  type AchievementId,
+  type MergedAchievement,
+  mergeAchievementsConfig,
+} from "@razzia/common/achievements"
 import type {
   Answer,
   GameResult,
@@ -86,6 +91,12 @@ export interface RoundManagerOptions {
   // (the optional `teamStandings` field stays undefined). OPTIONAL — absent in
   // unit-test fakes => treated as false (normal, no-teams behaviour).
   teamMode?: boolean
+  // Manager-editable achievements config, merged with the registry defaults and
+  // read ONCE at game creation (like teamMode). Drives the enable/disable gate +
+  // the per-badge numeric thresholds in showResults. OPTIONAL — absent in unit-
+  // test fakes => the constructor falls back to the registry defaults, so the
+  // SHIPPED hardcoded behaviour is preserved.
+  achievements?: MergedAchievement[]
 }
 
 export class RoundManager {
@@ -137,10 +148,21 @@ export class RoundManager {
     string,
     { answered: number; correct: number; ever: boolean }
   >()
+  // Manager-editable achievements config as an O(1) id → MergedAchievement map,
+  // built ONCE at construction. Drives the enabled gate + the per-badge numeric
+  // thresholds in showResults. Falls back to the registry defaults when the
+  // option is absent (unit-test fakes), so the SHIPPED behaviour is preserved.
+  private readonly achievementsConfig: Map<AchievementId, MergedAchievement>
 
   constructor(opts: RoundManagerOptions) {
     this.opts = opts
     this.ll = opts.lowLatency
+
+    // Default to the registry defaults (mergeAchievementsConfig({})) when no
+    // config is passed — keeps the unit-test fakes and any legacy caller on the
+    // SHIPPED hardcoded thresholds / all-enabled behaviour.
+    const merged = opts.achievements ?? mergeAchievementsConfig({})
+    this.achievementsConfig = new Map(merged.map((a) => [a.id, a]))
 
     // Throttle only the chatter (answered count). delayMs 0 when disabled =>
     // emits immediately, byte-identical to today.
@@ -588,6 +610,21 @@ export class RoundManager {
     this.showResults(question)
   }
 
+  // ── Achievements config helpers ───────────────────────────────────────────
+  // enabled gate: a badge with `enabled === false` in the merged config is
+  // skipped entirely (never pushed). A missing entry (never happens once merged
+  // off the registry, but defensive) defaults to enabled.
+  private achievementEnabled(id: AchievementId): boolean {
+    return this.achievementsConfig.get(id)?.enabled ?? true
+  }
+
+  // configured numeric threshold for a badge, falling back to `fallback` (the
+  // shipped default) when the config carries no number for it. Merged config
+  // already clamped the value to the registry [min,max], so this is read-only.
+  private achievementThreshold(id: AchievementId, fallback: number): number {
+    return this.achievementsConfig.get(id)?.threshold ?? fallback
+  }
+
   private showResults(question: Question): void {
     // Sim mode: the window is closing — cancel pending bot timers first so no
     // late bot answer can land after results are computed.
@@ -913,104 +950,124 @@ export class RoundManager {
 
         const rt = row.aResponseTimeMs
 
-        // ── Bronze ────────────────────────────────────────────────────────────
-        // first_correct: this player's FIRST EVER correct answer in the game.
-        if (row.aIsCorrect && !everBefore) {
-          unlocked.push("first_correct")
-        }
-
-        // lucky_guess: correct AND answered in the last 5% of the time window.
-        if (
-          row.aIsCorrect &&
-          rt !== null &&
-          rt >= 0.95 * question.time * 1000
-        ) {
-          unlocked.push("lucky_guess")
-        }
-
-        // participation: answered EVERY scored question. Awarded on the last
-        // scored round once the running answered count reaches the scored total.
-        if (
-          isLastScoredRound &&
-          totalScoredQuestions > 0 &&
-          nextCounter.answered === totalScoredQuestions
-        ) {
-          unlocked.push("participation")
-        }
-
-        // ── Silver ────────────────────────────────────────────────────────────
-        // speed_demon: correct in under 1s.
-        if (row.aIsCorrect && rt !== null && rt < 1000) {
-          unlocked.push("speed_demon")
-        }
-
-        // streak_3: streak hit exactly 3 this round.
-        if (row.aStreakAfter === 3) {
-          unlocked.push("streak_3")
-        }
-
-        // sharpshooter: slider question, correct, accuracy > 95%.
-        if (
-          question.type === "slider" &&
-          row.aIsCorrect &&
-          row.aBaseFactor > 0.95
-        ) {
-          unlocked.push("sharpshooter")
-        }
-
-        // climber: moved up >= 3 ranks vs the prior round (skip round 1).
-        if (hasPriorRound) {
-          const before = rankBefore.get(row.clientId)
-
-          if (before !== undefined && before - rankAfter >= 3) {
-            unlocked.push("climber")
+        // Push a badge only when it is enabled in the merged config. A disabled
+        // badge is never unlocked even if its condition holds. Every condition
+        // reads its numeric threshold from the merged config (clamped to the
+        // registry range); the fallback is the SHIPPED default, so an empty/
+        // missing config reproduces the previous hardcoded behaviour exactly.
+        const award = (id: AchievementId, condition: boolean): void => {
+          if (condition && this.achievementEnabled(id)) {
+            unlocked.push(id)
           }
         }
 
-        // ── Gold ──────────────────────────────────────────────────────────────
-        // first_responder: the round's first correct answer (by arrival order).
-        if (firstCorrectId !== null && row.clientId === firstCorrectId) {
-          unlocked.push("first_responder")
-        }
+        // ── Bronze ────────────────────────────────────────────────────────────
+        // first_correct: this player's FIRST EVER correct answer in the game.
+        award("first_correct", row.aIsCorrect && !everBefore)
 
-        // streak_5 + perfect_round both fire at exactly 5 (per spec).
-        if (row.aStreakAfter === 5) {
-          unlocked.push("streak_5")
-          unlocked.push("perfect_round")
-        }
-
-        // underdog: beat someone who was > 2000 pts ahead pre-round and now
-        // sits below this player.
-        const isUnderdog = sortedPlayers.some(
-          (other) =>
-            other.clientId !== row.clientId &&
-            other.aPointsBefore - row.aPointsBefore > 2000 &&
-            row.aPointsAfter > other.aPointsAfter,
+        // lucky_guess: correct AND answered in the last `lastPercent`% of the
+        // window (default 5 → rt >= 95% of the window in ms).
+        const luckyLastPercent = this.achievementThreshold("lucky_guess", 5)
+        award(
+          "lucky_guess",
+          row.aIsCorrect &&
+            rt !== null &&
+            rt >= (1 - luckyLastPercent / 100) * question.time * 1000,
         )
 
-        if (isUnderdog) {
-          unlocked.push("underdog")
-        }
+        // participation: answered EVERY scored question. Awarded on the last
+        // scored round once the running answered count reaches the scored total.
+        award(
+          "participation",
+          isLastScoredRound &&
+            totalScoredQuestions > 0 &&
+            nextCounter.answered === totalScoredQuestions,
+        )
+
+        // ── Silver ────────────────────────────────────────────────────────────
+        // speed_demon: correct in under `maxMs` (default 1000).
+        const speedMaxMs = this.achievementThreshold("speed_demon", 1000)
+        award("speed_demon", row.aIsCorrect && rt !== null && rt < speedMaxMs)
+
+        // streak_3: streak hit exactly the configured value (default 3).
+        award(
+          "streak_3",
+          row.aStreakAfter === this.achievementThreshold("streak_3", 3),
+        )
+
+        // sharpshooter: slider question, correct, accuracy > `minAccuracyPct`%
+        // (default 95 → baseFactor > 0.95).
+        const sharpMinPct = this.achievementThreshold("sharpshooter", 95)
+        award(
+          "sharpshooter",
+          question.type === "slider" &&
+            row.aIsCorrect &&
+            row.aBaseFactor > sharpMinPct / 100,
+        )
+
+        // climber: moved up >= `minRanksUp` ranks vs the prior round (default 3,
+        // skip round 1).
+        const climberMinUp = this.achievementThreshold("climber", 3)
+        const climbedBefore = hasPriorRound
+          ? rankBefore.get(row.clientId)
+          : undefined
+        award(
+          "climber",
+          climbedBefore !== undefined && climbedBefore - rankAfter >= climberMinUp,
+        )
+
+        // ── Gold ──────────────────────────────────────────────────────────────
+        // first_responder: the round's first correct answer (by arrival order).
+        award(
+          "first_responder",
+          firstCorrectId !== null && row.clientId === firstCorrectId,
+        )
+
+        // streak_5 + perfect_round both fire at their configured streak (both
+        // default 5). Each reads its own threshold so the manager can split them.
+        award(
+          "streak_5",
+          row.aStreakAfter === this.achievementThreshold("streak_5", 5),
+        )
+        award(
+          "perfect_round",
+          row.aStreakAfter === this.achievementThreshold("perfect_round", 5),
+        )
+
+        // underdog: beat someone who was > `minPointsAhead` pts ahead pre-round
+        // (default 2000) and now sits below this player.
+        const underdogMinAhead = this.achievementThreshold("underdog", 2000)
+        award(
+          "underdog",
+          sortedPlayers.some(
+            (other) =>
+              other.clientId !== row.clientId &&
+              other.aPointsBefore - row.aPointsBefore > underdogMinAhead &&
+              row.aPointsAfter > other.aPointsAfter,
+          ),
+        )
 
         // ── Diamant ───────────────────────────────────────────────────────────
-        // streak_10: streak hit exactly 10 this round.
-        if (row.aStreakAfter === 10) {
-          unlocked.push("streak_10")
-        }
+        // streak_10: streak hit exactly the configured value (default 10).
+        award(
+          "streak_10",
+          row.aStreakAfter === this.achievementThreshold("streak_10", 10),
+        )
 
-        // speedy_gonzales: correct in under 0.4s.
-        if (row.aIsCorrect && rt !== null && rt < 400) {
-          unlocked.push("speedy_gonzales")
-        }
+        // speedy_gonzales: correct in under `maxMs` (default 400).
+        const speedyMaxMs = this.achievementThreshold("speedy_gonzales", 400)
+        award(
+          "speedy_gonzales",
+          row.aIsCorrect && rt !== null && rt < speedyMaxMs,
+        )
 
         // perfect_game: 100% correct over all scored questions (last scored round).
-        if (
+        award(
+          "perfect_game",
           isLastScoredRound &&
-          totalScoredQuestions > 0 &&
-          nextCounter.correct === totalScoredQuestions
-        ) {
-          unlocked.push("perfect_game")
-        }
+            totalScoredQuestions > 0 &&
+            nextCounter.correct === totalScoredQuestions,
+        )
       }
 
       if (unlocked.length > 0) {

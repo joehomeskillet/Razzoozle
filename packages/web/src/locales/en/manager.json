@@ -126,7 +126,8 @@
     "satellite": "Satellite",
     "submissions": "Suggestions",
     "media": "Media",
-    "gamemode": "Mode"
+    "gamemode": "Mode",
+    "achievements": "Achievements"
   },
   "media": {
     "title": "Media library",
@@ -458,5 +459,15 @@
     "teamModeHint": "Players pick a team (red, blue, green, yellow). Requires a restart of the game.",
     "teamModeEnabled": "Team mode enabled",
     "teamModeDisabled": "Team mode disabled"
+  },
+  "achievementsConfig": {
+    "title": "Configure Achievements",
+    "hint": "Enable or disable badges, customize their names and descriptions, and adjust numeric thresholds.",
+    "enabled": "Enabled",
+    "name": "Name",
+    "description": "Description",
+    "threshold": "Threshold",
+    "save": "Save",
+    "saved": "Saved"
   }
 }

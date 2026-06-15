@@ -2,7 +2,12 @@ import { EVENTS } from "@razzia/common/constants"
 import { inviteCodeValidator } from "@razzia/common/validators/auth"
 import { setAvatarValidator } from "@razzia/common/validators/avatar"
 import type { SocketContext } from "@razzia/socket/handlers/types"
-import { getQuizz, updateGameConfig } from "@razzia/socket/services/config"
+import {
+  getQuizz,
+  saveAchievementsConfig,
+  updateGameConfig,
+} from "@razzia/socket/services/config"
+import type { AchievementsConfig } from "@razzia/common/validators/achievements"
 import Game from "@razzia/socket/services/game"
 import managerAuth, { emitConfig } from "@razzia/socket/services/manager"
 import Registry from "@razzia/socket/services/registry"
@@ -136,16 +141,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }
 
     const raw = payload as {
-      gameId?: unknown
       avatar?: unknown
       data?: { avatar?: unknown }
     }
-    const gameId = raw.gameId
     const avatar = raw.avatar ?? raw.data?.avatar
-
-    if (typeof gameId !== "string") {
-      return
-    }
 
     const result = setAvatarValidator.safeParse({ avatar })
 
@@ -155,7 +154,11 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
-    const game = registry.getPlayerGame(gameId, clientId)
+    // The AvatarPicker emits `{ avatar }` with NO gameId — resolve the socket's
+    // own game by membership (mirrors SELECT_TEAM). Requiring a gameId here meant
+    // every real pick was silently dropped, so no avatar ever reached the
+    // roster / leaderboard / podium (they all fell back to initials).
+    const game = resolveOwnGame()
 
     if (game) {
       void game.setAvatar(socket, result.data.avatar)
@@ -335,6 +338,31 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
         updateGameConfig({ teamMode })
         // Round-trip the saved value back so the manager's toggle reflects the
         // persisted config rather than its optimistic local state.
+        emitConfig(socket)
+      } catch {
+        // Validation failure is non-fatal for the socket session.
+      }
+    }),
+  )
+
+  // Persist a partial achievements-config patch (auth-gated — mirrors
+  // SET_GAME_CONFIG). The payload must be `{ config: { [id]: {...} } }`; a
+  // malformed payload (missing / non-object config) is a silent no-op.
+  // saveAchievementsConfig deep-merges the patch into the stored record,
+  // validates it, and safe-writes; we then round-trip the merged list back via
+  // emitConfig so the manager's editor reflects the persisted config.
+  socket.on(
+    EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG,
+    managerAuth.withAuth(socket, (payload: unknown) => {
+      const config = (payload as { config?: unknown } | null | undefined)
+        ?.config
+
+      if (typeof config !== "object" || config === null) {
+        return
+      }
+
+      try {
+        saveAchievementsConfig(config as AchievementsConfig)
         emitConfig(socket)
       } catch {
         // Validation failure is non-fatal for the socket session.

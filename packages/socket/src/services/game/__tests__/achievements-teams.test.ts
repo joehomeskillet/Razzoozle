@@ -6,6 +6,11 @@
 // results.test.ts / round-lifecycle.test.ts do. All time is fake so the timing
 // badges (speed_demon / lucky_guess / speedy_gonzales) are deterministic.
 
+import {
+  mergeAchievementsConfig,
+  type MergedAchievement,
+} from "@razzia/common/achievements"
+import type { AchievementsConfig } from "@razzia/common/validators/achievements"
 import type { Player, Question, Quizz } from "@razzia/common/types/game"
 import { STATUS, type StatusDataMap } from "@razzia/common/types/game/status"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -65,6 +70,24 @@ const setCurrentQuestion = (ctx: CapturedRound, index: number): void => {
 
 const enableTeamMode = (ctx: CapturedRound): void => {
   ;(ctx.round as unknown as { opts: { teamMode?: boolean } }).opts.teamMode = true
+}
+
+// Apply a merged achievements config to an already-built round. RoundManager
+// snapshots the lookup Map in its constructor (read once, like teamMode), so a
+// test that wants a custom config must both set the opts value AND rebuild the
+// private id→MergedAchievement map. Defaults to the registry defaults when no
+// patch is given (the same thing the constructor falls back to).
+const applyAchievementsConfig = (
+  ctx: CapturedRound,
+  patch: AchievementsConfig = {},
+): void => {
+  const merged = mergeAchievementsConfig(patch)
+  const inner = ctx.round as unknown as {
+    opts: { achievements?: MergedAchievement[] }
+    achievementsConfig: Map<string, MergedAchievement>
+  }
+  inner.opts.achievements = merged
+  inner.achievementsConfig = new Map(merged.map((a) => [a.id, a]))
 }
 
 const answerAt = (
@@ -328,6 +351,68 @@ describe("achievements — Silver", () => {
 
     // d climbed from rank 4 to rank 1 (≥3) → climber.
     expect(achievementsFor(ctx, "d")).toContain("climber")
+  })
+})
+
+// ── Manager config: enable/disable + custom thresholds (WP-1) ────────────────
+
+describe("achievements — configurable gating + thresholds", () => {
+  it("a DISABLED badge never unlocks even when its condition holds", () => {
+    const players = [makePlayer("a")]
+    // streak 2 before → after a correct answer it becomes exactly 3 → streak_3
+    // would normally fire. With streak_3 disabled it must NOT appear.
+    players[0].streak = 2
+    const ctx = buildRound({
+      quizz: choiceQuizz(1),
+      players,
+      lowLatency: DISABLED_LL,
+    })
+    applyAchievementsConfig(ctx, { streak_3: { enabled: false } })
+
+    setCurrentQuestion(ctx, 0)
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+    answerAt(ctx, "a", 1, QUESTION_START + 3_000)
+    callShowResults(ctx)
+
+    const got = achievementsFor(ctx, "a") ?? []
+    // streak_3 is disabled → absent; an unrelated enabled badge still fires.
+    expect(got).not.toContain("streak_3")
+    expect(got).toContain("first_correct")
+  })
+
+  it("a CUSTOM speed_demon threshold (maxMs=500) flips the unlock boundary", () => {
+    // Default maxMs=1000 → a 700ms correct answer earns speed_demon. With the
+    // configured maxMs lowered to 500, that same 700ms answer no longer unlocks.
+    const makeCtx = (config: AchievementsConfig): CapturedRound => {
+      const ctx = buildRound({
+        quizz: choiceQuizz(1),
+        players: [makePlayer("a")],
+        lowLatency: DISABLED_LL,
+      })
+      applyAchievementsConfig(ctx, config)
+      setCurrentQuestion(ctx, 0)
+      openQuestion(ctx.round, {
+        startTime: QUESTION_START,
+        ll: DISABLED_LL,
+        questionTimeSec: 20,
+      })
+      answerAt(ctx, "a", 1, QUESTION_START + 700) // 0.7s
+      callShowResults(ctx)
+
+      return ctx
+    }
+
+    // Defaults: 700ms < 1000ms → unlocked.
+    expect(achievementsFor(makeCtx({}), "a") ?? []).toContain("speed_demon")
+
+    // Custom maxMs=500: 700ms ≥ 500ms → NOT unlocked.
+    expect(
+      achievementsFor(makeCtx({ speed_demon: { threshold: 500 } }), "a") ?? [],
+    ).not.toContain("speed_demon")
   })
 })
 

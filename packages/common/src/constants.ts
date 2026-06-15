@@ -96,6 +96,8 @@ export const EVENTS = {
     PAUSE_GAME: "manager:pauseGame",
     RESUME_GAME: "manager:resumeGame",
     SET_GAME_CONFIG: "manager:setGameConfig",
+    // Achievements config patch (manager-auth-gated server-side)
+    SET_ACHIEVEMENTS_CONFIG: "manager:setAchievementsConfig",
   },
   QUIZZ: {
     GET: "quizz:get",

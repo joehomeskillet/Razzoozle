@@ -2,6 +2,7 @@ import type { GameResultMeta, QuizzMeta } from "@razzia/common/types/game"
 import type { SubmissionMeta } from "@razzia/common/types/submission"
 import type { MediaMeta } from "@razzia/common/types/media"
 import type { ThemeTemplateMeta } from "@razzia/common/types/theme"
+import type { MergedAchievement } from "@razzia/common/achievements"
 
 export interface ManagerConfig {
   quizz: QuizzMeta[]
@@ -19,4 +20,7 @@ export interface ManagerConfig {
   // reflects the saved value instead of always defaulting to off. Optional for
   // back-compat: an old emitConfig payload (or a missing config) reads as off.
   teamMode?: boolean
+  // Merged achievement config (registry defaults + manager overrides).
+  // Optional for back-compat; absent in old payloads → client falls back to defaults.
+  achievements?: MergedAchievement[]
 }

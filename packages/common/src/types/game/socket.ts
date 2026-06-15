@@ -393,6 +393,18 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.RESUME_GAME]: (_message: { gameId?: string }) => void
   // Partial game-config patch (manager-auth-gated server-side)
   [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean }) => void
+  // Achievements config patch (manager-auth-gated server-side)
+  [EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG]: (_payload: {
+    config: Record<
+      string,
+      {
+        enabled?: boolean
+        name?: string
+        description?: string
+        threshold?: number
+      }
+    >
+  }) => void
   // Media-manager actions (client -> server, all auth-gated server-side)
   [EVENTS.MEDIA.LIST]: () => void
   [EVENTS.MEDIA.UPLOAD]: (_payload: unknown) => void

@@ -16,10 +16,12 @@ import { setAvatarValidator } from "@razzia/common/validators/avatar"
 import {
   deleteGameAvatars,
   getGameConfig,
+  getMergedAchievements,
   getThemeTemplateById,
   saveEphemeralAvatar,
   saveResult,
 } from "@razzia/socket/services/config"
+import type { MergedAchievement } from "@razzia/common/achievements"
 import { BotManager } from "@razzia/socket/services/game/bot-manager"
 import { CooldownTimer } from "@razzia/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzia/socket/services/game/player-manager"
@@ -95,6 +97,10 @@ class Game {
   // mid-game config edit can't change behaviour for a running game. false =>
   // every team branch in the round is skipped (normal mode).
   private readonly teamMode: boolean
+  // Merged achievements config snapshot, read ONCE at game creation (like
+  // teamMode) so a mid-game config edit can't change a running game's badges.
+  // Crash-guarded — a config error falls back to the registry defaults.
+  private readonly achievements: MergedAchievement[]
   // Health-snapshot push throttle (low-latency observability). Coalesces bursts
   // of client metric reports into at most one HEALTH emit per window so a busy
   // room can't spam the host. null when no emit is currently scheduled.
@@ -186,6 +192,17 @@ class Game {
       }
     })()
 
+    // Read the merged achievements config once. Crash-guarded like teamMode — a
+    // config/read error returns an empty list, and RoundManager then falls back
+    // to the registry defaults (shipped behaviour).
+    this.achievements = (() => {
+      try {
+        return getMergedAchievements()
+      } catch {
+        return []
+      }
+    })()
+
     this.cooldown = new CooldownTimer(io, this.gameId)
 
     this.playerManager = new PlayerManager(
@@ -228,6 +245,7 @@ class Game {
       },
       lowLatency: this.lowLatency,
       teamMode: this.teamMode,
+      achievements: this.achievements,
     })
 
     // Restore path: no live socket — skip the room join + GAME_CREATED emit +

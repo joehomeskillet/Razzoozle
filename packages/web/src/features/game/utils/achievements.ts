@@ -3,6 +3,8 @@
  * IDs must match the server's achievement catalog exactly.
  */
 
+import type { MergedAchievement } from "@razzia/common/achievements"
+
 export type AchievementTier = "bronze" | "silver" | "gold" | "diamant"
 
 export interface AchievementMeta {
@@ -171,3 +173,55 @@ export const TIER_STYLES: Record<AchievementTier, TierStyle> = {
 }
 
 export { TIER_ORDER }
+
+// ─── Server-merged achievement meta (with manager overrides) ──────────────────
+
+/** Module-level promise cache so the fetch fires at most once per page load. */
+let _mergedMetaPromise: Promise<MergedAchievement[]> | null = null
+
+/**
+ * Fetches the merged achievement list from the server (`GET /api/achievements`).
+ * Results are cached for the lifetime of the page — call freely.
+ * Falls back to an empty list on any error so callers can safely fall back to
+ * the static ACHIEVEMENT_META + i18n.
+ */
+export function loadAchievementMeta(): Promise<MergedAchievement[]> {
+  if (_mergedMetaPromise) return _mergedMetaPromise
+
+  _mergedMetaPromise = fetch("/api/achievements", {
+    headers: { Accept: "application/json" },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`/api/achievements returned ${res.status}`)
+      return res.json() as Promise<{ achievements: MergedAchievement[] }>
+    })
+    .then((body) => body.achievements ?? [])
+    .catch(() => {
+      // Reset so the next call can retry (e.g. if network was temporarily down).
+      _mergedMetaPromise = null
+      return []
+    })
+
+  return _mergedMetaPromise
+}
+
+export interface AchievementDisplay {
+  name: string
+  description: string
+}
+
+/**
+ * Returns the display name and description for an achievement id.
+ * Prefers the server-provided override (`merged.name` / `merged.description`);
+ * falls back to the i18n-resolved values supplied via `i18nFallback`.
+ */
+export function getAchievementDisplay(
+  _id: string,
+  merged: MergedAchievement | undefined,
+  i18nFallback: { name: string; desc: string },
+): AchievementDisplay {
+  return {
+    name: merged?.name ?? i18nFallback.name,
+    description: merged?.description ?? i18nFallback.desc,
+  }
+}

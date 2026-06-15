@@ -126,7 +126,8 @@
     "satellite": "Satellit",
     "submissions": "Vorschläge",
     "media": "Medien",
-    "gamemode": "Modus"
+    "gamemode": "Modus",
+    "achievements": "Achievements"
   },
   "media": {
     "title": "Medienbibliothek",
@@ -450,6 +451,16 @@
     "meta": {
       "questions": "{{count}} Fragen"
     }
+  },
+  "achievementsConfig": {
+    "title": "Achievements konfigurieren",
+    "hint": "Hier kannst du Badges aktivieren oder deaktivieren, ihre Namen und Beschreibungen anpassen und die Schwellenwerte für numerische Bedingungen festlegen.",
+    "enabled": "Aktiviert",
+    "name": "Name",
+    "description": "Beschreibung",
+    "threshold": "Schwellenwert",
+    "save": "Speichern",
+    "saved": "Gespeichert"
   },
   "gameMode": {
     "title": "Spielmodus",

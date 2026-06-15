@@ -126,7 +126,8 @@
     "catalog": "Catálogo",
     "ki": "IA",
     "media": "Medios",
-    "gamemode": "Modo"
+    "gamemode": "Modo",
+    "achievements": "Logros"
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -458,5 +459,15 @@
     "teamModeHint": "Los jugadores eligen un equipo (rojo, azul, verde, amarillo). Requiere reiniciar la partida.",
     "teamModeEnabled": "Modo por equipos activado",
     "teamModeDisabled": "Modo por equipos desactivado"
+  },
+  "achievementsConfig": {
+    "title": "Configurar logros",
+    "hint": "Activa o desactiva insignias, personaliza sus nombres y descripciones, y ajusta los umbrales numéricos.",
+    "enabled": "Activado",
+    "name": "Nombre",
+    "description": "Descripción",
+    "threshold": "Umbral",
+    "save": "Guardar",
+    "saved": "Guardado"
   }
 }

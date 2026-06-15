@@ -1,7 +1,10 @@
+import type { MergedAchievement } from "@razzia/common/achievements"
 import {
   ACHIEVEMENT_META,
   TIER_ORDER,
   TIER_STYLES,
+  getAchievementDisplay,
+  loadAchievementMeta,
   type AchievementMeta,
   type AchievementTier,
 } from "@razzia/web/features/game/utils/achievements"
@@ -24,11 +27,21 @@ interface TierSectionProps {
   tier: AchievementTier
   metas: AchievementMeta[]
   counts: Record<string, number>
+  mergedList: MergedAchievement[]
 }
 
-const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
+const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
   const { t } = useTranslation()
   const style = TIER_STYLES[tier]
+
+  // Filter to only metas that are enabled (or have no merged entry = default enabled)
+  const visibleMetas = metas.filter((meta) => {
+    const merged = mergedList.find((m) => m.id === meta.id)
+    // If no merged data yet (e.g. fetch failed), treat as enabled
+    return merged === undefined || merged.enabled
+  })
+
+  if (visibleMetas.length === 0) return null
 
   return (
     <section aria-label={style.label} className="space-y-2">
@@ -42,9 +55,14 @@ const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
         {style.label}
       </h3>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-        {metas.map((meta) => {
+        {visibleMetas.map((meta) => {
           const count = counts[meta.id] ?? 0
           const unlocked = count > 0
+          const merged = mergedList.find((m) => m.id === meta.id)
+          const display = getAchievementDisplay(meta.id, merged, {
+            name: t(`game:achievements.${meta.id}.name`, meta.id),
+            desc: t(`game:achievements.${meta.id}.desc`, ""),
+          })
 
           return (
             <div
@@ -55,7 +73,7 @@ const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
                   ? `bg-gradient-to-r ring-1 ${style.gradient} ${style.ringColor} border-transparent shadow-md`
                   : "border-white/10 bg-white/5 opacity-40 grayscale",
               )}
-              aria-label={`${t(`game:achievements.${meta.id}.name`, meta.id)}${unlocked ? `, ${count}×` : ""}`}
+              aria-label={`${display.name}${unlocked ? `, ${count}×` : ""}`}
             >
               <span className="text-xl leading-none" aria-hidden>
                 {meta.icon}
@@ -67,7 +85,7 @@ const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
                     unlocked ? style.textColor : "text-white/60",
                   )}
                 >
-                  {t(`game:achievements.${meta.id}.name`, meta.id)}
+                  {display.name}
                 </p>
                 <p
                   className={clsx(
@@ -75,7 +93,7 @@ const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
                     unlocked ? `${style.textColor} opacity-80` : "text-white/40",
                   )}
                 >
-                  {t(`game:achievements.${meta.id}.desc`, "")}
+                  {display.description}
                 </p>
               </div>
               {unlocked && count > 1 && (
@@ -101,18 +119,33 @@ const TierSection = ({ tier, metas, counts }: TierSectionProps) => {
 /**
  * Trophy Gallery — shows all achievements grouped by tier.
  * Unlocked achievements are shown in full color; locked ones are greyed out.
+ * Disabled achievements (manager config) are hidden entirely.
  * Reads the {id: count} map persisted by Result.tsx in localStorage.
+ * Prefers server-provided name/description overrides when available.
  */
 const TrophyGallery = () => {
   const { t } = useTranslation()
   const [counts, setCounts] = useState<Record<string, number>>({})
+  const [mergedList, setMergedList] = useState<MergedAchievement[]>([])
 
   useEffect(() => {
     setCounts(readStoredAchievements())
   }, [])
 
-  const totalUnlocked = Object.values(counts).reduce(
-    (sum, c) => sum + (c > 0 ? 1 : 0),
+  useEffect(() => {
+    loadAchievementMeta().then((list) => {
+      if (list.length > 0) setMergedList(list)
+    })
+  }, [])
+
+  // Derive total enabled badge count (from merged list or fallback to all 15)
+  const enabledIds: Set<string> =
+    mergedList.length > 0
+      ? new Set(mergedList.filter((m) => m.enabled).map((m) => m.id))
+      : new Set(Object.keys(ACHIEVEMENT_META))
+
+  const totalUnlocked = Object.entries(counts).reduce(
+    (sum, [id, c]) => sum + (c > 0 && enabledIds.has(id) ? 1 : 0),
     0,
   )
 
@@ -137,7 +170,7 @@ const TrophyGallery = () => {
           {t("game:achievements.gallery.title", "Trophäen")}
         </h2>
         <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/60">
-          {totalUnlocked} / {Object.keys(ACHIEVEMENT_META).length}
+          {totalUnlocked} / {enabledIds.size}
         </span>
       </header>
 
@@ -150,13 +183,14 @@ const TrophyGallery = () => {
         </p>
       )}
 
-      {/* Render tiers from lowest to highest */}
+      {/* Render tiers from lowest to highest; disabled badges are hidden */}
       {TIER_ORDER.map((tier) => (
         <TierSection
           key={tier}
           tier={tier}
           metas={byTier[tier]}
           counts={counts}
+          mergedList={mergedList}
         />
       ))}
     </section>

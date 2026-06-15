@@ -117,7 +117,8 @@
     "catalog": "Catalogo",
     "ki": "IA",
     "media": "Media",
-    "gamemode": "Modalità"
+    "gamemode": "Modalità",
+    "achievements": "Obiettivi"
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -458,5 +459,15 @@
     "teamModeHint": "I giocatori scelgono una squadra (rosso, blu, verde, giallo). Richiede il riavvio della partita.",
     "teamModeEnabled": "Modalità squadre attivata",
     "teamModeDisabled": "Modalità squadre disattivata"
+  },
+  "achievementsConfig": {
+    "title": "Configura obiettivi",
+    "hint": "Attiva o disattiva i badge, personalizza nomi e descrizioni e regola le soglie numeriche.",
+    "enabled": "Attivo",
+    "name": "Nome",
+    "description": "Descrizione",
+    "threshold": "Soglia",
+    "save": "Salva",
+    "saved": "Salvato"
   }
 }

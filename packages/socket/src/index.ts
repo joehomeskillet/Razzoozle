@@ -22,6 +22,7 @@ import {
   assertSafeId,
   appendSoloResult,
   cleanupStaleAvatars,
+  getMergedAchievements,
   getQuizzById,
   getSoloResults,
   initConfig,
@@ -119,6 +120,16 @@ const httpServer = createServer((req, res) => {
   if (url === "/healthz") {
     res.writeHead(200, { "content-type": "text/plain" })
     res.end("ok")
+
+    return
+  }
+
+  // ── GET /api/achievements ─────────────────────────────────────────────────
+  // Public merged achievements config (enabled + name/description overrides +
+  // resolved thresholds) for the player client's popup / trophy gallery. Carries
+  // no game state, so no auth and no body — a plain read of the merged config.
+  if (url === "/api/achievements" && method === "GET") {
+    jsonOk(res, { achievements: getMergedAchievements() })
 
     return
   }
