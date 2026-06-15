@@ -319,7 +319,8 @@
       "toggle": "Seleziona {{name}}"
     },
     "dropHint": "Trascina qui i file per caricarli",
-    "dimensions": "{{w}} × {{h}} px"
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Dettagli"
   },
   "catalog": {
     "title": "Catalogo delle domande",

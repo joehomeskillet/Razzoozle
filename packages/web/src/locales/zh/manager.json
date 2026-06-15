@@ -170,7 +170,8 @@
       "toggle": "选择 {{name}}"
     },
     "dropHint": "将文件拖到此处以上传",
-    "dimensions": "{{w}} × {{h}} 像素"
+    "dimensions": "{{w}} × {{h}} 像素",
+    "details": "详情"
   },
   "catalog": {
     "title": "题目题库",

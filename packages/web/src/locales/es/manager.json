@@ -319,7 +319,8 @@
       "toggle": "Seleccionar {{name}}"
     },
     "dropHint": "Suelta los archivos aquí para subirlos",
-    "dimensions": "{{w}} × {{h}} px"
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Detalles"
   },
   "catalog": {
     "title": "Catálogo de preguntas",

@@ -170,7 +170,8 @@
       "toggle": "{{name}} auswählen"
     },
     "dropHint": "Dateien hier ablegen zum Hochladen",
-    "dimensions": "{{w}} × {{h}} px"
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Details"
   },
   "catalog": {
     "title": "Fragenkatalog",

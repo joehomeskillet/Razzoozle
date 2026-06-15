@@ -170,7 +170,8 @@
       "toggle": "Select {{name}}"
     },
     "dropHint": "Drop files here to upload",
-    "dimensions": "{{w}} × {{h}} px"
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Details"
   },
   "catalog": {
     "title": "Question catalog",

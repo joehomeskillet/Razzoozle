@@ -319,7 +319,8 @@
       "toggle": "Sélectionner {{name}}"
     },
     "dropHint": "Déposez les fichiers ici pour les envoyer",
-    "dimensions": "{{w}} × {{h}} px"
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Détails"
   },
   "catalog": {
     "title": "Catalogue de questions",
