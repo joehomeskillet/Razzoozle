@@ -22,7 +22,7 @@ const Question = ({
   return (
     <section className="relative mx-auto flex h-full w-full max-w-7xl flex-1 flex-col items-center px-4 lg:max-w-[85vw]">
       <div className="flex flex-1 flex-col items-center justify-center gap-5">
-        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,6vh,7rem)]">
+        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           {question}
         </h2>
 
@@ -36,11 +36,11 @@ const Question = ({
           <img
             alt={question}
             src={media.url}
-            className="max-h-60 w-auto rounded-md sm:max-h-100"
+            className="max-h-60 w-auto rounded-md sm:max-h-[40vh]"
           />
         )}
       </div>
-      <div className="mb-4 h-6 w-full overflow-hidden rounded-full bg-white/15 shadow-inner lg:h-10">
+      <div className="mb-8 h-6 w-full overflow-hidden rounded-full bg-white/15 shadow-inner lg:h-10">
         <div
           className="bg-primary h-full rounded-full"
           style={{ animation: `progressBar ${cooldown}s linear forwards` }}

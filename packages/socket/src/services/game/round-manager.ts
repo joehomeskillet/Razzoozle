@@ -178,10 +178,10 @@ export class RoundManager {
   }
 
   setAutoMode(on: boolean): void {
-    if (this.paused) {
-      return
-    }
-
+    // Always record the intent — even while paused. scheduleAuto()'s pause
+    // handling (waitWhilePaused) already defers the actual advance, so storing
+    // autoMode during a pause is safe and avoids a silent UI(on)/server(off)
+    // desync where auto-advance never resumes after un-pausing.
     this.autoMode = on
 
     if (!on) {
