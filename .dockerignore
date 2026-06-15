@@ -1,0 +1,9 @@
+**/node_modules
+.pnpm-store
+.git
+.claude
+docs
+**/dist
+**/*.tsbuildinfo
+*.log
+.screenshots

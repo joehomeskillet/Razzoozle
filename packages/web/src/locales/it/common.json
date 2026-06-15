@@ -1,0 +1,25 @@
+{
+  "cancel": "Annulla",
+  "confirm": "Conferma",
+  "connecting": "Connessione...",
+  "copied": "Copiato",
+  "delete": "Elimina",
+  "exit": "Esci",
+  "language": {
+    "de": "Tedesco",
+    "en": "Inglese",
+    "es": "Spagnolo",
+    "fr": "Francese",
+    "it": "Italiano",
+    "zh": "中文"
+  },
+  "loading": "Caricamento...",
+  "next": "Avanti",
+  "pinDigit": "Cifra PIN {{number}}",
+  "reconnecting": "Riconnessione in corso …",
+  "save": "Salva",
+  "seconds": "sec",
+  "skip": "Salta",
+  "submit": "Invia",
+  "close": "Chiudi"
+}

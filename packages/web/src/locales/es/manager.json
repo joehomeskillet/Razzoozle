@@ -1,0 +1,492 @@
+{
+  "aria": {
+    "passwordLabel": "Contraseña"
+  },
+  "configurationsTitle": "Configuraciones",
+  "kickPlayer": {
+    "aria": "Expulsar a {{name}} de la partida",
+    "confirm": "Expulsar",
+    "description": "¿Seguro que quieres expulsar a «{{name}}» de la partida?",
+    "title": "¿Expulsar al jugador?"
+  },
+  "logout": "Cerrar sesión",
+  "passwordPlaceholder": "Contraseña",
+  "editor": {
+    "unsavedChanges": "Cambios sin guardar",
+    "leaveTitle": "Cambios sin guardar",
+    "leaveDescription": "Tienes cambios que aún no se han guardado. ¿Quieres guardarlos antes de salir del cuestionario?",
+    "discard": "Descartar"
+  },
+  "mediaPicker": {
+    "title": "Elegir de la biblioteca",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar imágenes …",
+    "empty": "Aún no hay imágenes en la biblioteca. Sube algunas en la pestaña Medios.",
+    "noResults": "No se encontraron imágenes que coincidan.",
+    "openButton": "De la biblioteca"
+  },
+  "quizz": {
+    "create": "Crear cuestionario",
+    "delete": "Eliminar cuestionario",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "deleted": "Cuestionario eliminado",
+    "duplicate": "Duplicar «{{name}}»",
+    "duplicated": "Cuestionario duplicado",
+    "edit": "Editar «{{name}}»",
+    "import": "Importar cuestionario desde JSON",
+    "invalidJson": "Archivo JSON inválido o incompleto",
+    "none": "Aún no se ha creado ningún cuestionario",
+    "notFound": "No se encontró ningún cuestionario",
+    "pleaseCreate": "Por favor crea un cuestionario primero",
+    "pleaseSelect": "Por favor selecciona un cuestionario",
+    "startGame": "Iniciar juego",
+    "archive": "Archivar",
+    "unarchive": "Restaurar",
+    "archived": "Archivado",
+    "archivedSection": "Archivo",
+    "archivedHint": "Los cuestionarios archivados quedan ocultos de la lista de juego, pero se conservan y se pueden seguir editando.",
+    "archivedToast": "Cuestionario archivado",
+    "unarchivedToast": "Cuestionario restaurado",
+    "showArchived": "Mostrar archivo",
+    "hideArchived": "Ocultar archivo",
+    "search": "Buscar cuestionarios",
+    "searchPlaceholder": "Buscar por tema …",
+    "sort": "Ordenar",
+    "sortNameAsc": "Nombre A–Z",
+    "sortCountDesc": "Más preguntas",
+    "sortCountAsc": "Menos preguntas",
+    "noResults": "Sin coincidencias",
+    "noResultsHint": "Ajusta tu término de búsqueda.",
+    "duplicateTitle": "Duplicar cuestionario",
+    "duplicateConfirm": "Se creará una copia de «{{name}}» con el sufijo «(Copia)».",
+    "duplicateAction": "Duplicar",
+    "bulkSelected": "{{count}} seleccionados",
+    "bulkDelete": "Eliminar",
+    "bulkDeleteTitle": "Eliminar cuestionarios",
+    "bulkDeleteConfirm": "Se eliminarán permanentemente {{count}} cuestionarios seleccionados.",
+    "selectQuiz": "Seleccionar «{{name}}»"
+  },
+  "result": {
+    "aria": {
+      "close": "Cerrar",
+      "nextQuestion": "Pregunta siguiente",
+      "prevQuestion": "Pregunta anterior"
+    },
+    "delete": "Eliminar resultado",
+    "deleteConfirm": "¿Eliminar el resultado de \"{{name}}\"? Esta acción no se puede deshacer.",
+    "deleted": "Resultado eliminado",
+    "noAnswer": "Sin respuesta",
+    "none": "Aún no hay resultados, termina una partida para ver los informes aquí",
+    "emptyHeadline": "Aún no hay resultados",
+    "open": "Abrir el resultado de \"{{name}}\"",
+    "paginationOf": " de ",
+    "searchPlaceholder": "Buscar resultados",
+    "dateFilter": "Filtrar por fecha",
+    "noResults": "No hay resultados que coincidan",
+    "noResultsHint": "Ajusta la búsqueda o el filtro de fecha.",
+    "showNames": "Mostrar nombres",
+    "anonymizedPlayer": "Jugador {{index}}",
+    "slider": {
+      "average": "Media de las estimaciones:",
+      "correctAnswer": "Respuesta correcta:",
+      "guessSummary": "{{count}} estimaciones · {{noAnswer}} sin respuesta"
+    },
+    "stats": {
+      "correctAnswers": "Respuestas correctas",
+      "playersAnswered": "Jugadores que respondieron"
+    },
+    "table": {
+      "answered": "Respondido",
+      "correct": " Correcta",
+      "correctIncorrect": "Correcta / Incorrecta",
+      "incorrect": " Incorrecta",
+      "player": "Jugador",
+      "points": "Puntos",
+      "rank": "Puesto"
+    },
+    "playerCount": "{{count}} jugador(es)",
+    "timeLimitSuffix": "s de tiempo límite",
+    "share": {
+      "action": "Compartir enlace",
+      "copied": "Enlace copiado",
+      "copyFailed": "No se pudo copiar el enlace"
+    },
+    "export": {
+      "csv": "Exportar como CSV",
+      "done": "CSV descargado"
+    }
+  },
+  "tabs": {
+    "play": "Jugar",
+    "quizz": "Cuestionario",
+    "results": "Resultados",
+    "design": "Diseño",
+    "satellite": "Satélite",
+    "submissions": "Sugerencias",
+    "catalog": "Catálogo",
+    "ki": "IA",
+    "media": "Medios",
+    "gamemode": "Modo",
+    "achievements": "Logros"
+  },
+  "satellite": {
+    "title": "Pantalla satélite",
+    "description": "Conecta una Raspberry Pi o un PC con proyector como pantalla grande. El satélite muestra la vista del anfitrión (sala, preguntas, resultados) en la pantalla grande, mientras tú controlas todo el juego desde tu teléfono. No necesitas portátil.",
+    "howto": "Abre razzoozle.joelduss.xyz/display en el proyector e introduce aquí el código que aparece.",
+    "codeLabel": "Código de vinculación",
+    "codePlaceholder": "ABC123",
+    "pair": "Vincular",
+    "paired": "Pantalla vinculada",
+    "step1": "Conecta la Pi o el proyector a internet y abre razzoozle.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
+    "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
+    "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
+    "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager.",
+    "step1Result": "Entonces la pantalla grande muestra un código de 6 dígitos como «ABC123».",
+    "step2Enter": "Inicia una partida y toca «Satélite» en la parte superior del encabezado del juego. Introduce ahí el código que aparece en la pantalla grande.",
+    "step2Result": "Toca «Vincular» para probar la conexión. Si funciona, aparece «Pantalla vinculada».",
+    "troubleCode": "«Código inválido o caducado»: el código es incorrecto o demasiado antiguo (solo es válido 5 minutos). Recarga la página /display en la pantalla grande —mostrará un código nuevo— y escríbelo exactamente como aparece.",
+    "troubleNotConnected": "«Pantalla no conectada»: el proyector o la Pi perdió la conexión. Comprueba que siga conectado a internet y recarga la página /display. En una red propia, un firewall puede bloquearlo; entonces deben abrirse los puertos para razzoozle.joelduss.xyz.",
+    "troubleGame": "«Partida no encontrada» o «Contraseña inválida»: la vinculación solo funciona mientras tu partida está en curso y tú estás conectado como anfitrión. Reinicia la partida o vuelve a iniciar sesión y prueba de nuevo enseguida.",
+    "troubleTitle": "Si la vinculación no funciona"
+  },
+  "sim": {
+    "button": "Bots (Sim)",
+    "count": "Cantidad",
+    "add": "Añadir",
+    "windowHint": "Añade bots en la sala de espera o entre preguntas"
+  },
+  "lowLatency": {
+    "title": "Estado de baja latencia",
+    "p50p95": "p50 / p95",
+    "rtt": "Latencia (RTT)",
+    "clockOffset": "Desfase de reloj",
+    "answerAck": "Confirmación de respuesta",
+    "reconnects": "Reconexiones",
+    "rejected": "Respuestas rechazadas"
+  },
+  "display": {
+    "status": {
+      "title": "Pantallas conectadas",
+      "empty": "Aún no hay ninguna pantalla conectada",
+      "lastSeen": "visto hace {{seconds}}s",
+      "online": "En línea",
+      "stale": "Desconectada",
+      "unnamed": "Pantalla"
+    }
+  },
+  "theme": {
+    "branding": "Identidad de marca",
+    "appTitle": "Título de la app",
+    "logo": "Logotipo",
+    "default": "Estándar",
+    "showFooter": "Mostrar el pie de página «Razzoozle»",
+    "upload": "Imagen",
+    "preview": {
+      "title": "Vista previa",
+      "join": "Unirse",
+      "question": "Pregunta",
+      "leaderboard": "Clasificación"
+    },
+    "contrast": {
+      "hint": "Contraste",
+      "fail": "Contraste bajo"
+    },
+    "uiColors": "Colores de la interfaz",
+    "colors": {
+      "primary": "Primario",
+      "background": "Fondo",
+      "accent": "Acento",
+      "text": "Texto"
+    },
+    "answerColors": "Colores de las respuestas",
+    "contrastNote": "Los colores primarios claros se oscurecen automáticamente para el texto y los iconos para que sigan siendo legibles.",
+    "scrim": "Oscurecer el fondo ({{value}}%)",
+    "backgrounds": "Fondos",
+    "bgSlots": {
+      "auth": "Inicio / Unirse",
+      "managerGame": "Pantalla del anfitrión (pregunta)",
+      "playerGame": "Móvil del jugador (en partida)"
+    },
+    "save": "Guardar",
+    "reset": "Restablecer",
+    "toast": {
+      "imageUploaded": "Imagen subida",
+      "saved": "Diseño guardado"
+    },
+    "templates": {
+      "title": "Plantillas",
+      "save": "Guardar como plantilla",
+      "saved": "Plantilla guardada",
+      "namePrompt": "Nombre de la plantilla",
+      "apply": "Aplicar",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
+      "emptyHeadline": "Aún no hay plantillas",
+      "none": "Aún no hay plantillas guardadas"
+    },
+    "revisions": {
+      "title": "Versiones",
+      "restore": "Restaurar",
+      "empty": "Aún no hay versiones guardadas",
+      "restored": "Versión restaurada",
+      "confirmRestore": "¿Restaurar esta versión? La actual se guardará como una nueva versión.",
+      "savedAt": "Guardada {{when}}"
+    },
+    "style": {
+      "label": "Estilo",
+      "flat": "Plano",
+      "glass": "Cristal"
+    }
+  },
+  "submissions": {
+    "empty": "No hay sugerencias pendientes.",
+    "emptyHeadline": "No hay sugerencias",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "edit": "Editar",
+    "preview": "Vista previa",
+    "hidePreview": "Ocultar vista previa",
+    "selectQuizz": "Seleccionar quiz",
+    "submitLinkHint": "Enlace público de envío",
+    "copyLink": "Copiar enlace",
+    "confirmReject": "¿Seguro que quieres rechazar esta sugerencia?",
+    "submittedBy": "Enviada por {{name}}",
+    "submittedAt": "el {{date}}",
+    "previewLabels": {
+      "cooldown": "Pausa",
+      "loading": "Cargando vista previa …"
+    },
+    "statusFilter": {
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "pending": "Pendiente",
+      "label": "Filtrar por estado"
+    },
+    "statusEmpty": {
+      "headline": "No hay sugerencias en esta vista",
+      "hint": "Elige otro estado para ver más sugerencias."
+    },
+    "rejectReason": {
+      "label": "Motivo (opcional)",
+      "placeholder": "¿Por qué se rechaza esta pregunta?"
+    },
+    "rejectedBecause": "Rechazada: {{reason}}",
+    "category": {
+      "label": "Categoría",
+      "general": "General",
+      "history": "Historia",
+      "science": "Ciencia",
+      "geography": "Geografía",
+      "sports": "Deportes",
+      "entertainment": "Entretenimiento",
+      "technology": "Tecnología",
+      "other": "Otros"
+    }
+  },
+  "media": {
+    "title": "Biblioteca de medios",
+    "intro": "Gestiona imágenes, audio y contenido generado en un solo lugar.",
+    "empty": "Aún no hay medios.",
+    "emptyHeadline": "La biblioteca está vacía",
+    "upload": "Subir",
+    "uploading": "Subiendo…",
+    "uploaded": "Medio subido",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Seguro que quieres eliminar este medio?",
+    "deleted": "Medio eliminado",
+    "search": "Buscar medios",
+    "searchPlaceholder": "Buscar medios…",
+    "noResults": "No hay medios que coincidan",
+    "tooLarge": "El archivo es demasiado grande",
+    "uploadFailed": "Error al subir",
+    "filters": {
+      "all": "Todos",
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "source": {
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "category": {
+      "backgrounds": "Fondos",
+      "questions": "Preguntas",
+      "generated": "Generados",
+      "avatars": "Avatares",
+      "audio": "Audio"
+    },
+    "bulk": {
+      "selected": "{{count}} seleccionados",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar realmente {{count}} archivos?",
+      "toggle": "Seleccionar {{name}}"
+    },
+    "dropHint": "Suelta los archivos aquí para subirlos",
+    "dimensions": "{{w}} × {{h}} px",
+    "details": "Detalles"
+  },
+  "catalog": {
+    "title": "Catálogo de preguntas",
+    "intro": "Reúne preguntas reutilizables e insértalas en cualquier cuestionario.",
+    "empty": "Aún no hay preguntas en el catálogo.",
+    "emptyHeadline": "El catálogo está vacío",
+    "add": "Añadir pregunta",
+    "addManual": "Crear pregunta nueva",
+    "saveToCatalog": "Guardar en el catálogo",
+    "saved": "Pregunta guardada en el catálogo",
+    "insert": "Insertar desde el catálogo",
+    "insertTitle": "Elige una pregunta del catálogo",
+    "insertSuccess": "Pregunta insertada",
+    "delete": "Quitar del catálogo",
+    "deleteConfirm": "¿Seguro que quieres quitar esta pregunta del catálogo?",
+    "deleted": "Pregunta eliminada",
+    "edit": "Editar",
+    "updated": "Pregunta del catálogo actualizada",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "p. ej. geografía, fácil",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar en el catálogo",
+    "noResults": "No hay preguntas que coincidan",
+    "count": "{{count}} pregunta",
+    "count_other": "{{count}} preguntas",
+    "preview": "Vista previa",
+    "source": {
+      "manual": "Manual",
+      "submission": "Sugerencia",
+      "editor": "Editor",
+      "ai": "IA"
+    },
+    "approveToCatalog": "Al catálogo en lugar del cuestionario",
+    "approveToCatalogHint": "Coloca la pregunta aprobada en el catálogo en vez de directamente en un cuestionario."
+  },
+  "ai": {
+    "title": "Ajustes de IA",
+    "intro": "Conecta proveedores para la generación de texto e imágenes. Las claves de API permanecen en el servidor y nunca se envían al navegador.",
+    "text": {
+      "title": "Generación de texto",
+      "description": "Elige el proveedor para preguntas, respuestas y cuestionarios completos."
+    },
+    "image": {
+      "title": "Generación de imágenes",
+      "description": "Generación local de imágenes mediante ComfyUI / Z-Image."
+    },
+    "provider": "Proveedor",
+    "active": "Activo",
+    "off": "Desactivado",
+    "status": {
+      "off": "Desactivado",
+      "ready": "Listo",
+      "error": "Error"
+    },
+    "model": "Modelo",
+    "modelPlaceholder": "p. ej. llama3.2:3b",
+    "baseUrl": "URL base",
+    "baseUrlPlaceholder": "https://…/v1",
+    "apiKey": "Clave de API",
+    "apiKeyPlaceholder": "Introduce la clave…",
+    "keyConfigured": "Clave configurada",
+    "keyNotConfigured": "Sin clave",
+    "keySaved": "Clave guardada",
+    "keyCleared": "Clave eliminada",
+    "saveKey": "Guardar clave",
+    "clearKey": "Borrar clave",
+    "kind": {
+      "openai-compatible": "Compatible con OpenAI",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "test": "Probar conexión",
+    "testing": "Probando…",
+    "testOk": "Conexión correcta",
+    "testFailed": "Conexión fallida",
+    "save": "Guardar",
+    "saved": "Ajustes de IA guardados",
+    "saveFailed": "Error al guardar",
+    "generate": {
+      "title": "Generar con IA",
+      "topic": "Tema",
+      "topicPlaceholder": "p. ej. geografía de Suiza",
+      "type": "Tipo de pregunta",
+      "count": "Número de preguntas",
+      "question": "Generar pregunta",
+      "fromTopic": "Pregunta a partir del tema",
+      "distractors": "Sugerir respuestas",
+      "quiz": "Generar cuestionario",
+      "quizTitle": "Generar cuestionario a partir del tema",
+      "generating": "Generando…",
+      "generated": "Generado",
+      "applied": "Aplicado",
+      "quizCreated": "Cuestionario creado",
+      "failed": "Error en la generación",
+      "notConfigured": "No hay proveedor de texto configurado. Configura primero la IA.",
+      "openInEditor": "Abrir en el editor",
+      "countValue": "Preguntas: {{count}}",
+      "help": {
+        "aria": "Ayuda sobre las funciones de IA",
+        "text": "«Pregunta a partir del tema» crea una pregunta completa con respuestas. «Distractores» rellena los campos de respuesta vacíos con opciones falsas plausibles. Siempre ves primero una vista previa y decides con «Aplicar» o «Descartar»."
+      },
+      "preview": {
+        "label": "Vista previa",
+        "noQuestion": "(Sin pregunta)",
+        "emptyAnswer": "(vacío)",
+        "apply": "Aplicar",
+        "discard": "Descartar"
+      },
+      "distractorsCountValue": "Respuestas: {{count}}"
+    },
+    "privacy": {
+      "local": "Modelo local en tu servidor. Tus entradas nunca salen del servidor.",
+      "claude": "Envía tus temas y textos de preguntas a Anthropic (Claude). Consulta su política de privacidad: https://www.anthropic.com/legal/privacy",
+      "openai": "Envía tus temas y textos de preguntas a OpenAI. Consulta su política de privacidad: https://openai.com/policies/privacy-policy",
+      "openrouter": "Envía tus temas y textos de preguntas a OpenRouter y al modelo seleccionado. Consulta su política de privacidad: https://openrouter.ai/privacy",
+      "external": "Envía tus temas y textos de preguntas a un servicio externo. Revisa su política de privacidad."
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "help": "Más alta = más creativa, más baja = más precisa",
+      "value": "{{value}}"
+    },
+    "resolution": {
+      "label": "Resolución de imagen",
+      "help": "Longitud del borde de la imagen generada",
+      "option": "{{size}} × {{size}}"
+    }
+  },
+  "selectQuizz": {
+    "copySoloLink": "Copiar enlace solo",
+    "meta": {
+      "questions": "{{count}} preguntas"
+    }
+  },
+  "gameMode": {
+    "title": "Modo de juego",
+    "description": "En el modo por equipos, los puntos se suman por equipo y se muestra una clasificación por equipos.",
+    "teamMode": "Modo por equipos",
+    "teamModeHint": "Los jugadores eligen un equipo (rojo, azul, verde, amarillo). Requiere reiniciar la partida.",
+    "teamModeEnabled": "Modo por equipos activado",
+    "teamModeDisabled": "Modo por equipos desactivado"
+  },
+  "achievementsConfig": {
+    "title": "Configurar logros",
+    "hint": "Activa o desactiva insignias, personaliza sus nombres y descripciones, y ajusta los umbrales numéricos.",
+    "enabled": "Activado",
+    "name": "Nombre",
+    "description": "Descripción",
+    "threshold": "Umbral",
+    "bonus": "Puntos de bonificación",
+    "bonusHint": "Puntos adicionales al desbloquear",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "reset": "Restablecer valores predeterminados",
+    "resetDone": "Valores predeterminados restablecidos",
+    "thresholdHint": {
+      "lastPercent": "Último % del tiempo",
+      "maxMs": "Tiempo máx. de respuesta (ms)",
+      "streak": "Respuestas correctas seguidas",
+      "minAccuracyPct": "Precisión mín. del deslizador (%)",
+      "minRanksUp": "Puestos subidos en la clasificación",
+      "minPointsAhead": "Ventaja de puntos del superado"
+    }
+  }
+}

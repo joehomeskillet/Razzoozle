@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Typecheck (all packages)
+        run: corepack pnpm -r run types
+
+      - name: Test (socket)
+        run: corepack pnpm --filter socket test
+
+      - name: Build (web)
+        run: corepack pnpm --filter web build

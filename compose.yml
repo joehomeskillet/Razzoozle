@@ -1,0 +1,17 @@
+services:
+  razzoozle:
+    # Custom fork build — native theming
+    # (backgrounds per view + colors via /manager Design tab). Replaces the
+    # upstream image + the old bind-mount injector hacks.
+    image: razzoozle:custom
+    container_name: razzoozle
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    volumes:
+      - ./config:/app/config
+    # AI image gen: the socket reaches the host's ComfyUI (:8188, published on
+    # 0.0.0.0) via the docker host-gateway. COMFYUI_URL defaults to
+    # http://host.docker.internal:8188 in the image.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

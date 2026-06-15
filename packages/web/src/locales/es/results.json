@@ -1,0 +1,12 @@
+{
+  "share": {
+    "title": "Clasificación final",
+    "subtitle": "Así terminó el cuestionario",
+    "copyLink": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "loading": "Cargando la clasificación final",
+    "notFound": "Este resultado ya no está disponible. Es posible que se haya eliminado.",
+    "rank": "Puesto {{rank}}",
+    "points": "{{count}} puntos"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "form": {
+    "title": "Proponi una domanda",
+    "subtitle": "Proponi la tua domanda per il quiz: le verifichiamo e aggiungiamo le migliori al quiz.",
+    "namePlaceholder": "Il tuo nome (4–20 caratteri)",
+    "questionPlaceholder": "La tua domanda...",
+    "answerPlaceholder": "Risposta {{index}}",
+    "correctAnswerLabel": "Risposta corretta",
+    "submitButton": "Invia domanda",
+    "section": {
+      "name": "Il tuo nome",
+      "question": "La tua domanda",
+      "media": "Media (opzionale)",
+      "answers": "Risposte",
+      "settings": "Impostazioni"
+    }
+  },
+  "media": {
+    "enhanceHint": "L’IA perfeziona la tua descrizione prima di generare."
+  },
+  "category": {
+    "label": "Categoria (opzionale)",
+    "general": "Generale",
+    "history": "Storia",
+    "science": "Scienza",
+    "geography": "Geografia",
+    "sports": "Sport",
+    "entertainment": "Intrattenimento",
+    "technology": "Tecnologia",
+    "other": "Altro"
+  },
+  "cta": {
+    "afterGame": "Ti è piaciuto il quiz? Proponi la tua domanda"
+  },
+  "success": {
+    "title": "Grazie",
+    "body": "La tua domanda è stata inviata e sarà verificata.",
+    "again": "Invia un'altra domanda"
+  },
+  "errors": {
+    "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",
+    "serverError": "Si è verificato un errore. Riprova."
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "correct": "Bravo !",
+  "gamePinLabel": "PIN de la partie :",
+  "hud": {
+    "answers": "Réponses",
+    "time": "Temps"
+  },
+  "joinInstruction": "Rejoins la partie sur",
+  "joinTimeout": "Impossible de rejoindre à temps. Réessaie",
+  "leaderboard": "Classement",
+  "pinLabel": "Code PIN",
+  "playersJoined": "Joueurs connectés : ",
+  "questionPrefix": "Question n°",
+  "rejoin": "Revenir",
+  "rank": {
+    "1": "1er",
+    "2": "2ème place",
+    "3": "3ème place",
+    "other": "{{rank}}ème place"
+  },
+  "rankSuffix": "e place",
+  "resultBehind": ", derrière ",
+  "resultTop": "Tu es ",
+  "startGame": "Demarrer la partie",
+  "usernamePlaceholder": "Pseudo",
+  "waitingForAnswers": "En attente des réponses des joueurs",
+  "waitingForPlayers": "En attente des joueurs",
+  "wrong": "Dommage",
+  "slider": {
+    "submit": "Confirmer",
+    "submitted": "Envoyé",
+    "correctAnswer": "Bonne réponse",
+    "averageGuess": "Moyenne des estimations : {{value}}"
+  },
+  "streak": {
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Le plus rapide +100",
+    "streakTitle": "Série",
+    "streakValue": "+{{percent}}%"
+  },
+  "usernameLabel": "Pseudo",
+  "usernameRequired": "Saisis un pseudo",
+  "pollThanks": "Merci pour ton vote",
+  "submittedBy": "proposée par {{name}}",
+  "typeAnswerPlaceholder": "Saisissez votre réponse...",
+  "submitAnswer": "Envoyer",
+  "controls": {
+    "autoMode": "Mode auto",
+    "autoOn": "activé",
+    "autoOff": "désactivé",
+    "autoTitle": "Mode auto : avance automatiquement",
+    "fullscreen": "Plein écran"
+  },
+  "sending": "envoi…",
+  "avatar": {
+    "title": "Ton avatar",
+    "choose": "Choisir un avatar",
+    "upload": "Importer une image",
+    "uploading": "Envoi…",
+    "uploaded": "Avatar importé",
+    "skip": "Passer",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pause",
+    "paused": "La partie est en pause",
+    "resumeHint": "Tu reprends dès que l'hôte relance",
+    "pauseGame": "Mettre en pause",
+    "resumeGame": "Reprendre la partie"
+  },
+  "playerReconnected": "{{name}} s'est reconnecté",
+  "achievements": {
+    "gallery": {
+      "title": "Trophées",
+      "empty": "Aucun trophée pour l'instant — joue une partie pour en gagner un."
+    },
+    "first_correct": {
+      "name": "Premier succès",
+      "desc": "Ta toute première bonne réponse dans le jeu."
+    },
+    "participation": {
+      "name": "Plein les cases",
+      "desc": "Toutes les questions répondues, sans exception."
+    },
+    "lucky_guess": {
+      "name": "Coup de chance",
+      "desc": "Bonne réponse à la dernière seconde."
+    },
+    "speed_demon": {
+      "name": "Speed démon",
+      "desc": "Réponse correcte en moins d'une seconde."
+    },
+    "streak_3": {
+      "name": "Série de trois",
+      "desc": "Trois bonnes réponses d'affilée."
+    },
+    "sharpshooter": {
+      "name": "Tireur d'élite",
+      "desc": "Question curseur résolue avec plus de 95 % de précision."
+    },
+    "climber": {
+      "name": "Grimpeur",
+      "desc": "Remonté de trois places ou plus au classement."
+    },
+    "first_responder": {
+      "name": "Premier répondant",
+      "desc": "Premier à répondre correctement dans ce tour."
+    },
+    "streak_5": {
+      "name": "Cinq en feu",
+      "desc": "Cinq bonnes réponses consécutives."
+    },
+    "underdog": {
+      "name": "L'outsider",
+      "desc": "Dépassé quelqu'un avec 2000 points d'avance."
+    },
+    "perfect_round": {
+      "name": "Tour parfait",
+      "desc": "Tour impeccable."
+    },
+    "streak_10": {
+      "name": "Série de dix",
+      "desc": "Dix bonnes réponses d'affilée — impressionnant."
+    },
+    "speedy_gonzales": {
+      "name": "Speedy Gonzales",
+      "desc": "Réponse correcte en moins de 0,4 secondes."
+    },
+    "perfect_game": {
+      "name": "Partie parfaite",
+      "desc": "Toutes les questions répondues correctement."
+    }
+  },
+  "teams": {
+    "chooseTeam": "Choisis ton équipe",
+    "teamLeaderboard": "Classement par équipe",
+    "red": "Rouge",
+    "blue": "Bleu",
+    "green": "Vert",
+    "yellow": "Jaune"
+  },
+  "solo": {
+    "play": "Jouer en solo",
+    "yourScore": "Ton score",
+    "soloLeaderboard": "Classement",
+    "enterName": "Ton nom",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "rank": "Place {{rank}}",
+    "replay": "Rejouer",
+    "trophies": "Mes trophées"
+  },
+  "reward": {
+    "bonusPoints": "Bonus",
+    "dismiss": "Fermer"
+  }
+}

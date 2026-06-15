@@ -1,0 +1,10 @@
+[Unit]
+Description=Rahoot auto-deploy poller (pull-based GitOps — deploy on new origin/main)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /opt/razzoozle/source/scripts/auto-deploy-poll.sh
+# deploy.sh builds, smoke-tests, health-gates and auto-rolls-back — give it room
+TimeoutStartSec=900

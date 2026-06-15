@@ -1,0 +1,25 @@
+{
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "connecting": "Connecting...",
+  "copied": "Copied",
+  "delete": "Delete",
+  "exit": "Exit",
+  "language": {
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "it": "Italian",
+    "zh": "中文"
+  },
+  "loading": "Loading...",
+  "next": "Next",
+  "pinDigit": "PIN digit {{number}}",
+  "reconnecting": "Reconnecting …",
+  "save": "Save",
+  "seconds": "sec",
+  "skip": "Skip",
+  "submit": "Submit",
+  "close": "Close"
+}

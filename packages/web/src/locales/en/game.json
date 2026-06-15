@@ -1,0 +1,157 @@
+{
+  "correct": "Nice!",
+  "gamePinLabel": "Game PIN:",
+  "hud": {
+    "answers": "Answers",
+    "time": "Time"
+  },
+  "joinInstruction": "Join the game at",
+  "joinTimeout": "Could not join in time. Please try again",
+  "leaderboard": "Leaderboard",
+  "pinLabel": "PIN Code",
+  "playersJoined": "Players Joined: ",
+  "questionPrefix": "Question #",
+  "rejoin": "Rejoin",
+  "sending": "sending…",
+  "rank": {
+    "1": "1st place",
+    "2": "2nd place",
+    "3": "3rd place",
+    "other": "{{rank}}th place"
+  },
+  "rankSuffix": " place",
+  "resultBehind": ", behind ",
+  "resultTop": "You finished ",
+  "startGame": "Start Game",
+  "streak": {
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Fastest +100",
+    "streakTitle": "Streak",
+    "streakValue": "+{{percent}}%"
+  },
+  "usernameLabel": "Nickname",
+  "usernamePlaceholder": "Username here",
+  "usernameRequired": "Please enter a nickname",
+  "waitingForAnswers": "Waiting for the players to answer",
+  "waitingForPlayers": "Waiting for players",
+  "wrong": "Too bad",
+  "slider": {
+    "submit": "Confirm",
+    "submitted": "Sent",
+    "correctAnswer": "Correct answer",
+    "averageGuess": "Average guess: {{value}}"
+  },
+  "pollThanks": "Thanks for your vote",
+  "submittedBy": "submitted by {{name}}",
+  "typeAnswerPlaceholder": "Type your answer...",
+  "submitAnswer": "Submit",
+  "controls": {
+    "autoMode": "Auto mode",
+    "autoOn": "on",
+    "autoOff": "off",
+    "autoTitle": "Auto mode: advances automatically",
+    "fullscreen": "Fullscreen"
+  },
+  "avatar": {
+    "title": "Your avatar",
+    "choose": "Choose avatar",
+    "upload": "Upload image",
+    "uploading": "Uploading…",
+    "uploaded": "Avatar uploaded",
+    "skip": "Skip",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pause",
+    "paused": "The game is paused",
+    "resumeHint": "You continue as soon as the host resumes",
+    "pauseGame": "Pause game",
+    "resumeGame": "Resume game"
+  },
+  "playerReconnected": "{{name}} is back online",
+  "achievements": {
+    "gallery": {
+      "title": "Trophies",
+      "empty": "No trophies yet — play a round to earn your first one."
+    },
+    "first_correct": {
+      "name": "First Hit",
+      "desc": "Your very first correct answer in the game."
+    },
+    "participation": {
+      "name": "Full House",
+      "desc": "Answered every question — not a single one missed."
+    },
+    "lucky_guess": {
+      "name": "Lucky Guess",
+      "desc": "Got it right in the last second."
+    },
+    "speed_demon": {
+      "name": "Speed Demon",
+      "desc": "Answered correctly in under one second."
+    },
+    "streak_3": {
+      "name": "Triple Streak",
+      "desc": "Three correct answers in a row."
+    },
+    "sharpshooter": {
+      "name": "Sharpshooter",
+      "desc": "Solved a slider question with over 95% accuracy."
+    },
+    "climber": {
+      "name": "Climber",
+      "desc": "Climbed three or more places in the ranking."
+    },
+    "first_responder": {
+      "name": "First Responder",
+      "desc": "First to answer correctly in this round."
+    },
+    "streak_5": {
+      "name": "Five on Fire",
+      "desc": "Five correct answers in a row."
+    },
+    "underdog": {
+      "name": "Underdog",
+      "desc": "Overtook someone with a 2000-point lead."
+    },
+    "perfect_round": {
+      "name": "Perfect Round",
+      "desc": "Flawless round performance."
+    },
+    "streak_10": {
+      "name": "Ten-Streak",
+      "desc": "Ten correct answers in a row — impressive."
+    },
+    "speedy_gonzales": {
+      "name": "Speedy Gonzales",
+      "desc": "Answered correctly in under 0.4 seconds."
+    },
+    "perfect_game": {
+      "name": "Perfect Game",
+      "desc": "All questions answered correctly."
+    }
+  },
+  "teams": {
+    "chooseTeam": "Choose your team",
+    "teamLeaderboard": "Team Leaderboard",
+    "red": "Red",
+    "blue": "Blue",
+    "green": "Green",
+    "yellow": "Yellow"
+  },
+  "solo": {
+    "play": "Play Solo",
+    "yourScore": "Your Score",
+    "soloLeaderboard": "Leaderboard",
+    "enterName": "Your name",
+    "next": "Next",
+    "finish": "Finish",
+    "rank": "Rank {{rank}}",
+    "replay": "Play again",
+    "trophies": "My trophies"
+  },
+  "reward": {
+    "bonusPoints": "Bonus",
+    "dismiss": "Dismiss"
+  }
+}

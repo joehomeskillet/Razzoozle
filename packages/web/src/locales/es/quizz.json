@@ -1,0 +1,104 @@
+{
+  "addAnswerPlaceholder": "Añadir una respuesta...",
+  "addQuestion": "Añadir pregunta",
+  "answerInputLabel": "Respuesta {{label}}",
+  "answersCountSuffix": " respuestas",
+  "deleteQuestion": "Eliminar pregunta",
+  "markAnswerCorrectLabel": "Marcar la respuesta {{label}} como correcta",
+  "noQuestionYet": "Aún no hay preguntas",
+  "question": {
+    "addMediaHint": "Añade una imagen, video o audio a tu pregunta",
+    "config": {
+      "answerTime": "Tiempo de respuesta",
+      "answerTimeHint": "Tiempo que tienen los jugadores para responder ({{min}}–{{max}} s).",
+      "questionDisplay": "Visualización de la pregunta",
+      "questionDisplayHint": "Tiempo antes de que aparezcan las respuestas ({{min}}–{{max}} s).",
+      "timings": "Tiempos",
+      "rangeMin": "Al menos {{min}} segundos.",
+      "rangeMax": "Como máximo {{max}} segundos."
+    },
+    "deleteQuestion": "Eliminar pregunta",
+    "deleteQuestionConfirm": "¿Estás seguro de que quieres eliminar esta pregunta?",
+    "inputLabel": "Pregunta",
+    "media": {
+      "audio": "Audio",
+      "image": "Imagen",
+      "video": "Video",
+      "aiGenerate": "Generar con IA",
+      "aiPromptPlaceholder": "Describe la imagen...",
+      "uploadButton": "Subir imagen",
+      "uploading": "Subiendo",
+      "tabUrl": "URL",
+      "tabUpload": "Subir",
+      "tabAi": "IA",
+      "tabEdit": "Editar",
+      "enhanceButton": "Mejorar vista previa",
+      "enhancing": "Optimizando",
+      "enhancedLabel": "Cómo se generará",
+      "rawLabel": "Tu entrada",
+      "editPromptPlaceholder": "Describe el cambio en la imagen",
+      "editButton": "Editar imagen con texto",
+      "editing": "Editando"
+    },
+    "mediaUrlPlaceholder": "Introduce la URL...",
+    "placeholder": "Empieza a escribir tu pregunta..."
+  },
+  "quizzSaved": "Cuestionario guardado con éxito",
+  "quizzUpdated": "Cuestionario actualizado con éxito",
+  "reorderSlideLabel": "Mover la diapositiva {{index}}",
+  "slideLabel": "Diapositiva {{index}}",
+  "slider": {
+    "correct": "Correcto",
+    "max": "Máx",
+    "min": "Mín",
+    "step": "Paso",
+    "unit": "Unidad",
+    "unitPlaceholder": "p. ej. kWh"
+  },
+  "subjectInputLabel": "Título del cuestionario",
+  "titleQuizzPlaceholder": "Título del cuestionario...",
+  "type": {
+    "bonusQuestion": "Pregunta bonus (puntos dobles)",
+    "boolean": "Verdadero / Falso",
+    "choice": "Selección",
+    "poll": "Encuesta",
+    "practiceQuestion": "Pregunta de práctica (0 puntos)",
+    "slider": "Slider (número)",
+    "multipleSelect": "Selección múltiple",
+    "typeAnswer": "Respuesta libre",
+    "choiceDesc": "Una respuesta correcta",
+    "booleanDesc": "Verdadero o falso",
+    "sliderDesc": "Un número en una escala",
+    "pollDesc": "Encuesta de opinión, sin puntuación",
+    "multipleSelectDesc": "Varias respuestas correctas",
+    "typeAnswerDesc": "Respuesta escrita libremente"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
+    "submitButton": "Enviar respuestas",
+    "selectHint": "Selecciona todas las correctas"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Respuestas aceptadas",
+    "addAcceptedAnswer": "Añadir respuesta",
+    "acceptedAnswerPlaceholder": "p.ej. París",
+    "removeAcceptedAnswer": "Eliminar respuesta {{index}}",
+    "matchMode": {
+      "label": "Modo de coincidencia",
+      "exact": "Exacto",
+      "normalized": "Normalizado (recomendado)",
+      "fuzzy": "Tolerante (errores ok)"
+    },
+    "minAnswersRequired": "Se requiere al menos una respuesta"
+  },
+  "addAnswerCountLabel": "Añadir respuesta",
+  "removeAnswerCountLabel": "Eliminar respuesta",
+  "bulkSelected": "{{count}} seleccionadas",
+  "bulkDelete": "Eliminar",
+  "bulkDeleteConfirm": "¿Seguro que quieres eliminar las preguntas seleccionadas?",
+  "bulkToCatalog": "Guardar en el catálogo",
+  "themePicker": {
+    "label": "Diseño",
+    "global": "Diseño global"
+  }
+}

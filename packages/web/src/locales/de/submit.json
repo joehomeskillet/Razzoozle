@@ -1,0 +1,44 @@
+{
+  "form": {
+    "title": "Frage vorschlagen",
+    "subtitle": "Stell deine eigene Quizfrage – wir prüfen sie und nehmen die besten ins Quiz auf.",
+    "namePlaceholder": "Dein Name (4–20 Zeichen)",
+    "questionPlaceholder": "Deine Frage...",
+    "answerPlaceholder": "Antwort {{index}}",
+    "correctAnswerLabel": "Richtige Antwort",
+    "submitButton": "Frage einreichen",
+    "section": {
+      "name": "Dein Name",
+      "question": "Deine Frage",
+      "media": "Medien (optional)",
+      "answers": "Antworten",
+      "settings": "Einstellungen"
+    }
+  },
+  "media": {
+    "enhanceHint": "Die KI verfeinert deine Beschreibung vor dem Generieren."
+  },
+  "category": {
+    "label": "Kategorie (optional)",
+    "general": "Allgemein",
+    "history": "Geschichte",
+    "science": "Wissenschaft",
+    "geography": "Geografie",
+    "sports": "Sport",
+    "entertainment": "Unterhaltung",
+    "technology": "Technik",
+    "other": "Sonstiges"
+  },
+  "cta": {
+    "afterGame": "Hat dir das Quiz gefallen? Reich eine eigene Frage ein"
+  },
+  "success": {
+    "title": "Danke",
+    "body": "Deine Frage wurde eingereicht und wird geprüft.",
+    "again": "Weitere Frage einreichen"
+  },
+  "errors": {
+    "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",
+    "serverError": "Ein Fehler ist aufgetreten. Bitte versuche es erneut."
+  }
+}
