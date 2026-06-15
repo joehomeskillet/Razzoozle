@@ -1,0 +1,12 @@
+{
+  "share": {
+    "title": "Endstand",
+    "subtitle": "So ist das Quiz ausgegangen",
+    "copyLink": "Link kopieren",
+    "copied": "Link kopiert",
+    "loading": "Endstand wird geladen",
+    "notFound": "Diesen Endstand gibt es nicht mehr. Vielleicht wurde er entfernt.",
+    "rank": "Platz {{rank}}",
+    "points": "{{count}} Punkte"
+  }
+}

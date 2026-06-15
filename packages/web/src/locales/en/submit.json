@@ -1,0 +1,44 @@
+{
+  "form": {
+    "title": "Suggest a question",
+    "subtitle": "Suggest your own quiz question – we review them and add the best ones to the quiz.",
+    "namePlaceholder": "Your name (4–20 characters)",
+    "questionPlaceholder": "Your question...",
+    "answerPlaceholder": "Answer {{index}}",
+    "correctAnswerLabel": "Correct answer",
+    "submitButton": "Submit question",
+    "section": {
+      "name": "Your name",
+      "question": "Your question",
+      "media": "Media (optional)",
+      "answers": "Answers",
+      "settings": "Settings"
+    }
+  },
+  "media": {
+    "enhanceHint": "The AI refines your description before generating."
+  },
+  "category": {
+    "label": "Category (optional)",
+    "general": "General",
+    "history": "History",
+    "science": "Science",
+    "geography": "Geography",
+    "sports": "Sports",
+    "entertainment": "Entertainment",
+    "technology": "Technology",
+    "other": "Other"
+  },
+  "cta": {
+    "afterGame": "Enjoyed the quiz? Suggest your own question"
+  },
+  "success": {
+    "title": "Thank you",
+    "body": "Your question has been submitted and is under review.",
+    "again": "Submit another question"
+  },
+  "errors": {
+    "rateLimited": "You've submitted too many questions. Please wait a moment.",
+    "serverError": "Something went wrong. Please try again."
+  }
+}

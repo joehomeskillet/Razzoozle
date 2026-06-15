@@ -1,0 +1,44 @@
+{
+  "form": {
+    "title": "Sugerir una pregunta",
+    "subtitle": "Sugiere tu propia pregunta de quiz: las revisamos y añadimos las mejores al quiz.",
+    "namePlaceholder": "Tu nombre (4–20 caracteres)",
+    "questionPlaceholder": "Tu pregunta...",
+    "answerPlaceholder": "Respuesta {{index}}",
+    "correctAnswerLabel": "Respuesta correcta",
+    "submitButton": "Enviar pregunta",
+    "section": {
+      "name": "Tu nombre",
+      "question": "Tu pregunta",
+      "media": "Multimedia (opcional)",
+      "answers": "Respuestas",
+      "settings": "Ajustes"
+    }
+  },
+  "media": {
+    "enhanceHint": "La IA refina tu descripción antes de generar."
+  },
+  "category": {
+    "label": "Categoría (opcional)",
+    "general": "General",
+    "history": "Historia",
+    "science": "Ciencia",
+    "geography": "Geografía",
+    "sports": "Deportes",
+    "entertainment": "Entretenimiento",
+    "technology": "Tecnología",
+    "other": "Otros"
+  },
+  "cta": {
+    "afterGame": "¿Te gustó el quiz? Sugiere tu propia pregunta"
+  },
+  "success": {
+    "title": "Gracias",
+    "body": "Tu pregunta se ha enviado y está siendo revisada.",
+    "again": "Enviar otra pregunta"
+  },
+  "errors": {
+    "rateLimited": "Has enviado demasiadas preguntas. Espera un momento.",
+    "serverError": "Ocurrió un error. Inténtalo de nuevo."
+  }
+}

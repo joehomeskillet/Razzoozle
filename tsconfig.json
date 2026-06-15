@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "noErrorTruncation": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@razzoozle/common/*": ["./packages/common/src/*"],
+      "@razzoozle/socket/*": ["./packages/socket/src/*"],
+      "@razzoozle/web/*": ["./packages/web/src/*"]
+    },
+    "strict": true,
+    "strictNullChecks": true
+  }
+}

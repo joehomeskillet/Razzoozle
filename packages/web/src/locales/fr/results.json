@@ -1,0 +1,12 @@
+{
+  "share": {
+    "title": "Classement final",
+    "subtitle": "Comment le quiz s'est terminé",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié",
+    "loading": "Chargement du classement final",
+    "notFound": "Ce résultat n'est plus disponible. Il a peut-être été supprimé.",
+    "rank": "Rang {{rank}}",
+    "points": "{{count}} points"
+  }
+}

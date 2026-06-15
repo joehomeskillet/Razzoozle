@@ -1,0 +1,25 @@
+/*
+ * Admin-console derived theme tokens (2026 redesign).
+ *
+ * These are NOT a parallel theming system: they are *derived* from the existing
+ * runtime-themed `--color-primary` (set on <html> by features/theme/apply.ts).
+ * `color-mix()` re-evaluates at paint time, so when the Design tab changes the
+ * primary, these track it automatically — no JS, no duplicated source of truth.
+ *
+ * Import side-effect from ConsoleShell.tsx. Consumed via the Tailwind arbitrary
+ * value classes `bg-[var(--accent-tint)]` / `text-[var(--accent-contrast)]`.
+ *
+ *   --accent-tint     : soft wash for active nav rows + the header band.
+ *   --accent-contrast : the accent darkened just enough that white text and the
+ *                       filled icons/checks stay AA-legible even when the themed
+ *                       primary is a light color (e.g. #ff9900 ~2.6:1 on white).
+ *                       Spec §3 "Contrast fix".
+ */
+:root {
+  --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
+  --accent-contrast: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-primary), black 34%),
+    #1f2937 12%
+  );
+}

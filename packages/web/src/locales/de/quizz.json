@@ -1,0 +1,104 @@
+{
+  "addAnswerPlaceholder": "Antwort hinzufügen...",
+  "addQuestion": "Frage hinzufügen",
+  "answerInputLabel": "Antwort {{label}}",
+  "answersCountSuffix": " Antworten",
+  "deleteQuestion": "Frage löschen",
+  "markAnswerCorrectLabel": "Antwort {{label}} als richtig markieren",
+  "noQuestionYet": "Noch keine Fragen",
+  "question": {
+    "addMediaHint": "Füge ein Bild, Video oder Audio zu deiner Frage hinzu",
+    "config": {
+      "answerTime": "Antwortzeit",
+      "answerTimeHint": "Zeit, die Spieler zum Antworten haben ({{min}}–{{max}} Sek.).",
+      "questionDisplay": "Frageanzeige",
+      "questionDisplayHint": "Dauer bevor Antworten erscheinen ({{min}}–{{max}} Sek.).",
+      "timings": "Zeiten",
+      "rangeMin": "Mindestens {{min}} Sekunden.",
+      "rangeMax": "Höchstens {{max}} Sekunden."
+    },
+    "deleteQuestion": "Frage löschen",
+    "deleteQuestionConfirm": "Möchtest du diese Frage wirklich löschen?",
+    "inputLabel": "Frage",
+    "media": {
+      "audio": "Audio",
+      "image": "Bild",
+      "video": "Video",
+      "aiGenerate": "Mit KI generieren",
+      "aiPromptPlaceholder": "Beschreibe das Bild...",
+      "uploadButton": "Bild hochladen",
+      "uploading": "Wird hochgeladen",
+      "tabUrl": "URL",
+      "tabUpload": "Hochladen",
+      "tabAi": "KI",
+      "tabEdit": "Bearbeiten",
+      "enhanceButton": "Vorschau verbessern",
+      "enhancing": "Wird optimiert",
+      "enhancedLabel": "So wird generiert",
+      "rawLabel": "Deine Eingabe",
+      "editPromptPlaceholder": "Beschreibe die Änderung am Bild",
+      "editButton": "Bild per Text ändern",
+      "editing": "Wird bearbeitet"
+    },
+    "mediaUrlPlaceholder": "URL eingeben...",
+    "placeholder": "Beginne deine Frage zu tippen..."
+  },
+  "quizzSaved": "Quiz erfolgreich gespeichert",
+  "quizzUpdated": "Quiz erfolgreich aktualisiert",
+  "reorderSlideLabel": "Folie {{index}} verschieben",
+  "slideLabel": "Folie {{index}}",
+  "subjectInputLabel": "Quizz-Titel",
+  "titleQuizzPlaceholder": "Quiz-Titel...",
+  "type": {
+    "choice": "Auswahl",
+    "boolean": "Wahr / Falsch",
+    "slider": "Slider (Zahl)",
+    "poll": "Umfrage",
+    "bonusQuestion": "Bonusfrage (doppelte Punkte)",
+    "practiceQuestion": "Übungsfrage (0 Punkte)",
+    "multipleSelect": "Mehrfachauswahl",
+    "typeAnswer": "Texteingabe",
+    "choiceDesc": "Eine richtige Antwort",
+    "booleanDesc": "Wahr oder Falsch",
+    "sliderDesc": "Zahl auf einer Skala",
+    "pollDesc": "Stimmungsbild, keine Wertung",
+    "multipleSelectDesc": "Mehrere richtige Antworten",
+    "typeAnswerDesc": "Frei getippte Antwort"
+  },
+  "slider": {
+    "min": "Min",
+    "max": "Max",
+    "correct": "Richtig",
+    "step": "Schritt",
+    "unit": "Einheit",
+    "unitPlaceholder": "z.B. kWh"
+  },
+  "multipleSelect": {
+    "minSolutionsHint": "Mindestens 2 richtige Antworten markieren",
+    "submitButton": "Antworten abschicken",
+    "selectHint": "Mehrere Antworten wählbar"
+  },
+  "typeAnswer": {
+    "acceptedAnswersLabel": "Akzeptierte Antworten",
+    "addAcceptedAnswer": "Antwort hinzufügen",
+    "acceptedAnswerPlaceholder": "z.B. Paris",
+    "removeAcceptedAnswer": "Antwort {{index}} entfernen",
+    "matchMode": {
+      "label": "Vergleichsmodus",
+      "exact": "Exakt",
+      "normalized": "Normalisiert (empfohlen)",
+      "fuzzy": "Tolerant (Tippfehler ok)"
+    },
+    "minAnswersRequired": "Mindestens eine Antwort erforderlich"
+  },
+  "addAnswerCountLabel": "Antwort hinzufügen",
+  "removeAnswerCountLabel": "Antwort entfernen",
+  "bulkSelected": "{{count}} ausgewählt",
+  "bulkDelete": "Löschen",
+  "bulkDeleteConfirm": "Die ausgewählten Fragen wirklich löschen?",
+  "bulkToCatalog": "In Katalog speichern",
+  "themePicker": {
+    "label": "Design",
+    "global": "Globales Design"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "cancel": "Cancelar",
+  "confirm": "Confirmar",
+  "connecting": "Conectando...",
+  "copied": "Copiado",
+  "delete": "Eliminar",
+  "exit": "Salir",
+  "language": {
+    "de": "Alemán",
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés",
+    "it": "Italiano",
+    "zh": "中文"
+  },
+  "loading": "Cargando...",
+  "next": "Siguiente",
+  "pinDigit": "Dígito {{number}} del PIN",
+  "reconnecting": "Reconectando …",
+  "save": "Guardar",
+  "seconds": "seg",
+  "skip": "Omitir",
+  "submit": "Enviar",
+  "close": "Cerrar"
+}

@@ -1,0 +1,147 @@
+{
+  "auth": {
+    "invalidInviteCode": "Ungültiger Einladungscode",
+    "usernameTooLong": "Der Benutzername darf nicht mehr als 20 Zeichen haben",
+    "usernameTooShort": "Der Benutzername muss mindestens 4 Zeichen haben"
+  },
+  "display": {
+    "invalidCode": "Ungültiger oder abgelaufener Kopplungs-Code",
+    "notConnected": "Die Satelliten-Anzeige ist nicht mehr verbunden",
+    "notManager": "Nur der Spielleiter kann eine Anzeige koppeln"
+  },
+  "game": {
+    "expired": "Spiel abgelaufen",
+    "invalidAnswer": "Ungültige Antwort",
+    "kickedByManager": "Du wurdest vom Manager entfernt",
+    "managerAlreadyConnected": "Manager bereits verbunden",
+    "managerDisconnected": "Manager getrennt",
+    "noPlayersConnected": "Keine Spieler verbunden",
+    "notFound": "Spiel nicht gefunden",
+    "playerAlreadyConnected": "Spieler bereits verbunden"
+  },
+  "manager": {
+    "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",
+    "invalidPassword": "Ungültiges Passwort",
+    "passwordNotConfigured": "Manager-Passwort ist nicht konfiguriert",
+    "simModeDisabled": "Der Simulationsmodus ist auf dem Server nicht aktiviert",
+    "simWindowOpen": "Du kannst Bots nur in der Lobby oder zwischen Fragen hinzufügen, nicht während eine Frage offen ist"
+  },
+  "notFound": {
+    "back": "Zurück zur Startseite",
+    "description": "Die gesuchte Seite existiert nicht.",
+    "title": "Seite nicht gefunden"
+  },
+  "client": {
+    "back": "Zurück zur Startseite",
+    "description": "Mit der Anfrage stimmte etwas nicht. Bitte versuche es erneut.",
+    "title": "Da ist etwas verrutscht"
+  },
+  "server": {
+    "back": "Zurück zur Startseite",
+    "description": "Auf dem Server ist etwas schiefgelaufen. Wir kümmern uns darum.",
+    "title": "Der Server braucht kurz eine Pause"
+  },
+  "generic": {
+    "back": "Zurück zur Startseite",
+    "description": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+    "title": "Etwas ist schiefgelaufen"
+  },
+  "quotes": {
+    "notFound": [
+      "Diese Seite ist in einem anderen Schloss.",
+      "Schroedingers Seite: gleichzeitig da und nicht da.",
+      "Diese Seite hat sich ausgeloggt und nie wieder eingeloggt.",
+      "404 — hier ist nur noch Leere und ein bisschen kosmischer Staub.",
+      "Wir haben ueberall gesucht. Sogar hinter der Couch.",
+      "Diese Seite ist auf einer Reise zu sich selbst."
+    ],
+    "client": [
+      "Bad Request — PEBKAC, aber wir moegen dich trotzdem.",
+      "Layer-8-Problem erkannt.",
+      "Das war syntaktisch mutig.",
+      "Die Anfrage war ein bisschen daneben — passiert den Besten.",
+      "Irgendwas zwischen Stuhl und Tastatur ist verrutscht.",
+      "Fast richtig. Nur halt nicht ganz."
+    ],
+    "server": [
+      "Der Server hat kurz Feierabend gemacht.",
+      "Hast du es schon mit aus- und wieder einschalten versucht?",
+      "Stack Overflow (die schlechte Sorte).",
+      "Die Hamster im Serverrad brauchen eine Pause.",
+      "Kernel Panic — der Server zaehlt erst mal bis zehn.",
+      "Es liegt nicht an dir, es liegt an uns. Wirklich."
+    ],
+    "generic": [
+      "Etwas ist schiefgelaufen — wir wissen auch nicht genau was.",
+      "Ein wilder Fehler erschien. Es war nicht sehr effektiv.",
+      "Houston, wir haben ein kleines Problem.",
+      "Hier hat sich ein Bug eingeschlichen. Wir kehren ihn raus.",
+      "Unerwartet, aber nicht ungewohnt."
+    ]
+  },
+  "quizz": {
+    "answerEmpty": "Eine Antwort darf nicht leer sein",
+    "failedToDelete": "Quiz konnte nicht gelöscht werden",
+    "failedToSave": "Quiz ist unvollständig, stelle sicher, dass alle Fragen einen Titel und mindestens eine richtige Antwort haben",
+    "failedToUpdate": "Quiz konnte nicht aktualisiert werden",
+    "invalidMediaUrl": "Die Medien-URL muss eine gültige URL sein",
+    "noQuestions": "Ein Quiz muss mindestens eine Frage haben",
+    "notFound": "Quiz nicht gefunden",
+    "questionEmpty": "Die Frage darf nicht leer sein",
+    "subjectEmpty": "Das Thema darf nicht leer sein",
+    "tooFewAnswers": "Eine Frage muss mindestens 2 Antworten haben",
+    "tooManyAnswers": "Eine Frage darf nicht mehr als 4 Antworten haben"
+  },
+  "route": {
+    "back": "Zurück zur Startseite",
+    "description": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+    "title": "Etwas ist schiefgelaufen"
+  },
+  "theme": {
+    "imageTooLarge": "Das Bild ist zu gross (max. 8 MB)",
+    "uploadFailed": "Bild konnte nicht hochgeladen werden",
+    "saveFailed": "Design konnte nicht gespeichert werden"
+  },
+  "media": {
+    "tooLarge": "Das Bild ist zu groß. Maximal 8 MB.",
+    "invalidDataUrl": "Dieses Bildformat wird nicht unterstützt.",
+    "invalidUrl": "Diese Bildquelle ist ungültig."
+  },
+  "submission": {
+    "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",
+    "notFound": "Vorschlag nicht gefunden.",
+    "quizzNotFound": "Quizz nicht gefunden.",
+    "queueFull": "Es liegen gerade zu viele Vorschläge in der Moderation. Bitte später erneut.",
+    "imageLimitReached": "Du hast das Stunden-Limit für KI-Bilder erreicht. Bitte später erneut.",
+    "imageRateLimited": "Du erstellst zu schnell KI-Bilder. Bitte einen Moment warten.",
+    "imageGenFailed": "Das KI-Bild konnte nicht erstellt werden. Bitte später erneut.",
+    "promptInvalid": "Die Bildbeschreibung ist ungültig. Bitte passe sie an.",
+    "promptRejected": "Die Bildbeschreibung wurde abgelehnt. Bitte formuliere sie anders.",
+    "saveFailed": "Der Vorschlag konnte nicht gespeichert werden. Bitte später erneut."
+  },
+  "catalog": {
+    "notFound": "Katalog-Frage nicht gefunden.",
+    "saveFailed": "Frage konnte nicht im Katalog gespeichert werden.",
+    "deleteFailed": "Frage konnte nicht entfernt werden.",
+    "invalid": "Die Frage ist unvollständig."
+  },
+  "ai": {
+    "notConfigured": "Kein KI-Anbieter konfiguriert.",
+    "noKey": "Für diesen Anbieter ist kein API-Schlüssel hinterlegt.",
+    "generationFailed": "Die KI-Generierung ist fehlgeschlagen.",
+    "invalidOutput": "Die KI-Antwort war ungültig. Bitte erneut versuchen.",
+    "providerError": "Der KI-Anbieter hat einen Fehler gemeldet.",
+    "rateLimited": "Zu viele KI-Anfragen. Bitte kurz warten.",
+    "testFailed": "Verbindung zum KI-Anbieter fehlgeschlagen.",
+    "saveFailed": "KI-Einstellungen konnten nicht gespeichert werden.",
+    "unsupported": "Diese Funktion wird vom gewählten Anbieter nicht unterstützt."
+  },
+  "back": "Zurück zur Startseite",
+  "detail": {
+    "toggle": "Technische Details"
+  },
+  "connection": {
+    "lost": "Verbindung verloren — versuche neu zu verbinden",
+    "restored": "Verbindung wiederhergestellt"
+  }
+}

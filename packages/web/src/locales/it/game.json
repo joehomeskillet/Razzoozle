@@ -1,0 +1,157 @@
+{
+  "correct": "Bravo!",
+  "gamePinLabel": "PIN del gioco:",
+  "hud": {
+    "answers": "Risposte",
+    "time": "Tempo"
+  },
+  "joinInstruction": "Unisciti al gioco su",
+  "leaderboard": "Classifica",
+  "pinLabel": "Codice PIN",
+  "playersJoined": "Giocatori connessi: ",
+  "questionPrefix": "Domanda #",
+  "sending": "invio in corso…",
+  "rank": {
+    "1": "1° posto",
+    "2": "2° posto",
+    "3": "3° posto",
+    "other": "{{rank}}° posto"
+  },
+  "rankSuffix": "° posto",
+  "resultBehind": ", dietro ",
+  "resultTop": "Hai terminato ",
+  "startGame": "Inizia il gioco",
+  "usernamePlaceholder": "Nome utente qui",
+  "waitingForAnswers": "In attesa delle risposte dei giocatori",
+  "waitingForPlayers": "In attesa di giocatori",
+  "wrong": "Peccato",
+  "slider": {
+    "submit": "Conferma",
+    "submitted": "Inviato",
+    "correctAnswer": "Risposta corretta",
+    "averageGuess": "Media delle stime: {{value}}"
+  },
+  "pollThanks": "Grazie per il tuo voto",
+  "usernameLabel": "Soprannome",
+  "usernameRequired": "Inserisci un soprannome",
+  "joinTimeout": "Impossibile entrare in tempo. Riprova",
+  "rejoin": "Rientra",
+  "streak": {
+    "bonus": "Bonus ×2",
+    "firstCorrect": "Più veloce +100",
+    "streakTitle": "Serie",
+    "streakValue": "+{{percent}}%"
+  },
+  "submittedBy": "inviata da {{name}}",
+  "typeAnswerPlaceholder": "Scrivi la tua risposta...",
+  "submitAnswer": "Invia",
+  "controls": {
+    "autoMode": "Modalità auto",
+    "autoOn": "attiva",
+    "autoOff": "disattiva",
+    "autoTitle": "Modalità auto: avanza automaticamente",
+    "fullscreen": "Schermo intero"
+  },
+  "avatar": {
+    "title": "Il tuo avatar",
+    "choose": "Scegli avatar",
+    "upload": "Carica immagine",
+    "uploading": "Caricamento…",
+    "uploaded": "Avatar caricato",
+    "skip": "Salta",
+    "genericLabel": "Avatar"
+  },
+  "pause": {
+    "title": "Pausa",
+    "paused": "La partita è in pausa",
+    "resumeHint": "Riprendi non appena l'host riavvia",
+    "pauseGame": "Metti in pausa",
+    "resumeGame": "Riprendi la partita"
+  },
+  "playerReconnected": "{{name}} si è riconnesso",
+  "achievements": {
+    "gallery": {
+      "title": "Trofei",
+      "empty": "Ancora nessun trofeo — gioca una partita per guadagnare il primo."
+    },
+    "first_correct": {
+      "name": "Primo successo",
+      "desc": "La tua primissima risposta corretta nel gioco."
+    },
+    "participation": {
+      "name": "Piena partecipazione",
+      "desc": "Hai risposto a tutte le domande senza eccezioni."
+    },
+    "lucky_guess": {
+      "name": "Colpo di fortuna",
+      "desc": "Risposta corretta all'ultimo secondo."
+    },
+    "speed_demon": {
+      "name": "Demone della velocità",
+      "desc": "Risposta corretta in meno di un secondo."
+    },
+    "streak_3": {
+      "name": "Serie di tre",
+      "desc": "Tre risposte corrette di fila."
+    },
+    "sharpshooter": {
+      "name": "Cecchino",
+      "desc": "Domanda slider risolta con oltre il 95% di precisione."
+    },
+    "climber": {
+      "name": "Scalatore",
+      "desc": "Scalato tre o più posizioni in classifica."
+    },
+    "first_responder": {
+      "name": "Risposta fulmine",
+      "desc": "Primo a rispondere correttamente in questo turno."
+    },
+    "streak_5": {
+      "name": "Cinque di fila",
+      "desc": "Cinque risposte corrette consecutive."
+    },
+    "underdog": {
+      "name": "Underdog",
+      "desc": "Superato qualcuno con 2000 punti di vantaggio."
+    },
+    "perfect_round": {
+      "name": "Turno perfetto",
+      "desc": "Turno impeccabile."
+    },
+    "streak_10": {
+      "name": "Serie di dieci",
+      "desc": "Dieci risposte corrette di fila — impressionante."
+    },
+    "speedy_gonzales": {
+      "name": "Speedy Gonzales",
+      "desc": "Risposta corretta in meno di 0,4 secondi."
+    },
+    "perfect_game": {
+      "name": "Gioco perfetto",
+      "desc": "Tutte le domande con risposta corretta."
+    }
+  },
+  "teams": {
+    "chooseTeam": "Scegli la tua squadra",
+    "teamLeaderboard": "Classifica a squadre",
+    "red": "Rosso",
+    "blue": "Blu",
+    "green": "Verde",
+    "yellow": "Giallo"
+  },
+  "solo": {
+    "play": "Gioca da solo",
+    "yourScore": "Il tuo punteggio",
+    "soloLeaderboard": "Classifica",
+    "enterName": "Il tuo nome",
+    "next": "Avanti",
+    "finish": "Fine",
+    "rank": "Posto {{rank}}",
+    "replay": "Gioca di nuovo",
+    "trophies": "I miei trofei"
+  },
+  "reward": {
+    "bonusPoints": "Bonus",
+    "dismiss": "Chiudi"
+  }
+}

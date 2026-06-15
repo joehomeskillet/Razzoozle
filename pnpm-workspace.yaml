@@ -1,0 +1,24 @@
+packages:
+  - "packages/*"
+  # The MCP server (@razzoozle/mcp) is a host-only dev tool (project-scoped
+  # .mcp.json → node packages/mcp/dist/index.cjs, esbuild-bundled + self-
+  # contained). Excluded from the main workspace so it never drifts pnpm-lock or
+  # the Docker frozen install — the runtime image ships only web + socket.
+  - "!packages/mcp"
+
+# Force the transitive `ws` (socket.io → engine.io → ws) to a patched release.
+# 8.18.3 is vulnerable to GHSA-58qx-3vcg-4xpx (DoS); fix is >=8.20.1. ws serves
+# the PUBLIC websocket. pnpm >=11 reads overrides from here, not package.json.
+overrides:
+  ws: "^8.20.1"
+
+allowBuilds:
+  esbuild: true
+  oxlint: true
+  oxlint-tsgolint: true
+
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+# Relaxed from "no-downgrade": the upstream lockfile flags react-redux@9.2.0 and
+# semver@6.3.1 as trust-downgrades, which blocks a clean build of this fork.
+trustPolicy: permissive
