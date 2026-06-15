@@ -17,7 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-350%2B-3DBFA0)
 
-**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
