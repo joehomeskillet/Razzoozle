@@ -468,6 +468,8 @@
     "description": "Descrizione",
     "threshold": "Soglia",
     "save": "Salva",
-    "saved": "Salvato"
+    "saved": "Salvato",
+    "reset": "Ripristina valori predefiniti",
+    "resetDone": "Valori predefiniti ripristinati"
   }
 }

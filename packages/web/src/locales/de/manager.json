@@ -460,7 +460,9 @@
     "description": "Beschreibung",
     "threshold": "Schwellenwert",
     "save": "Speichern",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "reset": "Auf Standard zurücksetzen",
+    "resetDone": "Auf Standard zurückgesetzt"
   },
   "gameMode": {
     "title": "Spielmodus",

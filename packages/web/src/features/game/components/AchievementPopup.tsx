@@ -1,7 +1,17 @@
+/**
+ * AchievementPopup — stacked badge overlay rendered on the player result screen.
+ * Each badge is revealed with a tier-specific spring animation via <AchievementMedal>.
+ * Gold gets a pulse ring, Diamant gets a bounce + two-sided confetti burst.
+ * localStorage persistence and tier-chime are handled by Result.tsx (caller).
+ * Reduced-motion: spring/bounce collapsed to a simple fade-in.
+ */
+
 import type { MergedAchievement } from "@razzia/common/achievements"
+import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
 import {
   ACHIEVEMENT_META,
-  TIER_STYLES,
+  TIER_LABEL,
+  TIER_TEXT,
   getAchievementDisplay,
   loadAchievementMeta,
   type AchievementMeta,
@@ -12,12 +22,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-interface SingleBadgeProps {
-  meta: AchievementMeta
-  index: number
-  reduced: boolean
-  mergedList: MergedAchievement[]
-}
+// ─── Per-tier spring animations ───────────────────────────────────────────────
 
 const tierAnimVariants: Record<
   AchievementTier,
@@ -51,17 +56,7 @@ const tierAnimVariants: Record<
   },
 }
 
-const GoldPulse = ({ reduced }: { reduced: boolean }) => {
-  if (reduced) return null
-  return (
-    <motion.div
-      className="absolute inset-0 rounded-2xl bg-yellow-300/30"
-      animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.05, 1] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      aria-hidden
-    />
-  )
-}
+// ─── Diamant glow halo (behind the row card) ─────────────────────────────────
 
 const DiamantGlow = ({ reduced }: { reduced: boolean }) => {
   if (reduced) return null
@@ -75,6 +70,15 @@ const DiamantGlow = ({ reduced }: { reduced: boolean }) => {
   )
 }
 
+// ─── Single badge row ─────────────────────────────────────────────────────────
+
+interface SingleBadgeProps {
+  meta: AchievementMeta
+  index: number
+  reduced: boolean
+  mergedList: MergedAchievement[]
+}
+
 const AchievementBadge = ({
   meta,
   index,
@@ -82,7 +86,6 @@ const AchievementBadge = ({
   mergedList,
 }: SingleBadgeProps) => {
   const { t } = useTranslation()
-  const style = TIER_STYLES[meta.tier]
   const anim = tierAnimVariants[meta.tier]
 
   const merged = mergedList.find((m) => m.id === meta.id)
@@ -91,51 +94,53 @@ const AchievementBadge = ({
     desc: t(`${meta.i18nKey}.desc`, ""),
   })
 
+  // Card background uses a semi-transparent dark surface so the medallion gradient pops
+  const isGold = meta.tier === "gold"
+  const isDiamant = meta.tier === "diamant"
+
   return (
     <motion.div
-      initial={
-        reduced ? { opacity: 0 } : { opacity: 0, scale: 0.7, y: 20 }
-      }
-      animate={
-        reduced ? { opacity: 1 } : { ...anim.animate }
-      }
+      initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.7, y: 20 }}
+      animate={reduced ? { opacity: 1 } : { ...anim.animate }}
       transition={
-        reduced
-          ? undefined
-          : { ...anim.transition, delay: index * 0.15 }
+        reduced ? undefined : { ...anim.transition, delay: index * 0.15 }
       }
       exit={{ opacity: 0, scale: 0.8 }}
       role="status"
       aria-label={display.name}
       className="relative"
     >
-      {meta.tier === "diamant" && <DiamantGlow reduced={reduced} />}
-      <div
-        className={`relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r ring-2 px-4 py-3 shadow-xl ${style.gradient} ${style.ringColor}`}
-      >
-        {meta.tier === "gold" && <GoldPulse reduced={reduced} />}
-        <span className="relative z-10 text-2xl leading-none" aria-hidden>
-          {meta.icon}
-        </span>
-        <div className="relative z-10">
-          <p className={`text-sm font-extrabold leading-tight ${style.textColor}`}>
+      {isDiamant && <DiamantGlow reduced={reduced} />}
+      {/* Row card */}
+      <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-black/50 px-4 py-3 shadow-xl ring-1 ring-white/10 backdrop-blur-sm">
+        {/* Medallion — AchievementMedal handles tier gradient, ring, emoji, gold pulse, diamant shimmer */}
+        <AchievementMedal
+          id={meta.id}
+          tier={meta.tier}
+          size="md"
+          pulse={isGold || isDiamant}
+        />
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-extrabold leading-tight ${TIER_TEXT[meta.tier]}`}>
             {display.name}
           </p>
-          <p
-            className={`text-xs leading-snug opacity-85 ${style.textColor}`}
-          >
+          <p className={`text-xs leading-snug opacity-85 ${TIER_TEXT[meta.tier]}`}>
             {display.description}
           </p>
         </div>
+        {/* Tier label badge */}
         <span
-          className={`relative z-10 ml-auto text-[10px] font-bold uppercase tracking-widest opacity-70 ${style.textColor}`}
+          className={`shrink-0 text-[10px] font-bold uppercase tracking-widest opacity-70 ${TIER_TEXT[meta.tier]}`}
         >
-          {style.label}
+          {TIER_LABEL[meta.tier]}
         </span>
       </div>
     </motion.div>
   )
 }
+
+// ─── Public component ─────────────────────────────────────────────────────────
 
 interface Props {
   achievementIds: string[]

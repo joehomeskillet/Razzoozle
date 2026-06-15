@@ -1,8 +1,21 @@
+/**
+ * TrophyGallery — shows all achievements grouped by tier.
+ * Unlocked badges are shown as full-colour <AchievementMedal size="lg"> medallions
+ * with a count badge. Locked badges are greyed/desaturated. Disabled achievements
+ * (manager config) are hidden entirely.
+ * Reads the {id: count} map persisted by Result.tsx in localStorage.
+ * Prefers server-provided name/description overrides when available.
+ */
+
 import type { MergedAchievement } from "@razzia/common/achievements"
+import AchievementMedal from "@razzia/web/features/game/components/AchievementMedal"
 import {
   ACHIEVEMENT_META,
+  TIER_LABEL,
+  TIER_GRADIENT,
+  TIER_RING,
+  TIER_TEXT,
   TIER_ORDER,
-  TIER_STYLES,
   getAchievementDisplay,
   loadAchievementMeta,
   type AchievementMeta,
@@ -11,6 +24,8 @@ import {
 import clsx from "clsx"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
 
 const LS_KEY = "rahoot_achievements"
 
@@ -23,6 +38,8 @@ function readStoredAchievements(): Record<string, number> {
   }
 }
 
+// ─── Tier section ─────────────────────────────────────────────────────────────
+
 interface TierSectionProps {
   tier: AchievementTier
   metas: AchievementMeta[]
@@ -32,29 +49,38 @@ interface TierSectionProps {
 
 const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
   const { t } = useTranslation()
-  const style = TIER_STYLES[tier]
 
-  // Filter to only metas that are enabled (or have no merged entry = default enabled)
+  // Keep only enabled badges (treat absent merged entry as enabled)
   const visibleMetas = metas.filter((meta) => {
     const merged = mergedList.find((m) => m.id === meta.id)
-    // If no merged data yet (e.g. fetch failed), treat as enabled
     return merged === undefined || merged.enabled
   })
 
   if (visibleMetas.length === 0) return null
 
+  const enabledCount = visibleMetas.length
+  const unlockedCount = visibleMetas.filter((m) => (counts[m.id] ?? 0) > 0).length
+
   return (
-    <section aria-label={style.label} className="space-y-2">
-      <h3
-        className={clsx(
-          "inline-block rounded-full bg-gradient-to-r px-3 py-0.5 text-xs font-bold uppercase tracking-widest",
-          style.gradient,
-          style.textColor,
-        )}
-      >
-        {style.label}
-      </h3>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+    <section aria-label={TIER_LABEL[tier]} className="space-y-3">
+      {/* Tier header pill */}
+      <div className="flex items-center gap-2">
+        <h3
+          className={clsx(
+            "inline-block rounded-full bg-gradient-to-r px-3 py-0.5 text-xs font-bold uppercase tracking-widest",
+            TIER_GRADIENT[tier],
+            TIER_TEXT[tier],
+          )}
+        >
+          {TIER_LABEL[tier]}
+        </h3>
+        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white/50">
+          {unlockedCount} / {enabledCount}
+        </span>
+      </div>
+
+      {/* Badge grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {visibleMetas.map((meta) => {
           const count = counts[meta.id] ?? 0
           const unlocked = count > 0
@@ -68,40 +94,47 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
             <div
               key={meta.id}
               className={clsx(
-                "flex items-center gap-3 rounded-xl border px-3 py-2 transition-opacity",
+                "relative flex flex-col items-center gap-2 rounded-2xl px-3 py-4 transition-opacity",
                 unlocked
-                  ? `bg-gradient-to-r ring-1 ${style.gradient} ${style.ringColor} border-transparent shadow-md`
-                  : "border-white/10 bg-white/5 opacity-40 grayscale",
+                  ? `bg-gradient-to-br ring-2 shadow-lg ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
+                  : "bg-white/5 opacity-40 grayscale ring-1 ring-white/10",
               )}
-              aria-label={`${display.name}${unlocked ? `, ${count}×` : ""}`}
+              aria-label={`${display.name}${unlocked ? `, ${count}×` : ", gesperrt"}`}
             >
-              <span className="text-xl leading-none" aria-hidden>
-                {meta.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p
-                  className={clsx(
-                    "truncate text-sm font-bold leading-tight",
-                    unlocked ? style.textColor : "text-white/60",
-                  )}
-                >
-                  {display.name}
-                </p>
-                <p
-                  className={clsx(
-                    "truncate text-xs leading-snug",
-                    unlocked ? `${style.textColor} opacity-80` : "text-white/40",
-                  )}
-                >
-                  {display.description}
-                </p>
-              </div>
-              {unlocked && count > 1 && (
+              {/* Medallion — full colour when unlocked, inherits grayscale from parent when locked */}
+              <AchievementMedal
+                id={meta.id}
+                tier={tier}
+                size="lg"
+                pulse={unlocked && (tier === "gold" || tier === "diamant")}
+              />
+
+              {/* Badge name */}
+              <p
+                className={clsx(
+                  "text-center text-xs font-bold leading-tight",
+                  unlocked ? TIER_TEXT[tier] : "text-white/60",
+                )}
+              >
+                {display.name}
+              </p>
+
+              {/* Description — truncated to one line */}
+              <p
+                className={clsx(
+                  "line-clamp-2 text-center text-[10px] leading-snug",
+                  unlocked ? `${TIER_TEXT[tier]} opacity-75` : "text-white/40",
+                )}
+              >
+                {display.description}
+              </p>
+
+              {/* Count badge — shown when unlocked (always show ×count) */}
+              {unlocked && (
                 <span
                   className={clsx(
-                    "ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold",
-                    style.textColor,
-                    "bg-black/20",
+                    "absolute right-2 top-2 rounded-full bg-black/30 px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
+                    TIER_TEXT[tier],
                   )}
                   aria-hidden
                 >
@@ -116,13 +149,8 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
   )
 }
 
-/**
- * Trophy Gallery — shows all achievements grouped by tier.
- * Unlocked achievements are shown in full color; locked ones are greyed out.
- * Disabled achievements (manager config) are hidden entirely.
- * Reads the {id: count} map persisted by Result.tsx in localStorage.
- * Prefers server-provided name/description overrides when available.
- */
+// ─── Gallery ─────────────────────────────────────────────────────────────────
+
 const TrophyGallery = () => {
   const { t } = useTranslation()
   const [counts, setCounts] = useState<Record<string, number>>({})
@@ -138,7 +166,7 @@ const TrophyGallery = () => {
     })
   }, [])
 
-  // Derive total enabled badge count (from merged list or fallback to all 15)
+  // Derive enabled badge ids (from merged list or fall back to all)
   const enabledIds: Set<string> =
     mergedList.length > 0
       ? new Set(mergedList.filter((m) => m.enabled).map((m) => m.id))
@@ -163,13 +191,13 @@ const TrophyGallery = () => {
   return (
     <section
       aria-label={t("game:achievements.gallery.title", "Trophäen")}
-      className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6"
+      className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6"
     >
       <header className="flex items-baseline gap-3">
         <h2 className="text-2xl font-extrabold text-white drop-shadow">
           {t("game:achievements.gallery.title", "Trophäen")}
         </h2>
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/60">
+        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs tabular-nums text-white/60">
           {totalUnlocked} / {enabledIds.size}
         </span>
       </header>
@@ -183,7 +211,7 @@ const TrophyGallery = () => {
         </p>
       )}
 
-      {/* Render tiers from lowest to highest; disabled badges are hidden */}
+      {/* Tiers from lowest to highest; disabled badges are hidden inside TierSection */}
       {TIER_ORDER.map((tier) => (
         <TierSection
           key={tier}

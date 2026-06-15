@@ -468,6 +468,8 @@
     "description": "Description",
     "threshold": "Threshold",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "reset": "Reset to defaults",
+    "resetDone": "Reset to defaults"
   }
 }

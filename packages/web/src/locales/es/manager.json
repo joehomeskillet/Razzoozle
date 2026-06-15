@@ -468,6 +468,8 @@
     "description": "Descripción",
     "threshold": "Umbral",
     "save": "Guardar",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "reset": "Restablecer valores predeterminados",
+    "resetDone": "Valores predeterminados restablecidos"
   }
 }

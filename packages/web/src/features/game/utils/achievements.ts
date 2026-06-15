@@ -23,13 +23,13 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     id: "first_correct",
     tier: "bronze",
     i18nKey: "game:achievements.first_correct",
-    icon: "🌟",
+    icon: "✅",
   },
   participation: {
     id: "participation",
     tier: "bronze",
     i18nKey: "game:achievements.participation",
-    icon: "🎖️",
+    icon: "🎟️",
   },
   lucky_guess: {
     id: "lucky_guess",
@@ -61,7 +61,7 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     id: "climber",
     tier: "silver",
     i18nKey: "game:achievements.climber",
-    icon: "📈",
+    icon: "🧗",
   },
 
   // Gold
@@ -75,19 +75,19 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     id: "streak_5",
     tier: "gold",
     i18nKey: "game:achievements.streak_5",
-    icon: "💥",
+    icon: "🔥",
   },
   underdog: {
     id: "underdog",
     tier: "gold",
     i18nKey: "game:achievements.underdog",
-    icon: "🐉",
+    icon: "🐢",
   },
   perfect_round: {
     id: "perfect_round",
     tier: "gold",
     i18nKey: "game:achievements.perfect_round",
-    icon: "✨",
+    icon: "💯",
   },
 
   // Diamant
@@ -95,13 +95,13 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     id: "streak_10",
     tier: "diamant",
     i18nKey: "game:achievements.streak_10",
-    icon: "💎",
+    icon: "🔥",
   },
   speedy_gonzales: {
     id: "speedy_gonzales",
     tier: "diamant",
     i18nKey: "game:achievements.speedy_gonzales",
-    icon: "🚀",
+    icon: "💨",
   },
   perfect_game: {
     id: "perfect_game",
@@ -147,29 +147,64 @@ export interface TierStyle {
 
 export const TIER_STYLES: Record<AchievementTier, TierStyle> = {
   bronze: {
-    gradient: "from-amber-600 via-orange-500 to-amber-400",
-    textColor: "text-amber-50",
-    ringColor: "ring-amber-500",
+    gradient: "from-amber-600 to-orange-700",
+    textColor: "text-white",
+    ringColor: "ring-amber-400",
     label: "Bronze",
   },
   silver: {
-    gradient: "from-slate-500 via-slate-300 to-slate-400",
-    textColor: "text-slate-50",
-    ringColor: "ring-slate-400",
+    gradient: "from-slate-300 to-slate-500",
+    textColor: "text-slate-900",
+    ringColor: "ring-slate-200",
     label: "Silber",
   },
   gold: {
-    gradient: "from-yellow-500 via-yellow-300 to-yellow-600",
-    textColor: "text-yellow-950",
-    ringColor: "ring-yellow-400",
+    gradient: "from-yellow-400 to-amber-500",
+    textColor: "text-white",
+    ringColor: "ring-yellow-300",
     label: "Gold",
   },
   diamant: {
-    gradient: "from-cyan-400 via-purple-500 to-pink-500",
+    gradient: "from-cyan-400 via-fuchsia-500 to-violet-500",
     textColor: "text-white",
-    ringColor: "ring-purple-400",
+    ringColor: "ring-cyan-200",
     label: "Diamant",
   },
+}
+
+// ─── Flat tier token exports (canonical, spec-aligned) ────────────────────────
+// Derived from TIER_STYLES — single source of truth, no duplication.
+
+/** Tailwind gradient background classes keyed by tier. */
+export const TIER_GRADIENT: Record<AchievementTier, string> = {
+  bronze: TIER_STYLES.bronze.gradient,
+  silver: TIER_STYLES.silver.gradient,
+  gold: TIER_STYLES.gold.gradient,
+  diamant: TIER_STYLES.diamant.gradient,
+}
+
+/** Tailwind ring color class keyed by tier. */
+export const TIER_RING: Record<AchievementTier, string> = {
+  bronze: TIER_STYLES.bronze.ringColor,
+  silver: TIER_STYLES.silver.ringColor,
+  gold: TIER_STYLES.gold.ringColor,
+  diamant: TIER_STYLES.diamant.ringColor,
+}
+
+/** Readable text color class on that tier's gradient background. */
+export const TIER_TEXT: Record<AchievementTier, string> = {
+  bronze: TIER_STYLES.bronze.textColor,
+  silver: TIER_STYLES.silver.textColor,
+  gold: TIER_STYLES.gold.textColor,
+  diamant: TIER_STYLES.diamant.textColor,
+}
+
+/** Human-readable tier label (German). */
+export const TIER_LABEL: Record<AchievementTier, string> = {
+  bronze: TIER_STYLES.bronze.label,
+  silver: TIER_STYLES.silver.label,
+  gold: TIER_STYLES.gold.label,
+  diamant: TIER_STYLES.diamant.label,
 }
 
 export { TIER_ORDER }

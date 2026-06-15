@@ -468,6 +468,8 @@
     "description": "Description",
     "threshold": "Seuil",
     "save": "Enregistrer",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "reset": "Réinitialiser les valeurs par défaut",
+    "resetDone": "Valeurs par défaut restaurées"
   }
 }
