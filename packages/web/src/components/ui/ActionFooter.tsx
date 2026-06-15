@@ -21,9 +21,11 @@ export interface ActionFooterProps {
 const ActionFooter = ({ children, className }: ActionFooterProps) => (
   <div
     className={clsx(
-      // Bleed to panel edges (ConsoleShell tabpanel: p-4 sm:p-6) and round the
-      // bottom corners to sit flush inside the rounded-2xl console card.
-      "sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl sm:-mx-6 sm:-mb-6",
+      // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
+      // bar sits flush at the very bottom. The console card's
+      // `overflow-hidden rounded-2xl` clips the bottom-RIGHT corner to the card
+      // radius while the bottom-LEFT stays square (it abuts the nav rail).
+      "sticky bottom-0 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6",
       // Surface — fully opaque so scrolled content never bleeds through.
       "border-t border-gray-200 bg-white",
       // Shadow lifting it off the content.

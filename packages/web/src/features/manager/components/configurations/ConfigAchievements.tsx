@@ -323,7 +323,7 @@ const ConfigAchievements = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
       <div className="flex flex-1 flex-col gap-4 pb-20">
       <SectionCard
         icon={<Award className="size-5" aria-hidden />}
@@ -408,7 +408,7 @@ const ConfigAchievements = () => {
             : t("manager:achievementsConfig.save")}
         </button>
       </ActionFooter>
-    </div>
+    </>
   )
 }
 

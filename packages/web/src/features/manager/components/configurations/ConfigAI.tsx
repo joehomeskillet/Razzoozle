@@ -328,7 +328,7 @@ const ConfigAI = () => {
   }[textStatus]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
       <div className="flex flex-1 flex-col gap-4 pb-20">
       {/* ── Text-Provider ───────────────────────────────────────── */}
       <SectionCard
@@ -744,7 +744,7 @@ const ConfigAI = () => {
           {t("manager:ai.save")}
         </Button>
       </ActionFooter>
-    </div>
+    </>
   )
 }
 
