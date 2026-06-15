@@ -291,7 +291,7 @@ const ConfigTheme = () => {
         */}
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
           {/* ── LEFT: settings ─────────────────────────────────────── */}
-          <div className="flex min-w-0 flex-col">
+          <div className="flex min-w-0 flex-col gap-6">
 
             {/* ── App-Titel & Beschreibung ──────────────────────────── */}
             <FormSection title={t("manager:theme.branding")}>
