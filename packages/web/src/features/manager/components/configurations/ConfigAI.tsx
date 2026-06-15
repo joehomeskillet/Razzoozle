@@ -416,6 +416,10 @@ const ConfigAI = () => {
                         <input
                           id="ai-temperature"
                           type="range"
+                          // Field auto-wires aria-describedby only for a single
+                          // child; the slider lives beside a value span, so link
+                          // the hint explicitly (Field renders it as #*-hint).
+                          aria-describedby="ai-temperature-hint"
                           min={AI.TEMP_MIN}
                           max={AI.TEMP_MAX}
                           step={0.1}

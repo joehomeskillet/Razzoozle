@@ -275,7 +275,8 @@
         "emptyAnswer": "(empty)",
         "apply": "Apply",
         "discard": "Discard"
-      }
+      },
+      "distractorsCountValue": "Answers: {{count}}"
     },
     "privacy": {
       "local": "Local model on your server. Your inputs never leave the server.",

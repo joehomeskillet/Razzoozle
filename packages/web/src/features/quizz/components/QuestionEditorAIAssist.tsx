@@ -9,7 +9,7 @@ import {
 import { useQuizzEditor } from "@razzia/web/features/quizz/contexts/quizz-editor-context"
 import clsx from "clsx"
 import { CircleHelp, Sparkles } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback, useId, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import { motion, useReducedMotion } from "motion/react"
@@ -18,16 +18,59 @@ import { motion, useReducedMotion } from "motion/react"
 // AI.QUESTION_GENERATED / AI.DISTRACTORS_GENERATED). We hold the result in a
 // local `pendingResult` so the manager can review a small preview and decide
 // to apply ("Übernehmen") or discard ("Verwerfen") before it touches the form.
+//
+// For distractors we keep ONLY the raw suggestions: the merge against the
+// current answers is recomputed (via mergeDistractors) both for the live
+// preview and at apply time, so any edits the manager makes between Generate
+// and "Übernehmen" are honoured instead of being clobbered by a stale snapshot.
 type PendingResult =
   | { kind: "question"; question: Question }
-  | { kind: "distractors"; distractors: string[]; merged: string[] }
+  | { kind: "distractors"; distractors: string[] }
+
+// Distractor count bounds mirror aiGenerateDistractorsValidator.count (1–3).
+const DISTRACTORS_MIN = 1
+const DISTRACTORS_MAX = 3
+
+const clampDistractorsCount = (value: number) =>
+  Math.min(DISTRACTORS_MAX, Math.max(DISTRACTORS_MIN, Math.round(value)))
+
+// Fill empty, non-solution answer slots with the AI distractors (in order),
+// then append any leftovers up to a 4-slot ceiling. Pure so it can run against
+// either a live `currentQuestion` (preview/apply) or any answers snapshot.
+const mergeDistractors = (
+  answers: string[] | undefined,
+  solutions: number[] | undefined,
+  distractors: string[],
+): string[] => {
+  const merged = [...(answers ?? [])]
+  const solutionSet = Array.isArray(solutions) ? solutions : []
+  let distractorIndex = 0
+
+  for (
+    let i = 0;
+    i < merged.length && distractorIndex < distractors.length;
+    i++
+  ) {
+    if (!solutionSet.includes(i) && (!merged[i] || !merged[i].trim())) {
+      merged[i] = distractors[distractorIndex++]
+    }
+  }
+
+  while (distractorIndex < distractors.length && merged.length < 4) {
+    merged.push(distractors[distractorIndex++])
+  }
+
+  return merged
+}
 
 const QuestionEditorAIAssist = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { socket } = useSocket()
   const { t } = useTranslation()
   const reduceMotion = useReducedMotion()
+  const distractorsCountId = useId()
   const [topic, setTopic] = useState("")
+  const [distractorsCount, setDistractorsCount] = useState(DISTRACTORS_MAX)
   const [genQuestion, setGenQuestion] = useState(false)
   const [genDistractors, setGenDistractors] = useState(false)
   const [pendingResult, setPendingResult] = useState<PendingResult | null>(null)
@@ -42,36 +85,12 @@ const QuestionEditorAIAssist = () => {
 
   useEvent(
     EVENTS.AI.DISTRACTORS_GENERATED,
-    useCallback(
-      ({ distractors }: { distractors: string[] }) => {
-        // Compute the merge preview here so the manager sees exactly what would
-        // be written; the same shape is committed on "Übernehmen".
-        const existing = currentQuestion.answers ?? []
-        const merged = [...existing]
-        const solutions = Array.isArray(currentQuestion.solutions)
-          ? currentQuestion.solutions
-          : []
-        let distractorIndex = 0
-
-        for (
-          let i = 0;
-          i < merged.length && distractorIndex < distractors.length;
-          i++
-        ) {
-          if (!solutions.includes(i) && (!merged[i] || !merged[i].trim())) {
-            merged[i] = distractors[distractorIndex++]
-          }
-        }
-
-        while (distractorIndex < distractors.length && merged.length < 4) {
-          merged.push(distractors[distractorIndex++])
-        }
-
-        setPendingResult({ kind: "distractors", distractors, merged })
-        setGenDistractors(false)
-      },
-      [currentQuestion],
-    ),
+    useCallback(({ distractors }: { distractors: string[] }) => {
+      // Store ONLY the raw suggestions; the merge against the answers is
+      // recomputed live (preview) and at apply time so edits aren't clobbered.
+      setPendingResult({ kind: "distractors", distractors })
+      setGenDistractors(false)
+    }, []),
   )
 
   useEvent(
@@ -94,7 +113,17 @@ const QuestionEditorAIAssist = () => {
     if (pendingResult.kind === "question") {
       updateQuestion(currentIndex, pendingResult.question)
     } else {
-      updateQuestion(currentIndex, { answers: pendingResult.merged })
+      // Recompute the merge against the LIVE answers/solutions so any edits made
+      // between Generate and "Übernehmen" survive.
+      updateQuestion(currentIndex, {
+        answers: mergeDistractors(
+          currentQuestion.answers,
+          Array.isArray(currentQuestion.solutions)
+            ? currentQuestion.solutions
+            : undefined,
+          pendingResult.distractors,
+        ),
+      })
     }
 
     setPendingResult(null)
@@ -153,6 +182,7 @@ const QuestionEditorAIAssist = () => {
     socket.emit(EVENTS.AI.GENERATE_DISTRACTORS, {
       question,
       correct,
+      count: clampDistractorsCount(distractorsCount),
     })
   }
 
@@ -160,7 +190,15 @@ const QuestionEditorAIAssist = () => {
     pendingResult?.kind === "question"
       ? (pendingResult.question.answers ?? [])
       : pendingResult?.kind === "distractors"
-        ? pendingResult.merged
+        ? // Recompute against the LIVE answers so the preview reflects edits the
+          // manager makes after generating (same merge that applyPending uses).
+          mergeDistractors(
+            currentQuestion.answers,
+            Array.isArray(currentQuestion.solutions)
+              ? currentQuestion.solutions
+              : undefined,
+            pendingResult.distractors,
+          )
         : []
 
   const previewSolutions =
@@ -225,17 +263,52 @@ const QuestionEditorAIAssist = () => {
         </Button>
       </div>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={generateDistractors}
-        disabled={!currentQuestion.question?.trim() || genDistractors}
-      >
-        {genDistractors
-          ? t("manager:ai.generate.generating")
-          : t("manager:ai.generate.distractors")}
-      </Button>
+      <div className="space-y-2">
+        {/* Distractor count slider — mirrors the WP-9 quiz-gen slider; bounded
+            by aiGenerateDistractorsValidator.count (1–3). */}
+        <label
+          htmlFor={distractorsCountId}
+          className="block text-xs font-medium text-gray-600"
+        >
+          {t("manager:ai.generate.distractorsCountValue", {
+            defaultValue: "Antworten: {{count}}",
+            count: distractorsCount,
+          })}
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            id={distractorsCountId}
+            type="range"
+            min={DISTRACTORS_MIN}
+            max={DISTRACTORS_MAX}
+            step={1}
+            value={distractorsCount}
+            aria-valuetext={t("manager:ai.generate.distractorsCountValue", {
+              defaultValue: "Antworten: {{count}}",
+              count: distractorsCount,
+            })}
+            onChange={(event) =>
+              setDistractorsCount(clampDistractorsCount(Number(event.target.value)))
+            }
+            className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          />
+          <span className="w-6 shrink-0 text-right text-base font-bold tabular-nums text-gray-800">
+            {distractorsCount}
+          </span>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={generateDistractors}
+          disabled={!currentQuestion.question?.trim() || genDistractors}
+        >
+          {genDistractors
+            ? t("manager:ai.generate.generating")
+            : t("manager:ai.generate.distractors")}
+        </Button>
+      </div>
 
       {pendingResult ? (
         <motion.div

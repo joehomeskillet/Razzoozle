@@ -424,7 +424,8 @@
         "emptyAnswer": "(vide)",
         "apply": "Appliquer",
         "discard": "Ignorer"
-      }
+      },
+      "distractorsCountValue": "Réponses : {{count}}"
     },
     "privacy": {
       "local": "Modèle local sur ton serveur. Tes saisies ne quittent jamais le serveur.",

@@ -60,13 +60,22 @@ const DisplayStatusCard = () => {
   ).length
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div
+      className="relative"
+      ref={panelRef}
+      onKeyDown={(e) => {
+        // Escape closes the disclosure. Bound on the wrapper so it fires while
+        // focus is still on the trigger button (the panel never takes focus).
+        if (e.key === "Escape" && open) {
+          setOpen(false)
+        }
+      }}
+    >
       <Button
         variant="secondary"
         size="sm"
         onClick={() => setOpen((v) => !v)}
         title={t("manager:display.status.title")}
-        aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="display-status-popover"
         aria-label={t("manager:display.status.title")}
@@ -84,13 +93,8 @@ const DisplayStatusCard = () => {
       {open && (
         <div
           id="display-status-popover"
-          role="dialog"
+          role="region"
           aria-label={t("manager:display.status.title")}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              setOpen(false)
-            }
-          }}
           className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl"
         >
           <p className="text-sm font-bold">

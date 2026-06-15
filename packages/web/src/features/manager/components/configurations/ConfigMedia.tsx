@@ -357,7 +357,29 @@ const ConfigMedia = () => {
   const selectionActive = selected.size > 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    // DnD handlers + the drop overlay live on the OUTER container so dragging a
+    // file in works in every state — including an empty library or an empty
+    // search result, not just when there are cards to grid.
+    <div
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="relative flex min-h-0 flex-1 flex-col"
+    >
+      {dragActive && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--accent-tint)]/90 text-[var(--accent-contrast)]"
+        >
+          <UploadCloud className="size-8" aria-hidden />
+          <span className="text-sm font-semibold">
+            {t("manager:media.dropHint", {
+              defaultValue: "Dateien hier ablegen zum Hochladen",
+            })}
+          </span>
+        </div>
+      )}
       <div className="mb-4 flex shrink-0 flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -485,12 +507,8 @@ const ConfigMedia = () => {
         />
       ) : (
         <motion.div
-          onDragEnter={handleDragEnter}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           className={clsx(
-            "relative grid auto-rows-min grid-cols-2 gap-3 rounded-2xl p-0.5 transition-colors sm:grid-cols-3 xl:grid-cols-4",
+            "grid auto-rows-min grid-cols-2 gap-3 rounded-2xl p-0.5 transition-colors sm:grid-cols-3 xl:grid-cols-4",
             dragActive &&
               "outline-2 -outline-offset-2 outline-dashed outline-[var(--color-primary)]",
           )}
@@ -500,19 +518,6 @@ const ConfigMedia = () => {
             reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
           }
         >
-          {dragActive && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--accent-tint)]/90 text-[var(--accent-contrast)]"
-            >
-              <UploadCloud className="size-8" aria-hidden />
-              <span className="text-sm font-semibold">
-                {t("manager:media.dropHint", {
-                  defaultValue: "Dateien hier ablegen zum Hochladen",
-                })}
-              </span>
-            </div>
-          )}
           {filtered.map((item, index) => {
             const isSelected = selected.has(item.id)
 

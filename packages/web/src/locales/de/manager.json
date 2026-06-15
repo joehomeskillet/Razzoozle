@@ -275,7 +275,8 @@
         "emptyAnswer": "(leer)",
         "apply": "Übernehmen",
         "discard": "Verwerfen"
-      }
+      },
+      "distractorsCountValue": "Antworten: {{count}}"
     },
     "privacy": {
       "local": "Lokales Modell auf deinem Server. Deine Eingaben verlassen den Server nicht.",
