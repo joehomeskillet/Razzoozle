@@ -170,7 +170,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       </div>
 
       <div>
-        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw]">
+        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
           <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
             <span className="translate-y-1 text-sm">{t("game:hud.time")}</span>
             <span className="tabular-nums">{countdown}</span>
