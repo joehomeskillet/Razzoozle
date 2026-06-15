@@ -45,6 +45,10 @@ interface SoloShellProps {
    * and answer-music lifecycle.
    */
   phaseKey: number
+  /** Optional action rendered in the bottom bar next to the score — e.g. the
+   *  result-phase "next question" button, so it is always reachable without
+   *  scrolling and never crowds the answer content. */
+  footerAction?: React.ReactNode
 }
 
 const SoloShell = ({
@@ -55,6 +59,7 @@ const SoloShell = ({
   totalPoints,
   bgSrc,
   phaseKey,
+  footerAction,
 }: SoloShellProps) => {
   const reduced = useReducedMotion() ?? false
 
@@ -113,11 +118,14 @@ const SoloShell = ({
           </AnimatePresence>
         </div>
 
-        {/* Bottom bar: player name + points */}
-        <div className="z-50 flex items-center justify-between bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
-          <p className="text-gray-800">{playerName}</p>
-          <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
-            {totalPoints}
+        {/* Bottom bar: player name + (optional next action) + points */}
+        <div className="z-50 flex items-center justify-between gap-3 bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
+          <p className="min-w-0 truncate text-gray-800">{playerName}</p>
+          <div className="flex shrink-0 items-center gap-3">
+            {footerAction}
+            <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
+              {totalPoints}
+            </div>
           </div>
         </div>
       </div>
@@ -437,6 +445,25 @@ const SoloPlayPage = () => {
       playerName={playerName}
       totalPoints={totalPoints}
       phaseKey={currentIndex}
+      footerAction={
+        phase === "result" ? (
+          <motion.button
+            type="button"
+            onClick={nextQuestion}
+            animate={reduced ? undefined : { scale: [1, 1.05, 1] }}
+            transition={
+              reduced
+                ? undefined
+                : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+            }
+            className="rounded-lg bg-gradient-to-r from-primary to-purple-500 px-5 py-2 text-base font-bold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110 active:scale-95"
+          >
+            {currentIndex + 1 < questions.length
+              ? t("game:solo.next")
+              : t("game:solo.finish")}
+          </motion.button>
+        ) : undefined
+      }
     >
       {phase === "question" && (
         <div className="flex flex-1 flex-col">
@@ -450,46 +477,7 @@ const SoloPlayPage = () => {
       )}
 
       {(phase === "answering" || phase === "result") && (
-        <div className="flex flex-1 flex-col">
-          <SoloAnswers quizzId={id} question={currentQuestion} />
-
-          {/* Continue button shown once result is ready */}
-          {phase === "result" && (
-            <motion.div
-              initial={{ opacity: 0, y: reduced ? 0 : 10 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                ...(reduced ? {} : { scale: [1, 1.04, 1] }),
-              }}
-              transition={
-                reduced
-                  ? { delay: 0.4, duration: 0.3 }
-                  : {
-                      opacity: { delay: 0.4, duration: 0.3 },
-                      y: { delay: 0.4, duration: 0.3 },
-                      scale: {
-                        delay: 0.4,
-                        duration: 1.6,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      },
-                    }
-              }
-              className="mx-auto mb-6 mt-4 flex w-full max-w-7xl justify-center px-2 lg:max-w-[85vw]"
-            >
-              <button
-                type="button"
-                onClick={nextQuestion}
-                className="bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/40 rounded-2xl px-12 py-5 text-2xl font-black text-white hover:brightness-110 active:scale-95 transition-all"
-              >
-                {currentIndex + 1 < questions.length
-                  ? t("game:solo.next")
-                  : t("game:solo.finish")}
-              </button>
-            </motion.div>
-          )}
-        </div>
+        <SoloAnswers quizzId={id} question={currentQuestion} />
       )}
     </SoloShell>
   )
