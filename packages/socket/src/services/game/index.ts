@@ -219,6 +219,11 @@ class Game {
       io,
       this.gameId,
       () => this._manager.id,
+      // A finished game flips its broadcast/per-target status to FINISHED and
+      // never opens another question, so managerStatus stays FINISHED until the
+      // game is disposed. PlayerManager uses this to tell a returning player the
+      // game has ENDED instead of mis-reporting playerAlreadyConnected (item 6).
+      () => this.managerStatus?.name === STATUS.FINISHED,
     )
 
     // Sim mode: bots submit via the EXISTING selectAnswer path (real dedup /

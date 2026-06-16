@@ -238,6 +238,50 @@ describe("PlayerManager.join", () => {
     expect(pm.count()).toBe(1)
     expect(pm.getAll()[0].username).toBe("abcd")
   })
+
+  it("emits the distinct gameEnded error (NOT playerAlreadyConnected) when the game has ended", () => {
+    const { io, emits } = makeIo()
+    // isGameEnded predicate returns true → the join target game is over.
+    const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID, () => true)
+
+    const { socket, emitted, joinedRooms } = makeSocket("late", "late-sock")
+    pm.join(socket, "latecomer")
+
+    // No player seated, no room joined, no roster broadcast.
+    expect(pm.count()).toBe(0)
+    expect(joinedRooms).toEqual([])
+    expect(emits).toHaveLength(0)
+
+    // The joiner is told the GAME ENDED — the new distinct key.
+    const err = eventsOf(emitted, EVENTS.GAME.ERROR_MESSAGE)
+    expect(err).toHaveLength(1)
+    expect(err[0].payload).toBe("errors:game.gameEnded")
+    // And specifically NOT the duplicate-connection key.
+    expect(err[0].payload).not.toBe("errors:game.playerAlreadyConnected")
+
+    expect(eventsOf(emitted, EVENTS.GAME.SUCCESS_JOIN)).toHaveLength(0)
+  })
+
+  it("the ended check takes precedence over a duplicate clientId match", () => {
+    const { io } = makeIo()
+    let ended = false
+    const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID, () => ended)
+
+    // Seat a player while the game is live.
+    pm.join(makeSocket("dup", "dup-sock").socket, "duper")
+    expect(pm.count()).toBe(1)
+
+    // Game ends; the SAME clientId (a refresh) tries to rejoin. The roster still
+    // holds them, so without the ended-first ordering this would wrongly report
+    // playerAlreadyConnected.
+    ended = true
+    const again = makeSocket("dup", "dup-sock-2")
+    pm.join(again.socket, "duper")
+
+    const err = eventsOf(again.emitted, EVENTS.GAME.ERROR_MESSAGE)
+    expect(err).toHaveLength(1)
+    expect(err[0].payload).toBe("errors:game.gameEnded")
+  })
 })
 
 describe("PlayerManager.kick", () => {

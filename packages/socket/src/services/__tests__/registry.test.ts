@@ -49,6 +49,7 @@ const makeGame = (
   const game = {
     gameId,
     inviteCode: `INV-${gameId}`,
+    started: true,
     disposeMetrics,
     notifyManagerGone,
   } as unknown as Game
@@ -159,6 +160,63 @@ describe("Registry — empty-game cleanup (EMPTY_GAME_TIMEOUT_MINUTES = 5)", () 
 
     expect(registry.getGameCount()).toBe(0)
     expect(disposeMetrics).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("Registry — lobby vs in-progress empty-game grace differ", () => {
+  // A host-less lobby (game.started === false) is reclaimed on the SHORT
+  // EMPTY_LOBBY_TIMEOUT_MINUTES (= 1) grace, while a started/in-progress empty
+  // game keeps the full EMPTY_GAME_TIMEOUT_MINUTES (= 5) grace.
+  const EMPTY_LOBBY_TIMEOUT_MINUTES = 1
+
+  const makeLobby = (
+    gameId: string,
+  ): { game: Game; disposeMetrics: ReturnType<typeof vi.fn> } => {
+    const disposeMetrics = vi.fn()
+    const game = {
+      gameId,
+      inviteCode: `INV-${gameId}`,
+      started: false,
+      disposeMetrics,
+      notifyManagerGone: vi.fn(),
+    } as unknown as Game
+
+    return { game, disposeMetrics }
+  }
+
+  it("reaps a stale empty LOBBY after the short lobby grace while a started empty game within 5 min is kept", () => {
+    const { game: lobby, disposeMetrics: lobbyDispose } = makeLobby("g-lobby")
+    const { game: started, disposeMetrics: startedDispose } =
+      makeGame("g-started") // makeGame marks started: true
+
+    registry.addGame(lobby)
+    registry.markGameAsEmpty(lobby)
+    registry.addGame(started)
+    registry.markGameAsEmpty(started)
+    expect(registry.getEmptyGameCount()).toBe(2)
+
+    // Advance just past the short LOBBY grace (1 min) but well inside the
+    // 5-min started-game grace. The lobby is reaped; the started game survives.
+    vi.setSystemTime(T0 + EMPTY_LOBBY_TIMEOUT_MINUTES * MINUTE_MS + 1)
+    runCleanupEmptyGames(registry)
+
+    expect(registry.getGameById("g-lobby")).toBeUndefined()
+    expect(lobbyDispose).toHaveBeenCalledTimes(1)
+    expect(registry.getGameById("g-started")).toBeDefined()
+    expect(startedDispose).not.toHaveBeenCalled()
+    expect(registry.getEmptyGameCount()).toBe(1)
+  })
+
+  it("keeps an empty LOBBY that is still inside the short lobby grace", () => {
+    const { game: lobby, disposeMetrics } = makeLobby("g-lobby-young")
+    registry.addGame(lobby)
+    registry.markGameAsEmpty(lobby)
+
+    // 0 minutes old (well under the 1-min lobby grace): survives.
+    runCleanupEmptyGames(registry)
+
+    expect(registry.getGameById("g-lobby-young")).toBeDefined()
+    expect(disposeMetrics).not.toHaveBeenCalled()
   })
 })
 

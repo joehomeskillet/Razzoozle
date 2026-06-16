@@ -7,16 +7,40 @@ export class PlayerManager {
   private readonly io: Server
   private readonly gameId: string
   private readonly getManagerId: () => string
+  // Predicate: is the owning game already over? A finished game keeps its
+  // roster (for the FINISHED standings), so findByClientId still matches a
+  // returning/refreshing player — without this guard the join below would
+  // mis-report that genuine "the game is over" case as playerAlreadyConnected.
+  // Defaults to "never ended" so the unit harness (which omits it) and any
+  // lobby-only game behave exactly as before.
+  private readonly isGameEnded: () => boolean
   private players: Player[] = []
 
-  constructor(io: Server, gameId: string, getManagerId: () => string) {
+  constructor(
+    io: Server,
+    gameId: string,
+    getManagerId: () => string,
+    isGameEnded: () => boolean = () => false,
+  ) {
     this.io = io
     this.gameId = gameId
     this.getManagerId = getManagerId
+    this.isGameEnded = isGameEnded
   }
 
   join(socket: Socket, username: string, avatar?: string): void {
     const clientId = socket.handshake.auth.clientId as string
+
+    // Disentangle "the game has ended" from "you are a duplicate active
+    // connection". Both states can have a roster entry for this clientId, so the
+    // ended check MUST come first — otherwise a player landing on a finished game
+    // is wrongly told playerAlreadyConnected instead of gameEnded. (A genuinely
+    // missing game never reaches here: withGame emits game.notFound upstream.)
+    if (this.isGameEnded()) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:game.gameEnded")
+
+      return
+    }
 
     if (this.findByClientId(clientId)) {
       socket.emit(

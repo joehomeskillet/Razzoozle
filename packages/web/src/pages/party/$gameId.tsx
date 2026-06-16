@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
+import Ended from "@razzoozle/web/features/game/components/states/Ended"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
@@ -16,7 +17,7 @@ import {
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -37,6 +38,12 @@ const PlayerGamePage = () => {
   // server can detect a stale view. Defaults to undefined (normal mode / old
   // server simply ignores it). Held in a ref so updating it never re-renders.
   const lastServerSeqRef = useRef<number | undefined>(undefined)
+
+  // The host leaving (server emits the existing EVENTS.GAME.RESET via
+  // notifyManagerGone) should land the player on the explanatory Ended
+  // screen rather than a silent redirect. Holds the forwarded i18n key so
+  // Ended can adapt its copy; null => game still live.
+  const [endedMessage, setEndedMessage] = useState<string | null>(null)
 
   useEvent("connect", () => {
     if (gameIdParam) {
@@ -103,9 +110,19 @@ const PlayerGamePage = () => {
   })
 
   useEvent(EVENTS.GAME.RESET, (message) => {
-    navigate({ to: "/" })
+    // Clear the live-game stores either way; the manager-gone signal is the
+    // expected "host closed the room" case, so show the calm Ended view
+    // instead of bouncing the player home with an error toast. Genuine error
+    // resets (kicked / not-found / expired / duplicate host) still redirect.
     reset()
     setQuestionStates(null)
+
+    if (message === "errors:game.managerDisconnected") {
+      setEndedMessage(message)
+      return
+    }
+
+    navigate({ to: "/" })
     toast.error(t(message))
   })
 
@@ -117,6 +134,16 @@ const PlayerGamePage = () => {
     status && isKeyOf(GAME_STATE_COMPONENTS, status.name)
       ? GAME_STATE_COMPONENTS[status.name]
       : null
+
+  // Host ended/left the room: render the explanatory Ended screen. Placed
+  // before the `!status` guard so it survives the store reset above.
+  if (endedMessage) {
+    return (
+      <GameWrapper statusName={undefined}>
+        <Ended data={{ message: endedMessage }} />
+      </GameWrapper>
+    )
+  }
 
   if (!status) {
     return null

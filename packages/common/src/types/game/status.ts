@@ -81,6 +81,10 @@ export interface CommonStatusDataMap {
     // The revealed correct answer for the round, shown on the wrong-answer
     // screen. Present only when applicable (never for poll/correct).
     correctAnswer?: string
+    // Auto-mode: ms until the screen auto-advances, so the client can render a
+    // local countdown. OPTIONAL — present only while auto-mode is on and an
+    // advance is armed; absent (manual mode / old clients ignore it) otherwise.
+    autoAdvanceMs?: number
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }
@@ -115,6 +119,10 @@ interface ManagerExtraStatus {
     oldLeaderboard: Player[]
     leaderboard: Player[]
     teamStandings?: TeamStanding[]
+    // Auto-mode: ms until the leaderboard auto-advances to the next question, so
+    // the client can render a local countdown. OPTIONAL — present only while
+    // auto-mode is on and an advance is armed; absent otherwise.
+    autoAdvanceMs?: number
   }
 }
 

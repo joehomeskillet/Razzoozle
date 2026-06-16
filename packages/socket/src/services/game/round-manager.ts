@@ -110,6 +110,20 @@ export class RoundManager {
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
   private autoTimer: ReturnType<typeof setTimeout> | null = null
+  // Auto-mode advance durations (ms). Hoisted to class level so setAutoMode (the
+  // mid-screen immediacy path) and showResults/showLeaderboard (the countdown
+  // emit) read the SAME values scheduleAuto arms its timers with.
+  private static readonly AUTO_RESULT_MS = 6000
+  private static readonly AUTO_LEADERBOARD_MS = 5000
+  // FIX 8/9 bookkeeping: true while the post-results screen is showing (set at the
+  // end of showResults, cleared once showLeaderboard runs). Lets setAutoMode arm
+  // the advance for the screen ALREADY on display when auto-mode is toggled on.
+  private resultScreenActive = false
+  // Per-player (socketId -> SHOW_RESULT payload) cache of the round's result
+  // screen, kept so a mid-screen auto-mode toggle can RE-SEND the full payload
+  // with autoAdvanceMs added (re-sending the complete screen avoids any client
+  // merge-vs-replace assumption). Cleared once the screen is left.
+  private lastResultPayloads = new Map<string, StatusDataMap["SHOW_RESULT"]>()
   // Sim mode: true while the SELECT_ANSWER window is open. Gates Game.addBots
   // (no mid-window bot injection) via isAnswerWindowOpen().
   private answerWindowOpen = false
@@ -186,6 +200,21 @@ export class RoundManager {
 
     if (!on) {
       this.clearAuto()
+
+      return
+    }
+
+    // FIX 8 (immediacy): toggled ON while a result screen is already showing —
+    // arm the advance for THAT screen now instead of waiting for the next phase
+    // boundary. Guard against a duplicate timer (do nothing if one is pending).
+    // scheduleAuto() re-sends the result payload with autoAdvanceMs (FIX 9) so
+    // the client gets the countdown for the screen it is already on.
+    if (this.started && this.resultScreenActive && this.autoTimer === null) {
+      this.scheduleAuto()
+      // FIX 9: the SHOW_RESULT screen was already broadcast WITHOUT a countdown
+      // (auto-mode was off then) — re-send it with autoAdvanceMs so the client
+      // can render the local countdown for the screen it is already on.
+      this.emitResultCountdown(RoundManager.AUTO_RESULT_MS)
     }
   }
 
@@ -196,12 +225,28 @@ export class RoundManager {
     }
   }
 
+  // FIX 9 (mid-screen re-send): re-deliver the cached SHOW_RESULT payload to each
+  // player with autoAdvanceMs added, so a client already sitting on the result
+  // screen gets the countdown when auto-mode is toggled on. Re-sends the FULL
+  // cached payload (not a partial), so it is safe regardless of how the client
+  // applies the screen state. No-op when the cache is empty (not on the result
+  // screen / already advanced).
+  private emitResultCountdown(autoAdvanceMs: number): void {
+    if (this.lastResultPayloads.size === 0) {
+      return
+    }
+
+    for (const [socketId, payload] of this.lastResultPayloads) {
+      this.send(socketId, STATUS.SHOW_RESULT, { ...payload, autoAdvanceMs })
+    }
+  }
+
   // Auto mode: after results, advance to leaderboard then the next question
   // automatically (with pauses), so the host doesn't click through every round.
   private scheduleAuto(): void {
     this.clearAuto()
-    const AUTO_RESULT_MS = 6000
-    const AUTO_LEADERBOARD_MS = 5000
+    const AUTO_RESULT_MS = RoundManager.AUTO_RESULT_MS
+    const AUTO_LEADERBOARD_MS = RoundManager.AUTO_LEADERBOARD_MS
 
     this.autoTimer = setTimeout(() => {
       if (!this.started || !this.autoMode) {
@@ -446,6 +491,8 @@ export class RoundManager {
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
+    this.resultScreenActive = false
+    this.lastResultPayloads.clear()
     this.seenMessageIds.clear()
     this.answerMeta.clear()
     this.answerCountThrottle.cancel()
@@ -499,6 +546,9 @@ export class RoundManager {
     }
 
     this.clearAuto()
+    // Leaving the result screen for a fresh question — drop its FIX 8/9 state.
+    this.resultScreenActive = false
+    this.lastResultPayloads.clear()
     await this.waitWhilePaused()
 
     const question = this.opts.quizz.questions[this.currentQuestion]
@@ -1203,13 +1253,19 @@ export class RoundManager {
       return texts.length > 0 ? texts.join(", ") : undefined
     })()
 
+    // FIX 9: when auto-mode is already on at results time, the SHOW_RESULT screen
+    // will auto-advance after AUTO_RESULT_MS — carry that as autoAdvanceMs so the
+    // client can render a local countdown. Absent in manual mode (old clients
+    // ignore it). The cache below also feeds the FIX 8 mid-screen re-send.
+    this.lastResultPayloads.clear()
+
     cleanedSorted.forEach((player, index) => {
       const rank = index + 1
       const aheadPlayer = cleanedSorted[index - 1]
       const unlocked = achievementsByClient.get(player.clientId)
       const bonusPoints = bonusByClient.get(player.clientId) ?? 0
 
-      this.send(player.id, STATUS.SHOW_RESULT, {
+      const resultPayload: StatusDataMap["SHOW_RESULT"] = {
         correct: player.lastCorrect,
         message: player.lastPoll
           ? "game:pollThanks"
@@ -1231,8 +1287,23 @@ export class RoundManager {
         ...(correctAnswer !== undefined ? { correctAnswer } : {}),
         ...(unlocked ? { achievements: unlocked } : {}),
         ...(bonusPoints > 0 ? { bonusPoints } : {}),
+      }
+
+      // Cache WITHOUT autoAdvanceMs; emitResultCountdown adds the live remaining
+      // time on a mid-screen re-send so a late toggle gets an accurate value.
+      this.lastResultPayloads.set(player.id, resultPayload)
+
+      this.send(player.id, STATUS.SHOW_RESULT, {
+        ...resultPayload,
+        ...(this.autoMode
+          ? { autoAdvanceMs: RoundManager.AUTO_RESULT_MS }
+          : {}),
       })
     })
+
+    // The post-results screen is now on display: a subsequent setAutoMode(true)
+    // (FIX 8) arms the advance for THIS screen. Cleared once we leave it.
+    this.resultScreenActive = true
 
     const guesses = this.playersAnswers.map((a) => a.answerId)
     const averageGuess =
@@ -1701,6 +1772,11 @@ export class RoundManager {
   }
 
   showLeaderboard(): void {
+    // We are leaving the post-results screen: drop its FIX 8/9 bookkeeping so a
+    // late setAutoMode(true) can't re-arm / re-send a screen that is gone.
+    this.resultScreenActive = false
+    this.lastResultPayloads.clear()
+
     const isLastRound =
       this.currentQuestion + 1 === this.opts.quizz.questions.length
 
@@ -1768,6 +1844,12 @@ export class RoundManager {
       oldLeaderboard: oldLeaderboard.slice(0, 5),
       leaderboard: this.leaderboard.slice(0, 5),
       ...(teamStandings ? { teamStandings } : {}),
+      // FIX 9: in auto-mode the leaderboard auto-advances to the next question
+      // after AUTO_LEADERBOARD_MS — carry it so the client can render a local
+      // countdown. Absent in manual mode (old clients ignore it).
+      ...(this.autoMode
+        ? { autoAdvanceMs: RoundManager.AUTO_LEADERBOARD_MS }
+        : {}),
     })
 
     this.tempOldLeaderboard = null

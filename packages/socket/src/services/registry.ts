@@ -50,6 +50,10 @@ class Registry {
   // startSnapshotTask(), cleared in cleanup() so no timer leaks across restarts.
   private snapshotInterval: ReturnType<typeof setInterval> | null = null
   private readonly EMPTY_GAME_TIMEOUT_MINUTES = 5
+  // A host-less LOBBY (not-yet-started game) is reclaimed faster than an
+  // in-progress game: nobody can rejoin a lobby whose manager vanished before
+  // the round even began, so there is no reconnect grace to preserve.
+  private readonly EMPTY_LOBBY_TIMEOUT_MINUTES = 1
   private readonly PAIRING_TIMEOUT_MINUTES = DISPLAY_PAIRING_TTL_MINUTES
   private readonly CLEANUP_INTERVAL_MS = 60_000
   private readonly SNAPSHOT_VERSION = 1
@@ -305,11 +309,16 @@ class Registry {
 
   private cleanupEmptyGames(): void {
     const now = dayjs()
-    const stillEmpty = this.emptyGames.filter(
-      (g) =>
-        now.diff(dayjs.unix(g.since), "minute") <
-        this.EMPTY_GAME_TIMEOUT_MINUTES,
-    )
+    const stillEmpty = this.emptyGames.filter((g) => {
+      // A not-yet-started game is a host-less lobby: reclaim it on the short
+      // grace. A started/in-progress game keeps the full grace so a manager
+      // reconnect (handled by the round/reconnect flow) is not cut off.
+      const graceMinutes = g.game.started
+        ? this.EMPTY_GAME_TIMEOUT_MINUTES
+        : this.EMPTY_LOBBY_TIMEOUT_MINUTES
+
+      return now.diff(dayjs.unix(g.since), "minute") < graceMinutes
+    })
 
     if (stillEmpty.length === this.emptyGames.length) {
       return
