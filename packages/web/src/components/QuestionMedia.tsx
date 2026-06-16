@@ -1,5 +1,6 @@
 import { MEDIA_TYPES } from "@razzia/common/constants"
 import type { QuestionMedia as QuestionMediaType } from "@razzia/common/types/game"
+import { useSoundStore } from "@razzia/web/features/game/stores/sound"
 import { useEffect } from "react"
 
 interface Props {
@@ -64,6 +65,11 @@ const QuestionMedia = ({
   next,
   preloadNext = false,
 }: Props) => {
+  // Global mute gate: when the player has muted in-game sound, autoplaying
+  // question media must be silent too. `controls` stays so a user can manually
+  // unmute an individual clip.
+  const muted = useSoundStore((s) => s.muted)
+
   // Prefetch the next question's media when preload is on. No-op otherwise.
   useEffect(() => {
     if (!preloadNext) {
@@ -92,6 +98,7 @@ const QuestionMedia = ({
         src={media.url}
         autoPlay
         controls
+        muted={muted}
       />
     )
   }
@@ -103,6 +110,7 @@ const QuestionMedia = ({
         src={media.url}
         autoPlay
         controls
+        muted={muted}
       />
     )
   }

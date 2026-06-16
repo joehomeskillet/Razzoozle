@@ -50,7 +50,9 @@
     "autoOn": "attiva",
     "autoOff": "disattiva",
     "autoTitle": "Modalità auto: avanza automaticamente",
-    "fullscreen": "Schermo intero"
+    "fullscreen": "Schermo intero",
+    "mute": "Disattiva audio",
+    "unmute": "Attiva audio"
   },
   "avatar": {
     "title": "Il tuo avatar",

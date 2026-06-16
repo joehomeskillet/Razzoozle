@@ -32,6 +32,8 @@
     "deleted": "Cuestionario eliminado",
     "duplicate": "Duplicar «{{name}}»",
     "duplicated": "Cuestionario duplicado",
+    "export": "Exportar «{{name}}» como JSON",
+    "exported": "Cuestionario exportado como JSON",
     "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
     "invalidJson": "Archivo JSON inválido o incompleto",

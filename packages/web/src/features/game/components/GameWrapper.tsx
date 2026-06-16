@@ -18,11 +18,21 @@ import {
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { useManagerStore } from "@razzia/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzia/web/features/game/stores/question"
+import { useSoundStore } from "@razzia/web/features/game/stores/sound"
 import { buildJoinUrl } from "@razzia/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzia/web/features/game/utils/constants"
 import { useOnClickOutside } from "@razzia/web/hooks/useOnClickOutside"
 import clsx from "clsx"
-import { LogOut, Maximize, Maximize2, Pause, Play, X } from "lucide-react"
+import {
+  LogOut,
+  Maximize,
+  Maximize2,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react"
 import QRCode from "@razzia/web/components/QRCode"
 import { type PropsWithChildren, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -49,6 +59,7 @@ const GameWrapper = ({
   const { gameId, inviteCode } = useManagerStore()
   const { questionStates, setQuestionStates } = useQuestionStore()
   const { theme } = useThemeStore()
+  const { muted, toggle: toggleMuted } = useSoundStore()
   const { t } = useTranslation()
   const [isDisabled, setIsDisabled] = useState(false)
   const [autoOn, setAutoOn] = useState(false)
@@ -308,6 +319,26 @@ const GameWrapper = ({
               )}
 
               <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+                {/* Global mute toggle — shown for both player and host chrome so
+                    anyone can silence the game. Wired to the persisted sound
+                    store; >=44px touch target via Button size="icon" min-h-11. */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="min-h-11 min-w-11"
+                  onClick={toggleMuted}
+                  aria-pressed={muted}
+                  title={t(muted ? "game:controls.unmute" : "game:controls.mute")}
+                  aria-label={t(
+                    muted ? "game:controls.unmute" : "game:controls.mute",
+                  )}
+                >
+                  {muted ? (
+                    <VolumeX className="size-5" aria-hidden />
+                  ) : (
+                    <Volume2 className="size-5" aria-hidden />
+                  )}
+                </Button>
                 {/* Low-latency health widget. Self-hides unless the server emits
                     a health snapshot (i.e. low-latency mode is on), so it is
                     inert in normal mode. */}

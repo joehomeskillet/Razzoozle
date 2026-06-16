@@ -1,6 +1,7 @@
 import type { ManagerStatusDataMap } from "@razzia/common/types/game/status"
 import Avatar from "@razzia/web/components/Avatar"
 import TeamLeaderboard from "@razzia/web/features/game/components/TeamLeaderboard"
+import { useSoundStore } from "@razzia/web/features/game/stores/sound"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import useScreenSize from "@razzia/web/hooks/useScreenSize"
 import clsx from "clsx"
@@ -15,13 +16,24 @@ interface Props {
 
 const usePodiumAnimation = (topLength: number) => {
   const [apparition, setApparition] = useState(0)
+  const muted = useSoundStore((s) => s.muted)
 
-  const [sfxtThree] = useSound(SFX.PODIUM.THREE, { volume: 0.1 })
-  const [sfxSecond] = useSound(SFX.PODIUM.SECOND, { volume: 0.1 })
+  const [sfxtThree] = useSound(SFX.PODIUM.THREE, {
+    volume: 0.1,
+    soundEnabled: !muted,
+  })
+  const [sfxSecond] = useSound(SFX.PODIUM.SECOND, {
+    volume: 0.1,
+    soundEnabled: !muted,
+  })
   const [sfxRool, { stop: sfxRoolStop }] = useSound(SFX.PODIUM.SNEAR_ROOL, {
     volume: 0.1,
+    soundEnabled: !muted,
   })
-  const [sfxFirst] = useSound(SFX.PODIUM.FIRST, { volume: 0.1 })
+  const [sfxFirst] = useSound(SFX.PODIUM.FIRST, {
+    volume: 0.1,
+    soundEnabled: !muted,
+  })
 
   useEffect(() => {
     const actions: Partial<Record<number, () => void>> = {

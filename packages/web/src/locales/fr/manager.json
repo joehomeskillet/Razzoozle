@@ -32,6 +32,8 @@
     "deleted": "Quizz supprimé",
     "duplicate": "Dupliquer « {{name}} »",
     "duplicated": "Quizz dupliqué",
+    "export": "Exporter « {{name}} » au format JSON",
+    "exported": "Quiz exporté en JSON",
     "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
     "invalidJson": "Fichier JSON invalide ou incomplet",

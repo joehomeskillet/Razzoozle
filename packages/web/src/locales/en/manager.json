@@ -32,6 +32,8 @@
     "deleted": "Quiz deleted",
     "duplicate": "Duplicate “{{name}}”",
     "duplicated": "Quiz duplicated",
+    "export": "Export “{{name}}” as JSON",
+    "exported": "Quiz exported as JSON",
     "import": "Import quiz from JSON",
     "none": "No quiz created yet",
     "notFound": "No quiz found",

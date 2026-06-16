@@ -3,6 +3,7 @@ import CricleCheck from "@razzia/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzia/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzia/web/features/game/components/RewardStack"
 import { usePlayerStore } from "@razzia/web/features/game/stores/player"
+import { useSoundStore } from "@razzia/web/features/game/stores/sound"
 import { SFX } from "@razzia/web/features/game/utils/constants"
 import { playFirstCorrectSound } from "@razzia/web/features/game/utils/firstCorrectSound"
 import { rankKeyFor } from "@razzia/web/features/game/utils/rank"
@@ -55,24 +56,50 @@ const Result = ({
   },
 }: Props) => {
   const player = usePlayerStore()
+  const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
   const reduced = useReducedMotion() ?? false
   const achievementsFired = useRef(false)
 
-  const [sfxResults] = useSound(SFX.RESULTS_SOUND, { volume: 0.2 })
-  const [sfxBronze] = useSound(SFX.TIERS.BRONZE, { volume: 0.4 })
-  const [sfxSilver] = useSound(SFX.TIERS.SILVER, { volume: 0.4 })
-  const [sfxGold] = useSound(SFX.TIERS.GOLD, { volume: 0.4 })
-  const [sfxDiamant] = useSound(SFX.TIERS.DIAMANT, { volume: 0.4 })
+  const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+  // Wrong-answer chime — reuse the existing boump asset (mirrors SoloAnswers).
+  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+    volume: 0.3,
+    soundEnabled: !muted,
+  })
+  const [sfxBronze] = useSound(SFX.TIERS.BRONZE, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxSilver] = useSound(SFX.TIERS.SILVER, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxGold] = useSound(SFX.TIERS.GOLD, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxDiamant] = useSound(SFX.TIERS.DIAMANT, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
 
   useEffect(() => {
     player.updatePoints(myPoints)
 
+    // Correct/wrong answer chime — mirrors the SoloAnswers sound pattern:
+    // correct → champions sting (first) or results chime, wrong → boump.
+    // playFirstCorrectSound() is itself gated on the mute store.
     if (firstCorrect) {
       playFirstCorrectSound()
-    } else {
+    } else if (correct) {
       sfxResults()
+    } else if (!poll) {
+      sfxWrong()
     }
     // oxlint-disable-next-line
   }, [sfxResults])

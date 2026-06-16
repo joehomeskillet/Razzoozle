@@ -79,8 +79,16 @@ const getPath = (path = "") =>
 // Quizz/result ids are server-generated uuids / safe slugs. Reject anything that
 // could escape the quizz/results dir (path traversal) before using it in a path.
 const SAFE_ID = /^[A-Za-z0-9_-]+$/
+// Even though these literals pass SAFE_ID, reject them outright: used as object
+// keys downstream they enable prototype pollution. Additive guard on top of the
+// regex test (same error type as the regex path).
+const RESERVED_IDS = new Set(["__proto__", "constructor", "prototype"])
 export const assertSafeId = (id: string): void => {
   if (typeof id !== "string" || !SAFE_ID.test(id)) {
+    throw new Error("Invalid id")
+  }
+
+  if (RESERVED_IDS.has(id)) {
     throw new Error("Invalid id")
   }
 }

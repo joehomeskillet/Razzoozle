@@ -840,6 +840,19 @@ class Game {
     this.round.abortQuestion(socket)
   }
 
+  // ── Host live controls (#12) — passthrough to the round manager ───────────
+  skipQuestion(socket: Socket) {
+    this.round.skipQuestion(socket)
+  }
+
+  revealAnswer(socket: Socket) {
+    this.round.revealAnswer(socket)
+  }
+
+  adjustTimer(socket: Socket, deltaSeconds: number) {
+    this.round.adjustTimer(socket, deltaSeconds)
+  }
+
   showLeaderboard() {
     this.round.showLeaderboard()
   }

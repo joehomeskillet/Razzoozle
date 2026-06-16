@@ -49,7 +49,9 @@
     "autoOn": "activado",
     "autoOff": "desactivado",
     "autoTitle": "Modo automático: avanza automáticamente",
-    "fullscreen": "Pantalla completa"
+    "fullscreen": "Pantalla completa",
+    "mute": "Silenciar",
+    "unmute": "Activar sonido"
   },
   "sending": "enviando…",
   "avatar": {
