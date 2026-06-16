@@ -34,6 +34,7 @@ const PNG_1PX =
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME = {
+  style: "flat",
   colorPrimary: "#ff9900",
   colorSecondary: "#1a140b",
   colorText: "#ffffff",

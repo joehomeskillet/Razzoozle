@@ -27,6 +27,7 @@ const loadConfig = async (): Promise<ConfigModule> => {
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME: Theme = {
+  style: "flat",
   colorPrimary: "#ff9900",
   colorSecondary: "#1a140b",
   colorText: "#ffffff",

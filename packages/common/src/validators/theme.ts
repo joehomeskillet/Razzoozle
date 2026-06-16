@@ -18,6 +18,7 @@ const assetRef = z
   .nullable()
 
 export const themeValidator = z.object({
+  style: z.enum(["flat", "glass"]).default("flat"),
   colorPrimary: hexColor,
   colorSecondary: hexColor,
   colorText: hexColor.default("#ffffff"),
