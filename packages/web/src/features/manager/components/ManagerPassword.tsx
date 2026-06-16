@@ -4,7 +4,7 @@ import Input from "@razzia/web/components/Input"
 import { useEvent } from "@razzia/web/features/game/contexts/socket-context"
 import { Lock } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { type FormEvent, useState } from "react"
+import { type SyntheticEvent, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -17,7 +17,7 @@ const ManagerPassword = ({ onSubmit }: Props) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SyntheticEvent) => {
     event.preventDefault()
     onSubmit(password)
   }
