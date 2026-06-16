@@ -14,6 +14,7 @@ import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
+import ScoreToast from "@razzoozle/web/features/game/components/ScoreToast"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
@@ -202,6 +203,12 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
 
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
+      <ScoreToast
+        correct={lastResult?.correct ?? false}
+        points={lastResult?.points ?? 0}
+        visible={resultReady}
+      />
+
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question.question}</Markdown>
@@ -219,24 +226,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             <CircularTimer seconds={countdown} total={question.time} size={72} />
           </div>
         </div>
-
-        {/* Inline result feedback */}
-        {resultReady && (
-          <div
-            className={clsx(
-              "mx-auto mb-4 w-full max-w-7xl rounded-xl px-6 py-4 text-center text-xl font-bold text-white lg:max-w-[85vw]",
-              lastResult.correct ? "bg-green-600/80" : "bg-red-600/80",
-            )}
-          >
-            {lastResult.correct ? (
-              <span>
-                {t("game:correct")} +{lastResult.points}
-              </span>
-            ) : (
-              <span>{t("game:wrong")}</span>
-            )}
-          </div>
-        )}
 
         {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
             self-fetches meta + honors reduced-motion. ids = server sharpshooter
