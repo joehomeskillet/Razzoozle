@@ -157,5 +157,11 @@
   "reward": {
     "bonusPoints": "Bonus",
     "dismiss": "Cerrar"
+  },
+  "ended": {
+    "byHost": {
+      "title": "El anfitrión finalizó la partida",
+      "hint": "Gracias por jugar."
+    }
   }
 }

@@ -227,7 +227,11 @@
       "delete": "Eliminar",
       "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
       "emptyHeadline": "Aún no hay plantillas",
-      "none": "Aún no hay plantillas guardadas"
+      "none": "Aún no hay plantillas guardadas",
+      "importError": "Archivo de plantilla no válido",
+      "readError": "No se pudo leer el archivo",
+      "import": "Importar plantilla",
+      "export": "Exportar plantilla"
     },
     "revisions": {
       "title": "Versiones",
@@ -494,5 +498,13 @@
   "themePreview": {
     "join": "Unirse",
     "playerName": "Jugador {{rank}}"
+  },
+  "auto": {
+    "nextIn": "Siguiente en {{seconds}}s"
+  },
+  "exit": {
+    "title": "¿Seguro que quieres finalizar la partida?",
+    "description": "Se notificará a todos los jugadores y la partida finalizará.",
+    "confirm": "Finalizar"
   }
 }

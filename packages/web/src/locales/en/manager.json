@@ -388,7 +388,11 @@
       "delete": "Delete",
       "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
       "emptyHeadline": "No templates yet",
-      "none": "No templates saved yet"
+      "none": "No templates saved yet",
+      "importError": "Invalid template file",
+      "readError": "Could not read the file",
+      "import": "Import template",
+      "export": "Export template"
     },
     "revisions": {
       "title": "Versions",
@@ -513,5 +517,13 @@
     "end": "End",
     "endConfirm": "Really end the game \"{{name}}\"?",
     "ended": "Game ended."
+  },
+  "auto": {
+    "nextIn": "Next in {{seconds}}s"
+  },
+  "exit": {
+    "title": "Really end the game?",
+    "description": "All players will be notified and the game will end.",
+    "confirm": "End game"
   }
 }

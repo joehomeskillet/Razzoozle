@@ -227,7 +227,11 @@
       "delete": "Supprimer",
       "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
       "emptyHeadline": "Aucun modèle pour l’instant",
-      "none": "Aucun modèle enregistré pour l'instant"
+      "none": "Aucun modèle enregistré pour l'instant",
+      "importError": "Fichier de modèle non valide",
+      "readError": "Impossible de lire le fichier",
+      "import": "Importer un modèle",
+      "export": "Exporter le modèle"
     },
     "revisions": {
       "title": "Versions",
@@ -494,5 +498,13 @@
   "themePreview": {
     "join": "Rejoindre",
     "playerName": "Joueur {{rank}}"
+  },
+  "auto": {
+    "nextIn": "Suite dans {{seconds}}s"
+  },
+  "exit": {
+    "title": "Vraiment mettre fin à la partie ?",
+    "description": "Tous les joueurs seront notifiés et la partie prendra fin.",
+    "confirm": "Terminer"
   }
 }

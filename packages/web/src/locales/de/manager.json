@@ -388,7 +388,11 @@
       "delete": "Löschen",
       "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
       "emptyHeadline": "Noch keine Vorlagen",
-      "none": "Noch keine Vorlagen gespeichert"
+      "none": "Noch keine Vorlagen gespeichert",
+      "importError": "Ungültige Vorlagen-Datei",
+      "readError": "Datei konnte nicht gelesen werden",
+      "import": "Vorlage importieren",
+      "export": "Vorlage exportieren"
     },
     "revisions": {
       "title": "Versionen",
@@ -513,5 +517,13 @@
     "end": "Beenden",
     "endConfirm": "Soll das Spiel „{{name}}“ wirklich beendet werden?",
     "ended": "Spiel beendet."
+  },
+  "auto": {
+    "nextIn": "Weiter in {{seconds}}s"
+  },
+  "exit": {
+    "title": "Spiel wirklich beenden?",
+    "description": "Alle Spieler werden benachrichtigt und das Spiel wird beendet.",
+    "confirm": "Beenden"
   }
 }
