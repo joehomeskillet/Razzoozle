@@ -131,6 +131,39 @@ export const buildOpenApiDoc = (routes: readonly RouteDoc[]) => {
         "that shares these same zod schemas. See GET /api/v1/observability/events " +
         "for the socket event catalog.",
     },
+    tags: [
+      {
+        name: "Health",
+        description: "Liveness/health probes for this HTTP edge.",
+      },
+      {
+        name: "Achievements",
+        description: "Public merged achievements config for the player client.",
+      },
+      {
+        name: "Solo",
+        description:
+          "Single-player quiz flow: stripped questions, stateless answer " +
+          "checks, and score submission.",
+      },
+      {
+        name: "Observability",
+        description:
+          "Read-only diagnostics: client-event ingest plus the socket event " +
+          "catalog and payload JSON Schema.",
+      },
+      {
+        name: "Docs",
+        description: "This OpenAPI document.",
+      },
+      {
+        name: "Control plane",
+        description:
+          "Game/theme/AI mutations are NOT REST — they run over socket.io " +
+          "events (manager.withAuth) and the MCP server; this document covers " +
+          "the read/diagnostic HTTP surface only.",
+      },
+    ],
     components: {
       schemas: {
         SoloQuizz: toSchema(soloResponseSchema),
@@ -142,6 +175,14 @@ export const buildOpenApiDoc = (routes: readonly RouteDoc[]) => {
         // Documented, not enforced in this layer — manager writes stay on the
         // socket.io `manager.withAuth` gate.
         ManagerToken: { type: "apiKey", in: "header", name: "X-Manager-Token" },
+        "X-Manager-Token": {
+          type: "apiKey",
+          in: "header",
+          name: "X-Manager-Token",
+          description:
+            "Manager auth (documented only; control-plane writes are gated " +
+            "via socket.io manager.withAuth, not this header).",
+        },
       },
     },
     paths,

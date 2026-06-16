@@ -56,9 +56,32 @@ const ConfigDev = () => {
   const [games, setGames] = useState<GameSummary[]>([])
   const [displays, setDisplays] = useState<DisplayRow[]>([])
   const [snapshot, setSnapshot] = useState<MetricsHealthSnapshot | null>(null)
+  // A compact one-shot probe of the self-documenting HTTP surface. This tab only
+  // mounts in dev mode, so /api/openapi.json is reachable same-origin. Failures
+  // are swallowed: the banner simply stays hidden rather than rendering an error.
+  const [apiInfo, setApiInfo] = useState<{
+    routes: number
+    version: string
+    valid: boolean
+  } | null>(null)
   // A ticking "now" (epoch seconds) so each display's relative "last seen"
   // re-evaluates every second without a server round-trip.
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
+
+  // Probe the OpenAPI doc once on mount: route count, declared version, and
+  // whether it advertises the OpenAPI 3.1.0 contract. Silent on any failure.
+  useEffect(() => {
+    fetch("/api/openapi.json")
+      .then((r) => r.json())
+      .then((doc) => {
+        setApiInfo({
+          routes: Object.keys(doc.paths ?? {}).length,
+          version: doc.info?.version ?? "?",
+          valid: doc.openapi === "3.1.0",
+        })
+      })
+      .catch(() => {})
+  }, [])
 
   // Request the live game list on mount / reconnect. The server pushes
   // GAMES_DATA back to this socket; re-running on reconnect self-heals a deploy.
@@ -131,6 +154,21 @@ const ConfigDev = () => {
         description={t("dev.redactionNotice")}
       >
         <div className="space-y-3">
+          {apiInfo !== null && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 tabular-nums">
+              <span>
+                {apiInfo.routes} {t("dev.api.routes")}
+              </span>
+              <span>
+                {t("dev.api.version")} {apiInfo.version}
+              </span>
+              {apiInfo.valid && (
+                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                  {t("dev.api.schemaValid")}
+                </span>
+              )}
+            </div>
+          )}
           <ListRow
             title={t("dev.api.openapi")}
             onClick={openEndpoint("/api/openapi.json")}
