@@ -38,7 +38,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -46,6 +46,12 @@ import { useTranslation } from "react-i18next"
 // files client-side before pushing megabytes over the socket. AssetPreview
 // also guards client-side; this stays as a second line of defence.
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+// The kind of theme operation currently awaiting a server response. THEME_ERROR
+// carries no slot/context, so we track the last action explicitly to route the
+// failure (and clear the right pending state) instead of guessing from
+// pendingSlot, which can misattribute a save error to an in-flight upload slot.
+type ThemeAction = "upload" | "save" | "template" | "restore"
 
 const BG_SLOTS: Array<{
   key: BackgroundSlot
@@ -87,6 +93,9 @@ const ConfigTheme = () => {
   const [draft, setDraft] = useState<Theme>({ ...DEFAULT_THEME, ...theme })
   // The single slot whose upload is currently in flight (one at a time).
   const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
+  // The theme operation currently awaiting a server response, used to route a
+  // context-free THEME_ERROR to the right handler / pending-state cleanup.
+  const pendingActionRef = useRef<ThemeAction | null>(null)
   // Slot-scoped upload error, surfaced inline next to the slot's controls.
   const [slotErrors, setSlotErrors] = useState<
     Partial<Record<ThemeSlot, string>>
@@ -119,6 +128,7 @@ const ConfigTheme = () => {
   }
 
   useEvent(EVENTS.MANAGER.BACKGROUND_UPLOADED, ({ slot, path }) => {
+    pendingActionRef.current = null
     setPendingSlot((current) => (current === slot ? null : current))
     setSlotError(slot, null)
     setDraft((prev) =>
@@ -130,15 +140,19 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.MANAGER.SET_THEME_SUCCESS, (saved) => {
+    pendingActionRef.current = null
     setTheme(saved)
     applyTheme(saved)
     toast.success(t("manager:theme.toast.saved"))
   })
 
   useEvent(EVENTS.MANAGER.THEME_ERROR, (message) => {
-    // THEME_ERROR carries no slot. If an upload is in flight, attribute the
-    // failure to that slot inline; otherwise it's a save error → toast.
-    if (pendingSlot) {
+    // THEME_ERROR carries no slot/context. Route by the action we kicked off:
+    // an upload failure attaches inline to its slot; everything else toasts.
+    const action = pendingActionRef.current
+    pendingActionRef.current = null
+
+    if (action === "upload" && pendingSlot) {
       setSlotError(pendingSlot, message)
       setPendingSlot(null)
 
@@ -157,11 +171,13 @@ const ConfigTheme = () => {
   useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
 
   useEvent(EVENTS.THEME_TEMPLATE.SAVE_SUCCESS, () => {
+    pendingActionRef.current = null
     toast.success(t("manager:theme.templates.saved"))
     setTemplateName("")
   })
 
   useEvent(EVENTS.THEME_TEMPLATE.ERROR, (message) => {
+    pendingActionRef.current = null
     toast.error(t(message))
   })
 
@@ -173,6 +189,7 @@ const ConfigTheme = () => {
   // remount would re-seed `draft` from the stale store and a Save would clobber
   // the restored theme.
   useEvent(EVENTS.THEME_REVISION.RESTORE_SUCCESS, (restored) => {
+    pendingActionRef.current = null
     const full = { ...DEFAULT_THEME, ...restored }
     setTheme(full)
     preview(full)
@@ -180,6 +197,7 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.THEME_REVISION.ERROR, (message) => {
+    pendingActionRef.current = null
     toast.error(t(message))
   })
 
@@ -212,6 +230,7 @@ const ConfigTheme = () => {
 
     setSlotError(slot, null)
     setPendingSlot(slot)
+    pendingActionRef.current = "upload"
 
     const reader = new FileReader()
     reader.onload = () => {
@@ -223,6 +242,7 @@ const ConfigTheme = () => {
     reader.onerror = () => {
       setSlotError(slot, "errors:theme.uploadFailed")
       setPendingSlot((current) => (current === slot ? null : current))
+      pendingActionRef.current = null
     }
     reader.readAsDataURL(file)
   }
@@ -233,7 +253,10 @@ const ConfigTheme = () => {
       backgrounds: { ...prev.backgrounds, [slot]: null },
     }))
 
-  const handleSave = () => socket.emit(EVENTS.MANAGER.SET_THEME, draft)
+  const handleSave = () => {
+    pendingActionRef.current = "save"
+    socket.emit(EVENTS.MANAGER.SET_THEME, draft)
+  }
   const handleReset = () => preview({ ...DEFAULT_THEME })
 
   const handleSaveTemplate = () => {
@@ -243,6 +266,7 @@ const ConfigTheme = () => {
       return
     }
 
+    pendingActionRef.current = "template"
     socket.emit(EVENTS.THEME_TEMPLATE.SAVE, { name, theme: draft })
   }
 
@@ -267,6 +291,7 @@ const ConfigTheme = () => {
       return
     }
 
+    pendingActionRef.current = "restore"
     socket.emit(EVENTS.THEME_REVISION.RESTORE_REVISION, { id: pendingRestoreId })
     setPendingRestoreId(null)
   }

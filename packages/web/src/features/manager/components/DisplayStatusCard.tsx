@@ -40,10 +40,18 @@ const DisplayStatusCard = () => {
   useOnClickOutside({ ref: panelRef, handler: () => setOpen(false) })
 
   useEvent(EVENTS.DISPLAY.STATUS, ({ displays: next }) => {
-    setDisplays(next)
+    setDisplays(Array.isArray(next) ? next : [])
   })
 
+  // The "now" tick only matters while there is at least one display whose
+  // relative "last seen" / staleness badge is on screen. With no displays
+  // nothing depends on `now`, so we skip the interval instead of running it for
+  // the whole component lifetime.
   useEffect(() => {
+    if (displays.length === 0) {
+      return
+    }
+
     const id = setInterval(() => {
       setNow(Math.floor(Date.now() / 1000))
     }, 1000)
@@ -51,7 +59,7 @@ const DisplayStatusCard = () => {
     return () => {
       clearInterval(id)
     }
-  }, [])
+  }, [displays.length])
 
   // Online = at least one display seen within the staleness window. Drives the
   // button's status fill so the host sees a connected beamer at a glance.

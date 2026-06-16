@@ -86,8 +86,10 @@ const ConsoleShell = ({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      const currentIndex = nav.findIndex((item) => item.key === activeKey)
-      if (currentIndex < 0) return
+      const foundIndex = nav.findIndex((item) => item.key === activeKey)
+      // When activeKey isn't in the list (stale/unknown key), default to the
+      // first item so arrow-key nav still works instead of going dead.
+      const currentIndex = foundIndex < 0 ? 0 : foundIndex
 
       switch (event.key) {
         case "ArrowRight":

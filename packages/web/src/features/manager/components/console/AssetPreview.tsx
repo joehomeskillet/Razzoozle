@@ -164,7 +164,7 @@ const AssetPreview = ({
               type="button"
               onClick={onReset}
             >
-              {defaultLabel}
+              {t("manager:console.resetAsset", { defaultValue: "Zurücksetzen" })}
             </Button>
           )}
         </div>

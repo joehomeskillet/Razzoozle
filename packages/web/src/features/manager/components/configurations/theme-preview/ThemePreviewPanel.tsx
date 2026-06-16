@@ -129,7 +129,9 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               className="rounded-lg px-4 py-1.5 text-sm font-semibold text-white shadow"
               style={{ background: "var(--color-primary)" }}
             >
-              Beitreten
+              {t("manager:themePreview.join", {
+                defaultValue: "Beitreten",
+              })}
             </span>
             {theme.showBranding && (
               <span className="text-[10px] font-semibold text-white/50">
@@ -191,7 +193,10 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                     </span>
                   )}
                   <span className="flex-1 truncate text-left">
-                    {`Spieler ${rank}`}
+                    {t("manager:themePreview.playerName", {
+                      rank,
+                      defaultValue: "Spieler {{rank}}",
+                    })}
                   </span>
                   <span className="tabular-nums">{score}</span>
                 </div>

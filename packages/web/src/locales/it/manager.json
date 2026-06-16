@@ -130,7 +130,6 @@
     "pair": "Abbina",
     "paired": "Schermo abbinato",
     "step1": "Collega il Pi o il proiettore a internet e apri rahoot.joelduss.xyz/display — lo schermo grande mostra un codice di abbinamento.",
-    "step2": "Avvia una partita e tocca «Satellite» nell'intestazione del gioco per inserire il codice.",
     "step3": "Il telefono resta il telecomando: avvio, avanti e modalità automatica si controllano da qui.",
     "hint": "L'abbinamento funziona solo con una partita in corso — il codice richiede la partita attiva e la tua password da manager.",
     "codeLabel": "Codice di abbinamento",
@@ -249,6 +248,7 @@
     "confirmReject": "Vuoi davvero rifiutare questa proposta?",
     "submittedBy": "Inviata da {{name}}",
     "submittedAt": "il {{date}}",
+    "cooldownSuffix": "s",
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Caricamento anteprima …"
@@ -290,7 +290,6 @@
     "uploaded": "Media caricato",
     "delete": "Elimina",
     "deleteConfirm": "Vuoi davvero eliminare questo media?",
-    "deleted": "Media eliminato",
     "search": "Cerca media",
     "searchPlaceholder": "Cerca media…",
     "noResults": "Nessun media corrispondente",
@@ -321,7 +320,6 @@
       "toggle": "Seleziona {{name}}"
     },
     "dropHint": "Trascina qui i file per caricarli",
-    "dimensions": "{{w}} × {{h}} px",
     "details": "Dettagli"
   },
   "catalog": {
@@ -329,7 +327,6 @@
     "intro": "Raccogli domande riutilizzabili e inseriscile in qualsiasi quiz.",
     "empty": "Ancora nessuna domanda nel catalogo.",
     "emptyHeadline": "Il catalogo è vuoto",
-    "add": "Aggiungi domanda",
     "addManual": "Crea nuova domanda",
     "saveToCatalog": "Salva nel catalogo",
     "saved": "Domanda salvata nel catalogo",
@@ -348,7 +345,6 @@
     "noResults": "Nessuna domanda corrispondente",
     "count": "{{count}} domanda",
     "count_other": "{{count}} domande",
-    "preview": "Anteprima",
     "source": {
       "manual": "Manuale",
       "submission": "Proposta",
@@ -370,7 +366,6 @@
       "description": "Generazione di immagini in locale tramite ComfyUI / Z-Image."
     },
     "provider": "Provider",
-    "active": "Attivo",
     "off": "Disattivato",
     "status": {
       "off": "Disattivato",
@@ -399,14 +394,10 @@
     "testFailed": "Connessione non riuscita",
     "save": "Salva",
     "saved": "Impostazioni IA salvate",
-    "saveFailed": "Salvataggio non riuscito",
     "generate": {
       "title": "Genera con l'IA",
       "topic": "Tema",
       "topicPlaceholder": "es. geografia della Svizzera",
-      "type": "Tipo di domanda",
-      "count": "Numero di domande",
-      "question": "Genera domanda",
       "fromTopic": "Domanda dal tema",
       "distractors": "Suggerisci risposte",
       "quiz": "Genera quiz",
@@ -415,7 +406,6 @@
       "generated": "Generato",
       "applied": "Applicato",
       "quizCreated": "Quiz creato",
-      "failed": "Generazione non riuscita",
       "notConfigured": "Nessun provider di testo configurato. Configura prima l'IA.",
       "openInEditor": "Apri nell'editor",
       "countValue": "Domande: {{count}}",
@@ -485,5 +475,15 @@
       "minRanksUp": "Posizioni scalate in classifica",
       "minPointsAhead": "Vantaggio punti del superato"
     }
+  },
+  "achievements": {
+    "active": "attivo"
+  },
+  "console": {
+    "resetAsset": "Reimposta"
+  },
+  "themePreview": {
+    "join": "Partecipa",
+    "playerName": "Giocatore {{rank}}"
   }
 }
