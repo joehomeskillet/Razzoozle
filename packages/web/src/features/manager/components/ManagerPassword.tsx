@@ -1,8 +1,9 @@
 import { EVENTS } from "@razzia/common/constants"
 import Button from "@razzia/web/components/Button"
-import Card from "@razzia/web/components/Card"
 import Input from "@razzia/web/components/Input"
 import { useEvent } from "@razzia/web/features/game/contexts/socket-context"
+import { Lock } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import { type FormEvent, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -14,6 +15,7 @@ interface Props {
 const ManagerPassword = ({ onSubmit }: Props) => {
   const [password, setPassword] = useState("")
   const { t } = useTranslation()
+  const reducedMotion = useReducedMotion()
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -25,8 +27,28 @@ const ManagerPassword = ({ onSubmit }: Props) => {
   })
 
   return (
-    <Card>
-      <form onSubmit={handleSubmit}>
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+      animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      transition={reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }}
+      className="z-10 w-full max-w-sm overflow-hidden rounded-2xl bg-gray-50 shadow-lg"
+    >
+      {/* Branded header band — mirrors ConsoleShell's accent-tinted header. */}
+      <header className="flex items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-5 py-4">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--color-primary)]">
+          <Lock className="size-5" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <p className="text-lg font-bold text-gray-900">
+            {t("manager:auth.title")}
+          </p>
+          <p className="text-sm text-gray-500">
+            {t("manager:auth.subtitle")}
+          </p>
+        </div>
+      </header>
+
+      <form className="p-5" onSubmit={handleSubmit}>
         <label htmlFor="manager-password" className="sr-only">
           {t("manager:aria.passwordLabel")}
         </label>
@@ -35,14 +57,16 @@ const ManagerPassword = ({ onSubmit }: Props) => {
           name="password"
           type="password"
           autoComplete="current-password"
+          autoFocus
+          className="w-full"
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t("manager:passwordPlaceholder")}
         />
-        <Button className="mt-4" type="submit">
+        <Button className="mt-4 w-full" type="submit">
           {t("common:submit")}
         </Button>
       </form>
-    </Card>
+    </motion.div>
   )
 }
 

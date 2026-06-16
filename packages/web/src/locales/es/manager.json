@@ -485,5 +485,9 @@
   "themePreview": {
     "join": "Unirse",
     "playerName": "Jugador {{rank}}"
+  },
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Inicia sesión para gestionar tu partida."
   }
 }

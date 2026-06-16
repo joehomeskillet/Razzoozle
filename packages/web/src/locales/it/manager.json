@@ -485,5 +485,9 @@
   "themePreview": {
     "join": "Partecipa",
     "playerName": "Giocatore {{rank}}"
+  },
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Accedi per gestire la tua partita."
   }
 }

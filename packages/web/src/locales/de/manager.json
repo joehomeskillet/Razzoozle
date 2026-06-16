@@ -485,5 +485,9 @@
   "themePreview": {
     "join": "Beitreten",
     "playerName": "Spieler {{rank}}"
+  },
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Melde dich an, um dein Spiel zu verwalten."
   }
 }

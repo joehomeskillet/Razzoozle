@@ -485,5 +485,9 @@
   "themePreview": {
     "join": "加入",
     "playerName": "玩家 {{rank}}"
+  },
+  "auth": {
+    "title": "管理员",
+    "subtitle": "登录以管理你的游戏。"
   }
 }
