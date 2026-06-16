@@ -53,7 +53,8 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a violet **liquid-glass** preset + a flat default) and contrast-aware colour pickers. |
+| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a violet **liquid-glass** preset + a flat default) and contrast-aware colour pickers. Templates **export / import** as a JSON file, and an **Edit** action re-opens a saved template in the designer. |
+| 🕹️ | **Running Games console** — a live manager view of every active game at a glance: end a game, or take one over, from one place. |
 | 🧊 | **Liquid-glass UI** — an opt-in glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
 | 🎯 | **Kahoot-faithful game screens** — answer tiles with the classic shape icons (triangle / diamond / circle / square), a circular countdown timer, an answers-received counter, and an animated podium. |
 | 🏆 | **Gamification** — 15 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |
@@ -62,8 +63,8 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 | ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
 | 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
 | 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
-| 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
-| 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
+| 🌍 | **6 languages + PWA** — a fully localized UI in German, English, Spanish, French and Italian (plus Chinese); installable, offline-aware. |
+| 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. Leaving a lobby tears the game down immediately (no ghost games), game PINs are collision-checked, and a wrong answer reveals the correct solution. |
 
 Backed by **350+ automated tests**, a path-traversal + `ws`-CVE security pass, and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
@@ -107,6 +108,8 @@ pnpm start        # or: pnpm dev  (web + socket, hot reload)
 3. Players open the site on their phones, enter the PIN and a name.
 4. Answer as fast as you can — faster correct answers score more.
 5. Watch the leaderboard, medals and confetti between rounds.
+
+In **auto-mode** the host advances the current screen instantly and a live countdown shows when the next screen appears. Hitting **Exit** asks the host to confirm, and players then see a clear "the host ended the game" screen instead of being dropped.
 
 Prefer playing alone? Open any quiz's **solo** share link and practise at your own pace.
 

@@ -53,7 +53,8 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme-Cockpit** — ein Live-„Design“-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (ein violettes **Liquid-Glass**-Preset und ein flacher Standard) sowie kontrastbewusste Farbwähler. |
+| 🎨 | **Theme-Cockpit** — ein Live-„Design“-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (ein violettes **Liquid-Glass**-Preset und ein flacher Standard) sowie kontrastbewusste Farbwähler. Vorlagen lassen sich als JSON-Datei **exportieren / importieren**, und eine **Bearbeiten**-Aktion öffnet eine gespeicherte Vorlage erneut im Designer. |
+| 🕹️ | **Konsole für laufende Spiele** — eine Live-Ansicht im Manager über jedes aktive Spiel auf einen Blick: beende ein Spiel oder übernimm es, alles von einem Ort aus. |
 | 🧊 | **Liquid-Glass-UI** — eine optional aktivierbare Glassmorphism-Theme-Variante (mattierte, weichgezeichnete Flächen), die die flache Basis nie antastet. |
 | 🎯 | **Kahoot-treue Spielbildschirme** — Antwortkacheln mit den klassischen Form-Icons (Dreieck / Raute / Kreis / Quadrat), ein kreisförmiger Countdown-Timer, ein Zähler für eingegangene Antworten und ein animiertes Siegertreppchen. |
 | 🏆 | **Gamification** — 15 Erfolge, Medaillen, Serien, Konfetti und Klangsignale, dazu eine persönliche Trophäengalerie. |
@@ -62,8 +63,8 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 | ✍️ | **Mehr Fragetypen** — Mehrfachauswahl, Antwort-eintippen und Slider, zusätzlich zur klassischen Einfachauswahl. |
 | 🤝 | **Community-Fragen** — eine öffentliche Einreichungsseite mit einer Moderations-Warteschlange im Manager, dazu ein wiederverwendbarer Fragenkatalog und ein Quiz-Archiv. |
 | 🖼️ | **Lokale KI-Bilder** — erzeuge Bilder für Fragen und Themes direkt auf dem Gerät über ComfyUI (Z-Image), oder binde Cloud-Anbieter ein — die Schlüssel bleiben serverseitig. |
-| 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
-| 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. |
+| 🌍 | **6 Sprachen + PWA** — eine vollständig lokalisierte Oberfläche in Deutsch, Englisch, Spanisch, Französisch und Italienisch (plus Chinesisch); installierbar, offline-fähig. |
+| 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. Beim Verlassen einer Lobby wird das Spiel sofort beendet (keine Geisterspiele), Spiel-PINs werden auf Kollisionen geprüft, und eine falsche Antwort enthüllt die richtige Lösung. |
 
 Untermauert von **350+ automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
 
@@ -107,6 +108,8 @@ pnpm start        # oder: pnpm dev  (Web + Socket, Hot Reload)
 3. Die Spielenden öffnen die Seite auf ihren Handys und geben die PIN und einen Namen ein.
 4. Antworte so schnell du kannst — schnellere richtige Antworten geben mehr Punkte.
 5. Verfolge die Rangliste, die Medaillen und das Konfetti zwischen den Runden.
+
+Im **Auto-Modus** wechselt der Host den aktuellen Bildschirm sofort weiter, und ein Live-Countdown zeigt an, wann der nächste Bildschirm erscheint. Ein Klick auf **Beenden** verlangt vom Host eine Bestätigung, und die Spielenden sehen dann einen klaren Bildschirm „der Host hat das Spiel beendet“, anstatt einfach getrennt zu werden.
 
 Lieber allein spielen? Öffne den **Solo**-Teilen-Link eines beliebigen Quiz und übe in deinem eigenen Tempo.
 
