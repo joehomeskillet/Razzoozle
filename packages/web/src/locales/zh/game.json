@@ -147,6 +147,8 @@
     "soloLeaderboard": "排行榜",
     "enterName": "你的名字",
     "next": "下一题",
+    "autoNext": "自动继续",
+    "autoNextTitle": "自动前进到下一题",
     "finish": "完成",
     "rank": "第 {{rank}} 名",
     "replay": "再玩一次",

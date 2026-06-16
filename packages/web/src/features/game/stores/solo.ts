@@ -81,6 +81,11 @@ interface SoloState {
   answers: SoloQuestionResult[]
   leaderboard: SoloScoreEntry[]
   error: string | null
+  // Session preference: when true (default), the result screen auto-advances to
+  // the next question (or finished screen) after a short delay. Toggling off
+  // lets the player linger on the result; the manual Next/Finish button is
+  // always an immediate override.
+  autoAdvance: boolean
 
   // Actions
   setQuizzId: (id: string) => void
@@ -92,6 +97,7 @@ interface SoloState {
     payload: { answerId?: number; answerIds?: number[]; answerText?: string },
   ) => Promise<void>
   nextQuestion: () => void
+  toggleAutoAdvance: () => void
   finishGame: (id: string) => Promise<void>
   reset: () => void
 }
@@ -110,6 +116,7 @@ const initialState = {
   answers: [] as SoloQuestionResult[],
   leaderboard: [] as SoloScoreEntry[],
   error: null as string | null,
+  autoAdvance: true,
 }
 
 export const useSoloStore = create<SoloState>((set, get) => ({
@@ -235,7 +242,11 @@ export const useSoloStore = create<SoloState>((set, get) => ({
   },
 
   nextQuestion: () => {
-    const { currentIndex, questions } = get()
+    const { currentIndex, questions, phase } = get()
+    // Idempotency guard: only advance out of the result phase. Kills a
+    // double-advance if the auto-advance timer fires in the same tick as a
+    // manual Next click (a stale queued timer can't skip a question).
+    if (phase !== "result") return
     const next = currentIndex + 1
     if (next < questions.length) {
       set({
@@ -248,6 +259,8 @@ export const useSoloStore = create<SoloState>((set, get) => ({
       set({ phase: "finished" })
     }
   },
+
+  toggleAutoAdvance: () => set((s) => ({ autoAdvance: !s.autoAdvance })),
 
   finishGame: async (id: string) => {
     const { playerName, totalPoints, answers } = get()

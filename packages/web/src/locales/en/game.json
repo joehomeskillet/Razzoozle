@@ -147,6 +147,8 @@
     "soloLeaderboard": "Leaderboard",
     "enterName": "Your name",
     "next": "Next",
+    "autoNext": "Auto-advance",
+    "autoNextTitle": "Automatically advance to the next question",
     "finish": "Finish",
     "rank": "Rank {{rank}}",
     "replay": "Play again",
