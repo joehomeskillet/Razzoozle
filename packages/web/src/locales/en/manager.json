@@ -36,6 +36,8 @@
     "deleted": "Quiz deleted",
     "duplicate": "Duplicate “{{name}}”",
     "duplicated": "Quiz duplicated",
+    "export": "Export “{{name}}” as JSON",
+    "exported": "Quiz exported as JSON",
     "import": "Import quiz from JSON",
     "export": "Export “{{name}}” as JSON",
     "exported": "Quiz exported as JSON",

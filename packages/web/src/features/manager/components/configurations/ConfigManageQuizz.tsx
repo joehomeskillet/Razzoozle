@@ -32,9 +32,9 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 // Serialize a quiz to a pretty-printed JSON file and trigger a client-side
-// download via a transient object-URL anchor. The `id` field is stripped so the
-// exported shape matches quizzValidator, letting export -> import round-trip
-// cleanly.
+// download via a transient object-URL anchor (mirrors downloadResultCsv). The
+// `id` field is stripped so the exported shape matches quizzValidator, letting
+// export -> import round-trip cleanly.
 const downloadQuizzJson = (quizz: QuizzWithId) => {
   const slug = (s: string) =>
     s

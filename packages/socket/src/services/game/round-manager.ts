@@ -1640,7 +1640,7 @@ export class RoundManager {
     this.opts.cooldown.abort()
   }
 
-  // ── Host live controls (#12) ──────────────────
+  // ── Host live controls (#12) ──────────────────────────────────────
   // Manager skips the live question early: end the answer window NOW and let the
   // cooldown resolve so newQuestion()'s awaited cooldown.start() falls through to
   // showResults() — i.e. proceed exactly as if the timer had elapsed. This is the
