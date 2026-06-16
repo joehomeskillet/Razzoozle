@@ -147,6 +147,8 @@
     "soloLeaderboard": "Classement",
     "enterName": "Ton nom",
     "next": "Suivant",
+    "autoNext": "Avance auto",
+    "autoNextTitle": "Passer automatiquement à la question suivante",
     "finish": "Terminer",
     "rank": "Place {{rank}}",
     "replay": "Rejouer",
