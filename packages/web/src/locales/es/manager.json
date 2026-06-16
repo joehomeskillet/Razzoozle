@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Inicia sesión para gestionar tu partida."
+  },
   "aria": {
     "passwordLabel": "Contraseña"
   },

@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Connecte-toi pour gérer ta partie."
+  },
   "aria": {
     "passwordLabel": "Mot de passe"
   },

@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Melde dich an, um dein Spiel zu verwalten."
+  },
   "aria": {
     "passwordLabel": "Passwort"
   },

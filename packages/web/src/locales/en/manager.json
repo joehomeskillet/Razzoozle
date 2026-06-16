@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Sign in to manage your game."
+  },
   "configurationsTitle": "Configurations",
   "logout": "Logout",
   "passwordPlaceholder": "Password",

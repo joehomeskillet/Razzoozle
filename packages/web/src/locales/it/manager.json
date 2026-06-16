@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Accedi per gestire la tua partita."
+  },
   "configurationsTitle": "Configurazioni",
   "logout": "Disconnetti",
   "passwordPlaceholder": "Password",

@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "管理员",
+    "subtitle": "登录以管理你的游戏。"
+  },
   "configurationsTitle": "配置",
   "logout": "退出登录",
   "passwordPlaceholder": "密码",
