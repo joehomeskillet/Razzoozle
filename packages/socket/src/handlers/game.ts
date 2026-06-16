@@ -382,6 +382,39 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     withGame(gameId, socket, (game) => game.showLeaderboard()),
   )
 
+  // ── Host live controls (#12) ──────────────────────────────────────────────
+  // Skip the current question (end early → reveal results) and force-reveal the
+  // answer share the same withGame + internal-ownership guard as ABORT_QUIZ /
+  // NEXT_QUESTION (the round method checks socket.id === managerId). ADJUST_TIMER
+  // additionally validates + clamps deltaSeconds to a sane host range so a
+  // malformed/hostile value can never blow up the countdown.
+  socket.on(EVENTS.MANAGER.SKIP_QUESTION, ({ gameId }) =>
+    withGame(gameId, socket, (game) => game.skipQuestion(socket)),
+  )
+
+  socket.on(EVENTS.MANAGER.REVEAL_ANSWER, ({ gameId }) =>
+    withGame(gameId, socket, (game) => game.revealAnswer(socket)),
+  )
+
+  socket.on(EVENTS.MANAGER.ADJUST_TIMER, ({ gameId, deltaSeconds }) =>
+    withGame(gameId, socket, (game) => {
+      if (
+        typeof deltaSeconds !== "number" ||
+        !Number.isFinite(deltaSeconds) ||
+        deltaSeconds === 0
+      ) {
+        return
+      }
+
+      // Clamp to a sane per-action host range (+/- 60s) so one event can't push
+      // the countdown to an absurd value; the host UI taps this repeatedly for
+      // larger shifts.
+      const delta = Math.max(-60, Math.min(60, Math.trunc(deltaSeconds)))
+
+      game.adjustTimer(socket, delta)
+    }),
+  )
+
   socket.on(EVENTS.MANAGER.LEAVE, ({ gameId }) => {
     const game = registry.getManagerGame(gameId, clientId)
 

@@ -98,6 +98,12 @@ export const EVENTS = {
     SET_GAME_CONFIG: "manager:setGameConfig",
     // Achievements config patch (manager-auth-gated server-side)
     SET_ACHIEVEMENTS_CONFIG: "manager:setAchievementsConfig",
+    // Host live-control (manager-auth-gated server-side). SKIP_QUESTION ends the
+    // current question early; ADJUST_TIMER extends/shortens it (deltaSeconds, +/-);
+    // REVEAL_ANSWER discloses the solution while the question is live.
+    SKIP_QUESTION: "manager:skipQuestion",
+    ADJUST_TIMER: "manager:adjustTimer",
+    REVEAL_ANSWER: "manager:revealAnswer",
   },
   QUIZZ: {
     GET: "quizz:get",
@@ -338,7 +344,7 @@ export const PROMPT_MAX_LEN = 300
 export const AI = {
   TOPIC_MAX_LEN: 200,
   TEXT_GEN_COOLDOWN_MS: 4_000,
-  TEXT_GEN_MAX_PER_SOCKET: 60,
+  TEXT_GEN_MAX_PER_SOCKET: 20,
   QUIZ_MIN_QUESTIONS: 1,
   QUIZ_MAX_QUESTIONS: 15,
   // Anthropic API version pin (Messages API).

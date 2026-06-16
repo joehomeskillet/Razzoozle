@@ -50,7 +50,9 @@
     "autoOn": "an",
     "autoOff": "aus",
     "autoTitle": "Auto-Modus: läuft automatisch weiter",
-    "fullscreen": "Vollbild"
+    "fullscreen": "Vollbild",
+    "mute": "Ton aus",
+    "unmute": "Ton an"
   },
   "avatar": {
     "title": "Dein Avatar",

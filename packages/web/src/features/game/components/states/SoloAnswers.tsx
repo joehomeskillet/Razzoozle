@@ -15,6 +15,7 @@ import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
@@ -34,6 +35,7 @@ interface Props {
 
 const SoloAnswers = ({ quizzId, question }: Props) => {
   const { submitAnswer, lastResult, lastAchievements, phase } = useSoloStore()
+  const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
 
@@ -44,13 +46,23 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [countdown, setCountdown] = useState(question.time)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, { volume: 0.1 })
-  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, { volume: 0.2 })
-  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, { volume: 0.3 })
+  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
+    volume: 0.1,
+    soundEnabled: !muted,
+  })
+  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+    volume: 0.3,
+    soundEnabled: !muted,
+  })
   const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
     volume: 0.2,
     interrupt: true,
     loop: true,
+    soundEnabled: !muted,
   })
 
   const isSlider = question.type === "slider" && question.min != null && question.max != null

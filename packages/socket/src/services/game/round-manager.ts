@@ -1536,6 +1536,73 @@ export class RoundManager {
     this.opts.cooldown.abort()
   }
 
+  // ── Host live controls (#12) ──────────────────
+  // Manager skips the live question early: end the answer window NOW and let the
+  // cooldown resolve so newQuestion()'s awaited cooldown.start() falls through to
+  // showResults() — i.e. proceed exactly as if the timer had elapsed. This is the
+  // same server action as a force-reveal (revealAnswer below delegates here), and
+  // mirrors abortQuestion's window-close + cooldown.abort sequence. Ownership-
+  // guarded like nextQuestion/abortQuestion.
+  skipQuestion(socket: Socket): void {
+    if (!this.started) {
+      return
+    }
+
+    if (socket.id !== this.opts.getManagerId()) {
+      return
+    }
+
+    // No live answer window (e.g. pre-game START_COOLDOWN intro) — nothing to skip.
+    if (!this.answerWindowOpen) {
+      return
+    }
+
+    // Sim mode: window closing — cancel pending bot timers (no late-bot race).
+    this.answerWindowOpen = false
+    this.opts.onAnswerWindowClose?.()
+    this.opts.cooldown.abort()
+  }
+
+  // Manager force-reveals the answer while the question is live. Semantically the
+  // same as skipping (end early → showResults discloses the solution), so reuse
+  // the abort/reveal path rather than duplicate the window-close logic.
+  revealAnswer(socket: Socket): void {
+    this.skipQuestion(socket)
+  }
+
+  // Manager extends (+) or shortens (-) the running countdown by deltaSeconds.
+  // Ownership-guarded; ignored while paused or when no countdown is active. Shifts
+  // the cooldown's remaining time (which re-emits the new value to the room) and,
+  // in low-latency mode, the server-authoritative answer deadline so the too_late
+  // check stays consistent with the new window. A no-op when there is no live
+  // countdown (e.g. on the leaderboard).
+  adjustTimer(socket: Socket, deltaSeconds: number): void {
+    if (!this.started || this.paused) {
+      return
+    }
+
+    if (socket.id !== this.opts.getManagerId()) {
+      return
+    }
+
+    if (!this.answerWindowOpen || !this.opts.cooldown.isActive()) {
+      return
+    }
+
+    this.opts.cooldown.adjust(deltaSeconds)
+
+    // Low-latency mode: keep the server-side deadline in lock-step with the
+    // adjusted window so a late answer is accepted/rejected against the new time.
+    // Floored at the question start so a large shorten can't move it into the past
+    // before the question began. Untouched in normal mode (deadline stays 0).
+    if (this.ll.enabled && this.answerDeadlineAtServerMs > 0) {
+      this.answerDeadlineAtServerMs = Math.max(
+        this.startTime,
+        this.answerDeadlineAtServerMs + deltaSeconds * 1000,
+      )
+    }
+  }
+
   // Sim mode: is the SELECT_ANSWER window currently open? Game.addBots refuses to
   // add bots mid-window (no remaining-time race into the next question).
   isAnswerWindowOpen(): boolean {

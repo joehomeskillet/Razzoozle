@@ -33,6 +33,8 @@
     "duplicate": "复制“{{name}}”",
     "duplicated": "测验已复制",
     "import": "从 JSON 导入测验",
+    "export": "将“{{name}}”导出为 JSON",
+    "exported": "测验已导出为 JSON",
     "none": "尚未创建测验",
     "notFound": "未找到测验",
     "pleaseCreate": "请先创建一个测验",

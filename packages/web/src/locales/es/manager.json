@@ -34,6 +34,8 @@
     "duplicated": "Cuestionario duplicado",
     "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
+    "export": "Exportar «{{name}}» como JSON",
+    "exported": "Cuestionario exportado como JSON",
     "invalidJson": "Archivo JSON inválido o incompleto",
     "none": "Aún no se ha creado ningún cuestionario",
     "notFound": "No se encontró ningún cuestionario",

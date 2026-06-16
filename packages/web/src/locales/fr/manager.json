@@ -34,6 +34,8 @@
     "duplicated": "Quizz dupliqué",
     "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
+    "export": "Exporter « {{name}} » au format JSON",
+    "exported": "Quiz exporté en JSON",
     "invalidJson": "Fichier JSON invalide ou incomplet",
     "none": "Aucun quizz créé",
     "notFound": "Aucun quizz trouvé",

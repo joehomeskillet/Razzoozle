@@ -24,6 +24,8 @@
     "duplicate": "Duplica «{{name}}»",
     "duplicated": "Quiz duplicato",
     "import": "Importa quiz da JSON",
+    "export": "Esporta «{{name}}» come JSON",
+    "exported": "Quiz esportato come JSON",
     "none": "Nessun quiz creato ancora",
     "notFound": "Nessun quiz trovato",
     "pleaseCreate": "Per favore crea prima un quiz",

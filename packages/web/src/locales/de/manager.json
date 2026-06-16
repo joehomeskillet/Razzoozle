@@ -34,6 +34,8 @@
     "duplicated": "Quiz dupliziert",
     "edit": "„{{name}}\" bearbeiten",
     "import": "Quiz aus JSON importieren",
+    "export": "„{{name}}“ als JSON exportieren",
+    "exported": "Quiz als JSON exportiert",
     "invalidJson": "Ungültige oder unvollständige JSON-Datei",
     "none": "Noch kein Quiz erstellt",
     "notFound": "Kein Quiz gefunden",

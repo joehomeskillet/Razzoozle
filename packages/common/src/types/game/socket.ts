@@ -258,6 +258,15 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.ABORT_QUIZ]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.NEXT_QUESTION]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void
+  // Host live-control (manager-auth-gated server-side). SKIP ends the question
+  // early; ADJUST_TIMER shifts the remaining time by deltaSeconds (+ extend /
+  // - shorten); REVEAL discloses the solution while the question is live.
+  [EVENTS.MANAGER.SKIP_QUESTION]: (_message: MessageGameId) => void
+  [EVENTS.MANAGER.ADJUST_TIMER]: (_message: {
+    gameId?: string
+    deltaSeconds: number
+  }) => void
+  [EVENTS.MANAGER.REVEAL_ANSWER]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.GET_CONFIG]: () => void
   [EVENTS.MANAGER.LOGOUT]: () => void
 

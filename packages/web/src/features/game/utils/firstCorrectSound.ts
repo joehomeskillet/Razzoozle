@@ -2,6 +2,8 @@
 // Self-hosted at /theme/firstcorrect.mp3 (config volume, served by nginx).
 // Uses the native Audio API (no extra dep) and preloads on game start so it
 // plays instantly when the result arrives.
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
+
 let audio: HTMLAudioElement | null = null
 
 export const preloadFirstCorrectSound = () => {
@@ -14,6 +16,12 @@ export const preloadFirstCorrectSound = () => {
 }
 
 export const playFirstCorrectSound = () => {
+  // Respect the global mute toggle. Read straight from the store (this is a
+  // plain module fn, not a hook) so it stays in sync with the useSound calls.
+  if (useSoundStore.getState().muted) {
+    return
+  }
+
   preloadFirstCorrectSound()
 
   if (audio) {

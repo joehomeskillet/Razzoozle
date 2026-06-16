@@ -12,6 +12,7 @@ import {
 import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
 import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
@@ -54,6 +55,7 @@ const Answers = ({
 }: Props) => {
   const { socket } = useSocket()
   const { player, gameId } = usePlayerStore()
+  const muted = useSoundStore((s) => s.muted)
   const llActive = useLowLatencyStore((s) => s.active)
   const clockOffsetMs = useLowLatencyStore((s) => s.offsetMs)
   // Resume signal: did the server tell us we already answered this question?
@@ -100,12 +102,14 @@ const Answers = ({
 
   const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
     volume: 0.1,
+    soundEnabled: !muted,
   })
 
   const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
     volume: 0.2,
     interrupt: true,
     loop: true,
+    soundEnabled: !muted,
   })
 
   // Clear any pending ack timer on unmount so it can't fire after teardown.
