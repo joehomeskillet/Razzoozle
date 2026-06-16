@@ -1,9 +1,11 @@
 import { MEDIA_TYPES } from "@razzia/common/constants"
 import type { CommonStatusDataMap } from "@razzia/common/types/game/status"
 import Markdown from "@razzia/web/components/Markdown"
+import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
+import CircularTimer from "@razzia/web/features/game/components/CircularTimer"
 import { useSoundStore } from "@razzia/web/features/game/stores/sound"
 import { SFX } from "@razzia/web/features/game/utils/constants"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
@@ -12,7 +14,7 @@ interface Props {
 }
 
 const Question = ({
-  data: { question, media, cooldown, submittedBy },
+  data: { question, answers, media, cooldown, submittedBy },
 }: Props) => {
   const muted = useSoundStore((s) => s.muted)
   const [sfxShow] = useSound(SFX.SHOW_SOUND, {
@@ -20,6 +22,20 @@ const Question = ({
     soundEnabled: !muted,
   })
   const { t } = useTranslation()
+
+  // UI-only local countdown to drive the circular timer (this presenter view
+  // gets no per-second COOLDOWN broadcast, only the initial `cooldown` total).
+  // Purely cosmetic — scoring is server-authoritative and untouched.
+  const [remaining, setRemaining] = useState(cooldown)
+
+  useEffect(() => {
+    setRemaining(cooldown)
+    const id = setInterval(() => {
+      setRemaining((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+
+    return () => clearInterval(id)
+  }, [cooldown])
 
   useEffect(() => {
     sfxShow()
@@ -56,12 +72,41 @@ const Question = ({
             className="max-h-[26vh] w-auto rounded-md"
           />
         )}
+
+        {/* Kahoot-style answer tiles on the presenter big-screen — DISPLAY-ONLY.
+            Players answer on their phones (Answers.tsx); these are non-interactive
+            (no onClick, disabled + pointer-events-none + cursor-default). We render
+            exactly the answers present (choice/boolean = 2..4), shape icons via
+            colorIndex. Absent for slider questions, where `answers` is undefined. */}
+        {answers && answers.length > 0 && (
+          <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:gap-3 lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+            {answers.map((answer, index) => (
+              <AnswerButton
+                key={index}
+                colorIndex={index}
+                disabled
+                aria-disabled="true"
+                tabIndex={-1}
+                className="pointer-events-none cursor-default"
+              >
+                <Markdown>{answer}</Markdown>
+              </AnswerButton>
+            ))}
+          </div>
+        )}
       </div>
-      <div className="mb-8 h-6 w-full overflow-hidden rounded-full bg-white/15 shadow-inner lg:h-10">
-        <div
-          className="bg-primary h-full rounded-full"
-          style={{ animation: `progressBar ${cooldown}s linear forwards` }}
-        ></div>
+      {/* Prominent Kahoot-style circular countdown, replacing the old
+          horizontal progress bar. NOTE: the SHOW_QUESTION payload carries no
+          answered/total-player counts (and there's no game context here), so
+          the N / M answered counter is intentionally omitted in this view to
+          avoid threading new props through many layers. */}
+      <div className="mb-8 flex justify-center">
+        <CircularTimer
+          seconds={remaining}
+          total={cooldown}
+          size={140}
+          className="lg:size-[clamp(140px,18vh,220px)]!"
+        />
       </div>
     </section>
   )

@@ -12,6 +12,7 @@ import type { SoloQuestion } from "@razzia/common/types/game"
 import Markdown from "@razzia/web/components/Markdown"
 import QuestionMedia from "@razzia/web/components/QuestionMedia"
 import AnswerButton from "@razzia/web/features/game/components/AnswerButton"
+import CircularTimer from "@razzia/web/features/game/components/CircularTimer"
 import RewardStack from "@razzia/web/features/game/components/RewardStack"
 import { useSoloStore } from "@razzia/web/features/game/stores/solo"
 import { useSoundStore } from "@razzia/web/features/game/stores/sound"
@@ -210,10 +211,12 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       </div>
 
       <div>
-        <div className="mx-auto mb-4 flex w-full max-w-7xl justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
-          <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold">
-            <span className="translate-y-1 text-sm">{t("game:hud.time")}</span>
-            <span className="tabular-nums">{countdown}</span>
+        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
+          {/* Kahoot-style circular countdown — same as the live game. `countdown`
+              is the remaining seconds; `question.time` is the total. */}
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm">{t("game:hud.time")}</span>
+            <CircularTimer seconds={countdown} total={question.time} size={72} />
           </div>
         </div>
 
@@ -281,6 +284,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                     className="flex"
                   >
                     <AnswerButton
+                      colorIndex={key}
                       className={clsx(
                         "w-full",
                         ANSWERS_COLORS[key],
@@ -372,6 +376,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                   className="relative flex"
                 >
                   <AnswerButton
+                    colorIndex={key}
                     className={clsx(
                       "w-full",
                       ANSWERS_COLORS[key],

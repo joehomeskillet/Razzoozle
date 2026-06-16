@@ -176,7 +176,7 @@ const ConsoleShell = ({
             aria-orientation="horizontal"
             onKeyDown={handleKeyDown}
             className={clsx(
-              "flex gap-1 overflow-x-auto",
+              "flex gap-2 overflow-x-auto",
               "min-[720px]:flex-col min-[720px]:overflow-visible",
             )}
           >
