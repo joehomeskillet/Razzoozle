@@ -14,7 +14,6 @@ import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
-import ScoreToast from "@razzoozle/web/features/game/components/ScoreToast"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
@@ -23,7 +22,7 @@ import {
 } from "@razzoozle/web/features/game/utils/answers"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -203,12 +202,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
 
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
-      <ScoreToast
-        correct={lastResult?.correct ?? false}
-        points={lastResult?.points ?? 0}
-        visible={resultReady}
-      />
-
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question.question}</Markdown>
@@ -407,24 +400,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                   >
                     <Markdown>{answer}</Markdown>
                   </AnswerButton>
-
-                  {/* Floating +points on a correct pick */}
-                  <AnimatePresence>
-                    {resultReady &&
-                      isPicked &&
-                      lastResult.correct &&
-                      lastResult.points > 0 && (
-                        <motion.span
-                          key="floating-points"
-                          initial={{ opacity: 0, y: 0 }}
-                          animate={{ opacity: [0, 1, 0], y: -60 }}
-                          transition={{ duration: 1.2 }}
-                          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-black text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
-                        >
-                          +{lastResult.points}
-                        </motion.span>
-                      )}
-                  </AnimatePresence>
                 </motion.div>
               )
             })}

@@ -50,8 +50,16 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
               ? { duration: 0.2 }
               : { type: "spring", stiffness: 320, damping: 24 }
           }
-          className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2"
+          className="pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2"
+          style={{ top: "max(1.5rem, env(safe-area-inset-top))" }}
         >
+          {/* Single static announcement for the live region: read once with the
+              final value. The ticking count-up below is aria-hidden so screen
+              readers do not announce every intermediate spring frame. */}
+          <span className="sr-only">
+            {correct ? `${t("game:correct")} +${points}` : t("game:wrong")}
+          </span>
+
           <div
             className="relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] bg-black/55 px-5 py-3 text-white shadow-2xl ring-1 ring-white/15 backdrop-blur-md"
             style={{ borderLeft: `4px solid ${accent}` }}
@@ -107,7 +115,10 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
                 {correct ? t("game:correct") : t("game:wrong")}
               </span>
               {correct && (
-                <span className="text-3xl font-black tabular-nums text-yellow-300 drop-shadow">
+                <span
+                  aria-hidden
+                  className="text-3xl font-black tabular-nums text-yellow-300 drop-shadow"
+                >
                   +<AnimatedPoints to={points} className="tabular-nums" />
                 </span>
               )}
