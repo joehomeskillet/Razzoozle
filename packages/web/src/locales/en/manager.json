@@ -133,7 +133,8 @@
     "submissions": "Suggestions",
     "media": "Media",
     "gamemode": "Mode",
-    "achievements": "Achievements"
+    "achievements": "Achievements",
+    "running": "Running Games"
   },
   "media": {
     "title": "Media library",
@@ -494,5 +495,23 @@
   "themePreview": {
     "join": "Join",
     "playerName": "Player {{rank}}"
+  },
+  "runningGames": {
+    "title": "Running Games",
+    "description": "Manage currently active games.",
+    "refresh": "Refresh",
+    "emptyHeadline": "No running games",
+    "emptyHint": "Once you start a game, it will show up here.",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} players",
+    "phase": {
+      "lobby": "Lobby",
+      "running": "Running"
+    },
+    "hostOffline": "Host offline",
+    "takeOver": "Take over",
+    "end": "End",
+    "endConfirm": "Really end the game \"{{name}}\"?",
+    "ended": "Game ended."
   }
 }

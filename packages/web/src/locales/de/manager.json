@@ -133,7 +133,8 @@
     "submissions": "Vorschläge",
     "media": "Medien",
     "gamemode": "Modus",
-    "achievements": "Achievements"
+    "achievements": "Achievements",
+    "running": "Laufende Spiele"
   },
   "media": {
     "title": "Medienbibliothek",
@@ -494,5 +495,23 @@
   "themePreview": {
     "join": "Beitreten",
     "playerName": "Spieler {{rank}}"
+  },
+  "runningGames": {
+    "title": "Laufende Spiele",
+    "description": "Aktuell aktive Spiele verwalten.",
+    "refresh": "Aktualisieren",
+    "emptyHeadline": "Keine laufenden Spiele",
+    "emptyHint": "Sobald du ein Spiel startest, erscheint es hier.",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} Spieler",
+    "phase": {
+      "lobby": "Lobby",
+      "running": "Läuft"
+    },
+    "hostOffline": "Host offline",
+    "takeOver": "Übernehmen",
+    "end": "Beenden",
+    "endConfirm": "Soll das Spiel „{{name}}“ wirklich beendet werden?",
+    "ended": "Spiel beendet."
   }
 }

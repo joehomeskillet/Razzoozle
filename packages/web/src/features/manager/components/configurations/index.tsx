@@ -14,6 +14,7 @@ import ConfigResults from "@razzoozle/web/features/manager/components/configurat
 import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
+import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
 } from "@razzoozle/web/features/manager/components/console/ConsoleShell"
@@ -34,6 +35,7 @@ import {
   Monitor,
   Palette,
   Play,
+  Radio,
   Sparkles,
   Trophy,
   Users,
@@ -60,6 +62,7 @@ const tabs: TabDef[] = [
   { key: "ki", nameKey: "manager:tabs.ki", icon: Sparkles, component: ConfigAI },
   { key: "achievements", nameKey: "manager:tabs.achievements", icon: Award, component: ConfigAchievements },
   { key: "results", nameKey: "manager:tabs.results", icon: Trophy, component: ConfigResults },
+  { key: "running", nameKey: "manager:tabs.running", icon: Radio, component: RunningGamesSection },
   { key: "design", nameKey: "manager:tabs.design", icon: Palette, component: ConfigTheme },
   { key: "satellite", nameKey: "manager:tabs.satellite", icon: Monitor, component: ConfigDisplay },
   { key: "submissions", nameKey: "manager:tabs.submissions", icon: ClipboardList, component: ConfigSubmissions },

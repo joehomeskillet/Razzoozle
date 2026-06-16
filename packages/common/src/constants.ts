@@ -104,6 +104,13 @@ export const EVENTS = {
     SKIP_QUESTION: "manager:skipQuestion",
     ADJUST_TIMER: "manager:adjustTimer",
     REVEAL_ANSWER: "manager:revealAnswer",
+    // Running-games admin panel (manager-auth-gated server-side). LIST_GAMES
+    // requests the list (no payload); GAMES_DATA returns GameSummary[]; END_GAME
+    // ({ gameId }) kills a game the requester OWNS (ownership verified via
+    // registry.getManagerGame, never getGameById).
+    LIST_GAMES: "manager:listGames",
+    GAMES_DATA: "manager:gamesData",
+    END_GAME: "manager:endGame",
   },
   QUIZZ: {
     GET: "quizz:get",

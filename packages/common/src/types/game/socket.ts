@@ -3,7 +3,9 @@ import type { SubmissionCategory, ThemeSlot } from "@razzoozle/common/constants"
 import type { AISettingsPublic, AITestResult } from "@razzoozle/common/types/ai"
 import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import type {
+  EndGamePayload,
   GameResult,
+  GamesDataPayload,
   GameUpdateQuestion,
   Player,
   Question,
@@ -170,6 +172,9 @@ export interface ServerToClientEvents {
   [EVENTS.THEME_TEMPLATE.SAVE_SUCCESS]: () => void
   [EVENTS.THEME_TEMPLATE.ERROR]: (_m: string) => void
 
+  // Running-games admin panel (server -> client): the full GameSummary[] list.
+  [EVENTS.MANAGER.GAMES_DATA]: (_games: GamesDataPayload) => void
+
   // Question-submission events (feature #5)
   [EVENTS.MANAGER.SUBMISSIONS_DATA]: (_submissions: Submission[]) => void
   [EVENTS.MANAGER.SUBMISSION_ERROR]: (_message: string) => void
@@ -284,6 +289,10 @@ export interface ClientToServerEvents {
   }) => void
   [EVENTS.MANAGER.ENHANCE_PROMPT]: (_payload: { prompt: string }) => void
   [EVENTS.MANAGER.LIST_SUBMISSIONS]: () => void
+  // Running-games admin panel (client -> server, auth-gated). LIST_GAMES has no
+  // payload; END_GAME ends a game the requester OWNS.
+  [EVENTS.MANAGER.LIST_GAMES]: () => void
+  [EVENTS.MANAGER.END_GAME]: (_payload: EndGamePayload) => void
   [EVENTS.MANAGER.EDIT_SUBMISSION]: (_payload: unknown) => void
   // Approve a submission either into a quiz (quizzId) OR into the catalog
   // (toCatalog). Exactly one path is taken server-side.

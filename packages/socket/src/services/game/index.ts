@@ -1,5 +1,10 @@
 import { AVATARS_GENERIC, BOT, EVENTS } from "@razzoozle/common/constants"
-import type { Player, QuestionResult, Quizz } from "@razzoozle/common/types/game"
+import type {
+  GameSummary,
+  Player,
+  QuestionResult,
+  Quizz,
+} from "@razzoozle/common/types/game"
 import type {
   MetricKind,
   MetricsHealthSnapshot,
@@ -72,6 +77,9 @@ export interface GameSnapshot {
 class Game {
   readonly gameId: string
   readonly inviteCode: string
+  // Wall-clock creation time (ms). Set once at construction (new game OR
+  // crash-restore) and surfaced by toSummary() for the host's running-games list.
+  readonly createdAt: number = Date.now()
 
   private readonly io: Server
   private readonly _manager: {
@@ -869,6 +877,23 @@ class Game {
 
   resume(): void {
     this.round.resume()
+  }
+
+  // ── Running-games summary (MANAGER.LIST_GAMES) ───────────────────────────
+
+  // Compact, read-only metadata for the host's running-games list. Carries NO
+  // quiz content / solutions (anti-cheat) — only what the host needs to identify
+  // and optionally end a game it owns.
+  toSummary(): GameSummary {
+    return {
+      gameId: this.gameId,
+      inviteCode: this.inviteCode,
+      subject: this.quizz.subject,
+      playerCount: this.playerManager.count(),
+      started: this.started,
+      managerConnected: this._manager.connected,
+      createdAt: this.createdAt,
+    }
   }
 
   // ── Crash-recovery snapshot ──────────────────────────────────────────────

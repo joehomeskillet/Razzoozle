@@ -156,3 +156,25 @@ export interface SharedResult {
   date: string
   players: GameResultPlayer[]
 }
+
+// Running-games admin panel (MANAGER.LIST_GAMES / GAMES_DATA / END_GAME).
+// A compact, read-only summary of a live game for the host's "Laufende Spiele"
+// list. Deliberately carries NO quiz content / solutions — only metadata the
+// host needs to identify and (optionally) end a game it owns.
+export interface GameSummary {
+  gameId: string
+  inviteCode: string
+  subject: string
+  playerCount: number
+  started: boolean
+  managerConnected: boolean
+  createdAt: number
+}
+
+// MANAGER.GAMES_DATA response payload (the full summary list).
+export type GamesDataPayload = GameSummary[]
+
+// MANAGER.END_GAME request payload.
+export interface EndGamePayload {
+  gameId: string
+}

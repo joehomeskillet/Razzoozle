@@ -32,13 +32,15 @@ import { applyTheme } from "@razzoozle/web/features/theme/apply"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   BookMarked,
+  Download,
   History,
   Image as ImageIcon,
   RotateCcw,
   Trash2,
+  Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useEffect, useRef, useState } from "react"
+import { type ChangeEvent, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -96,6 +98,8 @@ const ConfigTheme = () => {
   // The theme operation currently awaiting a server response, used to route a
   // context-free THEME_ERROR to the right handler / pending-state cleanup.
   const pendingActionRef = useRef<ThemeAction | null>(null)
+  // Hidden file input for importing a template JSON (client-only round-trip).
+  const templateFileInputRef = useRef<HTMLInputElement>(null)
   // Slot-scoped upload error, surfaced inline next to the slot's controls.
   const [slotErrors, setSlotErrors] = useState<
     Partial<Record<ThemeSlot, string>>
@@ -273,6 +277,80 @@ const ConfigTheme = () => {
   // Load a template into the editor so the admin can preview + save it.
   const handleApplyTemplate = (template: ThemeTemplate) =>
     preview({ ...DEFAULT_THEME, ...template.theme })
+
+  // Export a saved template's Theme to a JSON file (client-only, no backend).
+  // Mirrors the Blob/object-URL anchor pattern used by the quiz export.
+  const handleExportTemplate = (template: ThemeTemplate) => {
+    const slug = (s: string) =>
+      s
+        .normalize("NFKD")
+        .replace(/[^\w-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase()
+    const json = JSON.stringify(
+      { name: template.name, theme: template.theme },
+      null,
+      2,
+    )
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${slug(template.name) || "theme-template"}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  // Import a template JSON: parse (guarded), then emit THEME_TEMPLATE.SAVE with
+  // { name, theme }. The server validator rejects malformed payloads.
+  const handleImportTemplate = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = (event) => {
+      let data: unknown = null
+
+      try {
+        data = JSON.parse(event.target?.result as string)
+      } catch {
+        toast.error(
+          t("manager:theme.templates.importError", {
+            defaultValue: "Ungültige Vorlagen-Datei",
+          }),
+        )
+
+        return
+      }
+
+      const parsed = data as { name?: unknown; theme?: unknown }
+      const name =
+        typeof parsed.name === "string" && parsed.name.trim()
+          ? parsed.name.trim()
+          : file.name.replace(/\.json$/i, "")
+
+      pendingActionRef.current = "template"
+      socket.emit(EVENTS.THEME_TEMPLATE.SAVE, { name, theme: parsed.theme })
+    }
+
+    reader.onerror = () => {
+      reader.abort()
+      toast.error(
+        t("manager:theme.templates.readError", {
+          defaultValue: "Datei konnte nicht gelesen werden",
+        }),
+      )
+    }
+
+    reader.readAsText(file)
+    e.target.value = ""
+  }
 
   const handleDeleteTemplate = () => {
     if (!pendingDeleteId) {
@@ -522,6 +600,27 @@ const ConfigTheme = () => {
                   >
                     {t("manager:theme.templates.save")}
                   </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    type="button"
+                    onClick={() => templateFileInputRef.current?.click()}
+                    title={t("manager:theme.templates.import", {
+                      defaultValue: "Vorlage importieren",
+                    })}
+                    aria-label={t("manager:theme.templates.import", {
+                      defaultValue: "Vorlage importieren",
+                    })}
+                  >
+                    <Upload className="size-4" aria-hidden />
+                  </Button>
+                  <input
+                    ref={templateFileInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleImportTemplate}
+                  />
                 </div>
               </SubGroup>
 
@@ -565,16 +664,32 @@ const ConfigTheme = () => {
                         >
                           {t("manager:theme.templates.apply")}
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="icon"
-                          type="button"
-                          aria-label={t("manager:theme.templates.delete")}
-                          title={t("manager:theme.templates.delete")}
-                          onClick={() => setPendingDeleteId(template.id)}
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            type="button"
+                            aria-label={t("manager:theme.templates.export", {
+                              defaultValue: "Vorlage exportieren",
+                            })}
+                            title={t("manager:theme.templates.export", {
+                              defaultValue: "Vorlage exportieren",
+                            })}
+                            onClick={() => handleExportTemplate(template)}
+                          >
+                            <Download className="size-4" aria-hidden />
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="icon"
+                            type="button"
+                            aria-label={t("manager:theme.templates.delete")}
+                            title={t("manager:theme.templates.delete")}
+                            onClick={() => setPendingDeleteId(template.id)}
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
