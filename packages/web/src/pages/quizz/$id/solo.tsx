@@ -16,6 +16,7 @@ import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import background from "@razzoozle/web/assets/background.webp"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
+import ScoreToast from "@razzoozle/web/features/game/components/ScoreToast"
 import SoloAnswers from "@razzoozle/web/features/game/components/states/SoloAnswers"
 import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
@@ -324,6 +325,7 @@ const SoloPlayPage = () => {
     playerName,
     totalPoints,
     leaderboard,
+    lastResult,
     error,
     loadQuiz,
     setPlayerName,
@@ -440,86 +442,98 @@ const SoloPlayPage = () => {
     }
 
   return (
-    <SoloShell
-      bgSrc={bgSrc}
-      questionCurrent={currentIndex + 1}
-      questionTotal={questions.length}
-      playerName={playerName}
-      totalPoints={totalPoints}
-      phaseKey={currentIndex}
-      footerAction={
-        phase === "result" ? (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-pressed={autoAdvance}
-              aria-label={t("game:solo.autoNextTitle", {
-                defaultValue: "Automatisch zur nächsten Frage",
-              })}
-              onClick={toggleAutoAdvance}
-              title={t("game:solo.autoNextTitle", {
-                defaultValue: "Automatisch zur nächsten Frage",
-              })}
-              className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
-            >
-              <span
-                className={
-                  "relative h-5 w-9 rounded-full transition-colors " +
-                  (autoAdvance ? "bg-primary" : "bg-gray-300")
-                }
+    <>
+      <SoloShell
+        bgSrc={bgSrc}
+        questionCurrent={currentIndex + 1}
+        questionTotal={questions.length}
+        playerName={playerName}
+        totalPoints={totalPoints}
+        phaseKey={currentIndex}
+        footerAction={
+          phase === "result" ? (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-pressed={autoAdvance}
+                aria-label={t("game:solo.autoNextTitle", {
+                  defaultValue: "Automatisch zur nächsten Frage",
+                })}
+                onClick={toggleAutoAdvance}
+                title={t("game:solo.autoNextTitle", {
+                  defaultValue: "Automatisch zur nächsten Frage",
+                })}
+                className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
               >
                 <span
                   className={
-                    "absolute top-0.5 size-4 rounded-full bg-white transition-[left] " +
-                    (autoAdvance ? "left-[18px]" : "left-0.5")
+                    "relative h-5 w-9 rounded-full transition-colors " +
+                    (autoAdvance ? "bg-primary" : "bg-gray-300")
                   }
-                />
-              </span>
-              <span className="hidden sm:inline">
-                {t("game:solo.autoNext", { defaultValue: "Auto-Weiter" })}{" "}
-                {autoAdvance
-                  ? t("game:controls.autoOn", { defaultValue: "an" })
-                  : t("game:controls.autoOff", { defaultValue: "aus" })}
-              </span>
-            </button>
-            <motion.button
-              type="button"
-              onClick={nextQuestion}
-              animate={reduced ? undefined : { scale: [1, 1.05, 1] }}
-              transition={
-                reduced
-                  ? undefined
-                  : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-              }
-              className="rounded-lg bg-gradient-to-r from-primary to-purple-500 px-5 py-2 text-base font-bold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110 active:scale-95"
-            >
-              {currentIndex + 1 < questions.length
-                ? t("game:solo.next")
-                : t("game:solo.finish")}
-            </motion.button>
+                >
+                  <span
+                    className={
+                      "absolute top-0.5 size-4 rounded-full bg-white transition-[left] " +
+                      (autoAdvance ? "left-[18px]" : "left-0.5")
+                    }
+                  />
+                </span>
+                <span className="hidden sm:inline">
+                  {t("game:solo.autoNext", { defaultValue: "Auto-Weiter" })}{" "}
+                  {autoAdvance
+                    ? t("game:controls.autoOn", { defaultValue: "an" })
+                    : t("game:controls.autoOff", { defaultValue: "aus" })}
+                </span>
+              </button>
+              <motion.button
+                type="button"
+                onClick={nextQuestion}
+                animate={reduced ? undefined : { scale: [1, 1.05, 1] }}
+                transition={
+                  reduced
+                    ? undefined
+                    : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                }
+                className="rounded-lg bg-gradient-to-r from-primary to-purple-500 px-5 py-2 text-base font-bold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110 active:scale-95"
+              >
+                {currentIndex + 1 < questions.length
+                  ? t("game:solo.next")
+                  : t("game:solo.finish")}
+              </motion.button>
+            </div>
+          ) : undefined
+        }
+      >
+        {phase === "question" && (
+          <div className="flex flex-1 flex-col">
+            <Question data={questionData} />
+            {/* After cooldown the state machine moves to "answering" via SoloAnswers
+                mounted below once the question phase auto-transitions — but we
+                need the user to see the question first. We auto-advance after the
+                cooldown animation completes (cooldown seconds). */}
+            <SoloAutoAdvance cooldown={currentQuestion.cooldown} />
           </div>
-        ) : undefined
-      }
-    >
-      {phase === "question" && (
-        <div className="flex flex-1 flex-col">
-          <Question data={questionData} />
-          {/* After cooldown the state machine moves to "answering" via SoloAnswers
-              mounted below once the question phase auto-transitions — but we
-              need the user to see the question first. We auto-advance after the
-              cooldown animation completes (cooldown seconds). */}
-          <SoloAutoAdvance cooldown={currentQuestion.cooldown} />
-        </div>
-      )}
+        )}
 
-      {(phase === "answering" || phase === "result") && (
-        <SoloAnswers quizzId={id} question={currentQuestion} />
-      )}
+        {(phase === "answering" || phase === "result") && (
+          <SoloAnswers quizzId={id} question={currentQuestion} />
+        )}
 
-      {/* RESULT auto-advance: mounts only while the player has auto-advance ON,
-          so toggling it off unmounts this and cancels the pending advance. */}
-      {phase === "result" && autoAdvance && <SoloResultAutoAdvance />}
-    </SoloShell>
+        {/* RESULT auto-advance: mounts only while the player has auto-advance ON,
+            so toggling it off unmounts this and cancels the pending advance. */}
+        {phase === "result" && autoAdvance && <SoloResultAutoAdvance />}
+      </SoloShell>
+
+      {/* Top-center result toast. Rendered at the page level (sibling of
+          SoloShell, portals to document.body) so SoloPlayPage stays mounted
+          across question changes — letting the toast's AnimatePresence EXIT
+          (slide-up) finally play when advancing to the next question. */}
+      <ScoreToast
+        correct={lastResult?.correct ?? false}
+        points={lastResult?.points ?? 0}
+        visible={phase === "result" && lastResult !== null}
+      />
+    </>
   )
 }
 
