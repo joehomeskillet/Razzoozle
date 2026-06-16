@@ -49,7 +49,9 @@
     "autoOn": "activado",
     "autoOff": "desactivado",
     "autoTitle": "Modo automático: avanza automáticamente",
-    "fullscreen": "Pantalla completa"
+    "fullscreen": "Pantalla completa",
+    "mute": "Silenciar",
+    "unmute": "Activar sonido"
   },
   "sending": "enviando…",
   "avatar": {
@@ -145,6 +147,8 @@
     "soloLeaderboard": "Clasificación",
     "enterName": "Tu nombre",
     "next": "Siguiente",
+    "autoNext": "Avance automático",
+    "autoNextTitle": "Avanzar automáticamente a la siguiente pregunta",
     "finish": "Finalizar",
     "rank": "Puesto {{rank}}",
     "replay": "Jugar de nuevo",
@@ -153,5 +157,11 @@
   "reward": {
     "bonusPoints": "Bonus",
     "dismiss": "Cerrar"
+  },
+  "ended": {
+    "byHost": {
+      "title": "El anfitrión finalizó la partida",
+      "hint": "Gracias por jugar."
+    }
   }
 }

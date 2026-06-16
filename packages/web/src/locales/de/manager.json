@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Melde dich an, um dein Spiel zu verwalten."
+  },
   "aria": {
     "passwordLabel": "Passwort"
   },
@@ -34,6 +38,8 @@
     "duplicated": "Quiz dupliziert",
     "edit": "„{{name}}\" bearbeiten",
     "import": "Quiz aus JSON importieren",
+    "export": "„{{name}}“ als JSON exportieren",
+    "exported": "Quiz als JSON exportiert",
     "invalidJson": "Ungültige oder unvollständige JSON-Datei",
     "none": "Noch kein Quiz erstellt",
     "notFound": "Kein Quiz gefunden",
@@ -127,7 +133,8 @@
     "submissions": "Vorschläge",
     "media": "Medien",
     "gamemode": "Modus",
-    "achievements": "Achievements"
+    "achievements": "Achievements",
+    "running": "Laufende Spiele"
   },
   "media": {
     "title": "Medienbibliothek",
@@ -139,7 +146,6 @@
     "uploaded": "Medium hochgeladen",
     "delete": "Löschen",
     "deleteConfirm": "Dieses Medium wirklich löschen?",
-    "deleted": "Medium gelöscht",
     "search": "Medien durchsuchen",
     "searchPlaceholder": "Medien durchsuchen…",
     "noResults": "Keine passenden Medien",
@@ -170,7 +176,6 @@
       "toggle": "{{name}} auswählen"
     },
     "dropHint": "Dateien hier ablegen zum Hochladen",
-    "dimensions": "{{w}} × {{h}} px",
     "details": "Details"
   },
   "catalog": {
@@ -178,7 +183,6 @@
     "intro": "Wiederverwendbare Fragen sammeln und in jedes Quiz einfügen.",
     "empty": "Noch keine Fragen im Katalog.",
     "emptyHeadline": "Katalog ist leer",
-    "add": "Frage hinzufügen",
     "addManual": "Neue Frage anlegen",
     "saveToCatalog": "In Katalog speichern",
     "saved": "Frage im Katalog gespeichert",
@@ -197,7 +201,6 @@
     "noResults": "Keine passenden Fragen",
     "count": "{{count}} Frage",
     "count_other": "{{count}} Fragen",
-    "preview": "Vorschau",
     "source": {
       "manual": "Manuell",
       "submission": "Vorschlag",
@@ -219,7 +222,6 @@
       "description": "Lokale Bildgenerierung über ComfyUI / Z-Image."
     },
     "provider": "Anbieter",
-    "active": "Aktiv",
     "off": "Aus",
     "status": {
       "off": "Aus",
@@ -248,14 +250,10 @@
     "testFailed": "Verbindung fehlgeschlagen",
     "save": "Speichern",
     "saved": "KI-Einstellungen gespeichert",
-    "saveFailed": "Speichern fehlgeschlagen",
     "generate": {
       "title": "Mit KI generieren",
       "topic": "Thema",
       "topicPlaceholder": "z. B. Schweizer Geografie",
-      "type": "Fragetyp",
-      "count": "Anzahl Fragen",
-      "question": "Frage generieren",
       "fromTopic": "Frage aus Thema",
       "distractors": "Antworten vorschlagen",
       "quiz": "Quiz generieren",
@@ -264,7 +262,6 @@
       "generated": "Generiert",
       "applied": "Übernommen",
       "quizCreated": "Quiz erstellt",
-      "failed": "Generierung fehlgeschlagen",
       "notConfigured": "Kein Text-Anbieter konfiguriert. Richte zuerst die KI ein.",
       "openInEditor": "Im Editor öffnen",
       "countValue": "Fragen: {{count}}",
@@ -308,7 +305,6 @@
     "pair": "Koppeln",
     "paired": "Anzeige gekoppelt",
     "step1": "Verbinde den Pi oder Beamer mit dem Internet und öffne razzoozle.joelduss.xyz/display – der grosse Bildschirm zeigt einen Kopplungs-Code.",
-    "step2": "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit», um den Code einzugeben.",
     "step3": "Dein Handy bleibt die Fernbedienung: Starten, Weiter und Auto-Modus steuerst du von hier.",
     "hint": "Die Kopplung ist erst möglich, sobald ein Spiel läuft – der Code braucht das laufende Spiel und dein Manager-Passwort.",
     "step1Result": "Du siehst dann auf dem grossen Bildschirm einen 6-stelligen Code wie «ABC123».",
@@ -392,7 +388,11 @@
       "delete": "Löschen",
       "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
       "emptyHeadline": "Noch keine Vorlagen",
-      "none": "Noch keine Vorlagen gespeichert"
+      "none": "Noch keine Vorlagen gespeichert",
+      "importError": "Ungültige Vorlagen-Datei",
+      "readError": "Datei konnte nicht gelesen werden",
+      "import": "Vorlage importieren",
+      "export": "Vorlage exportieren"
     },
     "revisions": {
       "title": "Versionen",
@@ -422,6 +422,7 @@
     "confirmReject": "Diesen Vorschlag wirklich ablehnen?",
     "submittedBy": "Eingereicht von {{name}}",
     "submittedAt": "am {{date}}",
+    "cooldownSuffix": "s",
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Vorschau wird geladen …"
@@ -488,5 +489,41 @@
     "teamModeHint": "Spieler wählen ein Team (Rot, Blau, Grün, Gelb). Erfordert einen Neustart des Spiels.",
     "teamModeEnabled": "Team-Modus aktiviert",
     "teamModeDisabled": "Team-Modus deaktiviert"
+  },
+  "achievements": {
+    "active": "aktiv"
+  },
+  "console": {
+    "resetAsset": "Zurücksetzen"
+  },
+  "themePreview": {
+    "join": "Beitreten",
+    "playerName": "Spieler {{rank}}"
+  },
+  "runningGames": {
+    "title": "Laufende Spiele",
+    "description": "Aktuell aktive Spiele verwalten.",
+    "refresh": "Aktualisieren",
+    "emptyHeadline": "Keine laufenden Spiele",
+    "emptyHint": "Sobald du ein Spiel startest, erscheint es hier.",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} Spieler",
+    "phase": {
+      "lobby": "Lobby",
+      "running": "Läuft"
+    },
+    "hostOffline": "Host offline",
+    "takeOver": "Übernehmen",
+    "end": "Beenden",
+    "endConfirm": "Soll das Spiel „{{name}}“ wirklich beendet werden?",
+    "ended": "Spiel beendet."
+  },
+  "auto": {
+    "nextIn": "Weiter in {{seconds}}s"
+  },
+  "exit": {
+    "title": "Spiel wirklich beenden?",
+    "description": "Alle Spieler werden benachrichtigt und das Spiel wird beendet.",
+    "confirm": "Beenden"
   }
 }

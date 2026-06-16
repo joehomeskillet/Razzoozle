@@ -7,6 +7,7 @@ import {
   aiSettingsValidator,
   aiTestValidator,
 } from "@razzoozle/common/validators/ai"
+import { getClientId } from "@razzoozle/socket/handlers/imageGenThrottle"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   generateDistractors,
@@ -22,10 +23,13 @@ import {
 } from "@razzoozle/socket/services/config"
 import manager from "@razzoozle/socket/services/manager"
 
-// Per-socket text-generation throttle. Text gen can spend money via a cloud key
-// (handlers are auth-gated, but a logged-in manager could still hammer it), so
-// every generation event shares one cooldown + lifetime cap keyed by socket.id.
-// State is GC'd on disconnect.
+// Text-generation throttle. Text gen can spend money via a cloud key (handlers
+// are auth-gated, but a logged-in manager could still hammer it), so every
+// generation event shares one cooldown + lifetime cap. Keyed by the DURABLE
+// clientId (services/manager.ts#getClientId), NOT socket.id, so a client cannot
+// reset its cooldown / lifetime cap by reconnecting. Entries self-expire via a
+// lazy time-window sweep on every read/write (no disconnect cleanup), so the
+// Map cannot grow unbounded across many distinct clients.
 interface TextGenState {
   last: number
   total: number
@@ -33,10 +37,24 @@ interface TextGenState {
 
 const textGenStore = new Map<string, TextGenState>()
 
+// Lazy GC: drop entries whose last activity is older than this window so the
+// Map cannot leak across many distinct clients. Far longer than the cooldown so
+// the lifetime cap stays durable for an active client.
+const TEXT_GEN_GC_MS = 3_600_000
+
+const sweepTextGenStore = (now: number): void => {
+  for (const [key, state] of textGenStore) {
+    if (now - state.last > TEXT_GEN_GC_MS) {
+      textGenStore.delete(key)
+    }
+  }
+}
+
 // Returns true if the call is allowed (and records it); false if throttled.
-const allowTextGen = (socketId: string): boolean => {
+const allowTextGen = (clientId: string): boolean => {
   const now = Date.now()
-  const state = textGenStore.get(socketId)
+  sweepTextGenStore(now)
+  const state = textGenStore.get(clientId)
 
   if (state) {
     if (now - state.last < AI.TEXT_GEN_COOLDOWN_MS) {
@@ -53,7 +71,7 @@ const allowTextGen = (socketId: string): boolean => {
     return true
   }
 
-  textGenStore.set(socketId, { last: now, total: 1 })
+  textGenStore.set(clientId, { last: now, total: 1 })
 
   return true
 }
@@ -117,7 +135,7 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.AI.TEST_PROVIDER,
     manager.withAuth(socket, (payload: unknown) => {
       void (async () => {
-        if (!allowTextGen(socket.id)) {
+        if (!allowTextGen(getClientId(socket))) {
           socket.emit(EVENTS.AI.TEST_RESULT, {
             ok: false,
             message: "errors:ai.rateLimited",
@@ -158,7 +176,7 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.AI.GENERATE_QUESTION,
     manager.withAuth(socket, (payload: unknown) => {
       void (async () => {
-        if (!allowTextGen(socket.id)) {
+        if (!allowTextGen(getClientId(socket))) {
           socket.emit(EVENTS.AI.ERROR, "errors:ai.rateLimited")
 
           return
@@ -193,7 +211,7 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.AI.GENERATE_DISTRACTORS,
     manager.withAuth(socket, (payload: unknown) => {
       void (async () => {
-        if (!allowTextGen(socket.id)) {
+        if (!allowTextGen(getClientId(socket))) {
           socket.emit(EVENTS.AI.ERROR, "errors:ai.rateLimited")
 
           return
@@ -229,7 +247,7 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.AI.GENERATE_QUIZ,
     manager.withAuth(socket, (payload: unknown) => {
       void (async () => {
-        if (!allowTextGen(socket.id)) {
+        if (!allowTextGen(getClientId(socket))) {
           socket.emit(EVENTS.AI.ERROR, "errors:ai.rateLimited")
 
           return
@@ -260,8 +278,4 @@ export const aiSocketHandlers = ({ socket }: SocketContext) => {
       })()
     }),
   )
-
-  socket.on("disconnect", () => {
-    textGenStore.delete(socket.id)
-  })
 }

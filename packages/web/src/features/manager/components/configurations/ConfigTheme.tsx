@@ -32,13 +32,15 @@ import { applyTheme } from "@razzoozle/web/features/theme/apply"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   BookMarked,
+  Download,
   History,
   Image as ImageIcon,
   RotateCcw,
   Trash2,
+  Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useEffect, useState } from "react"
+import { type ChangeEvent, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -46,6 +48,12 @@ import { useTranslation } from "react-i18next"
 // files client-side before pushing megabytes over the socket. AssetPreview
 // also guards client-side; this stays as a second line of defence.
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+// The kind of theme operation currently awaiting a server response. THEME_ERROR
+// carries no slot/context, so we track the last action explicitly to route the
+// failure (and clear the right pending state) instead of guessing from
+// pendingSlot, which can misattribute a save error to an in-flight upload slot.
+type ThemeAction = "upload" | "save" | "template" | "restore"
 
 const BG_SLOTS: Array<{
   key: BackgroundSlot
@@ -87,6 +95,11 @@ const ConfigTheme = () => {
   const [draft, setDraft] = useState<Theme>({ ...DEFAULT_THEME, ...theme })
   // The single slot whose upload is currently in flight (one at a time).
   const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
+  // The theme operation currently awaiting a server response, used to route a
+  // context-free THEME_ERROR to the right handler / pending-state cleanup.
+  const pendingActionRef = useRef<ThemeAction | null>(null)
+  // Hidden file input for importing a template JSON (client-only round-trip).
+  const templateFileInputRef = useRef<HTMLInputElement>(null)
   // Slot-scoped upload error, surfaced inline next to the slot's controls.
   const [slotErrors, setSlotErrors] = useState<
     Partial<Record<ThemeSlot, string>>
@@ -119,6 +132,7 @@ const ConfigTheme = () => {
   }
 
   useEvent(EVENTS.MANAGER.BACKGROUND_UPLOADED, ({ slot, path }) => {
+    pendingActionRef.current = null
     setPendingSlot((current) => (current === slot ? null : current))
     setSlotError(slot, null)
     setDraft((prev) =>
@@ -130,15 +144,19 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.MANAGER.SET_THEME_SUCCESS, (saved) => {
+    pendingActionRef.current = null
     setTheme(saved)
     applyTheme(saved)
     toast.success(t("manager:theme.toast.saved"))
   })
 
   useEvent(EVENTS.MANAGER.THEME_ERROR, (message) => {
-    // THEME_ERROR carries no slot. If an upload is in flight, attribute the
-    // failure to that slot inline; otherwise it's a save error → toast.
-    if (pendingSlot) {
+    // THEME_ERROR carries no slot/context. Route by the action we kicked off:
+    // an upload failure attaches inline to its slot; everything else toasts.
+    const action = pendingActionRef.current
+    pendingActionRef.current = null
+
+    if (action === "upload" && pendingSlot) {
       setSlotError(pendingSlot, message)
       setPendingSlot(null)
 
@@ -157,11 +175,13 @@ const ConfigTheme = () => {
   useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
 
   useEvent(EVENTS.THEME_TEMPLATE.SAVE_SUCCESS, () => {
+    pendingActionRef.current = null
     toast.success(t("manager:theme.templates.saved"))
     setTemplateName("")
   })
 
   useEvent(EVENTS.THEME_TEMPLATE.ERROR, (message) => {
+    pendingActionRef.current = null
     toast.error(t(message))
   })
 
@@ -173,6 +193,7 @@ const ConfigTheme = () => {
   // remount would re-seed `draft` from the stale store and a Save would clobber
   // the restored theme.
   useEvent(EVENTS.THEME_REVISION.RESTORE_SUCCESS, (restored) => {
+    pendingActionRef.current = null
     const full = { ...DEFAULT_THEME, ...restored }
     setTheme(full)
     preview(full)
@@ -180,6 +201,7 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.THEME_REVISION.ERROR, (message) => {
+    pendingActionRef.current = null
     toast.error(t(message))
   })
 
@@ -212,6 +234,7 @@ const ConfigTheme = () => {
 
     setSlotError(slot, null)
     setPendingSlot(slot)
+    pendingActionRef.current = "upload"
 
     const reader = new FileReader()
     reader.onload = () => {
@@ -223,6 +246,7 @@ const ConfigTheme = () => {
     reader.onerror = () => {
       setSlotError(slot, "errors:theme.uploadFailed")
       setPendingSlot((current) => (current === slot ? null : current))
+      pendingActionRef.current = null
     }
     reader.readAsDataURL(file)
   }
@@ -233,7 +257,10 @@ const ConfigTheme = () => {
       backgrounds: { ...prev.backgrounds, [slot]: null },
     }))
 
-  const handleSave = () => socket.emit(EVENTS.MANAGER.SET_THEME, draft)
+  const handleSave = () => {
+    pendingActionRef.current = "save"
+    socket.emit(EVENTS.MANAGER.SET_THEME, draft)
+  }
   const handleReset = () => preview({ ...DEFAULT_THEME })
 
   const handleSaveTemplate = () => {
@@ -243,12 +270,87 @@ const ConfigTheme = () => {
       return
     }
 
+    pendingActionRef.current = "template"
     socket.emit(EVENTS.THEME_TEMPLATE.SAVE, { name, theme: draft })
   }
 
   // Load a template into the editor so the admin can preview + save it.
   const handleApplyTemplate = (template: ThemeTemplate) =>
     preview({ ...DEFAULT_THEME, ...template.theme })
+
+  // Export a saved template's Theme to a JSON file (client-only, no backend).
+  // Mirrors the Blob/object-URL anchor pattern used by the quiz export.
+  const handleExportTemplate = (template: ThemeTemplate) => {
+    const slug = (s: string) =>
+      s
+        .normalize("NFKD")
+        .replace(/[^\w-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase()
+    const json = JSON.stringify(
+      { name: template.name, theme: template.theme },
+      null,
+      2,
+    )
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${slug(template.name) || "theme-template"}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  // Import a template JSON: parse (guarded), then emit THEME_TEMPLATE.SAVE with
+  // { name, theme }. The server validator rejects malformed payloads.
+  const handleImportTemplate = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = (event) => {
+      let data: unknown = null
+
+      try {
+        data = JSON.parse(event.target?.result as string)
+      } catch {
+        toast.error(
+          t("manager:theme.templates.importError", {
+            defaultValue: "Ungültige Vorlagen-Datei",
+          }),
+        )
+
+        return
+      }
+
+      const parsed = data as { name?: unknown; theme?: unknown }
+      const name =
+        typeof parsed.name === "string" && parsed.name.trim()
+          ? parsed.name.trim()
+          : file.name.replace(/\.json$/i, "")
+
+      pendingActionRef.current = "template"
+      socket.emit(EVENTS.THEME_TEMPLATE.SAVE, { name, theme: parsed.theme })
+    }
+
+    reader.onerror = () => {
+      reader.abort()
+      toast.error(
+        t("manager:theme.templates.readError", {
+          defaultValue: "Datei konnte nicht gelesen werden",
+        }),
+      )
+    }
+
+    reader.readAsText(file)
+    e.target.value = ""
+  }
 
   const handleDeleteTemplate = () => {
     if (!pendingDeleteId) {
@@ -267,6 +369,7 @@ const ConfigTheme = () => {
       return
     }
 
+    pendingActionRef.current = "restore"
     socket.emit(EVENTS.THEME_REVISION.RESTORE_REVISION, { id: pendingRestoreId })
     setPendingRestoreId(null)
   }
@@ -497,6 +600,27 @@ const ConfigTheme = () => {
                   >
                     {t("manager:theme.templates.save")}
                   </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    type="button"
+                    onClick={() => templateFileInputRef.current?.click()}
+                    title={t("manager:theme.templates.import", {
+                      defaultValue: "Vorlage importieren",
+                    })}
+                    aria-label={t("manager:theme.templates.import", {
+                      defaultValue: "Vorlage importieren",
+                    })}
+                  >
+                    <Upload className="size-4" aria-hidden />
+                  </Button>
+                  <input
+                    ref={templateFileInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleImportTemplate}
+                  />
                 </div>
               </SubGroup>
 
@@ -540,16 +664,32 @@ const ConfigTheme = () => {
                         >
                           {t("manager:theme.templates.apply")}
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="icon"
-                          type="button"
-                          aria-label={t("manager:theme.templates.delete")}
-                          title={t("manager:theme.templates.delete")}
-                          onClick={() => setPendingDeleteId(template.id)}
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            type="button"
+                            aria-label={t("manager:theme.templates.export", {
+                              defaultValue: "Vorlage exportieren",
+                            })}
+                            title={t("manager:theme.templates.export", {
+                              defaultValue: "Vorlage exportieren",
+                            })}
+                            onClick={() => handleExportTemplate(template)}
+                          >
+                            <Download className="size-4" aria-hidden />
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="icon"
+                            type="button"
+                            aria-label={t("manager:theme.templates.delete")}
+                            title={t("manager:theme.templates.delete")}
+                            onClick={() => setPendingDeleteId(template.id)}
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

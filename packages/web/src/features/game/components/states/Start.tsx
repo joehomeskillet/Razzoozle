@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import clsx from "clsx"
 import { useState } from "react"
@@ -13,9 +14,11 @@ interface Props {
 const Start = ({ data: { time, subject } }: Props) => {
   const [showTitle, setShowTitle] = useState(true)
   const [cooldown, setCooldown] = useState(time)
+  const muted = useSoundStore((s) => s.muted)
 
   const [sfxBoump] = useSound(SFX.BOUMP_SOUND, {
     volume: 0.2,
+    soundEnabled: !muted,
   })
 
   useEvent(EVENTS.GAME.START_COOLDOWN, () => {

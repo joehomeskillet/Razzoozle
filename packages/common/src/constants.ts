@@ -98,6 +98,19 @@ export const EVENTS = {
     SET_GAME_CONFIG: "manager:setGameConfig",
     // Achievements config patch (manager-auth-gated server-side)
     SET_ACHIEVEMENTS_CONFIG: "manager:setAchievementsConfig",
+    // Host live-control (manager-auth-gated server-side). SKIP_QUESTION ends the
+    // current question early; ADJUST_TIMER extends/shortens it (deltaSeconds, +/-);
+    // REVEAL_ANSWER discloses the solution while the question is live.
+    SKIP_QUESTION: "manager:skipQuestion",
+    ADJUST_TIMER: "manager:adjustTimer",
+    REVEAL_ANSWER: "manager:revealAnswer",
+    // Running-games admin panel (manager-auth-gated server-side). LIST_GAMES
+    // requests the list (no payload); GAMES_DATA returns GameSummary[]; END_GAME
+    // ({ gameId }) kills a game the requester OWNS (ownership verified via
+    // registry.getManagerGame, never getGameById).
+    LIST_GAMES: "manager:listGames",
+    GAMES_DATA: "manager:gamesData",
+    END_GAME: "manager:endGame",
   },
   QUIZZ: {
     GET: "quizz:get",
@@ -338,7 +351,7 @@ export const PROMPT_MAX_LEN = 300
 export const AI = {
   TOPIC_MAX_LEN: 200,
   TEXT_GEN_COOLDOWN_MS: 4_000,
-  TEXT_GEN_MAX_PER_SOCKET: 60,
+  TEXT_GEN_MAX_PER_SOCKET: 20,
   QUIZ_MIN_QUESTIONS: 1,
   QUIZ_MAX_QUESTIONS: 15,
   // Anthropic API version pin (Messages API).

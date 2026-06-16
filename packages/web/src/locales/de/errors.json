@@ -11,6 +11,7 @@
   },
   "game": {
     "expired": "Spiel abgelaufen",
+    "gameEnded": "Das Spiel ist beendet",
     "invalidAnswer": "Ungültige Antwort",
     "kickedByManager": "Du wurdest vom Manager entfernt",
     "managerAlreadyConnected": "Manager bereits verbunden",

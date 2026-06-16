@@ -50,7 +50,9 @@
     "autoOn": "on",
     "autoOff": "off",
     "autoTitle": "Auto mode: advances automatically",
-    "fullscreen": "Fullscreen"
+    "fullscreen": "Fullscreen",
+    "mute": "Mute",
+    "unmute": "Unmute"
   },
   "avatar": {
     "title": "Your avatar",
@@ -145,6 +147,8 @@
     "soloLeaderboard": "Leaderboard",
     "enterName": "Your name",
     "next": "Next",
+    "autoNext": "Auto-advance",
+    "autoNextTitle": "Automatically advance to the next question",
     "finish": "Finish",
     "rank": "Rank {{rank}}",
     "replay": "Play again",
@@ -153,5 +157,11 @@
   "reward": {
     "bonusPoints": "Bonus",
     "dismiss": "Dismiss"
+  },
+  "ended": {
+    "byHost": {
+      "title": "The host ended the game",
+      "hint": "Thanks for playing."
+    }
   }
 }

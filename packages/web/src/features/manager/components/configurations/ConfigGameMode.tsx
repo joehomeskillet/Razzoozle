@@ -2,9 +2,16 @@ import { EVENTS } from "@razzoozle/common/constants"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+const TEAM_COLOR_MAP: Record<string, string> = {
+  red: "bg-red-500",
+  blue: "bg-blue-500",
+  green: "bg-green-500",
+  yellow: "bg-yellow-400",
+}
 
 /**
  * Manager toggle for team mode. Emits `manager:setGameConfig { teamMode }`
@@ -19,6 +26,7 @@ const ConfigGameMode = () => {
   const config = useConfig()
   const [teamMode, setTeamMode] = useState(config.teamMode ?? false)
   const [saving, setSaving] = useState(false)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
   // the saved value back after a save (and on reconnect), so re-sync local state
@@ -26,6 +34,15 @@ const ConfigGameMode = () => {
   useEffect(() => {
     setTeamMode(config.teamMode ?? false)
   }, [config.teamMode])
+
+  // Clear any pending optimistic-toast timeout on unmount.
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleToggle = useCallback(
     (next: boolean) => {
@@ -37,7 +54,11 @@ const ConfigGameMode = () => {
 
       // Visual confirmation: the server may echo a success event in future; for
       // now a short optimistic toast keeps the UX consistent with SET_THEME.
-      setTimeout(() => {
+      // ponytail: server SET_GAME_CONFIG has no ack; toast is optimistic
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+      saveTimeoutRef.current = setTimeout(() => {
         setSaving(false)
         toast.success(
           next
@@ -51,6 +72,16 @@ const ConfigGameMode = () => {
       }, 300)
     },
     [socket, t],
+  )
+
+  const teamLabelMap = useMemo<Record<string, string>>(
+    () => ({
+      red: t("game:teams.red", { defaultValue: "Rot" }),
+      blue: t("game:teams.blue", { defaultValue: "Blau" }),
+      green: t("game:teams.green", { defaultValue: "Grün" }),
+      yellow: t("game:teams.yellow", { defaultValue: "Gelb" }),
+    }),
+    [t],
   )
 
   return (
@@ -76,28 +107,16 @@ const ConfigGameMode = () => {
         {teamMode && (
           <div className="flex flex-wrap gap-2">
             {["red", "blue", "green", "yellow"].map((team) => {
-              const colorMap: Record<string, string> = {
-                red: "bg-red-500",
-                blue: "bg-blue-500",
-                green: "bg-green-500",
-                yellow: "bg-yellow-400",
-              }
-              const labelMap: Record<string, string> = {
-                red: t("game:teams.red", { defaultValue: "Rot" }),
-                blue: t("game:teams.blue", { defaultValue: "Blau" }),
-                green: t("game:teams.green", { defaultValue: "Grün" }),
-                yellow: t("game:teams.yellow", { defaultValue: "Gelb" }),
-              }
               return (
                 <span
                   key={team}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700"
                 >
                   <span
-                    className={`size-3 rounded-full ${colorMap[team] ?? ""}`}
+                    className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
                     aria-hidden
                   />
-                  {labelMap[team]}
+                  {teamLabelMap[team]}
                 </span>
               )
             })}

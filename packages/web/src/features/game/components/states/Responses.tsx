@@ -1,6 +1,7 @@
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
   answerColor,
   answerLabel,
@@ -39,14 +40,17 @@ const Responses = ({
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
 
   const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
     volume: 0.2,
+    soundEnabled: !muted,
   })
 
   const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
     volume: 0.2,
+    soundEnabled: !muted,
     onplay: () => {
       setIsMusicPlaying(true)
     },

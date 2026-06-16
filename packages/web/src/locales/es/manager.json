@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Inicia sesión para gestionar tu partida."
+  },
   "aria": {
     "passwordLabel": "Contraseña"
   },
@@ -34,6 +38,8 @@
     "duplicated": "Cuestionario duplicado",
     "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
+    "export": "Exportar «{{name}}» como JSON",
+    "exported": "Cuestionario exportado como JSON",
     "invalidJson": "Archivo JSON inválido o incompleto",
     "none": "Aún no se ha creado ningún cuestionario",
     "notFound": "No se encontró ningún cuestionario",
@@ -138,7 +144,6 @@
     "pair": "Vincular",
     "paired": "Pantalla vinculada",
     "step1": "Conecta la Pi o el proyector a internet y abre razzoozle.joelduss.xyz/display — la pantalla grande muestra un código de vinculación.",
-    "step2": "Inicia una partida y toca «Satélite» en la cabecera del juego para introducir el código.",
     "step3": "Tu teléfono sigue siendo el mando: iniciar, siguiente y modo automático se controlan desde aquí.",
     "hint": "La vinculación solo funciona con una partida en curso — el código necesita la partida activa y tu contraseña de manager.",
     "step1Result": "Entonces la pantalla grande muestra un código de 6 dígitos como «ABC123».",
@@ -222,7 +227,11 @@
       "delete": "Eliminar",
       "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
       "emptyHeadline": "Aún no hay plantillas",
-      "none": "Aún no hay plantillas guardadas"
+      "none": "Aún no hay plantillas guardadas",
+      "importError": "Archivo de plantilla no válido",
+      "readError": "No se pudo leer el archivo",
+      "import": "Importar plantilla",
+      "export": "Exportar plantilla"
     },
     "revisions": {
       "title": "Versiones",
@@ -252,6 +261,7 @@
     "confirmReject": "¿Seguro que quieres rechazar esta sugerencia?",
     "submittedBy": "Enviada por {{name}}",
     "submittedAt": "el {{date}}",
+    "cooldownSuffix": "s",
     "previewLabels": {
       "cooldown": "Pausa",
       "loading": "Cargando vista previa …"
@@ -293,7 +303,6 @@
     "uploaded": "Medio subido",
     "delete": "Eliminar",
     "deleteConfirm": "¿Seguro que quieres eliminar este medio?",
-    "deleted": "Medio eliminado",
     "search": "Buscar medios",
     "searchPlaceholder": "Buscar medios…",
     "noResults": "No hay medios que coincidan",
@@ -324,7 +333,6 @@
       "toggle": "Seleccionar {{name}}"
     },
     "dropHint": "Suelta los archivos aquí para subirlos",
-    "dimensions": "{{w}} × {{h}} px",
     "details": "Detalles"
   },
   "catalog": {
@@ -332,7 +340,6 @@
     "intro": "Reúne preguntas reutilizables e insértalas en cualquier cuestionario.",
     "empty": "Aún no hay preguntas en el catálogo.",
     "emptyHeadline": "El catálogo está vacío",
-    "add": "Añadir pregunta",
     "addManual": "Crear pregunta nueva",
     "saveToCatalog": "Guardar en el catálogo",
     "saved": "Pregunta guardada en el catálogo",
@@ -351,7 +358,6 @@
     "noResults": "No hay preguntas que coincidan",
     "count": "{{count}} pregunta",
     "count_other": "{{count}} preguntas",
-    "preview": "Vista previa",
     "source": {
       "manual": "Manual",
       "submission": "Sugerencia",
@@ -373,7 +379,6 @@
       "description": "Generación local de imágenes mediante ComfyUI / Z-Image."
     },
     "provider": "Proveedor",
-    "active": "Activo",
     "off": "Desactivado",
     "status": {
       "off": "Desactivado",
@@ -402,14 +407,10 @@
     "testFailed": "Conexión fallida",
     "save": "Guardar",
     "saved": "Ajustes de IA guardados",
-    "saveFailed": "Error al guardar",
     "generate": {
       "title": "Generar con IA",
       "topic": "Tema",
       "topicPlaceholder": "p. ej. geografía de Suiza",
-      "type": "Tipo de pregunta",
-      "count": "Número de preguntas",
-      "question": "Generar pregunta",
       "fromTopic": "Pregunta a partir del tema",
       "distractors": "Sugerir respuestas",
       "quiz": "Generar cuestionario",
@@ -418,7 +419,6 @@
       "generated": "Generado",
       "applied": "Aplicado",
       "quizCreated": "Cuestionario creado",
-      "failed": "Error en la generación",
       "notConfigured": "No hay proveedor de texto configurado. Configura primero la IA.",
       "openInEditor": "Abrir en el editor",
       "countValue": "Preguntas: {{count}}",
@@ -488,5 +488,23 @@
       "minRanksUp": "Puestos subidos en la clasificación",
       "minPointsAhead": "Ventaja de puntos del superado"
     }
+  },
+  "achievements": {
+    "active": "activo"
+  },
+  "console": {
+    "resetAsset": "Restablecer"
+  },
+  "themePreview": {
+    "join": "Unirse",
+    "playerName": "Jugador {{rank}}"
+  },
+  "auto": {
+    "nextIn": "Siguiente en {{seconds}}s"
+  },
+  "exit": {
+    "title": "¿Seguro que quieres finalizar la partida?",
+    "description": "Se notificará a todos los jugadores y la partida finalizará.",
+    "confirm": "Finalizar"
   }
 }

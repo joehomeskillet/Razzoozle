@@ -106,7 +106,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           ) : (
             <img
               src={item.url}
-              alt={item.filename}
+              alt=""
               className="mt-4 aspect-video w-full rounded-lg bg-gray-50 object-contain"
             />
           )}
@@ -167,9 +167,22 @@ const ConfigMedia = () => {
   // read it, emit, and pull again on the next ack. A ref holds the live queue so
   // the event callbacks always see the current tail without re-subscribing.
   const queueRef = useRef<File[]>([])
+  // Mirror of `uploading` so the enqueue logic reads the live value without a
+  // stale closure (state updates are async; the ref is set synchronously).
+  const uploadingRef = useRef(false)
   // Drag-enter/leave fire per child element; a counter tracks real boundary
   // crossings so the highlight doesn't flicker over nested cards.
   const dragDepth = useRef(0)
+  // Holds the latest pumpQueue so sendFile's async FileReader callbacks can
+  // advance the queue without a circular useCallback dependency.
+  const pumpQueueRef = useRef<() => boolean>(() => false)
+
+  // Single source of truth for flipping the uploading flag so the ref and the
+  // state never drift apart.
+  const setUploadingFlag = useCallback((value: boolean) => {
+    uploadingRef.current = value
+    setUploading(value)
+  }, [])
 
   const requestMedia = useCallback(() => {
     socket.emit(EVENTS.MEDIA.LIST)
@@ -190,8 +203,10 @@ const ConfigMedia = () => {
         })
       }
       reader.onerror = () => {
-        setUploading(false)
         toast.error(t("manager:media.uploadFailed"))
+        // Surface the error but keep draining: advance to the next queued file
+        // (or settle to idle) just like onload does on success.
+        pumpQueueRef.current()
       }
       reader.readAsDataURL(file)
     },
@@ -214,16 +229,19 @@ const ConfigMedia = () => {
         continue
       }
 
-      setUploading(true)
+      setUploadingFlag(true)
       sendFile(next)
 
       return true
     }
 
-    setUploading(false)
+    setUploadingFlag(false)
 
     return false
-  }, [sendFile, t])
+  }, [sendFile, setUploadingFlag, t])
+
+  // Keep the ref pointed at the latest pumpQueue identity.
+  pumpQueueRef.current = pumpQueue
 
   // Validate + enqueue a batch (file picker or drop), then kick the pump if idle.
   const enqueueFiles = useCallback(
@@ -242,14 +260,16 @@ const ConfigMedia = () => {
         return
       }
 
-      const wasIdle = queueRef.current.length === 0 && !uploading
+      // Read the live uploading value via the ref so a batch enqueued right
+      // after a previous one can't see a stale `false` and double-pump.
+      const wasIdle = queueRef.current.length === 0 && !uploadingRef.current
       queueRef.current.push(...accepted)
 
       if (wasIdle) {
         pumpQueue()
       }
     },
-    [pumpQueue, t, uploading],
+    [pumpQueue, t],
   )
 
   useEvent(
@@ -273,7 +293,7 @@ const ConfigMedia = () => {
     EVENTS.MEDIA.ERROR,
     useCallback(
       (message: string) => {
-        toast.error(t(message))
+        toast.error(t(message, { defaultValue: message }))
         // Skip the failed item and keep draining the rest of the batch.
         pumpQueue()
       },
@@ -354,6 +374,9 @@ const ConfigMedia = () => {
     selected.forEach((id) => {
       socket.emit(EVENTS.MEDIA.DELETE, { id })
     })
+    // No per-id ack, so refresh the list once after firing the batch; MEDIA.DATA
+    // resyncs the grid and MEDIA.ERROR (listened above) surfaces any failures.
+    requestMedia()
     clearSelection()
     setBulkDeleteOpen(false)
   }
@@ -408,7 +431,16 @@ const ConfigMedia = () => {
         if (from !== -1 && to !== -1) {
           const lo = Math.min(from, to)
           const hi = Math.max(from, to)
-          setSelected(new Set(order.slice(lo, hi + 1)))
+          // Union the range with the existing selection so shift-click extends
+          // rather than replaces what the user already picked.
+          setSelected((prev) => {
+            const next = new Set(prev)
+            for (const rangeId of order.slice(lo, hi + 1)) {
+              next.add(rangeId)
+            }
+
+            return next
+          })
 
           return
         }

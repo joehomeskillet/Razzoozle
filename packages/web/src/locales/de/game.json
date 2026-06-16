@@ -50,7 +50,9 @@
     "autoOn": "an",
     "autoOff": "aus",
     "autoTitle": "Auto-Modus: läuft automatisch weiter",
-    "fullscreen": "Vollbild"
+    "fullscreen": "Vollbild",
+    "mute": "Ton aus",
+    "unmute": "Ton an"
   },
   "avatar": {
     "title": "Dein Avatar",
@@ -145,6 +147,8 @@
     "soloLeaderboard": "Bestenliste",
     "enterName": "Dein Name",
     "next": "Weiter",
+    "autoNext": "Auto-Weiter",
+    "autoNextTitle": "Automatisch zur nächsten Frage",
     "finish": "Beenden",
     "rank": "Platz {{rank}}",
     "replay": "Nochmal spielen",
@@ -153,5 +157,11 @@
   "reward": {
     "bonusPoints": "Bonus",
     "dismiss": "Schließen"
+  },
+  "ended": {
+    "byHost": {
+      "title": "Der Host hat das Spiel beendet",
+      "hint": "Danke fürs Mitspielen."
+    }
   }
 }

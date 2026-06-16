@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import type { QuizzWithId } from "@razzoozle/common/types/game"
 import { quizzValidator } from "@razzoozle/common/validators/quizz"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
@@ -17,6 +18,7 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  Download,
   ListChecks,
   SearchX,
   SquarePen,
@@ -29,6 +31,30 @@ import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
+// Serialize a quiz to a pretty-printed JSON file and trigger a client-side
+// download via a transient object-URL anchor. The `id` field is stripped so the
+// exported shape matches quizzValidator, letting export -> import round-trip
+// cleanly.
+const downloadQuizzJson = (quizz: QuizzWithId) => {
+  const slug = (s: string) =>
+    s
+      .normalize("NFKD")
+      .replace(/[^\w-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase()
+  const { id: _id, ...exportable } = quizz
+  const json = JSON.stringify(exportable, null, 2)
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `${slug(quizz.subject) || "quiz"}.json`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 // Sort options offered above the quiz list. "created date" is intentionally
 // omitted: QuizzMeta carries no timestamp, so there is no field to sort on.
 type SortKey = "name-asc" | "count-desc" | "count-asc"
@@ -38,6 +64,11 @@ const ConfigManageQuizz = () => {
   const { socket } = useSocket()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Holds the ids of quizzes awaiting a QUIZZ.DATA response for export. The
+  // QUIZZ.DATA event is shared (also used by the editor), so we only act on the
+  // response whose id is in this pending set. A Set (not a single ref) keeps
+  // concurrent exports from overwriting each other's pending id.
+  const pendingExportIds = useRef<Set<string>>(new Set())
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [showArchived, setShowArchived] = useState(false)
@@ -96,6 +127,24 @@ const ConfigManageQuizz = () => {
     toast.error(t(message))
   })
 
+  // Export: when the QUIZZ.DATA response for the quiz we requested arrives,
+  // serialize it to JSON and download. Reuses the EXISTING auth-gated QUIZZ.GET
+  // event (no new socket event).
+  useEvent(EVENTS.QUIZZ.DATA, (data: QuizzWithId) => {
+    if (!pendingExportIds.current.has(data.id)) {
+      return
+    }
+
+    pendingExportIds.current.delete(data.id)
+    downloadQuizzJson(data)
+    toast.success(t("manager:quizz.exported"))
+  })
+
+  const handleExport = (id: string) => {
+    pendingExportIds.current.add(id)
+    socket.emit(EVENTS.QUIZZ.GET, id)
+  }
+
   const clearSelection = () => setSelected(new Set())
 
   // Drop ids that are no longer SELECTABLE — only active (non-archived) rows
@@ -135,6 +184,7 @@ const ConfigManageQuizz = () => {
     selected.forEach((id) => {
       socket.emit(EVENTS.QUIZZ.DELETE, id)
     })
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.deleted"))
     clearSelection()
     setBulkDeleteOpen(false)
@@ -149,6 +199,7 @@ const ConfigManageQuizz = () => {
     }
 
     socket.emit(EVENTS.QUIZZ.DELETE, pendingDelete.id)
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.deleted"))
     setPendingDelete(null)
   }
@@ -159,12 +210,14 @@ const ConfigManageQuizz = () => {
     }
 
     socket.emit(EVENTS.QUIZZ.DUPLICATE, pendingDuplicate.id)
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.duplicated"))
     setPendingDuplicate(null)
   }
 
   const handleArchived = (id: string, archived: boolean) => {
     socket.emit(EVENTS.QUIZZ.SET_ARCHIVED, { id, archived })
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(
       t(
         archived
@@ -203,6 +256,15 @@ const ConfigManageQuizz = () => {
       }
 
       socket.emit(EVENTS.QUIZZ.SAVE, result.data)
+    }
+
+    reader.onerror = () => {
+      reader.abort()
+      toast.error(
+        t("manager:quizz.readError", {
+          defaultValue: "Datei konnte nicht gelesen werden",
+        }),
+      )
     }
 
     reader.readAsText(file)
@@ -419,6 +481,12 @@ const ConfigManageQuizz = () => {
                         setPendingDuplicate({ id: q.id, subject: q.subject }),
                     },
                     {
+                      key: "export",
+                      icon: Download,
+                      label: t("manager:quizz.export", { name: q.subject }),
+                      onClick: () => handleExport(q.id),
+                    },
+                    {
                       key: "archive",
                       icon: Archive,
                       label: t("manager:quizz.archive"),
@@ -509,6 +577,12 @@ const ConfigManageQuizz = () => {
                               params: { quizzId: q.id },
                             })
                           },
+                        },
+                        {
+                          key: "export",
+                          icon: Download,
+                          label: t("manager:quizz.export", { name: q.subject }),
+                          onClick: () => handleExport(q.id),
                         },
                         {
                           key: "delete",

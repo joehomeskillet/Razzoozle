@@ -1,5 +1,10 @@
 import { AVATARS_GENERIC, BOT, EVENTS } from "@razzoozle/common/constants"
-import type { Player, QuestionResult, Quizz } from "@razzoozle/common/types/game"
+import type {
+  GameSummary,
+  Player,
+  QuestionResult,
+  Quizz,
+} from "@razzoozle/common/types/game"
 import type {
   MetricKind,
   MetricsHealthSnapshot,
@@ -72,6 +77,9 @@ export interface GameSnapshot {
 class Game {
   readonly gameId: string
   readonly inviteCode: string
+  // Wall-clock creation time (ms). Set once at construction (new game OR
+  // crash-restore) and surfaced by toSummary() for the host's running-games list.
+  readonly createdAt: number = Date.now()
 
   private readonly io: Server
   private readonly _manager: {
@@ -156,7 +164,9 @@ class Game {
     this.io = io
     this.quizz = quizz
     this.gameId = restore ? restore.gameId : uuid()
-    this.inviteCode = restore ? restore.inviteCode : createInviteCode()
+    this.inviteCode = restore
+      ? restore.inviteCode
+      : registry.generateUniqueInviteCode(createInviteCode)
     this._manager = {
       // No live socket on restore: detached until a real reconnect binds one.
       id: socket ? socket.id : "",
@@ -209,6 +219,11 @@ class Game {
       io,
       this.gameId,
       () => this._manager.id,
+      // A finished game flips its broadcast/per-target status to FINISHED and
+      // never opens another question, so managerStatus stays FINISHED until the
+      // game is disposed. PlayerManager uses this to tell a returning player the
+      // game has ENDED instead of mis-reporting playerAlreadyConnected (item 6).
+      () => this.managerStatus?.name === STATUS.FINISHED,
     )
 
     // Sim mode: bots submit via the EXISTING selectAnswer path (real dedup /
@@ -840,6 +855,19 @@ class Game {
     this.round.abortQuestion(socket)
   }
 
+  // ── Host live controls (#12) — passthrough to the round manager ───────────
+  skipQuestion(socket: Socket) {
+    this.round.skipQuestion(socket)
+  }
+
+  revealAnswer(socket: Socket) {
+    this.round.revealAnswer(socket)
+  }
+
+  adjustTimer(socket: Socket, deltaSeconds: number) {
+    this.round.adjustTimer(socket, deltaSeconds)
+  }
+
   showLeaderboard() {
     this.round.showLeaderboard()
   }
@@ -854,6 +882,23 @@ class Game {
 
   resume(): void {
     this.round.resume()
+  }
+
+  // ── Running-games summary (MANAGER.LIST_GAMES) ───────────────────────────
+
+  // Compact, read-only metadata for the host's running-games list. Carries NO
+  // quiz content / solutions (anti-cheat) — only what the host needs to identify
+  // and optionally end a game it owns.
+  toSummary(): GameSummary {
+    return {
+      gameId: this.gameId,
+      inviteCode: this.inviteCode,
+      subject: this.quizz.subject,
+      playerCount: this.playerManager.count(),
+      started: this.started,
+      managerConnected: this._manager.connected,
+      createdAt: this.createdAt,
+    }
   }
 
   // ── Crash-recovery snapshot ──────────────────────────────────────────────

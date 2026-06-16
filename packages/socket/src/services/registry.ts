@@ -50,6 +50,10 @@ class Registry {
   // startSnapshotTask(), cleared in cleanup() so no timer leaks across restarts.
   private snapshotInterval: ReturnType<typeof setInterval> | null = null
   private readonly EMPTY_GAME_TIMEOUT_MINUTES = 5
+  // A host-less LOBBY (not-yet-started game) is reclaimed faster than an
+  // in-progress game: nobody can rejoin a lobby whose manager vanished before
+  // the round even began, so there is no reconnect grace to preserve.
+  private readonly EMPTY_LOBBY_TIMEOUT_MINUTES = 1
   private readonly PAIRING_TIMEOUT_MINUTES = DISPLAY_PAIRING_TTL_MINUTES
   private readonly CLEANUP_INTERVAL_MS = 60_000
   private readonly SNAPSHOT_VERSION = 1
@@ -75,6 +79,22 @@ class Registry {
 
   getGameByInviteCode(inviteCode: string): Game | undefined {
     return this.games.find((g) => g.inviteCode === inviteCode)
+  }
+
+  // Generate an invite code guaranteed unique among currently ACTIVE games. The
+  // caller passes the pure code generator (createInviteCode) so registry adds NO
+  // runtime import of utils/game — that would re-introduce the registry<->game
+  // import cycle the file header warns about. Retries up to maxAttempts times;
+  // if every candidate collided (astronomically unlikely for a 6-digit space) it
+  // accepts the last one rather than loop forever, so game creation never hangs.
+  generateUniqueInviteCode(generate: () => string, maxAttempts = 10): string {
+    let code = generate()
+
+    for (let i = 1; i < maxAttempts && this.getGameByInviteCode(code); i += 1) {
+      code = generate()
+    }
+
+    return code
   }
 
   getPlayerGame(gameId: string, clientId: string): Game | undefined {
@@ -289,11 +309,16 @@ class Registry {
 
   private cleanupEmptyGames(): void {
     const now = dayjs()
-    const stillEmpty = this.emptyGames.filter(
-      (g) =>
-        now.diff(dayjs.unix(g.since), "minute") <
-        this.EMPTY_GAME_TIMEOUT_MINUTES,
-    )
+    const stillEmpty = this.emptyGames.filter((g) => {
+      // A not-yet-started game is a host-less lobby: reclaim it on the short
+      // grace. A started/in-progress game keeps the full grace so a manager
+      // reconnect (handled by the round/reconnect flow) is not cut off.
+      const graceMinutes = g.game.started
+        ? this.EMPTY_GAME_TIMEOUT_MINUTES
+        : this.EMPTY_LOBBY_TIMEOUT_MINUTES
+
+      return now.diff(dayjs.unix(g.since), "minute") < graceMinutes
+    })
 
     if (stillEmpty.length === this.emptyGames.length) {
       return

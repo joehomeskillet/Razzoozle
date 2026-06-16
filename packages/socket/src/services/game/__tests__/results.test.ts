@@ -670,3 +670,98 @@ describe("leaderboard ordering / snapshot after results", () => {
     expect(resp?.answers).toEqual(["A", "B", "C", "D"])
   })
 })
+
+// ── W1-D FIX 1: reveal correct answer in RESULT, never in the live payloads ───
+
+describe("correct answer is revealed ONLY in the post-question RESULT payload", () => {
+  it("includes the correct answer text in the per-player SHOW_RESULT", () => {
+    const players = [makePlayer("right"), makePlayer("wrong")]
+    const ctx = buildRound({
+      quizz: quizzOf({ solutions: [1] }), // answers ["A","B","C","D"], correct = "B"
+      players,
+      lowLatency: DISABLED_LL,
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+
+    answer(ctx, "right", 1) // Correct
+    answer(ctx, "wrong", 0) // Wrong
+
+    callShowResults(ctx)
+
+    // The wrong-answer player's RESULT carries the correct answer text so the
+    // "Too bad" screen can show it (safe — the question is already over).
+    const w = resultFor(ctx, "wrong") as
+      | (StatusDataMap["SHOW_RESULT"] & { correctAnswer?: string })
+      | undefined
+    expect(w?.correct).toBe(false)
+    expect(w?.correctAnswer).toBe("B")
+
+    // It is present on every player's RESULT (not gated on correctness).
+    const r = resultFor(ctx, "right") as
+      | (StatusDataMap["SHOW_RESULT"] & { correctAnswer?: string })
+      | undefined
+    expect(r?.correctAnswer).toBe("B")
+  })
+
+  it("omits the correct answer for a poll (no correct answer exists)", () => {
+    const players = [makePlayer("voter")]
+    const ctx = buildRound({
+      quizz: quizzOf({
+        type: "poll",
+        answers: ["X", "Y"],
+        solutions: undefined,
+      }),
+      players,
+      lowLatency: DISABLED_LL,
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+    answer(ctx, "voter", 0)
+    callShowResults(ctx)
+
+    const r = resultFor(ctx, "voter") as
+      | (StatusDataMap["SHOW_RESULT"] & { correctAnswer?: string })
+      | undefined
+    expect(r?.poll).toBe(true)
+    expect(r?.correctAnswer).toBeUndefined()
+  })
+
+  it("ANTI-CHEAT: the live SELECT_ANSWER / SHOW_QUESTION payloads carry NO solution", async () => {
+    // Drive the REAL newQuestion() broadcasts (fake timers flush its sleeps) so
+    // we inspect what players actually receive DURING the question. The correct
+    // answer must never appear there — only in the post-question RESULT above.
+    const players = [makePlayer("p")]
+    const ctx = buildRound({
+      quizz: quizzOf({ solutions: [1] }), // correct text = "B"
+      players,
+      lowLatency: DISABLED_LL,
+    })
+
+    const promise = ctx.round.start(makeSocket(MANAGER_ID, MANAGER_ID).socket)
+    await vi.runAllTimersAsync()
+    await promise
+
+    const liveStatuses = [STATUS.SELECT_ANSWER, STATUS.SHOW_QUESTION] as const
+    for (const status of liveStatuses) {
+      const bc = ctx.broadcasts.find((b) => b.status === status)
+      expect(bc).toBeDefined()
+      const payload = bc?.data as Record<string, unknown>
+      // No correct-answer field of any kind may reach players (anti-cheat).
+      expect(payload).not.toHaveProperty("solutions")
+      expect(payload).not.toHaveProperty("correct")
+      expect(payload).not.toHaveProperty("correctAnswer")
+      // String-search the serialized payload — robust against renames.
+      const serialized = JSON.stringify(bc)
+      expect(serialized).not.toContain("solutions")
+      expect(serialized).not.toContain("correctAnswer")
+    }
+  })
+})
+

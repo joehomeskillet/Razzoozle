@@ -52,9 +52,15 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   const [showNames, setShowNames] = useState(false)
   const { t } = useTranslation()
 
-  const questionResult = result.questions[questionIndex]
   const total = result.questions.length
   const totalPlayers = result.players.length
+
+  // A result with zero questions (or an out-of-range index) has no question to
+  // show; fall back to a safe empty question so the modal renders an empty
+  // table instead of crashing on `questionResult.playerAnswers`.
+  const questionResult =
+    result.questions[questionIndex] ??
+    ({ playerAnswers: [] } as unknown as QuestionResult)
 
   const answeredCount = questionResult.playerAnswers.filter(
     // A record counts as answered if it carries any answer payload: the scalar
@@ -146,8 +152,20 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
     ),
   )
 
-  const getPlayerPoints = (name: string) =>
-    result.players.find((p) => p.username === name)?.points ?? 0
+  // O(1) per-player points lookup. Built once per result instead of an O(n)
+  // Array.find per call, so the table (one lookup per row) stays O(players)
+  // rather than O(players^2) per render.
+  const pointsByName = useMemo(() => {
+    const map = new Map<string, number>()
+
+    for (const player of result.players) {
+      map.set(player.username, player.points)
+    }
+
+    return map
+  }, [result])
+
+  const getPlayerPoints = (name: string) => pointsByName.get(name) ?? 0
 
   // Stable real-name → 1-based index, derived once from the canonical roster so
   // every view masks the same player to the same "Spieler N". Any name that

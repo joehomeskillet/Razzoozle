@@ -39,7 +39,17 @@ const Field = ({
   className,
 }: FieldProps) => {
   const generatedId = useId()
-  const controlId = htmlFor ?? generatedId
+
+  // If the single child control already carries its own id, the label must
+  // point at THAT id (we don't override the child's id below) — otherwise
+  // htmlFor and the rendered control id diverge and the label is dead.
+  const onlyChild = Children.count(children) === 1 ? Children.only(children) : null
+  const childId =
+    onlyChild && isValidElement(onlyChild)
+      ? (onlyChild.props as { id?: string }).id
+      : undefined
+
+  const controlId = childId ?? htmlFor ?? generatedId
   const hintId = `${controlId}-hint`
   const errorId = `${controlId}-error`
 
@@ -48,7 +58,6 @@ const Field = ({
     undefined
 
   // Wire the single child control without forcing the caller to repeat ids.
-  const onlyChild = Children.count(children) === 1 ? Children.only(children) : null
   const control =
     onlyChild && isValidElement(onlyChild)
       ? cloneElement(onlyChild as ReactElement<Record<string, unknown>>, {

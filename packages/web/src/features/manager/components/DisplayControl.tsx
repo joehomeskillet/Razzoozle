@@ -27,14 +27,22 @@ const DisplayControl = () => {
   const [paired, setPaired] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Tracks the previous `open` value so focus is only restored to the trigger
+  // on a genuine close (not on the initial mount, which would steal focus).
+  const wasOpenRef = useRef(false)
 
   useOnClickOutside({ ref: panelRef, handler: () => setOpen(false) })
 
-  // Move focus into the code field when the popover opens.
+  // Focus the code field when the popover opens; restore focus to the trigger
+  // button when it closes (minimal focus trap entry + restoration). The trigger
+  // is the first button in the wrapper (Button doesn't forward a ref).
   useEffect(() => {
     if (open) {
       inputRef.current?.focus()
+    } else if (wasOpenRef.current) {
+      panelRef.current?.querySelector("button")?.focus()
     }
+    wasOpenRef.current = open
   }, [open])
 
   const pair = () => {
@@ -59,7 +67,16 @@ const DisplayControl = () => {
   })
 
   useEvent(EVENTS.DISPLAY.PAIR_ERROR, (message) => {
-    toast.error(t(message))
+    toast.error(t(message, { defaultValue: message }))
+  })
+
+  // The server re-pushes the live display list on every pair / ping / kiosk
+  // disconnect. When no displays remain, the beamer is gone, so drop the paired
+  // status (it was previously latched true forever after the first PAIR_SUCCESS).
+  useEvent(EVENTS.DISPLAY.STATUS, ({ displays }) => {
+    if (Array.isArray(displays) && displays.length === 0) {
+      setPaired(false)
+    }
   })
 
   return (

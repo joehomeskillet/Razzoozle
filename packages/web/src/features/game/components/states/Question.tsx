@@ -3,6 +3,7 @@ import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -15,7 +16,11 @@ interface Props {
 const Question = ({
   data: { question, answers, media, cooldown, submittedBy },
 }: Props) => {
-  const [sfxShow] = useSound(SFX.SHOW_SOUND, { volume: 0.5 })
+  const muted = useSoundStore((s) => s.muted)
+  const [sfxShow] = useSound(SFX.SHOW_SOUND, {
+    volume: 0.5,
+    soundEnabled: !muted,
+  })
   const { t } = useTranslation()
 
   // UI-only local countdown to drive the circular timer (this presenter view
@@ -35,6 +40,17 @@ const Question = ({
   useEffect(() => {
     sfxShow()
   }, [sfxShow])
+
+  // Preload the CURRENT question image so it is already cached when the answer
+  // screen (Answers.tsx) renders the same media. No next-question look-ahead —
+  // the SHOW_QUESTION payload carries no hint about the upcoming question.
+  const imageUrl =
+    media?.type === MEDIA_TYPES.IMAGE ? media.url : undefined
+  useEffect(() => {
+    if (!imageUrl) return
+    const img = new Image()
+    img.src = imageUrl
+  }, [imageUrl])
 
   return (
     <section className="relative mx-auto flex h-full w-full max-w-7xl flex-1 flex-col items-center px-4 lg:max-w-[85vw]">

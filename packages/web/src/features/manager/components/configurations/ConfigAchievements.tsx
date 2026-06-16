@@ -41,6 +41,16 @@ interface RowState {
 
 type LocalState = Record<AchievementId, RowState>
 
+// Fallback used when a registry id has no entry in local state yet (e.g. a
+// freshly added achievement that the persisted config hasn't caught up to).
+const EMPTY_ROW: RowState = {
+  enabled: true,
+  name: "",
+  description: "",
+  threshold: null,
+  bonus: 0,
+}
+
 // ---------------------------------------------------------------------------
 // Tier section header — gradient strip with label + enabled-count badge
 // ---------------------------------------------------------------------------
@@ -52,6 +62,7 @@ interface TierHeaderProps {
 }
 
 const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
+  const { t } = useTranslation()
   const label = TIER_LABEL[tier]
   const gradient = TIER_GRADIENT[tier]
   const textCls = TIER_TEXT[tier]
@@ -67,7 +78,8 @@ const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
       </span>
       {/* Enabled count */}
       <span className="tabular-nums text-xs font-semibold text-gray-500">
-        {enabledCount}/{totalCount} aktiv
+        {enabledCount}/{totalCount}{" "}
+        {t("manager:achievements.active", { defaultValue: "aktiv" })}
       </span>
       <div className="flex-1 border-t border-gray-100" />
     </div>
@@ -129,6 +141,10 @@ const BadgeRow = ({
     thresholdUnit !== undefined &&
     thresholdMin !== undefined &&
     thresholdMax !== undefined
+
+  // Draft string for the threshold input so the user can clear it while editing
+  // (an empty string) without it snapping to min. Coerced + clamped on blur.
+  const [thresholdDraft, setThresholdDraft] = useState<string | null>(null)
 
   const nameId = `ach-name-${id}`
   const descId = `ach-desc-${id}`
@@ -209,10 +225,18 @@ const BadgeRow = ({
               aria-label={
                 thresholdHint ?? t("manager:achievementsConfig.threshold")
               }
-              value={state.threshold}
+              value={thresholdDraft ?? String(state.threshold)}
               onChange={(e) => {
-                const raw = Number(e.target.value)
-                if (!Number.isNaN(raw)) {
+                // Keep whatever the user types (including an empty string) in the
+                // draft; only commit/clamp on blur so clearing the field works.
+                setThresholdDraft(e.target.value)
+              }}
+              onBlur={() => {
+                if (thresholdDraft === null) {
+                  return
+                }
+                const raw = Number(thresholdDraft)
+                if (thresholdDraft.trim() !== "" && !Number.isNaN(raw)) {
                   onChange(id, {
                     threshold: Math.min(
                       Math.max(raw, thresholdMin!),
@@ -220,6 +244,8 @@ const BadgeRow = ({
                     ),
                   })
                 }
+                // Reset the draft so the committed (clamped) value shows.
+                setThresholdDraft(null)
               }}
             />
             <span className="text-xs font-medium text-gray-500">
@@ -435,7 +461,7 @@ const ConfigAchievements = () => {
                           key={entry.id}
                           id={entry.id as AchievementId}
                           tier={tier}
-                          state={local[entry.id as AchievementId]}
+                          state={local[entry.id as AchievementId] ?? EMPTY_ROW}
                           defaultName={defaultName}
                           defaultDesc={defaultDesc}
                           thresholdUnit={thresholdDef?.unit}

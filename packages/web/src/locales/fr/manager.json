@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "title": "Manager",
+    "subtitle": "Connecte-toi pour gérer ta partie."
+  },
   "aria": {
     "passwordLabel": "Mot de passe"
   },
@@ -34,6 +38,8 @@
     "duplicated": "Quizz dupliqué",
     "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
+    "export": "Exporter « {{name}} » au format JSON",
+    "exported": "Quiz exporté en JSON",
     "invalidJson": "Fichier JSON invalide ou incomplet",
     "none": "Aucun quizz créé",
     "notFound": "Aucun quizz trouvé",
@@ -138,7 +144,6 @@
     "pair": "Associer",
     "paired": "Écran associé",
     "step1": "Connecte le Pi ou le vidéoprojecteur à internet et ouvre razzoozle.joelduss.xyz/display — le grand écran affiche un code d'association.",
-    "step2": "Lance une partie et touche «Satellite» dans l'en-tête du jeu pour saisir le code.",
     "step3": "Ton téléphone reste la télécommande : démarrer, suivant et le mode auto se pilotent d'ici.",
     "hint": "L'association n'est possible qu'avec une partie en cours — le code a besoin de la partie active et de ton mot de passe manager.",
     "step1Result": "Le grand écran affiche alors un code à 6 chiffres comme « ABC123 ».",
@@ -222,7 +227,11 @@
       "delete": "Supprimer",
       "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
       "emptyHeadline": "Aucun modèle pour l’instant",
-      "none": "Aucun modèle enregistré pour l'instant"
+      "none": "Aucun modèle enregistré pour l'instant",
+      "importError": "Fichier de modèle non valide",
+      "readError": "Impossible de lire le fichier",
+      "import": "Importer un modèle",
+      "export": "Exporter le modèle"
     },
     "revisions": {
       "title": "Versions",
@@ -252,6 +261,7 @@
     "confirmReject": "Vraiment rejeter cette proposition ?",
     "submittedBy": "Proposée par {{name}}",
     "submittedAt": "le {{date}}",
+    "cooldownSuffix": "s",
     "previewLabels": {
       "cooldown": "Pause",
       "loading": "Chargement de l’aperçu …"
@@ -293,7 +303,6 @@
     "uploaded": "Média importé",
     "delete": "Supprimer",
     "deleteConfirm": "Veux-tu vraiment supprimer ce média ?",
-    "deleted": "Média supprimé",
     "search": "Rechercher des médias",
     "searchPlaceholder": "Rechercher des médias…",
     "noResults": "Aucun média correspondant",
@@ -324,7 +333,6 @@
       "toggle": "Sélectionner {{name}}"
     },
     "dropHint": "Déposez les fichiers ici pour les envoyer",
-    "dimensions": "{{w}} × {{h}} px",
     "details": "Détails"
   },
   "catalog": {
@@ -332,7 +340,6 @@
     "intro": "Rassemble des questions réutilisables et insère-les dans n'importe quel quizz.",
     "empty": "Aucune question dans le catalogue pour l'instant.",
     "emptyHeadline": "Le catalogue est vide",
-    "add": "Ajouter une question",
     "addManual": "Créer une question",
     "saveToCatalog": "Enregistrer dans le catalogue",
     "saved": "Question enregistrée dans le catalogue",
@@ -351,7 +358,6 @@
     "noResults": "Aucune question correspondante",
     "count": "{{count}} question",
     "count_other": "{{count}} questions",
-    "preview": "Aperçu",
     "source": {
       "manual": "Manuelle",
       "submission": "Proposition",
@@ -373,7 +379,6 @@
       "description": "Génération d'images locale via ComfyUI / Z-Image."
     },
     "provider": "Fournisseur",
-    "active": "Actif",
     "off": "Désactivé",
     "status": {
       "off": "Désactivé",
@@ -402,14 +407,10 @@
     "testFailed": "Échec de la connexion",
     "save": "Enregistrer",
     "saved": "Paramètres IA enregistrés",
-    "saveFailed": "Échec de l'enregistrement",
     "generate": {
       "title": "Générer avec l'IA",
       "topic": "Thème",
       "topicPlaceholder": "p. ex. géographie suisse",
-      "type": "Type de question",
-      "count": "Nombre de questions",
-      "question": "Générer une question",
       "fromTopic": "Question à partir du thème",
       "distractors": "Suggérer des réponses",
       "quiz": "Générer un quizz",
@@ -418,7 +419,6 @@
       "generated": "Généré",
       "applied": "Appliqué",
       "quizCreated": "Quizz créé",
-      "failed": "Échec de la génération",
       "notConfigured": "Aucun fournisseur de texte configuré. Configure d'abord l'IA.",
       "openInEditor": "Ouvrir dans l'éditeur",
       "countValue": "Questions : {{count}}",
@@ -488,5 +488,23 @@
       "minRanksUp": "Places gagnées au classement",
       "minPointsAhead": "Avance en points du dépassé"
     }
+  },
+  "achievements": {
+    "active": "actif"
+  },
+  "console": {
+    "resetAsset": "Réinitialiser"
+  },
+  "themePreview": {
+    "join": "Rejoindre",
+    "playerName": "Joueur {{rank}}"
+  },
+  "auto": {
+    "nextIn": "Suite dans {{seconds}}s"
+  },
+  "exit": {
+    "title": "Vraiment mettre fin à la partie ?",
+    "description": "Tous les joueurs seront notifiés et la partie prendra fin.",
+    "confirm": "Terminer"
   }
 }

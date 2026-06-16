@@ -15,13 +15,14 @@ import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -34,6 +35,7 @@ interface Props {
 
 const SoloAnswers = ({ quizzId, question }: Props) => {
   const { submitAnswer, lastResult, lastAchievements, phase } = useSoloStore()
+  const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
 
@@ -44,13 +46,23 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [countdown, setCountdown] = useState(question.time)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, { volume: 0.1 })
-  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, { volume: 0.2 })
-  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, { volume: 0.3 })
+  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
+    volume: 0.1,
+    soundEnabled: !muted,
+  })
+  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+    volume: 0.3,
+    soundEnabled: !muted,
+  })
   const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
     volume: 0.2,
     interrupt: true,
     loop: true,
+    soundEnabled: !muted,
   })
 
   const isSlider = question.type === "slider" && question.min != null && question.max != null
@@ -207,24 +219,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             <CircularTimer seconds={countdown} total={question.time} size={72} />
           </div>
         </div>
-
-        {/* Inline result feedback */}
-        {resultReady && (
-          <div
-            className={clsx(
-              "mx-auto mb-4 w-full max-w-7xl rounded-xl px-6 py-4 text-center text-xl font-bold text-white lg:max-w-[85vw]",
-              lastResult.correct ? "bg-green-600/80" : "bg-red-600/80",
-            )}
-          >
-            {lastResult.correct ? (
-              <span>
-                {t("game:correct")} +{lastResult.points}
-              </span>
-            ) : (
-              <span>{t("game:wrong")}</span>
-            )}
-          </div>
-        )}
 
         {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
             self-fetches meta + honors reduced-motion. ids = server sharpshooter
@@ -406,24 +400,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                   >
                     <Markdown>{answer}</Markdown>
                   </AnswerButton>
-
-                  {/* Floating +points on a correct pick */}
-                  <AnimatePresence>
-                    {resultReady &&
-                      isPicked &&
-                      lastResult.correct &&
-                      lastResult.points > 0 && (
-                        <motion.span
-                          key="floating-points"
-                          initial={{ opacity: 0, y: 0 }}
-                          animate={{ opacity: [0, 1, 0], y: -60 }}
-                          transition={{ duration: 1.2 }}
-                          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-black text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
-                        >
-                          +{lastResult.points}
-                        </motion.span>
-                      )}
-                  </AnimatePresence>
                 </motion.div>
               )
             })}

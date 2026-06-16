@@ -3,6 +3,7 @@ import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleChe
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { playFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
 import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
@@ -52,27 +53,60 @@ const Result = ({
     poll,
     achievements,
     bonusPoints,
+    correctAnswer,
+    playerCount,
   },
 }: Props) => {
   const player = usePlayerStore()
+  const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
   const reduced = useReducedMotion() ?? false
   const achievementsFired = useRef(false)
 
-  const [sfxResults] = useSound(SFX.RESULTS_SOUND, { volume: 0.2 })
-  const [sfxBronze] = useSound(SFX.TIERS.BRONZE, { volume: 0.4 })
-  const [sfxSilver] = useSound(SFX.TIERS.SILVER, { volume: 0.4 })
-  const [sfxGold] = useSound(SFX.TIERS.GOLD, { volume: 0.4 })
-  const [sfxDiamant] = useSound(SFX.TIERS.DIAMANT, { volume: 0.4 })
+  // W1-D FIX 2: only show the place/rank label when the player actually scored
+  // (score > 0) AND it is a real multiplayer game (more than one player).
+  // Otherwise a hollow "1st place" would appear at 0 points or in a solo game.
+  const showRank = myPoints > 0 && (playerCount ?? 1) > 1
+
+  const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+  // Wrong-answer chime — reuse the existing boump asset (mirrors SoloAnswers).
+  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+    volume: 0.3,
+    soundEnabled: !muted,
+  })
+  const [sfxBronze] = useSound(SFX.TIERS.BRONZE, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxSilver] = useSound(SFX.TIERS.SILVER, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxGold] = useSound(SFX.TIERS.GOLD, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
+  const [sfxDiamant] = useSound(SFX.TIERS.DIAMANT, {
+    volume: 0.4,
+    soundEnabled: !muted,
+  })
 
   useEffect(() => {
     player.updatePoints(myPoints)
 
+    // Correct/wrong answer chime — mirrors the SoloAnswers sound pattern:
+    // correct → champions sting (first) or results chime, wrong → boump.
+    // playFirstCorrectSound() is itself gated on the mute store.
     if (firstCorrect) {
       playFirstCorrectSound()
-    } else {
+    } else if (correct) {
       sfxResults()
+    } else if (!poll) {
+      sfxWrong()
     }
     // oxlint-disable-next-line
   }, [sfxResults])
@@ -117,11 +151,20 @@ const Result = ({
       <h2 className="mt-1 text-4xl font-bold text-white drop-shadow-lg">
         {t(message)}
       </h2>
-      <p className="mt-1 text-xl font-bold text-white drop-shadow-lg">
-        {t("game:resultTop")}
-        {t(rankKey, { rank })}
-        {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
-      </p>
+      {showRank && (
+        <p className="mt-1 text-xl font-bold text-white drop-shadow-lg">
+          {t("game:resultTop")}
+          {t(rankKey, { rank })}
+          {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
+        </p>
+      )}
+      {/* W1-D FIX 1: the question is over, so reveal the correct answer on the
+          wrong-answer (Too bad) screen. Never shown for poll or correct. */}
+      {!poll && !correct && correctAnswer && (
+        <p className="mt-2 text-lg font-semibold text-white drop-shadow-lg">
+          {t("game:slider.correctAnswer")}: {correctAnswer}
+        </p>
+      )}
       {!poll && correct && (
         <span className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg">
           +{points}

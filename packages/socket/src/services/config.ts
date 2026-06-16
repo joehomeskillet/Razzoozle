@@ -91,8 +91,16 @@ const getBrandingPath = (path = "") =>
 // Quizz/result ids are server-generated uuids / safe slugs. Reject anything that
 // could escape the quizz/results dir (path traversal) before using it in a path.
 const SAFE_ID = /^[A-Za-z0-9_-]+$/
+// Even though these literals pass SAFE_ID, reject them outright: used as object
+// keys downstream they enable prototype pollution. Additive guard on top of the
+// regex test (same error type as the regex path).
+const RESERVED_IDS = new Set(["__proto__", "constructor", "prototype"])
 export const assertSafeId = (id: string): void => {
   if (typeof id !== "string" || !SAFE_ID.test(id)) {
+    throw new Error("Invalid id")
+  }
+
+  if (RESERVED_IDS.has(id)) {
     throw new Error("Invalid id")
   }
 }
@@ -1103,7 +1111,15 @@ export const saveThemeTemplate = (payload: {
   name: string
   theme: Theme
 }): { id: string } => {
-  const id = normalizeFilename(payload.name)
+  // Dedupe-on-save: if a template already exists under the same display name
+  // (normalized + trimmed + case-insensitive), reuse its id so a re-save
+  // overwrites in place instead of creating a duplicate. Only a genuinely new
+  // name gets a fresh slug+nanoid id.
+  const normalizedName = payload.name.trim().toLowerCase()
+  const existing = getThemeTemplates().find(
+    (t) => t.name.trim().toLowerCase() === normalizedName,
+  )
+  const id = existing ? existing.id : normalizeFilename(payload.name)
   assertSafeId(id)
 
   const record: ThemeTemplate = { id, name: payload.name, theme: payload.theme }
