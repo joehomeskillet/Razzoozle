@@ -145,7 +145,8 @@ Priorität: **P1** = Quick-Win, hoher Nutzen / geringer Aufwand · **P2** = mitt
 
 ### I — Design / Theme
 
-**WP-18 · Theme: Versionierung / "Vorherige Version wiederherstellen"** · **P3** · `[BACKEND]`
+**WP-18 · Theme: Versionierung / "Vorherige Version wiederherstellen"** · ~~**P3** · `[BACKEND]`~~ · **DONE / OBSOLET**
+> **Korrektur (erledigt):** Bereits umgesetzt via `THEME_REVISION.*` (Ring-Buffer in `config.ts`, `THEME_REVISIONS_MAX = 10` Snapshots, Restore-Event + Test `theme-revision.test.ts`) — die frühere "keine History"-Einschätzung war falsch.
 - Scope: Audit-Punkt "Versionshistorie + Wiederherstellen". Heute nur Reset-auf-Default, keine History. Beim Speichern eine begrenzte Historie (z.B. letzte N) führen, Restore-Button anbieten.
 - Dateien: `packages/common/src/types/theme.ts` (History/Revision-Konzept), `packages/socket/src/handlers/theme-template.ts` + `packages/socket/src/services/config.ts` (Revisions-Store + Restore-Event), `constants.ts` EVENTS.THEME_TEMPLATE (Restore/History-Events), `configurations/ConfigTheme.tsx` (History-Liste + Restore).
 - Akzeptanz: (1) Theme-Speichern legt eine Revision an (begrenzte Tiefe). (2) "Vorherige Version wiederherstellen" lädt eine ältere Revision in den Draft. (3) Alle 5 Locales.

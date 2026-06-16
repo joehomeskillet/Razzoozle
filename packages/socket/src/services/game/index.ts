@@ -156,7 +156,9 @@ class Game {
     this.io = io
     this.quizz = quizz
     this.gameId = restore ? restore.gameId : uuid()
-    this.inviteCode = restore ? restore.inviteCode : createInviteCode()
+    this.inviteCode = restore
+      ? restore.inviteCode
+      : registry.generateUniqueInviteCode(createInviteCode)
     this._manager = {
       // No live socket on restore: detached until a real reconnect binds one.
       id: socket ? socket.id : "",

@@ -97,6 +97,35 @@ describe("theme-template CRUD round-trip", () => {
     expect(byId!.theme.accentColor).toBe("#ff9900")
   })
 
+  it("saving twice under the same name overwrites (one file, stable id)", async () => {
+    const config = await loadConfig()
+
+    const first = config.saveThemeTemplate({
+      name: "Sommer Theme",
+      theme: VALID_THEME,
+    })
+
+    const second = config.saveThemeTemplate({
+      name: "Sommer Theme",
+      theme: { ...VALID_THEME, colorPrimary: "#00ff00" },
+    })
+
+    // Same display name → reuse the existing id (overwrite in place).
+    expect(second.id).toBe(first.id)
+
+    const list = config.getThemeTemplates()
+    expect(list).toHaveLength(1)
+    expect(list[0].id).toBe(first.id)
+    // The overwrite carried the new theme through.
+    expect(list[0].theme.colorPrimary).toBe("#00ff00")
+
+    // Only one file landed on disk.
+    const files = fs
+      .readdirSync(path.join(tmpDir, "theme-templates"))
+      .filter((f) => f.endsWith(".json"))
+    expect(files).toHaveLength(1)
+  })
+
   it("getThemeTemplatesMeta returns only {id,name}", async () => {
     const config = await loadConfig()
 

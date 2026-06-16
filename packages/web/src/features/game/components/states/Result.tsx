@@ -53,6 +53,8 @@ const Result = ({
     poll,
     achievements,
     bonusPoints,
+    correctAnswer,
+    playerCount,
   },
 }: Props) => {
   const player = usePlayerStore()
@@ -61,6 +63,11 @@ const Result = ({
   const rankKey = rankKeyFor(rank)
   const reduced = useReducedMotion() ?? false
   const achievementsFired = useRef(false)
+
+  // W1-D FIX 2: only show the place/rank label when the player actually scored
+  // (score > 0) AND it is a real multiplayer game (more than one player).
+  // Otherwise a hollow "1st place" would appear at 0 points or in a solo game.
+  const showRank = myPoints > 0 && (playerCount ?? 1) > 1
 
   const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
     volume: 0.2,
@@ -144,11 +151,20 @@ const Result = ({
       <h2 className="mt-1 text-4xl font-bold text-white drop-shadow-lg">
         {t(message)}
       </h2>
-      <p className="mt-1 text-xl font-bold text-white drop-shadow-lg">
-        {t("game:resultTop")}
-        {t(rankKey, { rank })}
-        {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
-      </p>
+      {showRank && (
+        <p className="mt-1 text-xl font-bold text-white drop-shadow-lg">
+          {t("game:resultTop")}
+          {t(rankKey, { rank })}
+          {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
+        </p>
+      )}
+      {/* W1-D FIX 1: the question is over, so reveal the correct answer on the
+          wrong-answer (Too bad) screen. Never shown for poll or correct. */}
+      {!poll && !correct && correctAnswer && (
+        <p className="mt-2 text-lg font-semibold text-white drop-shadow-lg">
+          {t("game:slider.correctAnswer")}: {correctAnswer}
+        </p>
+      )}
       {!poll && correct && (
         <span className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg">
           +{points}

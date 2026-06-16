@@ -75,6 +75,12 @@ export interface CommonStatusDataMap {
     // Sum of per-achievement bonus points unlocked this round (already folded
     // into `myPoints`). Present only when > 0; absent/0 in the shipped default.
     bonusPoints?: number
+    // Total players in this game, so the client can suppress a hollow "1st
+    // place" label in a solo (single-player) game (W1-D FIX 2).
+    playerCount?: number
+    // The revealed correct answer for the round, shown on the wrong-answer
+    // screen. Present only when applicable (never for poll/correct).
+    correctAnswer?: string
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }

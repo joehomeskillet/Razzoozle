@@ -27,12 +27,25 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     registry.getGameByPlayerSocketId(socket.id) ??
     registry.getGameByManagerSocketId(socket.id)
 
-  const handleManagerLeave = (game: Game) => {
-    // Give EVERY game (lobby or started) the same empty-grace window: a brief
-    // host wifi blip must not destroy a not-yet-started lobby. The manager can
-    // reconnect within EMPTY_GAME_TIMEOUT via reactivateGame (reconnectManager
-    // restores the lobby). Truly abandoned games are RESET + removed by the
-    // registry's cleanupEmptyGames once the grace window elapses.
+  const handleManagerLeave = (game: Game, intentional: boolean) => {
+    // Intentional leave on a not-yet-started lobby = tear down NOW. The host
+    // clicked Exit, so the lobby must not linger host-less yet joinable for the
+    // full empty-grace window (the P0 ghost-game bug). notifyManagerGone sends a
+    // clean RESET to anyone still in the room, then removeGame drops it from the
+    // registry (un-joinable, disposes timers/metrics).
+    if (intentional && !game.started) {
+      game.notifyManagerGone()
+      registry.removeGame(game.gameId)
+
+      return
+    }
+
+    // Otherwise (a transport-level disconnect, or a leave on a started game)
+    // keep the empty-grace window: a brief host wifi blip must not destroy a
+    // game. The manager can reconnect within EMPTY_GAME_TIMEOUT via
+    // reactivateGame (reconnectManager restores the lobby). Truly abandoned
+    // games are RESET + removed by the registry's cleanupEmptyGames once the
+    // grace window elapses.
     game.setManagerDisconnected()
     registry.markGameAsEmpty(game)
   }
@@ -420,7 +433,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
     if (game) {
       console.log(`Manager left game ${game.inviteCode}`)
-      handleManagerLeave(game)
+      // Intentional leave (the host clicked Exit): tear down a not-yet-started
+      // lobby immediately so it can't linger host-less yet joinable.
+      handleManagerLeave(game, true)
     }
   })
 
@@ -439,7 +454,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
     if (managerGame) {
       console.log(`Manager disconnected from game ${managerGame.inviteCode}`)
-      handleManagerLeave(managerGame)
+      // Transport-level drop (wifi blip / tab close): NOT intentional. Keep the
+      // 5-minute empty-grace + reconnect path for every game.
+      handleManagerLeave(managerGame, false)
 
       return
     }

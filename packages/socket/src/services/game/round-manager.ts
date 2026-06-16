@@ -1174,6 +1174,35 @@ export class RoundManager {
 
     this.opts.players.replace(cleanedSorted)
 
+    // The question is OVER, so the correct answer is now safe to reveal in the
+    // per-player RESULT payload (anti-cheat: it is NEVER added to the live
+    // SHOW_QUESTION / SELECT_ANSWER payloads above). Built as a display string
+    // per question type so the wrong-answer "Too bad" screen can show what the
+    // right answer was. undefined for poll (no correct answer) and when the
+    // question carries no solution data.
+    const correctAnswer = ((): string | undefined => {
+      if (isPoll) {
+        return undefined
+      }
+
+      if (question.type === "slider") {
+        return question.correct != null
+          ? `${question.correct}${question.unit ? ` ${question.unit}` : ""}`
+          : undefined
+      }
+
+      if (question.type === "type-answer") {
+        return question.acceptedAnswers?.[0]
+      }
+
+      // choice / boolean / multiple-select: map solution indices to answer texts.
+      const texts = (question.solutions ?? [])
+        .map((i) => question.answers?.[i])
+        .filter((t): t is string => typeof t === "string")
+
+      return texts.length > 0 ? texts.join(", ") : undefined
+    })()
+
     cleanedSorted.forEach((player, index) => {
       const rank = index + 1
       const aheadPlayer = cleanedSorted[index - 1]
@@ -1196,6 +1225,10 @@ export class RoundManager {
         bonus: player.lastBonus,
         firstCorrect: player.lastFirstCorrect,
         poll: player.lastPoll,
+        // Total players in this game, so the client can suppress a hollow "1st
+        // place" label in a solo (single-player) game (W1-D FIX 2).
+        playerCount: cleanedSorted.length,
+        ...(correctAnswer !== undefined ? { correctAnswer } : {}),
         ...(unlocked ? { achievements: unlocked } : {}),
         ...(bonusPoints > 0 ? { bonusPoints } : {}),
       })

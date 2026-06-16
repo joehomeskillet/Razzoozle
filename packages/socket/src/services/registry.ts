@@ -77,6 +77,22 @@ class Registry {
     return this.games.find((g) => g.inviteCode === inviteCode)
   }
 
+  // Generate an invite code guaranteed unique among currently ACTIVE games. The
+  // caller passes the pure code generator (createInviteCode) so registry adds NO
+  // runtime import of utils/game — that would re-introduce the registry<->game
+  // import cycle the file header warns about. Retries up to maxAttempts times;
+  // if every candidate collided (astronomically unlikely for a 6-digit space) it
+  // accepts the last one rather than loop forever, so game creation never hangs.
+  generateUniqueInviteCode(generate: () => string, maxAttempts = 10): string {
+    let code = generate()
+
+    for (let i = 1; i < maxAttempts && this.getGameByInviteCode(code); i += 1) {
+      code = generate()
+    }
+
+    return code
+  }
+
   getPlayerGame(gameId: string, clientId: string): Game | undefined {
     return this.games.find(
       (g) =>
