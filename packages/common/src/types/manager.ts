@@ -23,4 +23,14 @@ export interface ManagerConfig {
   // Merged achievement config (registry defaults + manager overrides).
   // Optional for back-compat; absent in old payloads → client falls back to defaults.
   achievements?: MergedAchievement[]
+  // Dev-mode flag mirroring the server's RAZZOOLE_DEV env. Optional for
+  // back-compat; absent in old payloads → reads as off.
+  devMode?: boolean
+  // Observability dashboard links surfaced in the manager's dev tab. Optional;
+  // any individual URL may be absent if not configured.
+  observability?: {
+    grafanaUrl?: string
+    lokiUrl?: string
+    prometheusUrl?: string
+  }
 }

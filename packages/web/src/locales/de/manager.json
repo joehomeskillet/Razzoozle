@@ -134,7 +134,44 @@
     "media": "Medien",
     "gamemode": "Modus",
     "achievements": "Achievements",
-    "running": "Laufende Spiele"
+    "running": "Laufende Spiele",
+    "dev": "Dev"
+  },
+  "dev": {
+    "redactionNotice": "Passwörter, API-Tokens und Antwortlösungen werden nie protokolliert.",
+    "api": {
+      "title": "API-Explorer",
+      "description": "Selbstdokumentierende HTTP-Schnittstelle.",
+      "openapi": "OpenAPI-Schema",
+      "events": "Ereignis-Katalog",
+      "schema": "Client-Ereignis-Schema",
+      "routes": "Routen",
+      "version": "Version",
+      "schemaValid": "Schema gültig",
+      "tokensTitle": "Tokens & Scopes",
+      "tokensEmpty": "Noch nicht konfiguriert."
+    },
+    "observability": {
+      "title": "Observability",
+      "description": "Live-Zustand und Diagnose.",
+      "serverHealth": "Server-Zustand",
+      "activeGames": "Aktive Spiele",
+      "players": "Spieler",
+      "noGames": "Keine aktiven Spiele",
+      "metrics": "Latenz & Zustand",
+      "reconnects": "Reconnects",
+      "rejected": "Abgelehnte Antworten",
+      "answerLatency": "Antwort-Latenz",
+      "metricsOffTitle": "Metriken inaktiv",
+      "metricsOffHint": "Low-Latency-Modus ist aus.",
+      "displays": "Displays",
+      "noDisplays": "Keine Displays gekoppelt",
+      "eventCatalog": "Ereignis-Katalog",
+      "sampledRedacted": "gesampelt & redigiert",
+      "grafana": "Grafana",
+      "loki": "Loki",
+      "prometheus": "Prometheus"
+    }
   },
   "media": {
     "title": "Medienbibliothek",

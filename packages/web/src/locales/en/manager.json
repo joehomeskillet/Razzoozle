@@ -136,7 +136,44 @@
     "media": "Media",
     "gamemode": "Mode",
     "achievements": "Achievements",
-    "running": "Running Games"
+    "running": "Running Games",
+    "dev": "Dev"
+  },
+  "dev": {
+    "redactionNotice": "Passwords, API tokens and answer solutions are never logged.",
+    "api": {
+      "title": "API Explorer",
+      "description": "Self-documenting HTTP surface.",
+      "openapi": "OpenAPI schema",
+      "events": "Event catalog",
+      "schema": "Client-event schema",
+      "routes": "routes",
+      "version": "Version",
+      "schemaValid": "Schema valid",
+      "tokensTitle": "Tokens & Scopes",
+      "tokensEmpty": "Not configured yet."
+    },
+    "observability": {
+      "title": "Observability",
+      "description": "Live health and diagnostics.",
+      "serverHealth": "Server health",
+      "activeGames": "Active games",
+      "players": "players",
+      "noGames": "No active games",
+      "metrics": "Latency & health",
+      "reconnects": "Reconnects",
+      "rejected": "Rejected answers",
+      "answerLatency": "Answer latency",
+      "metricsOffTitle": "Metrics inactive",
+      "metricsOffHint": "Low-latency mode is off.",
+      "displays": "Displays",
+      "noDisplays": "No displays paired",
+      "eventCatalog": "Event catalog",
+      "sampledRedacted": "sampled & redacted",
+      "grafana": "Grafana",
+      "loki": "Loki",
+      "prometheus": "Prometheus"
+    }
   },
   "media": {
     "title": "Media library",

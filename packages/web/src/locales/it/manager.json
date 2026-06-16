@@ -126,7 +126,44 @@
     "ki": "IA",
     "media": "Media",
     "gamemode": "Modalità",
-    "achievements": "Obiettivi"
+    "achievements": "Obiettivi",
+    "dev": "Dev"
+  },
+  "dev": {
+    "redactionNotice": "Password, token API e soluzioni delle risposte non vengono mai registrati.",
+    "api": {
+      "title": "Esplora API",
+      "description": "Interfaccia HTTP auto-documentata.",
+      "openapi": "Schema OpenAPI",
+      "events": "Catalogo eventi",
+      "schema": "Schema eventi client",
+      "routes": "route",
+      "version": "Versione",
+      "schemaValid": "Schema valido",
+      "tokensTitle": "Token e ambiti",
+      "tokensEmpty": "Non ancora configurato."
+    },
+    "observability": {
+      "title": "Osservabilità",
+      "description": "Stato e diagnostica in tempo reale.",
+      "serverHealth": "Stato del server",
+      "activeGames": "Partite attive",
+      "players": "giocatori",
+      "noGames": "Nessuna partita attiva",
+      "metrics": "Latenza e stato",
+      "reconnects": "Riconnessioni",
+      "rejected": "Risposte rifiutate",
+      "answerLatency": "Latenza risposta",
+      "metricsOffTitle": "Metriche inattive",
+      "metricsOffHint": "La modalità bassa latenza è disattivata.",
+      "displays": "Schermi",
+      "noDisplays": "Nessuno schermo abbinato",
+      "eventCatalog": "Catalogo eventi",
+      "sampledRedacted": "campionati e oscurati",
+      "grafana": "Grafana",
+      "loki": "Loki",
+      "prometheus": "Prometheus"
+    }
   },
   "satellite": {
     "title": "Schermo satellite",

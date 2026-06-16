@@ -135,7 +135,44 @@
     "ki": "IA",
     "media": "Médias",
     "gamemode": "Mode",
-    "achievements": "Succès"
+    "achievements": "Succès",
+    "dev": "Dev"
+  },
+  "dev": {
+    "redactionNotice": "Les mots de passe, jetons d'API et solutions de réponse ne sont jamais journalisés.",
+    "api": {
+      "title": "Explorateur d'API",
+      "description": "Surface HTTP auto-documentée.",
+      "openapi": "Schéma OpenAPI",
+      "events": "Catalogue d'événements",
+      "schema": "Schéma d'événement client",
+      "routes": "routes",
+      "version": "Version",
+      "schemaValid": "Schéma valide",
+      "tokensTitle": "Jetons et portées",
+      "tokensEmpty": "Pas encore configuré."
+    },
+    "observability": {
+      "title": "Observabilité",
+      "description": "Santé et diagnostics en direct.",
+      "serverHealth": "Santé du serveur",
+      "activeGames": "Parties actives",
+      "players": "joueurs",
+      "noGames": "Aucune partie active",
+      "metrics": "Latence et santé",
+      "reconnects": "Reconnexions",
+      "rejected": "Réponses rejetées",
+      "answerLatency": "Latence de réponse",
+      "metricsOffTitle": "Métriques inactives",
+      "metricsOffHint": "Le mode faible latence est désactivé.",
+      "displays": "Écrans",
+      "noDisplays": "Aucun écran associé",
+      "eventCatalog": "Catalogue d'événements",
+      "sampledRedacted": "échantillonné et expurgé",
+      "grafana": "Grafana",
+      "loki": "Loki",
+      "prometheus": "Prometheus"
+    }
   },
   "satellite": {
     "title": "Écran satellite",

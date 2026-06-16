@@ -6,6 +6,7 @@ import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import ConfigAI from "@razzoozle/web/features/manager/components/configurations/ConfigAI"
 import ConfigAchievements from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements"
 import ConfigCatalog from "@razzoozle/web/features/manager/components/configurations/ConfigCatalog"
+import ConfigDev from "./ConfigDev"
 import ConfigDisplay from "@razzoozle/web/features/manager/components/configurations/ConfigDisplay"
 import ConfigGameMode from "@razzoozle/web/features/manager/components/configurations/ConfigGameMode"
 import ConfigManageQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigManageQuizz"
@@ -37,6 +38,7 @@ import {
   Play,
   Radio,
   Sparkles,
+  Terminal,
   Trophy,
   Users,
 } from "lucide-react"
@@ -54,18 +56,84 @@ interface TabDef {
 // matching component renders in the console panel. Internals are unchanged
 // (separate track) — this file only wires them into <ConsoleShell>.
 const tabs: TabDef[] = [
-  { key: "play", nameKey: "manager:tabs.play", icon: Play, component: ConfigSelectQuizz },
-  { key: "quizz", nameKey: "manager:tabs.quizz", icon: ListChecks, component: ConfigManageQuizz },
-  { key: "gamemode", nameKey: "manager:tabs.gamemode", icon: Users, component: ConfigGameMode },
-  { key: "catalog", nameKey: "manager:tabs.catalog", icon: Library, component: ConfigCatalog },
-  { key: "media", nameKey: "manager:tabs.media", icon: Images, component: ConfigMedia },
-  { key: "ki", nameKey: "manager:tabs.ki", icon: Sparkles, component: ConfigAI },
-  { key: "achievements", nameKey: "manager:tabs.achievements", icon: Award, component: ConfigAchievements },
-  { key: "results", nameKey: "manager:tabs.results", icon: Trophy, component: ConfigResults },
-  { key: "running", nameKey: "manager:tabs.running", icon: Radio, component: RunningGamesSection },
-  { key: "design", nameKey: "manager:tabs.design", icon: Palette, component: ConfigTheme },
-  { key: "satellite", nameKey: "manager:tabs.satellite", icon: Monitor, component: ConfigDisplay },
-  { key: "submissions", nameKey: "manager:tabs.submissions", icon: ClipboardList, component: ConfigSubmissions },
+  {
+    key: "play",
+    nameKey: "manager:tabs.play",
+    icon: Play,
+    component: ConfigSelectQuizz,
+  },
+  {
+    key: "quizz",
+    nameKey: "manager:tabs.quizz",
+    icon: ListChecks,
+    component: ConfigManageQuizz,
+  },
+  {
+    key: "gamemode",
+    nameKey: "manager:tabs.gamemode",
+    icon: Users,
+    component: ConfigGameMode,
+  },
+  {
+    key: "catalog",
+    nameKey: "manager:tabs.catalog",
+    icon: Library,
+    component: ConfigCatalog,
+  },
+  {
+    key: "media",
+    nameKey: "manager:tabs.media",
+    icon: Images,
+    component: ConfigMedia,
+  },
+  {
+    key: "ki",
+    nameKey: "manager:tabs.ki",
+    icon: Sparkles,
+    component: ConfigAI,
+  },
+  {
+    key: "achievements",
+    nameKey: "manager:tabs.achievements",
+    icon: Award,
+    component: ConfigAchievements,
+  },
+  {
+    key: "results",
+    nameKey: "manager:tabs.results",
+    icon: Trophy,
+    component: ConfigResults,
+  },
+  {
+    key: "running",
+    nameKey: "manager:tabs.running",
+    icon: Radio,
+    component: RunningGamesSection,
+  },
+  {
+    key: "design",
+    nameKey: "manager:tabs.design",
+    icon: Palette,
+    component: ConfigTheme,
+  },
+  {
+    key: "satellite",
+    nameKey: "manager:tabs.satellite",
+    icon: Monitor,
+    component: ConfigDisplay,
+  },
+  {
+    key: "submissions",
+    nameKey: "manager:tabs.submissions",
+    icon: ClipboardList,
+    component: ConfigSubmissions,
+  },
+  {
+    key: "dev",
+    nameKey: "manager:tabs.dev",
+    icon: Terminal,
+    component: ConfigDev,
+  },
 ]
 
 /**
@@ -105,7 +173,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
   const { reset } = useManagerStore()
   const { socket } = useSocket()
   const { t } = useTranslation()
-  const { submissions } = useConfig()
+  const { submissions, devMode } = useConfig()
 
   const pendingCount = submissions.filter((s) => s.status === "pending").length
 
@@ -114,12 +182,14 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
     reset()
   }
 
-  const nav: ConsoleNavItem[] = tabs.map((tab) => ({
-    key: tab.key,
-    label: t(tab.nameKey),
-    icon: tab.icon,
-    count: tab.key === "submissions" ? pendingCount : undefined,
-  }))
+  const nav: ConsoleNavItem[] = tabs
+    .filter((tab) => tab.key !== "dev" || devMode)
+    .map((tab) => ({
+      key: tab.key,
+      label: t(tab.nameKey),
+      icon: tab.icon,
+      count: tab.key === "submissions" ? pendingCount : undefined,
+    }))
 
   const active = tabs.find((tab) => tab.key === activeKey) ?? tabs[0]
   const ActiveComponent = active.component

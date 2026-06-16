@@ -135,7 +135,44 @@
     "submissions": "建议",
     "media": "媒体",
     "gamemode": "模式",
-    "achievements": "成就"
+    "achievements": "成就",
+    "dev": "开发"
+  },
+  "dev": {
+    "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",
+    "api": {
+      "title": "API 浏览器",
+      "description": "自文档化的 HTTP 接口。",
+      "openapi": "OpenAPI 架构",
+      "events": "事件目录",
+      "schema": "客户端事件架构",
+      "routes": "路由",
+      "version": "版本",
+      "schemaValid": "架构有效",
+      "tokensTitle": "令牌与作用域",
+      "tokensEmpty": "尚未配置。"
+    },
+    "observability": {
+      "title": "可观测性",
+      "description": "实时健康状况与诊断。",
+      "serverHealth": "服务器健康状况",
+      "activeGames": "活跃游戏",
+      "players": "玩家",
+      "noGames": "无活跃游戏",
+      "metrics": "延迟与健康状况",
+      "reconnects": "重新连接",
+      "rejected": "被拒绝的答案",
+      "answerLatency": "答题延迟",
+      "metricsOffTitle": "指标未启用",
+      "metricsOffHint": "低延迟模式已关闭。",
+      "displays": "显示屏",
+      "noDisplays": "没有已配对的显示屏",
+      "eventCatalog": "事件目录",
+      "sampledRedacted": "已采样并脱敏",
+      "grafana": "Grafana",
+      "loki": "Loki",
+      "prometheus": "Prometheus"
+    }
   },
   "media": {
     "title": "媒体库",
