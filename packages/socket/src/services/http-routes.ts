@@ -1,0 +1,503 @@
+// HTTP route table + dispatcher for the raw node `http` server. The SAME table
+// feeds the OpenAPI generator (single source of truth) and the request
+// dispatcher, so a route can never be served without being documented (or vice
+// versa) — the route-parity test asserts the path-set equality.
+//
+// Matching stays regex-based (the proven legacy approach). Helpers (jsonOk /
+// jsonError / readBody, 64 KB cap, 413 precheck) are reused verbatim. The 5
+// legacy routes keep their exact behavior. New /api/v1/* routes are DEV-gated
+// fail-closed (absent → handled as 404 when RAZZOOLE_DEV is unset).
+
+import type { IncomingMessage, ServerResponse } from "http"
+import { z } from "zod"
+import {
+  buildOpenApiDoc,
+  soloResponseSchema,
+  type RouteDoc,
+} from "@razzoozle/common/openapi/doc"
+import { buildEventCatalog } from "@razzoozle/common/openapi/events-catalog"
+import {
+  soloCheckAnswerRequestValidator,
+  soloScoreSubmitValidator,
+} from "@razzoozle/common/validators/solo"
+import {
+  ALWAYS_KEEP_TYPES,
+  clientEventValidator,
+} from "@razzoozle/common/validators/client-events"
+import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
+import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
+import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
+import {
+  appendSoloResult,
+  assertSafeId,
+  getMergedAchievements,
+  getQuizzById,
+  getSoloResults,
+  isDevMode,
+} from "@razzoozle/socket/services/config"
+import { requestLogger } from "@razzoozle/socket/services/logger"
+import {
+  clientEventsTotal,
+  httpRequestsTotal,
+  renderMetrics,
+} from "@razzoozle/socket/services/prom"
+
+// ── HTTP helpers (reused verbatim from the legacy router) ───────────────────
+export const jsonOk = (res: ServerResponse, data: unknown): void => {
+  const body = JSON.stringify(data)
+  res.writeHead(200, {
+    "content-type": "application/json",
+    "content-length": Buffer.byteLength(body),
+  })
+  res.end(body)
+}
+
+export const jsonError = (
+  res: ServerResponse,
+  status: number,
+  message: string,
+): void => {
+  const body = JSON.stringify({ error: message })
+  res.writeHead(status, {
+    "content-type": "application/json",
+    "content-length": Buffer.byteLength(body),
+  })
+  res.end(body)
+}
+
+const BODY_LIMIT_BYTES = 64 * 1024 // 64 KB — enough for any valid payload
+
+export const readBody = (req: IncomingMessage): Promise<unknown> =>
+  new Promise((resolve, reject) => {
+    const tooLarge = () =>
+      reject(Object.assign(new Error("Payload Too Large"), { status: 413 }))
+
+    // Content-Length pre-check: reject WITHOUT destroying the socket (no body
+    // bytes consumed yet) so the handler's catch can still write a real 413
+    // response. Pause the stream so the (unread) body never accumulates.
+    const contentLength = Number(req.headers["content-length"] ?? 0)
+    if (contentLength > BODY_LIMIT_BYTES) {
+      req.pause()
+      tooLarge()
+      return
+    }
+
+    const chunks: Buffer[] = []
+    let accumulated = 0
+    let aborted = false
+
+    req.on("data", (chunk: Buffer) => {
+      if (aborted) {
+        return
+      }
+      accumulated += chunk.byteLength
+      if (accumulated > BODY_LIMIT_BYTES) {
+        // Chunked overflow (no/under-stated Content-Length): stop reading and
+        // reject — the handler writes a 413 response, then the connection
+        // closes cleanly once the response is flushed.
+        aborted = true
+        req.pause()
+        tooLarge()
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on("end", () => {
+      if (aborted) {
+        return
+      }
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")))
+      } catch {
+        reject(new Error("Invalid JSON"))
+      }
+    })
+    req.on("error", reject)
+  })
+
+const statusFrom413 = (err: unknown, fallback: number): number =>
+  err instanceof Error &&
+  (err as NodeJS.ErrnoException & { status?: number }).status === 413
+    ? 413
+    : fallback
+
+// ── client-events token bucket (per clientId, NEVER per-IP) ─────────────────
+// Venues share a NAT IP, so a per-IP limiter would throttle a whole room. The
+// bucket Map is CAPPED + LRU-evicted (≤10k) so an unauthenticated public
+// endpoint can never OOM the single process (G11).
+const RATE_WINDOW_MS = 60_000
+export const RATE_MAX = 20 // ~20 events / minute / clientId
+export const BUCKET_MAX = 10_000 // LRU cap (mirrors metrics.ts MAX_SAMPLES intent)
+export const SAMPLE_RATE = 0.1 // keep 10% of non-error/non-join-failure events
+
+interface Bucket {
+  count: number
+  resetAt: number
+}
+
+const buckets = new Map<string, Bucket>()
+
+// Returns true if the event is WITHIN the rate limit (allowed). Evicts the
+// oldest entry (insertion order — Map preserves it) once the cap is reached.
+export const withinRate = (clientId: string, now: number): boolean => {
+  let b = buckets.get(clientId)
+
+  if (!b || now >= b.resetAt) {
+    if (buckets.size >= BUCKET_MAX && !buckets.has(clientId)) {
+      const oldest = buckets.keys().next().value
+      if (oldest !== undefined) {
+        buckets.delete(oldest)
+      }
+    }
+    b = { count: 0, resetAt: now + RATE_WINDOW_MS }
+    // Re-insert at the tail so LRU eviction drops genuinely-stale clients.
+    buckets.delete(clientId)
+    buckets.set(clientId, b)
+  }
+
+  if (b.count >= RATE_MAX) {
+    return false
+  }
+
+  b.count += 1
+  return true
+}
+
+// Deterministic 0..1 hash of a clientId+type so sampling is stable per client
+// (a given client's answer-latency events are consistently kept or dropped
+// within a window) and testable without Math.random.
+export const sampleHash = (key: string): number => {
+  let h = 2166136261
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  // Map to [0,1)
+  return (h >>> 0) / 4294967296
+}
+
+// Test seam: reset bucket state between cases.
+export const __resetClientEventBuckets = (): void => buckets.clear()
+export const __bucketSize = (): number => buckets.size
+
+// ── new-route handlers ──────────────────────────────────────────────────────
+
+const handleClientEvents = (req: IncomingMessage, res: ServerResponse): void => {
+  const log = requestLogger("/api/v1/client-events")
+
+  void (async () => {
+    try {
+      const body = await readBody(req)
+      const parsed = clientEventValidator.safeParse(body)
+
+      if (!parsed.success) {
+        jsonError(res, 400, parsed.error.issues[0]!.message)
+        httpRequestsTotal.inc({ route: "/api/v1/client-events", status: "400" })
+        return
+      }
+
+      const event = parsed.data
+      const now = Date.now()
+
+      // Per-clientId rate limit (NEVER per-IP). Over-limit → silent 204.
+      if (!withinRate(event.clientId, now)) {
+        res.writeHead(204)
+        res.end()
+        httpRequestsTotal.inc({ route: "/api/v1/client-events", status: "204" })
+        return
+      }
+
+      // Sampling: always keep errors + join-failures; sample the rest at 0.1
+      // (deterministic so tests are stable). Dropped → silent 204.
+      const keep =
+        ALWAYS_KEEP_TYPES.has(event.type) ||
+        sampleHash(`${event.clientId}:${event.type}`) < SAMPLE_RATE
+
+      clientEventsTotal.inc({ type: event.type })
+
+      if (keep) {
+        // Logged through the redacting child logger. zod already stripped any
+        // smuggled secret/solution field; the logger redacts the rest.
+        log.info({ clientEvent: event }, "client-event")
+      }
+
+      res.writeHead(204)
+      res.end()
+      httpRequestsTotal.inc({ route: "/api/v1/client-events", status: "204" })
+    } catch (err) {
+      const status = statusFrom413(err, 400)
+      jsonError(res, status, err instanceof Error ? err.message : "Error")
+      httpRequestsTotal.inc({
+        route: "/api/v1/client-events",
+        status: String(status),
+      })
+    }
+  })()
+}
+
+const handleSoloGet = (
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  try {
+    assertSafeId(id ?? "")
+    const quiz = getQuizzById(id!)
+    const questions = quiz.questions.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ({ solutions: _s, correct: _c, acceptedAnswers: _a, ...rest }) => rest,
+    )
+    jsonOk(res, { subject: quiz.subject, questions })
+  } catch (err) {
+    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
+  }
+}
+
+const handleCheckAnswer = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  void (async () => {
+    try {
+      assertSafeId(id ?? "")
+      const body = await readBody(req)
+      const parsed = soloCheckAnswerRequestValidator.safeParse(body)
+
+      if (!parsed.success) {
+        jsonError(res, 400, parsed.error.issues[0]!.message)
+        return
+      }
+
+      const { questionIndex, answerId, answerIds, answerText } = parsed.data
+      const quiz = getQuizzById(id!)
+
+      if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
+        jsonError(res, 400, "Invalid questionIndex")
+        return
+      }
+
+      const question = quiz.questions[questionIndex]!
+      const { correct, base } = evaluateAnswer(question, {
+        answerId,
+        answerIds,
+        answerText,
+      })
+      const points = correct ? Math.round(1000 * base) : 0
+      const response: SoloCheckAnswerResponse = { correct, points }
+
+      if (question.type === "slider") {
+        response.accuracy = base
+        const sharp = mergeAchievementsConfig({}).find(
+          (a) => a.id === "sharpshooter",
+        )
+        const minPct = sharp?.threshold ?? 95
+        if ((sharp?.enabled ?? true) && correct && base * 100 >= minPct) {
+          response.achievements = ["sharpshooter"]
+        }
+      }
+
+      jsonOk(res, response)
+    } catch (err) {
+      jsonError(
+        res,
+        statusFrom413(err, 404),
+        err instanceof Error ? err.message : "Error",
+      )
+    }
+  })()
+}
+
+const handleSoloScore = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  void (async () => {
+    try {
+      assertSafeId(id ?? "")
+      const body = await readBody(req)
+      const parsed = soloScoreSubmitValidator.safeParse(body)
+
+      if (!parsed.success) {
+        jsonError(res, 400, parsed.error.issues[0]!.message)
+        return
+      }
+
+      const { playerName, score } = parsed.data
+      appendSoloResult(id!, {
+        playerName,
+        score,
+        answeredAt: new Date().toISOString(),
+      })
+
+      const leaderboard = getSoloResults(id!).sort((a, b) => b.score - a.score)
+      jsonOk(res, { leaderboard })
+    } catch (err) {
+      jsonError(
+        res,
+        statusFrom413(err, 500),
+        err instanceof Error ? err.message : "Error",
+      )
+    }
+  })()
+}
+
+// ── Route table (single source of truth) ────────────────────────────────────
+// Each entry carries a regex matcher with one optional capture group (the id),
+// the doc metadata, and the handler. `dev` routes are fail-closed.
+
+interface Route extends RouteDoc {
+  match: RegExp
+  dev?: boolean
+  handle: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    id: string | undefined,
+  ) => void
+}
+
+const clientEventSchemaJson = () =>
+  z.toJSONSchema(clientEventValidator, {
+    target: "draft-2020-12",
+    unrepresentable: "any",
+  })
+
+export const routes: Route[] = [
+  // ── 5 legacy routes (verbatim behavior) ───────────────────────────────────
+  {
+    method: "GET",
+    path: "/api/achievements",
+    summary: "Public merged achievements config for the player client.",
+    match: /^\/api\/achievements$/,
+    handle: (_req, res) =>
+      jsonOk(res, { achievements: getMergedAchievements() }),
+  },
+  {
+    method: "GET",
+    path: "/api/quizz/:id/solo",
+    summary: "Quiz questions for solo play, with solutions stripped.",
+    description:
+      "Returns subject + questions with solutions/correct/acceptedAnswers " +
+      "removed so a solo client cannot trivially cheat.",
+    responseSchema: soloResponseSchema,
+    match: /^\/api\/quizz\/([^/]+)\/solo$/,
+    handle: (_req, res, id) => handleSoloGet(res, id),
+  },
+  {
+    method: "POST",
+    path: "/api/quizz/:id/check-answer",
+    summary: "Stateless server-side answer check for solo play.",
+    requestSchema: soloCheckAnswerRequestValidator,
+    match: /^\/api\/quizz\/([^/]+)\/check-answer$/,
+    handle: (req, res, id) => handleCheckAnswer(req, res, id),
+  },
+  {
+    method: "POST",
+    path: "/api/quizz/:id/solo-score",
+    summary: "Persist a solo-play score and return the leaderboard.",
+    requestSchema: soloScoreSubmitValidator,
+    match: /^\/api\/quizz\/([^/]+)\/solo-score$/,
+    handle: (req, res, id) => handleSoloScore(req, res, id),
+  },
+  // ── new routes ────────────────────────────────────────────────────────────
+  {
+    method: "GET",
+    path: "/api/v1/health",
+    summary: "Additive JSON health (the text/plain /healthz probe is frozen).",
+    match: /^\/api\/v1\/health$/,
+    handle: (_req, res) =>
+      jsonOk(res, { status: "ok", ts: new Date().toISOString() }),
+  },
+  {
+    method: "POST",
+    path: "/api/v1/client-events",
+    summary: "Ingest client telemetry (errors, join failures, reconnects).",
+    description:
+      "Sampled (0.1, errors/join-failures always kept), redacted, " +
+      "rate-limited per clientId (never per-IP). Over-limit → silent 204.",
+    requestSchema: clientEventValidator,
+    match: /^\/api\/v1\/client-events$/,
+    handle: (req, res) => handleClientEvents(req, res),
+  },
+  {
+    method: "GET",
+    path: "/api/v1/observability/events",
+    summary: "Static socket.io event catalog (role + direction).",
+    dev: true,
+    match: /^\/api\/v1\/observability\/events$/,
+    handle: (_req, res) => jsonOk(res, { events: buildEventCatalog() }),
+  },
+  {
+    method: "GET",
+    path: "/api/v1/observability/schema",
+    summary: "JSON Schema for the client-events payload.",
+    dev: true,
+    match: /^\/api\/v1\/observability\/schema$/,
+    handle: (_req, res) => jsonOk(res, clientEventSchemaJson()),
+  },
+  {
+    method: "GET",
+    path: "/api/openapi.json",
+    summary: "OpenAPI 3.1 document for this HTTP edge.",
+    dev: true,
+    match: /^\/api\/openapi\.json$/,
+    handle: (_req, res) => jsonOk(res, openApiDoc),
+  },
+  {
+    method: "GET",
+    path: "/metrics",
+    summary: "Prometheus metrics (localhost-only via nginx, DEV-gated).",
+    // hidden: kept out of the public OpenAPI contract (it is prom text, not JSON).
+    hidden: true,
+    dev: true,
+    match: /^\/metrics$/,
+    handle: (_req, res) => {
+      void (async () => {
+        try {
+          const body = await renderMetrics()
+          res.writeHead(200, {
+            "content-type": "text/plain; version=0.0.4; charset=utf-8",
+          })
+          res.end(body)
+        } catch {
+          jsonError(res, 500, "metrics error")
+        }
+      })()
+    },
+  },
+]
+
+// Build the OpenAPI doc once from the SAME table (excludes hidden routes).
+export const openApiDoc = buildOpenApiDoc(routes)
+
+// Dispatch a request against the table. Returns true if a route handled it
+// (including DEV-gated 404). Returns false if no route matched at all (caller
+// emits the generic 404), so /healthz and the socket.io upgrade are untouched.
+export const dispatchHttp = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): boolean => {
+  const url = (req.url ?? "").split("?")[0] ?? ""
+  const method = req.method ?? "GET"
+
+  for (const route of routes) {
+    if (route.method !== method) {
+      continue
+    }
+    const m = route.match.exec(url)
+    if (!m) {
+      continue
+    }
+
+    // DEV-gated fail-closed: behave as if the route does not exist when off.
+    if (route.dev && !isDevMode()) {
+      return false
+    }
+
+    httpRequestsTotal.inc({ route: route.path, status: "200" })
+    route.handle(req, res, m[1])
+    return true
+  }
+
+  return false
+}

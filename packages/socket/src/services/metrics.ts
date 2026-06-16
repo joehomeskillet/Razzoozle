@@ -7,6 +7,11 @@
 // no I/O, no external deps. A room's metrics are dropped on demand via clear().
 
 import type { MetricsHealthSnapshot } from "@razzoozle/common/types/game/socket"
+import {
+  answerAckLatencyMs,
+  answersRejectedTotal,
+  clockRttMs,
+} from "@razzoozle/socket/services/prom"
 
 const MAX_SAMPLES = 200
 
@@ -68,6 +73,8 @@ const percentile = (values: Sample[], p: number): number | null => {
 export const metrics = {
   recordRtt(gameId: string, rttMs: number): void {
     push(getRoom(gameId).rtt, rttMs)
+    // prom histogram .observe() — reached ONLY from LL-gated callers.
+    clockRttMs.observe(rttMs)
   },
 
   recordClockOffset(gameId: string, offsetMs: number): void {
@@ -76,6 +83,8 @@ export const metrics = {
 
   recordAnswerAck(gameId: string, latencyMs: number): void {
     push(getRoom(gameId).answerAck, latencyMs)
+    // prom histogram .observe() — reached ONLY from LL-gated callers.
+    answerAckLatencyMs.observe(latencyMs)
   },
 
   recordReconnect(gameId: string): void {
@@ -85,6 +94,8 @@ export const metrics = {
   recordRejected(gameId: string, reason: string): void {
     const room = getRoom(gameId)
     room.rejected[reason] = (room.rejected[reason] ?? 0) + 1
+    // bounded label — `reason` is a fixed enum, never an id.
+    answersRejectedTotal.inc({ reason })
   },
 
   // P50/p95 snapshot for a room. Safe to call any time; returns nulls when no

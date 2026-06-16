@@ -76,6 +76,13 @@ const getPath = (path = "") =>
     ? resolve(inContainerPath, path)
     : resolve(process.cwd(), "../../config", path)
 
+// RAZZOOLE_DEV — fail-closed dev/observability gate. Mirrors the
+// `RAHOOT_SIM_MODE !== "1"` pattern (services/game/index.ts): the ABILITY is in
+// the prod bundle, but every dev-only HTTP surface (OpenAPI, Scalar docs,
+// /metrics, observability + client-events endpoints) is absent (404) unless the
+// operator explicitly opts in. Default OFF, any value other than "1" is OFF.
+export const isDevMode = (): boolean => process.env.RAZZOOLE_DEV === "1"
+
 // Read-only seed assets baked into the image (presets + brand backgrounds/logo).
 // Mirrors getPath: BRANDING_PATH is set in Docker (=/app/branding via Dockerfile)
 // and falls back to the repo-relative `source/branding` in dev (the socket dev
