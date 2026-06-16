@@ -305,8 +305,10 @@ const seedBrandingAssets = (): void => {
     }
   }
 
-  // 3. Brand chrome served from /theme/: the OG share image + the wordmark SVG
-  //    (the preset's `logo` points at /theme/razzoozle-logo.svg).
+  // 3. Brand chrome served from /theme/: the OG share image + the wordmark SVG.
+  //    Seed BOTH brand sets idempotently (each copyIfMissing only writes a
+  //    missing target). The Razzoozle preset's `logo` points at
+  //    /theme/razzoozle-logo.svg; the rahoot preset's at /theme/rahoot-logo.svg.
   ensureDir(getPath("theme"))
   copyIfMissing(
     getBrandingPath("razzoozle-og.webp"),
@@ -315,6 +317,14 @@ const seedBrandingAssets = (): void => {
   copyIfMissing(
     getBrandingPath("razzoozle-logo.svg"),
     getPath("theme/razzoozle-logo.svg"),
+  )
+  copyIfMissing(
+    getBrandingPath("rahoot-og.webp"),
+    getPath("theme/rahoot-og.webp"),
+  )
+  copyIfMissing(
+    getBrandingPath("rahoot-logo.svg"),
+    getPath("theme/rahoot-logo.svg"),
   )
 }
 

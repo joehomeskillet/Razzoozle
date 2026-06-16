@@ -6,7 +6,6 @@ import {
 import {
   DEFAULT_THEME,
   type Theme,
-  type ThemeRevision,
   type ThemeTemplate,
 } from "@razzoozle/common/types/theme"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
@@ -33,7 +32,6 @@ import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   BookMarked,
   Download,
-  History,
   Image as ImageIcon,
   RotateCcw,
   Trash2,
@@ -53,7 +51,7 @@ const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 // carries no slot/context, so we track the last action explicitly to route the
 // failure (and clear the right pending state) instead of guessing from
 // pendingSlot, which can misattribute a save error to an in-flight upload slot.
-type ThemeAction = "upload" | "save" | "template" | "restore"
+type ThemeAction = "upload" | "save" | "template"
 
 const BG_SLOTS: Array<{
   key: BackgroundSlot
@@ -72,20 +70,6 @@ const BG_SLOTS: Array<{
     aspect: "aspect-[9/16]",
   },
 ]
-
-// Locale-aware short timestamp for a saved revision (mirrors ConfigMedia).
-const formatRevisionDate = (iso: string) => {
-  const d = new Date(iso)
-
-  return `${d.toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })} · ${d.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`
-}
 
 const ConfigTheme = () => {
   const { socket } = useSocket()
@@ -109,10 +93,6 @@ const ConfigTheme = () => {
   const [templateName, setTemplateName] = useState("")
   // The template id pending a delete confirmation; drives the AlertDialog.
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  // Per-save theme revisions (full ThemeRevision[] from THEME_REVISION.DATA).
-  const [revisions, setRevisions] = useState<ThemeRevision[]>([])
-  // The revision id pending a restore confirmation; drives the AlertDialog.
-  const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
 
   const setSlotError = (slot: ThemeSlot, message: string | null) =>
     setSlotErrors((prev) => {
@@ -166,10 +146,9 @@ const ConfigTheme = () => {
     toast.error(message)
   })
 
-  // Request the saved templates + revisions once on mount.
+  // Request the saved templates once on mount.
   useEffect(() => {
     socket.emit(EVENTS.THEME_TEMPLATE.LIST)
-    socket.emit(EVENTS.THEME_REVISION.LIST_REVISIONS)
   }, [socket])
 
   useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
@@ -181,26 +160,6 @@ const ConfigTheme = () => {
   })
 
   useEvent(EVENTS.THEME_TEMPLATE.ERROR, (message) => {
-    pendingActionRef.current = null
-    toast.error(t(message))
-  })
-
-  useEvent(EVENTS.THEME_REVISION.DATA, setRevisions)
-
-  // RESTORE_SUCCESS carries the restored Theme — sync the shared store AND
-  // preview it (mirrors SET_THEME_SUCCESS). The acting socket is excluded from
-  // the server's THEME broadcast, so without updating the store here a later tab
-  // remount would re-seed `draft` from the stale store and a Save would clobber
-  // the restored theme.
-  useEvent(EVENTS.THEME_REVISION.RESTORE_SUCCESS, (restored) => {
-    pendingActionRef.current = null
-    const full = { ...DEFAULT_THEME, ...restored }
-    setTheme(full)
-    preview(full)
-    toast.success(t("manager:theme.revisions.restored"))
-  })
-
-  useEvent(EVENTS.THEME_REVISION.ERROR, (message) => {
     pendingActionRef.current = null
     toast.error(t(message))
   })
@@ -277,6 +236,14 @@ const ConfigTheme = () => {
   // Load a template into the editor so the admin can preview + save it.
   const handleApplyTemplate = (template: ThemeTemplate) =>
     preview({ ...DEFAULT_THEME, ...template.theme })
+
+  // Edit a saved template: load its theme into the editable editor state and
+  // prefill the name field so a re-save overwrites the same template
+  // (dedupe-on-save). Same load path as Apply, but targets the name input too.
+  const handleEditTemplate = (template: ThemeTemplate) => {
+    preview({ ...DEFAULT_THEME, ...template.theme })
+    setTemplateName(template.name)
+  }
 
   // Export a saved template's Theme to a JSON file (client-only, no backend).
   // Mirrors the Blob/object-URL anchor pattern used by the quiz export.
@@ -359,19 +326,6 @@ const ConfigTheme = () => {
 
     socket.emit(EVENTS.THEME_TEMPLATE.DELETE, { id: pendingDeleteId })
     setPendingDeleteId(null)
-  }
-
-  // Restore a captured revision. The server snapshots the current theme first
-  // (restore is undoable) and broadcasts THEME; RESTORE_SUCCESS triggers the
-  // local preview() above.
-  const handleRestore = () => {
-    if (!pendingRestoreId) {
-      return
-    }
-
-    pendingActionRef.current = "restore"
-    socket.emit(EVENTS.THEME_REVISION.RESTORE_REVISION, { id: pendingRestoreId })
-    setPendingRestoreId(null)
   }
 
   return (
@@ -664,6 +618,16 @@ const ConfigTheme = () => {
                         >
                           {t("manager:theme.templates.apply")}
                         </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          type="button"
+                          onClick={() => handleEditTemplate(template)}
+                        >
+                          {t("manager:theme.templates.edit", {
+                            defaultValue: "Bearbeiten",
+                          })}
+                        </Button>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="secondary"
@@ -697,56 +661,6 @@ const ConfigTheme = () => {
               )}
             </SectionCard>
 
-            {/* ── Versionen ────────────────────────────────────────── */}
-            <SectionCard
-              icon={<History className="size-5" />}
-              title={t("manager:theme.revisions.title")}
-            >
-              {revisions.length === 0 ? (
-                <EmptyState
-                  icon={History}
-                  headline={t("manager:theme.revisions.empty")}
-                />
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {revisions.map((revision) => (
-                    <div
-                      key={revision.id}
-                      className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
-                    >
-                      <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
-                        {t("manager:theme.revisions.savedAt", {
-                          when: formatRevisionDate(revision.createdAt),
-                        })}
-                      </p>
-                      <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-gray-200">
-                        {[
-                          revision.theme.colorPrimary,
-                          revision.theme.accentColor,
-                          ...revision.theme.answerColors,
-                        ].map((color, index) => (
-                          <span
-                            // oxlint-disable-next-line no-array-index-key
-                            key={index}
-                            className="flex-1"
-                            style={{ backgroundColor: color }}
-                            aria-hidden
-                          />
-                        ))}
-                      </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        type="button"
-                        onClick={() => setPendingRestoreId(revision.id)}
-                      >
-                        {t("manager:theme.revisions.restore")}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </SectionCard>
           </div>
 
           {/* ── RIGHT: live preview (sticky) ───────────────────────── */}
@@ -792,18 +706,6 @@ const ConfigTheme = () => {
         onConfirm={handleDeleteTemplate}
       />
 
-      <AlertDialog
-        open={pendingRestoreId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingRestoreId(null)
-          }
-        }}
-        title={t("manager:theme.revisions.restore")}
-        description={t("manager:theme.revisions.confirmRestore")}
-        confirmLabel={t("manager:theme.revisions.restore")}
-        onConfirm={handleRestore}
-      />
     </>
   )
 }
