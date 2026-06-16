@@ -24,7 +24,7 @@ import {
 } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { BookOpen, Library, Pencil, SearchX, Trash2, X } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -191,6 +191,9 @@ const CatalogQuestionModal = ({
 }: CatalogQuestionModalProps) => {
   const { t } = useTranslation()
   const [tagsValue, setTagsValue] = useState("")
+  const dialogRef = useRef<HTMLElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -214,6 +217,63 @@ const CatalogQuestionModal = ({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [onClose, open])
 
+  // Focus management: remember the previously focused element, move focus into
+  // the modal on open, and restore it on close.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    closeButtonRef.current?.focus()
+
+    return () => {
+      previousFocusRef.current?.focus()
+    }
+  }, [open])
+
+  // Trap Tab / Shift+Tab focus within the modal.
+  const handleFocusTrap = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== "Tab") {
+      return
+    }
+
+    const dialog = dialogRef.current
+
+    if (!dialog) {
+      return
+    }
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+
+    if (focusable.length === 0) {
+      return
+    }
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const active = document.activeElement
+
+    if (event.shiftKey) {
+      if (active === first || !dialog.contains(active)) {
+        event.preventDefault()
+        last.focus()
+      }
+
+      return
+    }
+
+    if (active === last || !dialog.contains(active)) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
   if (!open) {
     return null
   }
@@ -231,9 +291,11 @@ const CatalogQuestionModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6">
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="catalog-question-modal-title"
+        onKeyDown={handleFocusTrap}
         className="flex max-h-[88svh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl xl:max-w-5xl"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
@@ -248,6 +310,7 @@ const CatalogQuestionModal = ({
             </h2>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label={t("common:cancel")}
@@ -307,6 +370,8 @@ const ConfigCatalog = () => {
     EVENTS.CATALOG.ERROR,
     useCallback(
       (message: string) => {
+        // Reset pendingOp so a failed add/edit doesn't mislabel the next op.
+        setPendingOp(null)
         toast.error(t(message))
       },
       [t],
@@ -371,6 +436,7 @@ const ConfigCatalog = () => {
       return
     }
 
+    // Optimistic: no per-op ack for DELETE; CATALOG.ERROR covers failures.
     socket.emit(EVENTS.CATALOG.DELETE, { id: pendingDelete.id })
     toast.success(t("manager:catalog.deleted"))
     setPendingDelete(null)

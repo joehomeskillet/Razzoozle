@@ -22,7 +22,12 @@ const csvFilename = (subject: string, date: string) => {
       .replace(/[^\w-]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .toLowerCase()
-  const day = new Date(date).toISOString().slice(0, 10)
+  // An invalid/missing date would make `toISOString()` throw a RangeError, so
+  // guard it and just drop the datestamp from the filename in that case.
+  const parsed = new Date(date)
+  const day = Number.isNaN(parsed.getTime())
+    ? ""
+    : parsed.toISOString().slice(0, 10)
   const base = [slug(subject), day].filter(Boolean).join("-") || "ergebnis"
 
   return `${base}.csv`

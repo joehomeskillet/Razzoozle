@@ -90,21 +90,23 @@ const NavItem = ({
         {label}
       </span>
 
-      {hasBadge && (
-        <span
-          // aria-live so screen readers announce queue-count changes (spec §6).
-          aria-live="polite"
-          className={clsx(
-            "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
-            active
-              ? "bg-[var(--accent-contrast)] text-white"
-              : "bg-gray-200 text-gray-700 group-hover:bg-gray-300",
-            !isVertical && "absolute -top-0.5 -right-0.5 sm:static",
-          )}
-        >
-          {count}
-        </span>
-      )}
+      {/* aria-live so screen readers announce queue-count changes (spec §6).
+          The region stays mounted permanently — when the count drops to 0 we
+          hide the badge visually but keep the (now empty) live region so the
+          transition to 0 is still announced; mounting/unmounting would not be. */}
+      <span
+        aria-live="polite"
+        className={clsx(
+          "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
+          active
+            ? "bg-[var(--accent-contrast)] text-white"
+            : "bg-gray-200 text-gray-700 group-hover:bg-gray-300",
+          !isVertical && "absolute -top-0.5 -right-0.5 sm:static",
+          !hasBadge && "sr-only",
+        )}
+      >
+        {hasBadge ? count : ""}
+      </span>
     </button>
   )
 }

@@ -141,7 +141,6 @@
     "uploaded": "媒体已上传",
     "delete": "删除",
     "deleteConfirm": "确定要删除此媒体项吗？",
-    "deleted": "媒体已删除",
     "search": "搜索媒体",
     "searchPlaceholder": "搜索媒体…",
     "noResults": "无匹配媒体",
@@ -172,7 +171,6 @@
       "toggle": "选择 {{name}}"
     },
     "dropHint": "将文件拖到此处以上传",
-    "dimensions": "{{w}} × {{h}} 像素",
     "details": "详情"
   },
   "catalog": {
@@ -180,7 +178,6 @@
     "intro": "收集可复用的题目，并将它们插入任意测验。",
     "empty": "题库中还没有题目。",
     "emptyHeadline": "题库为空",
-    "add": "添加题目",
     "addManual": "创建新题目",
     "saveToCatalog": "保存到题库",
     "saved": "题目已保存到题库",
@@ -199,7 +196,6 @@
     "noResults": "无匹配题目",
     "count": "{{count}} 道题目",
     "count_other": "{{count}} 道题目",
-    "preview": "预览",
     "source": {
       "manual": "手动",
       "submission": "建议",
@@ -221,7 +217,6 @@
       "description": "通过 ComfyUI / Z-Image 进行本地图片生成。"
     },
     "provider": "提供商",
-    "active": "已启用",
     "off": "关闭",
     "status": {
       "off": "关闭",
@@ -250,14 +245,10 @@
     "testFailed": "连接失败",
     "save": "保存",
     "saved": "AI 设置已保存",
-    "saveFailed": "保存失败",
     "generate": {
       "title": "使用 AI 生成",
       "topic": "主题",
       "topicPlaceholder": "例如：瑞士地理",
-      "type": "题目类型",
-      "count": "题目数量",
-      "question": "生成题目",
       "fromTopic": "根据主题生成题目",
       "distractors": "建议答案",
       "quiz": "生成测验",
@@ -266,7 +257,6 @@
       "generated": "已生成",
       "applied": "已应用",
       "quizCreated": "测验已创建",
-      "failed": "生成失败",
       "notConfigured": "尚未配置文本提供商。请先设置 AI。",
       "openInEditor": "在编辑器中打开",
       "countValue": "题目：{{count}}",
@@ -310,7 +300,6 @@
     "pair": "配对",
     "paired": "显示屏已配对",
     "step1": "将树莓派或投影仪连接到互联网并打开 razzoozle.joelduss.xyz/display —— 大屏幕会显示一个配对码。",
-    "step2": "开始一局游戏，然后点击游戏顶栏中的「卫星屏」来输入代码。",
     "step3": "你的手机仍是遥控器：开始、下一题和自动模式都在这里操控。",
     "hint": "只有在游戏运行时才能配对 —— 配对码需要实时进行的游戏和你的主持人密码。",
     "step1Result": "随后大屏幕会显示一个 6 位代码，例如「ABC123」。",
@@ -424,6 +413,7 @@
     "confirmReject": "确定要拒绝此建议吗？",
     "submittedBy": "由 {{name}} 提交",
     "submittedAt": "于 {{date}}",
+    "cooldownSuffix": "秒",
     "previewLabels": {
       "cooldown": "冷却时间",
       "loading": "正在加载预览 …"
@@ -490,5 +480,15 @@
       "minRanksUp": "排行榜上升名次",
       "minPointsAhead": "被超越玩家的分数领先"
     }
+  },
+  "achievements": {
+    "active": "已启用"
+  },
+  "console": {
+    "resetAsset": "重置"
+  },
+  "themePreview": {
+    "join": "加入",
+    "playerName": "玩家 {{rank}}"
   }
 }

@@ -126,11 +126,11 @@ const ConfigAI = () => {
       (result: AITestResult) => {
         setTesting(false)
         setLastTest(result.ok ? "ok" : "failed")
-        setLastTestMessage(t(result.message))
+        setLastTestMessage(t(result.message, { defaultValue: result.message }))
         if (result.ok) {
-          toast.success(t(result.message))
+          toast.success(t(result.message, { defaultValue: result.message }))
         } else {
-          toast.error(t(result.message))
+          toast.error(t(result.message, { defaultValue: result.message }))
         }
       },
       [t],
@@ -249,12 +249,14 @@ const ConfigAI = () => {
   const saveKey = (providerId: string) => {
     socket.emit(EVENTS.AI.SET_KEY, { providerId, key: keyInput })
     setKeyInput("")
+    // ponytail: no server ack for key save
     toast.success(t("manager:ai.keySaved"))
   }
 
   const clearKey = (providerId: string) => {
     socket.emit(EVENTS.AI.SET_KEY, { providerId, key: "" })
     setKeyInput("")
+    // ponytail: no server ack for key save
     toast.success(t("manager:ai.keyCleared"))
   }
 
@@ -299,7 +301,24 @@ const ConfigAI = () => {
           (provider) => provider.id === settings.text.activeProvider,
         )
 
-  const textConfigured = Boolean(selectedProvider?.keyConfigured)
+  // A provider needs no API key only when it targets a local host — mirror the
+  // server's isLocalBaseUrl rule (localhost / 127.0.0.1 / host.docker.internal)
+  // rather than matching the provider id, so the badge + hint stay in sync with
+  // server behavior even if the 'local' provider is repointed at a remote host.
+  const isLocalProvider =
+    selectedProvider?.kind === "openai-compatible" &&
+    (() => {
+      try {
+        return ["localhost", "127.0.0.1", "host.docker.internal"].includes(
+          new URL(selectedProvider.baseUrl ?? "").hostname,
+        )
+      } catch {
+        return false
+      }
+    })()
+  const textConfigured = Boolean(
+    selectedProvider && (selectedProvider.keyConfigured || isLocalProvider),
+  )
 
   const textStatus: "off" | "ready" | "error" = !selectedProvider
     ? "off"

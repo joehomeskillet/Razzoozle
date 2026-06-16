@@ -64,10 +64,11 @@ const ConfigManageQuizz = () => {
   const { socket } = useSocket()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // Holds the id of the quiz awaiting a QUIZZ.DATA response for export. The
+  // Holds the ids of quizzes awaiting a QUIZZ.DATA response for export. The
   // QUIZZ.DATA event is shared (also used by the editor), so we only act on the
-  // response whose id matches this pending export request.
-  const pendingExportId = useRef<string | null>(null)
+  // response whose id is in this pending set. A Set (not a single ref) keeps
+  // concurrent exports from overwriting each other's pending id.
+  const pendingExportIds = useRef<Set<string>>(new Set())
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [showArchived, setShowArchived] = useState(false)
@@ -130,20 +131,17 @@ const ConfigManageQuizz = () => {
   // serialize it to JSON and download. Reuses the EXISTING auth-gated QUIZZ.GET
   // event (no new socket event).
   useEvent(EVENTS.QUIZZ.DATA, (data: QuizzWithId) => {
-    if (
-      pendingExportId.current === null ||
-      data.id !== pendingExportId.current
-    ) {
+    if (!pendingExportIds.current.has(data.id)) {
       return
     }
 
-    pendingExportId.current = null
+    pendingExportIds.current.delete(data.id)
     downloadQuizzJson(data)
     toast.success(t("manager:quizz.exported"))
   })
 
   const handleExport = (id: string) => {
-    pendingExportId.current = id
+    pendingExportIds.current.add(id)
     socket.emit(EVENTS.QUIZZ.GET, id)
   }
 
@@ -186,6 +184,7 @@ const ConfigManageQuizz = () => {
     selected.forEach((id) => {
       socket.emit(EVENTS.QUIZZ.DELETE, id)
     })
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.deleted"))
     clearSelection()
     setBulkDeleteOpen(false)
@@ -200,6 +199,7 @@ const ConfigManageQuizz = () => {
     }
 
     socket.emit(EVENTS.QUIZZ.DELETE, pendingDelete.id)
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.deleted"))
     setPendingDelete(null)
   }
@@ -210,12 +210,14 @@ const ConfigManageQuizz = () => {
     }
 
     socket.emit(EVENTS.QUIZZ.DUPLICATE, pendingDuplicate.id)
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.duplicated"))
     setPendingDuplicate(null)
   }
 
   const handleArchived = (id: string, archived: boolean) => {
     socket.emit(EVENTS.QUIZZ.SET_ARCHIVED, { id, archived })
+    // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(
       t(
         archived
@@ -254,6 +256,15 @@ const ConfigManageQuizz = () => {
       }
 
       socket.emit(EVENTS.QUIZZ.SAVE, result.data)
+    }
+
+    reader.onerror = () => {
+      reader.abort()
+      toast.error(
+        t("manager:quizz.readError", {
+          defaultValue: "Datei konnte nicht gelesen werden",
+        }),
+      )
     }
 
     reader.readAsText(file)

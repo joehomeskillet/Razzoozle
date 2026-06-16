@@ -70,7 +70,7 @@ const ResultModalTable = () => {
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100">
-        {questionResult.playerAnswers.map((pa, i) => {
+        {questionResult.playerAnswers.map((pa) => {
           const isSlider = questionResult.type === "slider"
           const isPoll = questionResult.type === "poll"
           const isCorrect = isAnswerCorrect(pa)
@@ -78,7 +78,7 @@ const ResultModalTable = () => {
             !isSlider && pa.answerId !== null ? answerLabel(pa.answerId) : null
 
           return (
-            <tr key={i} className="hover:bg-gray-50">
+            <tr key={pa.playerName} className="hover:bg-gray-50">
               <td className="px-5 py-2.5 font-medium">
                 {displayName(pa.playerName)}
               </td>

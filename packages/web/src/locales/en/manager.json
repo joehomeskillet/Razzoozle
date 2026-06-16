@@ -141,7 +141,6 @@
     "uploaded": "Media uploaded",
     "delete": "Delete",
     "deleteConfirm": "Really delete this media item?",
-    "deleted": "Media deleted",
     "search": "Search media",
     "searchPlaceholder": "Search media…",
     "noResults": "No matching media",
@@ -172,7 +171,6 @@
       "toggle": "Select {{name}}"
     },
     "dropHint": "Drop files here to upload",
-    "dimensions": "{{w}} × {{h}} px",
     "details": "Details"
   },
   "catalog": {
@@ -180,7 +178,6 @@
     "intro": "Collect reusable questions and insert them into any quiz.",
     "empty": "No questions in the catalog yet.",
     "emptyHeadline": "Catalog is empty",
-    "add": "Add question",
     "addManual": "Create new question",
     "saveToCatalog": "Save to catalog",
     "saved": "Question saved to catalog",
@@ -199,7 +196,6 @@
     "noResults": "No matching questions",
     "count": "{{count}} question",
     "count_other": "{{count}} questions",
-    "preview": "Preview",
     "source": {
       "manual": "Manual",
       "submission": "Suggestion",
@@ -221,7 +217,6 @@
       "description": "Local image generation via ComfyUI / Z-Image."
     },
     "provider": "Provider",
-    "active": "Active",
     "off": "Off",
     "status": {
       "off": "Off",
@@ -250,14 +245,10 @@
     "testFailed": "Connection failed",
     "save": "Save",
     "saved": "AI settings saved",
-    "saveFailed": "Save failed",
     "generate": {
       "title": "Generate with AI",
       "topic": "Topic",
       "topicPlaceholder": "e.g. Swiss geography",
-      "type": "Question type",
-      "count": "Number of questions",
-      "question": "Generate question",
       "fromTopic": "Question from topic",
       "distractors": "Suggest answers",
       "quiz": "Generate quiz",
@@ -266,7 +257,6 @@
       "generated": "Generated",
       "applied": "Applied",
       "quizCreated": "Quiz created",
-      "failed": "Generation failed",
       "notConfigured": "No text provider configured. Set up the AI first.",
       "openInEditor": "Open in editor",
       "countValue": "Questions: {{count}}",
@@ -310,7 +300,6 @@
     "pair": "Pair",
     "paired": "Display paired",
     "step1": "Connect the Pi or beamer to the internet and open razzoozle.joelduss.xyz/display — the big screen shows a pairing code.",
-    "step2": "Start a game and tap «Satellite» in the game header to enter the code.",
     "step3": "Your phone stays the remote: start, next and auto-mode are all driven from here.",
     "hint": "Pairing only works once a game is running — the code needs the live game and your manager password.",
     "step1Result": "The big screen then shows a 6-digit code like «ABC123».",
@@ -424,6 +413,7 @@
     "confirmReject": "Really reject this suggestion?",
     "submittedBy": "Submitted by {{name}}",
     "submittedAt": "on {{date}}",
+    "cooldownSuffix": "s",
     "previewLabels": {
       "cooldown": "Cooldown",
       "loading": "Loading preview …"
@@ -490,5 +480,15 @@
       "minRanksUp": "Ranks climbed in the leaderboard",
       "minPointsAhead": "Point lead of the overtaken player"
     }
+  },
+  "achievements": {
+    "active": "active"
+  },
+  "console": {
+    "resetAsset": "Reset"
+  },
+  "themePreview": {
+    "join": "Join",
+    "playerName": "Player {{rank}}"
   }
 }

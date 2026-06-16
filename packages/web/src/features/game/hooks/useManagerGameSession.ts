@@ -45,6 +45,12 @@ export const useManagerGameSession = (
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
     if (name in GAME_STATE_COMPONENTS_MANAGER) {
       setStatus(name, data)
+    } else {
+      // Unknown state name — without this branch the previous component would
+      // stay mounted forever (silent no-op). Log it so the mismatch is
+      // diagnosable; CurrentComponent below already resolves to null for an
+      // unknown status, so the UI falls back instead of getting stuck.
+      console.warn(`[manager] ignoring unknown GAME.STATUS state: ${name}`)
     }
   })
 

@@ -118,7 +118,7 @@ const SimControl = () => {
             <button
               type="button"
               onClick={addBots}
-              disabled={!gameId || windowOpen}
+              disabled={!gameId || count < 1 || windowOpen}
               className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
             >
               {t("manager:sim.add")}

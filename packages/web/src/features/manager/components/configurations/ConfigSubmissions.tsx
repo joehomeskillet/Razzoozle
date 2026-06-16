@@ -165,7 +165,7 @@ const QuestionPreview = ({ question }: { question: Question }) => {
         <span className="flex items-center gap-1.5">
           <Timer className="size-3.5" aria-hidden />
           {t("manager:submissions.previewLabels.cooldown")}: {question.cooldown}
-          s
+          {t("manager:submissions.cooldownSuffix", { defaultValue: "s" })}
         </span>
       </div>
     </div>
@@ -245,6 +245,17 @@ const ConfigSubmissions = () => {
     useCallback((subs: Submission[]) => {
       setFull(subs)
     }, []),
+  )
+
+  // ponytail: success is optimistic; failures now surface via SUBMISSION_ERROR
+  useEvent(
+    EVENTS.MANAGER.SUBMISSION_ERROR,
+    useCallback(
+      (msg: string) => {
+        toast.error(t(msg, { defaultValue: msg }))
+      },
+      [t],
+    ),
   )
 
   const fullById = (id: string) => full.find((s) => s.id === id)?.question
@@ -552,21 +563,26 @@ const ConfigSubmissions = () => {
                       }
                 }
               >
-                {!isPending && (
-                  <div className="mb-2 space-y-1.5">
-                    <StatusBadge status={s.status} />
-                    {/* WP-17 — surface the moderator note on rejected cards. */}
-                    {s.status === "rejected" &&
-                      recordById(s.id)?.rejectionReason && (
-                        <p className="text-sm text-red-700">
-                          {t("manager:submissions.rejectedBecause", {
-                            reason: recordById(s.id)?.rejectionReason,
-                            defaultValue: "Abgelehnt: {{reason}}",
-                          })}
-                        </p>
-                      )}
-                  </div>
-                )}
+                {!isPending &&
+                  (() => {
+                    const rejRecord = recordById(s.id)
+
+                    return (
+                      <div className="mb-2 space-y-1.5">
+                        <StatusBadge status={s.status} />
+                        {/* WP-17 — surface the moderator note on rejected cards. */}
+                        {s.status === "rejected" &&
+                          rejRecord?.rejectionReason && (
+                            <p className="text-sm text-red-700">
+                              {t("manager:submissions.rejectedBecause", {
+                                reason: rejRecord?.rejectionReason,
+                                defaultValue: "Abgelehnt: {{reason}}",
+                              })}
+                            </p>
+                          )}
+                      </div>
+                    )
+                  })()}
 
                 {isPending && editingId === s.id ? (
                   <Input
