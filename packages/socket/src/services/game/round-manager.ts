@@ -1989,6 +1989,13 @@ export class RoundManager {
     perPlayer: Map<string, PlayerRecap>
   } {
     const entries = [...this.recapStats.entries()]
+    // clientId -> avatar lookup for superlative winner cards. The cleaned round
+    // leaderboard rows carry avatar (bug #4 fix); recapStats does not, so we map
+    // it here once and attach it to each award below.
+    const avatarByClient = new Map<string, string | undefined>()
+    for (const p of this.leaderboard) {
+      avatarByClient.set(p.clientId, p.avatar)
+    }
 
     // argmax/argmin helpers over the non-bot entries. A superlative is only
     // produced when at least one entry qualifies (predicate true) AND the best
@@ -2021,7 +2028,12 @@ export class RoundManager {
       }
       return {
         clientId: bestId,
-        superlative: { key, winnerName: bestName, value: bestVal },
+        superlative: {
+          key,
+          winnerName: bestName,
+          winnerAvatar: avatarByClient.get(bestId),
+          value: bestVal,
+        },
       }
     }
 
@@ -2094,6 +2106,7 @@ export class RoundManager {
           superlative: {
             key: "comeback_kid",
             winnerName: stat.username,
+            winnerAvatar: avatarByClient.get(clientId),
             value: climb,
           },
         }
@@ -2235,6 +2248,9 @@ export class RoundManager {
         ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
         // MANAGER recap: the full awards list + hardest-question callout.
         recap: managerRecap,
+        // Echo the auto-mode flag so the end-game screen knows the host advanced
+        // automatically (client display-only; old clients ignore it).
+        autoMode: this.autoMode,
       })
 
       this.leaderboard.forEach((player, index) => {

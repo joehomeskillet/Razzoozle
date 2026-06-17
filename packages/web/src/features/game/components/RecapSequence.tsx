@@ -18,6 +18,7 @@
  */
 
 import type { Superlative, SuperlativeKey } from "@razzoozle/common/types/game"
+import Avatar from "@razzoozle/web/components/Avatar"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useState } from "react"
@@ -29,6 +30,8 @@ interface Props {
   onComplete?: () => void
   /** ms each superlative card stays before auto-advancing. */
   autoAdvanceMs?: number
+  /** When true, cards auto-advance (10s each); when false the user advances manually. */
+  autoMode?: boolean
 }
 
 // Playful emoji per award key — labels themselves live in i18n (du-form).
@@ -44,7 +47,7 @@ const SUPERLATIVE_EMOJI: Record<SuperlativeKey, string> = {
   hardest_question: "🧠",
 }
 
-const DEFAULT_AUTO_MS = 3200
+const DEFAULT_AUTO_MS = 10000
 
 /**
  * Formats a superlative's numeric `value` for display.
@@ -66,6 +69,7 @@ const RecapSequence = ({
   superlatives,
   onComplete,
   autoAdvanceMs = DEFAULT_AUTO_MS,
+  autoMode = false,
 }: Props) => {
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -93,10 +97,16 @@ const RecapSequence = ({
       onComplete?.()
       return
     }
+    // The final "Podium" cue always hands off to the podium after a short hold
+    // — in manual mode the user clicks through to reach it, then this brief
+    // timer flips to the podium so the sequence never dead-ends.
     if (isFinalCue) {
       const done = setTimeout(() => onComplete?.(), 1400)
       return () => clearTimeout(done)
     }
+    // Per-card auto-advance is opt-in via autoMode (10s/card); otherwise the
+    // user drives the cards manually (Weiter button / click layer), no timer.
+    if (!autoMode) return
     if (autoStopped) return
     const timer = setTimeout(advance, autoAdvanceMs)
     return () => clearTimeout(timer)
@@ -106,6 +116,7 @@ const RecapSequence = ({
     isFinalCue,
     autoStopped,
     advance,
+    autoMode,
     autoAdvanceMs,
     onComplete,
   ])
@@ -176,9 +187,14 @@ const RecapSequence = ({
               })}
             </p>
 
-            {/* Winner name in an accent pill — ink-on-accent so the name reads
-                against the solid accent fill on the white card. */}
-            <p className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-4xl font-black text-[var(--accent-contrast-text)] md:text-5xl lg:text-6xl">
+            {/* Winner avatar above the name — flat ink text, no accent pill. */}
+            <Avatar
+              src={current.winnerAvatar}
+              name={current.winnerName}
+              size={112}
+              className="mx-auto"
+            />
+            <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-4xl lg:text-5xl">
               {current.winnerName}
             </p>
 

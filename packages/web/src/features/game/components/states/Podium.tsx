@@ -277,7 +277,7 @@ const PodiumStickerButton = ({
   )
 }
 
-const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
+const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Props) => {
   // Manager view: play the superlative recap BEFORE the podium when present.
   const managerRecap = isManagerRecap(recap) ? recap : null
   const hasRecap = !!managerRecap && managerRecap.superlatives.length > 0
@@ -300,6 +300,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
       {hasRecap && !recapDone && (
         <RecapSequence
           superlatives={managerRecap.superlatives}
+          autoMode={autoMode}
           onComplete={() => setRecapDone(true)}
         />
       )}

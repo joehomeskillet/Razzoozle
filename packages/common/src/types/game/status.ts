@@ -100,6 +100,9 @@ export interface CommonStatusDataMap {
     // for the big screen), the per-player emit carries a `PlayerRecap` (this
     // player's own card + the single award they won). Old clients ignore it.
     recap?: ManagerRecap | PlayerRecap
+    // Auto-mode flag echoed on the end-game screen so the client knows whether
+    // the host auto-advanced through the game. OPTIONAL (old clients ignore it).
+    autoMode?: boolean
   }
 }
 

@@ -166,6 +166,7 @@ export type SuperlativeKey =
 export interface Superlative {
   key: SuperlativeKey
   winnerName: string
+  winnerAvatar?: string
   value: number
 }
 
