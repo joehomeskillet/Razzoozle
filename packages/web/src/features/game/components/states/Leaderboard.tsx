@@ -353,7 +353,7 @@ const Leaderboard = ({
 
   return (
     <section className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-2">
-      <h2 className="mb-6 text-5xl font-bold text-white drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
+      <h2 className="mb-6 text-5xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
         {t("game:leaderboard")}
       </h2>
 

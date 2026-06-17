@@ -186,11 +186,11 @@ const Result = ({
           )}
         </motion.div>
       )}
-      <h2 className="mt-1 text-4xl font-bold text-white drop-shadow-lg">
+      <h2 className="mt-1 text-4xl font-bold text-[color:var(--game-fg)]">
         {t(message)}
       </h2>
       {showRank && (
-        <p className="mt-1 text-xl font-bold text-white drop-shadow-lg">
+        <p className="mt-1 text-xl font-bold text-[color:var(--game-fg)]">
           {t("game:resultTop")}
           {t(rankKey, { rank })}
           {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
@@ -199,7 +199,7 @@ const Result = ({
       {/* W1-D FIX 1: the question is over, so reveal the correct answer on the
           wrong-answer (Too bad) screen. Never shown for poll or correct. */}
       {!poll && !correct && correctAnswer && (
-        <p className="mt-2 text-lg font-semibold text-white drop-shadow-lg">
+        <p className="mt-2 text-lg font-semibold text-[color:var(--game-fg)]">
           {t("game:slider.correctAnswer")}: {correctAnswer}
         </p>
       )}

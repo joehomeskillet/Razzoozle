@@ -24,7 +24,7 @@ const Prepared = ({ data: { totalAnswers, questionNumber } }: Props) => {
       animate="visible"
     >
       <motion.h2
-        className="mb-20 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl"
+        className="mb-20 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-5xl"
         variants={reveal.item()}
         transition={reveal.spring}
       >

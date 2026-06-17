@@ -40,7 +40,7 @@ const Start = ({ data: { time, subject } }: Props) => {
   return (
     <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
       {showTitle ? (
-        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
+        <h2 className="anim-show text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
           {subject}
         </h2>
       ) : (
@@ -60,7 +60,7 @@ const Start = ({ data: { time, subject } }: Props) => {
               initial="hidden"
               animate="visible"
               transition={reveal.snap}
-              className="absolute text-6xl font-bold text-white tabular-nums drop-shadow-md md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]"
+              className="absolute text-6xl font-bold text-[color:var(--game-fg)] tabular-nums md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]"
             >
               {cooldown}
             </motion.span>

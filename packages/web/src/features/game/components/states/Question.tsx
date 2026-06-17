@@ -67,7 +67,7 @@ const Question = ({
         animate="visible"
       >
         <motion.h2
-          className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
+          className="text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
           variants={reveal.item()}
           transition={reveal.spring}
         >
@@ -76,7 +76,7 @@ const Question = ({
 
         {submittedBy && (
           <motion.p
-            className="text-center text-sm text-white/60"
+            className="text-center text-sm text-[color:var(--game-fg)]/60"
             variants={reveal.item()}
             transition={reveal.spring}
           >

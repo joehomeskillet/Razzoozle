@@ -52,7 +52,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
       <motion.h2
         animate={headingSheen}
         transition={breatheTransition}
-        className="mt-5 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+        className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
       >
         {t(text)}
       </motion.h2>

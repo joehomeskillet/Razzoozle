@@ -40,19 +40,19 @@ const Paused = ({ data }: Props) => {
         className="flex flex-col items-center"
       >
         <motion.div variants={reveal.pop(0.8)} transition={reveal.spring}>
-          <Pause className="h-24 w-24 text-white drop-shadow-lg" aria-hidden />
+          <Pause className="h-24 w-24 text-[color:var(--game-fg)]" aria-hidden />
         </motion.div>
         <motion.h2
           variants={reveal.item()}
           transition={reveal.spring}
-          className="mt-5 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+          className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
         >
           {t("game:pause.paused")}
         </motion.h2>
         <motion.p
           variants={reveal.item()}
           transition={reveal.spring}
-          className="mt-4 text-center text-xl font-semibold text-white/80 drop-shadow"
+          className="mt-4 text-center text-xl font-semibold text-[color:var(--game-fg)]/80"
         >
           {data.reason ?? t("game:pause.resumeHint")}
         </motion.p>

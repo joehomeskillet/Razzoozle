@@ -27,10 +27,10 @@ const Ended = ({ data }: Props) => {
       animate="visible"
     >
       <motion.div variants={reveal.pop()} transition={reveal.spring}>
-        <DoorOpen className="h-24 w-24 text-white drop-shadow-lg" aria-hidden />
+        <DoorOpen className="h-24 w-24 text-[color:var(--game-fg)]" aria-hidden />
       </motion.div>
       <motion.h2
-        className="mt-5 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+        className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
         variants={reveal.item()}
         transition={reveal.spring}
       >
@@ -39,7 +39,7 @@ const Ended = ({ data }: Props) => {
         })}
       </motion.h2>
       <motion.p
-        className="mt-4 text-center text-xl font-semibold text-white/80 drop-shadow"
+        className="mt-4 text-center text-xl font-semibold text-[color:var(--game-fg)]/80"
         variants={reveal.item()}
         transition={reveal.spring}
       >

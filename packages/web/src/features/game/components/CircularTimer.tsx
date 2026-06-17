@@ -117,7 +117,7 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
           "absolute font-bold tabular-nums drop-shadow",
           // Number tracks the ring colour for a redundant (non-colour-only)
           // urgency cue; instant under reduced motion via the global rule.
-          isUrgent ? "text-[var(--timer-urgent)]" : "text-white",
+          isUrgent ? "text-[var(--timer-urgent)]" : "text-[color:var(--game-fg)]",
           "transition-colors duration-300 motion-reduce:transition-none",
         )}
         style={{ fontSize: Math.max(14, Math.round(size * 0.34)) }}

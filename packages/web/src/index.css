@@ -17,6 +17,7 @@
   --answer-text: #0B0B12;
   --radius-theme: 16px;
   --bg-scrim: 0.4;
+  --game-fg: #ffffff;
 
   /* Front-of-house cream field + flat-surface tokens (Wave 1). Overridable at
      runtime by a served theme (see apply.ts), defaults live here. */

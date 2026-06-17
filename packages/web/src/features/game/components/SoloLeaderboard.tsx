@@ -56,13 +56,13 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4">
-      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-white drop-shadow-lg">
+      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg">
         <Trophy className="size-7 text-yellow-300" aria-hidden />
         {t("game:solo.soloLeaderboard")}
       </div>
 
       {sorted.length === 0 ? (
-        <p className="text-center text-white/70">{t("game:solo.noScores", "—")}</p>
+        <p className="text-center text-[color:var(--game-fg)]/70">{t("game:solo.noScores", "—")}</p>
       ) : (
         <motion.ol
           className="flex flex-col gap-2"

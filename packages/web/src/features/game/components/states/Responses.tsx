@@ -84,7 +84,7 @@ const Responses = ({
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
-        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
+        <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           <Markdown>{question}</Markdown>
         </h2>
 
@@ -149,14 +149,14 @@ const Responses = ({
             <motion.div
               variants={reveal.item()}
               transition={reveal.spring}
-              className="text-lg font-semibold text-white/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className="text-lg font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             >
               {t("game:slider.correctAnswer")}
             </motion.div>
             <motion.div
               variants={reveal.item()}
               transition={reveal.spring}
-              className="text-6xl font-bold text-white drop-shadow-lg lg:text-[clamp(4rem,10vh,10rem)]"
+              className="text-6xl font-bold text-[color:var(--game-fg)] drop-shadow-lg lg:text-[clamp(4rem,10vh,10rem)]"
             >
               {correct}
               {unit ? ` ${unit}` : ""}
@@ -165,7 +165,7 @@ const Responses = ({
               <motion.div
                 variants={reveal.item()}
                 transition={reveal.spring}
-                className="text-xl font-semibold text-white/80 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                className="text-xl font-semibold text-[color:var(--game-fg)]/80 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
               >
                 {t("game:slider.averageGuess", { value: averageGuess })}
                 {unit ? ` ${unit}` : ""}
@@ -189,7 +189,7 @@ const Responses = ({
               >
                 {/* Answer letter makes each bar identifiable without relying on
                     color alone (color-blind safe). */}
-                <span className="text-center text-xl font-bold text-white drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                <span className="text-center text-xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                   {answerLabel(key)}
                 </span>
                 <div

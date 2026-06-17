@@ -221,7 +221,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
-        <h2 className="text-center text-2xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
+        <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question.question}</Markdown>
         </h2>
 
@@ -229,7 +229,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       </div>
 
       <div>
-        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
+        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
           {/* Kahoot-style circular countdown — same as the live game. `countdown`
               is the remaining seconds; `question.time` is the total. */}
           <div className="flex flex-col items-center gap-1">
@@ -276,7 +276,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
           </div>
         ) : isMultiSelect ? (
           <div className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-4 px-2 lg:max-w-[85vw]">
-            <p className="text-center text-sm font-medium text-white/80">
+            <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
               {t("quizz:multipleSelect.selectHint")}
             </p>
             <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
@@ -336,7 +336,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
           </div>
         ) : isSlider ? (
           <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            <div className="text-5xl font-bold text-white drop-shadow-lg lg:text-[clamp(3rem,8vh,8rem)]">
+            <div className="text-5xl font-bold text-[color:var(--game-fg)] drop-shadow-lg lg:text-[clamp(3rem,8vh,8rem)]">
               {sliderValue}
               {question.unit ? ` ${question.unit}` : ""}
             </div>
@@ -350,7 +350,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               onChange={(e) => setSliderValue(Number(e.target.value))}
               className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
             />
-            <div className="flex w-full justify-between text-sm font-semibold text-white/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
+            <div className="flex w-full justify-between text-sm font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
               <span>
                 {question.min}
                 {question.unit ? ` ${question.unit}` : ""}

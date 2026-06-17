@@ -166,7 +166,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </AlertDialog.Root>
       </div>
 
-      <h2 className="mb-4 text-4xl font-bold text-white drop-shadow-lg">
+      <h2 className="mb-4 text-4xl font-bold text-[color:var(--game-fg)] drop-shadow-lg">
         {t(text)}
       </h2>
 

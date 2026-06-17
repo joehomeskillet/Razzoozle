@@ -145,16 +145,26 @@ const GameWrapper = ({
   }
 
   return (
-    <section className="relative flex min-h-dvh">
+    <section
+      className="relative flex min-h-dvh"
+      style={{ "--game-fg": manager ? "#ffffff" : "#0E1120" } as React.CSSProperties}
+    >
       <div className="fixed top-0 left-0 h-full w-full">
-        <img
-          className="pointer-events-none h-full w-full object-cover select-none"
-          src={bgSrc}
-          alt="background"
-        />
+        {manager ? (
+          <img
+            className="pointer-events-none h-full w-full object-cover select-none"
+            src={bgSrc}
+            alt="background"
+          />
+        ) : (
+          <div
+            className="pointer-events-none h-full w-full"
+            style={{ background: "var(--color-field-cream)" }}
+          />
+        )}
         <div
           className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
+          style={{ opacity: manager ? "var(--bg-scrim)" : 0 }}
         />
       </div>
 
@@ -249,7 +259,7 @@ const GameWrapper = ({
         {!isConnected && !statusName ? (
           <div className="flex h-full w-full flex-1 flex-col items-center justify-center">
             <Loader className="h-30" />
-            <h1 className="text-4xl font-bold text-white">
+            <h1 className="text-4xl font-bold text-[color:var(--game-fg)]">
               {t("common:connecting")}
             </h1>
           </div>

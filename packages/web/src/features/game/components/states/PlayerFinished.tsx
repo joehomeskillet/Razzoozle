@@ -200,7 +200,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
       animate="visible"
     >
       <motion.h3
-        className="text-lg font-extrabold text-white drop-shadow"
+        className="text-lg font-extrabold text-[color:var(--game-fg)] drop-shadow"
         variants={reveal.item()}
         transition={reveal.spring}
       >
@@ -208,7 +208,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
       </motion.h3>
 
       {!hasAny && (
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-[color:var(--game-fg)]/60">
           {t("game:recap.trophies.empty")}
         </p>
       )}
@@ -377,7 +377,7 @@ const PlayerFinished = ({ data }: Props) => {
       animate="visible"
     >
       <motion.p
-        className="text-center text-4xl font-bold text-white drop-shadow-lg md:text-5xl"
+        className="text-center text-4xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-5xl"
         variants={reveal.pop()}
         transition={reveal.spring}
       >
@@ -385,7 +385,7 @@ const PlayerFinished = ({ data }: Props) => {
       </motion.p>
 
       <motion.p
-        className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl"
+        className="text-center text-3xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl"
         variants={reveal.item()}
         transition={reveal.spring}
       >
@@ -405,7 +405,7 @@ const PlayerFinished = ({ data }: Props) => {
           subtle (below the score) so it doesn't crowd the result. */}
       <motion.a
         href="/submit"
-        className="focus-visible:ring-primary/60 mt-4 inline-flex min-h-11 items-center rounded px-3 py-2 text-center text-base font-semibold text-white underline-offset-4 drop-shadow-lg hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-visible:ring-primary/60 mt-4 inline-flex min-h-11 items-center rounded px-3 py-2 text-center text-base font-semibold text-[color:var(--game-fg)] underline-offset-4 drop-shadow-lg hover:underline focus-visible:ring-2 focus-visible:outline-none"
         variants={reveal.item()}
         transition={reveal.spring}
       >
@@ -421,7 +421,7 @@ const PlayerFinished = ({ data }: Props) => {
           animate="visible"
         >
           <motion.h2
-            className="text-center text-xl font-extrabold text-white drop-shadow"
+            className="text-center text-xl font-extrabold text-[color:var(--game-fg)] drop-shadow"
             variants={reveal.item()}
             transition={reveal.spring}
           >
