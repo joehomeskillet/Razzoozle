@@ -79,7 +79,7 @@ export const RISE = 16
 
 /* ----- Variant factories (pure; pair with the `reduced` flag from useReveal) ----- */
 
-export const fadeUp = (distance: number = RISE): Variants => ({
+export const fadeUp = (distance = RISE): Variants => ({
   hidden: { opacity: 0, y: distance },
   visible: { opacity: 1, y: 0 },
 })
@@ -89,20 +89,20 @@ export const fadeIn = (): Variants => ({
   visible: { opacity: 1 },
 })
 
-export const scaleIn = (from: number = 0.92): Variants => ({
+export const scaleIn = (from = 0.92): Variants => ({
   hidden: { opacity: 0, scale: from },
   visible: { opacity: 1, scale: 1 },
 })
 
 /** Overshoot pop — for medals, result "moment of truth", reward badges. */
-export const popIn = (from: number = 0.6): Variants => ({
+export const popIn = (from = 0.6): Variants => ({
   hidden: { opacity: 0, scale: from },
   visible: { opacity: 1, scale: [from, 1.08, 1] },
 })
 
 export const staggerContainer = (
   stagger: number = STAGGER.base,
-  delayChildren: number = 0,
+  delayChildren = 0,
 ): Variants => ({
   hidden: {},
   visible: { transition: { staggerChildren: stagger, delayChildren } },

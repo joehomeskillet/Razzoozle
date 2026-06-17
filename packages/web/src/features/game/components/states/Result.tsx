@@ -12,10 +12,11 @@ import {
   highestTier,
 } from "@razzoozle/web/features/game/utils/achievements"
 import { fireTierConfetti } from "@razzoozle/web/features/game/utils/confetti"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
-import { useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 
 interface Props {
   data: CommonStatusDataMap["SHOW_RESULT"]
@@ -61,7 +62,8 @@ const Result = ({
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
+  const reduced = reveal.reduced
   const achievementsFired = useRef(false)
 
   // W1-D FIX 2: only show the place/rank label when the player actually scored
@@ -142,12 +144,24 @@ const Result = ({
 
   return (
     <section className="glass-3 anim-show relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
-      {!poll &&
-        (correct ? (
-          <CricleCheck className="aspect-square max-h-60 w-full" />
-        ) : (
-          <CricleXmark className="aspect-square max-h-60 w-full" />
-        ))}
+      {!poll && (
+        // Moment of truth: the verdict icon pops in (overshoot scale) so the
+        // correct/wrong reveal lands as a beat. Opacity-only when reduced.
+        <motion.div
+          key={correct ? "correct" : "wrong"}
+          className="w-full"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          {correct ? (
+            <CricleCheck className="aspect-square max-h-60 w-full" />
+          ) : (
+            <CricleXmark className="aspect-square max-h-60 w-full" />
+          )}
+        </motion.div>
+      )}
       <h2 className="mt-1 text-4xl font-bold text-white drop-shadow-lg">
         {t(message)}
       </h2>
@@ -166,9 +180,17 @@ const Result = ({
         </p>
       )}
       {!poll && correct && (
-        <span className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg">
+        // Points payoff: emphasised pop, delayed a touch behind the verdict so
+        // the score reads as the reward beat. Opacity-only when reduced.
+        <motion.span
+          className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg"
+          variants={reveal.pop(0.7)}
+          initial="hidden"
+          animate="visible"
+          transition={reduced ? reveal.snap : { ...reveal.snap, delay: 0.18 }}
+        >
           +{points}
-        </span>
+        </motion.span>
       )}
 
       <RewardStack

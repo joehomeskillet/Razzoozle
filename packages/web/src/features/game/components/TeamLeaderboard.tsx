@@ -1,4 +1,5 @@
 import type { TeamStanding } from "@razzoozle/common/types/game"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion } from "motion/react"
 import { useTranslation } from "react-i18next"
 
@@ -39,6 +40,7 @@ interface Props {
 
 const TeamLeaderboard = ({ standings }: Props) => {
   const { t } = useTranslation()
+  const reveal = useReveal()
 
   if (standings.length === 0) {
     return null
@@ -52,7 +54,12 @@ const TeamLeaderboard = ({ standings }: Props) => {
       <h3 className="mb-3 text-2xl font-bold text-white drop-shadow-md lg:text-3xl">
         {t("game:teamLeaderboard", { defaultValue: "Teams" })}
       </h3>
-      <div className="flex flex-col gap-2">
+      <motion.div
+        className="flex flex-col gap-2"
+        variants={reveal.container()}
+        initial="hidden"
+        animate="visible"
+      >
         <AnimatePresence mode="popLayout">
           {standings.map((standing, rank) => {
             const colors = TEAM_COLORS[standing.teamId] ?? fallback
@@ -65,13 +72,18 @@ const TeamLeaderboard = ({ standings }: Props) => {
               <motion.div
                 key={standing.teamId}
                 layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+                variants={reveal.item(20)}
+                exit={
+                  reveal.reduced
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: 20 }
+                }
+                // Reorder is a lifecycle moment → snappy layout spring (or instant
+                // when reduced). Enter/exit fades stay cheap via the tween.
                 transition={{
-                  layout: { type: "spring", stiffness: 400, damping: 28 },
-                  opacity: { duration: 0.25 },
-                  y: { duration: 0.25 },
+                  layout: reveal.snap,
+                  opacity: reveal.tween(),
+                  y: reveal.spring,
                 }}
                 className={`flex items-center gap-3 overflow-hidden rounded-xl p-3 ${colors.bg}`}
               >
@@ -99,7 +111,7 @@ const TeamLeaderboard = ({ standings }: Props) => {
                     className={`h-3 rounded-full ${colors.bar}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${barWidth}%` }}
-                    transition={{ type: "spring", stiffness: 200, damping: 30 }}
+                    transition={reveal.reduced ? reveal.spring : reveal.snap}
                   />
                 </div>
 
@@ -121,7 +133,7 @@ const TeamLeaderboard = ({ standings }: Props) => {
             )
           })}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   )
 }

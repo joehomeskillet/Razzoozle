@@ -18,6 +18,13 @@ const STROKE = 9
 const RADIUS = (VIEWBOX - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
+// Below this remaining fraction the timer enters its "urgent" state: the ring +
+// number shift to a warning red and (motion permitting) breathe with a pulse.
+const URGENT_FRACTION = 0.25
+// Theme-agnostic urgency colour. Reads on both flat (Suedhang) and glass
+// (Razzoozle) themes; not tied to `--color-accent` so the shift is unmistakable.
+const URGENT_STROKE = "#ff3b30"
+
 /**
  * Kahoot-style circular countdown ring.
  *
@@ -27,9 +34,15 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
  * remaining seconds are shown centred (tabular, bold) so the timer never relies
  * on shape or colour alone (it always carries a readable number + aria-label).
  *
- * Motion: only an opacity/transform/stroke transition is used. Under
+ * Urgency: in the final ~25% of the question's time the ring + number shift from
+ * the accent colour to a warning red and the whole dial pulses. The pulse is a
+ * pure CSS opacity breathe (`animate-pulse`) — no layout, no spring — so it stays
+ * cheap even with the per-tick re-render firehose of a ~200-player room.
+ *
+ * Motion: only opacity/transform/stroke transitions are used. Under
  * `prefers-reduced-motion` the stroke transition is dropped (the ring snaps to
- * each second instead of sweeping) while the number stays fully legible.
+ * each second) and the urgency pulse is suppressed (`motion-reduce:animate-none`)
+ * — but the colour shift remains, so the warning is never lost.
  *
  * Theme-agnostic: the foreground uses `var(--color-accent)` over a translucent
  * white track, so it reads correctly on both the flat (Suedhang) and glass
@@ -46,10 +59,18 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
 
   const displaySeconds = Math.ceil(safeSeconds)
 
+  // Urgent once we drop into the final quarter of the run, but only while time
+  // actually remains (fraction === 0 is "done", not "urgent").
+  const isUrgent = fraction > 0 && fraction <= URGENT_FRACTION
+  const ringStroke = isUrgent ? URGENT_STROKE : "var(--color-accent)"
+
   return (
     <div
       className={clsx(
         "relative inline-flex shrink-0 items-center justify-center",
+        // Pulse only while urgent; a pure opacity breathe (no layout/spring).
+        // Suppressed under reduced motion — the colour shift below stays.
+        isUrgent && "animate-pulse motion-reduce:animate-none",
         className,
       )}
       style={{ width: size, height: size }}
@@ -80,18 +101,25 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
           cy={VIEWBOX / 2}
           r={RADIUS}
           fill="none"
-          stroke="var(--color-accent)"
+          stroke={ringStroke}
           strokeWidth={STROKE}
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={dashOffset}
-          // Smooth sweep between ticks; dropped under reduced motion so the ring
-          // snaps per second instead of animating.
-          className="transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none"
+          // Smooth sweep between ticks plus a cheap colour cross-fade into the
+          // urgent state; both dropped under reduced motion so the ring snaps
+          // per second and the colour swaps instantly.
+          className="transition-[stroke-dashoffset,stroke] duration-300 ease-linear motion-reduce:transition-none"
         />
       </svg>
       <span
-        className="absolute font-bold tabular-nums text-white drop-shadow"
+        className={clsx(
+          "absolute font-bold tabular-nums drop-shadow",
+          // Number tracks the ring colour for a redundant (non-colour-only)
+          // urgency cue; instant under reduced motion via the global rule.
+          isUrgent ? "text-[#ff3b30]" : "text-white",
+          "transition-colors duration-300 motion-reduce:transition-none",
+        )}
         style={{ fontSize: Math.max(14, Math.round(size * 0.34)) }}
         aria-hidden="true"
       >

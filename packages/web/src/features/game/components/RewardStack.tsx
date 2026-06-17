@@ -9,10 +9,15 @@
  * is reduced-motion-gated. Server name/description overrides are honored via
  * loadAchievementMeta() + getAchievementDisplay() (moved here from AchievementPopup).
  *
+ * The stack itself is a reveal.container() — the rows cascade in via
+ * staggerChildren (collapsing to instant/opacity-only under reduced motion),
+ * while each <RewardRow> still owns its own per-row entry/exit + dismiss logic.
+ *
  * No server/type/schema change — purely presentational over the SHOW_RESULT payload.
  */
 
 import type { MergedAchievement } from "@razzoozle/common/achievements"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import RewardRow from "@razzoozle/web/features/game/components/RewardRow"
 import {
@@ -24,7 +29,7 @@ import {
   loadAchievementMeta,
   type AchievementMeta,
 } from "@razzoozle/web/features/game/utils/achievements"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { Coins, Flame, Star, Zap } from "lucide-react"
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -60,7 +65,8 @@ const RewardStack = ({
   visible,
   bonusPoints,
 }: Props) => {
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
+  const reduced = reveal.reduced
   const { t } = useTranslation()
 
   // Server-merged metadata (name/description overrides). Fetched at most once.
@@ -185,6 +191,11 @@ const RewardStack = ({
       role="list"
       aria-live="polite"
       className="mt-3 flex w-full max-w-sm mx-auto flex-col gap-2 px-2 pointer-events-auto"
+      // Stacked cascade: the container staggers its children in (top-tier first).
+      // Reduced motion collapses stagger → 0 via reveal.container().
+      variants={reveal.container()}
+      initial="hidden"
+      animate="visible"
     >
       <AnimatePresence>
         {liveItems.map((item) => (

@@ -1,9 +1,11 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import clsx from "clsx"
+import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import useSound from "use-sound"
 
@@ -15,6 +17,7 @@ const Start = ({ data: { time, subject } }: Props) => {
   const [showTitle, setShowTitle] = useState(true)
   const [cooldown, setCooldown] = useState(time)
   const muted = useSoundStore((s) => s.muted)
+  const reveal = useReveal()
 
   const [sfxBoump] = useSound(SFX.BOUMP_SOUND, {
     volume: 0.2,
@@ -47,9 +50,18 @@ const Start = ({ data: { time, subject } }: Props) => {
               transform: `rotate(${45 * (time - cooldown)}deg)`,
             }}
           ></div>
-          <span className="absolute text-6xl font-bold text-white tabular-nums drop-shadow-md md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]">
-            {cooldown}
-          </span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={cooldown}
+              variants={reveal.pop()}
+              initial="hidden"
+              animate="visible"
+              transition={reveal.snap}
+              className="absolute text-6xl font-bold text-white tabular-nums drop-shadow-md md:text-8xl lg:text-[clamp(6rem,15vh,16rem)]"
+            >
+              {cooldown}
+            </motion.span>
+          </AnimatePresence>
         </>
       )}
     </section>

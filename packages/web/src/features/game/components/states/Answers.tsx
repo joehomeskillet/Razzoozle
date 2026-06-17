@@ -3,6 +3,7 @@ import type { QuestionMediaType } from "@razzoozle/common/types/game"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
@@ -20,6 +21,7 @@ import {
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import clsx from "clsx"
+import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -33,6 +35,13 @@ interface Props {
 // hint. We do NOT resend — a missing ack just means the network is slow; the
 // server is idempotent and will count the first arrival.
 const ACK_PENDING_HINT_MS = 800
+
+// Press-feedback (tap) classes. CSS-only scale-down on :active so the firehose
+// of taps in a ~200-player room stays cheap — no per-answer layout springs.
+// `motion-reduce:` collapses the transform + transition when the user prefers
+// reduced motion, honouring the same contract as useReveal().
+const PRESS_FEEDBACK =
+  "transition-transform duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
 
 const Answers = ({
   data: {
@@ -99,6 +108,10 @@ const Answers = ({
   const pendingSentAtRef = useRef<number | null>(null)
   const ackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
+  // Reduced-motion-aware animation bundle. Drives the one lifecycle moment on
+  // this screen (the lock-in confirmation pop); the per-tap press feedback above
+  // is CSS-only to keep the hot path cheap.
+  const reveal = useReveal()
 
   const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
     volume: 0.1,
@@ -376,6 +389,13 @@ const Answers = ({
   // a tap, or a resumed already-answered state. Normal mode never disables.
   const choiceLocked = (lowLatency && submitted) || resumeAnswered
 
+  // A single lock-in confirmation pill — the one lifecycle moment on this screen.
+  // Pops in (overshoot, or opacity-only when reduced) the instant an answer is
+  // locked: multiple-choice in low-latency/resumed mode, or any submitted
+  // slider / multi-select / type-answer. Fires once per question, so a spring
+  // pop is fine here (not the per-tap hot path).
+  const answerLockedIn = choiceLocked || submitted
+
   return (
     <div className="flex min-h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
@@ -399,6 +419,25 @@ const Answers = ({
           <div className="mx-auto mb-2 w-full max-w-7xl px-2 text-center text-sm font-semibold text-white/80 lg:max-w-[85vw]">
             {t("game:sending")}
           </div>
+        )}
+
+        {/* Lock-in confirmation — appears once the player's answer is committed.
+            One-shot lifecycle pop (opacity-only under reduced motion). aria-live
+            announces the locked state to assistive tech. */}
+        {answerLockedIn && (
+          <motion.div
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            transition={reveal.spring}
+            role="status"
+            aria-live="polite"
+            className="mx-auto mb-2 flex w-full max-w-7xl items-center justify-center px-2 lg:max-w-[85vw]"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-4 py-1 text-sm font-bold text-white shadow-lg">
+              {t("game:slider.submitted")}
+            </span>
+          </motion.div>
         )}
 
         <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
@@ -442,7 +481,10 @@ const Answers = ({
               type="button"
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className={clsx(
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                PRESS_FEEDBACK,
+              )}
             >
               {t("game:submitAnswer")}
             </button>
@@ -458,6 +500,7 @@ const Answers = ({
                   key={key}
                   className={clsx(
                     ANSWERS_COLORS[key],
+                    !submitted && PRESS_FEEDBACK,
                     submitted && "opacity-50",
                     multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
                   )}
@@ -473,7 +516,10 @@ const Answers = ({
               type="button"
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
-              className="bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className={clsx(
+                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                PRESS_FEEDBACK,
+              )}
             >
               {t("quizz:multipleSelect.submitButton")}
             </button>
@@ -507,7 +553,10 @@ const Answers = ({
             <button
               onClick={submitSlider}
               disabled={submitted}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className={clsx(
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                PRESS_FEEDBACK,
+              )}
             >
               {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
             </button>
@@ -519,6 +568,10 @@ const Answers = ({
                 key={key}
                 className={clsx(
                   ANSWERS_COLORS[key],
+                  // Per-tap press feedback (CSS-only, reduced-motion-safe) while
+                  // the tile is still tappable. Once locked we drop it so the
+                  // dim/ring lock-in state below reads cleanly.
+                  !choiceLocked && PRESS_FEEDBACK,
                   // Instant local feedback: dim the un-chosen buttons once a
                   // choice is locked in (low-latency / resumed). Normal mode
                   // never sets selectedKey/choiceLocked, so this is inert there.

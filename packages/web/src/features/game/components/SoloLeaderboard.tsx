@@ -4,9 +4,10 @@
  */
 import type { SoloScoreEntry } from "@razzoozle/common/types/game"
 import Avatar from "@razzoozle/web/components/Avatar"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import clsx from "clsx"
 import { Trophy } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -37,7 +38,7 @@ const MEDAL_GRADIENT = [
 
 const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
   const { t } = useTranslation()
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
 
   // Sort descending by score (the server should return them sorted, but be safe).
   const sorted = [...leaderboard].sort((a, b) => b.score - a.score)
@@ -63,13 +64,23 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
       {sorted.length === 0 ? (
         <p className="text-center text-white/70">{t("game:solo.noScores", "—")}</p>
       ) : (
-        <ol className="flex flex-col gap-2">
+        <motion.ol
+          className="flex flex-col gap-2"
+          variants={reveal.container()}
+          initial="hidden"
+          animate="visible"
+        >
           {sorted.map((entry, i) => {
             const isMe = i === myIndex
             const isMedal = i < 3
             return (
               <motion.li
                 key={`${entry.playerName}-${entry.answeredAt}-${i}`}
+                // `layout` makes rank shifts (entries reordering by score)
+                // glide on the lifecycle spring — a moment, not a hot-path tick.
+                layout
+                variants={reveal.item()}
+                transition={reveal.spring}
                 className={clsx(
                   "flex items-center gap-3 rounded-xl px-4 py-3 text-white",
                   isMe
@@ -77,16 +88,6 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                     : "bg-black/30",
                 )}
                 aria-current={isMe ? "true" : undefined}
-                animate={
-                  isMe && !reduced
-                    ? { scale: [1, 1.02, 1] }
-                    : undefined
-                }
-                transition={
-                  isMe && !reduced
-                    ? { repeat: Infinity, duration: 2, ease: "easeInOut" }
-                    : undefined
-                }
               >
                 {/* Rank */}
                 <span
@@ -124,7 +125,7 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
               </motion.li>
             )
           })}
-        </ol>
+        </motion.ol>
       )}
     </div>
   )

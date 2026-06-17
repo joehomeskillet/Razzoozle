@@ -4,6 +4,8 @@ import type { PlayerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Loader from "@razzoozle/web/components/Loader"
 import AvatarPicker from "@razzoozle/web/features/game/components/join/AvatarPicker"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { motion } from "motion/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -22,6 +24,7 @@ interface Props {
 const Wait = ({ data: { text, teamMode } }: Props) => {
   const { t } = useTranslation()
   const { socket } = useSocket()
+  const reveal = useReveal()
   const [showPicker, setShowPicker] = useState(true)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
 
@@ -29,17 +32,48 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
   // state is reused between questions where the picker would be out of place.
   const isLobby = text === "game:waitingForPlayers"
 
+  // Anticipation loop — a gentle "breathing" pulse on the loader + a soft sheen
+  // on the heading so the otherwise-static wait screen feels alive. Looping
+  // ambient motion is suppressed entirely under reduced-motion (static values),
+  // so nothing animates when the user opts out. Cheap: opacity / scale only, no
+  // layout — this screen can be on hundreds of clients at once.
+  const loaderPulse = reveal.reduced
+    ? undefined
+    : { scale: [1, 1.04, 1], opacity: [0.92, 1, 0.92] }
+  const headingSheen = reveal.reduced ? undefined : { opacity: [0.88, 1, 0.88] }
+  const breatheTransition = {
+    duration: 2.4,
+    ease: EASE.inOut,
+    repeat: Infinity,
+  }
+
   return (
     <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
-      <Loader className="h-30" />
-      <h2 className="mt-5 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
+      <motion.div
+        animate={loaderPulse}
+        transition={breatheTransition}
+        style={{ willChange: "transform, opacity" }}
+      >
+        <Loader className="h-30" />
+      </motion.div>
+      <motion.h2
+        animate={headingSheen}
+        transition={breatheTransition}
+        className="mt-5 text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+      >
         {t(text)}
-      </h2>
+      </motion.h2>
 
       {isLobby && showPicker && (
-        <div className="mt-8 w-full max-w-md rounded-xl bg-white/95 p-4 shadow-lg">
+        <motion.div
+          variants={reveal.item()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.spring}
+          className="mt-8 w-full max-w-md rounded-xl bg-white/95 p-4 shadow-lg"
+        >
           <AvatarPicker onDone={() => setShowPicker(false)} />
-        </div>
+        </motion.div>
       )}
 
       {/* Team picker — only rendered in the lobby of a team-mode game. The
@@ -48,7 +82,13 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           Visually compact and non-blocking so it doesn't interfere with the
           avatar flow. */}
       {isLobby && teamMode && (
-        <div className="mt-4 w-full max-w-md rounded-xl bg-white/95 px-4 py-3 shadow-lg">
+        <motion.div
+          variants={reveal.item()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.spring}
+          className="mt-4 w-full max-w-md rounded-xl bg-white/95 px-4 py-3 shadow-lg"
+        >
           <p className="mb-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
             {t("game:teams.pick", { defaultValue: "Team wählen" })}
           </p>
@@ -90,7 +130,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
               )
             })}
           </div>
-        </div>
+        </motion.div>
       )}
     </section>
   )

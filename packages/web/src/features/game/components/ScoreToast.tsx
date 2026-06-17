@@ -15,6 +15,7 @@
  * and clip the slide-in / re-scope z-[60]).
  */
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
+import { SPRING } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Trophy, X } from "lucide-react"
 import { createPortal } from "react-dom"
@@ -48,7 +49,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
           transition={
             reduced
               ? { duration: 0.2 }
-              : { type: "spring", stiffness: 320, damping: 24 }
+              : SPRING
           }
           className="pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2"
           style={{ top: "max(1.5rem, env(safe-area-inset-top))" }}

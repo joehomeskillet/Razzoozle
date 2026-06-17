@@ -10,13 +10,23 @@
  * on the dark surface. Accent only drives the left border + leading wash.
  *
  * All non-essential motion is gated on the `reduced` flag (drag disabled,
- * entry/exit collapsed to opacity-only).
+ * entry/exit collapsed to opacity-only). The entrance reveal mirrors the shared
+ * `useReveal().item()` / `reveal.spring` contract from the animation presets, but
+ * is driven off the parent-supplied `reduced` prop (this atom is rendered by
+ * <RewardStack>, which owns the reduced-motion source of truth) instead of
+ * re-reading the hook.
  */
 
 import { motion } from "motion/react"
 import { X } from "lucide-react"
 import { useCallback, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
+import {
+  DURATION,
+  SPRING,
+  fadeUp,
+  reducedVariants,
+} from "@razzoozle/web/features/game/animation/presets"
 
 export interface RewardRowProps {
   id: string
@@ -85,11 +95,19 @@ const RewardRow = ({
     if (info.offset.x > 80) onDismiss(id)
   }
 
+  // Entrance reveal — mirrors reveal.item() (fade + rise, opacity-only when
+  // reduced) and reveal.spring (lifecycle spring, or instant fade when reduced),
+  // derived from the parent-supplied `reduced` prop.
+  const enterVariants = reduced ? reducedVariants : fadeUp(12)
+  const enterTransition = reduced ? { duration: DURATION.instant } : SPRING
+
   return (
     <motion.li
       layout
-      initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
-      animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      variants={enterVariants}
+      initial="hidden"
+      animate="visible"
+      transition={enterTransition}
       exit={reduced ? { opacity: 0 } : { opacity: 0, x: 60 }}
       drag={reduced ? false : "x"}
       dragSnapToOrigin

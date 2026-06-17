@@ -1,11 +1,12 @@
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Avatar from "@razzoozle/web/components/Avatar"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
-import { useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 import { useEffect, useState } from "react"
 import ReactConfetti from "react-confetti"
 import useSound from "use-sound"
@@ -114,11 +115,14 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
   const apparition = usePodiumAnimation(top.length)
 
   const { width, height } = useScreenSize()
-  const reducedMotion = useReducedMotion()
+  const reveal = useReveal()
+  // Lifecycle rise distance — the podium blocks lift up from below as each
+  // tier reveals. Opacity-only when reduced (reveal.item handles the guard).
+  const RISE = 96
 
   return (
     <>
-      {apparition >= 4 && !reducedMotion && (
+      {apparition >= 4 && !reveal.reduced && (
         <ReactConfetti
           width={width}
           height={height}
@@ -126,7 +130,7 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
         />
       )}
 
-      {apparition >= 3 && top.length >= 3 && !reducedMotion && (
+      {apparition >= 3 && top.length >= 3 && !reveal.reduced && (
         <div className="pointer-events-none absolute min-h-dvh w-full overflow-hidden">
           <div className="spotlight"></div>
         </div>
@@ -145,11 +149,12 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
           className={`grid w-full max-w-200 flex-1 items-end justify-center justify-self-end overflow-x-visible overflow-y-hidden`}
         >
           {top[1] && (
-            <div
-              className={clsx(
-                "z-20 flex h-[50%] w-full translate-y-full flex-col items-center justify-center gap-3 opacity-0 transition-[transform,opacity]",
-                { "translate-y-0! opacity-100": apparition >= 2 },
-              )}
+            <motion.div
+              variants={reveal.item(RISE)}
+              initial="hidden"
+              animate={apparition >= 2 ? "visible" : "hidden"}
+              transition={reveal.spring}
+              className="z-20 flex h-[50%] w-full flex-col items-center justify-center gap-3"
             >
               <Avatar
                 src={top[1].avatar}
@@ -168,20 +173,28 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
                 {top[1].username}
               </p>
               <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
-                <Medal rank={2} />
+                <motion.div
+                  variants={reveal.pop()}
+                  initial="hidden"
+                  animate={apparition >= 2 ? "visible" : "hidden"}
+                  transition={reveal.snap}
+                >
+                  <Medal rank={2} />
+                </motion.div>
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[1].points}
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
 
-          <div
+          <motion.div
+            variants={reveal.item(RISE)}
+            initial="hidden"
+            animate={apparition >= 3 ? "visible" : "hidden"}
+            transition={reveal.spring}
             className={clsx(
-              "z-30 flex h-[60%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-[transform,opacity]",
-              {
-                "translate-y-0! opacity-100": apparition >= 3,
-              },
+              "z-30 flex h-[60%] w-full flex-col items-center gap-3",
               {
                 "md:min-w-64": top.length < 2,
               },
@@ -202,21 +215,27 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
               {top[0].username}
             </p>
             <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
-              <Medal rank={1} />
+              <motion.div
+                variants={reveal.pop()}
+                initial="hidden"
+                animate={apparition >= 3 ? "visible" : "hidden"}
+                transition={reveal.snap}
+              >
+                <Medal rank={1} />
+              </motion.div>
               <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                 {top[0].points}
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {top[2] && (
-            <div
-              className={clsx(
-                "z-10 flex h-[40%] w-full translate-y-full flex-col items-center gap-3 opacity-0 transition-[transform,opacity]",
-                {
-                  "translate-y-0! opacity-100": apparition >= 1,
-                },
-              )}
+            <motion.div
+              variants={reveal.item(RISE)}
+              initial="hidden"
+              animate={apparition >= 1 ? "visible" : "hidden"}
+              transition={reveal.spring}
+              className="z-10 flex h-[40%] w-full flex-col items-center gap-3"
             >
               <Avatar
                 src={top[2].avatar}
@@ -235,13 +254,20 @@ const Podium = ({ data: { subject, top, teamStandings } }: Props) => {
                 {top[2].username}
               </p>
               <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
-                <Medal rank={3} />
+                <motion.div
+                  variants={reveal.pop()}
+                  initial="hidden"
+                  animate={apparition >= 1 ? "visible" : "hidden"}
+                  transition={reveal.snap}
+                >
+                  <Medal rank={3} />
+                </motion.div>
 
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[2].points}
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </section>

@@ -2,11 +2,19 @@
  * AchievementMedal — pure presentational circular medallion for a single
  * achievement badge. Renders a tier-gradient disc with the badge emoji centered,
  * an optional label underneath, and a subtle animated ring/shimmer for gold and
- * diamant tiers (gated on useReducedMotion).
+ * diamant tiers (gated on reduced motion).
+ *
+ * On unlock the disc pops in via reveal.pop() (overshoot, opacity-only when the
+ * user prefers reduced motion) with a one-shot shine sweep across the disc.
  *
  * No socket, store, or network imports — presentation only.
  */
 
+import {
+  DURATION,
+  EASE,
+  useReveal,
+} from "@razzoozle/web/features/game/animation/presets"
 import {
   ACHIEVEMENT_META,
   TIER_GRADIENT,
@@ -14,7 +22,7 @@ import {
   TIER_RING,
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 
 // ─── Size map ────────────────────────────────────────────────────────────────
 
@@ -82,7 +90,7 @@ const AchievementMedal = ({
   pulse = false,
   className = "",
 }: AchievementMedalProps) => {
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
 
   const meta = ACHIEVEMENT_META[id]
   const icon = meta?.icon ?? "🏅"
@@ -91,20 +99,39 @@ const AchievementMedal = ({
     : id.replace(/_/g, " ")
 
   const showAnimatedRing =
-    !reduced && (pulse || tier === "gold" || tier === "diamant")
+    !reveal.reduced && (pulse || tier === "gold" || tier === "diamant")
 
   return (
     <span
       className={`inline-flex flex-col items-center gap-1 ${className}`}
     >
-      {/* Disc */}
-      <span
+      {/* Disc — pops in on unlock (overshoot; opacity-only when reduced) */}
+      <motion.span
         role="img"
         aria-label={displayName}
-        className={`relative inline-flex items-center justify-center rounded-full bg-gradient-to-br ring-2 ${SIZE_CLASS[size]} ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`}
+        className={`relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ring-2 ${SIZE_CLASS[size]} ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`}
+        variants={reveal.pop()}
+        initial="hidden"
+        animate="visible"
+        transition={reveal.spring}
       >
         {/* Animated ring — reduced-motion: static only */}
         {showAnimatedRing && <PulseRing tier={tier} />}
+
+        {/* One-shot shine sweep on unlock — suppressed when reduced */}
+        {!reveal.reduced && (
+          <motion.span
+            className="pointer-events-none absolute inset-y-0 -left-full z-20 w-1/2 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+            initial={{ x: 0 }}
+            animate={{ x: "300%" }}
+            transition={{
+              duration: DURATION.sheen,
+              ease: EASE.out,
+              delay: DURATION.fast,
+            }}
+            aria-hidden
+          />
+        )}
 
         {/* Emoji icon */}
         <span
@@ -113,7 +140,7 @@ const AchievementMedal = ({
         >
           {icon}
         </span>
-      </span>
+      </motion.span>
 
       {/* Optional label — inherits text color from parent; tabular-nums for counts */}
       {label !== undefined && (

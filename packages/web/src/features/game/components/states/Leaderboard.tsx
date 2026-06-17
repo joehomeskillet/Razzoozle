@@ -1,6 +1,7 @@
 import type { MergedAchievement } from "@razzoozle/common/achievements"
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Avatar from "@razzoozle/web/components/Avatar"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import Fire from "@razzoozle/web/features/game/components/icons/Fire"
@@ -41,6 +42,38 @@ const StreakBadge = ({ streak }: { streak: number }) => (
   </AnimatePresence>
 )
 
+// ─── Climber / faller rank-delta emphasis ────────────────────────────────────
+
+type RankMove = "up" | "down" | "same"
+
+/** Cheap, CSS-only emphasis chip shown next to a row that moved this round. */
+const RankDeltaChip = ({ move, delta }: { move: RankMove; delta: number }) => {
+  const { t } = useTranslation()
+  if (move === "same" || delta === 0) return null
+
+  const up = move === "up"
+  const label = up
+    ? t("game:rankUp", { defaultValue: "{{count}} hoch", count: delta })
+    : t("game:rankDown", { defaultValue: "{{count}} runter", count: delta })
+
+  return (
+    <span
+      role="status"
+      aria-label={label}
+      className={[
+        "flex flex-shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5",
+        "text-xs font-bold tabular-nums leading-none",
+        up
+          ? "bg-emerald-500/25 text-emerald-100"
+          : "bg-rose-500/25 text-rose-100",
+      ].join(" ")}
+    >
+      <span aria-hidden="true">{up ? "▲" : "▼"}</span>
+      {delta}
+    </span>
+  )
+}
+
 // ─── Achievement chip row (per player) ───────────────────────────────────────
 
 interface AchievementChipsProps {
@@ -55,7 +88,7 @@ const AchievementChips = ({
   show,
   mergedList,
 }: AchievementChipsProps) => {
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
   const { t } = useTranslation()
 
   if (!achievementIds.length) return null
@@ -78,18 +111,14 @@ const AchievementChips = ({
           return (
             <motion.span
               key={id}
-              initial={{ opacity: 0, scale: reduced ? 1 : 0.5, y: reduced ? 0 : -8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: reduced ? 1 : 0.5 }}
+              variants={reveal.pop(0.5)}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
               transition={
-                reduced
-                  ? { duration: 0.2 }
-                  : {
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 22,
-                      delay: i * 0.07,
-                    }
+                reveal.reduced
+                  ? reveal.spring
+                  : { ...reveal.snap, delay: i * 0.07 }
               }
               className="flex-shrink-0"
               title={name}
@@ -185,6 +214,7 @@ const CelebratoryBanner = ({
 const Leaderboard = ({
   data: { oldLeaderboard, leaderboard, teamStandings },
 }: Props) => {
+  const reveal = useReveal()
   const [displayedLeaderboard, setDisplayedLeaderboard] =
     useState(oldLeaderboard)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -217,6 +247,29 @@ const Leaderboard = ({
       clearTimeout(rankTimer)
       clearTimeout(chipsTimer)
     }
+  }, [oldLeaderboard, leaderboard])
+
+  // Climber / faller emphasis — rank delta (old index → new index) per player.
+  // Cheap O(n) map built once per leaderboard change; consulted with a Map lookup
+  // in render so a ~200-row list stays light (no per-row .findIndex scans).
+  const rankMoves = useMemo(() => {
+    const oldRank = new Map<string, number>()
+    oldLeaderboard.forEach((p, i) => oldRank.set(p.id, i))
+
+    const moves = new Map<string, { move: RankMove; delta: number }>()
+    leaderboard.forEach((p, newIndex) => {
+      const prev = oldRank.get(p.id)
+      if (prev === undefined) {
+        moves.set(p.id, { move: "same", delta: 0 })
+        return
+      }
+      const diff = prev - newIndex
+      moves.set(p.id, {
+        move: diff > 0 ? "up" : diff < 0 ? "down" : "same",
+        delta: Math.abs(diff),
+      })
+    })
+    return moves
   }, [oldLeaderboard, leaderboard])
 
   // Derive the highest-tier unlock across all CURRENT leaderboard rows.
@@ -295,60 +348,84 @@ const Leaderboard = ({
       <div className="glass-2 flex w-full flex-col gap-2">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(
-            ({ id, username, points, streak, avatar, achievements }) => (
-              <motion.div
-                key={id}
-                layout
-                initial={{ opacity: 0, y: 50 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: 50,
-                  transition: { duration: 0.2 },
-                }}
-                transition={{
-                  layout: {
-                    type: "spring",
-                    stiffness: 350,
-                    damping: 25,
-                  },
-                }}
-                className="glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]"
-              >
-                {/* Main row: avatar + name + streak + points */}
-                <div className="flex w-full items-center justify-between">
-                  <span className="flex items-center gap-2 drop-shadow-md">
-                    <Avatar src={avatar} name={username} size={36} />
-                    {username}
-                    <StreakBadge streak={streak} />
-                  </span>
-                  {isAnimating ? (
-                    <AnimatedPoints
-                      from={
-                        oldLeaderboard.find((u) => u.id === id)?.points ?? 0
-                      }
-                      to={leaderboard.find((u) => u.id === id)?.points ?? 0}
-                    />
-                  ) : (
-                    <span className="tabular-nums drop-shadow-md">{points}</span>
-                  )}
-                </div>
+            ({ id, username, points, streak, avatar, achievements }) => {
+              const rank = rankMoves.get(id)
+              // Emphasis only once rows have settled into their new order.
+              const emphasize = isAnimating && rank !== undefined
+              const climbing = emphasize && rank.move === "up"
+              const falling = emphasize && rank.move === "down"
 
-                {/* Achievement chips — staggered spring after rank animation */}
-                {achievements && achievements.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 pl-1">
-                    <AchievementChips
-                      achievementIds={achievements}
-                      show={chipsVisible}
-                      mergedList={mergedList}
-                    />
+              return (
+                <motion.div
+                  key={id}
+                  layout
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    // Cheap opacity-only lift for climbers; fallers dim slightly.
+                    // No fabricated motion — useReveal honours reduced via reveal.spring.
+                    scale: reveal.reduced ? 1 : climbing ? 1.015 : 1,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: 50,
+                    transition: { duration: 0.2 },
+                  }}
+                  transition={{
+                    layout: reveal.spring,
+                    scale: reveal.spring,
+                    default: reveal.spring,
+                  }}
+                  className={[
+                    "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]",
+                    // Cheap CSS ring/opacity emphasis — keeps the ~200-row hot path light.
+                    "transition-shadow",
+                    climbing
+                      ? "shadow-[0_0_0_2px_rgba(16,185,129,0.6)]"
+                      : "",
+                    falling ? "opacity-80" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {/* Main row: avatar + name + streak + points */}
+                  <div className="flex w-full items-center justify-between">
+                    <span className="flex items-center gap-2 drop-shadow-md">
+                      <Avatar src={avatar} name={username} size={36} />
+                      {username}
+                      <StreakBadge streak={streak} />
+                      {emphasize && (
+                        <RankDeltaChip move={rank.move} delta={rank.delta} />
+                      )}
+                    </span>
+                    {isAnimating ? (
+                      <AnimatedPoints
+                        from={
+                          oldLeaderboard.find((u) => u.id === id)?.points ?? 0
+                        }
+                        to={leaderboard.find((u) => u.id === id)?.points ?? 0}
+                      />
+                    ) : (
+                      <span className="tabular-nums drop-shadow-md">
+                        {points}
+                      </span>
+                    )}
                   </div>
-                )}
-              </motion.div>
-            ),
+
+                  {/* Achievement chips — staggered spring after rank animation */}
+                  {achievements && achievements.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 pl-1">
+                      <AchievementChips
+                        achievementIds={achievements}
+                        show={chipsVisible}
+                        mergedList={mergedList}
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              )
+            },
           )}
         </AnimatePresence>
       </div>

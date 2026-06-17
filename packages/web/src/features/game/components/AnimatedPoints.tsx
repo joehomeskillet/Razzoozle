@@ -8,6 +8,8 @@
 import { useReducedMotion, useSpring, useTransform } from "motion/react"
 import { useEffect, useState } from "react"
 
+import { SPRING_COUNT } from "@razzoozle/web/features/game/animation/presets"
+
 interface Props {
   /** Final value to count up to. */
   to: number
@@ -18,7 +20,7 @@ interface Props {
 
 const AnimatedPoints = ({ to, from = 0, className }: Props) => {
   const reduced = useReducedMotion() ?? false
-  const spring = useSpring(from, { stiffness: 1000, damping: 30 })
+  const spring = useSpring(from, SPRING_COUNT)
   const display = useTransform(spring, (value) => Math.round(value))
   const [displayValue, setDisplayValue] = useState(from)
 

@@ -9,8 +9,13 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
+import {
+  STAGGER,
+  useReveal,
+} from "@razzoozle/web/features/game/animation/presets"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 import QRCode from "@razzoozle/web/components/QRCode"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -40,6 +45,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const [pairCode, setPairCode] = useState("")
   const qrContentRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
+  const reveal = useReveal()
 
   const pairDisplay = () => {
     if (!gameId || pairCode.trim().length === 0) {
@@ -197,69 +203,85 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        {playerList.map((player) => (
-          <div
-            key={player.id}
-            className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
-          >
-            {player.teamId && TEAM_DOT[player.teamId] && (
-              <span
-                className={`size-4 shrink-0 rounded-full ${TEAM_DOT[player.teamId]} ring-2 ring-white/40`}
-                aria-label={player.teamId}
-                title={player.teamId}
-              />
-            )}
-            <Avatar src={player.avatar} name={player.username} size={40} />
-            <span className="text-3xl drop-shadow-sm">{player.username}</span>
-            <AlertDialog.Root>
-              <AlertDialog.Trigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("manager:kickPlayer.aria", {
-                    name: player.username,
-                  })}
-                  className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                >
-                  <X className="size-4" />
-                </button>
-              </AlertDialog.Trigger>
-              <AlertDialog.Portal>
-                <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-                <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-black">
-                  <AlertDialog.Title className="text-xl font-bold">
-                    {t("manager:kickPlayer.title")}
-                  </AlertDialog.Title>
-                  <AlertDialog.Description className="mt-2 text-gray-600">
-                    {t("manager:kickPlayer.description", {
+      {/* Lobby roster: each card enters/leaves on its own id key. Stagger is the
+          fast token (rooms hold ~200 players) and `layout` is dropped under
+          reduced motion so reflows never fabricate movement. */}
+      <motion.div
+        className="flex flex-wrap gap-3"
+        variants={reveal.container(STAGGER.fast)}
+        initial="hidden"
+        animate="visible"
+      >
+        <AnimatePresence initial={false}>
+          {playerList.map((player) => (
+            <motion.div
+              key={player.id}
+              layout={!reveal.reduced}
+              variants={reveal.item()}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              transition={reveal.spring}
+              className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
+            >
+              {player.teamId && TEAM_DOT[player.teamId] && (
+                <span
+                  className={`size-4 shrink-0 rounded-full ${TEAM_DOT[player.teamId]} ring-2 ring-white/40`}
+                  aria-label={player.teamId}
+                  title={player.teamId}
+                />
+              )}
+              <Avatar src={player.avatar} name={player.username} size={40} />
+              <span className="text-3xl drop-shadow-sm">{player.username}</span>
+              <AlertDialog.Root>
+                <AlertDialog.Trigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t("manager:kickPlayer.aria", {
                       name: player.username,
                     })}
-                  </AlertDialog.Description>
-                  <div className="mt-6 flex justify-end gap-3">
-                    <AlertDialog.Cancel asChild>
-                      <button
-                        type="button"
-                        className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
-                      >
-                        {t("common:cancel")}
-                      </button>
-                    </AlertDialog.Cancel>
-                    <AlertDialog.Action asChild>
-                      <button
-                        type="button"
-                        onClick={() => kickPlayer(player.id)}
-                        className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-                      >
-                        {t("manager:kickPlayer.confirm")}
-                      </button>
-                    </AlertDialog.Action>
-                  </div>
-                </AlertDialog.Content>
-              </AlertDialog.Portal>
-            </AlertDialog.Root>
-          </div>
-        ))}
-      </div>
+                    className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </AlertDialog.Trigger>
+                <AlertDialog.Portal>
+                  <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+                  <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-black">
+                    <AlertDialog.Title className="text-xl font-bold">
+                      {t("manager:kickPlayer.title")}
+                    </AlertDialog.Title>
+                    <AlertDialog.Description className="mt-2 text-gray-600">
+                      {t("manager:kickPlayer.description", {
+                        name: player.username,
+                      })}
+                    </AlertDialog.Description>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <AlertDialog.Cancel asChild>
+                        <button
+                          type="button"
+                          className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+                        >
+                          {t("common:cancel")}
+                        </button>
+                      </AlertDialog.Cancel>
+                      <AlertDialog.Action asChild>
+                        <button
+                          type="button"
+                          onClick={() => kickPlayer(player.id)}
+                          className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                        >
+                          {t("manager:kickPlayer.confirm")}
+                        </button>
+                      </AlertDialog.Action>
+                    </div>
+                  </AlertDialog.Content>
+                </AlertDialog.Portal>
+              </AlertDialog.Root>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
     </section>
   )
 }

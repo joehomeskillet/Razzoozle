@@ -22,7 +22,8 @@ import {
 } from "@razzoozle/web/features/game/utils/answers"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
-import { motion, useReducedMotion } from "motion/react"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { motion } from "motion/react"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -37,7 +38,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const { submitAnswer, lastResult, lastAchievements, phase } = useSoloStore()
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
-  const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
+  const reduced = reveal.reduced
 
   const [selectedKey, setSelectedKey] = useState<number | null>(null)
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
@@ -267,19 +269,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                 return (
                   <motion.div
                     key={key}
-                    initial={
-                      reduced ? { opacity: 0 } : { opacity: 0, y: 50 }
-                    }
-                    animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    variants={{ ...reveal.item(50), popped: reveal.pop().visible }}
+                    initial="hidden"
+                    animate={resultReady && isPicked ? "popped" : "visible"}
                     transition={
-                      reduced
-                        ? { duration: 0.2 }
-                        : {
-                            delay: key * 0.1,
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 24,
-                          }
+                      resultReady && isPicked ? reveal.snap : reveal.spring
                     }
                     className="flex"
                   >
@@ -359,19 +353,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               return (
                 <motion.div
                   key={key}
-                  initial={
-                    reduced ? { opacity: 0 } : { opacity: 0, y: 50 }
-                  }
-                  animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  variants={{ ...reveal.item(50), popped: reveal.pop().visible }}
+                  initial="hidden"
+                  animate={resultReady && isPicked ? "popped" : "visible"}
                   transition={
-                    reduced
-                      ? { duration: 0.2 }
-                      : {
-                          delay: key * 0.1,
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 24,
-                        }
+                    resultReady && isPicked ? reveal.snap : reveal.spring
                   }
                   className="relative flex"
                 >
