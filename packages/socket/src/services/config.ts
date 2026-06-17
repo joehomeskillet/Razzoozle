@@ -2052,11 +2052,15 @@ const PLUGIN_ASSET_EXT = new Set([
   "cjs",
   "json",
   "css",
-  "html",
   "ttf",
   "woff",
   "gif",
 ])
+// SECURITY: the PUBLIC /plugins/:id/:path route must never serve
+// browser-renderable markup (same-origin XSS). "svg" is inherited from
+// SKELETON_ASSET_EXT (which gates the separate skeleton-upload surface and is
+// left untouched); delete it here so only this public allowlist drops it.
+PLUGIN_ASSET_EXT.delete("svg")
 
 const pluginsRoot = (): string => getPath("plugins")
 const pluginDir = (id: string): string => getPath(`plugins/${id}`)
@@ -2329,8 +2333,6 @@ const PLUGIN_MIME: Record<string, string> = {
   cjs: "text/javascript; charset=utf-8",
   json: "application/json; charset=utf-8",
   css: "text/css; charset=utf-8",
-  html: "text/html; charset=utf-8",
-  svg: "image/svg+xml",
   png: "image/png",
   webp: "image/webp",
   gif: "image/gif",
@@ -2377,25 +2379,12 @@ export const resolvePluginAsset = (
   }
 
   // PUBLIC surface restriction: this route is unauthenticated, so only ever
-  // serve client-facing files — the manifest's client entry (default ui.js) or
-  // anything under assets/. Everything else at the plugin root (server.js,
-  // plugin.json, plugin-revisions.json, ...) is denied (404).
-  let clientEntry = "ui.js"
-
-  try {
-    const manifestRaw = fs.readFileSync(resolve(dir, "plugin.json"), "utf-8")
-    const parsed = JSON.parse(manifestRaw) as {
-      hooks?: { client?: unknown }
-    }
-
-    if (typeof parsed.hooks?.client === "string" && parsed.hooks.client) {
-      clientEntry = parsed.hooks.client
-    }
-  } catch {
-    clientEntry = "ui.js"
-  }
-
-  if (rest !== clientEntry && !rest.startsWith("assets/")) {
+  // serve client-facing files. The allowed client entry is HARD-CODED to
+  // "ui.js" (the manifest default + what the client injector loads) — never
+  // read from the plugin's own attacker-controlled manifest. Everything else at
+  // the plugin root (server.js, plugin.json, plugin-revisions.json, ...) is
+  // denied (404); only ui.js or anything under assets/ is served.
+  if (rest !== "ui.js" && !rest.startsWith("assets/")) {
     return null
   }
 
