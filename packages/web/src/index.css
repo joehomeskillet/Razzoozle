@@ -81,6 +81,16 @@
   );
 }
 
+body {
+  background:
+    radial-gradient(42rem 32rem at 12% -8%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 62%),
+    radial-gradient(38rem 30rem at 92% 108%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 62%),
+    radial-gradient(135% 105% at 50% -10%, #FBF9F3, var(--color-field-cream) 52%, #ECE6D8);
+  background-attachment: fixed;
+  min-height: 100dvh;
+  color: var(--color-field-ink);
+}
+
 button:not(:disabled),
 [role="button"]:not(:disabled) {
   cursor: pointer;
@@ -518,4 +528,13 @@ button:not(:disabled),
    because background luminance leaks through the frost. */
 [data-theme-style="glass"] .glass-3 :is(h1, h2, .prompt-text) {
   text-shadow: 0 1px 8px rgba(10, 4, 24, 0.55);
+}
+
+/* Cream game field — warm cream background with soft brand glows (de-clinical).
+   Used by Background.tsx in the `field="cream"` branch and by the cream-converted
+   game surfaces (manager/display/satellite/share/podium/recap). The radial brand
+   tints (primary top-left, accent bottom-right) keep large cream areas from
+   reading as a flat clinical sheet. */
+.cream-field {
+  background: transparent;
 }

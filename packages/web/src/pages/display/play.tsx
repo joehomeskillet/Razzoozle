@@ -83,7 +83,7 @@ const DisplayPlayPage = () => {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-[3vh] text-center">
         <Loader className="h-[12vh]" />
-        <p className="text-[3vh] font-bold text-white/80">
+        <p className="text-[3vh] font-bold text-[color:var(--color-field-ink)]/80">
           {t("display:waitingForGame", {
             defaultValue: "Waiting for the game to start…",
           })}

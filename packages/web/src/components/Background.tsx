@@ -1,23 +1,19 @@
 import defaultLogo from "@razzoozle/web/assets/logo.svg"
 import GithubIcon from "@razzoozle/web/components/GithubIcon"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
-import { type PropsWithChildren, useState } from "react"
+import { type PropsWithChildren } from "react"
 
-// `plain` forces the purple brand gradient and skips the themed photo wallpaper
-// — used by the manager console (/manager/config) which wants a clean solid
-// background, while login/lobby/submit/share keep the photo.
+// `plain` is kept for API compatibility but no longer changes the visuals: the
+// page background is now painted exclusively by the single cream gradient on
+// <body>. Background never paints a full-bleed page background of its own —
+// neither the themed photo wallpaper, the brand gradient, nor the dark scrim —
+// so the one body bg shows through consistently on every screen.
 const Background = ({
   children,
-  plain = false,
   field = "ink",
 }: PropsWithChildren<{ plain?: boolean; field?: "cream" | "ink" }>) => {
   const { theme } = useThemeStore()
-  const authBg = theme.backgrounds.auth
   const appTitle = theme.appTitle?.trim()
-  // Silent media fallback (WP-C item 4): if the themed wallpaper URL fails to
-  // load (deleted asset, broken config, offline media volume), drop to the brand
-  // gradient instead of leaving a broken-image box. No crash, no console noise.
-  const [bgFailed, setBgFailed] = useState(false)
   const isCream = field === "cream"
 
   return (
@@ -30,38 +26,6 @@ const Background = ({
       className="relative flex min-h-dvh flex-col items-center justify-center-safe"
       style={isCream ? { color: "var(--color-field-ink)" } : undefined}
     >
-      <div className="fixed inset-0 overflow-hidden">
-        {isCream ? (
-          <div
-            className="absolute inset-0"
-            style={{ background: "var(--color-field-cream)" }}
-          />
-        ) : (
-          <>
-            {authBg && !plain && !bgFailed ? (
-              <img
-                src={authBg}
-                alt="background"
-                onError={() => setBgFailed(true)}
-                className="pointer-events-none absolute h-full w-full object-cover select-none"
-              />
-            ) : (
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
-                }}
-              />
-            )}
-            <div
-              className="pointer-events-none absolute inset-0 bg-black"
-              style={{ opacity: "var(--bg-scrim)" }}
-            />
-          </>
-        )}
-      </div>
-
       {/* Brand above the login: a custom uploaded logo wins; otherwise show the
           themed appTitle as text (e.g. "Südhang Kahoot"); fall back to the
           bundled logo only when neither is set. */}

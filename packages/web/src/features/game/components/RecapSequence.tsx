@@ -140,7 +140,7 @@ const RecapSequence = ({
 
       {/* Title + progress */}
       <motion.h2
-        className="relative z-10 text-2xl font-bold text-white/90 drop-shadow-lg md:text-3xl"
+        className="relative z-10 text-2xl font-bold text-[color:var(--game-fg)]/90 md:text-3xl"
         variants={reveal.item()}
         initial="hidden"
         animate="visible"
@@ -199,7 +199,7 @@ const RecapSequence = ({
             <span className="text-7xl drop-shadow-lg md:text-8xl" aria-hidden>
               🏆
             </span>
-            <p className="text-4xl font-black text-white drop-shadow-lg md:text-5xl">
+            <p className="text-4xl font-black text-[color:var(--game-fg)] md:text-5xl">
               {t("game:recap.podiumCue", {
                 defaultValue: "Und jetzt: Das Podium",
               })}

@@ -2,14 +2,12 @@ import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import { EVENTS } from "@razzoozle/common/constants"
 import type { Status } from "@razzoozle/common/types/game/status"
 import { STATUS } from "@razzoozle/common/types/game/status"
-import background from "@razzoozle/web/assets/background.webp"
 import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
 import DisplayControl from "@razzoozle/web/features/manager/components/DisplayControl"
 import DisplayStatusCard from "@razzoozle/web/features/manager/components/DisplayStatusCard"
 import SimControl from "@razzoozle/web/features/manager/components/SimControl"
 import LowLatencyHealth from "@razzoozle/web/features/game/components/LowLatencyHealth"
-import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { preloadFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
 import {
   useEvent,
@@ -67,7 +65,6 @@ const GameWrapper = ({
   const { player } = usePlayerStore()
   const { gameId, inviteCode } = useManagerStore()
   const { questionStates, setQuestionStates } = useQuestionStore()
-  const { theme } = useThemeStore()
   const { muted, toggle: toggleMuted } = useSoundStore()
   const { enabled: hapticsEnabled, toggle: toggleHaptics } = useHapticsStore()
   const { t } = useTranslation()
@@ -107,9 +104,6 @@ const GameWrapper = ({
     }
   }
   const next = statusName ? MANAGER_SKIP_BTN[statusName] : null
-  const bgSrc =
-    (manager ? theme.backgrounds.managerGame : theme.backgrounds.playerGame) ??
-    background
 
   useEvent(EVENTS.GAME.UPDATE_QUESTION, ({ current, total }) => {
     setQuestionStates({
@@ -147,26 +141,9 @@ const GameWrapper = ({
   return (
     <section
       className="relative flex min-h-dvh"
-      style={{ "--game-fg": manager ? "#ffffff" : "#0E1120" } as React.CSSProperties}
+      style={{ "--game-fg": "#0E1120" } as React.CSSProperties}
     >
-      <div className="fixed top-0 left-0 h-full w-full">
-        {manager ? (
-          <img
-            className="pointer-events-none h-full w-full object-cover select-none"
-            src={bgSrc}
-            alt="background"
-          />
-        ) : (
-          <div
-            className="pointer-events-none h-full w-full"
-            style={{ background: "var(--color-field-cream)" }}
-          />
-        )}
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: manager ? "var(--bg-scrim)" : 0 }}
-        />
-      </div>
+      <div className="cream-field pointer-events-none fixed inset-0" />
 
       {/* Host-screen rejoin badge: a player who dropped scans this QR (or types
           the PIN shown on the slide) to come straight back to the game — their

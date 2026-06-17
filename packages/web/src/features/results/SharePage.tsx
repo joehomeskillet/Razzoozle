@@ -143,7 +143,7 @@ const SharePage = ({ id }: Props) => {
 
   if (notFound) {
     return (
-      <Background>
+      <Background field="cream">
         <div className="z-10 mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-2xl bg-white p-8 text-center shadow-lg">
           <p className="text-base font-semibold leading-relaxed text-gray-700">
             {t("results:share.notFound")}
@@ -155,9 +155,9 @@ const SharePage = ({ id }: Props) => {
 
   if (!result) {
     return (
-      <Background>
-        <div className="z-10 flex flex-col items-center gap-4 text-white">
-          <Loader className="size-12 text-white" />
+      <Background field="cream">
+        <div className="z-10 flex flex-col items-center gap-4">
+          <Loader className="size-12 text-[color:var(--color-field-ink)]" />
           <p className="text-lg font-semibold tracking-wide animate-pulse">
             {t("results:share.loading")}
           </p>
@@ -170,7 +170,7 @@ const SharePage = ({ id }: Props) => {
   const restPlayers = result.players ? result.players.slice(3) : []
 
   return (
-    <Background>
+    <Background field="cream">
       {result && !reducedMotion && (
         <Suspense fallback={null}>
           <ReactConfetti
@@ -184,14 +184,14 @@ const SharePage = ({ id }: Props) => {
       )}
 
       <div className="z-10 flex w-full max-w-3xl flex-col items-center px-4 pt-6 pb-20">
-        <header className="mb-8 text-center text-white drop-shadow-lg">
-          <p className="text-xs font-semibold tracking-wide uppercase text-white/70">
+        <header className="mb-8 text-center">
+          <p className="text-xs font-semibold tracking-wide uppercase text-[color:var(--color-field-ink)]/70">
             {t("results:share.title")}
           </p>
           <h2 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
             {result.subject}
           </h2>
-          <p className="mt-2 text-sm text-white/80">
+          <p className="mt-2 text-sm text-[color:var(--color-field-ink)]/80">
             {formattedDate}
           </p>
         </header>
@@ -209,7 +209,7 @@ const SharePage = ({ id }: Props) => {
               className="flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "75%" }}
             >
-              <p className="max-w-full truncate text-center text-sm font-bold text-white drop-shadow-md md:text-base px-1">
+              <p className="max-w-full truncate text-center text-sm font-bold text-[color:var(--color-field-ink)] md:text-base px-1">
                 {top3[1].username}
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-3 shadow-lg">
@@ -233,7 +233,7 @@ const SharePage = ({ id }: Props) => {
               className="z-10 flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "90%" }}
             >
-              <p className="max-w-full truncate text-center text-base font-bold text-white drop-shadow-md md:text-lg px-1">
+              <p className="max-w-full truncate text-center text-base font-bold text-[color:var(--color-field-ink)] md:text-lg px-1">
                 {top3[0].username}
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-4 shadow-xl border-t-2 border-yellow-400/20">
@@ -257,7 +257,7 @@ const SharePage = ({ id }: Props) => {
               className="flex w-1/3 max-w-[10rem] flex-col items-center gap-2"
               style={{ height: "60%" }}
             >
-              <p className="max-w-full truncate text-center text-xs font-bold text-white drop-shadow-md md:text-sm px-1">
+              <p className="max-w-full truncate text-center text-xs font-bold text-[color:var(--color-field-ink)] md:text-sm px-1">
                 {top3[2].username}
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-3 shadow-lg">

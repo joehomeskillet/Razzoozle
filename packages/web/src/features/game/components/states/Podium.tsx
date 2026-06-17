@@ -325,7 +325,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
           { "opacity-0": hasRecap && !recapDone },
         )}
       >
-        <h2 className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
+        <h2 className="anim-show text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]">
           {subject}
         </h2>
 
@@ -353,7 +353,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
               />
               <p
                 className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                   {
                     "anim-balanced": apparition >= 4,
                   },
@@ -407,7 +407,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
             />
             <p
               className={clsx(
-                "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white opacity-0 drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] opacity-0 md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                 { "anim-balanced opacity-100": apparition >= 4 },
               )}
             >
@@ -454,7 +454,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
               />
               <p
                 className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
                   {
                     "anim-balanced": apparition >= 4,
                   },

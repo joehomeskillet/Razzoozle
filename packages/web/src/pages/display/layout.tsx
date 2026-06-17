@@ -46,7 +46,7 @@ const DisplayLayout = () => {
   }, [])
 
   return (
-    <div className="display-kiosk relative h-dvh w-dvw overflow-hidden bg-black text-white select-none">
+    <div className="display-kiosk cream-field relative h-dvh w-dvw overflow-hidden text-[color:var(--color-field-ink)] select-none">
       <Outlet />
     </div>
   )

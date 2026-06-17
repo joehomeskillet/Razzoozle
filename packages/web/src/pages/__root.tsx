@@ -36,14 +36,6 @@ const GameLayout = () => {
     applyTheme(theme)
   })
 
-  useEffect(() => {
-    document.body.classList.add("bg-secondary")
-
-    return () => {
-      document.body.classList.remove("bg-secondary")
-    }
-  }, [])
-
   return (
     <>
       {/* Skip link — first focusable element so keyboard users can jump past
@@ -54,7 +46,7 @@ const GameLayout = () => {
       >
         Zum Inhalt springen
       </a>
-      <main id="main" className="bg-secondary antialiased">
+      <main id="main" className="antialiased">
         <Outlet />
       </main>
     </>
@@ -73,12 +65,12 @@ export const Route = createRootRoute({
     </SocketProvider>
   ),
   errorComponent: ({ error }) => (
-    <div className="bg-secondary antialiased">
+    <div className="antialiased">
       <ErrorPage error={error} />
     </div>
   ),
   notFoundComponent: () => (
-    <div className="bg-secondary antialiased">
+    <div className="antialiased">
       <NotFound />
     </div>
   ),

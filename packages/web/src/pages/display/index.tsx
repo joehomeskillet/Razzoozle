@@ -109,7 +109,7 @@ const DisplayRegisterPage = () => {
 
       {pairingCode ? (
         <>
-          <p className="text-[2.6vh] font-medium text-white/70">
+          <p className="text-[2.6vh] font-medium text-[color:var(--color-field-ink)]/70">
             {t("display:enterCode", {
               defaultValue: "Enter this code in the Razzoozle admin on your phone",
             })}
@@ -125,7 +125,7 @@ const DisplayRegisterPage = () => {
             <div className="rounded-2xl bg-white p-[1.4vh]">
               <QRCode className="h-[16vh] w-[16vh]" size={320} value={joinUrl} />
             </div>
-            <p className="text-[1.8vh] font-semibold break-all text-white/60">
+            <p className="text-[1.8vh] font-semibold break-all text-[color:var(--color-field-ink)]/60">
               {joinUrl}
             </p>
           </div>
@@ -133,7 +133,7 @@ const DisplayRegisterPage = () => {
       ) : (
         <div className="flex flex-col items-center gap-[3vh]">
           <Loader className="h-[12vh]" />
-          <p className="text-[3vh] font-bold text-white/80">
+          <p className="text-[3vh] font-bold text-[color:var(--color-field-ink)]/80">
             {isConnected
               ? t("display:registering", {
                   defaultValue: "Preparing display…",
@@ -143,10 +143,10 @@ const DisplayRegisterPage = () => {
         </div>
       )}
 
-      <p className="mt-[2vh] flex items-center gap-[1.2vh] text-[2vh] font-semibold text-white/60">
+      <p className="mt-[2vh] flex items-center gap-[1.2vh] text-[2vh] font-semibold text-[color:var(--color-field-ink)]/60">
         <span className="relative flex h-[1.6vh] w-[1.6vh]">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60" />
-          <span className="relative inline-flex h-[1.6vh] w-[1.6vh] rounded-full bg-white/80" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-field-ink)]/40" />
+          <span className="relative inline-flex h-[1.6vh] w-[1.6vh] rounded-full bg-[color:var(--color-field-ink)]/40" />
         </span>
         {t("display:waitingForManager", {
           defaultValue: "Waiting for manager to pair…",

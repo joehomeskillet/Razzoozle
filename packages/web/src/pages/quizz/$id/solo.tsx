@@ -14,13 +14,11 @@
  */
 import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import background from "@razzoozle/web/assets/background.webp"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import ScoreToast from "@razzoozle/web/features/game/components/ScoreToast"
 import SoloAnswers from "@razzoozle/web/features/game/components/states/SoloAnswers"
 import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
-import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import Question from "@razzoozle/web/features/game/components/states/Question"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
@@ -38,7 +36,6 @@ interface SoloShellProps {
   questionTotal?: number
   playerName: string
   totalPoints: number
-  bgSrc: string
   /**
    * Key for the AnimatePresence transition around the content slot. Keyed on
    * the question index (NOT the phase) so SoloAnswers stays mounted across the
@@ -58,7 +55,6 @@ const SoloShell = ({
   questionTotal,
   playerName,
   totalPoints,
-  bgSrc,
   phaseKey,
   footerAction,
 }: SoloShellProps) => {
@@ -66,18 +62,6 @@ const SoloShell = ({
 
   return (
     <section className="relative flex h-dvh overflow-hidden">
-      <div className="fixed top-0 left-0 h-full w-full">
-        <img
-          className="pointer-events-none h-full w-full object-cover select-none"
-          src={bgSrc}
-          alt="background"
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
-        />
-      </div>
-
       <div className="z-10 flex w-full flex-1 flex-col justify-between">
         {/* Top bar: question counter */}
         <div className="flex w-full items-center justify-between gap-2 p-4">
@@ -94,7 +78,7 @@ const SoloShell = ({
               </motion.div>
             )}
           </div>
-          <div className="shrink-0 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white/80">
+          <div className="shrink-0 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
             Solo
           </div>
         </div>
@@ -140,29 +124,16 @@ const SoloShell = ({
 
 interface NameScreenProps {
   subject: string
-  bgSrc: string
   onStart: (name: string) => void
 }
 
-const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
+const NameScreen = ({ subject, onStart }: NameScreenProps) => {
   const [name, setName] = useState("")
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
 
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center">
-      <div className="fixed top-0 left-0 h-full w-full">
-        <img
-          className="pointer-events-none h-full w-full object-cover select-none"
-          src={bgSrc}
-          alt="background"
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
-        />
-      </div>
-
       <motion.div
         initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }}
         animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
@@ -171,12 +142,12 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
             ? { duration: 0.3 }
             : { type: "spring", stiffness: 300, damping: 30 }
         }
-        className="glass-3 relative z-10 mx-auto w-full max-w-md rounded-3xl border border-white/20 bg-white/10 p-10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] backdrop-blur-xl"
+        className="relative z-10 mx-auto w-full max-w-md rounded-3xl border border-[var(--border-hairline)] bg-white p-10 shadow-lg"
       >
-        <h1 className="mb-2 text-center text-4xl font-bold text-white drop-shadow-lg">
+        <h1 className="mb-2 text-center text-4xl font-bold text-[color:var(--color-field-ink)]">
           {subject}
         </h1>
-        <p className="mb-6 text-center text-lg text-white/70">
+        <p className="mb-6 text-center text-lg text-[color:var(--color-field-ink)]/70">
           {t("game:solo.play")}
         </p>
 
@@ -195,7 +166,7 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
             placeholder={t("game:solo.enterName")}
             autoFocus
             autoComplete="off"
-            className="w-full bg-white/5 border-2 border-white/20 text-white placeholder-white/40 focus:bg-white/20 focus:border-primary focus:ring-4 focus:ring-primary/30 transition-all duration-300 rounded-2xl px-6 py-4 text-2xl text-center font-bold outline-none"
+            className="w-full bg-gray-50 border-2 border-[var(--border-hairline)] text-[color:var(--color-field-ink)] placeholder-gray-400 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/30 transition-all duration-300 rounded-2xl px-6 py-4 text-2xl text-center font-bold outline-none"
           />
           <button
             type="submit"
@@ -214,7 +185,6 @@ const NameScreen = ({ subject, bgSrc, onStart }: NameScreenProps) => {
 // ---------------------------------------------------------------------------
 
 interface FinishedScreenProps {
-  bgSrc: string
   subject: string
   totalPoints: number
   leaderboard: import("@razzoozle/common/types/game").SoloScoreEntry[]
@@ -223,7 +193,6 @@ interface FinishedScreenProps {
 }
 
 const FinishedScreen = ({
-  bgSrc,
   subject,
   totalPoints,
   leaderboard,
@@ -235,18 +204,6 @@ const FinishedScreen = ({
 
   return (
     <section className="relative flex min-h-dvh flex-col">
-      <div className="fixed top-0 left-0 h-full w-full">
-        <img
-          className="pointer-events-none h-full w-full object-cover select-none"
-          src={bgSrc}
-          alt="background"
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
-        />
-      </div>
-
       <div className="relative z-10 flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto px-4 py-10">
         <motion.div
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
@@ -258,10 +215,10 @@ const FinishedScreen = ({
           }
           className="text-center"
         >
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg">
+          <h1 className="text-4xl font-bold text-[color:var(--color-field-ink)]">
             {subject}
           </h1>
-          <p className="mt-2 text-2xl font-bold text-white/80">
+          <p className="mt-2 text-2xl font-bold text-[color:var(--color-field-ink)]/80">
             {t("game:solo.yourScore")}
           </p>
           <div className="mt-3 inline-block rounded-2xl bg-black/40 px-8 py-3">
@@ -289,13 +246,13 @@ const FinishedScreen = ({
           </button>
           <a
             href="/trophies"
-            className="glass-2 flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl transition-colors hover:bg-white/20"
+            className="flex items-center justify-center rounded-full border border-[var(--border-hairline)] bg-white px-10 py-3 text-xl font-bold text-[color:var(--color-field-ink)] transition-colors hover:bg-gray-50"
           >
             {t("game:solo.trophies")}
           </a>
           <a
             href="/"
-            className="glass-2 flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-10 py-3 text-xl font-bold text-white backdrop-blur-xl transition-colors hover:bg-white/20"
+            className="flex items-center justify-center rounded-full border border-[var(--border-hairline)] bg-white px-10 py-3 text-xl font-bold text-[color:var(--color-field-ink)] transition-colors hover:bg-gray-50"
           >
             {t("common:exit")}
           </a>
@@ -311,7 +268,6 @@ const FinishedScreen = ({
 
 const SoloPlayPage = () => {
   const { id } = useParams({ from: "/quizz/$id/solo" })
-  const { theme } = useThemeStore()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { updatePoints } = usePlayerStore()
@@ -339,8 +295,6 @@ const SoloPlayPage = () => {
 
   // Track if finishGame has been called to avoid double-submit.
   const finishedRef = useRef(false)
-
-  const bgSrc = theme.backgrounds.playerGame ?? background
 
   // Load quiz on mount / when id changes.
   useEffect(() => {
@@ -396,7 +350,6 @@ const SoloPlayPage = () => {
     return (
       <NameScreen
         subject={subject}
-        bgSrc={bgSrc}
         onStart={(name) => {
           setPlayerName(name.trim() || "Anonym")
           startGame()
@@ -409,7 +362,6 @@ const SoloPlayPage = () => {
   if (phase === "finished") {
     return (
       <FinishedScreen
-        bgSrc={bgSrc}
         subject={subject}
         totalPoints={totalPoints}
         leaderboard={leaderboard}
@@ -444,7 +396,6 @@ const SoloPlayPage = () => {
   return (
     <>
       <SoloShell
-        bgSrc={bgSrc}
         questionCurrent={currentIndex + 1}
         questionTotal={questions.length}
         playerName={playerName}

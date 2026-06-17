@@ -527,20 +527,11 @@ const SubmitPage = () => {
 
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden p-3 sm:p-5">
-      {/* Solid cream front-of-house field behind everything — the /submit page
-          is part of the pre-game ENTRY, so it shares the cream field instead of
-          the dark brand gradient. The scrim is held at 0 so the cream stays
-          true; the white form cards sit on top unchanged. */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{ background: "var(--color-field-cream)" }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: 0 }}
-        />
-      </div>
+      {/* Warm cream front-of-house field behind everything — the /submit page
+          is part of the pre-game ENTRY, so it shares the same `.cream-field`
+          surface (cream background + soft glows) as the rest of the game.
+          The white form cards sit on top unchanged. */}
+      <div className="cream-field absolute inset-0 -z-10 overflow-hidden" />
 
       {/* Playful field of popping "?" glyphs — sits behind the form surface. */}
       <QuestionMarksField />
