@@ -61,38 +61,47 @@ const Question = ({
           question (mount-on-key). reduced-motion → opacity-only via useReveal. */}
       <motion.div
         key={question}
-        className="glass-3 flex flex-1 flex-col items-center justify-center gap-5"
+        className="glass-3 flex w-full flex-1 flex-col items-center gap-6 py-6"
         variants={reveal.container()}
         initial="hidden"
         animate="visible"
       >
-        <motion.h2
-          className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
-          variants={reveal.item()}
-          transition={reveal.spring}
+        {/* Question + image fill and centre the prominent upper space so the
+            media stays the focus during the question-reading window; the answer
+            tiles are anchored to the bottom of the panel (Kahoot-style presenter
+            layout) with a comfortable gap to the bottom edge. */}
+        <motion.div
+          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-5"
+          variants={reveal.container()}
         >
-          <Markdown>{question}</Markdown>
-        </motion.h2>
-
-        {submittedBy && (
-          <motion.p
-            className="text-sm text-white/60 text-center"
+          <motion.h2
+            className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
             variants={reveal.item()}
             transition={reveal.spring}
           >
-            {t("game:submittedBy", { name: submittedBy })}
-          </motion.p>
-        )}
+            <Markdown>{question}</Markdown>
+          </motion.h2>
 
-        {media?.type === MEDIA_TYPES.IMAGE && (
-          <motion.img
-            alt={question}
-            src={media.url}
-            className="max-h-[26vh] w-auto rounded-md"
-            variants={reveal.item()}
-            transition={reveal.spring}
-          />
-        )}
+          {submittedBy && (
+            <motion.p
+              className="text-center text-sm text-white/60"
+              variants={reveal.item()}
+              transition={reveal.spring}
+            >
+              {t("game:submittedBy", { name: submittedBy })}
+            </motion.p>
+          )}
+
+          {media?.type === MEDIA_TYPES.IMAGE && (
+            <motion.img
+              alt={question}
+              src={media.url}
+              className="min-h-0 max-h-[42vh] w-auto rounded-md object-contain"
+              variants={reveal.item()}
+              transition={reveal.spring}
+            />
+          )}
+        </motion.div>
 
         {/* Kahoot-style answer tiles on the presenter big-screen — DISPLAY-ONLY.
             Players answer on their phones (Answers.tsx); these are non-interactive
@@ -103,7 +112,7 @@ const Question = ({
             stagger container — no per-tile layout springs. */}
         {answers && answers.length > 0 && (
           <motion.div
-            className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:gap-3 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+            className="grid w-full shrink-0 grid-cols-2 gap-2 text-lg font-bold text-white md:text-xl lg:gap-3 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             variants={reveal.container()}
           >
             {answers.map((answer, index) => (
