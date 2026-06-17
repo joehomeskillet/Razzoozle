@@ -173,6 +173,13 @@
       "grafana": "Grafana",
       "loki": "Loki",
       "prometheus": "Prometheus"
+    },
+    "logs": {
+      "title": "Logs",
+      "description": "Download recent redacted server & client logs.",
+      "server": "Server logs",
+      "client": "Client logs",
+      "download": "Download"
     }
   },
   "media": {

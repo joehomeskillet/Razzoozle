@@ -172,6 +172,13 @@
       "grafana": "Grafana",
       "loki": "Loki",
       "prometheus": "Prometheus"
+    },
+    "logs": {
+      "title": "Journaux",
+      "description": "Télécharge les journaux récents et expurgés du serveur et du client.",
+      "server": "Journaux du serveur",
+      "client": "Journaux du client",
+      "download": "Télécharger"
     }
   },
   "satellite": {

@@ -35,7 +35,13 @@ import {
   getSoloResults,
   isDevMode,
 } from "@razzoozle/socket/services/config"
-import { requestLogger } from "@razzoozle/socket/services/logger"
+import { createLogger, requestLogger } from "@razzoozle/socket/services/logger"
+import {
+  clientLogLines,
+  pushClientLog,
+  serverLogLines,
+} from "@razzoozle/socket/services/log-buffer"
+import type pino from "pino"
 import {
   clientEventsTotal,
   httpRequestsTotal,
@@ -63,6 +69,22 @@ export const jsonError = (
     "content-length": Buffer.byteLength(body),
   })
   res.end(body)
+}
+
+// Plain-text attachment response (used by the log-download endpoints). The
+// Content-Disposition makes the browser save the body instead of rendering it.
+const textAttachment = (
+  res: ServerResponse,
+  filename: string,
+  body: string,
+): void => {
+  const buf = Buffer.from(body, "utf-8")
+  res.writeHead(200, {
+    "content-type": "text/plain; charset=utf-8",
+    "content-disposition": `attachment; filename="${filename}"`,
+    "content-length": buf.byteLength,
+  })
+  res.end(buf)
 }
 
 const BODY_LIMIT_BYTES = 64 * 1024 // 64 KB — enough for any valid payload
@@ -180,9 +202,26 @@ export const sampleHash = (key: string): number => {
 export const __resetClientEventBuckets = (): void => buckets.clear()
 export const __bucketSize = (): number => buckets.size
 
+// Dedicated client-event logger whose destination is the CLIENT ring. It reuses
+// createLogger (SAME redact config as production), so the line written into the
+// client ring is redacted by the same serializer — no second un-redacted sink.
+const clientRingSink: pino.DestinationStream = {
+  write(chunk: string): void {
+    for (const line of chunk.split("\n")) {
+      if (line.trim()) {
+        pushClientLog(line)
+      }
+    }
+  },
+}
+const clientEventLogger = createLogger(clientRingSink, "info")
+
 // ── new-route handlers ──────────────────────────────────────────────────────
 
-const handleClientEvents = (req: IncomingMessage, res: ServerResponse): void => {
+const handleClientEvents = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
   const log = requestLogger("/api/v1/client-events")
 
   void (async () => {
@@ -217,8 +256,11 @@ const handleClientEvents = (req: IncomingMessage, res: ServerResponse): void => 
 
       if (keep) {
         // Logged through the redacting child logger. zod already stripped any
-        // smuggled secret/solution field; the logger redacts the rest.
+        // smuggled secret/solution field; the logger redacts the rest. The
+        // dedicated clientEventLogger writes the SAME redacted line into the
+        // CLIENT ring for the DEV-gated download endpoint.
         log.info({ clientEvent: event }, "client-event")
+        clientEventLogger.info({ clientEvent: event }, "client-event")
       }
 
       res.writeHead(204)
@@ -235,10 +277,7 @@ const handleClientEvents = (req: IncomingMessage, res: ServerResponse): void => 
   })()
 }
 
-const handleSoloGet = (
-  res: ServerResponse,
-  id: string | undefined,
-): void => {
+const handleSoloGet = (res: ServerResponse, id: string | undefined): void => {
   try {
     assertSafeId(id ?? "")
     const quiz = getQuizzById(id!)
@@ -434,6 +473,24 @@ export const routes: Route[] = [
     dev: true,
     match: /^\/api\/v1\/observability\/schema$/,
     handle: (_req, res) => jsonOk(res, clientEventSchemaJson()),
+  },
+  {
+    method: "GET",
+    path: "/api/v1/observability/logs/server",
+    summary: "Download recent redacted SERVER log lines (NDJSON).",
+    dev: true,
+    match: /^\/api\/v1\/observability\/logs\/server$/,
+    handle: (_req, res) =>
+      textAttachment(res, "server-logs.ndjson", serverLogLines().join("\n")),
+  },
+  {
+    method: "GET",
+    path: "/api/v1/observability/logs/client",
+    summary: "Download recent redacted CLIENT-EVENT log lines (NDJSON).",
+    dev: true,
+    match: /^\/api\/v1\/observability\/logs\/client$/,
+    handle: (_req, res) =>
+      textAttachment(res, "client-logs.ndjson", clientLogLines().join("\n")),
   },
   {
     method: "GET",

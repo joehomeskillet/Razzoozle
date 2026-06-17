@@ -12,15 +12,24 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
-import { Activity, Gamepad2, KeyRound, PlugZap } from "lucide-react"
+import {
+  Activity,
+  Download,
+  Gamepad2,
+  KeyRound,
+  PlugZap,
+  ScrollText,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-// Dev tab — a read-only "developer console" for the manager. Two stacked
+// Dev tab — a read-only "developer console" for the manager. Stacked
 // SectionCards: an API Explorer that opens the self-documenting HTTP surface,
-// and a live Observability panel wired to the existing manager socket events
-// (LIST_GAMES / GAMES_DATA, DISPLAY.STATUS, METRICS.SUBSCRIBE / HEALTH). It only
-// reuses already-shipped contracts — it adds neither a new event nor a new dep.
+// a live Observability panel wired to the existing manager socket events
+// (LIST_GAMES / GAMES_DATA, DISPLAY.STATUS, METRICS.SUBSCRIBE / HEALTH), and a
+// Logs card to download the recent redacted server/client log rings. It only
+// reuses already-shipped contracts and the shared console primitives — it adds
+// neither a new event, a new dep, nor a new CSS file.
 //
 // Redaction notice: passwords, API tokens and answer solutions are never logged.
 // That promise is surfaced as the API Explorer's description so it stays visible.
@@ -152,6 +161,13 @@ const ConfigDev = () => {
         icon={<PlugZap className="size-5" />}
         title={t("dev.api.title")}
         description={t("dev.redactionNotice")}
+        actions={
+          apiInfo !== null && apiInfo.valid ? (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+              {t("dev.api.schemaValid")}
+            </span>
+          ) : undefined
+        }
       >
         <div className="space-y-3">
           {apiInfo !== null && (
@@ -162,28 +178,28 @@ const ConfigDev = () => {
               <span>
                 {t("dev.api.version")} {apiInfo.version}
               </span>
-              {apiInfo.valid && (
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-                  {t("dev.api.schemaValid")}
-                </span>
-              )}
             </div>
           )}
-          <ListRow
-            title={t("dev.api.openapi")}
-            onClick={openEndpoint("/api/openapi.json")}
-            bodyLabel={t("dev.api.openapi")}
-          />
-          <ListRow
-            title={t("dev.api.events")}
-            onClick={openEndpoint("/api/v1/observability/events")}
-            bodyLabel={t("dev.api.events")}
-          />
-          <ListRow
-            title={t("dev.api.schema")}
-            onClick={openEndpoint("/api/v1/observability/schema")}
-            bodyLabel={t("dev.api.schema")}
-          />
+          <div className="space-y-2">
+            <ListRow
+              title={t("dev.api.openapi")}
+              leading={<PlugZap className="size-5" />}
+              onClick={openEndpoint("/api/openapi.json")}
+              bodyLabel={t("dev.api.openapi")}
+            />
+            <ListRow
+              title={t("dev.api.events")}
+              leading={<Activity className="size-5" />}
+              onClick={openEndpoint("/api/v1/observability/events")}
+              bodyLabel={t("dev.api.events")}
+            />
+            <ListRow
+              title={t("dev.api.schema")}
+              leading={<ScrollText className="size-5" />}
+              onClick={openEndpoint("/api/v1/observability/schema")}
+              bodyLabel={t("dev.api.schema")}
+            />
+          </div>
           <EmptyState
             icon={KeyRound}
             headline={t("dev.api.tokensTitle")}
@@ -196,119 +212,190 @@ const ConfigDev = () => {
         icon={<Activity className="size-5" />}
         title={t("dev.observability.title")}
         description={t("dev.observability.description")}
+        actions={
+          <span
+            className={
+              isConnected
+                ? "inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
+                : "inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500"
+            }
+          >
+            <span
+              aria-hidden
+              className={
+                isConnected
+                  ? "size-2 rounded-full bg-green-500"
+                  : "size-2 rounded-full bg-gray-400"
+              }
+            />
+            {t("dev.observability.serverHealth")}
+          </span>
+        }
       >
-        <div className="space-y-3">
+        <div className="space-y-4">
           <ListRow
             title={t("dev.observability.serverHealth")}
+            leading={<Activity className="size-5" />}
             onClick={openEndpoint("/api/v1/health")}
             bodyLabel={t("dev.observability.serverHealth")}
           />
 
-          {games.length === 0 ? (
-            <EmptyState
-              icon={Gamepad2}
-              headline={t("dev.observability.noGames")}
-            />
-          ) : (
-            games.map((game) => (
-              <ListRow
-                key={game.gameId}
-                title={game.subject}
-                meta={`${game.playerCount} ${t("dev.observability.players")}`}
+          <div className="space-y-2">
+            {games.length === 0 ? (
+              <EmptyState
+                icon={Gamepad2}
+                headline={t("dev.observability.noGames")}
               />
-            ))
-          )}
+            ) : (
+              games.map((game) => (
+                <ListRow
+                  key={game.gameId}
+                  title={game.subject}
+                  leading={<Gamepad2 className="size-5" />}
+                  meta={`${game.playerCount} ${t("dev.observability.players")}`}
+                />
+              ))
+            )}
+          </div>
 
-          {snapshot === null ? (
-            <EmptyState
-              icon={Activity}
-              headline={t("dev.observability.metricsOffTitle")}
-              hint={t("dev.observability.metricsOffHint")}
-            />
-          ) : (
-            <>
-              <ListRow
-                title={t("dev.observability.reconnects")}
-                meta={
-                  <span className="tabular-nums">
-                    {snapshot.reconnectCount}
-                  </span>
-                }
+          <div className="space-y-2">
+            {snapshot === null ? (
+              <EmptyState
+                icon={Activity}
+                headline={t("dev.observability.metricsOffTitle")}
+                hint={t("dev.observability.metricsOffHint")}
               />
-              <ListRow
-                title={t("dev.observability.rejected")}
-                meta={
-                  rejectedReasons.length === 0 ? (
-                    <span className="tabular-nums">0</span>
-                  ) : (
+            ) : (
+              <>
+                <ListRow
+                  title={t("dev.observability.reconnects")}
+                  meta={
                     <span className="tabular-nums">
-                      {rejectedReasons
-                        .map(([reason, count]) => `${reason}: ${count}`)
-                        .join(" · ")}
+                      {snapshot.reconnectCount}
                     </span>
-                  )
-                }
-              />
-              <ListRow
-                title={t("dev.observability.answerLatency")}
-                meta={
-                  <span className="tabular-nums">
-                    {`p50 ${fmtMs(snapshot.answerAck.p50)} · p95 ${fmtMs(snapshot.answerAck.p95)}`}
-                  </span>
-                }
-              />
-            </>
-          )}
+                  }
+                />
+                <ListRow
+                  title={t("dev.observability.rejected")}
+                  meta={
+                    rejectedReasons.length === 0 ? (
+                      <span className="tabular-nums">0</span>
+                    ) : (
+                      <span className="tabular-nums">
+                        {rejectedReasons
+                          .map(([reason, count]) => `${reason}: ${count}`)
+                          .join(" · ")}
+                      </span>
+                    )
+                  }
+                />
+                <ListRow
+                  title={t("dev.observability.answerLatency")}
+                  meta={
+                    <span className="tabular-nums">
+                      {`p50 ${fmtMs(snapshot.answerAck.p50)} · p95 ${fmtMs(snapshot.answerAck.p95)}`}
+                    </span>
+                  }
+                />
+              </>
+            )}
+          </div>
 
-          {displays.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              headline={t("dev.observability.noDisplays")}
-            />
-          ) : (
-            displays.map((display) => (
-              <ListRow
-                key={display.socketId}
-                title={display.name}
-                meta={
-                  <span className="tabular-nums">
-                    {t("display.status.lastSeen", {
-                      seconds: Math.max(0, now - display.lastPingAt),
-                    })}
-                  </span>
-                }
+          <div className="space-y-2">
+            {displays.length === 0 ? (
+              <EmptyState
+                icon={Activity}
+                headline={t("dev.observability.noDisplays")}
               />
-            ))
-          )}
+            ) : (
+              displays.map((display) => (
+                <ListRow
+                  key={display.socketId}
+                  title={display.name}
+                  meta={
+                    <span className="tabular-nums">
+                      {t("display.status.lastSeen", {
+                        seconds: Math.max(0, now - display.lastPingAt),
+                      })}
+                    </span>
+                  }
+                />
+              ))
+            )}
+          </div>
 
           <ListRow
             title={t("dev.observability.eventCatalog")}
+            leading={<ScrollText className="size-5" />}
             meta={t("dev.observability.sampledRedacted")}
             onClick={openEndpoint("/api/v1/observability/events")}
             bodyLabel={t("dev.observability.eventCatalog")}
           />
 
-          {typeof grafanaUrl === "string" && grafanaUrl.length > 0 && (
-            <ListRow
-              title={t("dev.observability.grafana")}
-              onClick={openEndpoint(grafanaUrl)}
-              bodyLabel={t("dev.observability.grafana")}
-            />
-          )}
-          {typeof lokiUrl === "string" && lokiUrl.length > 0 && (
-            <ListRow
-              title={t("dev.observability.loki")}
-              onClick={openEndpoint(lokiUrl)}
-              bodyLabel={t("dev.observability.loki")}
-            />
-          )}
-          {typeof prometheusUrl === "string" && prometheusUrl.length > 0 && (
-            <ListRow
-              title={t("dev.observability.prometheus")}
-              onClick={openEndpoint(prometheusUrl)}
-              bodyLabel={t("dev.observability.prometheus")}
-            />
-          )}
+          {(typeof grafanaUrl === "string" && grafanaUrl.length > 0) ||
+          (typeof lokiUrl === "string" && lokiUrl.length > 0) ||
+          (typeof prometheusUrl === "string" && prometheusUrl.length > 0) ? (
+            <div className="space-y-2">
+              {typeof grafanaUrl === "string" && grafanaUrl.length > 0 && (
+                <ListRow
+                  title={t("dev.observability.grafana")}
+                  leading={<PlugZap className="size-5" />}
+                  onClick={openEndpoint(grafanaUrl)}
+                  bodyLabel={t("dev.observability.grafana")}
+                />
+              )}
+              {typeof lokiUrl === "string" && lokiUrl.length > 0 && (
+                <ListRow
+                  title={t("dev.observability.loki")}
+                  leading={<PlugZap className="size-5" />}
+                  onClick={openEndpoint(lokiUrl)}
+                  bodyLabel={t("dev.observability.loki")}
+                />
+              )}
+              {typeof prometheusUrl === "string" &&
+                prometheusUrl.length > 0 && (
+                  <ListRow
+                    title={t("dev.observability.prometheus")}
+                    leading={<PlugZap className="size-5" />}
+                    onClick={openEndpoint(prometheusUrl)}
+                    bodyLabel={t("dev.observability.prometheus")}
+                  />
+                )}
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        icon={<ScrollText className="size-5" />}
+        title={t("dev.logs.title")}
+        description={t("dev.logs.description")}
+      >
+        <div className="space-y-2">
+          <ListRow
+            title={t("dev.logs.server")}
+            leading={<ScrollText className="size-5" />}
+            actions={[
+              {
+                key: "download-server",
+                icon: Download,
+                label: t("dev.logs.download"),
+                onClick: openEndpoint("/api/v1/observability/logs/server"),
+              },
+            ]}
+          />
+          <ListRow
+            title={t("dev.logs.client")}
+            leading={<ScrollText className="size-5" />}
+            actions={[
+              {
+                key: "download-client",
+                icon: Download,
+                label: t("dev.logs.download"),
+                onClick: openEndpoint("/api/v1/observability/logs/client"),
+              },
+            ]}
+          />
         </div>
       </SectionCard>
     </div>

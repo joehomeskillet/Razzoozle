@@ -172,6 +172,13 @@
       "grafana": "Grafana",
       "loki": "Loki",
       "prometheus": "Prometheus"
+    },
+    "logs": {
+      "title": "日志",
+      "description": "下载最近的已脱敏服务器和客户端日志。",
+      "server": "服务器日志",
+      "client": "客户端日志",
+      "download": "下载"
     }
   },
   "media": {

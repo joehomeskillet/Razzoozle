@@ -16,6 +16,7 @@
 
 import { nanoid } from "nanoid"
 import pino, { type Logger } from "pino"
+import { pushServerLog } from "@razzoozle/socket/services/log-buffer"
 
 // NEUTRAL service identity (never "Razzoozle"/brand strings — this generic
 // observability layer is backported verbatim to the sibling tree).
@@ -54,14 +55,34 @@ export const REDACT_PATHS: string[] = [
   "*.answerText",
 ]
 
-// The pino instance. `sync: true` + `fd: 1` => synchronous stdout, no worker.
+// Real synchronous stdout destination. `sync: true` + `fd: 1` => no worker.
+const stdoutDest = pino.destination({ fd: 1, sync: true })
+
+// Tee destination: forwards every chunk to the real sync stdout (behaviour
+// UNCHANGED) and ALSO captures each finished, already-redacted line into the
+// bounded server ring for the DEV-gated download endpoint. pino may batch
+// several "...}\n" lines into one chunk, so split on newlines. This is a
+// minimal pass-through wrapper — NOT a transport/worker (esbuild-safe).
+const teeDest: pino.DestinationStream = {
+  write(chunk: string): void {
+    stdoutDest.write(chunk)
+    for (const line of chunk.split("\n")) {
+      if (line.trim()) {
+        pushServerLog(line)
+      }
+    }
+  },
+}
+
+// The pino instance. Same options as before; only the destination is now the
+// tee wrapper around the unchanged sync stdout destination.
 export const logger: Logger = pino(
   {
     level: process.env.LOG_LEVEL || "info",
     base: { service: SERVICE, env: process.env.NODE_ENV || "development" },
     redact: { paths: REDACT_PATHS, censor: "[REDACTED]" },
   },
-  pino.destination({ fd: 1, sync: true }),
+  teeDest,
 )
 
 // Test/seam helper: build a logger writing to a caller-supplied destination so

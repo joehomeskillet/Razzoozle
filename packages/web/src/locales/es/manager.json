@@ -172,6 +172,13 @@
       "grafana": "Grafana",
       "loki": "Loki",
       "prometheus": "Prometheus"
+    },
+    "logs": {
+      "title": "Logs",
+      "description": "Descarga los registros recientes censurados del servidor y del cliente.",
+      "server": "Registros del servidor",
+      "client": "Registros del cliente",
+      "download": "Descargar"
     }
   },
   "satellite": {

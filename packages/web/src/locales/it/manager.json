@@ -163,6 +163,13 @@
       "grafana": "Grafana",
       "loki": "Loki",
       "prometheus": "Prometheus"
+    },
+    "logs": {
+      "title": "Logs",
+      "description": "Scarica i log recenti oscurati di server e client.",
+      "server": "Log del server",
+      "client": "Log del client",
+      "download": "Scarica"
     }
   },
   "satellite": {
