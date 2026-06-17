@@ -5,6 +5,13 @@
  * the award key, the winner name, and the formatted value. Ends on a "Podium"
  * cue and calls `onComplete` so the parent can flip to the podium reveal.
  *
+ * A11y: the card content lives in a non-interactive `role="region"`
+ * (aria-live="polite") so screen readers announce the award label, winner, and
+ * value. Advancing is driven by a real, focusable "Weiter" button; the
+ * click-anywhere layer is a non-essential, aria-hidden enhancement on top. The
+ * auto-advance timer can be paused/resumed (WCAG 2.2.2) and is paused while the
+ * region is hovered or focused.
+ *
  * Reduced-motion safe via `useReveal` (opacity-only fallback, no fabricated
  * motion). Pure presentation: no socket / store writes — labels come from i18n
  * (`game:recap.superlative.<key>`) with the emoji mapped locally.
@@ -67,14 +74,20 @@ const RecapSequence = ({
   // "Podium" cue. Held in one index so click + timer share a single source.
   const total = superlatives.length
   const [step, setStep] = useState(0)
+  // User-controlled pause + transient pause while hovered/focused (WCAG 2.2.2).
+  const [paused, setPaused] = useState(false)
+  const [interacting, setInteracting] = useState(false)
 
   const isFinalCue = step >= total
+  const autoStopped = paused || interacting
 
   const advance = useCallback(() => {
     setStep((s) => Math.min(s + 1, total))
   }, [total])
 
   // Auto-advance through the cards; the final cue holds briefly then completes.
+  // Halted while paused or while the user is hovering/focusing the region;
+  // manual advance via the Weiter button / click layer always still works.
   useEffect(() => {
     if (total === 0) {
       onComplete?.()
@@ -84,44 +97,63 @@ const RecapSequence = ({
       const done = setTimeout(() => onComplete?.(), 1400)
       return () => clearTimeout(done)
     }
+    if (autoStopped) return
     const timer = setTimeout(advance, autoAdvanceMs)
     return () => clearTimeout(timer)
-  }, [step, total, isFinalCue, advance, autoAdvanceMs, onComplete])
+  }, [
+    step,
+    total,
+    isFinalCue,
+    autoStopped,
+    advance,
+    autoAdvanceMs,
+    onComplete,
+  ])
 
   if (total === 0) return null
 
   const current = superlatives[step]
+  const awardsTitle = t("game:recap.awardsTitle", {
+    defaultValue: "Auszeichnungen",
+  })
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={advance}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          advance()
-        }
-      }}
-      aria-label={t("game:recap.advance", { defaultValue: "Weiter" })}
-      className="absolute inset-0 z-40 flex w-full cursor-pointer flex-col items-center justify-center gap-8 px-6 text-center focus-visible:outline-none"
+    <section
+      role="region"
+      aria-label={awardsTitle}
+      aria-live="polite"
+      onMouseEnter={() => setInteracting(true)}
+      onMouseLeave={() => setInteracting(false)}
+      onFocus={() => setInteracting(true)}
+      onBlur={() => setInteracting(false)}
+      className="absolute inset-0 z-40 flex w-full flex-col items-center justify-center gap-8 px-6 text-center"
     >
+      {/* Click-anywhere-to-advance — non-essential enhancement, hidden from AT
+          (the Weiter button below is the accessible control). */}
+      <button
+        type="button"
+        aria-hidden
+        tabIndex={-1}
+        onClick={advance}
+        className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-none"
+      />
+
       {/* Title + progress */}
       <motion.h2
-        className="text-2xl font-bold text-white/90 drop-shadow-lg md:text-3xl"
+        className="relative z-10 text-2xl font-bold text-white/90 drop-shadow-lg md:text-3xl"
         variants={reveal.item()}
         initial="hidden"
         animate="visible"
         transition={reveal.spring}
       >
-        {t("game:recap.awardsTitle", { defaultValue: "Auszeichnungen" })}
+        {awardsTitle}
       </motion.h2>
 
       <AnimatePresence mode="wait">
         {!isFinalCue && current ? (
           <motion.div
             key={`card-${step}`}
-            className="flex flex-col items-center gap-5"
+            className="relative z-10 flex flex-col items-center gap-5"
             variants={reveal.pop()}
             initial="hidden"
             animate="visible"
@@ -152,7 +184,7 @@ const RecapSequence = ({
         ) : (
           <motion.div
             key="final-cue"
-            className="flex flex-col items-center gap-4"
+            className="relative z-10 flex flex-col items-center gap-4"
             variants={reveal.pop()}
             initial="hidden"
             animate="visible"
@@ -172,7 +204,7 @@ const RecapSequence = ({
       </AnimatePresence>
 
       {/* Progress dots — one per card; the final cue lights them all. */}
-      <div className="flex items-center gap-2" aria-hidden>
+      <div className="relative z-10 flex items-center gap-2" aria-hidden>
         {superlatives.map((s, i) => (
           <span
             key={s.key}
@@ -184,7 +216,30 @@ const RecapSequence = ({
           />
         ))}
       </div>
-    </div>
+
+      {/* Accessible controls: pause/resume auto-advance + manual advance. */}
+      {!isFinalCue && (
+        <div className="relative z-10 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPaused((p) => !p)}
+            aria-pressed={paused}
+            className="rounded-full bg-black/40 px-5 py-2 text-base font-bold text-white drop-shadow hover:bg-black/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          >
+            {paused
+              ? t("game:recap.resume", { defaultValue: "Fortsetzen" })
+              : t("game:recap.pause", { defaultValue: "Pause" })}
+          </button>
+          <button
+            type="button"
+            onClick={advance}
+            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-white drop-shadow hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          >
+            {t("game:recap.advance", { defaultValue: "Weiter" })}
+          </button>
+        </div>
+      )}
+    </section>
   )
 }
 

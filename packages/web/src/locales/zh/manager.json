@@ -138,6 +138,7 @@
     "media": "媒体",
     "gamemode": "模式",
     "achievements": "成就",
+    "running": "进行中的游戏",
     "dev": "开发"
   },
   "plugins":   {
@@ -605,5 +606,31 @@
   "themePreview": {
     "join": "加入",
     "playerName": "玩家 {{rank}}"
+  },
+  "runningGames": {
+    "title": "进行中的游戏",
+    "description": "管理当前进行中的游戏。",
+    "refresh": "刷新",
+    "emptyHeadline": "没有进行中的游戏",
+    "emptyHint": "一旦你开始游戏，它就会显示在这里。",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} 名玩家",
+    "phase": {
+      "lobby": "等候厅",
+      "running": "进行中"
+    },
+    "hostOffline": "主持人离线",
+    "takeOver": "接管",
+    "end": "结束",
+    "endConfirm": "确定要结束游戏 \"{{name}}\" 吗？",
+    "ended": "游戏已结束。"
+  },
+  "auto": {
+    "nextIn": "{{seconds}} 秒后继续"
+  },
+  "exit": {
+    "title": "确定要结束游戏吗？",
+    "description": "所有玩家都会收到通知，游戏将结束。",
+    "confirm": "结束游戏"
   }
 }

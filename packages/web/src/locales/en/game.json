@@ -213,7 +213,14 @@
       "copied": "Sticker copied to clipboard.",
       "downloaded": "Sticker downloaded.",
       "error": "Could not create the sticker.",
-      "share": "Share sticker"
+      "share": "Share sticker",
+      "rankBadge": "Rank {{rank}}",
+      "points": "pts",
+      "honorific": {
+        "1": "Top spot",
+        "2": "Second place",
+        "3": "Third place"
+      }
     },
     "superlative": {
       "fastest_finger": "Fastest finger",

@@ -374,7 +374,7 @@ const PlayerFinished = ({ data }: Props) => {
         variants={reveal.item()}
         transition={reveal.spring}
       >
-        {player?.points ?? 0} pts
+        {player?.points ?? 0} {t("game:recap.sticker.points")}
       </motion.p>
 
       {/* Public entry point to the question-submission page. Standalone flow,

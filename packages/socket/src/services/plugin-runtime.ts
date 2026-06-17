@@ -264,7 +264,14 @@ export const loadPlugin = async (plugin: InstalledPlugin): Promise<boolean> => {
     // BUNDLE-SAFE dynamic import of a runtime file URL (see file header). The
     // specifier is a variable, so esbuild preserves the import() instead of
     // trying to bundle the (non-existent-at-build-time) plugin file.
-    const mod = (await import(pathToFileURL(serverPath).href)) as {
+    //
+    // CACHE-BUST: Node's ESM loader caches modules by resolved URL, so an
+    // uninstall+reinstall at the SAME path would return the STALE module (the
+    // new server.js never runs until a full process restart). Append a query so
+    // each (re)load resolves to a fresh URL. version usually bumps on reinstall;
+    // a timestamp guarantees freshness even when it doesn't.
+    const cacheBust = `?v=${encodeURIComponent(plugin.version)}&t=${Date.now()}`
+    const mod = (await import(pathToFileURL(serverPath).href + cacheBust)) as {
       register?: unknown
       default?: unknown
     }
@@ -302,10 +309,15 @@ export const loadPlugin = async (plugin: InstalledPlugin): Promise<boolean> => {
 
     return true
   } catch (error) {
-    // ERROR ISOLATION: never let a broken plugin escape. Mark errored, keep the
-    // (empty) registry entry so a later unload is a clean no-op, log loudly.
-    loaded.errored = true
+    // ERROR ISOLATION: never let a broken plugin escape. register() may have
+    // already hot-bound live listeners onto connected sockets via hostApi.on()
+    // BEFORE throwing — leaving them attached would keep a failed plugin live.
+    // unloadPlugin detaches every bound listener from every socket and drops
+    // the registry entry (crash-isolated; teardown is undefined here, so it is
+    // a clean detach-and-delete). Log loudly, report failure.
     console.error(`[plugin:${plugin.id}] failed to load server hook:`, error)
+    loaded.errored = true
+    unloadPlugin(plugin.id)
 
     return false
   }

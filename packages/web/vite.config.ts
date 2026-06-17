@@ -182,6 +182,18 @@ export default defineConfig({
           ) {
             return "vendor-markdown"
           }
+          // canvas-confetti + react-confetti (and react-confetti's tween-functions
+          // dep) are only used during celebrations and are dynamic-imported at
+          // their call sites (utils/confetti.ts, Podium/SharePage React.lazy), so
+          // route them to their OWN chunk — kept out of the eager bundle and
+          // fetched on demand when a burst first fires.
+          if (
+            id.includes("/canvas-confetti/") ||
+            id.includes("/react-confetti/") ||
+            id.includes("/tween-functions/")
+          ) {
+            return "confetti"
+          }
           // @dicebear/core + collection are heavy (~3MB) and dynamically imported
           // (see features/game/utils/dicebear.ts), so route them to their OWN chunk
           // — kept out of the eager "vendor" bundle and loaded lazily on demand.

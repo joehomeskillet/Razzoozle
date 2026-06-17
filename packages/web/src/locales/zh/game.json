@@ -207,7 +207,14 @@
       "copied": "贴纸已复制到剪贴板。",
       "downloaded": "贴纸已下载。",
       "error": "无法生成贴纸。",
-      "share": "分享贴纸"
+      "share": "分享贴纸",
+      "rankBadge": "第 {{rank}} 名",
+      "points": "分",
+      "honorific": {
+        "1": "冠军",
+        "2": "亚军",
+        "3": "季军"
+      }
     },
     "superlative": {
       "fastest_finger": "最快手指",

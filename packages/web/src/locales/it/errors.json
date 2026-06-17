@@ -102,12 +102,40 @@
     "saveFailed": "Impossibile salvare il design",
     "audioTooLarge": "Il file audio è troppo grande (max 4 MB)",
     "invalidSlot": "Slot non valido",
-    "invalidAudio": "Formato audio non supportato (solo MP3, WAV, OGG)"
+    "invalidAudio": "Formato audio non supportato (solo MP3, WAV, OGG)",
+    "invalidColor": "Valore di colore non valido",
+    "invalidImage": "Questo formato di immagine non è supportato",
+    "invalidAsset": "Percorso della risorsa non valido"
   },
   "media": {
     "tooLarge": "L’immagine è troppo grande. Massimo 8 MB.",
     "invalidDataUrl": "Questo formato di immagine non è supportato.",
-    "invalidUrl": "Questa sorgente immagine non è valida."
+    "invalidUrl": "Questa sorgente immagine non è valida.",
+    "notFound": "Media non trovato.",
+    "invalidCategory": "Categoria di media non valida."
+  },
+  "plugin": {
+    "notFound": "Plugin non trovato",
+    "invalidPayload": "I dati del plugin non sono validi",
+    "installFailed": "Non è stato possibile installare il plugin",
+    "removeFailed": "Non è stato possibile rimuovere il plugin",
+    "configFailed": "Non è stato possibile salvare le impostazioni del plugin",
+    "tooManyEntries": "Il pacchetto del plugin contiene troppi file",
+    "tooLarge": "Il pacchetto del plugin è troppo grande",
+    "assetTooLarge": "Un file nel pacchetto del plugin è troppo grande",
+    "missingManifest": "Nel pacchetto del plugin manca il file plugin.json",
+    "idCollision": "È già installato un plugin con questo ID"
+  },
+  "skeleton": {
+    "invalidKind": "Tipo di skeleton non valido",
+    "invalidContent": "Il contenuto dello skeleton non è valido",
+    "tooManyEntries": "Il pacchetto dello skeleton contiene troppi file",
+    "tooLarge": "Il pacchetto dello skeleton è troppo grande",
+    "assetTooLarge": "Un file nel pacchetto dello skeleton è troppo grande",
+    "missingManifest": "Nel pacchetto dello skeleton manca il file skeleton.json"
+  },
+  "themeTemplate": {
+    "notFound": "Modello di design non trovato"
   },
   "submission": {
     "rateLimited": "Hai inviato troppe domande. Aspetta un attimo.",

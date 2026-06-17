@@ -213,7 +213,14 @@
       "copied": "Sticker copié dans le presse-papiers.",
       "downloaded": "Sticker téléchargé.",
       "error": "Impossible de créer le sticker.",
-      "share": "Partager le sticker"
+      "share": "Partager le sticker",
+      "rankBadge": "Rang {{rank}}",
+      "points": "pts",
+      "honorific": {
+        "1": "Première place",
+        "2": "Deuxième place",
+        "3": "Troisième place"
+      }
     },
     "superlative": {
       "fastest_finger": "Doigt le plus rapide",

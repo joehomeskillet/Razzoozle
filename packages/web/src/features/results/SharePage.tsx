@@ -8,10 +8,13 @@ import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { Share2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import ReactConfetti from "react-confetti"
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+// react-confetti is lazy-loaded into its own chunk so it stays out of the eager
+// bundle: it only fires once the shared result has loaded, never on first paint.
+const ReactConfetti = lazy(() => import("react-confetti"))
 
 interface Props {
   id: string
@@ -169,13 +172,15 @@ const SharePage = ({ id }: Props) => {
   return (
     <Background>
       {result && !reducedMotion && (
-        <ReactConfetti
-          width={width}
-          height={height}
-          recycle={false}
-          numberOfPieces={300}
-          className="pointer-events-none fixed inset-0 z-50"
-        />
+        <Suspense fallback={null}>
+          <ReactConfetti
+            width={width}
+            height={height}
+            recycle={false}
+            numberOfPieces={300}
+            className="pointer-events-none fixed inset-0 z-50"
+          />
+        </Suspense>
       )}
 
       <div className="z-10 flex w-full max-w-3xl flex-col items-center px-4 pt-6 pb-20">

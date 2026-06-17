@@ -213,7 +213,14 @@
       "copied": "Pegatina copiada al portapapeles.",
       "downloaded": "Pegatina descargada.",
       "error": "No se pudo crear la pegatina.",
-      "share": "Compartir pegatina"
+      "share": "Compartir pegatina",
+      "rankBadge": "Puesto {{rank}}",
+      "points": "pts",
+      "honorific": {
+        "1": "Primer puesto",
+        "2": "Segundo puesto",
+        "3": "Tercer puesto"
+      }
     },
     "superlative": {
       "fastest_finger": "Dedo más rápido",

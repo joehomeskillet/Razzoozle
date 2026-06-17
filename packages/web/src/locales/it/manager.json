@@ -129,6 +129,7 @@
     "media": "Media",
     "gamemode": "Modalità",
     "achievements": "Obiettivi",
+    "running": "Partite in corso",
     "dev": "Dev"
   },
   "plugins":   {
@@ -609,6 +610,24 @@
   "themePreview": {
     "join": "Partecipa",
     "playerName": "Giocatore {{rank}}"
+  },
+  "runningGames": {
+    "title": "Partite in corso",
+    "description": "Gestisci le partite attualmente attive.",
+    "refresh": "Aggiorna",
+    "emptyHeadline": "Nessuna partita in corso",
+    "emptyHint": "Non appena avvii una partita, comparirà qui.",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} giocatori",
+    "phase": {
+      "lobby": "Sala d’attesa",
+      "running": "In corso"
+    },
+    "hostOffline": "Host offline",
+    "takeOver": "Prendi il controllo",
+    "end": "Termina",
+    "endConfirm": "Terminare davvero la partita \"{{name}}\"?",
+    "ended": "Partita terminata."
   },
   "auto": {
     "nextIn": "Avanti tra {{seconds}}s"

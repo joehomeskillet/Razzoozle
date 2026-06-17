@@ -19,8 +19,10 @@
  *      540×960 for story; pixelRatio 2 → 1080² / 1080×1920 emitted).
  *
  * Reads the active theme via useThemeStore but RESOLVES every token to inline
- * hex/rgb with the spec's fallbacks. No socket / i18n-runtime / network reads in
- * the capture subtree — copy is German du-form, baked in per the spec §5.
+ * hex/rgb with the spec's fallbacks. Visible text labels (honorific, points
+ * unit) come from i18n `t()` so the exported PNG is localized to the active
+ * locale; the i18n bundle is already loaded at capture time (plain text, no
+ * webfont/oklch concern).
  */
 
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
@@ -28,6 +30,7 @@ import {
   ACHIEVEMENT_META,
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
+import { useTranslation } from "react-i18next"
 
 // ─── Format presets (logical px; pixelRatio 2 emits double) ───────────────────
 
@@ -74,12 +77,6 @@ const RANK_TIER: Record<1 | 2 | 3, "gold" | "silver" | "bronze"> = {
   1: "gold",
   2: "silver",
   3: "bronze",
-}
-
-const HONORIFIC: Record<1 | 2 | 3, string> = {
-  1: "Spitzenplatz",
-  2: "Zweiter Platz",
-  3: "Dritter Platz",
 }
 
 // ─── Color helpers — resolve to literal #rrggbb / rgba(), never color-mix ─────
@@ -198,9 +195,15 @@ const TrophySticker = ({
   achievements,
   format = "square",
 }: TrophyStickerProps) => {
+  const { t } = useTranslation()
   const theme = useThemeStore((s) => s.theme)
   const { width, height } = FORMATS[format]
   const isStory = format === "story"
+
+  // Localized visible labels (resolved synchronously — bundle is loaded by
+  // capture time). Honorific falls back to the rank's own key per locale.
+  const honorific = t(`game:recap.sticker.honorific.${rank}`)
+  const pointsUnit = t("game:recap.sticker.points")
 
   // ── Resolve every token to a literal hex/rgba (spec §3) ──
   const bgStart = safeHex(theme.colorSecondary, FALLBACK.bgStart)
@@ -322,7 +325,7 @@ const TrophySticker = ({
               textShadow: `1px 1px ${rgba("#000000", 0.25)}`,
             }}
           >
-            Rang {rank}
+            {t("game:recap.sticker.rankBadge", { rank })}
           </span>
         </div>
       </div>
@@ -349,7 +352,7 @@ const TrophySticker = ({
             color: textMuted,
           }}
         >
-          {HONORIFIC[rank]}
+          {honorific}
         </span>
 
         {/* Big static medal disc — AchievementMedal visual language, inline hex */}
@@ -453,7 +456,7 @@ const TrophySticker = ({
               color: textMuted,
             }}
           >
-            Pkt.
+            {pointsUnit}
           </span>
         </span>
 

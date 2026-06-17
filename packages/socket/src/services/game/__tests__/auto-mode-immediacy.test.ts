@@ -83,9 +83,10 @@ describe("RoundManager auto-mode: FIX 8 mid-screen immediacy", () => {
       (s) => s.status === STATUS.SHOW_RESULT,
     )
     expect(initialResult).toBeDefined()
-    expect(
-      (initialResult?.data as { autoAdvanceMs?: number }).autoAdvanceMs,
-    ).toBeUndefined()
+    const initialData = initialResult?.data as
+      | { autoAdvanceMs?: number }
+      | undefined
+    expect(initialData?.autoAdvanceMs).toBeUndefined()
 
     const sendsBefore = ctx.sends.length
 
@@ -102,9 +103,8 @@ describe("RoundManager auto-mode: FIX 8 mid-screen immediacy", () => {
       .find((s) => s.status === STATUS.SHOW_RESULT)
     expect(reSent).toBeDefined()
     expect(reSent?.target).toBe("alice")
-    expect((reSent?.data as { autoAdvanceMs?: number }).autoAdvanceMs).toBe(
-      AUTO_RESULT_MS,
-    )
+    const reSentData = reSent?.data as { autoAdvanceMs?: number } | undefined
+    expect(reSentData?.autoAdvanceMs).toBe(AUTO_RESULT_MS)
 
     // And the armed advance actually fires on time → leaderboard after the leg.
     vi.advanceTimersByTime(AUTO_RESULT_MS)
@@ -174,18 +174,18 @@ describe("RoundManager auto-mode: FIX 9 countdown on the normal end-of-results p
 
     // SHOW_RESULT broadcast at results time already carries the countdown.
     const result = ctx.sends.find((s) => s.status === STATUS.SHOW_RESULT)
-    expect((result?.data as { autoAdvanceMs?: number }).autoAdvanceMs).toBe(
-      AUTO_RESULT_MS,
-    )
+    const resultData = result?.data as { autoAdvanceMs?: number } | undefined
+    expect(resultData?.autoAdvanceMs).toBe(AUTO_RESULT_MS)
 
     // First leg fires → SHOW_LEADERBOARD carries its own countdown.
     vi.advanceTimersByTime(AUTO_RESULT_MS)
     const leaderboard = ctx.sends.find(
       (s) => s.status === STATUS.SHOW_LEADERBOARD,
     )
-    expect(
-      (leaderboard?.data as { autoAdvanceMs?: number }).autoAdvanceMs,
-    ).toBe(AUTO_LEADERBOARD_MS)
+    const leaderboardData = leaderboard?.data as
+      | { autoAdvanceMs?: number }
+      | undefined
+    expect(leaderboardData?.autoAdvanceMs).toBe(AUTO_LEADERBOARD_MS)
   })
 
   it("manual mode (auto off) carries NO autoAdvanceMs on either screen", () => {
@@ -201,17 +201,17 @@ describe("RoundManager auto-mode: FIX 9 countdown on the normal end-of-results p
 
     runShowResults(ctx.round, quizz.questions[0])
     const result = ctx.sends.find((s) => s.status === STATUS.SHOW_RESULT)
-    expect(
-      (result?.data as { autoAdvanceMs?: number }).autoAdvanceMs,
-    ).toBeUndefined()
+    const resultData = result?.data as { autoAdvanceMs?: number } | undefined
+    expect(resultData?.autoAdvanceMs).toBeUndefined()
 
     // Manually show the leaderboard (manager-driven) → no countdown field.
     ctx.round.showLeaderboard()
     const leaderboard = ctx.sends.find(
       (s) => s.status === STATUS.SHOW_LEADERBOARD,
     )
-    expect(
-      (leaderboard?.data as { autoAdvanceMs?: number }).autoAdvanceMs,
-    ).toBeUndefined()
+    const leaderboardData = leaderboard?.data as
+      | { autoAdvanceMs?: number }
+      | undefined
+    expect(leaderboardData?.autoAdvanceMs).toBeUndefined()
   })
 })

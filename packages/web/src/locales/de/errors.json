@@ -108,12 +108,40 @@
     "saveFailed": "Design konnte nicht gespeichert werden",
     "audioTooLarge": "Die Audiodatei ist zu gross (max. 4 MB)",
     "invalidSlot": "Ungültiger Slot",
-    "invalidAudio": "Audioformat wird nicht unterstützt (nur MP3, WAV, OGG)"
+    "invalidAudio": "Audioformat wird nicht unterstützt (nur MP3, WAV, OGG)",
+    "invalidColor": "Ungültiger Farbwert",
+    "invalidImage": "Dieses Bildformat wird nicht unterstützt",
+    "invalidAsset": "Ungültiger Asset-Pfad"
   },
   "media": {
     "tooLarge": "Das Bild ist zu groß. Maximal 8 MB.",
     "invalidDataUrl": "Dieses Bildformat wird nicht unterstützt.",
-    "invalidUrl": "Diese Bildquelle ist ungültig."
+    "invalidUrl": "Diese Bildquelle ist ungültig.",
+    "notFound": "Medium nicht gefunden.",
+    "invalidCategory": "Ungültige Medienkategorie."
+  },
+  "plugin": {
+    "notFound": "Plugin nicht gefunden",
+    "invalidPayload": "Die Plugin-Daten sind ungültig",
+    "installFailed": "Das Plugin konnte nicht installiert werden",
+    "removeFailed": "Das Plugin konnte nicht entfernt werden",
+    "configFailed": "Die Plugin-Einstellungen konnten nicht gespeichert werden",
+    "tooManyEntries": "Das Plugin-Paket enthält zu viele Dateien",
+    "tooLarge": "Das Plugin-Paket ist zu gross",
+    "assetTooLarge": "Eine Datei im Plugin-Paket ist zu gross",
+    "missingManifest": "Im Plugin-Paket fehlt die plugin.json",
+    "idCollision": "Ein Plugin mit dieser ID ist bereits installiert"
+  },
+  "skeleton": {
+    "invalidKind": "Ungültiger Skeleton-Typ",
+    "invalidContent": "Der Skeleton-Inhalt ist ungültig",
+    "tooManyEntries": "Das Skeleton-Paket enthält zu viele Dateien",
+    "tooLarge": "Das Skeleton-Paket ist zu gross",
+    "assetTooLarge": "Eine Datei im Skeleton-Paket ist zu gross",
+    "missingManifest": "Im Skeleton-Paket fehlt die skeleton.json"
+  },
+  "themeTemplate": {
+    "notFound": "Design-Vorlage nicht gefunden"
   },
   "submission": {
     "rateLimited": "Du hast zu viele Fragen eingereicht. Bitte warte einen Moment.",

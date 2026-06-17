@@ -11,7 +11,12 @@ import {
   ACHIEVEMENT_META,
   highestTier,
 } from "@razzoozle/web/features/game/utils/achievements"
-import confetti from "canvas-confetti"
+
+// canvas-confetti is dynamic-imported (instead of statically) so it lands in its
+// own lazy chunk rather than the eager bundle — it is only needed during a
+// celebration, never on first render. Callers fire-and-forget (`void`), so the
+// async indirection is invisible to them.
+const loadConfetti = () => import("canvas-confetti").then((m) => m.default)
 
 /**
  * Per-tier burst parameters. Centralised so every tier funnels through one
@@ -38,10 +43,10 @@ function shouldSkipBurst(reduced: boolean): boolean {
  * Fire a confetti burst scaled to the highest unlocked achievement tier.
  * Two-sided stream for the diamant tier.
  */
-export function fireTierConfetti(
+export async function fireTierConfetti(
   achievementIds: string[],
   reduced: boolean,
-): void {
+): Promise<void> {
   if (shouldSkipBurst(reduced) || achievementIds.length === 0) return
 
   const tiers = achievementIds
@@ -52,6 +57,7 @@ export function fireTierConfetti(
   if (!top) return
 
   const colors = TIER_COLORS[top] ?? []
+  const confetti = await loadConfetti()
 
   if (top === "diamant") {
     // Two-sided stream
@@ -79,9 +85,10 @@ export function fireTierConfetti(
  * Fire a generic center burst — used for a correct answer in solo mode where
  * there is no achievement tier to key off of.
  */
-export function fireCenterSalvo(reduced: boolean): void {
+export async function fireCenterSalvo(reduced: boolean): Promise<void> {
   if (shouldSkipBurst(reduced)) return
 
+  const confetti = await loadConfetti()
   void confetti({
     particleCount: 45,
     spread: 70,

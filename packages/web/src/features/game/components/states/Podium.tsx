@@ -15,11 +15,14 @@ import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { Share2 } from "lucide-react"
 import { motion } from "motion/react"
-import { useEffect, useMemo, useState } from "react"
-import ReactConfetti from "react-confetti"
+import { Suspense, lazy, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
+
+// react-confetti is lazy-loaded into its own chunk: it is only rendered once the
+// podium fully reveals, never on first paint, so it stays out of the eager bundle.
+const ReactConfetti = lazy(() => import("react-confetti"))
 
 interface Props {
   data: ManagerStatusDataMap["FINISHED"]
@@ -300,11 +303,13 @@ const Podium = ({ data: { subject, top, teamStandings, recap } }: Props) => {
       )}
 
       {apparition >= 4 && !reveal.reduced && (
-        <ReactConfetti
-          width={width}
-          height={height}
-          className="h-full w-full"
-        />
+        <Suspense fallback={null}>
+          <ReactConfetti
+            width={width}
+            height={height}
+            className="h-full w-full"
+          />
+        </Suspense>
       )}
 
       {apparition >= 3 && top.length >= 3 && !reveal.reduced && (

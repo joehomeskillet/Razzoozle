@@ -102,12 +102,40 @@
     "saveFailed": "No se pudo guardar el diseño",
     "audioTooLarge": "El archivo de audio es demasiado grande (máx. 4 MB)",
     "invalidSlot": "Ranura no válida",
-    "invalidAudio": "Formato de audio no compatible (solo MP3, WAV, OGG)"
+    "invalidAudio": "Formato de audio no compatible (solo MP3, WAV, OGG)",
+    "invalidColor": "Valor de color no válido",
+    "invalidImage": "Este formato de imagen no es compatible",
+    "invalidAsset": "Ruta de recurso no válida"
   },
   "media": {
     "tooLarge": "La imagen es demasiado grande. Máximo 8 MB.",
     "invalidDataUrl": "Este formato de imagen no es compatible.",
-    "invalidUrl": "Esta fuente de imagen no es válida."
+    "invalidUrl": "Esta fuente de imagen no es válida.",
+    "notFound": "Medio no encontrado.",
+    "invalidCategory": "Categoría de medio no válida."
+  },
+  "plugin": {
+    "notFound": "Plugin no encontrado",
+    "invalidPayload": "Los datos del plugin no son válidos",
+    "installFailed": "No se pudo instalar el plugin",
+    "removeFailed": "No se pudo eliminar el plugin",
+    "configFailed": "No se pudieron guardar los ajustes del plugin",
+    "tooManyEntries": "El paquete del plugin contiene demasiados archivos",
+    "tooLarge": "El paquete del plugin es demasiado grande",
+    "assetTooLarge": "Un archivo del paquete del plugin es demasiado grande",
+    "missingManifest": "Falta el archivo plugin.json en el paquete del plugin",
+    "idCollision": "Ya hay un plugin instalado con este ID"
+  },
+  "skeleton": {
+    "invalidKind": "Tipo de esqueleto no válido",
+    "invalidContent": "El contenido del esqueleto no es válido",
+    "tooManyEntries": "El paquete del esqueleto contiene demasiados archivos",
+    "tooLarge": "El paquete del esqueleto es demasiado grande",
+    "assetTooLarge": "Un archivo del paquete del esqueleto es demasiado grande",
+    "missingManifest": "Falta el archivo skeleton.json en el paquete del esqueleto"
+  },
+  "themeTemplate": {
+    "notFound": "Plantilla de diseño no encontrada"
   },
   "submission": {
     "rateLimited": "Has enviado demasiadas preguntas. Espera un momento.",

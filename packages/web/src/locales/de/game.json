@@ -213,7 +213,14 @@
       "copied": "Sticker in die Zwischenablage kopiert.",
       "downloaded": "Sticker heruntergeladen.",
       "error": "Sticker konnte nicht erstellt werden.",
-      "share": "Sticker teilen"
+      "share": "Sticker teilen",
+      "rankBadge": "Rang {{rank}}",
+      "points": "Pkt.",
+      "honorific": {
+        "1": "Spitzenplatz",
+        "2": "Zweiter Platz",
+        "3": "Dritter Platz"
+      }
     },
     "superlative": {
       "fastest_finger": "Schnellster Finger",

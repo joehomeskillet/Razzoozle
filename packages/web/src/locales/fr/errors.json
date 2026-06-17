@@ -102,12 +102,40 @@
     "saveFailed": "Impossible d’enregistrer le design",
     "audioTooLarge": "Le fichier audio est trop volumineux (max. 4 Mo)",
     "invalidSlot": "Emplacement invalide",
-    "invalidAudio": "Format audio non pris en charge (MP3, WAV, OGG uniquement)"
+    "invalidAudio": "Format audio non pris en charge (MP3, WAV, OGG uniquement)",
+    "invalidColor": "Valeur de couleur non valide",
+    "invalidImage": "Ce format d’image n’est pas pris en charge",
+    "invalidAsset": "Chemin de ressource non valide"
   },
   "media": {
     "tooLarge": "L’image est trop volumineuse. Maximum 8 Mo.",
     "invalidDataUrl": "Ce format d’image n’est pas pris en charge.",
-    "invalidUrl": "Cette source d’image est invalide."
+    "invalidUrl": "Cette source d’image est invalide.",
+    "notFound": "Média introuvable.",
+    "invalidCategory": "Catégorie de média non valide."
+  },
+  "plugin": {
+    "notFound": "Plugin introuvable",
+    "invalidPayload": "Les données du plugin ne sont pas valides",
+    "installFailed": "Le plugin n’a pas pu être installé",
+    "removeFailed": "Le plugin n’a pas pu être supprimé",
+    "configFailed": "Les paramètres du plugin n’ont pas pu être enregistrés",
+    "tooManyEntries": "Le paquet du plugin contient trop de fichiers",
+    "tooLarge": "Le paquet du plugin est trop volumineux",
+    "assetTooLarge": "Un fichier du paquet du plugin est trop volumineux",
+    "missingManifest": "Le fichier plugin.json est manquant dans le paquet du plugin",
+    "idCollision": "Un plugin avec cet identifiant est déjà installé"
+  },
+  "skeleton": {
+    "invalidKind": "Type de squelette non valide",
+    "invalidContent": "Le contenu du squelette n’est pas valide",
+    "tooManyEntries": "Le paquet du squelette contient trop de fichiers",
+    "tooLarge": "Le paquet du squelette est trop volumineux",
+    "assetTooLarge": "Un fichier du paquet du squelette est trop volumineux",
+    "missingManifest": "Le fichier skeleton.json est manquant dans le paquet du squelette"
+  },
+  "themeTemplate": {
+    "notFound": "Modèle de design introuvable"
   },
   "submission": {
     "rateLimited": "Tu as envoyé trop de questions. Attends un instant.",

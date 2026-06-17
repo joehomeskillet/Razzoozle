@@ -213,7 +213,14 @@
       "copied": "Sticker copiato negli appunti.",
       "downloaded": "Sticker scaricato.",
       "error": "Impossibile creare lo sticker.",
-      "share": "Condividi sticker"
+      "share": "Condividi sticker",
+      "rankBadge": "Posizione {{rank}}",
+      "points": "pti",
+      "honorific": {
+        "1": "Primo posto",
+        "2": "Secondo posto",
+        "3": "Terzo posto"
+      }
     },
     "superlative": {
       "fastest_finger": "Dito più veloce",

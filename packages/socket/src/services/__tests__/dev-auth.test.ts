@@ -12,7 +12,9 @@ import { createLogger } from "@razzoozle/socket/services/logger"
 //   dev off            -> 404 (do not reveal), even with DEV_API_KEY set
 //   dev on  + key set  -> 401 { error: "unauthorized" } unless the X-Manager-Token
 //                         header OR the ?token= query equals DEV_API_KEY
-//   dev on  + no key   -> served (dev-gate only, unchanged)
+//   dev on  + no key   -> served (dev-gate only) for ordinary dev routes, BUT
+//                         401 for the log-download routes (they fail CLOSED so
+//                         operational logs are never served unauthenticated)
 
 const startServer = async (): Promise<{ server: Server; base: string }> => {
   const { dispatchHttp } =
@@ -122,6 +124,57 @@ describe("DEV_API_KEY auth on dev-gated routes", () => {
     expect(body.openapi).toBe("3.1.0")
   })
 
+  // ── CASE B-LOG: log-download routes FAIL CLOSED when no key is set ─────────
+  // Operational logs must never be served unauthenticated on a live dev
+  // instance: with dev on but no DEV_API_KEY, the log routes deny (401) even
+  // though ordinary dev routes are dev-gate-only (open).
+  it("dev on, no DEV_API_KEY → 401 on server log download (fail closed)", async () => {
+    process.env.RAZZOOLE_DEV = "1"
+    delete process.env.DEV_API_KEY
+    ;({ server, base } = await startServer())
+
+    const res = await fetch(`${base}/api/v1/observability/logs/server`)
+    expect(res.status).toBe(401)
+    const body = (await res.json()) as { error?: string }
+    expect(body.error).toBe("unauthorized")
+  })
+
+  it("dev on, no DEV_API_KEY → 401 on client log download (fail closed)", async () => {
+    process.env.RAZZOOLE_DEV = "1"
+    delete process.env.DEV_API_KEY
+    ;({ server, base } = await startServer())
+
+    const res = await fetch(`${base}/api/v1/observability/logs/client`)
+    expect(res.status).toBe(401)
+    const body = (await res.json()) as { error?: string }
+    expect(body.error).toBe("unauthorized")
+  })
+
+  // With a key configured the log routes behave like every other dev route:
+  // the correct token still serves them (behavior unchanged when key is set).
+  it("dev on, key set, correct token → 200 server log download", async () => {
+    process.env.RAZZOOLE_DEV = "1"
+    process.env.DEV_API_KEY = "testkey"
+    ;({ server, base } = await startServer())
+
+    const res = await fetch(`${base}/api/v1/observability/logs/server`, {
+      headers: { "X-Manager-Token": "testkey" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.headers.get("content-type")).toContain("text/plain")
+  })
+
+  it("dev on, key set, no token → 401 on server log download", async () => {
+    process.env.RAZZOOLE_DEV = "1"
+    process.env.DEV_API_KEY = "testkey"
+    ;({ server, base } = await startServer())
+
+    const res = await fetch(`${base}/api/v1/observability/logs/server`)
+    expect(res.status).toBe(401)
+    const body = (await res.json()) as { error?: string }
+    expect(body.error).toBe("unauthorized")
+  })
+
   // ── CASE C: dev OFF + key set → 404 (dev-off wins, fail-closed) ────────────
   it("dev off wins → 404 even with DEV_API_KEY set", async () => {
     delete process.env.RAZZOOLE_DEV
@@ -131,6 +184,16 @@ describe("DEV_API_KEY auth on dev-gated routes", () => {
     const res = await fetch(`${base}/api/openapi.json`, {
       headers: { "X-Manager-Token": "testkey" },
     })
+    expect(res.status).toBe(404)
+  })
+
+  // Log routes also obey dev-off (404) regardless of key — dev gate wins first.
+  it("dev off → 404 on log download even with no key", async () => {
+    delete process.env.RAZZOOLE_DEV
+    delete process.env.DEV_API_KEY
+    ;({ server, base } = await startServer())
+
+    const res = await fetch(`${base}/api/v1/observability/logs/server`)
     expect(res.status).toBe(404)
   })
 

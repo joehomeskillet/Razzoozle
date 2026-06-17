@@ -157,6 +157,16 @@ export async function register() {
 }
 `
 
+// A fixture that hot-binds a listener via hostApi.on() and THEN throws: the
+// load-failure path must detach the already-bound listener (no live listeners
+// left for a failed plugin) rather than only flag it errored.
+const BIND_THEN_THROW_SERVER_JS = `
+export function register(hostApi) {
+  hostApi.on("ping", () => {})
+  throw new Error("boom after binding")
+}
+`
+
 let tmpDir: string
 let prevConfigPath: string | undefined
 
@@ -272,6 +282,34 @@ describe("plugin server runtime", () => {
     )
     // Unloading the errored plugin is a clean no-op.
     expect(() => runtime.unloadPlugin("rt-bad")).not.toThrow()
+  })
+
+  it("detaches already-bound listeners when register() throws AFTER binding", async () => {
+    const { config, runtime } = await loadModules()
+
+    const record = await config.importPluginZip(
+      await buildPluginZip(
+        "rt-bind-throw",
+        ["SERVER_HANDLER"],
+        BIND_THEN_THROW_SERVER_JS,
+      ),
+    )
+
+    const socket = makeSocket("s1")
+    const sockets = new Map([[socket.id, socket]])
+    const { io } = makeIo(sockets)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    runtime.setPluginIo(io as any)
+
+    // register() hot-bound a listener and then threw — load must fail…
+    const ok = await runtime.loadPlugin(record)
+    expect(ok).toBe(false)
+    // …and the teardown path must detach the live listener so a failed plugin
+    // leaves NO listeners behind on any connected socket.
+    expect(socket.listeners.has("plugin:rt-bind-throw:ping")).toBe(false)
+    expect(runtime.isPluginLoaded("rt-bind-throw")).toBe(false)
+    // A subsequent unload of the already-cleaned id is a clean no-op.
+    expect(() => runtime.unloadPlugin("rt-bind-throw")).not.toThrow()
   })
 
   it("skips a plugin without the SERVER_HANDLER capability (UI-only)", async () => {

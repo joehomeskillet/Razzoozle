@@ -189,35 +189,44 @@ const RewardStack = ({
   if (liveItems.length === 0 || !visible) return null
 
   return (
-    <motion.ul
-      role="list"
-      aria-live="polite"
-      className="mt-3 flex w-full max-w-sm mx-auto flex-col gap-2 px-2 pointer-events-auto"
-      // Stacked cascade: the container staggers its children in (top-tier first).
-      // Reduced motion collapses stagger → 0 via reveal.container().
-      variants={reveal.container()}
-      initial="hidden"
-      animate="visible"
-    >
-      <AnimatePresence>
-        {liveItems.map((item) => (
-          <RewardRow
-            key={item.id}
-            id={item.id}
-            icon={item.icon}
-            title={item.title}
-            value={item.value}
-            badge={item.badge}
-            accent={item.accent}
-            reduced={reduced}
-            spring={reveal.spring}
-            durationMs={item.durationMs}
-            dismissLabel={t("game:reward.dismiss")}
-            onDismiss={handleDismiss}
-          />
-        ))}
-      </AnimatePresence>
-    </motion.ul>
+    <>
+      {/* SR announcement: announce the unlocked rewards ONCE from the resolved
+          titles. The rows below enter staggered, auto-dismiss on timers and are
+          swipe-/close-dismissible — a live region on the <ul> would announce
+          every insertion AND removal (noisy/garbled). This static status region
+          reads the reward titles a single time instead. */}
+      <span role="status" className="sr-only">
+        {items.map((i) => i.title).join(", ")}
+      </span>
+      <motion.ul
+        role="list"
+        className="mt-3 flex w-full max-w-sm mx-auto flex-col gap-2 px-2 pointer-events-auto"
+        // Stacked cascade: the container staggers its children in (top-tier first).
+        // Reduced motion collapses stagger → 0 via reveal.container().
+        variants={reveal.container()}
+        initial="hidden"
+        animate="visible"
+      >
+        <AnimatePresence>
+          {liveItems.map((item) => (
+            <RewardRow
+              key={item.id}
+              id={item.id}
+              icon={item.icon}
+              title={item.title}
+              value={item.value}
+              badge={item.badge}
+              accent={item.accent}
+              reduced={reduced}
+              spring={reveal.spring}
+              durationMs={item.durationMs}
+              dismissLabel={t("game:reward.dismiss")}
+              onDismiss={handleDismiss}
+            />
+          ))}
+        </AnimatePresence>
+      </motion.ul>
+    </>
   )
 }
 

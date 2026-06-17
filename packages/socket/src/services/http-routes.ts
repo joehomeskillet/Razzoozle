@@ -621,6 +621,11 @@ const handlePluginAsset = (
 interface Route extends RouteDoc {
   match: RegExp
   dev?: boolean
+  // dev routes that expose operational data (the log downloads) MUST fail
+  // closed even within dev mode: when no DEV_API_KEY is configured they are
+  // denied (401) rather than served, so an unauthenticated client can never
+  // pull operational logs off a live dev instance.
+  requireKey?: boolean
   handle: (
     req: IncomingMessage,
     res: ServerResponse,
@@ -751,6 +756,7 @@ export const routes: Route[] = [
     path: "/api/v1/observability/logs/server",
     summary: "Download recent redacted SERVER log lines (NDJSON).",
     dev: true,
+    requireKey: true,
     match: /^\/api\/v1\/observability\/logs\/server$/,
     handle: (_req, res) =>
       textAttachment(res, "server-logs.ndjson", serverLogLines().join("\n")),
@@ -760,6 +766,7 @@ export const routes: Route[] = [
     path: "/api/v1/observability/logs/client",
     summary: "Download recent redacted CLIENT-EVENT log lines (NDJSON).",
     dev: true,
+    requireKey: true,
     match: /^\/api\/v1\/observability\/logs\/client$/,
     handle: (_req, res) =>
       textAttachment(res, "client-logs.ndjson", clientLogLines().join("\n")),
@@ -799,14 +806,17 @@ export const routes: Route[] = [
 // Build the OpenAPI doc once from the SAME table (excludes hidden routes).
 export const openApiDoc = buildOpenApiDoc(routes)
 
-// DEV-route access decision for a dev-flagged route. Mirrors the fail-closed
-// contract: dev off -> "notfound" (404, do not reveal); dev on + a DEV_API_KEY
+// DEV-route access decision for a dev-flagged route. Fail-closed contract:
+// dev off -> "notfound" (404, do not reveal); dev on + a DEV_API_KEY
 // configured -> require the token from the X-Manager-Token header OR the
 // ?token= query, constant-time compared -> "unauthorized" on mismatch; dev on
-// with no key -> "ok" (dev-gate only).
+// with no key -> "ok" (dev-gate only) for ordinary dev routes, BUT
+// "unauthorized" for `requireKey` routes (log downloads) so operational logs
+// are never served unauthenticated — those routes fail CLOSED.
 const authorizeDevRequest = (
   req: IncomingMessage,
   url: URL,
+  requireKey: boolean,
 ): "ok" | "notfound" | "unauthorized" => {
   if (!isDevMode()) {
     return "notfound"
@@ -815,7 +825,9 @@ const authorizeDevRequest = (
   const expected = devApiKey()
 
   if (!expected) {
-    return "ok"
+    // No key configured: ordinary dev routes are dev-gate-only (open), but a
+    // `requireKey` route (log download) must DENY rather than leak logs.
+    return requireKey ? "unauthorized" : "ok"
   }
 
   const headerToken = req.headers["x-manager-token"]
@@ -860,8 +872,9 @@ export const dispatchHttp = (
 
     // DEV-gated routes: fail-closed 404 when dev off, 401 when a DEV_API_KEY
     // is configured and the presented token is absent/wrong, else serve.
+    // `requireKey` routes (log downloads) additionally 401 when NO key is set.
     if (route.dev) {
-      const decision = authorizeDevRequest(req, parsedUrl)
+      const decision = authorizeDevRequest(req, parsedUrl, route.requireKey ?? false)
 
       if (decision === "notfound") {
         return false

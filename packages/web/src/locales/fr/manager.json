@@ -138,6 +138,7 @@
     "media": "Médias",
     "gamemode": "Mode",
     "achievements": "Succès",
+    "running": "Parties en cours",
     "dev": "Dev"
   },
   "plugins":   {
@@ -609,6 +610,24 @@
   "themePreview": {
     "join": "Rejoindre",
     "playerName": "Joueur {{rank}}"
+  },
+  "runningGames": {
+    "title": "Parties en cours",
+    "description": "Gérez les parties actuellement actives.",
+    "refresh": "Actualiser",
+    "emptyHeadline": "Aucune partie en cours",
+    "emptyHint": "Dès que tu lances une partie, elle apparaîtra ici.",
+    "pin": "PIN {{pin}}",
+    "playerCount": "{{count}} joueurs",
+    "phase": {
+      "lobby": "Salon",
+      "running": "En cours"
+    },
+    "hostOffline": "Hôte hors ligne",
+    "takeOver": "Reprendre",
+    "end": "Terminer",
+    "endConfirm": "Vraiment terminer la partie \"{{name}}\" ?",
+    "ended": "Partie terminée."
   },
   "auto": {
     "nextIn": "Suite dans {{seconds}}s"

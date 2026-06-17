@@ -204,8 +204,23 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     withGame(gameId, socket, (game) => game.start(socket)),
   )
 
-  socket.on(EVENTS.MANAGER.SET_AUTO, ({ gameId, auto }) =>
-    withGame(gameId, socket, (game) => game.setAutoMode(auto)),
+  // Host-only: toggle auto-advance. Routed via withAuth + getManagerGame (same
+  // ownership gate as PAUSE_GAME / RESUME_GAME) rather than the ownership-free
+  // withGame — withGame resolves by gameId alone, so any joined player could
+  // emit SET_AUTO to grief a live game (force auto-advance). A non-host emit is
+  // ignored (no state change).
+  socket.on(
+    EVENTS.MANAGER.SET_AUTO,
+    managerAuth.withAuth(
+      socket,
+      (payload: { gameId?: string; auto?: boolean } | undefined) => {
+        const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
+
+        if (game) {
+          game.setAutoMode(payload?.auto === true)
+        }
+      },
+    ),
   )
 
   socket.on(
@@ -391,8 +406,20 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     withGame(gameId, socket, (game) => game.nextRound(socket)),
   )
 
-  socket.on(EVENTS.MANAGER.SHOW_LEADERBOARD, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.showLeaderboard()),
+  // Host-only: advance to the leaderboard screen. Routed via withAuth +
+  // getManagerGame (same ownership gate as PAUSE_GAME / RESUME_GAME) rather than
+  // the ownership-free withGame — withGame resolves by gameId alone, so any
+  // joined player could emit SHOW_LEADERBOARD to grief a live game (skip the
+  // result screen). A non-host emit is ignored (no state change).
+  socket.on(
+    EVENTS.MANAGER.SHOW_LEADERBOARD,
+    managerAuth.withAuth(socket, (payload: { gameId?: string } | undefined) => {
+      const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
+
+      if (game) {
+        game.showLeaderboard()
+      }
+    }),
   )
 
   // ── Host live controls (#12) ──────────────────────────────────────────────
