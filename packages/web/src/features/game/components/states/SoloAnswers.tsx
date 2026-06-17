@@ -269,7 +269,13 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                 return (
                   <motion.div
                     key={key}
-                    variants={{ ...reveal.item(50), popped: reveal.pop().visible }}
+                    variants={{
+                      ...reveal.item(50),
+                      // Already-visible tile: emphasis pulse from the CURRENT
+                      // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
+                      // which would shrink the tile toward centre on reveal.
+                      popped: reveal.reduced ? { opacity: 1 } : { scale: [1, 1.06, 1] },
+                    }}
                     initial="hidden"
                     animate={resultReady && isPicked ? "popped" : "visible"}
                     transition={
@@ -353,7 +359,13 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               return (
                 <motion.div
                   key={key}
-                  variants={{ ...reveal.item(50), popped: reveal.pop().visible }}
+                  variants={{
+                    ...reveal.item(50),
+                    // Already-visible tile: emphasis pulse from the CURRENT
+                    // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
+                    // which would shrink the tile toward centre on reveal.
+                    popped: reveal.reduced ? { opacity: 1 } : { scale: [1, 1.06, 1] },
+                  }}
                   initial="hidden"
                   animate={resultReady && isPicked ? "popped" : "visible"}
                   transition={
