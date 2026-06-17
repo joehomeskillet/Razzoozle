@@ -1,5 +1,7 @@
 import type {
+  ManagerRecap,
   Player,
+  PlayerRecap,
   QuestionMedia,
   QuestionType,
   TeamStanding,
@@ -93,6 +95,11 @@ export interface CommonStatusDataMap {
     top: Player[]
     rank?: number
     teamStandings?: TeamStanding[]
+    // Post-game recap / awards (WP-A). OPTIONAL + filled DIFFERENTLY per
+    // recipient: the manager emit carries a `ManagerRecap` (the full awards list
+    // for the big screen), the per-player emit carries a `PlayerRecap` (this
+    // player's own card + the single award they won). Old clients ignore it.
+    recap?: ManagerRecap | PlayerRecap
   }
 }
 

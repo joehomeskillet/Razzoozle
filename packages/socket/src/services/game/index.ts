@@ -63,6 +63,26 @@ export interface GameSnapshot {
       string,
       { answered: number; correct: number; ever: boolean }
     >
+    // Per-player recap accumulator (WP-A), keyed by clientId — drives the
+    // end-of-game superlatives; survives restore. Bots are never persisted.
+    recapStats?: Record<
+      string,
+      {
+        username: string
+        fastestMs: number | null
+        peakStreak: number
+        correct: number
+        wrong: number
+        answered: number
+        bestClimb: number
+        worstRankEver: number
+        achievementCount: number
+        achievementIds: string[]
+        luckyGuess: boolean
+      }
+    >
+    // Per-question correctness tally (WP-A) for the hardest_question superlative.
+    questionStats?: Record<number, { correct: number; total: number }>
   }
   players: Array<{
     clientId: string

@@ -17,10 +17,14 @@ import {
 import type {
   Answer,
   GameResult,
+  ManagerRecap,
   Player,
+  PlayerRecap,
   Question,
   QuestionResult,
   Quizz,
+  Superlative,
+  SuperlativeKey,
   TeamStanding,
 } from "@razzoozle/common/types/game"
 import type {
@@ -162,6 +166,30 @@ export class RoundManager {
     string,
     { answered: number; correct: number; ever: boolean }
   >()
+  // Per-player RECAP accumulator (WP-A) — scalar-only, persistent across rounds
+  // and snapshot-safe, mirroring gameCounters. Updated INSIDE the showResults
+  // sortedPlayers loop (reads the already-computed aXxx fields — zero recompute).
+  // Drives the end-of-game superlatives + each player's myRecap card. Bots never
+  // enter this map (sim-mode contract). No per-answer arrays (room-scale memory).
+  private recapStats = new Map<
+    string,
+    {
+      username: string
+      fastestMs: number | null
+      peakStreak: number
+      correct: number
+      wrong: number
+      answered: number
+      bestClimb: number
+      worstRankEver: number
+      achievementCount: number
+      achievementIds: string[]
+      luckyGuess: boolean
+    }
+  >()
+  // Per-QUESTION correctness tally (WP-A), keyed by 0-based question index, for
+  // the hardest_question superlative (lowest correct%). Snapshot-safe; scalar.
+  private questionStats = new Map<number, { correct: number; total: number }>()
   // Manager-editable achievements config as an O(1) id → MergedAchievement map,
   // built ONCE at construction. Drives the enabled gate + the per-badge numeric
   // thresholds in showResults. Falls back to the registry defaults when the
@@ -401,6 +429,26 @@ export class RoundManager {
       string,
       { answered: number; correct: number; ever: boolean }
     >
+    // Per-player recap accumulator (WP-A) — survives restore so a resumed game
+    // keeps accurate end-of-game superlatives. Serialized as a plain object.
+    recapStats?: Record<
+      string,
+      {
+        username: string
+        fastestMs: number | null
+        peakStreak: number
+        correct: number
+        wrong: number
+        answered: number
+        bestClimb: number
+        worstRankEver: number
+        achievementCount: number
+        achievementIds: string[]
+        luckyGuess: boolean
+      }
+    >
+    // Per-question correctness tally (WP-A) for the hardest_question superlative.
+    questionStats?: Record<number, { correct: number; total: number }>
   } {
     // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
     // them from BOTH the leaderboard AND each question's playerAnswers — a
@@ -427,6 +475,42 @@ export class RoundManager {
       }
     }
 
+    // Recap accumulator (WP-A): drop bot clientIds (a restored game must not
+    // resurrect bot recap state) and deep-copy each scalar record.
+    const recapStats: Record<
+      string,
+      {
+        username: string
+        fastestMs: number | null
+        peakStreak: number
+        correct: number
+        wrong: number
+        answered: number
+        bestClimb: number
+        worstRankEver: number
+        achievementCount: number
+        achievementIds: string[]
+        luckyGuess: boolean
+      }
+    > = {}
+
+    for (const [clientId, stat] of this.recapStats) {
+      if (!botClientIds.has(clientId)) {
+        recapStats[clientId] = {
+          ...stat,
+          achievementIds: [...stat.achievementIds],
+        }
+      }
+    }
+
+    // Per-question tally is not player-keyed (counts are already bot-free, since
+    // bots never enter the loop branch that increments it) — copy verbatim.
+    const questionStats: Record<number, { correct: number; total: number }> = {}
+
+    for (const [index, q] of this.questionStats) {
+      questionStats[index] = { ...q }
+    }
+
     return {
       started: this.started,
       currentQuestion: this.currentQuestion,
@@ -441,6 +525,8 @@ export class RoundManager {
       paused: this.paused,
       pausedState: this.pausedState,
       gameCounters,
+      recapStats,
+      questionStats,
     }
   }
 
@@ -461,6 +547,23 @@ export class RoundManager {
       string,
       { answered: number; correct: number; ever: boolean }
     >
+    recapStats?: Record<
+      string,
+      {
+        username: string
+        fastestMs: number | null
+        peakStreak: number
+        correct: number
+        wrong: number
+        answered: number
+        bestClimb: number
+        worstRankEver: number
+        achievementCount: number
+        achievementIds: string[]
+        luckyGuess: boolean
+      }
+    >
+    questionStats?: Record<number, { correct: number; total: number }>
   }): void {
     this.started = snap.started
     this.currentQuestion = snap.currentQuestion
@@ -485,6 +588,20 @@ export class RoundManager {
       Object.entries(snap.gameCounters ?? {}).map(([clientId, counter]) => [
         clientId,
         { ...counter },
+      ]),
+    )
+    // Rebuild the recap accumulator (WP-A) so a resumed game's end-of-game
+    // superlatives stay accurate across a crash/restore.
+    this.recapStats = new Map(
+      Object.entries(snap.recapStats ?? {}).map(([clientId, stat]) => [
+        clientId,
+        { ...stat, achievementIds: [...stat.achievementIds] },
+      ]),
+    )
+    this.questionStats = new Map(
+      Object.entries(snap.questionStats ?? {}).map(([index, q]) => [
+        Number(index),
+        { ...q },
       ]),
     )
     this.answerReceivedAt.clear()
@@ -1138,6 +1255,97 @@ export class RoundManager {
         // Defensive cap: never emit an unbounded list (≤ 20 per the spec).
         achievementsByClient.set(row.clientId, unlocked.slice(0, 20))
       }
+
+      // ── RECAP accumulator (WP-A) ────────────────────────────────────────────
+      // Fold THIS round's already-computed per-player fields into the persistent
+      // scalar accumulator (bots are excluded — they returned at the top). Only a
+      // SCORED row contributes to correctness/streak/timing/achievements; poll &
+      // practice rows leave those untouched (mirrors gameCounters above).
+      const recap = this.recapStats.get(row.clientId) ?? {
+        username: row.username,
+        fastestMs: null as number | null,
+        peakStreak: 0,
+        correct: 0,
+        wrong: 0,
+        answered: 0,
+        bestClimb: 0,
+        worstRankEver: index + 1,
+        achievementCount: 0,
+        achievementIds: [] as string[],
+        luckyGuess: false,
+      }
+      // Keep the freshest display name (a player can rename mid-game).
+      recap.username = row.username
+
+      if (row.aScored) {
+        const answeredThisRound = this.answerReceivedAt.has(row.clientId)
+        const rt = row.aResponseTimeMs
+
+        if (answeredThisRound) {
+          recap.answered += 1
+          if (rt !== null) {
+            recap.fastestMs =
+              recap.fastestMs === null ? rt : Math.min(recap.fastestMs, rt)
+          }
+        }
+
+        if (row.aIsCorrect) {
+          recap.correct += 1
+        } else if (answeredThisRound) {
+          // wrong = an actual incorrect submission (a no-show is neither).
+          recap.wrong += 1
+        }
+
+        recap.peakStreak = Math.max(recap.peakStreak, row.aStreakAfter)
+
+        // bestClimb: largest single-round upward rank move (only meaningful once
+        // a prior round exists; rankBefore is empty on round 1 → no climb).
+        const climbedFrom = hasPriorRound
+          ? rankBefore.get(row.clientId)
+          : undefined
+        if (climbedFrom !== undefined) {
+          recap.bestClimb = Math.max(recap.bestClimb, climbedFrom - rankAfter)
+        }
+
+        // worstRankEver: the lowest (highest-numbered) rank this player ever
+        // held, tracked across rounds so comeback_kid can measure climb from the
+        // nadir.
+        recap.worstRankEver = Math.max(recap.worstRankEver, index + 1)
+
+        // luckyGuess: a correct answer that landed in the last ~10% of the timer.
+        if (
+          row.aIsCorrect &&
+          rt !== null &&
+          rt >= 0.9 * question.time * 1000
+        ) {
+          recap.luckyGuess = true
+        }
+
+        // Per-question correctness tally for hardest_question (non-bot only).
+        const q = this.questionStats.get(this.currentQuestion) ?? {
+          correct: 0,
+          total: 0,
+        }
+        q.total += answeredThisRound ? 1 : 0
+        q.correct += row.aIsCorrect ? 1 : 0
+        this.questionStats.set(this.currentQuestion, q)
+      }
+
+      // Union the badges unlocked THIS round into the full-game set (capped) —
+      // BEFORE achievements are stripped from the player below.
+      if (unlocked.length > 0) {
+        for (const id of unlocked) {
+          if (!recap.achievementIds.includes(id)) {
+            recap.achievementIds.push(id)
+          }
+        }
+        recap.achievementCount += unlocked.length
+        if (recap.achievementIds.length > 50) {
+          recap.achievementIds = recap.achievementIds.slice(0, 50)
+        }
+      }
+
+      this.recapStats.set(row.clientId, recap)
     })
 
     // ── Achievements: award configurable BONUS POINTS (Wave B) ────────────────
@@ -1771,6 +1979,183 @@ export class RoundManager {
       .sort((a, b) => b.points - a.points)
   }
 
+  // ── Post-game recap / awards derivation (WP-A) ────────────────────────────
+  // Reduce the per-player recap accumulator into the manager-side superlatives
+  // list + per-player recap cards. Pure read of recapStats/questionStats — call
+  // ONCE at game end. Returns the manager payload, a per-clientId player payload
+  // map, and a per-clientId map of the single superlative that player won (for
+  // the phone highlight). Bots are already absent from recapStats.
+  private buildRecap(finalRanks: Map<string, number>): {
+    manager: ManagerRecap
+    perPlayer: Map<string, PlayerRecap>
+  } {
+    const entries = [...this.recapStats.entries()]
+
+    // argmax/argmin helpers over the non-bot entries. A superlative is only
+    // produced when at least one entry qualifies (predicate true) AND the best
+    // value clears the floor (e.g. nobody climbed → no biggest_climber).
+    const award = (
+      key: SuperlativeKey,
+      pick: (stat: (typeof entries)[number][1]) => number | null,
+      better: (a: number, b: number) => boolean,
+      floor?: (value: number) => boolean,
+    ): { clientId: string; superlative: Superlative } | null => {
+      let bestId: string | null = null
+      let bestVal = 0
+      let bestName = ""
+      for (const [clientId, stat] of entries) {
+        const v = pick(stat)
+        if (v === null) {
+          continue
+        }
+        if (bestId === null || better(v, bestVal)) {
+          bestId = clientId
+          bestVal = v
+          bestName = stat.username
+        }
+      }
+      if (bestId === null) {
+        return null
+      }
+      if (floor && !floor(bestVal)) {
+        return null
+      }
+      return {
+        clientId: bestId,
+        superlative: { key, winnerName: bestName, value: bestVal },
+      }
+    }
+
+    const max = (a: number, b: number): boolean => a > b
+    const min = (a: number, b: number): boolean => a < b
+
+    const winners: Array<{ clientId: string; superlative: Superlative } | null> =
+      [
+        // fastest_finger: lowest single-answer time (only players who answered).
+        award("fastest_finger", (s) => s.fastestMs, min),
+        // most_correct: highest correct count (skip if nobody got any right).
+        award("most_correct", (s) => s.correct, max, (v) => v > 0),
+        // most_wrong (playful): highest wrong count (skip if nobody was wrong).
+        award("most_wrong", (s) => s.wrong, max, (v) => v > 0),
+        // longest_streak: highest peak streak (skip if nobody built one).
+        award("longest_streak", (s) => s.peakStreak, max, (v) => v > 0),
+        // biggest_climber: largest single-round upward rank move.
+        award("biggest_climber", (s) => s.bestClimb, max, (v) => v > 0),
+        // lucky_guesser: a player who landed a correct answer in the last ~10%.
+        award(
+          "lucky_guesser",
+          (s) => (s.luckyGuess ? s.correct : null),
+          max,
+          (v) => v > 0,
+        ),
+        // most_achievements: highest full-game badge count (skip if zero).
+        award("most_achievements", (s) => s.achievementCount, max, (v) => v > 0),
+      ]
+
+    const superlatives: Superlative[] = []
+    const highlightByClient = new Map<
+      string,
+      { key: SuperlativeKey; value: number }
+    >()
+
+    for (const w of winners) {
+      if (!w) {
+        continue
+      }
+      superlatives.push(w.superlative)
+      // First award a player wins becomes their phone highlight (one card).
+      if (!highlightByClient.has(w.clientId)) {
+        highlightByClient.set(w.clientId, {
+          key: w.superlative.key,
+          value: w.superlative.value,
+        })
+      }
+    }
+
+    // comeback_kid: argmax of (worstRankEver - finalRank) — how far a player
+    // climbed from their lowest-ever rank to their final standing. Distinct from
+    // biggest_climber (largest single-ROUND jump). Needs finalRanks, so it can't
+    // use the generic award() helper. Skip if nobody net-improved.
+    let comeback: { clientId: string; superlative: Superlative } | null = null
+    let bestComeback = 0
+    for (const [clientId, stat] of entries) {
+      const finalRank = finalRanks.get(clientId)
+      if (finalRank === undefined) {
+        continue
+      }
+      const climb = stat.worstRankEver - finalRank
+      if (comeback === null || climb > bestComeback) {
+        comeback = {
+          clientId,
+          superlative: {
+            key: "comeback_kid",
+            winnerName: stat.username,
+            value: climb,
+          },
+        }
+        bestComeback = climb
+      }
+    }
+    if (comeback !== null && bestComeback > 0) {
+      superlatives.push(comeback.superlative)
+      if (!highlightByClient.has(comeback.clientId)) {
+        highlightByClient.set(comeback.clientId, {
+          key: comeback.superlative.key,
+          value: comeback.superlative.value,
+        })
+      }
+    }
+
+    // hardest_question: the SCORED question with the lowest correct% (>=1 answer).
+    // Quiz-level award — winnerName is the human 1-based question label.
+    let hardest: { questionIndex: number; correctPct: number } | undefined
+    for (const [index, q] of this.questionStats) {
+      if (q.total <= 0) {
+        continue
+      }
+      const pct = Math.round((q.correct / q.total) * 100)
+      if (hardest === undefined || pct < hardest.correctPct) {
+        hardest = { questionIndex: index, correctPct: pct }
+      }
+    }
+    if (hardest !== undefined) {
+      superlatives.push({
+        key: "hardest_question",
+        winnerName: `#${hardest.questionIndex + 1}`,
+        value: hardest.correctPct,
+      })
+    }
+
+    const manager: ManagerRecap = {
+      superlatives,
+      ...(hardest !== undefined ? { hardestQuestion: hardest } : {}),
+    }
+
+    // Per-player recap cards.
+    const perPlayer = new Map<string, PlayerRecap>()
+    for (const [clientId, stat] of entries) {
+      const answered = stat.answered
+      const accuracyPct =
+        answered > 0 ? Math.round((stat.correct / answered) * 100) : 0
+      const myRecap: PlayerRecap["myRecap"] = {
+        rank: finalRanks.get(clientId) ?? 0,
+        accuracyPct,
+        correct: stat.correct,
+        wrong: stat.wrong,
+        fastestMs: stat.fastestMs,
+        peakStreak: stat.peakStreak,
+        achievements: [...stat.achievementIds],
+      }
+      const highlight = highlightByClient.get(clientId)
+      perPlayer.set(clientId, {
+        myRecap,
+        ...(highlight ? { highlight } : {}),
+      })
+    }
+
+    return { manager, perPlayer }
+  }
+
   showLeaderboard(): void {
     // We are leaving the post-results screen: drop its FIX 8/9 bookkeeping so a
     // late setAutoMode(true) can't re-arm / re-send a screen that is gone.
@@ -1783,7 +2168,29 @@ export class RoundManager {
     if (isLastRound) {
       this.started = false
 
-      const top = this.leaderboard.slice(0, 3)
+      // Attach FULL-GAME achievements onto the podium slice so the FINISHED
+      // top[] can render medals. We STOP stripping achievements here: read each
+      // top player's accumulated full-game badge set from recapStats (bots carry
+      // none). Back-compat: players without an entry simply get no achievements.
+      const top = this.leaderboard.slice(0, 3).map((p) => {
+        const stat = this.recapStats.get(p.clientId)
+        return stat && stat.achievementIds.length > 0
+          ? { ...p, achievements: [...stat.achievementIds] }
+          : { ...p }
+      })
+
+      // Final human ranks (1..N) keyed by clientId — matches the per-player emit
+      // index+1 below and feeds each myRecap.rank.
+      const finalRanks = new Map<string, number>()
+      this.leaderboard
+        .filter((p) => !p.isBot)
+        .forEach((p, index) => {
+          finalRanks.set(p.clientId, index + 1)
+        })
+
+      // Derive the recap ONCE (manager superlatives + per-player cards).
+      const { manager: managerRecap, perPlayer: playerRecaps } =
+        this.buildRecap(finalRanks)
 
       // Sim mode: the PERSISTED result must never carry bots (they would pollute
       // the real results archive / history UI). Mirror toSnapshot's filter here —
@@ -1822,14 +2229,22 @@ export class RoundManager {
         subject: this.opts.quizz.subject,
         top,
         ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
+        // MANAGER recap: the full awards list + hardest-question callout.
+        recap: managerRecap,
       })
 
       this.leaderboard.forEach((player, index) => {
+        // PER-PLAYER recap: this player's own card + the single award they won
+        // (if any). Bots carry no recap entry, so this is simply absent for them.
+        const myPlayerRecap = this.recapStats.has(player.clientId)
+          ? playerRecaps.get(player.clientId)
+          : undefined
         this.send(player.id, STATUS.FINISHED, {
           subject: this.opts.quizz.subject,
           top,
           rank: index + 1,
           ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
+          ...(myPlayerRecap ? { recap: myPlayerRecap } : {}),
         })
       })
 

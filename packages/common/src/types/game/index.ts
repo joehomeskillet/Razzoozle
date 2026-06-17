@@ -140,6 +140,57 @@ export interface TeamStanding {
   playerCount: number
 }
 
+// ── Post-game recap / awards (WP-A) ──────────────────────────────────────────
+// All recap shapes are ADDITIVE + OPTIONAL on the FINISHED payload so old clients
+// that don't read `recap` keep working unchanged.
+
+// The canonical superlative keys. Each award is derived server-side at game end
+// by reducing the per-player recap accumulators (argmax/argmin over non-bots).
+// `hardest_question` is a quiz-level award (the question with the lowest correct%),
+// not a per-player one — its winner label is the question number, value its %.
+export type SuperlativeKey =
+  | "fastest_finger"
+  | "most_correct"
+  | "most_wrong"
+  | "longest_streak"
+  | "biggest_climber"
+  | "lucky_guesser"
+  | "comeback_kid"
+  | "most_achievements"
+  | "hardest_question"
+
+// One awarded superlative. `value` is the numeric stat that won it (ms for
+// fastest_finger, a count/streak/climb for the rest, the correct% for
+// hardest_question). `winnerName` is the player's username (or the question
+// label for hardest_question). A superlative is OMITTED when nobody qualifies.
+export interface Superlative {
+  key: SuperlativeKey
+  winnerName: string
+  value: number
+}
+
+// MANAGER-side recap: the full awards list for the big-screen, plus the hardest
+// question detail (index + correct%) for an optional callout.
+export interface ManagerRecap {
+  superlatives: Superlative[]
+  hardestQuestion?: { questionIndex: number; correctPct: number }
+}
+
+// PER-PLAYER recap: this player's own end-of-game card stats, plus the single
+// superlative THIS player won (if any) for the phone 1-card highlight.
+export interface PlayerRecap {
+  myRecap: {
+    rank: number
+    accuracyPct: number
+    correct: number
+    wrong: number
+    fastestMs: number | null
+    peakStreak: number
+    achievements: string[]
+  }
+  highlight?: { key: SuperlativeKey; value: number }
+}
+
 export interface GameResultMeta {
   id: string
   subject: string
