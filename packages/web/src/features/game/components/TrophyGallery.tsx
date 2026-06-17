@@ -74,7 +74,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
         >
           {TIER_LABEL[tier]}
         </h3>
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white/50">
+        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
           {unlockedCount} / {enabledCount}
         </span>
       </div>
@@ -97,7 +97,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
                 "relative flex flex-col items-center gap-2 rounded-2xl px-3 py-4 transition-opacity",
                 unlocked
                   ? `bg-gradient-to-br ring-2 shadow-lg ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
-                  : "bg-white/5 opacity-40 grayscale ring-1 ring-white/10",
+                  : "bg-black/5 opacity-40 grayscale ring-1 ring-white/10",
               )}
               aria-label={`${display.name}${unlocked ? `, ${count}×` : ", gesperrt"}`}
             >
@@ -113,7 +113,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
               <p
                 className={clsx(
                   "text-center text-xs font-bold leading-tight",
-                  unlocked ? TIER_TEXT[tier] : "text-white/60",
+                  unlocked ? TIER_TEXT[tier] : "text-[color:var(--color-field-ink)]/70",
                 )}
               >
                 {display.name}
@@ -123,7 +123,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
               <p
                 className={clsx(
                   "line-clamp-2 text-center text-[10px] leading-snug",
-                  unlocked ? `${TIER_TEXT[tier]} opacity-75` : "text-white/40",
+                  unlocked ? `${TIER_TEXT[tier]} opacity-75` : "text-[color:var(--color-field-ink)]/50",
                 )}
               >
                 {display.description}
@@ -194,16 +194,16 @@ const TrophyGallery = () => {
       className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6"
     >
       <header className="flex items-baseline gap-3">
-        <h2 className="text-2xl font-extrabold text-white drop-shadow">
+        <h2 className="text-2xl font-extrabold text-[color:var(--color-field-ink)]">
           {t("game:achievements.gallery.title", "Trophäen")}
         </h2>
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs tabular-nums text-white/60">
+        <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs tabular-nums text-[color:var(--color-field-ink)]/60">
           {totalUnlocked} / {enabledIds.size}
         </span>
       </header>
 
       {totalUnlocked === 0 && (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-[color:var(--color-field-ink)]/70">
           {t(
             "game:achievements.gallery.empty",
             "Noch keine Trophäen — spiel eine Runde, um deine erste zu verdienen.",
