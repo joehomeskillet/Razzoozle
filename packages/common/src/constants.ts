@@ -71,6 +71,11 @@ export const EVENTS = {
     UPLOAD_BACKGROUND: "manager:uploadBackground",
     BACKGROUND_UPLOADED: "manager:backgroundUploaded",
     THEME_ERROR: "manager:themeError",
+    // Skeleton CSS/JS text edits (manager-auth-gated server-side). Writes the
+    // file, toggles the matching *Enabled flag, bumps skeletonVersion, persists,
+    // and broadcasts MANAGER.THEME; errors reuse THEME_ERROR.
+    SET_SKELETON_ASSET: "manager:setSkeletonAsset",
+    SET_SKELETON_ASSET_SUCCESS: "manager:setSkeletonAssetSuccess",
     // Public question submission (client -> server, no auth)
     SUBMIT_QUESTION: "manager:submitQuestion",
     // Admin submission moderation (client -> server, auth-gated)

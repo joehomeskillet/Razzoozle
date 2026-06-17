@@ -242,7 +242,9 @@ const parseTheme = (data: unknown): Theme => {
     throw socketResult.error
   }
 
-  return socketResult.data
+  // The lenient socket fallback validator predates the extended theme fields;
+  // merge over DEFAULT_THEME so the result is always a complete Theme.
+  return { ...DEFAULT_THEME, ...socketResult.data }
 }
 
 // Copy a single file into place only when the destination is missing — never

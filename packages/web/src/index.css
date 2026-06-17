@@ -18,6 +18,43 @@
   --radius-theme: 16px;
   --bg-scrim: 0.4;
 
+  /* Teams — base set at runtime by applyTheme; ring/text derived. */
+  --team-red: #ef4444;  --team-blue: #3b82f6;  --team-green: #22c55e;  --team-yellow: #facc15;
+  --team-red-ring:    color-mix(in srgb, var(--team-red), black 32%);
+  --team-red-text:    color-mix(in srgb, var(--team-red), black 55%);
+  --team-blue-ring:   color-mix(in srgb, var(--team-blue), black 32%);
+  --team-blue-text:   color-mix(in srgb, var(--team-blue), black 55%);
+  --team-green-ring:  color-mix(in srgb, var(--team-green), black 32%);
+  --team-green-text:  color-mix(in srgb, var(--team-green), black 55%);
+  --team-yellow-ring: color-mix(in srgb, var(--team-yellow), black 32%);
+  --team-yellow-text: color-mix(in srgb, var(--team-yellow), black 55%);
+
+  /* Tiers + derived glow (box-shadow recipe for leaderboard banners). */
+  --tier-bronze: #b45309;  --tier-silver: #9ca3af;  --tier-gold: #eab308;  --tier-diamant: #38bdf8;
+  --tier-bronze-glow:  0 0 28px color-mix(in srgb, var(--tier-bronze),  transparent 50%);
+  --tier-silver-glow:  0 0 28px color-mix(in srgb, var(--tier-silver),  transparent 50%);
+  --tier-gold-glow:    0 0 30px color-mix(in srgb, var(--tier-gold),    transparent 45%);
+  --tier-diamant-glow: 0 0 34px color-mix(in srgb, var(--tier-diamant), transparent 40%);
+
+  /* State + soft tints (the /20–/30 chip backgrounds). */
+  --state-correct: #22c55e;  --state-wrong: #ef4444;
+  --state-correct-soft: color-mix(in srgb, var(--state-correct), transparent 78%);
+  --state-wrong-soft:   color-mix(in srgb, var(--state-wrong),   transparent 78%);
+
+  /* Rank delta + soft tints. */
+  --rank-up: #10b981;  --rank-down: #f43f5e;
+  --rank-up-soft:   color-mix(in srgb, var(--rank-up),   transparent 75%);
+  --rank-down-soft: color-mix(in srgb, var(--rank-down), transparent 75%);
+
+  /* Timer: urgent base; track derived from text (was rgba(255,255,255,.22)). */
+  --timer-urgent: #ff3b30;
+  --timer-track:  color-mix(in srgb, var(--color-text) 22%, transparent);
+
+  /* Misc. */
+  --streak-color: #b45309;
+  --surface-muted: #374151;
+  --footer-bg: #ffffff;  --footer-text: #1f2937;
+
   /*
    * Derived accent tokens — globally available (not just inside the console).
    * `color-mix()` re-evaluates at paint, so they track the runtime-themed

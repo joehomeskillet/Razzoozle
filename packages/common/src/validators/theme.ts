@@ -35,6 +35,61 @@ export const themeValidator = z.object({
     managerGame: assetRef,
     playerGame: assetRef,
   }),
+  // Skeleton-system token additions — every field is optional with a Zod
+  // `.default(...)` so old theme.json files (and DEFAULT_THEME) stay valid and
+  // nested objects get an object-level default for shallow-partial inputs.
+  teamColors: z
+    .object({
+      red: hexColor.default("#ef4444"),
+      blue: hexColor.default("#3b82f6"),
+      green: hexColor.default("#22c55e"),
+      yellow: hexColor.default("#facc15"),
+    })
+    .default({
+      red: "#ef4444",
+      blue: "#3b82f6",
+      green: "#22c55e",
+      yellow: "#facc15",
+    }),
+  tierColors: z
+    .object({
+      bronze: hexColor.default("#b45309"),
+      silver: hexColor.default("#9ca3af"),
+      gold: hexColor.default("#eab308"),
+      diamant: hexColor.default("#38bdf8"),
+    })
+    .default({
+      bronze: "#b45309",
+      silver: "#9ca3af",
+      gold: "#eab308",
+      diamant: "#38bdf8",
+    }),
+  stateColors: z
+    .object({
+      correct: hexColor.default("#22c55e"),
+      wrong: hexColor.default("#ef4444"),
+    })
+    .default({ correct: "#22c55e", wrong: "#ef4444" }),
+  rankColors: z
+    .object({
+      up: hexColor.default("#10b981"),
+      down: hexColor.default("#f43f5e"),
+    })
+    .default({ up: "#10b981", down: "#f43f5e" }),
+  timerUrgent: hexColor.default("#ff3b30"),
+  streakColor: hexColor.default("#b45309"),
+  surfaceMuted: hexColor.default("#374151"),
+  footerColors: z
+    .object({
+      bg: hexColor.default("#ffffff"),
+      text: hexColor.default("#1f2937"),
+    })
+    .default({ bg: "#ffffff", text: "#1f2937" }),
+  // Skeleton overrides — content lives in files (config/theme/skeleton.css|js),
+  // theme.json only carries the enable flags + a cache-bust version.
+  customCssEnabled: z.boolean().default(false),
+  customJsEnabled: z.boolean().default(false),
+  skeletonVersion: z.number().int().min(0).default(0),
 })
 
 // A savable, named theme preset. `id` is server-assigned (slug of name) on save,
