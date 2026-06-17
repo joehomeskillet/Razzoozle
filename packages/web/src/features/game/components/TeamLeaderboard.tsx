@@ -1,38 +1,8 @@
 import type { TeamStanding } from "@razzoozle/common/types/game"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 import { AnimatePresence, motion } from "motion/react"
 import { useTranslation } from "react-i18next"
-
-// Team color map — one tint per fixed team id. Consistent with the player-side
-// team picker swatches so the same colours appear everywhere.
-const TEAM_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
-  red: {
-    bg: "bg-red-100",
-    text: "text-red-800",
-    bar: "bg-red-500",
-  },
-  blue: {
-    bg: "bg-blue-100",
-    text: "text-blue-800",
-    bar: "bg-blue-500",
-  },
-  green: {
-    bg: "bg-green-100",
-    text: "text-green-800",
-    bar: "bg-green-500",
-  },
-  yellow: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-900",
-    bar: "bg-yellow-400",
-  },
-}
-
-const fallback = {
-  bg: "bg-gray-100",
-  text: "text-gray-800",
-  bar: "bg-gray-400",
-}
 
 interface Props {
   standings: TeamStanding[]
@@ -62,7 +32,7 @@ const TeamLeaderboard = ({ standings }: Props) => {
       >
         <AnimatePresence mode="popLayout">
           {standings.map((standing, rank) => {
-            const colors = TEAM_COLORS[standing.teamId] ?? fallback
+            const colors = teamColor(standing.teamId)
             const barWidth =
               maxPoints > 0
                 ? Math.max(4, Math.round((standing.points / maxPoints) * 100))

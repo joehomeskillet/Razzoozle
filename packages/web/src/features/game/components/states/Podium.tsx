@@ -73,15 +73,15 @@ const usePodiumAnimation = (topLength: number) => {
 
 const medalColor = [
   {
-    background: "bg-yellow-500",
+    background: "bg-[var(--tier-gold)]",
     border: "border-yellow-600",
   },
   {
-    background: "bg-gray-400",
+    background: "bg-[var(--tier-silver)]",
     border: "border-gray-200",
   },
   {
-    background: "bg-amber-700",
+    background: "bg-[var(--tier-bronze)]",
     border: "border-amber-800",
   },
 ]

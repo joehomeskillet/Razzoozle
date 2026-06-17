@@ -19,6 +19,7 @@ import {
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { hapticTap } from "@razzoozle/web/features/game/utils/haptics"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import clsx from "clsx"
 import { motion } from "motion/react"
@@ -153,6 +154,7 @@ const Answers = ({
     // Instant local visual feedback — set BEFORE awaiting any network round-trip.
     setSelectedKey(answerKey)
     sfxPop()
+    hapticTap()
 
     const clientMessageId = lowLatency ? uuid() : undefined
 
@@ -200,6 +202,7 @@ const Answers = ({
     })
     setSubmitted(true)
     sfxPop()
+    hapticTap()
 
     if (lowLatency) {
       pendingMessageIdRef.current = clientMessageId ?? null
@@ -237,6 +240,7 @@ const Answers = ({
 
     setSubmitted(true)
     sfxPop()
+    hapticTap()
     socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
       gameId,
       data: {
@@ -264,6 +268,7 @@ const Answers = ({
 
     setSubmitted(true)
     sfxPop()
+    hapticTap()
     socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
       gameId,
       data: {

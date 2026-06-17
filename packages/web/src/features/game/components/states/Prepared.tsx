@@ -32,7 +32,7 @@ const Prepared = ({ data: { totalAnswers, questionNumber } }: Props) => {
         {questionNumber}
       </motion.h2>
       <motion.div
-        className="grid aspect-square w-60 grid-cols-2 gap-4 rounded-2xl bg-gray-700 p-5 md:w-60"
+        className="grid aspect-square w-60 grid-cols-2 gap-4 rounded-2xl bg-[var(--surface-muted)] p-5 md:w-60"
         variants={reveal.pop(0.92)}
         transition={reveal.spring}
       >

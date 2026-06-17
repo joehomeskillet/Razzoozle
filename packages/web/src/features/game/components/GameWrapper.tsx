@@ -19,6 +19,7 @@ import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
+import { useHapticsStore } from "@razzoozle/web/features/game/stores/haptics"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzoozle/web/features/game/utils/constants"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
@@ -35,6 +36,8 @@ import {
   Maximize2,
   Pause,
   Play,
+  Vibrate,
+  VibrateOff,
   Volume2,
   VolumeX,
   X,
@@ -66,6 +69,7 @@ const GameWrapper = ({
   const { questionStates, setQuestionStates } = useQuestionStore()
   const { theme } = useThemeStore()
   const { muted, toggle: toggleMuted } = useSoundStore()
+  const { enabled: hapticsEnabled, toggle: toggleHaptics } = useHapticsStore()
   const { t } = useTranslation()
   const reveal = useReveal()
   const [isDisabled, setIsDisabled] = useState(false)
@@ -346,6 +350,33 @@ const GameWrapper = ({
                     <Volume2 className="size-5" aria-hidden />
                   )}
                 </Button>
+                {/* Haptics toggle — sits next to the global mute so any player
+                    (or host) can silence phone vibration. Wired to the persisted
+                    haptics store; >=44px touch target via Button size="icon"
+                    min-h-11, matching the mute control exactly. */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="min-h-11 min-w-11"
+                  onClick={toggleHaptics}
+                  aria-pressed={hapticsEnabled}
+                  title={t(
+                    hapticsEnabled
+                      ? "game:controls.hapticsOff"
+                      : "game:controls.hapticsOn",
+                  )}
+                  aria-label={t(
+                    hapticsEnabled
+                      ? "game:controls.hapticsOff"
+                      : "game:controls.hapticsOn",
+                  )}
+                >
+                  {hapticsEnabled ? (
+                    <Vibrate className="size-5" aria-hidden />
+                  ) : (
+                    <VibrateOff className="size-5" aria-hidden />
+                  )}
+                </Button>
                 {/* Low-latency health widget. Self-hides unless the server emits
                     a health snapshot (i.e. low-latency mode is on), so it is
                     inert in normal mode. */}
@@ -437,8 +468,8 @@ const GameWrapper = ({
             </div>
 
             {!manager && (
-              <div className="z-50 flex items-center justify-between bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
-                <p className="text-gray-800">{player?.username}</p>
+              <div className="z-50 flex items-center justify-between bg-[var(--footer-bg)] px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
+                <p className="text-[var(--footer-text)]">{player?.username}</p>
                 <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
                   {player?.points}
                 </div>

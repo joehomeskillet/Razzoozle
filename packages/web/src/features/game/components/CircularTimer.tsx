@@ -23,7 +23,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 const URGENT_FRACTION = 0.25
 // Theme-agnostic urgency colour. Reads on both flat (Suedhang) and glass
 // (Razzoozle) themes; not tied to `--color-accent` so the shift is unmistakable.
-const URGENT_STROKE = "#ff3b30"
+const URGENT_STROKE = "var(--timer-urgent)"
 
 /**
  * Kahoot-style circular countdown ring.
@@ -92,7 +92,7 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
           cy={VIEWBOX / 2}
           r={RADIUS}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.22)"
+          stroke="var(--timer-track)"
           strokeWidth={STROKE}
         />
         {/* Foreground depleting ring */}
@@ -117,7 +117,7 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
           "absolute font-bold tabular-nums drop-shadow",
           // Number tracks the ring colour for a redundant (non-colour-only)
           // urgency cue; instant under reduced motion via the global rule.
-          isUrgent ? "text-[#ff3b30]" : "text-white",
+          isUrgent ? "text-[var(--timer-urgent)]" : "text-white",
           "transition-colors duration-300 motion-reduce:transition-none",
         )}
         style={{ fontSize: Math.max(14, Math.round(size * 0.34)) }}

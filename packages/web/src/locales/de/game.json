@@ -52,7 +52,9 @@
     "autoTitle": "Auto-Modus: läuft automatisch weiter",
     "fullscreen": "Vollbild",
     "mute": "Ton aus",
-    "unmute": "Ton an"
+    "unmute": "Ton an",
+    "hapticsOff": "Vibration aus",
+    "hapticsOn": "Vibration an"
   },
   "avatar": {
     "title": "Dein Avatar",

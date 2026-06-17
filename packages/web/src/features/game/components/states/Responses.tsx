@@ -93,7 +93,7 @@ const Responses = ({
               {(acceptedAnswers ?? []).map((a) => (
                 <span
                   key={a}
-                  className="rounded-full bg-green-500/20 px-3 py-1 text-sm font-semibold text-green-300"
+                  className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-300"
                 >
                   {a}
                 </span>
@@ -123,7 +123,7 @@ const Responses = ({
                       className={clsx(
                         "flex items-center justify-between rounded-xl px-4 py-2",
                         isMatch
-                          ? "bg-green-500/30 text-green-100"
+                          ? "bg-[var(--state-correct-soft)] text-green-100"
                           : "bg-white/10 text-white/70",
                       )}
                     >
