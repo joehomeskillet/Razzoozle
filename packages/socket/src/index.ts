@@ -8,6 +8,7 @@ import {
 } from "@razzoozle/common/constants"
 import type { Server } from "@razzoozle/common/types/game/socket"
 import type { Theme } from "@razzoozle/common/types/theme"
+import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
 import { aiSocketHandlers } from "@razzoozle/socket/handlers/ai"
 import { catalogSocketHandlers } from "@razzoozle/socket/handlers/catalog"
 import { displaySocketHandlers } from "@razzoozle/socket/handlers/display"
@@ -24,6 +25,7 @@ import { cleanupStaleAvatars, initConfig } from "@razzoozle/socket/services/conf
 import Registry from "@razzoozle/socket/services/registry"
 import {
   dispatchHttp,
+  registerPluginBroadcaster,
   registerThemeBroadcaster,
 } from "@razzoozle/socket/services/http-routes"
 import { logger, socketLogger } from "@razzoozle/socket/services/logger"
@@ -82,6 +84,13 @@ io.attach(httpServer)
 // path so an uploaded skeleton applies live without a reload.
 registerThemeBroadcaster((theme) => {
   io.emit(EVENTS.MANAGER.THEME, theme as Theme)
+})
+
+// Wire the plugin-import HTTP route to broadcast the fresh InstalledPlugin[] to
+// every connected client (mirrors the skeleton/theme broadcaster), so an HTTP
+// install/remove reflects live in every open manager without a reload.
+registerPluginBroadcaster((plugins) => {
+  io.emit(EVENTS.MANAGER.PLUGIN_CONFIG, plugins as InstalledPlugin[])
 })
 
 // FROZEN BOOT LOG (P0-2): deploy.sh greps `grep -qF "Socket server running on

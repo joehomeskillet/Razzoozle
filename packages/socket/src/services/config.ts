@@ -54,6 +54,11 @@ import {
   themeTemplateValidator,
   themeValidator,
 } from "@razzoozle/common/validators/theme"
+import {
+  pluginManifestValidator,
+  type InstalledPlugin,
+  type PluginManifest,
+} from "@razzoozle/common/validators/plugin"
 import { hasKey } from "@razzoozle/socket/services/ai-secrets"
 import { gameResultValidator } from "@razzoozle/socket/services/validators"
 import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
@@ -467,6 +472,19 @@ export const initConfig = () => {
   // its default threshold (see mergeAchievementsConfig).
   if (!fs.existsSync(getPath("achievements.json"))) {
     fs.writeFileSync(getPath("achievements.json"), JSON.stringify({}, null, 2))
+  }
+
+  // Installed-plugins store. config/plugins/index.json is the InstalledPlugin[]
+  // registry; each plugin's extracted files live under config/plugins/<id>/.
+  // Mirrors the quizz/theme-templates dir bootstrap.
+  const pluginsDir = getPath("plugins")
+
+  if (!fs.existsSync(pluginsDir)) {
+    fs.mkdirSync(pluginsDir, { recursive: true })
+  }
+
+  if (!fs.existsSync(getPath("plugins/index.json"))) {
+    fs.writeFileSync(getPath("plugins/index.json"), JSON.stringify([], null, 2))
   }
 
   // Seed the baked-in Razzoozle brand presets + assets last (the dirs above —
@@ -2009,6 +2027,390 @@ export const resetSkeleton = (): Theme => {
 
   return setTheme({ ...DEFAULT_THEME })
 }
+
+// ---- Plugin system: storage + ZIP pipeline (WP2) --------------------------
+// Mirrors the skeleton ZIP+storage pipeline (buildSkeletonZip / importSkeletonZip
+// + the theme-revisions ring), scoped to INSTALL/REMOVE/LIST/extract only. WP2
+// NEVER executes plugin code (no require of server.js, no handler/route binding)
+// — that is WP3. Install just stores+extracts+tracks.
+//
+// On-disk layout:
+//   config/plugins/index.json          InstalledPlugin[] registry (single file)
+//   config/plugins/plugin-revisions.json   index.json snapshot ring (newest-first)
+//   config/plugins/<id>/plugin.json     the validated manifest
+//   config/plugins/<id>/ui.js           client UI bundle (manifest.hooks.client)
+//   config/plugins/<id>/server.js       optional server hook (stored, NOT run)
+//   config/plugins/<id>/assets/**       arbitrary plugin assets (ext-allowlisted)
+
+const PLUGIN_REVISIONS_MAX = THEME_REVISIONS_MAX
+// Plugin ZIPs additionally carry code (js) + the manifest (json) on top of the
+// skeleton media exts; reuse the skeleton allowlist and extend it.
+const PLUGIN_ASSET_EXT = new Set([
+  ...SKELETON_ASSET_EXT,
+  "js",
+  "mjs",
+  "cjs",
+  "json",
+  "css",
+  "html",
+  "ttf",
+  "woff",
+  "gif",
+])
+
+const pluginsRoot = (): string => getPath("plugins")
+const pluginDir = (id: string): string => getPath(`plugins/${id}`)
+const pluginIndexFile = (): string => getPath("plugins/index.json")
+const pluginRevisionsFile = (): string => getPath("plugins/plugin-revisions.json")
+
+const installedPluginValidator = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  enabled: z.boolean(),
+  capabilities: z.array(z.string()).default([]),
+  config: z.record(z.string(), z.unknown()).optional(),
+})
+
+// Read config/plugins/index.json → InstalledPlugin[]. safeParse-with-fallback []
+// (mirrors getGameConfig / getThemeRevisions): a missing or malformed file yields
+// an empty list so the server never crashes on a corrupt registry.
+export const readPlugins = (): InstalledPlugin[] => {
+  const file = pluginIndexFile()
+
+  if (!fs.existsSync(file)) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf-8")) as unknown
+    const arr = Array.isArray(parsed) ? parsed : []
+
+    return arr.flatMap((entry) => {
+      const result = installedPluginValidator.safeParse(entry)
+
+      if (!result.success) {
+        console.warn("Invalid installed-plugin entry:", result.error.issues)
+
+        return []
+      }
+
+      return [result.data as InstalledPlugin]
+    })
+  } catch (error) {
+    console.error("Failed to read plugins index:", error)
+
+    return []
+  }
+}
+
+export const writePlugins = (plugins: InstalledPlugin[]): void => {
+  ensureDir(pluginsRoot())
+  fs.writeFileSync(pluginIndexFile(), JSON.stringify(plugins, null, 2))
+}
+
+// Snapshot the current index.json into a rolling ring (newest-first, capped),
+// before any mutation — cloned from saveThemeRevision / the theme-revisions ring.
+const savePluginRevision = (): void => {
+  const record = {
+    id: `rev-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    plugins: readPlugins(),
+  }
+
+  let prior: unknown[] = []
+  const file = pluginRevisionsFile()
+
+  if (fs.existsSync(file)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, "utf-8")) as unknown
+      prior = Array.isArray(parsed) ? parsed : []
+    } catch {
+      prior = []
+    }
+  }
+
+  const next = [record, ...prior].slice(0, PLUGIN_REVISIONS_MAX)
+  ensureDir(pluginsRoot())
+  fs.writeFileSync(file, JSON.stringify(next, null, 2))
+}
+
+// Pack config/plugins/<id>/ into a ZIP: plugin.json + ui.js + optional server.js
+// + assets/**. Clone of buildSkeletonZip's addAsset/walk pattern.
+export const buildPluginZip = async (id: string): Promise<Buffer> => {
+  assertSafeId(id)
+
+  const dir = pluginDir(id)
+
+  if (!fs.existsSync(dir)) {
+    throw new Error("errors:plugin.notFound")
+  }
+
+  const zip = new JSZip()
+
+  // Recursively add every file under <dir>, keyed by its path relative to <dir>
+  // (so plugin.json / ui.js / server.js / assets/** keep their layout). Entry +
+  // size caps mirror the skeleton import side.
+  const addDir = (abs: string): void => {
+    for (const name of fs.readdirSync(abs)) {
+      const child = resolve(abs, name)
+      const stat = fs.lstatSync(child)
+
+      if (stat.isDirectory()) {
+        addDir(child)
+
+        continue
+      }
+
+      // lstatSync + isFile() skips symlinks (and any non-regular file) so a
+      // symlink under config/plugins/<id>/ can never be packed out of dir.
+      if (!stat.isFile()) {
+        continue
+      }
+
+      const rel = relative(dir, child).split("\\").join("/")
+      zip.file(rel, fs.readFileSync(child))
+    }
+  }
+
+  addDir(dir)
+
+  return (await zip.generateAsync({ type: "nodebuffer" })) as Buffer
+}
+
+// Parse + validate a plugin ZIP, then extract it to config/plugins/<id>/ and
+// upsert the index. Clone of importSkeletonZip (same JSZip load, entry/size caps,
+// per-entry ext + path-traversal guards). Rejects id collisions and unsafe ids.
+export const importPluginZip = async (
+  buf: Buffer,
+): Promise<InstalledPlugin> => {
+  const zip = await JSZip.loadAsync(buf)
+  const entries = Object.values(zip.files)
+
+  if (entries.length > SKELETON_ENTRY_MAX) {
+    throw new Error("errors:plugin.tooManyEntries")
+  }
+
+  const buffers = new Map<string, Buffer>()
+  let totalBytes = 0
+
+  for (const entry of entries) {
+    if (entry.dir) {
+      continue
+    }
+
+    const entryBuffer = await entry.async("nodebuffer")
+    totalBytes += entryBuffer.byteLength
+
+    if (totalBytes > SKELETON_TOTAL_MAX_BYTES) {
+      throw new Error("errors:plugin.tooLarge")
+    }
+
+    if (entryBuffer.byteLength > SKELETON_ASSET_MAX_BYTES) {
+      throw new Error("errors:plugin.assetTooLarge")
+    }
+
+    buffers.set(entry.name, entryBuffer)
+  }
+
+  const manifestRaw = buffers.get("plugin.json")
+
+  if (!manifestRaw) {
+    throw new Error("errors:plugin.missingManifest")
+  }
+
+  const parsedJson = JSON.parse(manifestRaw.toString("utf-8")) as unknown
+  const manifest: PluginManifest = pluginManifestValidator.parse(parsedJson)
+
+  // Filesystem guard on the id BEFORE any path use (the wire validator already
+  // shape-checked it, this is the on-disk re-assertion).
+  assertSafeId(manifest.id)
+
+  if (readPlugins().some((p) => p.id === manifest.id)) {
+    throw new Error("errors:plugin.idCollision")
+  }
+
+  const dir = pluginDir(manifest.id)
+  ensureDir(dir)
+
+  for (const entry of entries) {
+    if (entry.dir) {
+      continue
+    }
+
+    const content = buffers.get(entry.name)
+
+    if (!content) {
+      continue
+    }
+
+    // Reject any traversal/absolute/odd path before joining it under <dir>.
+    const rel = entry.name
+    if (
+      rel.startsWith("/") ||
+      rel.startsWith("\\") ||
+      rel.includes("..") ||
+      rel.includes("\0")
+    ) {
+      continue
+    }
+
+    const ext = extname(rel).slice(1).toLowerCase()
+
+    if (!PLUGIN_ASSET_EXT.has(ext)) {
+      continue
+    }
+
+    const dest = resolve(dir, rel)
+
+    // Defence-in-depth: the resolved path must stay inside <dir>.
+    if (dest !== dir && !dest.startsWith(dir + "/")) {
+      continue
+    }
+
+    ensureDir(resolve(dest, ".."))
+    fs.writeFileSync(dest, content)
+  }
+
+  savePluginRevision()
+
+  const record: InstalledPlugin = {
+    id: manifest.id,
+    name: manifest.name,
+    version: manifest.version,
+    enabled: true,
+    capabilities: manifest.capabilities,
+    config: manifest.config,
+  }
+
+  writePlugins([...readPlugins(), record])
+
+  return record
+}
+
+// Remove config/plugins/<id>/ and its index entry. Snapshots first.
+export const removePlugin = (id: string): void => {
+  assertSafeId(id)
+  savePluginRevision()
+
+  const dir = pluginDir(id)
+
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+
+  writePlugins(readPlugins().filter((p) => p.id !== id))
+}
+
+// Merge a config bag into the index entry for <id>. Snapshots first.
+export const setPluginConfig = (
+  id: string,
+  config: Record<string, unknown>,
+): void => {
+  assertSafeId(id)
+  savePluginRevision()
+
+  writePlugins(
+    readPlugins().map((p) =>
+      p.id === id
+        ? { ...p, config: { ...(p.config ?? {}), ...config } }
+        : p,
+    ),
+  )
+}
+
+// Resolve a public "/plugins/<id>/<rest>" request to an on-disk file + its
+// content-type. Returns null on any unsafe path / missing file / disallowed ext,
+// so the HTTP layer can 404 uniformly. The node server serves these directly
+// (unlike /theme/ + /media/, which nginx serves from the config volume).
+const PLUGIN_MIME: Record<string, string> = {
+  js: "text/javascript; charset=utf-8",
+  mjs: "text/javascript; charset=utf-8",
+  cjs: "text/javascript; charset=utf-8",
+  json: "application/json; charset=utf-8",
+  css: "text/css; charset=utf-8",
+  html: "text/html; charset=utf-8",
+  svg: "image/svg+xml",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  woff2: "font/woff2",
+  woff: "font/woff",
+  ttf: "font/ttf",
+}
+
+export const resolvePluginAsset = (
+  id: string,
+  rest: string,
+): { buffer: Buffer; contentType: string } | null => {
+  try {
+    assertSafeId(id)
+  } catch {
+    return null
+  }
+
+  if (
+    !rest ||
+    rest.startsWith("/") ||
+    rest.includes("..") ||
+    rest.includes("\0")
+  ) {
+    return null
+  }
+
+  const ext = extname(rest).slice(1).toLowerCase()
+
+  if (!PLUGIN_ASSET_EXT.has(ext)) {
+    return null
+  }
+
+  const dir = pluginDir(id)
+  const dest = resolve(dir, rest)
+
+  if (dest !== dir && !dest.startsWith(dir + "/")) {
+    return null
+  }
+
+  // PUBLIC surface restriction: this route is unauthenticated, so only ever
+  // serve client-facing files — the manifest's client entry (default ui.js) or
+  // anything under assets/. Everything else at the plugin root (server.js,
+  // plugin.json, plugin-revisions.json, ...) is denied (404).
+  let clientEntry = "ui.js"
+
+  try {
+    const manifestRaw = fs.readFileSync(resolve(dir, "plugin.json"), "utf-8")
+    const parsed = JSON.parse(manifestRaw) as {
+      hooks?: { client?: unknown }
+    }
+
+    if (typeof parsed.hooks?.client === "string" && parsed.hooks.client) {
+      clientEntry = parsed.hooks.client
+    }
+  } catch {
+    clientEntry = "ui.js"
+  }
+
+  if (rest !== clientEntry && !rest.startsWith("assets/")) {
+    return null
+  }
+
+  // lstatSync (not statSync) so a symlink is never a regular file -> 404. A
+  // symlink under config/plugins/<id>/ can therefore never be served out of dir.
+  if (!fs.existsSync(dest) || !fs.lstatSync(dest).isFile()) {
+    return null
+  }
+
+  return {
+    buffer: fs.readFileSync(dest),
+    contentType: PLUGIN_MIME[ext] ?? "application/octet-stream",
+  }
+}
+
 
 // ---- Theme revisions (per-save version ring) ------------------------------
 // A single rolling config/theme-revisions.json array (newest-first), capped at

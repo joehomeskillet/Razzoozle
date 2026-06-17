@@ -27,11 +27,15 @@ import {
   getSubmissionById,
   getSubmissions,
   getTheme,
+  importPluginZip,
+  readPlugins,
+  removePlugin,
   saveBackgroundImage,
   saveSoundFile,
   saveCatalogEntry,
   saveSubmission,
   resetSkeleton,
+  setPluginConfig,
   setSkeletonAsset,
   setTheme,
   toPublicAISettings,
@@ -125,6 +129,84 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         )
       }
     }),
+  )
+
+  // ── Plugin system (WP2): install / remove / set-config ────────────────────
+  // All manager-auth-gated. INSTALL takes a base64 ZIP (mirrors UPLOAD_BACKGROUND
+  // shape) → importPluginZip stores+extracts (NO server.js execution — WP3). Each
+  // mutation broadcasts the fresh InstalledPlugin[] to every client and to the
+  // requester (socket.broadcast excludes the sender, so emit to self too).
+  const broadcastPlugins = (): void => {
+    const plugins = readPlugins()
+    socket.broadcast.emit(EVENTS.MANAGER.PLUGIN_CONFIG, plugins)
+    socket.emit(EVENTS.MANAGER.PLUGIN_CONFIG, plugins)
+  }
+
+  socket.on(
+    EVENTS.MANAGER.PLUGIN_INSTALL,
+    manager.withAuth(socket, (payload: { zipBase64?: string }) => {
+      void (async () => {
+        try {
+          if (typeof payload?.zipBase64 !== "string") {
+            throw new Error("errors:plugin.invalidPayload")
+          }
+
+          const buf = Buffer.from(payload.zipBase64, "base64")
+          await importPluginZip(buf)
+          broadcastPlugins()
+        } catch (error) {
+          socket.emit(
+            EVENTS.MANAGER.ERROR_MESSAGE,
+            error instanceof Error ? error.message : "errors:plugin.installFailed",
+          )
+        }
+      })()
+    }),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.PLUGIN_REMOVE,
+    manager.withAuth(socket, (payload: { id?: string }) => {
+      try {
+        if (typeof payload?.id !== "string") {
+          throw new Error("errors:plugin.invalidPayload")
+        }
+
+        removePlugin(payload.id)
+        broadcastPlugins()
+      } catch (error) {
+        socket.emit(
+          EVENTS.MANAGER.ERROR_MESSAGE,
+          error instanceof Error ? error.message : "errors:plugin.removeFailed",
+        )
+      }
+    }),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.PLUGIN_SET_CONFIG,
+    manager.withAuth(
+      socket,
+      (payload: { id?: string; config?: Record<string, unknown> }) => {
+        try {
+          if (
+            typeof payload?.id !== "string" ||
+            typeof payload?.config !== "object" ||
+            payload.config === null
+          ) {
+            throw new Error("errors:plugin.invalidPayload")
+          }
+
+          setPluginConfig(payload.id, payload.config)
+          broadcastPlugins()
+        } catch (error) {
+          socket.emit(
+            EVENTS.MANAGER.ERROR_MESSAGE,
+            error instanceof Error ? error.message : "errors:plugin.configFailed",
+          )
+        }
+      },
+    ),
   )
 
   socket.on(

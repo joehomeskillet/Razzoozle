@@ -11,6 +11,7 @@ import {
   getSubmissionsMeta,
   getThemeTemplatesMeta,
   isDevMode,
+  readPlugins,
 } from "@razzoozle/socket/services/config"
 
 const getClientId = (socket: SocketContext["socket"]) =>
@@ -27,6 +28,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     achievements: getMergedAchievements(),
     devMode: isDevMode(),
     devApiKey: devApiKey(),
+    plugins: readPlugins(),
   })
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi

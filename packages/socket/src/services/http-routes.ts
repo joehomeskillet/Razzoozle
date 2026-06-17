@@ -33,13 +33,17 @@ import manager from "@razzoozle/socket/services/manager"
 import {
   appendSoloResult,
   assertSafeId,
+  buildPluginZip,
   buildSkeletonZip,
   devApiKey,
   getMergedAchievements,
   getQuizzById,
   getSoloResults,
+  importPluginZip,
   importSkeletonZip,
   isDevMode,
+  readPlugins,
+  resolvePluginAsset,
 } from "@razzoozle/socket/services/config"
 import { createLogger, requestLogger } from "@razzoozle/socket/services/logger"
 import {
@@ -229,6 +233,16 @@ export const registerThemeBroadcaster = (
   fn: (theme: unknown) => void,
 ): void => {
   themeBroadcaster = fn
+}
+
+// Broadcast the installed-plugin list (InstalledPlugin[]) after an HTTP import.
+// Mirrors registerThemeBroadcaster: index.ts wires it to io.emit(PLUGIN_CONFIG).
+let pluginBroadcaster: ((plugins: unknown) => void) | null = null
+
+export const registerPluginBroadcaster = (
+  fn: (plugins: unknown) => void,
+): void => {
+  pluginBroadcaster = fn
 }
 
 // ── client-events token bucket (per clientId, NEVER per-IP) ─────────────────
@@ -517,6 +531,89 @@ const handleSkeletonImport = (
   })()
 }
 
+// POST /api/plugins/import — body = raw ZIP bytes. Manager-gated, mirrors
+// handleSkeletonImport. Stores+extracts only (NO server.js execution — WP3).
+const handlePluginImport = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
+  if (!authorizeManagerRequest(req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  void (async () => {
+    try {
+      const buf = await readRawBody(req, SKELETON_IMPORT_MAX)
+      const plugin = await importPluginZip(buf)
+      if (pluginBroadcaster) {
+        pluginBroadcaster(readPlugins())
+      }
+      jsonOk(res, { ok: true, plugin })
+    } catch (err) {
+      const status = statusFrom413(err, 400)
+      jsonError(res, status, err instanceof Error ? err.message : "error")
+    }
+  })()
+}
+
+// GET /api/plugins/:id/export — repack config/plugins/<id>/ as a ZIP. Manager-
+// gated, mirrors handleSkeletonExport.
+const handlePluginExport = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  if (!authorizeManagerRequest(req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  void (async () => {
+    try {
+      assertSafeId(id ?? "")
+      const buf = await buildPluginZip(id!)
+      res.writeHead(200, {
+        "content-type": "application/zip",
+        "content-disposition": `attachment; filename="plugin-${id}.zip"`,
+        "content-length": buf.byteLength,
+      })
+      res.end(buf)
+    } catch (err) {
+      jsonError(res, 400, err instanceof Error ? err.message : "error")
+    }
+  })()
+}
+
+// GET /plugins/:id/* — serve an installed plugin's static files (ui.js, assets)
+// directly from config/plugins/<id>/. PUBLIC (the client loads ui.js without a
+// manager session); resolvePluginAsset enforces assertSafeId + path-traversal +
+// ext-allowlist and returns null → 404 for anything else. No code is executed —
+// the file is streamed as bytes with a content-type by extension.
+const handlePluginAsset = (
+  _req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+  rest: string | undefined,
+): void => {
+  const resolved = resolvePluginAsset(id ?? "", rest ?? "")
+
+  if (!resolved) {
+    jsonError(res, 404, "not found")
+    return
+  }
+
+  // Long cache: an installed plugin's files are immutable for a given version
+  // (a re-import changes the id/version), mirroring how skeleton assets are
+  // served with versioned, cacheable URLs.
+  res.writeHead(200, {
+    "content-type": resolved.contentType,
+    "content-length": resolved.buffer.byteLength,
+    "cache-control": "public, max-age=31536000, immutable",
+  })
+  res.end(resolved.buffer)
+}
+
 // ── Route table (single source of truth) ────────────────────────────────────
 // Each entry carries a regex matcher with one optional capture group (the id),
 // the doc metadata, and the handler. `dev` routes are fail-closed.
@@ -528,6 +625,7 @@ interface Route extends RouteDoc {
     req: IncomingMessage,
     res: ServerResponse,
     id: string | undefined,
+    rest: string | undefined,
   ) => void
 }
 
@@ -597,6 +695,29 @@ export const routes: Route[] = [
       "Import a skeleton ZIP and apply it as the active theme (manager-gated).",
     match: /^\/api\/skeleton\/import$/,
     handle: (req, res) => handleSkeletonImport(req, res),
+  },
+  {
+    method: "POST",
+    path: "/api/plugins/import",
+    summary: "Install a plugin from a ZIP (manager-gated, stores+extracts only).",
+    match: /^\/api\/plugins\/import$/,
+    handle: (req, res) => handlePluginImport(req, res),
+  },
+  {
+    method: "GET",
+    path: "/api/plugins/:id/export",
+    summary: "Export an installed plugin's files as a ZIP (manager-gated).",
+    match: /^\/api\/plugins\/([^/]+)\/export$/,
+    handle: (req, res, id) => handlePluginExport(req, res, id),
+  },
+  {
+    method: "GET",
+    path: "/plugins/:id/:path",
+    summary: "Serve an installed plugin's static files (ui.js, assets) — public.",
+    // hidden: a wildcard static surface, not part of the JSON API contract.
+    hidden: true,
+    match: /^\/plugins\/([^/]+)\/(.+)$/,
+    handle: (req, res, id, rest) => handlePluginAsset(req, res, id, rest),
   },
   {
     method: "POST",
@@ -754,7 +875,7 @@ export const dispatchHttp = (
     }
 
     httpRequestsTotal.inc({ route: route.path, status: "200" })
-    route.handle(req, res, m[1])
+    route.handle(req, res, m[1], m[2])
     return true
   }
 
