@@ -62,6 +62,7 @@ import {
   renderSkeletonDoc,
   renderSkeletonJs,
 } from "@razzoozle/common/skeleton-doc"
+import { renderSkeletonDemo } from "@razzoozle/common/skeleton-demo"
 import { z } from "zod"
 import type {
   Submission,
@@ -141,11 +142,7 @@ const SKELETON_ASSET_EXT = new Set([
   "jpeg",
   "woff2",
 ])
-const SKELETON_BACKGROUND_SLOTS = [
-  "auth",
-  "managerGame",
-  "playerGame",
-] as const
+const SKELETON_BACKGROUND_SLOTS = ["auth", "managerGame", "playerGame"] as const
 
 const ensureDir = (dir: string): void => {
   if (!fs.existsSync(dir)) {
@@ -1813,6 +1810,13 @@ export const buildSkeletonZip = async (): Promise<Buffer> => {
   )
 
   zip.file("SKELETON.md", renderSkeletonDoc(theme))
+
+  // Themed + animated preview pages (phone-game / lobby / presentation) plus the
+  // animation stylesheet, so an LLM that receives the ZIP can open demo/*.html
+  // and visually test the theme it authored. Export-only (ignored on import).
+  for (const file of renderSkeletonDemo(theme)) {
+    zip.file(file.path, file.content)
+  }
 
   return (await zip.generateAsync({ type: "nodebuffer" })) as Buffer
 }
