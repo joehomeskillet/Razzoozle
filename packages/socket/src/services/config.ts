@@ -388,6 +388,104 @@ const seedBrandingAssets = (): void => {
   )
 }
 
+// Recursively copy <src> into <dest> (files only; symlinks/non-regular files are
+// skipped via lstat, mirroring buildPluginZip's addDir guard). Reuses ensureDir +
+// copyFileSync — no per-file overwrite guard because the only caller already
+// checks the destination plugin dir is absent (idempotent at the dir level).
+const copyDirRecursive = (src: string, dest: string): void => {
+  ensureDir(dest)
+
+  for (const name of fs.readdirSync(src)) {
+    const from = resolve(src, name)
+    const to = resolve(dest, name)
+    const stat = fs.lstatSync(from)
+
+    if (stat.isDirectory()) {
+      copyDirRecursive(from, to)
+
+      continue
+    }
+
+    if (stat.isFile()) {
+      fs.copyFileSync(from, to)
+    }
+  }
+}
+
+// Resolve the baked-in config-editor example bundle ROBUSTLY across dev + Docker
+// prod. Mirrors the getPath/getBrandingPath fallback style: try candidate roots
+// in order and return the first that contains a plugin.json. An optional
+// PLUGIN_EXAMPLES_PATH env override wins (same opt-in pattern as CONFIG_PATH /
+// BRANDING_PATH), so an operator — or the focused test — can point it at an
+// explicit bundle. Returns null when none exists (seeding is then skipped).
+const resolveExamplePluginDir = (): string | null => {
+  const override = process.env.PLUGIN_EXAMPLES_PATH
+
+  const candidates: (string | null)[] = [
+    // 1. Explicit env override (test fixture / operator-supplied).
+    override ? resolve(override) : null,
+    // 2. Dev: the socket process runs from packages/socket, so ../../examples
+    //    === source/examples (exactly like CONFIG_PATH's ../../config fallback).
+    resolve(process.cwd(), "../../examples/plugins/config-editor"),
+    // 3. Docker prod paths (baked example bundle).
+    "/app/src/examples/plugins/config-editor",
+    "/app/examples/plugins/config-editor",
+    // 4. cwd-rooted (vitest / repo-root invocations).
+    resolve(process.cwd(), "examples/plugins/config-editor"),
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate && fs.existsSync(resolve(candidate, "plugin.json"))) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
+// One-time, idempotent seeding of the first-party config-editor example plugin so
+// it appears PRE-INSTALLED in the manager Plugins tab on a fresh config volume.
+// Fully guarded: skips when the baked bundle is absent (silent, no crash) and
+// never clobbers an existing install (config/plugins/config-editor/ present =>
+// no-op), so a manager's edits survive a re-run. Mirrors importPluginZip's record
+// shape without running the ZIP pipeline (the files are copied straight in).
+const seedExamplePlugin = (): void => {
+  const id = "config-editor"
+  assertSafeId(id)
+
+  const dest = pluginDir(id)
+
+  // Idempotent at the dir level: an existing install (or user edits) is never
+  // touched, and the registry is left exactly as-is.
+  if (fs.existsSync(dest)) {
+    return
+  }
+
+  const src = resolveExamplePluginDir()
+
+  if (!src) {
+    return
+  }
+
+  copyDirRecursive(src, dest)
+
+  // Defence-in-depth on top of the dir check: skip if already registered.
+  if (readPlugins().some((p) => p.id === id)) {
+    return
+  }
+
+  const entry: InstalledPlugin = {
+    id,
+    name: "Config Editor",
+    version: "1.0.0",
+    enabled: true,
+    capabilities: ["MANAGER_TAB", "CONFIG"],
+    config: {},
+  }
+
+  writePlugins([...readPlugins(), entry])
+}
+
 export const initConfig = () => {
   const isConfigFolderExists = fs.existsSync(getPath())
 
@@ -486,6 +584,12 @@ export const initConfig = () => {
   if (!fs.existsSync(getPath("plugins/index.json"))) {
     fs.writeFileSync(getPath("plugins/index.json"), JSON.stringify([], null, 2))
   }
+
+  // Pre-install the first-party config-editor example plugin so it shows up in
+  // the manager Plugins tab out of the box. Idempotent + crash-safe: skips when
+  // the baked bundle is absent and never clobbers an existing install (see
+  // seedExamplePlugin). Runs after the plugins dir + index.json exist above.
+  seedExamplePlugin()
 
   // Seed the baked-in Razzoozle brand presets + assets last (the dirs above —
   // theme-templates, media/backgrounds, theme — now exist). Fully idempotent:

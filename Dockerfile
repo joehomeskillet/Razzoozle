@@ -51,6 +51,13 @@ COPY docker/comfy-img2img-workflow.json /app/comfy-img2img-workflow.json
 # target into config/ (idempotent — never overwrites user data).
 COPY --from=builder /app/branding /app/branding
 
+# First-party example plugin bundle (config-editor). Baked in so seedExamplePlugin
+# can pre-install it into a fresh config volume on boot with no host-filesystem
+# dependency. resolveExamplePluginDir finds it at /app/examples/plugins/config-editor
+# (one of its Docker-prod candidate paths); without this COPY the runner stage —
+# which never runs `COPY . .` — has no examples/ and seeding silently skips.
+COPY --from=builder /app/examples /app/examples
+
 # Health check the FULL chain: nginx (3000) proxying to the socket /healthz
 # (3001). If either is down the container is marked unhealthy. busybox wget.
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
