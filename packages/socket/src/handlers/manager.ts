@@ -29,6 +29,7 @@ import {
   saveBackgroundImage,
   saveCatalogEntry,
   saveSubmission,
+  resetSkeleton,
   setSkeletonAsset,
   setTheme,
   toPublicAISettings,
@@ -105,6 +106,23 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         }
       },
     ),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.RESET_SKELETON,
+    manager.withAuth(socket, () => {
+      try {
+        const theme = resetSkeleton()
+        socket.broadcast.emit(EVENTS.MANAGER.THEME, theme)
+        socket.emit(EVENTS.MANAGER.THEME, theme)
+        socket.emit(EVENTS.MANAGER.RESET_SKELETON_SUCCESS)
+      } catch (error) {
+        socket.emit(
+          EVENTS.MANAGER.THEME_ERROR,
+          error instanceof Error ? error.message : "errors:theme.saveFailed",
+        )
+      }
+    }),
   )
 
   socket.on(
@@ -206,7 +224,10 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     try {
       saveSubmission(submission)
     } catch {
-      socket.emit(EVENTS.MANAGER.SUBMISSION_ERROR, "errors:submission.saveFailed")
+      socket.emit(
+        EVENTS.MANAGER.SUBMISSION_ERROR,
+        "errors:submission.saveFailed",
+      )
 
       return
     }
@@ -224,7 +245,10 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         .safeParse(payload)
 
       if (!parsed.success) {
-        socket.emit(EVENTS.MANAGER.IMAGE_ERROR, "errors:submission.promptInvalid")
+        socket.emit(
+          EVENTS.MANAGER.IMAGE_ERROR,
+          "errors:submission.promptInvalid",
+        )
 
         return
       }
@@ -278,7 +302,9 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
       } catch (error) {
         socket.emit(
           EVENTS.MANAGER.IMAGE_ERROR,
-          error instanceof Error ? error.message : "errors:submission.imageGenFailed",
+          error instanceof Error
+            ? error.message
+            : "errors:submission.imageGenFailed",
         )
       }
     })()
@@ -350,7 +376,9 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
       } catch (error) {
         socket.emit(
           EVENTS.MANAGER.SUBMISSION_ERROR,
-          error instanceof Error ? error.message : "errors:submission.saveFailed",
+          error instanceof Error
+            ? error.message
+            : "errors:submission.saveFailed",
         )
       }
     }),

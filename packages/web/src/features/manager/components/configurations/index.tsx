@@ -13,7 +13,6 @@ import ConfigManageQuizz from "@razzoozle/web/features/manager/components/config
 import ConfigMedia from "@razzoozle/web/features/manager/components/configurations/ConfigMedia"
 import ConfigResults from "@razzoozle/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
-import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
@@ -35,7 +34,6 @@ import {
   ListChecks,
   LogOut,
   Monitor,
-  Package,
   Palette,
   Play,
   Radio,
@@ -117,12 +115,6 @@ const tabs: TabDef[] = [
     nameKey: "manager:tabs.design",
     icon: Palette,
     component: ConfigTheme,
-  },
-  {
-    key: "skeleton",
-    nameKey: "manager:tabs.skeleton",
-    icon: Package,
-    component: ConfigSkeleton,
   },
   {
     key: "satellite",

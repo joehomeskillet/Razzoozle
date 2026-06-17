@@ -76,6 +76,10 @@ export const EVENTS = {
     // and broadcasts MANAGER.THEME; errors reuse THEME_ERROR.
     SET_SKELETON_ASSET: "manager:setSkeletonAsset",
     SET_SKELETON_ASSET_SUCCESS: "manager:setSkeletonAssetSuccess",
+    // Reset the look to the bundled default (discards the active theme + custom
+    // skeleton CSS/JS; snapshots the prior theme to the revision ring first).
+    RESET_SKELETON: "manager:resetSkeleton",
+    RESET_SKELETON_SUCCESS: "manager:resetSkeletonSuccess",
     // Public question submission (client -> server, no auth)
     SUBMIT_QUESTION: "manager:submitQuestion",
     // Admin submission moderation (client -> server, auth-gated)

@@ -23,3 +23,24 @@
     #1f2937 12%
   );
 }
+
+/*
+ * Admin-console insulation: the console shell (ConsoleShell.tsx carries the
+ * `console-shell` class) PINS the brand tokens to the fixed Razzoozle defaults,
+ * overriding the runtime-themed values that apply.ts sets on <html>. CSS custom
+ * properties resolve to the nearest ancestor declaration, so everything inside
+ * the console subtree uses these fixed values — an uploaded skeleton/theme
+ * recolors the game but never the admin interface. The accent-tint/contrast are
+ * re-derived from the pinned primary so the console's warm accents stay stable.
+ */
+.console-shell {
+  --color-primary: #7c3aed;
+  --color-secondary: #2e1065;
+  --color-accent: #ff9900;
+  --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
+  --accent-contrast: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-primary), black 34%),
+    #1f2937 12%
+  );
+}

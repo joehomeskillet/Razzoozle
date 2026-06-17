@@ -1970,6 +1970,21 @@ export const setSkeletonAsset = (
   return setTheme(theme)
 }
 
+// Factory-reset the look: discard the active theme + any custom skeleton CSS/JS
+// and re-persist the bundled DEFAULT_THEME. setTheme snapshots the prior theme to
+// the revision ring first, so a reset stays undoable. Backs the manager's
+// "reset to standard" action.
+export const resetSkeleton = (): Theme => {
+  for (const name of ["skeleton.css", "skeleton.js"]) {
+    const file = getPath(`theme/${name}`)
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file)
+    }
+  }
+
+  return setTheme({ ...DEFAULT_THEME })
+}
+
 // ---- Theme revisions (per-save version ring) ------------------------------
 // A single rolling config/theme-revisions.json array (newest-first), capped at
 // THEME_REVISIONS_MAX. Each prior theme is snapshotted before an admin SET_THEME

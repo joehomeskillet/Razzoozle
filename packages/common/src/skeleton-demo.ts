@@ -813,6 +813,132 @@ ${leaderRows}
   return htmlShell(theme, "Razzoozle — Präsentation", pageStyle, body)
 }
 
+// admin.html — the manager console. Deliberately uses FIXED colors (the real
+// console palette), NOT the theme tokens and NOT ../theme.css: the admin UI is
+// theme-INDEPENDENT — an uploaded skeleton must never restyle it (the live
+// console pins these via .console-shell in console/tokens.css). This page shows
+// that fixed look so an LLM knows the admin interface is off-limits for theming.
+function adminHtml(): string {
+  return `<!doctype html>
+<html lang="de" data-reduced="false">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Razzoozle — Admin (Konsole)</title>
+<style>
+  :root {
+    --brand: #7c3aed; --brand-tint: #ece7fb; --brand-deep: #4c1d95;
+    --ink: #111827; --text: #374151; --muted: #6b7280;
+    --panel: #ffffff; --app: #f9fafb; --line: #e5e7eb;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--app); color: var(--text); }
+  .notice {
+    display: flex; gap: .5rem; align-items: center; justify-content: center;
+    background: var(--brand-tint); color: var(--brand-deep);
+    font-size: .85rem; font-weight: 600; padding: .55rem 1rem; text-align: center;
+  }
+  .shell {
+    margin: .75rem; background: var(--app); border-radius: 1rem; overflow: hidden;
+    box-shadow: 0 10px 30px rgb(17 24 39 / .12); border: 1px solid var(--line);
+    animation: rise .32s cubic-bezier(.16,1,.3,1) both;
+  }
+  .head {
+    display: flex; align-items: center; gap: 1rem;
+    padding: .85rem 1.25rem; border-bottom: 1px solid var(--line);
+    background: linear-gradient(90deg, var(--brand-tint), var(--panel));
+  }
+  .wordmark { font-weight: 800; color: var(--brand); font-size: 1.15rem; }
+  .head .sep { width: 1px; height: 1.25rem; background: var(--line); }
+  .head h1 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--text); }
+  .head .actions { margin-left: auto; display: flex; gap: .5rem; }
+  .btn {
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    border-radius: .55rem; padding: .5rem .85rem; font-size: .85rem; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: .4rem;
+  }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .body { display: flex; min-height: 540px; }
+  .nav { width: 220px; border-right: 1px solid var(--line); padding: .75rem; background: var(--panel); }
+  .nav a {
+    display: block; padding: .5rem .7rem; border-radius: .55rem; color: var(--text);
+    text-decoration: none; font-size: .9rem; font-weight: 500; margin-bottom: .15rem;
+  }
+  .nav a.active { background: var(--brand-tint); color: var(--brand-deep); font-weight: 700; }
+  .main { flex: 1; padding: 1.5rem 1.75rem; background: var(--app); }
+  .main h2 { margin: 0 0 .35rem; color: var(--ink); }
+  .main p.sub { margin: 0 0 1.25rem; color: var(--muted); font-size: .9rem; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: .85rem; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
+  .card h3 { margin: 0 0 .9rem; font-size: .95rem; color: var(--ink); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+  .swatch { display: flex; align-items: center; gap: .6rem; font-size: .85rem; }
+  .chip { width: 28px; height: 28px; border-radius: .5rem; border: 1px solid rgb(17 24 39 / .12); flex: none; }
+  .swatch .hex { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .shell { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="notice">🔒 Admin-Oberfläche — vom Skeleton NICHT verändert (theme-independent)</div>
+  <div class="shell">
+    <header class="head">
+      <span class="wordmark">Razzoozle</span>
+      <span class="sep"></span>
+      <h1>Konfiguration</h1>
+      <div class="actions">
+        <button class="btn">Vorschau</button>
+        <button class="btn primary">Spiel starten</button>
+      </div>
+    </header>
+    <div class="body">
+      <nav class="nav">
+        <a>Spiel</a>
+        <a>Quizze</a>
+        <a>Spielmodus</a>
+        <a>Katalog</a>
+        <a>Medien</a>
+        <a>KI</a>
+        <a>Trophäen</a>
+        <a>Ergebnisse</a>
+        <a class="active">Design</a>
+        <a>Anzeige</a>
+        <a>Einsendungen</a>
+      </nav>
+      <main class="main">
+        <h2>Design</h2>
+        <p class="sub">Farben, Stil und das Skeleton — alles an einem Ort. Die Konsole selbst bleibt unverändert.</p>
+        <div class="card">
+          <h3>Theme-Farben</h3>
+          <div class="swatches">
+            <div class="swatch"><span class="chip" style="background:#7c3aed"></span> Primär <span class="hex">#7C3AED</span></div>
+            <div class="swatch"><span class="chip" style="background:#ff9900"></span> Akzent <span class="hex">#FF9900</span></div>
+            <div class="swatch"><span class="chip" style="background:#ef4444"></span> Team Rot <span class="hex">#EF4444</span></div>
+            <div class="swatch"><span class="chip" style="background:#3b82f6"></span> Team Blau <span class="hex">#3B82F6</span></div>
+            <div class="swatch"><span class="chip" style="background:#22c55e"></span> Team Grün <span class="hex">#22C55E</span></div>
+            <div class="swatch"><span class="chip" style="background:#facc15"></span> Team Gelb <span class="hex">#FACC15</span></div>
+            <div class="swatch"><span class="chip" style="background:#eab308"></span> Tier Gold <span class="hex">#EAB308</span></div>
+            <div class="swatch"><span class="chip" style="background:#9ca3af"></span> Tier Silber <span class="hex">#9CA3AF</span></div>
+            <div class="swatch"><span class="chip" style="background:#b45309"></span> Tier Bronze <span class="hex">#B45309</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Skeleton</h3>
+          <div class="row">
+            <button class="btn primary">Skeleton herunterladen</button>
+            <button class="btn">Skeleton hochladen (ZIP)</button>
+            <button class="btn">Auf Standard zurücksetzen</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
+`
+}
+
 // ===========================================================================
 // Public API.
 // ===========================================================================
@@ -824,5 +950,6 @@ export function renderSkeletonDemo(
     { path: "demo/phone-game.html", content: phoneGameHtml(theme) },
     { path: "demo/lobby.html", content: lobbyHtml(theme) },
     { path: "demo/presentation.html", content: presentationHtml(theme) },
+    { path: "demo/admin.html", content: adminHtml() },
   ]
 }

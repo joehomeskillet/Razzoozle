@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import {
   getClientId,
@@ -14,6 +15,7 @@ import {
   Code2,
   Download,
   FileCode,
+  RotateCcw,
   Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -52,6 +54,7 @@ const ConfigSkeleton = () => {
   const savingKindRef = useRef<"css" | "js" | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   // Prefill the editors from the live, nginx-served files. A 404 (no skeleton
   // uploaded yet) leaves the textarea empty rather than erroring.
@@ -96,7 +99,19 @@ const ConfigSkeleton = () => {
     )
   })
 
+  useEvent(EVENTS.MANAGER.RESET_SKELETON_SUCCESS, () => {
+    setResetting(false)
+    setCssDraft("")
+    setJsDraft("")
+    toast.success(
+      t("manager:skeleton.toast.reset", {
+        defaultValue: "Auf Standard zurückgesetzt",
+      }),
+    )
+  })
+
   useEvent(EVENTS.MANAGER.THEME_ERROR, (message) => {
+    setResetting(false)
     if (savingKindRef.current) {
       savingKindRef.current = null
       setSavingKind(null)
@@ -233,12 +248,19 @@ const ConfigSkeleton = () => {
     socket.emit(EVENTS.MANAGER.SET_SKELETON_ASSET, { kind, content })
   }
 
+  const handleReset = () => {
+    setResetting(true)
+    socket.emit(EVENTS.MANAGER.RESET_SKELETON)
+  }
+
   return (
     <motion.div
       className="flex flex-1 flex-col"
       initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }}
+      transition={
+        reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+      }
     >
       <div className="flex flex-col gap-6 pb-6">
         {/* ── Import / Export ──────────────────────────────────────── */}
@@ -277,6 +299,32 @@ const ConfigSkeleton = () => {
                   defaultValue: "Skeleton hochladen (ZIP)",
                 })}
               </Button>
+
+              <AlertDialog
+                trigger={
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    disabled={resetting}
+                  >
+                    <RotateCcw className="size-4" aria-hidden />
+                    {t("manager:skeleton.transfer.reset", {
+                      defaultValue: "Auf Standard zurücksetzen",
+                    })}
+                  </Button>
+                }
+                title={t("manager:skeleton.reset.title", {
+                  defaultValue: "Auf Standard zurücksetzen?",
+                })}
+                description={t("manager:skeleton.reset.confirm", {
+                  defaultValue:
+                    "Aktuelles Theme, CSS und JS werden verworfen und das Standard-Design wiederhergestellt.",
+                })}
+                confirmLabel={t("manager:skeleton.reset.confirmLabel", {
+                  defaultValue: "Zurücksetzen",
+                })}
+                onConfirm={handleReset}
+              />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -320,7 +368,9 @@ const ConfigSkeleton = () => {
               onClick={handleSaveAsset("css")}
               disabled={savingKind === "css"}
             >
-              {t("manager:skeleton.css.save", { defaultValue: "CSS speichern" })}
+              {t("manager:skeleton.css.save", {
+                defaultValue: "CSS speichern",
+              })}
             </Button>
           </div>
         </SectionCard>
