@@ -268,7 +268,7 @@ const PodiumStickerButton = ({
         type="button"
         onClick={handleClick}
         disabled={isExporting}
-        className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none disabled:opacity-60"
+        className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[var(--border-hairline)] bg-white px-3 py-1.5 text-sm font-semibold text-[color:var(--color-field-ink)] shadow-sm transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]/60 focus-visible:outline-none disabled:opacity-60"
       >
         <Share2 className="size-4" aria-hidden />
         {label}

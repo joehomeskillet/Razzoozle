@@ -72,13 +72,13 @@ const SoloShell = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black"
+                className="flex min-h-11 items-center rounded-lg border border-[var(--border-hairline)] bg-white px-4 text-lg font-bold text-[color:var(--color-field-ink)] shadow-sm"
               >
                 {`${questionCurrent} / ${questionTotal}`}
               </motion.div>
             )}
           </div>
-          <div className="shrink-0 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
+          <div className="shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
             Solo
           </div>
         </div>
@@ -104,11 +104,11 @@ const SoloShell = ({
         </div>
 
         {/* Bottom bar: player name + (optional next action) + points */}
-        <div className="z-50 flex items-center justify-between gap-3 bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
+        <div className="z-50 flex items-center justify-between gap-3 border-t border-[var(--border-hairline)] bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-[color:var(--color-field-ink)]">
           <p className="min-w-0 truncate text-gray-800">{playerName}</p>
           <div className="flex shrink-0 items-center gap-3">
             {footerAction}
-            <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
+            <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums text-white">
               {totalPoints}
             </div>
           </div>
@@ -221,12 +221,14 @@ const FinishedScreen = ({
           <p className="mt-2 text-2xl font-bold text-[color:var(--color-field-ink)]/80">
             {t("game:solo.yourScore")}
           </p>
-          <div className="mt-3 inline-block rounded-2xl bg-black/40 px-8 py-3">
+          <div className="mt-3 inline-block rounded-2xl border border-[var(--border-hairline)] bg-white px-8 py-3 shadow-sm">
             <AnimatedPoints
               to={totalPoints}
-              className="text-6xl font-black tabular-nums text-yellow-300 drop-shadow-[0_2px_8px_rgba(250,204,21,0.5)]"
+              className="text-6xl font-black tabular-nums text-yellow-500 drop-shadow-[0_2px_8px_rgba(250,204,21,0.35)]"
             />
-            <span className="ml-2 text-lg text-white/60">pts</span>
+            <span className="ml-2 text-lg text-[color:var(--color-field-ink)]/60">
+              pts
+            </span>
           </div>
         </motion.div>
 

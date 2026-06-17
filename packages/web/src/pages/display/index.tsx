@@ -98,7 +98,7 @@ const DisplayRegisterPage = () => {
         onClick={toggleFullscreen}
         title={t("display:fullscreen", { defaultValue: "Vollbild" })}
         aria-label={t("display:fullscreen", { defaultValue: "Vollbild" })}
-        className="fixed top-[2vh] right-[2vh] z-50 rounded-md bg-white/10 p-[1.4vh] text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        className="fixed top-[2vh] right-[2vh] z-50 rounded-md bg-[color:var(--color-field-ink)]/5 p-[1.4vh] text-[color:var(--color-field-ink)]/60 ring-1 ring-[var(--border-hairline)] transition-colors hover:bg-[color:var(--color-field-ink)]/10 hover:text-[color:var(--color-field-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-field-ink)]"
       >
         <Maximize className="h-[3vh] w-[3vh]" />
       </button>

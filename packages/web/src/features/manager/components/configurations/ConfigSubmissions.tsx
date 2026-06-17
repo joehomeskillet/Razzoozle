@@ -502,7 +502,7 @@ const ConfigSubmissions = () => {
               <span
                 className={clsx(
                   "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums",
-                  active ? "bg-black/15" : "bg-gray-200 text-gray-600",
+                  active ? "bg-[color:var(--color-field-ink)]/10 text-[color:var(--color-field-ink)]" : "bg-gray-200 text-gray-600",
                 )}
               >
                 {entry.count}

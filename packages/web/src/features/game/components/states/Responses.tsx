@@ -126,7 +126,7 @@ const Responses = ({
                         "flex items-center justify-between rounded-xl px-4 py-2",
                         isMatch
                           ? "bg-[var(--state-correct-soft)] text-green-100"
-                          : "bg-white/10 text-white/70",
+                          : "bg-white border border-[var(--border-hairline)] text-[color:var(--color-field-ink)]/70",
                       )}
                     >
                       <span className="font-semibold">{text}</span>

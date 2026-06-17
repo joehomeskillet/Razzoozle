@@ -56,22 +56,22 @@ const AutoAdvanceCountdown = ({ ms }: { ms: number | undefined }) => {
 
   return (
     <div className="pointer-events-none absolute top-4 left-1/2 z-30 -translate-x-1/2">
-      <div className="flex min-w-48 flex-col items-center gap-1 rounded-[var(--radius-theme)] bg-black/50 px-4 py-2 backdrop-blur-sm">
-        <span className="text-sm font-semibold text-white tabular-nums drop-shadow">
+      <div className="flex min-w-48 flex-col items-center gap-1 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-4 py-2 shadow-md">
+        <span className="text-sm font-semibold text-[color:var(--color-field-ink)] tabular-nums">
           {t("manager:auto.nextIn", {
             seconds,
             defaultValue: "Weiter in {{seconds}}s",
           })}
         </span>
         <div
-          className="h-1.5 w-full overflow-hidden rounded-full bg-white/20"
+          className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-field-ink)]/10"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(pct)}
         >
           <div
-            className="h-full rounded-full bg-white transition-[width] duration-100 ease-linear"
+            className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-100 ease-linear"
             style={{ width: `${pct}%` }}
           />
         </div>

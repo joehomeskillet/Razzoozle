@@ -411,7 +411,7 @@ const QuestionEditorMedia = () => {
             editing happens here.
           */}
           {canEditImage && (
-            <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-lg border border-gray-200 bg-white/70 p-3">
+            <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
               <Input
                 variant="sm"
                 className="w-full"

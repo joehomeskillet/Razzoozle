@@ -441,7 +441,7 @@ const Answers = ({
             aria-live="polite"
             className="mx-auto mb-2 flex w-full max-w-7xl items-center justify-center px-2 lg:max-w-[85vw]"
           >
-            <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-4 py-1 text-sm font-bold text-white shadow-lg">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1 text-sm font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm">
               {t("game:slider.submitted")}
             </span>
           </motion.div>
@@ -455,7 +455,7 @@ const Answers = ({
             <span className="text-sm">{t("game:hud.time")}</span>
             <CircularTimer seconds={cooldown} total={time} size={72} />
           </div>
-          <div className="flex flex-col items-center rounded-lg bg-black/40 px-4 text-lg font-bold text-white">
+          <div className="flex flex-col items-center rounded-lg bg-white px-4 text-lg font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm">
             <span className="translate-y-1 text-sm">
               {t("game:hud.answers")}
             </span>
@@ -482,7 +482,7 @@ const Answers = ({
               autoFocus
               autoComplete="off"
               autoCorrect="off"
-              className="w-full rounded-xl border-2 border-white/40 bg-white/20 px-5 py-4 text-xl font-semibold text-white placeholder-white/50 outline-none focus:border-white disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/40 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             />
             <button
               type="button"
@@ -545,7 +545,7 @@ const Answers = ({
               value={sliderValue}
               disabled={submitted}
               onChange={(e) => setSliderValue(Number(e.target.value))}
-              className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-white/40 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
+              className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--color-field-ink)]/5 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
             />
             <div className="flex w-full justify-between text-sm font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
               <span>

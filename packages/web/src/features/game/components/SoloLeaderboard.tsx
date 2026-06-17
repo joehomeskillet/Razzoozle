@@ -83,10 +83,10 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                 variants={reveal.item()}
                 transition={reveal.spring}
                 className={clsx(
-                  "flex items-center gap-3 rounded-xl px-4 py-3 text-white",
+                  "flex items-center gap-3 rounded-xl px-4 py-3 text-[color:var(--color-field-ink)]",
                   isMe
-                    ? "bg-white/25 ring-2 ring-white/80"
-                    : "bg-black/30",
+                    ? "bg-white ring-2 ring-[var(--color-accent)] shadow-sm"
+                    : "bg-white border border-[var(--border-hairline)] shadow-sm",
                 )}
                 aria-current={isMe ? "true" : undefined}
               >
@@ -96,7 +96,7 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                     "shrink-0 text-center font-bold",
                     isMedal
                       ? "flex size-8 items-center justify-center rounded-full bg-gradient-to-br text-base text-white shadow"
-                      : "w-8 text-xl text-white/60",
+                      : "w-8 text-xl text-[color:var(--color-field-ink)]/50",
                     isMedal && MEDAL_GRADIENT[i],
                   )}
                 >
@@ -111,16 +111,16 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                   <p className="truncate font-bold">
                     {entry.playerName}
                     {isMe && (
-                      <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
+                      <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-[color:var(--color-field-ink)]">
                         ★
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-white/60">{formatDate(entry.answeredAt)}</p>
+                  <p className="text-xs text-[color:var(--color-field-ink)]/50">{formatDate(entry.answeredAt)}</p>
                 </div>
 
                 {/* Score */}
-                <span className="shrink-0 rounded-lg bg-black/40 px-3 py-1 font-mono text-lg font-bold tabular-nums">
+                <span className="shrink-0 rounded-lg bg-[color:var(--color-field-ink)]/5 px-3 py-1 font-mono text-lg font-bold tabular-nums text-[color:var(--color-field-ink)]">
                   {entry.score}
                 </span>
               </motion.li>
