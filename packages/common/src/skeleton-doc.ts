@@ -44,6 +44,13 @@ export function renderSkeletonCss(theme: Theme): string {
     ["--answer-text", theme.answerTextColor],
     ["--radius-theme", `${theme.radius}px`],
     ["--bg-scrim", `${theme.scrim / 100}`],
+    // Flat / cream-field tokens (static — added by the cream redesign).
+    ["--surface", "#FFFFFF"],
+    ["--border-hairline", "#E2DDD2"],
+    ["--color-field-cream", "#F4F1EA"],
+    ["--color-field-ink", "#0E1120"],
+    ["--accent-contrast-text", "#0E1120"],
+    ["--game-fg", "#0E1120"],
     // Registry tokens (teams / tiers / state / rank / timer / misc).
     ...THEME_TOKENS.map((tok): [string, string] => {
       const value = getPath(theme, tok.path)
@@ -298,6 +305,26 @@ override anything. Useful selectors a skeleton can target:
   (prefer the \`--tier-*\`, \`--rank-*\` tokens so glows stay derived).
 
 Keep overrides scoped; \`!important\` is rarely needed since this sheet loads last.
+
+### Flat surfaces + single cream field
+
+The cream redesign adds these theme.css-overridable CSS vars. Override any of
+them in \`theme.css\` to retone the flat look:
+
+| CSS var | Controls |
+|---|---|
+| \`--color-field-cream\` | The single page background base (warm cream). The whole page background is one body gradient derived from this. |
+| \`--color-field-ink\` | Ink text color on the cream field. |
+| \`--surface\` | Flat card / panel fill (white). |
+| \`--border-hairline\` | 1px hairline on cards / answer tiles. |
+| \`--shadow-flat\` | Flat card shadow. |
+| \`--accent-contrast-text\` | Text / icon color placed on \`--color-accent\` fills. |
+| \`--game-fg\` | In-game foreground text color (ink on the cream play field). |
+
+> There is ONE page background: a warm cream radial gradient on \`<body>\`
+> derived from \`--color-field-cream\` (plus soft \`--color-primary\` /
+> \`--color-accent\` glows). Every surface is transparent — override
+> \`--color-field-cream\` in \`theme.css\` to retone the whole app background.
 
 ## 4. JS surface (\`theme.js\`) + ⚠️ SECURITY WARNING
 

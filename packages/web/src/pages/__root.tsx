@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import ErrorBoundary from "@razzoozle/web/components/ErrorBoundary"
 import ErrorPage from "@razzoozle/web/components/ErrorPage"
+import CreamBackdrop from "@razzoozle/web/components/CreamBackdrop"
 import NotFound from "@razzoozle/web/components/NotFound"
 import {
   SocketProvider,
@@ -47,6 +48,7 @@ const GameLayout = () => {
         Zum Inhalt springen
       </a>
       <main id="main" className="antialiased">
+        <CreamBackdrop />
         <Outlet />
       </main>
     </>

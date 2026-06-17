@@ -60,6 +60,15 @@ function rootVars(theme: Theme): string {
     `--surface-muted: ${theme.surfaceMuted};`,
     `--footer-bg: ${theme.footerColors.bg};`,
     `--footer-text: ${theme.footerColors.text};`,
+    ``,
+    `/* Flat surfaces + single cream field — override --color-field-cream to retone the whole page background */`,
+    `--surface: #FFFFFF;`,
+    `--border-hairline: #E2DDD2;`,
+    `--shadow-flat: 0 1px 2px rgba(20,18,43,.06), 0 8px 24px rgba(20,18,43,.07);`,
+    `--color-field-cream: #F4F1EA;`,
+    `--color-field-ink: #0E1120;`,
+    `--accent-contrast-text: #0E1120;`,
+    `--game-fg: #0E1120;`,
   ]
   return `  :root {\n${lines.map((l) => `    ${l}`).join("\n")}\n  }`
 }
