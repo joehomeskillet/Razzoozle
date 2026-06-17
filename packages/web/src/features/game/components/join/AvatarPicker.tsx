@@ -1,8 +1,4 @@
-import {
-  AVATARS_GENERIC,
-  AVATAR_MAX_BYTES,
-  EVENTS,
-} from "@razzoozle/common/constants"
+import { AVATAR_MAX_BYTES, EVENTS } from "@razzoozle/common/constants"
 import Avatar from "@razzoozle/web/components/Avatar"
 import Button from "@razzoozle/web/components/Button"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -13,7 +9,7 @@ import {
 } from "@razzoozle/web/features/game/utils/dicebear"
 import type { AvatarStyle } from "@razzoozle/web/features/game/utils/dicebear"
 import clsx from "clsx"
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -32,10 +28,9 @@ const makeSeed = (username: string, counter: number): string => {
 }
 
 // Lobby avatar picker: generate a DiceBear avatar (pick a style + re-roll a
-// seed), choose one of the 4 generic KI avatars, or upload an image (converted
-// to a size-capped data-URL). The selection is persisted to the player store
-// and broadcast to the server via PLAYER.SET_AVATAR so the host roster /
-// leaderboard / podium can render it.
+// seed) or upload an image (converted to a size-capped data-URL). The selection
+// is persisted to the player store and broadcast to the server via
+// PLAYER.SET_AVATAR so the host roster / leaderboard / podium can render it.
 const AvatarPicker = ({ onDone }: Props) => {
   const { socket } = useSocket()
   const { player, setAvatar } = usePlayerStore()
@@ -48,9 +43,25 @@ const AvatarPicker = ({ onDone }: Props) => {
   const rollCount = useRef(0)
   const { t } = useTranslation()
 
-  // Deterministic SVG data-URI for the current (style, seed) pair; recomputed
-  // only when style/seed change. Synchronous in @dicebear/core v10.
-  const generated = useMemo(() => generateAvatar(style, seed), [style, seed])
+  // SVG data-URI for the current (style, seed) pair. generateAvatar is async
+  // (the @dicebear libs are dynamically imported / code-split), so we recompute
+  // it in an effect when style/seed change. While it is undefined the preview
+  // falls back to the initials Avatar and the "use" actions are disabled.
+  const [generated, setGenerated] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    let cancelled = false
+
+    generateAvatar(style, seed).then((uri) => {
+      if (!cancelled) {
+        setGenerated(uri)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [style, seed])
 
   const choose = (value: string) => {
     setSelected(value)
@@ -119,7 +130,8 @@ const AvatarPicker = ({ onDone }: Props) => {
           type="button"
           aria-label={t("game:avatar.preview")}
           aria-pressed={selected === generated}
-          onClick={() => choose(generated)}
+          disabled={!generated}
+          onClick={() => generated && choose(generated)}
           className={clsx(
             "rounded-full transition",
             selected === generated
@@ -158,30 +170,15 @@ const AvatarPicker = ({ onDone }: Props) => {
           <Button variant="secondary" size="sm" onClick={reroll}>
             {t("game:avatar.reroll")}
           </Button>
-          <Button variant="primary" size="sm" onClick={() => choose(generated)}>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={!generated}
+            onClick={() => generated && choose(generated)}
+          >
             {t("game:avatar.useThis")}
           </Button>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        {AVATARS_GENERIC.map((url, index) => (
-          <button
-            key={url}
-            type="button"
-            aria-label={`${t("game:avatar.genericLabel")} ${index + 1}`}
-            aria-pressed={selected === url}
-            onClick={() => choose(url)}
-            className={clsx(
-              "rounded-full transition",
-              selected === url
-                ? "outline-3 outline-offset-2 outline-[var(--color-primary)]"
-                : "outline-2 outline-offset-2 outline-transparent hover:outline-gray-300",
-            )}
-          >
-            <Avatar src={url} name={username} size={64} />
-          </button>
-        ))}
       </div>
 
       <input

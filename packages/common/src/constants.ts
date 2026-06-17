@@ -250,14 +250,6 @@ export const DISPLAY_NAME_MAX_LEN = 40
 // WP-18 — theme revision ring size N (server cap + client UI hint share this).
 export const THEME_REVISIONS_MAX = 10
 
-// Generic KI-generated avatar set (committed/seeded, persistent under config/media/avatars/generic/).
-export const AVATARS_GENERIC = [
-  "/media/avatars/generic/generic-1.webp",
-  "/media/avatars/generic/generic-2.webp",
-  "/media/avatars/generic/generic-3.webp",
-  "/media/avatars/generic/generic-4.webp",
-] as const
-
 // Fixed team set for team mode (labels/colors are client-side).
 export const TEAMS = ["red", "blue", "green", "yellow"] as const
 export type Team = (typeof TEAMS)[number]

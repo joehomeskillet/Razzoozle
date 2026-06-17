@@ -1,7 +1,6 @@
 import {
   AVATAR_MAX_BYTES,
   AVATAR_SVG_MAX_CHARS,
-  AVATARS_GENERIC,
   EVENTS,
 } from "@razzoozle/common/constants"
 import type { Quizz } from "@razzoozle/common/types/game"
@@ -121,44 +120,6 @@ describe("player avatars", () => {
     }
 
     fs.rmSync(tmpDir, { recursive: true, force: true })
-  })
-
-  it("SET_AVATAR accepts a generic avatar, stores it and re-broadcasts player updates", async () => {
-    const { default: Game } = await import("@razzoozle/socket/services/game")
-    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
-    const { default: Registry } = await import("@razzoozle/socket/services/registry")
-
-    const managerSocket = makeFakeSocket("manager-sock", "manager-client")
-    const game = new Game(
-      fakeIo as unknown as Server,
-      managerSocket as unknown as Socket,
-      makeQuizz(),
-    )
-    Registry.getInstance().addGame(game)
-
-    const playerSocket = makeFakeSocket("player-sock", "player-client")
-    await game.join(playerSocket as unknown as Socket, "Alice")
-    gameSocketHandlers(ctxOf(playerSocket))
-
-    playerSocket.handlers.get(EVENTS.PLAYER.SET_AVATAR)!({
-      gameId: game.gameId,
-      avatar: AVATARS_GENERIC[0],
-    })
-    await vi.waitFor(() => {
-      expect(game.players[0]?.avatar).toBe(AVATARS_GENERIC[0])
-    })
-
-    expect(
-      ioEmitted.some(
-        (e) =>
-          e.target === "manager-sock" &&
-          e.event === EVENTS.MANAGER.NEW_PLAYER &&
-          (e.payload as { avatar?: string }).avatar === AVATARS_GENERIC[0],
-      ),
-    ).toBe(true)
-    expect(
-      ioEmitted.some((e) => e.event === EVENTS.PLAYER.UPDATE_LEADERBOARD),
-    ).toBe(true)
   })
 
   it("SET_AVATAR stores a data URL as an ephemeral per-game WebP URL", async () => {

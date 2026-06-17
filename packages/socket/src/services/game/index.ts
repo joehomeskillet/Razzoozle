@@ -1,5 +1,4 @@
 import {
-  AVATARS_GENERIC,
   AVATAR_SVG_MAX_CHARS,
   BOT,
   EVENTS,
@@ -462,10 +461,6 @@ class Game {
     }
 
     const value = result.data.avatar
-
-    if ((AVATARS_GENERIC as readonly string[]).includes(value)) {
-      return value
-    }
 
     // SVG data-URIs (our DiceBear-generated avatars) are tiny and render safely in
     // <img> with no script execution, so we store them verbatim — no WebP transcode

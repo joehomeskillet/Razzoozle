@@ -52,6 +52,11 @@ export default defineConfig({
         // online-first shell is the right tradeoff (offline play is impossible
         // anyway); the runtime cache still covers a brief static-side blip.
         globPatterns: ["**/*.{js,css,woff2,woff,svg,png,webp}"],
+        // The @dicebear avatar-gen chunk is large but loaded lazily on demand (only
+        // when the avatar UI mounts), so it must NOT be precached — otherwise that
+        // 3MB chunk blows the SW precache limit and fails the build. Exclude it; it
+        // is fetched at runtime when first needed.
+        globIgnores: ["**/dicebear-*.js"],
         // vite-plugin-pwa defaults navigateFallback to "index.html", which would
         // auto-register a cache-first NavigationRoute *before* (and thus shadow)
         // our NetworkFirst navigate route below. Null it out so the only handler
@@ -176,6 +181,12 @@ export default defineConfig({
             id.includes("/devlop/")
           ) {
             return "vendor-markdown"
+          }
+          // @dicebear/core + collection are heavy (~3MB) and dynamically imported
+          // (see features/game/utils/dicebear.ts), so route them to their OWN chunk
+          // — kept out of the eager "vendor" bundle and loaded lazily on demand.
+          if (id.includes("/@dicebear/")) {
+            return "dicebear"
           }
           return "vendor"
         },
