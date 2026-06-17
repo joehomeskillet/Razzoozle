@@ -85,6 +85,21 @@ export const themeValidator = z.object({
       text: hexColor.default("#1f2937"),
     })
     .default({ bg: "#ffffff", text: "#1f2937" }),
+  // Manager-tunable motion tokens — defaults mirror presets.ts SPRING (300/24)
+  // and scale 1.0 so an absent/old theme.json stays a visual no-op.
+  animation: z
+    .object({
+      springStiffness: z.number().min(50).max(1000).default(300),
+      springDamping: z.number().min(5).max(60).default(24),
+      durationScale: z.number().min(0.25).max(3).default(1),
+      staggerScale: z.number().min(0).max(3).default(1),
+    })
+    .default({
+      springStiffness: 300,
+      springDamping: 24,
+      durationScale: 1,
+      staggerScale: 1,
+    }),
   // Skeleton overrides — content lives in files (config/theme/skeleton.css|js),
   // theme.json only carries the enable flags + a cache-bust version.
   customCssEnabled: z.boolean().default(false),

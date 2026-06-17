@@ -27,6 +27,7 @@ import {
   SectionCard,
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
+import AnimationControls from "@razzoozle/web/features/manager/components/configurations/AnimationControls"
 import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
@@ -616,6 +617,15 @@ const ConfigTheme = () => {
                   </SectionCard>
                 )
               })}
+
+              {/* ── Animation (spring/duration/stagger + live preview) ──
+                Tunes draft.animation; the live preview re-reveals with the draft
+                tokens via useReveal(draft.animation). Saving rides the unchanged
+                MANAGER.SET_THEME flow — the full draft carries these fields. */}
+              <AnimationControls
+                value={draft.animation}
+                onChange={(animation) => preview({ ...draft, animation })}
+              />
 
               {/* ── Logo ─────────────────────────────────────────────── */}
               <FormSection title={t("manager:theme.logo")}>

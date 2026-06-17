@@ -12,6 +12,8 @@
  * The stack itself is a reveal.container() — the rows cascade in via
  * staggerChildren (collapsing to instant/opacity-only under reduced motion),
  * while each <RewardRow> still owns its own per-row entry/exit + dismiss logic.
+ * The theme-tuned reveal.spring is passed down so each row settles with the same
+ * stiffness/damping the active theme configures.
  *
  * No server/type/schema change — purely presentational over the SHOW_RESULT payload.
  */
@@ -208,6 +210,7 @@ const RewardStack = ({
             badge={item.badge}
             accent={item.accent}
             reduced={reduced}
+            spring={reveal.spring}
             durationMs={item.durationMs}
             dismissLabel={t("game:reward.dismiss")}
             onDismiss={handleDismiss}

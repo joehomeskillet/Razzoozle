@@ -453,6 +453,16 @@
       "label": "Style",
       "flat": "Flat",
       "glass": "Glass"
+    },
+    "animation": {
+      "title": "Animation",
+      "description": "Fine-tune the in-game feel — spring force, duration and reveal stagger.",
+      "springStiffness": "Spring stiffness",
+      "springDamping": "Spring damping",
+      "durationScale": "Duration scale",
+      "staggerScale": "Stagger scale",
+      "previewLabel": "Preview",
+      "replay": "Replay"
     }
   },
   "submissions": {

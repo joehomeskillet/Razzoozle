@@ -14,6 +14,10 @@
  *   - Everything behind `useReveal()` / the `reduced` flag → no fabricated motion
  *     when the user prefers reduced motion (opacity-only fallback, stagger → 0).
  *
+ * The spring stiffness/damping, duration scale, and stagger scale are read live
+ * from the active theme's `animation` tokens (managers can tune the in-game feel),
+ * with an optional override so the manager preview can drive DRAFT tokens.
+ *
  * Canonical usage (copy this shape):
  *
  *   const reveal = useReveal()
@@ -27,8 +31,17 @@
  */
 import { useReducedMotion } from "motion/react"
 import type { Transition, Variants } from "motion/react"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 
 type Bezier = [number, number, number, number]
+
+/** Animation tokens that tune the theme-aware reveal (see Theme.animation). */
+export type AnimationTokens = {
+  springStiffness: number
+  springDamping: number
+  durationScale: number
+  staggerScale: number
+}
 
 /** Primary lifecycle spring — matches the dominant existing feel (300 / 24). */
 export const SPRING: Transition = { type: "spring", stiffness: 300, damping: 24 }
@@ -137,19 +150,41 @@ export interface Reveal {
  * Reduced-motion-aware bundle. Prefer this over the raw tokens in components:
  * it guarantees the opacity-only fallback and stagger collapse without each file
  * re-implementing the `useReducedMotion` guard.
+ *
+ * The lifecycle spring, tween duration, and stagger rhythm are tuned by the active
+ * theme's `animation` tokens. Pass `override` (e.g. the manager preview's DRAFT
+ * tokens) to tune the feel without committing the theme: `useReveal(draft.animation)`.
  */
-export const useReveal = (): Reveal => {
+export const useReveal = (
+  override?: Partial<AnimationTokens>,
+): Reveal => {
   const reduced = useReducedMotion() ?? false
+  const themeAnimation = useThemeStore((s) => s.theme.animation)
+
+  const { springStiffness, springDamping, durationScale, staggerScale } = {
+    ...themeAnimation,
+    ...override,
+  }
+
   const instant: Transition = { duration: DURATION.instant }
+  const spring: Transition = {
+    type: "spring",
+    stiffness: springStiffness,
+    damping: springDamping,
+  }
+
   return {
     reduced,
-    spring: reduced ? instant : SPRING,
+    spring: reduced ? instant : spring,
     snap: reduced ? instant : SPRING_SNAP,
     container: (stagger = STAGGER.base, delayChildren = 0) =>
-      staggerContainer(reduced ? 0 : stagger, reduced ? 0 : delayChildren),
+      staggerContainer(
+        reduced ? 0 : stagger * staggerScale,
+        reduced ? 0 : delayChildren,
+      ),
     item: (distance = RISE) => (reduced ? reducedVariants : fadeUp(distance)),
     pop: (from = 0.6) => (reduced ? reducedVariants : popIn(from)),
     tween: (duration = DURATION.base, ease = EASE.out) =>
-      reduced ? instant : { duration, ease },
+      reduced ? instant : { duration: duration * durationScale, ease },
   }
 }

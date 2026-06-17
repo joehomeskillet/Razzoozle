@@ -292,6 +292,16 @@
       "label": "Style",
       "flat": "Plat",
       "glass": "Verre"
+    },
+    "animation": {
+      "title": "Animation",
+      "description": "Affinez le ressenti en jeu — force du ressort, durée et décalage des apparitions.",
+      "springStiffness": "Rigidité du ressort",
+      "springDamping": "Amortissement du ressort",
+      "durationScale": "Facteur de durée",
+      "staggerScale": "Facteur de décalage",
+      "previewLabel": "Aperçu",
+      "replay": "Rejouer"
     }
   },
   "submissions": {

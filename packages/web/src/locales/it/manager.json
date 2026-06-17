@@ -292,6 +292,16 @@
       "label": "Stile",
       "flat": "Piatto",
       "glass": "Vetro"
+    },
+    "animation": {
+      "title": "Animazione",
+      "description": "Regola la sensazione di gioco — forza della molla, durata e sfasamento delle comparse.",
+      "springStiffness": "Rigidità della molla",
+      "springDamping": "Smorzamento della molla",
+      "durationScale": "Fattore di durata",
+      "staggerScale": "Fattore di sfasamento",
+      "previewLabel": "Anteprima",
+      "replay": "Riproduci"
     }
   },
   "submissions": {

@@ -11,19 +11,18 @@
  *
  * All non-essential motion is gated on the `reduced` flag (drag disabled,
  * entry/exit collapsed to opacity-only). The entrance reveal mirrors the shared
- * `useReveal().item()` / `reveal.spring` contract from the animation presets, but
- * is driven off the parent-supplied `reduced` prop (this atom is rendered by
- * <RewardStack>, which owns the reduced-motion source of truth) instead of
- * re-reading the hook.
+ * `useReveal().item()` / `reveal.spring` contract from the animation presets: the
+ * `reduced` flag AND the theme-tuned `spring` transition are passed down from the
+ * parent <RewardStack> (which owns the single `useReveal()` call) instead of this
+ * atom re-reading the hook.
  */
 
 import { motion } from "motion/react"
+import type { Transition } from "motion/react"
 import { X } from "lucide-react"
 import { useCallback, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import {
-  DURATION,
-  SPRING,
   fadeUp,
   reducedVariants,
 } from "@razzoozle/web/features/game/animation/presets"
@@ -36,6 +35,8 @@ export interface RewardRowProps {
   badge?: string
   accent: string
   reduced: boolean
+  /** Theme-tuned lifecycle spring (already reduced-aware) from the parent's useReveal(). */
+  spring: Transition
   durationMs: number
   /** Accessible label for the close button. */
   dismissLabel?: string
@@ -50,6 +51,7 @@ const RewardRow = ({
   badge,
   accent,
   reduced,
+  spring,
   durationMs,
   dismissLabel,
   onDismiss,
@@ -96,10 +98,9 @@ const RewardRow = ({
   }
 
   // Entrance reveal — mirrors reveal.item() (fade + rise, opacity-only when
-  // reduced) and reveal.spring (lifecycle spring, or instant fade when reduced),
-  // derived from the parent-supplied `reduced` prop.
+  // reduced) and reveal.spring (theme-tuned lifecycle spring, or instant fade when
+  // reduced), derived from the parent-supplied `reduced` flag + `spring` prop.
   const enterVariants = reduced ? reducedVariants : fadeUp(12)
-  const enterTransition = reduced ? { duration: DURATION.instant } : SPRING
 
   return (
     <motion.li
@@ -107,7 +108,7 @@ const RewardRow = ({
       variants={enterVariants}
       initial="hidden"
       animate="visible"
-      transition={enterTransition}
+      transition={spring}
       exit={reduced ? { opacity: 0 } : { opacity: 0, x: 60 }}
       drag={reduced ? false : "x"}
       dragSnapToOrigin

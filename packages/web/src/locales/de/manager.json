@@ -451,6 +451,16 @@
       "label": "Stil",
       "flat": "Flach",
       "glass": "Glas"
+    },
+    "animation": {
+      "title": "Animation",
+      "description": "Feinabstimmung des Spielgefühls — Federkraft, Dauer und Versatz der Einblendungen.",
+      "springStiffness": "Federsteifigkeit",
+      "springDamping": "Federdämpfung",
+      "durationScale": "Dauer-Faktor",
+      "staggerScale": "Versatz-Faktor",
+      "previewLabel": "Vorschau",
+      "replay": "Abspielen"
     }
   },
   "submissions": {

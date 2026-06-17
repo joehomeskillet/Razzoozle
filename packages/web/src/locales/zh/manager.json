@@ -448,6 +448,16 @@
       "label": "风格",
       "flat": "扁平",
       "glass": "玻璃"
+    },
+    "animation": {
+      "title": "动画",
+      "description": "微调游戏手感——弹簧强度、时长和出现错峰。",
+      "springStiffness": "弹簧刚度",
+      "springDamping": "弹簧阻尼",
+      "durationScale": "时长系数",
+      "staggerScale": "错峰系数",
+      "previewLabel": "预览",
+      "replay": "重播"
     }
   },
   "submissions": {

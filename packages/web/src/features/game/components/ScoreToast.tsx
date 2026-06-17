@@ -15,7 +15,7 @@
  * and clip the slide-in / re-scope z-[60]).
  */
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
-import { SPRING } from "@razzoozle/web/features/game/animation/presets"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Trophy, X } from "lucide-react"
 import { createPortal } from "react-dom"
@@ -32,6 +32,7 @@ interface Props {
 const ScoreToast = ({ correct, points, visible }: Props) => {
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
+  const reveal = useReveal()
 
   const accent = correct ? "#facc15" : "#ef4444"
 
@@ -46,11 +47,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
           initial={reduced ? { opacity: 0 } : { opacity: 0, y: -64, scale: 0.9 }}
           animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, y: -32 }}
-          transition={
-            reduced
-              ? { duration: 0.2 }
-              : SPRING
-          }
+          transition={reveal.spring}
           className="pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2"
           style={{ top: "max(1.5rem, env(safe-area-inset-top))" }}
         >

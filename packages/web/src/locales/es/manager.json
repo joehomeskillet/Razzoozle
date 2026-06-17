@@ -292,6 +292,16 @@
       "label": "Estilo",
       "flat": "Plano",
       "glass": "Cristal"
+    },
+    "animation": {
+      "title": "Animación",
+      "description": "Ajusta la sensación del juego: fuerza del resorte, duración y desfase de aparición.",
+      "springStiffness": "Rigidez del resorte",
+      "springDamping": "Amortiguación del resorte",
+      "durationScale": "Factor de duración",
+      "staggerScale": "Factor de desfase",
+      "previewLabel": "Vista previa",
+      "replay": "Reproducir"
     }
   },
   "submissions": {

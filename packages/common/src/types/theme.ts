@@ -60,6 +60,12 @@ export const DEFAULT_THEME: Theme = {
     bg: "#ffffff",
     text: "#1f2937",
   },
+  animation: {
+    springStiffness: 300,
+    springDamping: 24,
+    durationScale: 1,
+    staggerScale: 1,
+  },
   customCssEnabled: false,
   customJsEnabled: false,
   skeletonVersion: 0,
