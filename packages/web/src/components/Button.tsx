@@ -27,9 +27,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   // Main CTA — keeps today's look. White text on the runtime-darkened accent
   // (--accent-contrast is computed to clear AA against white). White ring.
   primary:
-    "bg-[var(--accent-contrast)] text-white shadow-sm " +
-    "hover:brightness-[1.05] active:brightness-[0.95] " +
-    "focus-visible:outline-white",
+    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-flat)] hover:brightness-110 active:brightness-95 focus-visible:outline-[var(--color-primary)]",
   // Neutral actions — paper-white surface, gray border, gray-700 text (AA).
   // Ring uses the runtime accent so it reads against the light surface.
   secondary:

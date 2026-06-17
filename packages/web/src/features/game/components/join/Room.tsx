@@ -90,11 +90,13 @@ const Room = () => {
   useEffect(() => clearJoinTimeout, [clearJoinTimeout])
 
   return (
-    <Card className="glass-2">
-      <p className="mb-2 text-lg font-semibold">{t("game:pinLabel")}</p>
+    <Card>
+      <h2 className="mb-3 text-xl font-bold text-[color:var(--color-field-ink)]">
+        {t("game:pinLabel")}
+      </h2>
       <PinInput value={invitation} onChange={setInvitation} />
       <Button
-        className="mt-4"
+        className="mt-4 w-full"
         onClick={handleJoin}
         disabled={!canJoin}
         aria-busy={isJoining}

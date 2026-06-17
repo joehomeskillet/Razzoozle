@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
+import Card from "@razzoozle/web/components/Card"
 import Input from "@razzoozle/web/components/Input"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { Lock } from "lucide-react"
@@ -31,41 +32,42 @@ const ManagerPassword = ({ onSubmit }: Props) => {
       initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={reducedMotion ? undefined : { duration: 0.32, ease: "easeOut" }}
-      className="z-10 w-full max-w-sm overflow-hidden rounded-2xl bg-gray-50 shadow-lg"
+      className="z-10 w-full max-w-sm"
     >
-      {/* Branded header band — mirrors ConsoleShell's accent-tinted header. */}
-      <header className="flex items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-5 py-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--color-primary)]">
-          <Lock className="size-5" aria-hidden />
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--color-primary)]">
+            <Lock className="size-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-[color:var(--color-field-ink)]">
+              {t("manager:auth.title")}
+            </h1>
+            <p className="text-sm text-[color:var(--color-field-ink)]/60">
+              {t("manager:auth.subtitle")}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-lg font-bold text-gray-900">
-            {t("manager:auth.title")}
-          </p>
-          <p className="text-sm text-gray-500">
-            {t("manager:auth.subtitle")}
-          </p>
-        </div>
-      </header>
 
-      <form className="p-5" onSubmit={handleSubmit}>
-        <label htmlFor="manager-password" className="sr-only">
-          {t("manager:aria.passwordLabel")}
-        </label>
-        <Input
-          id="manager-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          autoFocus
-          className="w-full"
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder={t("manager:passwordPlaceholder")}
-        />
-        <Button className="mt-4 w-full" type="submit">
-          {t("common:submit")}
-        </Button>
-      </form>
+        <form className="mt-4" onSubmit={handleSubmit}>
+          <label htmlFor="manager-password" className="sr-only">
+            {t("manager:aria.passwordLabel")}
+          </label>
+          <Input
+            id="manager-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+            className="w-full"
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("manager:passwordPlaceholder")}
+          />
+          <Button className="mt-4 w-full" type="submit">
+            {t("common:submit")}
+          </Button>
+        </form>
+      </Card>
     </motion.div>
   )
 }

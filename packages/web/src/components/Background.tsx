@@ -23,7 +23,7 @@ const Background = ({
     // of centring the overflow above the scroll origin. Plain `justify-center`
     // clips the top out of reach on mobile, trapping the page (no scroll-up).
     <section
-      className="relative flex min-h-dvh flex-col items-center justify-center-safe"
+      className="relative flex min-h-dvh flex-col items-center justify-center-safe touch-pan-y"
       style={isCream ? { color: "var(--color-field-ink)" } : undefined}
     >
       {/* Brand above the login: a custom uploaded logo wins; otherwise show the

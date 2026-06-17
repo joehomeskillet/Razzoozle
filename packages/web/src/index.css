@@ -84,7 +84,6 @@
 body {
   background:
     radial-gradient(135% 105% at 50% -10%, color-mix(in srgb, var(--color-field-cream), white 45%), var(--color-field-cream) 52%, color-mix(in srgb, var(--color-field-cream), black 6%));
-  background-attachment: fixed;
   min-height: 100dvh;
   color: var(--color-field-ink);
 }
