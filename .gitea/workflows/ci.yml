@@ -25,8 +25,8 @@ jobs:
       - name: Typecheck (all packages)
         run: corepack pnpm -r run types
 
-      - name: Test (socket)
-        run: corepack pnpm --filter socket test
+      - name: Test (all packages with a test script)
+        run: corepack pnpm -r --if-present run test
 
-      - name: Build (web)
-        run: corepack pnpm --filter web build
+      - name: Build (all packages)
+        run: corepack pnpm -r run build

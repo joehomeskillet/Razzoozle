@@ -1,0 +1,23 @@
+name: Deploy (dev)
+
+# CD for the razzoozle DEV environment (razzoozle.joelduss.xyz → :3011).
+# Runs on the self-hosted host runner (docker + /nvmetank1 access) and invokes
+# the hardened, health-gated, rollback-safe host deploy script. The systemd
+# poller (razzoozle-cd.timer, every 5 min) is the fallback: this workflow writes
+# .cd-deployed-sha so the poller no-ops once Actions has deployed.
+
+on:
+  push:
+    branches: [main]
+
+# Never run two deploys of the same env at once.
+concurrency:
+  group: deploy-razzoozle-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Health-gated host redeploy (razzoozle dev → :3011)
+        run: bash /nvmetank1/projects/Razzoozle/cd-poll.sh
