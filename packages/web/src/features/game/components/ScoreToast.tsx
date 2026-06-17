@@ -3,11 +3,11 @@
  * play. Slides in at the top-center of the viewport and reveals the points for
  * the answer as a count-up.
  *
- * Mirrors the achievement visual language of RewardRow.tsx: dark glassy surface,
- * accent-driven left border + leading wash, always-white text. Full-motion (slide
- * down + spring settle + one-shot sheen sweep) collapses to an opacity-only fade
- * under reduced motion. The count-up reuses AnimatedPoints, which already
- * self-handles reduced motion.
+ * Flat-light card surface matching the cream field: white background, soft
+ * shadow + hairline border, accent-driven left border + leading wash, ink text.
+ * Full-motion (slide down + spring settle + one-shot sheen sweep) collapses to
+ * an opacity-only fade under reduced motion. The count-up reuses AnimatedPoints,
+ * which already self-handles reduced motion.
  *
  * Rendered through a portal to document.body so the `position: fixed` toast
  * attaches to the viewport (not to SoloShell's transformed, overflow-hidden
@@ -59,7 +59,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
           </span>
 
           <div
-            className="relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] bg-black/55 px-5 py-3 text-white shadow-2xl ring-1 ring-white/15 backdrop-blur-md"
+            className="relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-5 py-3 text-[color:var(--color-field-ink)] shadow-xl"
             style={{ borderLeft: `4px solid ${accent}` }}
           >
             {/* Leading accent wash */}
@@ -95,7 +95,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
                   className="flex items-center justify-center"
                   style={{ color: accent }}
                 >
-                  <Trophy className="size-6 drop-shadow" aria-hidden="true" />
+                  <Trophy className="size-6" aria-hidden="true" />
                 </motion.span>
               ) : (
                 <span
@@ -109,13 +109,13 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
 
             {/* Text column */}
             <span className="relative z-10 flex min-w-0 flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-field-ink)]/60">
                 {correct ? t("game:correct") : t("game:wrong")}
               </span>
               {correct && (
                 <span
                   aria-hidden
-                  className="text-3xl font-black tabular-nums text-yellow-300 drop-shadow"
+                  className="text-3xl font-black tabular-nums text-amber-500"
                 >
                   +<AnimatedPoints to={points} className="tabular-nums" />
                 </span>

@@ -70,6 +70,8 @@ const Username = () => {
         : `${username}-${Date.now()}`
 
     generateAvatar(style, seed).then((uri) => {
+      // A fast pick/upload can land before this async random resolves — don't clobber it.
+      if (usePlayerStore.getState().player?.avatar) return
       setAvatar(uri)
       socket.emit(EVENTS.PLAYER.SET_AVATAR, { avatar: uri })
     })

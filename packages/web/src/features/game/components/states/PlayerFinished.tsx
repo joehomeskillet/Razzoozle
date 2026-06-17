@@ -95,14 +95,14 @@ const MyRecapCard = ({ myRecap }: { myRecap: PlayerRecap["myRecap"] }) => {
       {stats.map((s) => (
         <motion.div
           key={s.label}
-          className="flex flex-col items-center gap-0.5 rounded-2xl bg-black/30 px-3 py-3 text-center"
+          className="flex flex-col items-center gap-0.5 rounded-2xl border border-[var(--border-hairline)] bg-white px-3 py-3 text-center shadow-sm"
           variants={reveal.item()}
           transition={reveal.spring}
         >
-          <span className="text-2xl font-extrabold text-white tabular-nums drop-shadow">
+          <span className="text-2xl font-extrabold text-[color:var(--color-field-ink)] tabular-nums">
             {s.value}
           </span>
-          <span className="text-[11px] font-semibold tracking-wide text-white/60 uppercase">
+          <span className="text-[11px] font-semibold tracking-wide text-[color:var(--color-field-ink)]/60 uppercase">
             {s.label}
           </span>
         </motion.div>
@@ -251,15 +251,14 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
                       "relative flex flex-col items-center gap-1 rounded-2xl px-2 py-2",
                       isNew
                         ? `bg-gradient-to-br ring-2 ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
-                        : "bg-white/5 ring-1 ring-white/10",
+                        : "bg-[color:var(--color-field-ink)]/5 ring-1 ring-[var(--border-hairline)]",
                     )}
                   >
                     <AchievementMedal id={id} tier={tier} size="sm" />
                     {count > 1 && (
                       <span
                         className={clsx(
-                          "absolute -top-1 -right-1 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] font-extrabold tabular-nums",
-                          TIER_TEXT[tier],
+                          "absolute -top-1 -right-1 rounded-full border border-[var(--border-hairline)] bg-white px-1.5 py-0.5 text-[9px] font-extrabold text-[color:var(--color-field-ink)] tabular-nums shadow-sm",
                         )}
                         aria-hidden
                       >
@@ -393,7 +392,7 @@ const PlayerFinished = ({ data }: Props) => {
       </motion.p>
 
       <motion.p
-        className="mt-2 rounded-2xl bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums"
+        className="mt-2 rounded-2xl border border-[var(--border-hairline)] bg-white px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums shadow-md"
         variants={reveal.item()}
         transition={reveal.spring}
       >

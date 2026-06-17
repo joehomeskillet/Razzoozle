@@ -6,8 +6,8 @@
  * close button, a horizontal swipe (motion drag), and an auto-dismiss timer that
  * pauses while the row is hovered or focused.
  *
- * Titles are ALWAYS rendered white — tier text colors (e.g. silver) fail contrast
- * on the dark surface. Accent only drives the left border + leading wash.
+ * Titles are rendered in field ink on the flat white card. Accent only drives the
+ * left border + leading wash.
  *
  * All non-essential motion is gated on the `reduced` flag (drag disabled,
  * entry/exit collapsed to opacity-only). The entrance reveal mirrors the shared
@@ -119,7 +119,7 @@ const RewardRow = ({
       onMouseLeave={resume}
       onFocus={pause}
       onBlur={resume}
-      className="group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] bg-black/40 py-2.5 pr-3 pl-2.5 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm pointer-events-auto"
+      className="group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white py-2.5 pr-3 pl-2.5 text-[color:var(--color-field-ink)] shadow-md pointer-events-auto"
       style={{ borderLeft: `4px solid ${accent}` }}
     >
       {/* Leading accent wash */}
@@ -134,21 +134,21 @@ const RewardRow = ({
         {icon}
       </span>
 
-      {/* Title — ALWAYS white (silver fails contrast) */}
-      <span className="relative z-10 min-w-0 flex-1 truncate text-sm font-extrabold leading-tight drop-shadow">
+      {/* Title — field ink on the flat white card */}
+      <span className="relative z-10 min-w-0 flex-1 truncate text-sm font-extrabold leading-tight">
         {title}
       </span>
 
       {/* Optional value */}
       {value !== undefined && (
-        <span className="relative z-10 shrink-0 text-base font-extrabold tabular-nums drop-shadow">
+        <span className="relative z-10 shrink-0 text-base font-extrabold tabular-nums">
           {value}
         </span>
       )}
 
       {/* Optional badge */}
       {badge !== undefined && (
-        <span className="relative z-10 shrink-0 text-[10px] font-bold uppercase tracking-widest text-white/80">
+        <span className="relative z-10 shrink-0 text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-field-ink)]/60">
           {badge}
         </span>
       )}
@@ -158,7 +158,7 @@ const RewardRow = ({
         type="button"
         aria-label={dismissLabel ?? "Dismiss"}
         onClick={() => onDismiss(id)}
-        className="relative z-20 shrink-0 rounded-full p-1 text-white/70 opacity-0 transition hover:bg-white/10 hover:text-white focus-visible:bg-white/10 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
+        className="relative z-20 shrink-0 rounded-full p-1 text-[color:var(--color-field-ink)]/40 opacity-0 transition hover:bg-black/5 hover:text-[color:var(--color-field-ink)] focus-visible:bg-black/5 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
       >
         <X className="size-4" aria-hidden="true" />
       </button>

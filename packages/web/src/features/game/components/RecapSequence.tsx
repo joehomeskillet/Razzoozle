@@ -151,11 +151,11 @@ const RecapSequence = ({
 
       <AnimatePresence mode="wait">
         {!isFinalCue && current ? (
-          // Medal/card surface — the superlative reads as an award card, not bare
-          // floating text. glass-2 carries the themed blur + elevation fallbacks.
+          // Medal/card surface — the superlative reads as a flat light award card
+          // on the cream field, not bare floating text.
           <motion.div
             key={`card-${step}`}
-            className="glass-2 relative z-10 flex flex-col items-center gap-5 rounded-3xl border border-white/15 bg-black/30 px-8 py-8 shadow-2xl md:px-12 md:py-10"
+            className="relative z-10 flex flex-col items-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 shadow-xl md:px-12 md:py-10"
             variants={reveal.pop()}
             initial="hidden"
             animate="visible"
@@ -164,25 +164,25 @@ const RecapSequence = ({
           >
             {/* Emoji sits in a medal disc to match the podium/achievement language. */}
             <span
-              className="flex size-24 items-center justify-center rounded-full border-4 border-white/30 bg-black/35 text-6xl drop-shadow-lg md:size-32 md:text-7xl lg:text-8xl"
+              className="flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 text-6xl md:size-32 md:text-7xl lg:text-8xl"
               aria-hidden
             >
               {SUPERLATIVE_EMOJI[current.key]}
             </span>
 
-            <p className="text-3xl font-extrabold text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+            <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-4xl lg:text-5xl">
               {t(`game:recap.superlative.${current.key}`, {
                 defaultValue: current.key.replace(/_/g, " "),
               })}
             </p>
 
-            {/* Winner name uses the themeable accent; the dark pill is a contrast
-                floor so a light accent still reads on a light themed background. */}
-            <p className="rounded-full bg-black/55 px-6 py-2 text-4xl font-black text-[var(--color-accent)] drop-shadow-md md:text-5xl lg:text-6xl">
+            {/* Winner name in an accent pill — ink-on-accent so the name reads
+                against the solid accent fill on the white card. */}
+            <p className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-4xl font-black text-[var(--accent-contrast-text)] md:text-5xl lg:text-6xl">
               {current.winnerName}
             </p>
 
-            <p className="rounded-full bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums drop-shadow md:text-3xl">
+            <p className="rounded-full border border-[var(--border-hairline)] bg-gray-100 px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-3xl">
               {formatValue(current.key, current.value)}
             </p>
           </motion.div>
@@ -230,7 +230,7 @@ const RecapSequence = ({
             type="button"
             onClick={() => setPaused((p) => !p)}
             aria-pressed={paused}
-            className="rounded-full bg-black/40 px-5 py-2 text-base font-bold text-white drop-shadow hover:bg-black/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-base font-bold text-white hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-primary)]"
           >
             {paused
               ? t("game:recap.resume", { defaultValue: "Fortsetzen" })
@@ -239,7 +239,7 @@ const RecapSequence = ({
           <button
             type="button"
             onClick={advance}
-            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-[var(--accent-contrast-text)] drop-shadow hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-[var(--accent-contrast-text)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           >
             {t("game:recap.advance", { defaultValue: "Weiter" })}
           </button>

@@ -118,7 +118,7 @@ const RewardStack = ({
     if (bonusPoints && bonusPoints > 0) {
       result.push({
         id: "bonus_achievement",
-        icon: <Coins className="size-6 text-white" aria-hidden="true" />,
+        icon: <Coins className="size-6 text-amber-500" aria-hidden="true" />,
         title: t("game:reward.bonusPoints"),
         value: `+${bonusPoints}`,
         accent: "var(--color-primary)",
@@ -128,7 +128,7 @@ const RewardStack = ({
     if (streakBonus && streak) {
       result.push({
         id: "bonus_streak",
-        icon: <Flame className="size-6 text-white" aria-hidden="true" />,
+        icon: <Flame className="size-6 text-orange-500" aria-hidden="true" />,
         title: t("game:streak.streakTitle"),
         value: t("game:streak.streakValue", {
           percent: 10 * Math.min(streak - 1, 5),
@@ -140,7 +140,7 @@ const RewardStack = ({
     if (bonus) {
       result.push({
         id: "bonus_double",
-        icon: <Star className="size-6 text-white" aria-hidden="true" />,
+        icon: <Star className="size-6 text-amber-400" aria-hidden="true" />,
         title: t("game:streak.bonus"),
         accent: "var(--answer-4)",
         durationMs: 4000,
@@ -149,7 +149,7 @@ const RewardStack = ({
     if (firstCorrect) {
       result.push({
         id: "bonus_first",
-        icon: <Zap className="size-6 text-white" aria-hidden="true" />,
+        icon: <Zap className="size-6 text-[var(--color-accent)]" aria-hidden="true" />,
         title: t("game:streak.firstCorrect"),
         accent: "var(--answer-2)",
         durationMs: 4000,
