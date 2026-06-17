@@ -15,12 +15,16 @@ const AuthLayout = () => {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const isManagerAuth = pathname === "/manager"
+  // Pre-game ENTRY (PIN-join + username) is the cream front-of-house field.
+  // The manager auth keeps the dark brand gradient (plain), so only the player
+  // auth gets `field="cream"`.
+  const field = isManagerAuth ? undefined : "cream"
 
   if (!isConnected) {
     return (
-      <Background plain={isManagerAuth}>
+      <Background plain={isManagerAuth} field={field}>
         <Loader className="h-23" />
-        <h2 className="mt-2 text-center text-2xl font-bold text-white drop-shadow-lg md:text-3xl">
+        <h2 className="mt-2 text-center text-2xl font-bold md:text-3xl">
           {t("common:loading")}
         </h2>
       </Background>
@@ -28,7 +32,7 @@ const AuthLayout = () => {
   }
 
   return (
-    <Background plain={isManagerAuth}>
+    <Background plain={isManagerAuth} field={field}>
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>

@@ -9,7 +9,8 @@ import { type PropsWithChildren, useState } from "react"
 const Background = ({
   children,
   plain = false,
-}: PropsWithChildren<{ plain?: boolean }>) => {
+  field = "ink",
+}: PropsWithChildren<{ plain?: boolean; field?: "cream" | "ink" }>) => {
   const { theme } = useThemeStore()
   const authBg = theme.backgrounds.auth
   const appTitle = theme.appTitle?.trim()
@@ -17,6 +18,7 @@ const Background = ({
   // load (deleted asset, broken config, offline media volume), drop to the brand
   // gradient instead of leaving a broken-image box. No crash, no console noise.
   const [bgFailed, setBgFailed] = useState(false)
+  const isCream = field === "cream"
 
   return (
     // `justify-center-safe` (safe center): short pages (login/lobby/loader) stay
@@ -24,45 +26,67 @@ const Background = ({
     // full /trophies gallery on a phone — it falls back to top alignment instead
     // of centring the overflow above the scroll origin. Plain `justify-center`
     // clips the top out of reach on mobile, trapping the page (no scroll-up).
-    <section className="relative flex min-h-dvh flex-col items-center justify-center-safe">
+    <section
+      className="relative flex min-h-dvh flex-col items-center justify-center-safe"
+      style={isCream ? { color: "var(--color-field-ink)" } : undefined}
+    >
       <div className="fixed inset-0 overflow-hidden">
-        {authBg && !plain && !bgFailed ? (
-          <img
-            src={authBg}
-            alt="background"
-            onError={() => setBgFailed(true)}
-            className="pointer-events-none absolute h-full w-full object-cover select-none"
-          />
-        ) : (
+        {isCream ? (
           <div
             className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
-            }}
+            style={{ background: "var(--color-field-cream)" }}
           />
+        ) : (
+          <>
+            {authBg && !plain && !bgFailed ? (
+              <img
+                src={authBg}
+                alt="background"
+                onError={() => setBgFailed(true)}
+                className="pointer-events-none absolute h-full w-full object-cover select-none"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
+                }}
+              />
+            )}
+            <div
+              className="pointer-events-none absolute inset-0 bg-black"
+              style={{ opacity: "var(--bg-scrim)" }}
+            />
+          </>
         )}
-        <div
-          className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
-        />
       </div>
 
       {/* Brand above the login: a custom uploaded logo wins; otherwise show the
           themed appTitle as text (e.g. "Südhang Kahoot"); fall back to the
           bundled logo only when neither is set. */}
       {theme.logo ? (
-        <img
-          src={theme.logo}
-          className="z-10 mb-10 h-16"
-          alt={appTitle ?? "logo"}
-        />
+        <>
+          <img
+            src={theme.logo}
+            className="z-10 mb-10 h-16"
+            alt={appTitle ?? "logo"}
+          />
+          <h1 className="sr-only">{appTitle ?? "Razzoozle"}</h1>
+        </>
       ) : appTitle ? (
-        <h1 className="z-10 mb-10 text-center text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-5xl">
+        <h1
+          className={`z-10 mb-10 text-center text-4xl font-extrabold tracking-tight md:text-5xl ${
+            isCream ? "text-[color:var(--color-field-ink)]" : "text-white drop-shadow-lg"
+          }`}
+        >
           {appTitle}
         </h1>
       ) : (
-        <img src={defaultLogo} className="z-10 mb-10 h-16" alt="logo" />
+        <>
+          <img src={defaultLogo} className="z-10 mb-10 h-16" alt="logo" />
+          <h1 className="sr-only">{appTitle ?? "Razzoozle"}</h1>
+        </>
       )}
       {children}
 

@@ -4,7 +4,7 @@
   --color-primary: #7c3aed;
   --color-secondary: #2e1065;
   --color-text: #ffffff;
-  --color-accent: #ff9900;
+  --color-accent: #FF2D6E;
   --font-display: "Rubik Variable", sans-serif;
 }
 
@@ -14,9 +14,18 @@
   --answer-2: #56b4e9;
   --answer-3: #3dbfa0;
   --answer-4: #cc79a7;
-  --answer-text: #ffffff;
+  --answer-text: #0B0B12;
   --radius-theme: 16px;
   --bg-scrim: 0.4;
+
+  /* Front-of-house cream field + flat-surface tokens (Wave 1). Overridable at
+     runtime by a served theme (see apply.ts), defaults live here. */
+  --surface: #FFFFFF;
+  --border-hairline: #E2DDD2;
+  --shadow-flat: 0 1px 2px rgba(20,18,43,.06),0 8px 24px rgba(20,18,43,.07);
+  --color-field-cream: #F4F1EA;
+  --color-field-ink: #0E1120;
+  --accent-contrast-text: #0E1120;
 
   /* Teams — base set at runtime by applyTheme; ring/text derived. */
   --team-red: #ef4444;  --team-blue: #3b82f6;  --team-green: #22c55e;  --team-yellow: #facc15;

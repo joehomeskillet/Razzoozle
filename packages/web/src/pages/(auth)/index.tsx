@@ -31,6 +31,10 @@ const PlayerAuthPage = () => {
 
   return (
     <>
+      {/* Landing page heading. The Background only renders a visible <h1> when a
+          themed appTitle is set (logo/default branches use an <img>), so this
+          sr-only <h1> guarantees the entry page always exposes a top-level
+          heading to assistive tech / outline parsing. */}
       <Room />
       {/* Full navigation to the trophies page (route.gen.ts auto-regens on build) */}
       <a

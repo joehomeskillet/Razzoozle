@@ -108,14 +108,20 @@ const medalColor = [
   {
     background: "bg-[var(--tier-gold)]",
     border: "border-yellow-600",
+    // gold tier → ink label (ink reads on the light-gold fill)
+    text: "text-[#0E1120]",
   },
   {
     background: "bg-[var(--tier-silver)]",
     border: "border-gray-200",
+    // silver tier → ink label
+    text: "text-[#0E1120]",
   },
   {
     background: "bg-[var(--tier-bronze)]",
     border: "border-amber-800",
+    // bronze tier → white label
+    text: "text-white",
   },
 ]
 
@@ -125,21 +131,17 @@ const Medal = ({ rank }: { rank: number }) => {
   return (
     <div
       className={clsx(
-        "relative flex aspect-square size-20 items-center justify-center overflow-hidden rounded-full border-8 text-5xl font-extrabold text-white drop-shadow-sm md:size-26 md:border-10 md:text-6xl",
+        "relative flex aspect-square size-20 items-center justify-center overflow-hidden rounded-full border-8 text-5xl font-extrabold md:size-26 md:border-10 md:text-6xl",
         color.background,
         color.border,
+        color.text,
       )}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
         <div className="absolute top-[30%] left-1/2 h-6 w-[160%] -translate-x-1/2 -rotate-40 bg-white/25" />
         <div className="absolute top-[70%] left-1/2 h-3 w-[160%] -translate-x-1/2 -rotate-40 bg-white/25" />
       </div>
-      <p
-        className="relative z-10"
-        style={{ textShadow: "2px 2px rgba(0,0,0, 0.25)" }}
-      >
-        {rank}
-      </p>
+      <p className="relative z-10">{rank}</p>
     </div>
   )
 }

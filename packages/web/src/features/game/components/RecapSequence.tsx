@@ -239,7 +239,7 @@ const RecapSequence = ({
           <button
             type="button"
             onClick={advance}
-            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-white drop-shadow hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-[var(--accent-contrast-text)] drop-shadow hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           >
             {t("game:recap.advance", { defaultValue: "Weiter" })}
           </button>

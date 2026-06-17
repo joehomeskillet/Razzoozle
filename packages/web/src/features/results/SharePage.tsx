@@ -214,7 +214,7 @@ const SharePage = ({ id }: Props) => {
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-3 shadow-lg">
                 <Medal rank={2} />
-                <p className="text-lg font-bold text-white tabular-nums drop-shadow-sm md:text-xl">
+                <p className="text-lg font-bold text-[var(--accent-contrast-text)] tabular-nums md:text-xl">
                   {top3[1].points}
                 </p>
               </div>
@@ -238,7 +238,7 @@ const SharePage = ({ id }: Props) => {
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-4 shadow-xl border-t-2 border-yellow-400/20">
                 <Medal rank={1} />
-                <p className="text-xl font-extrabold text-white tabular-nums drop-shadow-sm md:text-2xl">
+                <p className="text-xl font-extrabold text-[var(--accent-contrast-text)] tabular-nums md:text-2xl">
                   {top3[0].points}
                 </p>
               </div>
@@ -262,7 +262,7 @@ const SharePage = ({ id }: Props) => {
               </p>
               <div className="flex w-full flex-1 flex-col items-center justify-between rounded-t-xl bg-[var(--color-accent)] pt-4 pb-3 shadow-lg">
                 <Medal rank={3} />
-                <p className="text-base font-bold text-white tabular-nums drop-shadow-sm md:text-lg">
+                <p className="text-base font-bold text-[var(--accent-contrast-text)] tabular-nums md:text-lg">
                   {top3[2].points}
                 </p>
               </div>
@@ -284,7 +284,7 @@ const SharePage = ({ id }: Props) => {
                       ? undefined
                       : { duration: 0.3, delay: idx * 0.05 + 0.8 }
                   }
-                  className="flex w-full justify-between items-center rounded-xl bg-[var(--color-accent)] px-4 py-3 text-lg font-bold text-white shadow-md"
+                  className="flex w-full justify-between items-center rounded-xl bg-[var(--color-accent)] px-4 py-3 text-lg font-bold text-[var(--accent-contrast-text)] shadow-md"
                 >
                   <div className="flex items-center gap-3">
                     <span className="flex size-7 items-center justify-center rounded-full bg-white/20 text-xs font-extrabold">

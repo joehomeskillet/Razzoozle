@@ -45,9 +45,19 @@ const GameLayout = () => {
   }, [])
 
   return (
-    <div className="bg-secondary antialiased">
-      <Outlet />
-    </div>
+    <>
+      {/* Skip link — first focusable element so keyboard users can jump past
+          the persistent chrome straight to the page content (#main below). */}
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-[var(--color-primary)] px-4 py-2 font-semibold text-white focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:outline-2 focus:outline-offset-2 focus:outline-white"
+      >
+        Zum Inhalt springen
+      </a>
+      <main id="main" className="bg-secondary antialiased">
+        <Outlet />
+      </main>
+    </>
   )
 }
 

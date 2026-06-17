@@ -37,6 +37,19 @@ export const applyTheme = (theme: Theme) => {
   style.setProperty("--radius-theme", `${t.radius}px`)
   style.setProperty("--bg-scrim", `${t.scrim / 100}`)
 
+  // Front-of-house cream field + ink-on-accent tokens (Wave 1). These are
+  // optional on the served theme: only override when present, otherwise the
+  // index.css :root defaults (cream #F4F1EA / ink #0E1120) stand. Read via an
+  // indexed view so this stays tsc-clean whether or not the Theme type declares
+  // the fields yet, and never crashes if a partial/old theme.json omits them.
+  const opt = t as unknown as Record<string, unknown>
+  const setOptional = (cssVar: string, value: unknown) => {
+    if (typeof value === "string") style.setProperty(cssVar, value)
+  }
+  setOptional("--color-field-cream", opt.colorFieldCream)
+  setOptional("--color-field-ink", opt.colorFieldInk)
+  setOptional("--accent-contrast-text", opt.accentContrastText)
+
   // Registry loop — the 1:1 color tokens (teams, tiers, state, rank, misc). The
   // derived vars (-ring/-text/-glow/-soft/--timer-track) track these via
   // color-mix in index.css with zero JS. The `?? DEFAULT_THEME` fallback also

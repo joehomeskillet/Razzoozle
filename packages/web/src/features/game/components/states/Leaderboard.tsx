@@ -406,7 +406,7 @@ const Leaderboard = ({
                     default: reveal.spring,
                   }}
                   className={[
-                    "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-white lg:text-[clamp(1.5rem,4vh,4rem)]",
+                    "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
                     // Cheap CSS ring/opacity emphasis — keeps the ~200-row hot path light.
                     "transition-shadow",
                     climbing

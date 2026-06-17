@@ -527,19 +527,18 @@ const SubmitPage = () => {
 
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden p-3 sm:p-5">
-      {/* Purple brand gradient + scrim behind everything (mirrors Background's
-          `plain` recipe), so the surface's own header band carries the brand. */}
+      {/* Solid cream front-of-house field behind everything — the /submit page
+          is part of the pre-game ENTRY, so it shares the cream field instead of
+          the dark brand gradient. The scrim is held at 0 so the cream stays
+          true; the white form cards sit on top unchanged. */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div
           className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
-          }}
+          style={{ background: "var(--color-field-cream)" }}
         />
         <div
           className="pointer-events-none absolute inset-0 bg-black"
-          style={{ opacity: "var(--bg-scrim)" }}
+          style={{ opacity: 0 }}
         />
       </div>
 
