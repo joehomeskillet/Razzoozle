@@ -2,7 +2,6 @@ import { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
-import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
@@ -16,7 +15,7 @@ interface Props {
 }
 
 const Question = ({
-  data: { question, answers, media, cooldown, submittedBy },
+  data: { question, media, cooldown, submittedBy },
 }: Props) => {
   const muted = useSoundStore((s) => s.muted)
   const [sfxShow] = useSound(SFX.SHOW_SOUND, {
@@ -61,78 +60,49 @@ const Question = ({
           question (mount-on-key). reduced-motion → opacity-only via useReveal. */}
       <motion.div
         key={question}
-        className="glass-3 flex w-full flex-1 flex-col items-center gap-3 py-3 lg:gap-6 lg:py-6"
+        className="glass-3 flex w-full flex-1 flex-col items-center justify-center gap-4 py-6 lg:gap-6"
         variants={reveal.container()}
         initial="hidden"
         animate="visible"
       >
-        {/* Question + image fill and centre the prominent upper space so the
-            media stays the focus during the question-reading window; the answer
-            tiles are anchored to the bottom of the panel (Kahoot-style presenter
-            layout) with a comfortable gap to the bottom edge. */}
-        <motion.div
-          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 lg:gap-5"
-          variants={reveal.container()}
+        <motion.h2
+          className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
+          variants={reveal.item()}
+          transition={reveal.spring}
         >
-          <motion.h2
-            className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
+          <Markdown>{question}</Markdown>
+        </motion.h2>
+
+        {submittedBy && (
+          <motion.p
+            className="text-center text-sm text-white/60"
             variants={reveal.item()}
             transition={reveal.spring}
           >
-            <Markdown>{question}</Markdown>
-          </motion.h2>
+            {t("game:submittedBy", { name: submittedBy })}
+          </motion.p>
+        )}
 
-          {submittedBy && (
-            <motion.p
-              className="text-center text-sm text-white/60"
-              variants={reveal.item()}
-              transition={reveal.spring}
-            >
-              {t("game:submittedBy", { name: submittedBy })}
-            </motion.p>
-          )}
-
-          {media?.type === MEDIA_TYPES.IMAGE && (
-            <motion.img
-              alt={question}
-              src={media.url}
-              className="min-h-0 max-h-[28vh] w-auto rounded-md object-contain lg:max-h-[42vh]"
-              variants={reveal.item()}
-              transition={reveal.spring}
-            />
-          )}
-        </motion.div>
-
-        {/* Kahoot-style answer tiles on the presenter big-screen — DISPLAY-ONLY.
-            Players answer on their phones (Answers.tsx); these are non-interactive
-            (no onClick, disabled + pointer-events-none + cursor-default). We render
-            exactly the answers present (choice/boolean = 2..4), shape icons via
-            colorIndex. Absent for slider questions, where `answers` is undefined.
-            Hot path: tiles reveal via cheap fade+rise items inside the shared
-            stagger container — no per-tile layout springs. */}
-        {answers && answers.length > 0 && (
+        {/* 5-second question preview: question + media only. The answer options
+            are intentionally NOT shown here — they appear in the answering phase
+            (Answers.tsx / SoloAnswers.tsx). When a question has no image we still
+            reserve the space with a transparent placeholder so the question and
+            countdown stay vertically stable from question to question. */}
+        {media?.type === MEDIA_TYPES.IMAGE ? (
+          <motion.img
+            alt={question}
+            src={media.url}
+            className="min-h-0 max-h-[28vh] w-auto rounded-md object-contain lg:max-h-[42vh]"
+            variants={reveal.item()}
+            transition={reveal.spring}
+          />
+        ) : (
           <motion.div
-            className="grid w-full shrink-0 grid-cols-2 gap-2 text-lg font-bold text-white md:text-xl lg:gap-3 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
-            variants={reveal.container()}
-          >
-            {answers.map((answer, index) => (
-              <motion.div
-                key={index}
-                variants={reveal.item()}
-                transition={reveal.spring}
-              >
-                <AnswerButton
-                  colorIndex={index}
-                  disabled
-                  aria-disabled="true"
-                  tabIndex={-1}
-                  className="pointer-events-none cursor-default"
-                >
-                  <Markdown>{answer}</Markdown>
-                </AnswerButton>
-              </motion.div>
-            ))}
-          </motion.div>
+            aria-hidden
+            className="pointer-events-none h-[28vh] w-full max-w-md shrink-0 lg:h-[42vh]"
+            variants={reveal.item()}
+            transition={reveal.spring}
+          />
         )}
       </motion.div>
       {/* Prominent Kahoot-style circular countdown, replacing the old
