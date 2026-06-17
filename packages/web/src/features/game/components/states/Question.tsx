@@ -61,7 +61,7 @@ const Question = ({
           question (mount-on-key). reduced-motion → opacity-only via useReveal. */}
       <motion.div
         key={question}
-        className="glass-3 flex w-full flex-1 flex-col items-center gap-6 py-6"
+        className="glass-3 flex w-full flex-1 flex-col items-center gap-3 py-3 lg:gap-6 lg:py-6"
         variants={reveal.container()}
         initial="hidden"
         animate="visible"
@@ -71,7 +71,7 @@ const Question = ({
             tiles are anchored to the bottom of the panel (Kahoot-style presenter
             layout) with a comfortable gap to the bottom edge. */}
         <motion.div
-          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-5"
+          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 lg:gap-5"
           variants={reveal.container()}
         >
           <motion.h2
@@ -96,7 +96,7 @@ const Question = ({
             <motion.img
               alt={question}
               src={media.url}
-              className="min-h-0 max-h-[42vh] w-auto rounded-md object-contain"
+              className="min-h-0 max-h-[28vh] w-auto rounded-md object-contain lg:max-h-[42vh]"
               variants={reveal.item()}
               transition={reveal.spring}
             />
