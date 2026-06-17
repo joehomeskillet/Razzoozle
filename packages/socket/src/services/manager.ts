@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { Socket } from "@razzoozle/common/types/game/socket"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
+  devApiKey,
   getGameConfig,
   getMergedAchievements,
   getQuizzMeta,
@@ -25,6 +26,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     teamMode: getGameConfig().teamMode,
     achievements: getMergedAchievements(),
     devMode: isDevMode(),
+    devApiKey: devApiKey(),
   })
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi

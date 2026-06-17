@@ -33,6 +33,8 @@ export const REDACT_PATHS: string[] = [
   "*.managerPassword",
   "apiKey",
   "*.apiKey",
+  "devApiKey",
+  "*.devApiKey",
   "key",
   "*.key",
   "token",

@@ -183,6 +183,15 @@ export const buildOpenApiDoc = (routes: readonly RouteDoc[]) => {
             "Manager auth (documented only; control-plane writes are gated " +
             "via socket.io manager.withAuth, not this header).",
         },
+        DevToken: {
+          type: "apiKey",
+          in: "query",
+          name: "token",
+          description:
+            "Optional DEV-route token (env DEV_API_KEY). Required on the " +
+            "DEV-gated paths when configured; sent as the ?token= query param " +
+            "or the X-Manager-Token header.",
+        },
       },
     },
     paths,

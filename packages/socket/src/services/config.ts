@@ -83,6 +83,12 @@ const getPath = (path = "") =>
 // operator explicitly opts in. Default OFF, any value other than "1" is OFF.
 export const isDevMode = (): boolean => process.env.RAZZOOLE_DEV === "1"
 
+// Optional DEV-route API key. When set (and dev mode is on), the DEV-gated
+// HTTP routes additionally require this token (header X-Manager-Token or
+// ?token= query). Unset/empty -> dev-gate only (unchanged behaviour).
+export const devApiKey = (): string | undefined =>
+  process.env.DEV_API_KEY || undefined
+
 // Read-only seed assets baked into the image (presets + brand backgrounds/logo).
 // Mirrors getPath: BRANDING_PATH is set in Docker (=/app/branding via Dockerfile)
 // and falls back to the repo-relative `source/branding` in dev (the socket dev
@@ -180,16 +186,28 @@ const socketThemeValidator = z.object({
   answerColors: z.tuple([
     z
       .string()
-      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+      .regex(
+        /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+        "errors:theme.invalidColor",
+      ),
     z
       .string()
-      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+      .regex(
+        /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+        "errors:theme.invalidColor",
+      ),
     z
       .string()
-      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+      .regex(
+        /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+        "errors:theme.invalidColor",
+      ),
     z
       .string()
-      .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "errors:theme.invalidColor"),
+      .regex(
+        /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+        "errors:theme.invalidColor",
+      ),
   ]),
   answerTextColor: z
     .string()
@@ -271,7 +289,10 @@ const seedBrandingAssets = (): void => {
         const parsed = themeTemplateValidator.safeParse(JSON.parse(raw))
 
         if (!parsed.success) {
-          console.warn(`Skipping invalid brand preset "${file}":`, parsed.error.issues)
+          console.warn(
+            `Skipping invalid brand preset "${file}":`,
+            parsed.error.issues,
+          )
 
           continue
         }
@@ -796,7 +817,10 @@ export const getSubmissions = (): Submission[] => {
         const result = submissionRecordValidator.safeParse(JSON.parse(raw))
 
         if (!result.success) {
-          console.warn(`Invalid submission file "${file}":`, result.error.issues)
+          console.warn(
+            `Invalid submission file "${file}":`,
+            result.error.issues,
+          )
 
           return []
         }
@@ -821,13 +845,15 @@ export const countPendingSubmissions = (): number => {
 }
 
 export const getSubmissionsMeta = (): SubmissionMeta[] =>
-  getSubmissions().map(({ id, submittedBy, submittedAt, status, question }) => ({
-    id,
-    submittedBy,
-    submittedAt,
-    status,
-    question: question.question,
-  }))
+  getSubmissions().map(
+    ({ id, submittedBy, submittedAt, status, question }) => ({
+      id,
+      submittedBy,
+      submittedAt,
+      status,
+      question: question.question,
+    }),
+  )
 
 export const getSubmissionById = (id: string): Submission | null => {
   assertSafeId(id)
@@ -1311,8 +1337,7 @@ const readMediaManifest = (): MediaMeta[] => {
         // (pre-existing rows without them MUST still load — no new required key).
         (candidate.width !== undefined &&
           typeof candidate.width !== "number") ||
-        (candidate.height !== undefined &&
-          typeof candidate.height !== "number")
+        (candidate.height !== undefined && typeof candidate.height !== "number")
       ) {
         return []
       }
@@ -1416,7 +1441,11 @@ const mediaFilePath = (category: MediaCategory, filename: string): string => {
   const target = resolve(mediaRoot, category, filename)
   const rel = relative(mediaRoot, target)
 
-  if (rel.startsWith("..") || rel === "" || resolve(mediaRoot, rel) !== target) {
+  if (
+    rel.startsWith("..") ||
+    rel === "" ||
+    resolve(mediaRoot, rel) !== target
+  ) {
     throw new Error("Invalid id")
   }
 
@@ -1476,7 +1505,8 @@ export const saveMediaFile = async (
     "errors:media.invalidDataUrl",
   )
   const inferredType = mime.startsWith("audio/") ? "audio" : "image"
-  const resolvedCategory = category ?? (inferredType === "audio" ? "audio" : "questions")
+  const resolvedCategory =
+    category ?? (inferredType === "audio" ? "audio" : "questions")
 
   if (!isMediaCategory(resolvedCategory)) {
     throw new Error("errors:media.invalidCategory")
@@ -1689,10 +1719,7 @@ export const setTheme = (
     fs.mkdirSync(themeDir)
   }
 
-  fs.writeFileSync(
-    getPath("theme/theme.json"),
-    JSON.stringify(theme, null, 2),
-  )
+  fs.writeFileSync(getPath("theme/theme.json"), JSON.stringify(theme, null, 2))
 
   return theme
 }
@@ -1864,10 +1891,7 @@ export const getSoloResults = (id: string): SoloScoreEntry[] => {
   }
 }
 
-export const appendSoloResult = (
-  id: string,
-  entry: SoloScoreEntry,
-): void => {
+export const appendSoloResult = (id: string, entry: SoloScoreEntry): void => {
   assertSafeId(id)
 
   const dir = getPath("solo-results")

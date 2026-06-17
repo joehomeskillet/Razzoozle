@@ -9,6 +9,7 @@
 // fail-closed (absent → handled as 404 when RAZZOOLE_DEV is unset).
 
 import type { IncomingMessage, ServerResponse } from "http"
+import { timingSafeEqual } from "crypto"
 import { z } from "zod"
 import {
   buildOpenApiDoc,
@@ -30,6 +31,7 @@ import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
 import {
   appendSoloResult,
   assertSafeId,
+  devApiKey,
   getMergedAchievements,
   getQuizzById,
   getSoloResults,
@@ -527,6 +529,43 @@ export const routes: Route[] = [
 // Build the OpenAPI doc once from the SAME table (excludes hidden routes).
 export const openApiDoc = buildOpenApiDoc(routes)
 
+// DEV-route access decision for a dev-flagged route. Mirrors the fail-closed
+// contract: dev off -> "notfound" (404, do not reveal); dev on + a DEV_API_KEY
+// configured -> require the token from the X-Manager-Token header OR the
+// ?token= query, constant-time compared -> "unauthorized" on mismatch; dev on
+// with no key -> "ok" (dev-gate only).
+const authorizeDevRequest = (
+  req: IncomingMessage,
+  url: URL,
+): "ok" | "notfound" | "unauthorized" => {
+  if (!isDevMode()) {
+    return "notfound"
+  }
+
+  const expected = devApiKey()
+
+  if (!expected) {
+    return "ok"
+  }
+
+  const headerToken = req.headers["x-manager-token"]
+  const presented =
+    (typeof headerToken === "string" ? headerToken : undefined) ??
+    url.searchParams.get("token") ??
+    ""
+
+  // Constant-time compare only when the lengths match (timingSafeEqual throws
+  // on unequal-length buffers); a length mismatch is itself a rejection.
+  const a = Buffer.from(presented)
+  const b = Buffer.from(expected)
+
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return "unauthorized"
+  }
+
+  return "ok"
+}
+
 // Dispatch a request against the table. Returns true if a route handled it
 // (including DEV-gated 404). Returns false if no route matched at all (caller
 // emits the generic 404), so /healthz and the socket.io upgrade are untouched.
@@ -536,6 +575,9 @@ export const dispatchHttp = (
 ): boolean => {
   const url = (req.url ?? "").split("?")[0] ?? ""
   const method = req.method ?? "GET"
+  // Full URL (with query) for the dev-route token check; matching still uses
+  // the path-only `url` above (unchanged).
+  const parsedUrl = new URL(req.url ?? "/", "http://localhost")
 
   for (const route of routes) {
     if (route.method !== method) {
@@ -546,9 +588,20 @@ export const dispatchHttp = (
       continue
     }
 
-    // DEV-gated fail-closed: behave as if the route does not exist when off.
-    if (route.dev && !isDevMode()) {
-      return false
+    // DEV-gated routes: fail-closed 404 when dev off, 401 when a DEV_API_KEY
+    // is configured and the presented token is absent/wrong, else serve.
+    if (route.dev) {
+      const decision = authorizeDevRequest(req, parsedUrl)
+
+      if (decision === "notfound") {
+        return false
+      }
+
+      if (decision === "unauthorized") {
+        httpRequestsTotal.inc({ route: route.path, status: "401" })
+        jsonError(res, 401, "unauthorized")
+        return true
+      }
     }
 
     httpRequestsTotal.inc({ route: route.path, status: "200" })

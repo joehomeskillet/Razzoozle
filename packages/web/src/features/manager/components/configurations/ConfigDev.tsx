@@ -62,6 +62,14 @@ const ConfigDev = () => {
   // null whenever no game is live, which lets us tear down stale telemetry.
   const { gameId } = useManagerStore()
 
+  // Append the dev API token (URL-encoded) to a same-origin DEV endpoint URL
+  // when one is configured, so the manager's opens/fetches authenticate. The
+  // key is never rendered — it only rides along on these dev-route requests.
+  const withToken = (url: string): string =>
+    config.devApiKey
+      ? `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(config.devApiKey)}`
+      : url
+
   const [games, setGames] = useState<GameSummary[]>([])
   const [displays, setDisplays] = useState<DisplayRow[]>([])
   const [snapshot, setSnapshot] = useState<MetricsHealthSnapshot | null>(null)
@@ -80,7 +88,7 @@ const ConfigDev = () => {
   // Probe the OpenAPI doc once on mount: route count, declared version, and
   // whether it advertises the OpenAPI 3.1.0 contract. Silent on any failure.
   useEffect(() => {
-    fetch("/api/openapi.json")
+    fetch(withToken("/api/openapi.json"))
       .then((r) => r.json())
       .then((doc) => {
         setApiInfo({
@@ -90,7 +98,8 @@ const ConfigDev = () => {
         })
       })
       .catch(() => {})
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.devApiKey])
 
   // Request the live game list on mount / reconnect. The server pushes
   // GAMES_DATA back to this socket; re-running on reconnect self-heals a deploy.
@@ -184,19 +193,19 @@ const ConfigDev = () => {
             <ListRow
               title={t("dev.api.openapi")}
               leading={<PlugZap className="size-5" />}
-              onClick={openEndpoint("/api/openapi.json")}
+              onClick={openEndpoint(withToken("/api/openapi.json"))}
               bodyLabel={t("dev.api.openapi")}
             />
             <ListRow
               title={t("dev.api.events")}
               leading={<Activity className="size-5" />}
-              onClick={openEndpoint("/api/v1/observability/events")}
+              onClick={openEndpoint(withToken("/api/v1/observability/events"))}
               bodyLabel={t("dev.api.events")}
             />
             <ListRow
               title={t("dev.api.schema")}
               leading={<ScrollText className="size-5" />}
-              onClick={openEndpoint("/api/v1/observability/schema")}
+              onClick={openEndpoint(withToken("/api/v1/observability/schema"))}
               bodyLabel={t("dev.api.schema")}
             />
           </div>
@@ -328,7 +337,7 @@ const ConfigDev = () => {
             title={t("dev.observability.eventCatalog")}
             leading={<ScrollText className="size-5" />}
             meta={t("dev.observability.sampledRedacted")}
-            onClick={openEndpoint("/api/v1/observability/events")}
+            onClick={openEndpoint(withToken("/api/v1/observability/events"))}
             bodyLabel={t("dev.observability.eventCatalog")}
           />
 
@@ -380,7 +389,9 @@ const ConfigDev = () => {
                 key: "download-server",
                 icon: Download,
                 label: t("dev.logs.download"),
-                onClick: openEndpoint("/api/v1/observability/logs/server"),
+                onClick: openEndpoint(
+                  withToken("/api/v1/observability/logs/server"),
+                ),
               },
             ]}
           />
@@ -392,7 +403,9 @@ const ConfigDev = () => {
                 key: "download-client",
                 icon: Download,
                 label: t("dev.logs.download"),
-                onClick: openEndpoint("/api/v1/observability/logs/client"),
+                onClick: openEndpoint(
+                  withToken("/api/v1/observability/logs/client"),
+                ),
               },
             ]}
           />

@@ -26,6 +26,10 @@ export interface ManagerConfig {
   // Dev-mode flag mirroring the server's RAZZOOLE_DEV env. Optional for
   // back-compat; absent in old payloads → reads as off.
   devMode?: boolean
+  // Optional dev-API token (mirrors the server's DEV_API_KEY env) the manager
+  // appends to dev-gated endpoint URLs. Optional/absent when no key is set or
+  // for back-compat with old payloads → client falls back to dev-gate only.
+  devApiKey?: string
   // Observability dashboard links surfaced in the manager's dev tab. Optional;
   // any individual URL may be absent if not configured.
   observability?: {
