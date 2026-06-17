@@ -7,7 +7,7 @@ import {
   answerColor,
   answerLabel,
 } from "@razzoozle/web/features/game/utils/answers"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { calculatePercentages } from "@razzoozle/web/features/game/utils/score"
 import { matchAnswer } from "@razzoozle/web/features/game/utils/text-match"
 import clsx from "clsx"
@@ -46,12 +46,14 @@ const Responses = ({
   const { t } = useTranslation()
   const reveal = useReveal()
 
-  const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
+  const resultsUrl = useSoundUrl("results")
+  const musicUrl = useSoundUrl("answersMusic")
+  const [sfxResults] = useSound(resultsUrl, {
     volume: 0.2,
     soundEnabled: !muted,
   })
 
-  const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
+  const [playMusic, { stop: stopMusic }] = useSound(musicUrl, {
     volume: 0.2,
     soundEnabled: !muted,
     onplay: () => {

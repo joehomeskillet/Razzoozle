@@ -95,7 +95,10 @@
   "theme": {
     "imageTooLarge": "L'image est trop volumineuse (max. 8 Mo)",
     "uploadFailed": "Échec de l'envoi de l'image",
-    "saveFailed": "Impossible d’enregistrer le design"
+    "saveFailed": "Impossible d’enregistrer le design",
+    "audioTooLarge": "Le fichier audio est trop volumineux (max. 4 Mo)",
+    "invalidSlot": "Emplacement invalide",
+    "invalidAudio": "Format audio non pris en charge (MP3, WAV, OGG uniquement)"
   },
   "media": {
     "tooLarge": "L’image est trop volumineuse. Maximum 8 Mo.",

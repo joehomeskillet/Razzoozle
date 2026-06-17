@@ -302,6 +302,33 @@
       "staggerScale": "Factor de desfase",
       "previewLabel": "Vista previa",
       "replay": "Reproducir"
+    },
+    "sounds": {
+      "title": "Sonidos",
+      "description": "Sube un sonido propio por ranura. Vacío = sonido predeterminado.",
+      "default": "Predeterminado",
+      "custom": "Personalizado",
+      "upload": "Subir",
+      "test": "Reproducir",
+      "reset": "Restablecer",
+      "toast": {
+        "uploaded": "Sonido subido"
+      },
+      "slots": {
+        "answersMusic": "Música (pregunta activa)",
+        "answersSound": "Sonido (pregunta activa)",
+        "podiumThree": "Podio – 3.er puesto",
+        "podiumSecond": "Podio – 2.º puesto",
+        "podiumFirst": "Podio – 1.er puesto",
+        "podiumSnearRoll": "Podio – redoble de tambor",
+        "results": "Resultados",
+        "show": "Revelación",
+        "boump": "Tic / Boump",
+        "tierBronze": "Logro – Bronce",
+        "tierSilver": "Logro – Plata",
+        "tierGold": "Logro – Oro",
+        "tierDiamant": "Logro – Diamante"
+      }
     }
   },
   "submissions": {

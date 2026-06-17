@@ -3,6 +3,7 @@ import {
   EVENTS,
   PROMPT_MAX_LEN,
   SUBMISSION_CATEGORIES,
+  type SoundSlot,
   type ThemeSlot,
 } from "@razzoozle/common/constants"
 import type { EndGamePayload, Question } from "@razzoozle/common/types/game"
@@ -27,6 +28,7 @@ import {
   getSubmissions,
   getTheme,
   saveBackgroundImage,
+  saveSoundFile,
   saveCatalogEntry,
   saveSubmission,
   resetSkeleton,
@@ -136,6 +138,39 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
             slot: payload.slot,
             path,
           })
+        } catch (error) {
+          socket.emit(
+            EVENTS.MANAGER.THEME_ERROR,
+            error instanceof Error
+              ? error.message
+              : "errors:theme.uploadFailed",
+          )
+        }
+      },
+    ),
+  )
+
+  // Sound-pack upload (mirrors UPLOAD_BACKGROUND, but for audio — no transcode).
+  // Validates the slot + audio MIME + size cap in saveSoundFile, writes the file,
+  // stores the returned assetRef on theme.sounds[slot], persists, then emits
+  // SOUND_UPLOADED to the requester and broadcasts the new theme to everyone else.
+  socket.on(
+    EVENTS.MANAGER.UPLOAD_SOUND,
+    manager.withAuth(
+      socket,
+      async (payload: { slot: SoundSlot; dataUrl: string }) => {
+        try {
+          const assetRef = await saveSoundFile(payload.slot, payload.dataUrl)
+          const current = getTheme()
+          const theme = setTheme({
+            ...current,
+            sounds: { ...current.sounds, [payload.slot]: assetRef },
+          })
+          socket.emit(EVENTS.MANAGER.SOUND_UPLOADED, {
+            slot: payload.slot,
+            assetRef,
+          })
+          socket.broadcast.emit(EVENTS.MANAGER.THEME, theme)
         } catch (error) {
           socket.emit(
             EVENTS.MANAGER.THEME_ERROR,

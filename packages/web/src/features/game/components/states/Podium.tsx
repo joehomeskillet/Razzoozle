@@ -3,7 +3,7 @@ import Avatar from "@razzoozle/web/components/Avatar"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { motion } from "motion/react"
@@ -19,19 +19,23 @@ const usePodiumAnimation = (topLength: number) => {
   const [apparition, setApparition] = useState(0)
   const muted = useSoundStore((s) => s.muted)
 
-  const [sfxtThree] = useSound(SFX.PODIUM.THREE, {
+  const threeUrl = useSoundUrl("podiumThree")
+  const secondUrl = useSoundUrl("podiumSecond")
+  const snearRollUrl = useSoundUrl("podiumSnearRoll")
+  const firstUrl = useSoundUrl("podiumFirst")
+  const [sfxtThree] = useSound(threeUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })
-  const [sfxSecond] = useSound(SFX.PODIUM.SECOND, {
+  const [sfxSecond] = useSound(secondUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })
-  const [sfxRool, { stop: sfxRoolStop }] = useSound(SFX.PODIUM.SNEAR_ROOL, {
+  const [sfxRool, { stop: sfxRoolStop }] = useSound(snearRollUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })
-  const [sfxFirst] = useSound(SFX.PODIUM.FIRST, {
+  const [sfxFirst] = useSound(firstUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })

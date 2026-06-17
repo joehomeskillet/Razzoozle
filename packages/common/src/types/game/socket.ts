@@ -1,5 +1,9 @@
 import { EVENTS } from "@razzoozle/common/constants"
-import type { SubmissionCategory, ThemeSlot } from "@razzoozle/common/constants"
+import type {
+  SoundSlot,
+  SubmissionCategory,
+  ThemeSlot,
+} from "@razzoozle/common/constants"
 import type { AISettingsPublic, AITestResult } from "@razzoozle/common/types/ai"
 import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import type {
@@ -174,6 +178,12 @@ export interface ServerToClientEvents {
     slot: ThemeSlot
     path: string
   }) => void
+  // Per-slot sound upload ack (mirrors BACKGROUND_UPLOADED). `assetRef` is the
+  // served path the client writes into draft.sounds[slot].
+  [EVENTS.MANAGER.SOUND_UPLOADED]: (_data: {
+    slot: SoundSlot
+    assetRef: string
+  }) => void
   [EVENTS.MANAGER.THEME_ERROR]: (_message: string) => void
 
   // Theme-template events (server -> client). DATA carries the full
@@ -346,6 +356,12 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.RESET_SKELETON]: () => void
   [EVENTS.MANAGER.UPLOAD_BACKGROUND]: (_data: {
     slot: ThemeSlot
+    dataUrl: string
+  }) => void
+  // Per-slot sound upload (mirrors UPLOAD_BACKGROUND). dataUrl is the audio file
+  // as a data URL; the server transcodes/persists and acks via SOUND_UPLOADED.
+  [EVENTS.MANAGER.UPLOAD_SOUND]: (_data: {
+    slot: SoundSlot
     dataUrl: string
   }) => void
 

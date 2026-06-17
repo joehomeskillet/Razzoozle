@@ -458,6 +458,33 @@
       "staggerScale": "错峰系数",
       "previewLabel": "预览",
       "replay": "重播"
+    },
+    "sounds": {
+      "title": "音效",
+      "description": "为每个声槽上传自定义音效。留空 = 默认音效。",
+      "default": "默认",
+      "custom": "自定义",
+      "upload": "上传",
+      "test": "播放",
+      "reset": "重置",
+      "toast": {
+        "uploaded": "音效已上传"
+      },
+      "slots": {
+        "answersMusic": "音乐（答题进行中）",
+        "answersSound": "音效（答题进行中）",
+        "podiumThree": "领奖台 – 第 3 名",
+        "podiumSecond": "领奖台 – 第 2 名",
+        "podiumFirst": "领奖台 – 第 1 名",
+        "podiumSnearRoll": "领奖台 – 鼓声",
+        "results": "结果",
+        "show": "揭晓",
+        "boump": "提示音 / Boump",
+        "tierBronze": "成就 – 铜",
+        "tierSilver": "成就 – 银",
+        "tierGold": "成就 – 金",
+        "tierDiamant": "成就 – 钻石"
+      }
     }
   },
   "submissions": {

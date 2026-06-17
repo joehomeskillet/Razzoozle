@@ -461,6 +461,33 @@
       "staggerScale": "Versatz-Faktor",
       "previewLabel": "Vorschau",
       "replay": "Abspielen"
+    },
+    "sounds": {
+      "title": "Sounds",
+      "description": "Eigene Klänge pro Slot hochladen. Leer = Standardklang.",
+      "default": "Standard",
+      "custom": "Eigener",
+      "upload": "Hochladen",
+      "test": "Anhören",
+      "reset": "Zurücksetzen",
+      "toast": {
+        "uploaded": "Sound hochgeladen"
+      },
+      "slots": {
+        "answersMusic": "Musik (Frage läuft)",
+        "answersSound": "Sound (Frage läuft)",
+        "podiumThree": "Podium – 3. Platz",
+        "podiumSecond": "Podium – 2. Platz",
+        "podiumFirst": "Podium – 1. Platz",
+        "podiumSnearRoll": "Podium – Trommelwirbel",
+        "results": "Ergebnisse",
+        "show": "Einblendung",
+        "boump": "Tick / Boump",
+        "tierBronze": "Achievement – Bronze",
+        "tierSilver": "Achievement – Silber",
+        "tierGold": "Achievement – Gold",
+        "tierDiamant": "Achievement – Diamant"
+      }
     }
   },
   "submissions": {

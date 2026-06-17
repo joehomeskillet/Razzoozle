@@ -1,6 +1,7 @@
 import {
   type BackgroundSlot,
   EVENTS,
+  type SoundSlot,
   type ThemeSlot,
 } from "@razzoozle/common/constants"
 import { THEME_TOKENS } from "@razzoozle/common/theme-tokens"
@@ -29,6 +30,7 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import AnimationControls from "@razzoozle/web/features/manager/components/configurations/AnimationControls"
 import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
+import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
@@ -193,6 +195,15 @@ const ConfigTheme = () => {
     setDraft(next)
     applyTheme(next)
   }
+
+  // Immutably set one sound-slot override in the draft (assetRef or null). Used
+  // by SoundControls for both the upload-result feedback and the reset action;
+  // rides the unchanged MANAGER.SET_THEME save path (theme.sounds round-trips).
+  const setSoundSlot = (slot: SoundSlot, value: string | null) =>
+    setDraft((prev) => ({
+      ...prev,
+      sounds: { ...prev.sounds, [slot]: value },
+    }))
 
   useEvent(EVENTS.MANAGER.BACKGROUND_UPLOADED, ({ slot, path }) => {
     pendingActionRef.current = null
@@ -688,6 +699,12 @@ const ConfigTheme = () => {
                   ))}
                 </div>
               </SectionCard>
+
+              {/* ── Sounds (per-slot upload / test / reset) ────────────
+                Bound to draft.sounds; uploads emit MANAGER.UPLOAD_SOUND and the
+                MANAGER.SOUND_UPLOADED ack feeds the served assetRef back into
+                the draft. Saving rides the unchanged MANAGER.SET_THEME flow. */}
+              <SoundControls draft={draft} onSlotChange={setSoundSlot} />
 
               {/* ── Vorlagen ─────────────────────────────────────────── */}
               <SectionCard

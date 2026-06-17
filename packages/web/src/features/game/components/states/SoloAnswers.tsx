@@ -20,7 +20,7 @@ import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
 import {
   hapticError,
@@ -53,19 +53,23 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [countdown, setCountdown] = useState(question.time)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
+  const popUrl = useSoundUrl("answersSound")
+  const resultsUrl = useSoundUrl("results")
+  const boumpUrl = useSoundUrl("boump")
+  const musicUrl = useSoundUrl("answersMusic")
+  const [sfxPop] = useSound(popUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })
-  const [sfxCorrect] = useSound(SFX.RESULTS_SOUND, {
+  const [sfxCorrect] = useSound(resultsUrl, {
     volume: 0.2,
     soundEnabled: !muted,
   })
-  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+  const [sfxWrong] = useSound(boumpUrl, {
     volume: 0.3,
     soundEnabled: !muted,
   })
-  const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
+  const [playMusic, { stop: stopMusic }] = useSound(musicUrl, {
     volume: 0.2,
     interrupt: true,
     loop: true,

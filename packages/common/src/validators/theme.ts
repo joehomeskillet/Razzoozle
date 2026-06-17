@@ -100,6 +100,41 @@ export const themeValidator = z.object({
       durationScale: 1,
       staggerScale: 1,
     }),
+  // Sound-pack overrides — one assetRef per SOUND_SLOT. null ⇒ playback falls
+  // back to the bundled default mp3 (SOUND_DEFAULTS), so an absent/old theme.json
+  // stays an audio no-op. Object-level `.default` keeps shallow-partial inputs
+  // (and DEFAULT_THEME) valid; default = all null.
+  sounds: z
+    .object({
+      answersMusic: assetRef,
+      answersSound: assetRef,
+      podiumThree: assetRef,
+      podiumSecond: assetRef,
+      podiumFirst: assetRef,
+      podiumSnearRoll: assetRef,
+      results: assetRef,
+      show: assetRef,
+      boump: assetRef,
+      tierBronze: assetRef,
+      tierSilver: assetRef,
+      tierGold: assetRef,
+      tierDiamant: assetRef,
+    })
+    .default({
+      answersMusic: null,
+      answersSound: null,
+      podiumThree: null,
+      podiumSecond: null,
+      podiumFirst: null,
+      podiumSnearRoll: null,
+      results: null,
+      show: null,
+      boump: null,
+      tierBronze: null,
+      tierSilver: null,
+      tierGold: null,
+      tierDiamant: null,
+    }),
   // Skeleton overrides — content lives in files (config/theme/skeleton.css|js),
   // theme.json only carries the enable flags + a cache-bust version.
   customCssEnabled: z.boolean().default(false),

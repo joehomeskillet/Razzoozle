@@ -4,7 +4,7 @@ import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXma
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { playFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
 import {
   hapticAchievement,
@@ -77,28 +77,34 @@ const Result = ({
   // Otherwise a hollow "1st place" would appear at 0 points or in a solo game.
   const showRank = myPoints > 0 && (playerCount ?? 1) > 1
 
-  const [sfxResults] = useSound(SFX.RESULTS_SOUND, {
+  const resultsUrl = useSoundUrl("results")
+  const boumpUrl = useSoundUrl("boump")
+  const bronzeUrl = useSoundUrl("tierBronze")
+  const silverUrl = useSoundUrl("tierSilver")
+  const goldUrl = useSoundUrl("tierGold")
+  const diamantUrl = useSoundUrl("tierDiamant")
+  const [sfxResults] = useSound(resultsUrl, {
     volume: 0.2,
     soundEnabled: !muted,
   })
   // Wrong-answer chime — reuse the existing boump asset (mirrors SoloAnswers).
-  const [sfxWrong] = useSound(SFX.BOUMP_SOUND, {
+  const [sfxWrong] = useSound(boumpUrl, {
     volume: 0.3,
     soundEnabled: !muted,
   })
-  const [sfxBronze] = useSound(SFX.TIERS.BRONZE, {
+  const [sfxBronze] = useSound(bronzeUrl, {
     volume: 0.4,
     soundEnabled: !muted,
   })
-  const [sfxSilver] = useSound(SFX.TIERS.SILVER, {
+  const [sfxSilver] = useSound(silverUrl, {
     volume: 0.4,
     soundEnabled: !muted,
   })
-  const [sfxGold] = useSound(SFX.TIERS.GOLD, {
+  const [sfxGold] = useSound(goldUrl, {
     volume: 0.4,
     soundEnabled: !muted,
   })
-  const [sfxDiamant] = useSound(SFX.TIERS.DIAMANT, {
+  const [sfxDiamant] = useSound(diamantUrl, {
     volume: 0.4,
     soundEnabled: !muted,
   })

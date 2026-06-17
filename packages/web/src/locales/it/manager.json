@@ -302,6 +302,33 @@
       "staggerScale": "Fattore di sfasamento",
       "previewLabel": "Anteprima",
       "replay": "Riproduci"
+    },
+    "sounds": {
+      "title": "Suoni",
+      "description": "Carica un suono personalizzato per slot. Vuoto = suono predefinito.",
+      "default": "Predefinito",
+      "custom": "Personalizzato",
+      "upload": "Carica",
+      "test": "Riproduci",
+      "reset": "Reimposta",
+      "toast": {
+        "uploaded": "Suono caricato"
+      },
+      "slots": {
+        "answersMusic": "Musica (domanda in corso)",
+        "answersSound": "Suono (domanda in corso)",
+        "podiumThree": "Podio – 3º posto",
+        "podiumSecond": "Podio – 2º posto",
+        "podiumFirst": "Podio – 1º posto",
+        "podiumSnearRoll": "Podio – rullo di tamburi",
+        "results": "Risultati",
+        "show": "Rivelazione",
+        "boump": "Tic / Boump",
+        "tierBronze": "Obiettivo – Bronzo",
+        "tierSilver": "Obiettivo – Argento",
+        "tierGold": "Obiettivo – Oro",
+        "tierDiamant": "Obiettivo – Diamante"
+      }
     }
   },
   "submissions": {

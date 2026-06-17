@@ -100,7 +100,10 @@
   "theme": {
     "imageTooLarge": "图片太大（最大 8 MB）",
     "uploadFailed": "图片上传失败",
-    "saveFailed": "无法保存设计"
+    "saveFailed": "无法保存设计",
+    "audioTooLarge": "音频文件太大（最大 4 MB）",
+    "invalidSlot": "无效的插槽",
+    "invalidAudio": "不支持此音频格式（仅支持 MP3、WAV、OGG）"
   },
   "media": {
     "tooLarge": "图片太大。最大 8 MB。",

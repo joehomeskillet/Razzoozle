@@ -4,7 +4,7 @@ import Markdown from "@razzoozle/web/components/Markdown"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -18,7 +18,8 @@ const Question = ({
   data: { question, media, cooldown, submittedBy },
 }: Props) => {
   const muted = useSoundStore((s) => s.muted)
-  const [sfxShow] = useSound(SFX.SHOW_SOUND, {
+  const showUrl = useSoundUrl("show")
+  const [sfxShow] = useSound(showUrl, {
     volume: 0.5,
     soundEnabled: !muted,
   })

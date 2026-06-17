@@ -302,6 +302,33 @@
       "staggerScale": "Facteur de décalage",
       "previewLabel": "Aperçu",
       "replay": "Rejouer"
+    },
+    "sounds": {
+      "title": "Sons",
+      "description": "Téléverse un son personnalisé par emplacement. Vide = son par défaut.",
+      "default": "Par défaut",
+      "custom": "Personnalisé",
+      "upload": "Téléverser",
+      "test": "Écouter",
+      "reset": "Réinitialiser",
+      "toast": {
+        "uploaded": "Son téléversé"
+      },
+      "slots": {
+        "answersMusic": "Musique (question en cours)",
+        "answersSound": "Son (question en cours)",
+        "podiumThree": "Podium – 3e place",
+        "podiumSecond": "Podium – 2e place",
+        "podiumFirst": "Podium – 1re place",
+        "podiumSnearRoll": "Podium – roulement de tambour",
+        "results": "Résultats",
+        "show": "Révélation",
+        "boump": "Tic / Boump",
+        "tierBronze": "Succès – Bronze",
+        "tierSilver": "Succès – Argent",
+        "tierGold": "Succès – Or",
+        "tierDiamant": "Succès – Diamant"
+      }
     }
   },
   "submissions": {

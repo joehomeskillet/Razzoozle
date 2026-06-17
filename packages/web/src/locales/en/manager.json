@@ -463,6 +463,33 @@
       "staggerScale": "Stagger scale",
       "previewLabel": "Preview",
       "replay": "Replay"
+    },
+    "sounds": {
+      "title": "Sounds",
+      "description": "Upload a custom sound per slot. Empty = default sound.",
+      "default": "Default",
+      "custom": "Custom",
+      "upload": "Upload",
+      "test": "Play",
+      "reset": "Reset",
+      "toast": {
+        "uploaded": "Sound uploaded"
+      },
+      "slots": {
+        "answersMusic": "Music (question running)",
+        "answersSound": "Sound (question running)",
+        "podiumThree": "Podium – 3rd place",
+        "podiumSecond": "Podium – 2nd place",
+        "podiumFirst": "Podium – 1st place",
+        "podiumSnearRoll": "Podium – drum roll",
+        "results": "Results",
+        "show": "Reveal",
+        "boump": "Tick / Boump",
+        "tierBronze": "Achievement – Bronze",
+        "tierSilver": "Achievement – Silver",
+        "tierGold": "Achievement – Gold",
+        "tierDiamant": "Achievement – Diamond"
+      }
     }
   },
   "submissions": {

@@ -18,7 +18,7 @@ import {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { hapticTap } from "@razzoozle/web/features/game/utils/haptics"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import clsx from "clsx"
@@ -114,12 +114,14 @@ const Answers = ({
   // is CSS-only to keep the hot path cheap.
   const reveal = useReveal()
 
-  const [sfxPop] = useSound(SFX.ANSWERS.SOUND, {
+  const popUrl = useSoundUrl("answersSound")
+  const musicUrl = useSoundUrl("answersMusic")
+  const [sfxPop] = useSound(popUrl, {
     volume: 0.1,
     soundEnabled: !muted,
   })
 
-  const [playMusic, { stop: stopMusic }] = useSound(SFX.ANSWERS.MUSIC, {
+  const [playMusic, { stop: stopMusic }] = useSound(musicUrl, {
     volume: 0.2,
     interrupt: true,
     loop: true,

@@ -101,7 +101,10 @@
   "theme": {
     "imageTooLarge": "Das Bild ist zu gross (max. 8 MB)",
     "uploadFailed": "Bild konnte nicht hochgeladen werden",
-    "saveFailed": "Design konnte nicht gespeichert werden"
+    "saveFailed": "Design konnte nicht gespeichert werden",
+    "audioTooLarge": "Die Audiodatei ist zu gross (max. 4 MB)",
+    "invalidSlot": "Ungültiger Slot",
+    "invalidAudio": "Audioformat wird nicht unterstützt (nur MP3, WAV, OGG)"
   },
   "media": {
     "tooLarge": "Das Bild ist zu groß. Maximal 8 MB.",

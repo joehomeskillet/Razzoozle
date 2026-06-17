@@ -4,7 +4,7 @@ import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { hapticCountdown } from "@razzoozle/web/features/game/utils/haptics"
-import { SFX } from "@razzoozle/web/features/game/utils/constants"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import clsx from "clsx"
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
@@ -20,7 +20,8 @@ const Start = ({ data: { time, subject } }: Props) => {
   const muted = useSoundStore((s) => s.muted)
   const reveal = useReveal()
 
-  const [sfxBoump] = useSound(SFX.BOUMP_SOUND, {
+  const boumpUrl = useSoundUrl("boump")
+  const [sfxBoump] = useSound(boumpUrl, {
     volume: 0.2,
     soundEnabled: !muted,
   })

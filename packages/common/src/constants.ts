@@ -70,6 +70,8 @@ export const EVENTS = {
     SET_THEME_SUCCESS: "manager:setThemeSuccess",
     UPLOAD_BACKGROUND: "manager:uploadBackground",
     BACKGROUND_UPLOADED: "manager:backgroundUploaded",
+    UPLOAD_SOUND: "manager:uploadSound",
+    SOUND_UPLOADED: "manager:soundUploaded",
     THEME_ERROR: "manager:themeError",
     // Skeleton CSS/JS text edits (manager-auth-gated server-side). Writes the
     // file, toggles the matching *Enabled flag, bumps skeletonVersion, persists,
@@ -393,6 +395,44 @@ export const THEME_SLOTS = [...BACKGROUND_SLOTS, "logo"] as const
 export type BackgroundSlot = (typeof BACKGROUND_SLOTS)[number]
 
 export type ThemeSlot = (typeof THEME_SLOTS)[number]
+
+// Theme sound slots. Each flat slot id maps to a bundled default mp3 under
+// /sounds/ (SOUND_DEFAULTS); a theme may override a slot with a served asset
+// ref (validators/theme.ts -> sounds). A null override ⇒ playback falls back to
+// the bundled default, so an absent/old theme.json stays an audio no-op.
+export const SOUND_SLOTS = [
+  "answersMusic",
+  "answersSound",
+  "podiumThree",
+  "podiumSecond",
+  "podiumFirst",
+  "podiumSnearRoll",
+  "results",
+  "show",
+  "boump",
+  "tierBronze",
+  "tierSilver",
+  "tierGold",
+  "tierDiamant",
+] as const
+
+export type SoundSlot = (typeof SOUND_SLOTS)[number]
+
+export const SOUND_DEFAULTS: Record<SoundSlot, string> = {
+  answersMusic: "/sounds/answersMusic.mp3",
+  answersSound: "/sounds/answersSound.mp3",
+  podiumThree: "/sounds/three.mp3",
+  podiumSecond: "/sounds/second.mp3",
+  podiumFirst: "/sounds/first.mp3",
+  podiumSnearRoll: "/sounds/snearRoll.mp3",
+  results: "/sounds/results.mp3",
+  show: "/sounds/show.mp3",
+  boump: "/sounds/boump.mp3",
+  tierBronze: "/sounds/bronze.mp3",
+  tierSilver: "/sounds/silver.mp3",
+  tierGold: "/sounds/gold.mp3",
+  tierDiamant: "/sounds/diamant.mp3",
+}
 
 // ---- Scoring / timing tuning (server imports these in a later phase) -------
 export const FIRST_CORRECT_BONUS = 100

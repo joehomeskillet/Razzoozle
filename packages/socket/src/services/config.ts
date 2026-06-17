@@ -5,9 +5,11 @@ import {
   DEFAULT_MANAGER_PASSWORD,
   EXAMPLE_QUIZZ,
   MEDIA_CATEGORIES,
+  SOUND_SLOTS,
   THEME_REVISIONS_MAX,
   THEME_SLOTS,
   type MediaCategory,
+  type SoundSlot,
   type ThemeSlot,
 } from "@razzoozle/common/constants"
 import type {
@@ -141,6 +143,9 @@ const SKELETON_ASSET_EXT = new Set([
   "jpg",
   "jpeg",
   "woff2",
+  "mp3",
+  "wav",
+  "ogg",
 ])
 const SKELETON_BACKGROUND_SLOTS = ["auth", "managerGame", "playerGame"] as const
 
@@ -1790,6 +1795,12 @@ export const buildSkeletonZip = async (): Promise<Buffer> => {
   addAsset(theme.backgrounds.managerGame, "assets/backgrounds")
   addAsset(theme.backgrounds.playerGame, "assets/backgrounds")
 
+  // Sound-pack overrides → assets/sounds/ (mirrors the backgrounds branch). A
+  // null slot has no asset to ship; addAsset no-ops on null/missing files.
+  for (const slot of SOUND_SLOTS) {
+    addAsset(theme.sounds[slot], "assets/sounds")
+  }
+
   // Always ship theme.css / theme.js: the saved custom override if one exists,
   // otherwise a generated scaffold (the bundle is meant to carry css + js, and
   // the scaffold gives an LLM a concrete starting point).
@@ -1865,7 +1876,10 @@ export const importSkeletonZip = async (buf: Buffer): Promise<Theme> => {
 
     const content = buffers.get(entry.name)
     const base = basename(entry.name)
-    const expectedBase = entry.name.replace(/^assets\/(backgrounds\/)?/u, "")
+    const expectedBase = entry.name.replace(
+      /^assets\/(backgrounds\/|sounds\/)?/u,
+      "",
+    )
 
     if (
       !content ||
@@ -1885,13 +1899,16 @@ export const importSkeletonZip = async (buf: Buffer): Promise<Theme> => {
     }
 
     const isBackground = entry.name.startsWith("assets/backgrounds/")
+    const isSound = entry.name.startsWith("assets/sounds/")
     const dest = isBackground
       ? getPath(`media/backgrounds/${base}`)
-      : getPath(`theme/${base}`)
+      : isSound
+        ? getPath(`media/sounds/${base}`)
+        : getPath(`theme/${base}`)
     ensureDir(resolve(dest, ".."))
     fs.writeFileSync(dest, content)
 
-    if (!isBackground && basename(theme.logo ?? "") === base) {
+    if (!isBackground && !isSound && basename(theme.logo ?? "") === base) {
       theme.logo = `/theme/${base}`
     }
 
@@ -1899,6 +1916,14 @@ export const importSkeletonZip = async (buf: Buffer): Promise<Theme> => {
       for (const slot of SKELETON_BACKGROUND_SLOTS) {
         if (basename(theme.backgrounds[slot] ?? "") === base) {
           theme.backgrounds[slot] = `/media/backgrounds/${base}`
+        }
+      }
+    }
+
+    if (isSound) {
+      for (const slot of SOUND_SLOTS) {
+        if (basename(theme.sounds[slot] ?? "") === base) {
+          theme.sounds[slot] = `/media/sounds/${base}`
         }
       }
     }
@@ -2103,6 +2128,71 @@ export const saveBackgroundImage = async (
   )
 
   return `/media/backgrounds/${filename}`
+}
+
+// Persist an uploaded sound (data URL) for a SOUND_SLOT and return its public
+// "/media/sounds/<file>" path (served by nginx from the config volume). Unlike
+// saveBackgroundImage (which transcodes to WebP), audio bytes are written AS-IS
+// — only the container extension is derived from the MIME (mp3/wav/ogg).
+export const saveSoundFile = async (
+  slot: SoundSlot,
+  dataUrl: string,
+): Promise<string> => {
+  if (!SOUND_SLOTS.includes(slot)) {
+    throw new Error("errors:theme.invalidSlot")
+  }
+
+  const { mime, buffer } = decodeDataUrl(
+    dataUrl,
+    MEDIA_AUDIO_MIME,
+    "errors:theme.invalidAudio",
+  )
+
+  // 4 MB hard cap
+  if (buffer.byteLength > 4 * 1024 * 1024) {
+    throw new Error("errors:theme.audioTooLarge")
+  }
+
+  ensureMediaDirs()
+  const soundsDir = getPath(`${MEDIA_ROOT}/sounds`)
+  ensureDir(soundsDir)
+
+  // Remove previous files for this slot so the folder doesn't grow unbounded.
+  for (const file of fs.readdirSync(soundsDir)) {
+    if (file.startsWith(`${slot}-`)) {
+      fs.unlinkSync(resolve(soundsDir, file))
+    }
+  }
+  removeManifestWhere(
+    (item) =>
+      item.category === "audio" &&
+      item.source === "theme" &&
+      item.filename.startsWith(`${slot}-`),
+  )
+
+  // Audio is NOT transcoded: write the decoded bytes verbatim, pick the
+  // container ext from the MIME (.mp3/.wav/.ogg). Compute the timestamp ONCE so
+  // the filename and the manifest id can never drift apart.
+  const stamp = Date.now()
+  const filename = `${slot}-${stamp}${extensionForMime(mime)}`
+  fs.writeFileSync(resolve(soundsDir, filename), buffer)
+
+  // Track in the manifest like backgrounds do, reusing createMediaMeta for the
+  // id/uploadedAt fields. Files live under media/sounds/; the manifest
+  // `category` is the closest valid MediaCategory ("audio"), so we override the
+  // helper's derived `url` to point at the real /media/sounds/<file> location.
+  upsertMediaMeta({
+    ...createMediaMeta({
+      filename,
+      category: "audio",
+      size: buffer.byteLength,
+      type: "audio",
+      source: "theme",
+    }),
+    url: `/media/sounds/${filename}`,
+  })
+
+  return `/media/sounds/${filename}`
 }
 
 // ---- Solo-play leaderboard (config/solo-results/:quizzId.json) ------------

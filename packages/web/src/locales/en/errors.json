@@ -101,7 +101,10 @@
   "theme": {
     "imageTooLarge": "Image is too large (max 8 MB)",
     "uploadFailed": "Image upload failed",
-    "saveFailed": "Could not save the design"
+    "saveFailed": "Could not save the design",
+    "audioTooLarge": "Audio file is too large (max 4 MB)",
+    "invalidSlot": "Invalid slot",
+    "invalidAudio": "Unsupported audio format (MP3, WAV, OGG only)"
   },
   "media": {
     "tooLarge": "The image is too large. Maximum 8 MB.",
