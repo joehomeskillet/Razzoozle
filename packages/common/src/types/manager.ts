@@ -3,6 +3,7 @@ import type { SubmissionMeta } from "@razzoozle/common/types/submission"
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import type { ThemeTemplateMeta } from "@razzoozle/common/types/theme"
 import type { MergedAchievement } from "@razzoozle/common/achievements"
+import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
 
 export interface ManagerConfig {
   quizz: QuizzMeta[]
@@ -30,6 +31,10 @@ export interface ManagerConfig {
   // appends to dev-gated endpoint URLs. Optional/absent when no key is set or
   // for back-compat with old payloads → client falls back to dev-gate only.
   devApiKey?: string
+  // Installed manager plugins (config/plugins/index.json). Optional for
+  // back-compat; absent in old payloads → client renders no plugin tabs. The
+  // socket layer broadcasts the live list via MANAGER.PLUGIN_CONFIG.
+  plugins?: InstalledPlugin[]
   // Observability dashboard links surfaced in the manager's dev tab. Optional;
   // any individual URL may be absent if not configured.
   observability?: {

@@ -122,6 +122,14 @@ export const EVENTS = {
     LIST_GAMES: "manager:listGames",
     GAMES_DATA: "manager:gamesData",
     END_GAME: "manager:endGame",
+    // Manager plugin system. PLUGIN_CONFIG is the server->client broadcast of the
+    // installed plugin list (InstalledPlugin[]); the other three are client->server
+    // mutations, all manager-auth-gated server-side. INSTALL takes a base64 ZIP
+    // (mirrors UPLOAD_BACKGROUND's data shape), REMOVE/SET_CONFIG key by plugin id.
+    PLUGIN_CONFIG: "manager:pluginConfig",
+    PLUGIN_INSTALL: "manager:pluginInstall",
+    PLUGIN_REMOVE: "manager:pluginRemove",
+    PLUGIN_SET_CONFIG: "manager:pluginSetConfig",
   },
   QUIZZ: {
     GET: "quizz:get",

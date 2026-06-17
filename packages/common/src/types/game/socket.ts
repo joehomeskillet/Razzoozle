@@ -26,6 +26,7 @@ import type {
   ThemeTemplate,
 } from "@razzoozle/common/types/theme"
 import type { MediaMeta } from "@razzoozle/common/types/media"
+import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>
@@ -160,6 +161,9 @@ export interface ServerToClientEvents {
     id: string
     username: string
   }) => void
+  // Manager plugin system (server -> client). Broadcast of the installed plugin
+  // list whenever it changes (install / remove / config patch).
+  [EVENTS.MANAGER.PLUGIN_CONFIG]: (_plugins: InstalledPlugin[]) => void
   // Media-manager events (server -> client)
   [EVENTS.MEDIA.DATA]: (_media: MediaMeta[]) => void
   [EVENTS.MEDIA.UPLOAD_SUCCESS]: () => void
@@ -294,6 +298,16 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.REVEAL_ANSWER]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.GET_CONFIG]: () => void
   [EVENTS.MANAGER.LOGOUT]: () => void
+
+  // Manager plugin system (client -> server, all manager-auth-gated server-side).
+  // INSTALL ships a base64 ZIP (mirrors UPLOAD_BACKGROUND's data-carrying shape);
+  // REMOVE / SET_CONFIG key by the manifest plugin id.
+  [EVENTS.MANAGER.PLUGIN_INSTALL]: (_payload: { zipBase64: string }) => void
+  [EVENTS.MANAGER.PLUGIN_REMOVE]: (_payload: { id: string }) => void
+  [EVENTS.MANAGER.PLUGIN_SET_CONFIG]: (_payload: {
+    id: string
+    config: Record<string, unknown>
+  }) => void
 
   // Question-submission actions (feature #5)
   [EVENTS.MANAGER.SUBMIT_QUESTION]: (_payload: unknown) => void
