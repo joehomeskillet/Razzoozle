@@ -97,6 +97,7 @@ describe("skeleton export/import", () => {
     expect(zip.file("demo/phone-game.html")).not.toBeNull()
     expect(zip.file("demo/lobby.html")).not.toBeNull()
     expect(zip.file("demo/presentation.html")).not.toBeNull()
+    expect(zip.file("demo/admin.html")).not.toBeNull()
 
     // The demo pages are themed from the live theme (colorPrimary baked in).
     const phone = await zip.file("demo/phone-game.html")!.async("string")
@@ -116,6 +117,18 @@ describe("skeleton export/import", () => {
     expect(imported.customJsEnabled).toBe(true)
     expect(config.getSkeletonAsset("css")).toContain("color:red")
     expect(config.getSkeletonAsset("js")).toContain("window.x")
+  })
+
+  it("resetSkeleton restores the default theme and drops custom CSS/JS", async () => {
+    const config = await loadConfig()
+    config.setTheme({ ...DEFAULT_THEME, colorPrimary: "#abcdef" })
+    config.setSkeletonAsset("css", ".x{color:red}")
+
+    const reset = config.resetSkeleton()
+    expect(reset.colorPrimary).toBe(DEFAULT_THEME.colorPrimary)
+    expect(reset.customCssEnabled).toBe(false)
+    expect(config.getSkeletonAsset("css")).toBe("")
+    expect(config.getTheme().colorPrimary).toBe(DEFAULT_THEME.colorPrimary)
   })
 
   it("rejects a zip exceeding the entry-count cap", async () => {

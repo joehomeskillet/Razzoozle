@@ -27,6 +27,7 @@ import {
   SectionCard,
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
+import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
@@ -61,7 +62,11 @@ const BG_SLOTS: Array<{
   labelKey: string
   aspect: string
 }> = [
-  { key: "auth", labelKey: "manager:theme.bgSlots.auth", aspect: "aspect-[16/10]" },
+  {
+    key: "auth",
+    labelKey: "manager:theme.bgSlots.auth",
+    aspect: "aspect-[16/10]",
+  },
   {
     key: "managerGame",
     labelKey: "manager:theme.bgSlots.managerGame",
@@ -85,7 +90,11 @@ const TOKEN_CARDS: Array<{
   /** THEME_TOKENS `group` values rendered in this card, in order. */
   groups: string[]
 }> = [
-  { key: "teamsTiers", defaultTitle: "Teams & Tiers", groups: ["Teams", "Tiers"] },
+  {
+    key: "teamsTiers",
+    defaultTitle: "Teams & Tiers",
+    groups: ["Teams", "Tiers"],
+  },
   {
     key: "statesMisc",
     defaultTitle: "States & Misc",
@@ -114,7 +123,10 @@ const getTokenColor = (theme: Theme, path: string): string => {
 const setTokenColor = (theme: Theme, path: string, hex: string): Theme => {
   const keys = path.split(".")
 
-  const assign = (obj: Record<string, unknown>, i: number): Record<string, unknown> => {
+  const assign = (
+    obj: Record<string, unknown>,
+    i: number,
+  ): Record<string, unknown> => {
     const key = keys[i] as string
 
     if (i === keys.length - 1) {
@@ -135,7 +147,10 @@ const setTokenColor = (theme: Theme, path: string, hex: string): Theme => {
     }
   }
 
-  return assign(theme as unknown as Record<string, unknown>, 0) as unknown as Theme
+  return assign(
+    theme as unknown as Record<string, unknown>,
+    0,
+  ) as unknown as Theme
 }
 
 const ConfigTheme = () => {
@@ -406,389 +421,406 @@ const ConfigTheme = () => {
     <>
       <motion.div
         className="flex flex-1 flex-col"
-      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={
-        reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-      }
-    >
-      {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
-      <div className="flex flex-col gap-4 pb-20">
-        {/*
+        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={
+          reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+        }
+      >
+        {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
+        <div className="flex flex-col gap-4 pb-20">
+          {/*
           Cockpit: LEFT settings column (minmax(0,1fr)) + RIGHT sticky preview
           column (minmax(320px,420px)) at xl; single column below. The whole
           grid stays inside the ConsoleShell tabpanel scroller — no nested
           overflow that would trap mobile scroll.
         */}
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
-          {/* ── LEFT: settings ─────────────────────────────────────── */}
-          <div className="flex min-w-0 flex-col gap-6">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
+            {/* ── LEFT: settings ─────────────────────────────────────── */}
+            <div className="flex min-w-0 flex-col gap-6">
+              {/* ── App-Titel & Beschreibung ──────────────────────────── */}
+              <FormSection title={t("manager:theme.branding")}>
+                <LabelRow
+                  label={t("manager:theme.appTitle")}
+                  htmlFor="theme-app-title"
+                >
+                  <Input
+                    id="theme-app-title"
+                    value={draft.appTitle ?? ""}
+                    maxLength={40}
+                    placeholder="Razzoozle"
+                    variant="sm"
+                    onChange={(e) =>
+                      preview({ ...draft, appTitle: e.target.value || null })
+                    }
+                    className="min-h-11 w-full rounded-lg"
+                  />
+                </LabelRow>
 
-            {/* ── App-Titel & Beschreibung ──────────────────────────── */}
-            <FormSection title={t("manager:theme.branding")}>
-              <LabelRow
-                label={t("manager:theme.appTitle")}
-                htmlFor="theme-app-title"
-              >
-                <Input
-                  id="theme-app-title"
-                  value={draft.appTitle ?? ""}
-                  maxLength={40}
-                  placeholder="Razzoozle"
-                  variant="sm"
-                  onChange={(e) =>
-                    preview({ ...draft, appTitle: e.target.value || null })
-                  }
-                  className="min-h-11 w-full rounded-lg"
-                />
-              </LabelRow>
+                <LabelRow
+                  label={t("manager:theme.showFooter")}
+                  htmlFor="theme-show-branding"
+                >
+                  <input
+                    id="theme-show-branding"
+                    type="checkbox"
+                    checked={draft.showBranding}
+                    onChange={(e) =>
+                      preview({ ...draft, showBranding: e.target.checked })
+                    }
+                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                </LabelRow>
 
-              <LabelRow label={t("manager:theme.showFooter")} htmlFor="theme-show-branding">
-                <input
-                  id="theme-show-branding"
-                  type="checkbox"
-                  checked={draft.showBranding}
-                  onChange={(e) =>
-                    preview({ ...draft, showBranding: e.target.checked })
-                  }
-                  className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                />
-              </LabelRow>
-
-              {/* Stil / Style — Flat (Südhang) vs. Glass (Liquid-Glass).
+                {/* Stil / Style — Flat (Südhang) vs. Glass (Liquid-Glass).
                   Writes theme.style into the draft and live-previews via
                   preview() → applyTheme(), which sets data-theme-style on
                   <html> so the scoped glass CSS in index.css activates. */}
-              <LabelRow
-                label={t("manager:theme.style.label", { defaultValue: "Stil" })}
-                htmlFor="theme-style-flat"
-              >
-                <div
-                  role="radiogroup"
-                  aria-label={t("manager:theme.style.label", {
+                <LabelRow
+                  label={t("manager:theme.style.label", {
                     defaultValue: "Stil",
                   })}
-                  className="inline-flex rounded-lg bg-gray-100 p-1 outline-1 -outline-offset-1 outline-gray-200"
+                  htmlFor="theme-style-flat"
                 >
-                  {(
-                    [
-                      { value: "flat", fallback: "Flach" },
-                      { value: "glass", fallback: "Glas" },
-                    ] as const
-                  ).map(({ value: styleOption, fallback }) => {
-                    const active = (draft.style ?? "flat") === styleOption
-                    return (
-                      <button
-                        id={`theme-style-${styleOption}`}
-                        key={styleOption}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => preview({ ...draft, style: styleOption })}
-                        className={`min-h-9 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                          active
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        {t(`manager:theme.style.${styleOption}`, {
-                          defaultValue: fallback,
-                        })}
-                      </button>
-                    )
-                  })}
-                </div>
-              </LabelRow>
-            </FormSection>
+                  <div
+                    role="radiogroup"
+                    aria-label={t("manager:theme.style.label", {
+                      defaultValue: "Stil",
+                    })}
+                    className="inline-flex rounded-lg bg-gray-100 p-1 outline-1 -outline-offset-1 outline-gray-200"
+                  >
+                    {(
+                      [
+                        { value: "flat", fallback: "Flach" },
+                        { value: "glass", fallback: "Glas" },
+                      ] as const
+                    ).map(({ value: styleOption, fallback }) => {
+                      const active = (draft.style ?? "flat") === styleOption
+                      return (
+                        <button
+                          id={`theme-style-${styleOption}`}
+                          key={styleOption}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() =>
+                            preview({ ...draft, style: styleOption })
+                          }
+                          className={`min-h-9 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                            active
+                              ? "bg-white text-gray-900 shadow-sm"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                        >
+                          {t(`manager:theme.style.${styleOption}`, {
+                            defaultValue: fallback,
+                          })}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </LabelRow>
+              </FormSection>
 
-            {/* ── Farben ───────────────────────────────────────────── */}
-            <FormSection
-              title={t("manager:theme.uiColors")}
-              description={t("manager:theme.contrastNote")}
-            >
-              <ColorPickerField
-                label={t("manager:theme.colors.primary")}
-                value={draft.colorPrimary}
-                onChange={setColorValue("colorPrimary")}
-              />
-              <ColorPickerField
-                label={t("manager:theme.colors.background")}
-                value={draft.colorSecondary}
-                onChange={setColorValue("colorSecondary")}
-              />
-              <ColorPickerField
-                label={t("manager:theme.colors.accent")}
-                value={draft.accentColor}
-                onChange={setColorValue("accentColor")}
-              />
-              <ColorPickerField
-                label={t("manager:theme.colors.text")}
-                value={draft.answerTextColor}
-                onChange={setColorValue("answerTextColor")}
-              />
+              {/* ── Farben ───────────────────────────────────────────── */}
+              <FormSection
+                title={t("manager:theme.uiColors")}
+                description={t("manager:theme.contrastNote")}
+              >
+                <ColorPickerField
+                  label={t("manager:theme.colors.primary")}
+                  value={draft.colorPrimary}
+                  onChange={setColorValue("colorPrimary")}
+                />
+                <ColorPickerField
+                  label={t("manager:theme.colors.background")}
+                  value={draft.colorSecondary}
+                  onChange={setColorValue("colorSecondary")}
+                />
+                <ColorPickerField
+                  label={t("manager:theme.colors.accent")}
+                  value={draft.accentColor}
+                  onChange={setColorValue("accentColor")}
+                />
+                <ColorPickerField
+                  label={t("manager:theme.colors.text")}
+                  value={draft.answerTextColor}
+                  onChange={setColorValue("answerTextColor")}
+                />
 
-              {/* Answer colors — one row each */}
-              {draft.answerColors.map((color, index) => {
-                const letter = ["A", "B", "C", "D"][index] ?? ""
-                return (
-                  // oxlint-disable-next-line no-array-index-key
-                  <ColorPickerField
-                    key={index}
-                    label={`${t("manager:theme.answerColors")} ${letter}`}
-                    value={color}
-                    onChange={setAnswerValue(index)}
-                    contrastAgainst={draft.answerTextColor}
-                    answerPreview={{ text: draft.answerTextColor, label: letter }}
-                  />
-                )
-              })}
-            </FormSection>
+                {/* Answer colors — one row each */}
+                {draft.answerColors.map((color, index) => {
+                  const letter = ["A", "B", "C", "D"][index] ?? ""
+                  return (
+                    // oxlint-disable-next-line no-array-index-key
+                    <ColorPickerField
+                      key={index}
+                      label={`${t("manager:theme.answerColors")} ${letter}`}
+                      value={color}
+                      onChange={setAnswerValue(index)}
+                      contrastAgainst={draft.answerTextColor}
+                      answerPreview={{
+                        text: draft.answerTextColor,
+                        label: letter,
+                      }}
+                    />
+                  )
+                })}
+              </FormSection>
 
-            {/* ── Spiel-Farben (Token-Registry) ────────────────────────
+              {/* ── Spiel-Farben (Token-Registry) ────────────────────────
                 Registry-driven pickers for every THEME_TOKENS color (teams,
                 tiers, correct/wrong, rank deltas, timer, streak, muted surface,
                 footer). Each binds to its dot-path in the draft; saving rides
                 the unchanged MANAGER.SET_THEME flow. Defaults are a visual
                 no-op, so leaving these untouched keeps the current look. */}
-            {TOKEN_CARDS.map((card) => {
-              const tokens = THEME_TOKENS.filter((tok) =>
-                card.groups.includes(tok.group),
-              )
+              {TOKEN_CARDS.map((card) => {
+                const tokens = THEME_TOKENS.filter((tok) =>
+                  card.groups.includes(tok.group),
+                )
 
-              if (tokens.length === 0) {
-                return null
-              }
+                if (tokens.length === 0) {
+                  return null
+                }
 
-              return (
-                <SectionCard
-                  key={card.key}
-                  icon={
-                    card.key === "teamsTiers" ? (
-                      <Palette className="size-5" />
-                    ) : (
-                      <Sparkles className="size-5" />
-                    )
-                  }
-                  title={t(`manager:theme.tokens.${card.key}.title`, {
-                    defaultValue: card.defaultTitle,
-                  })}
-                  description={t(`manager:theme.tokens.${card.key}.description`, {
-                    defaultValue: "",
-                  })}
+                return (
+                  <SectionCard
+                    key={card.key}
+                    icon={
+                      card.key === "teamsTiers" ? (
+                        <Palette className="size-5" />
+                      ) : (
+                        <Sparkles className="size-5" />
+                      )
+                    }
+                    title={t(`manager:theme.tokens.${card.key}.title`, {
+                      defaultValue: card.defaultTitle,
+                    })}
+                    description={t(
+                      `manager:theme.tokens.${card.key}.description`,
+                      {
+                        defaultValue: "",
+                      },
+                    )}
+                  >
+                    {tokens.map((tok) => (
+                      <ColorPickerField
+                        key={tok.path}
+                        label={t(`manager:theme.tokens.fields.${tok.path}`, {
+                          defaultValue: tok.label,
+                        })}
+                        value={getTokenColor(draft, tok.path)}
+                        onChange={setTokenValue(tok.path)}
+                      />
+                    ))}
+                  </SectionCard>
+                )
+              })}
+
+              {/* ── Logo ─────────────────────────────────────────────── */}
+              <FormSection title={t("manager:theme.logo")}>
+                <AssetPreview
+                  label={t("manager:theme.logo")}
+                  value={draft.logo ?? null}
+                  fit="contain"
+                  aspect="aspect-video"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  uploading={pendingSlot === "logo"}
+                  error={slotErrors.logo ? t(slotErrors.logo) : undefined}
+                  onUpload={handleUpload("logo")}
+                  onReset={() => setDraft((p) => ({ ...p, logo: null }))}
+                  defaultLabel={t("manager:theme.default")}
+                />
+              </FormSection>
+
+              {/* ── Hintergründe ─────────────────────────────────────── */}
+              <SectionCard
+                icon={<ImageIcon className="size-5" />}
+                title={t("manager:theme.backgrounds")}
+              >
+                <LabelRow
+                  label={t("manager:theme.scrim", { value: draft.scrim })}
+                  htmlFor="theme-scrim"
                 >
-                  {tokens.map((tok) => (
-                    <ColorPickerField
-                      key={tok.path}
-                      label={t(`manager:theme.tokens.fields.${tok.path}`, {
-                        defaultValue: tok.label,
-                      })}
-                      value={getTokenColor(draft, tok.path)}
-                      onChange={setTokenValue(tok.path)}
+                  <input
+                    id="theme-scrim"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={draft.scrim}
+                    onChange={(e) =>
+                      preview({ ...draft, scrim: Number(e.target.value) })
+                    }
+                    className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                </LabelRow>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {BG_SLOTS.map(({ key, labelKey, aspect }) => (
+                    <AssetPreviewCard
+                      key={key}
+                      label={t(labelKey)}
+                      value={draft.backgrounds[key] ?? null}
+                      fit="cover"
+                      aspect={aspect}
+                      scrim={draft.scrim}
+                      accept="image/png,image/jpeg,image/webp"
+                      uploading={pendingSlot === key}
+                      error={
+                        slotErrors[key]
+                          ? t(slotErrors[key] as string)
+                          : undefined
+                      }
+                      onUpload={handleUpload(key)}
+                      onReset={clearBackground(key)}
+                      defaultLabel={t("manager:theme.default")}
                     />
                   ))}
-                </SectionCard>
-              )
-            })}
-
-            {/* ── Logo ─────────────────────────────────────────────── */}
-            <FormSection title={t("manager:theme.logo")}>
-              <AssetPreview
-                label={t("manager:theme.logo")}
-                value={draft.logo ?? null}
-                fit="contain"
-                aspect="aspect-video"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                uploading={pendingSlot === "logo"}
-                error={slotErrors.logo ? t(slotErrors.logo) : undefined}
-                onUpload={handleUpload("logo")}
-                onReset={() => setDraft((p) => ({ ...p, logo: null }))}
-                defaultLabel={t("manager:theme.default")}
-              />
-            </FormSection>
-
-            {/* ── Hintergründe ─────────────────────────────────────── */}
-            <SectionCard
-              icon={<ImageIcon className="size-5" />}
-              title={t("manager:theme.backgrounds")}
-            >
-              <LabelRow
-                label={t("manager:theme.scrim", { value: draft.scrim })}
-                htmlFor="theme-scrim"
-              >
-                <input
-                  id="theme-scrim"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={draft.scrim}
-                  onChange={(e) =>
-                    preview({ ...draft, scrim: Number(e.target.value) })
-                  }
-                  className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                />
-              </LabelRow>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {BG_SLOTS.map(({ key, labelKey, aspect }) => (
-                  <AssetPreviewCard
-                    key={key}
-                    label={t(labelKey)}
-                    value={draft.backgrounds[key] ?? null}
-                    fit="cover"
-                    aspect={aspect}
-                    scrim={draft.scrim}
-                    accept="image/png,image/jpeg,image/webp"
-                    uploading={pendingSlot === key}
-                    error={
-                      slotErrors[key] ? t(slotErrors[key] as string) : undefined
-                    }
-                    onUpload={handleUpload(key)}
-                    onReset={clearBackground(key)}
-                    defaultLabel={t("manager:theme.default")}
-                  />
-                ))}
-              </div>
-            </SectionCard>
-
-            {/* ── Vorlagen ─────────────────────────────────────────── */}
-            <SectionCard
-              icon={<BookMarked className="size-5" />}
-              title={t("manager:theme.templates.title")}
-            >
-              <SubGroup>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    value={templateName}
-                    maxLength={60}
-                    placeholder={t("manager:theme.templates.namePrompt")}
-                    variant="sm"
-                    aria-label={t("manager:theme.templates.namePrompt")}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    className="min-h-11 flex-1 rounded-lg"
-                  />
-                  <Button
-                    variant="primary"
-                    type="button"
-                    onClick={handleSaveTemplate}
-                    disabled={!templateName.trim()}
-                  >
-                    {t("manager:theme.templates.save")}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    type="button"
-                    onClick={() => templateFileInputRef.current?.click()}
-                    title={t("manager:theme.templates.import", {
-                      defaultValue: "Vorlage importieren",
-                    })}
-                    aria-label={t("manager:theme.templates.import", {
-                      defaultValue: "Vorlage importieren",
-                    })}
-                  >
-                    <Upload className="size-4" aria-hidden />
-                  </Button>
-                  <input
-                    ref={templateFileInputRef}
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleImportTemplate}
-                  />
                 </div>
-              </SubGroup>
+              </SectionCard>
 
-              {templates.length === 0 ? (
-                <EmptyState
-                  icon={BookMarked}
-                  headline={t("manager:theme.templates.emptyHeadline")}
-                  hint={t("manager:theme.templates.none")}
-                />
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {templates.map((template) => (
-                    <div
-                      key={template.id}
-                      className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+              {/* ── Vorlagen ─────────────────────────────────────────── */}
+              <SectionCard
+                icon={<BookMarked className="size-5" />}
+                title={t("manager:theme.templates.title")}
+              >
+                <SubGroup>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      value={templateName}
+                      maxLength={60}
+                      placeholder={t("manager:theme.templates.namePrompt")}
+                      variant="sm"
+                      aria-label={t("manager:theme.templates.namePrompt")}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      className="min-h-11 flex-1 rounded-lg"
+                    />
+                    <Button
+                      variant="primary"
+                      type="button"
+                      onClick={handleSaveTemplate}
+                      disabled={!templateName.trim()}
                     >
-                      <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
-                        {template.name}
-                      </p>
-                      <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-gray-200">
-                        {[
-                          template.theme.colorPrimary,
-                          template.theme.accentColor,
-                          ...template.theme.answerColors,
-                        ].map((color, index) => (
-                          <span
-                            // oxlint-disable-next-line no-array-index-key
-                            key={index}
-                            className="flex-1"
-                            style={{ backgroundColor: color }}
-                            aria-hidden
-                          />
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          type="button"
-                          onClick={() => handleApplyTemplate(template)}
-                        >
-                          {t("manager:theme.templates.apply")}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          type="button"
-                          onClick={() => handleEditTemplate(template)}
-                        >
-                          {t("manager:theme.templates.edit", {
-                            defaultValue: "Bearbeiten",
-                          })}
-                        </Button>
-                        <div className="flex items-center gap-2">
+                      {t("manager:theme.templates.save")}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      type="button"
+                      onClick={() => templateFileInputRef.current?.click()}
+                      title={t("manager:theme.templates.import", {
+                        defaultValue: "Vorlage importieren",
+                      })}
+                      aria-label={t("manager:theme.templates.import", {
+                        defaultValue: "Vorlage importieren",
+                      })}
+                    >
+                      <Upload className="size-4" aria-hidden />
+                    </Button>
+                    <input
+                      ref={templateFileInputRef}
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={handleImportTemplate}
+                    />
+                  </div>
+                </SubGroup>
+
+                {templates.length === 0 ? (
+                  <EmptyState
+                    icon={BookMarked}
+                    headline={t("manager:theme.templates.emptyHeadline")}
+                    hint={t("manager:theme.templates.none")}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {templates.map((template) => (
+                      <div
+                        key={template.id}
+                        className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+                      >
+                        <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
+                          {template.name}
+                        </p>
+                        <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-gray-200">
+                          {[
+                            template.theme.colorPrimary,
+                            template.theme.accentColor,
+                            ...template.theme.answerColors,
+                          ].map((color, index) => (
+                            <span
+                              // oxlint-disable-next-line no-array-index-key
+                              key={index}
+                              className="flex-1"
+                              style={{ backgroundColor: color }}
+                              aria-hidden
+                            />
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
                           <Button
                             variant="secondary"
-                            size="icon"
+                            size="sm"
                             type="button"
-                            aria-label={t("manager:theme.templates.export", {
-                              defaultValue: "Vorlage exportieren",
-                            })}
-                            title={t("manager:theme.templates.export", {
-                              defaultValue: "Vorlage exportieren",
-                            })}
-                            onClick={() => handleExportTemplate(template)}
+                            onClick={() => handleApplyTemplate(template)}
                           >
-                            <Download className="size-4" aria-hidden />
+                            {t("manager:theme.templates.apply")}
                           </Button>
                           <Button
-                            variant="danger"
-                            size="icon"
+                            variant="secondary"
+                            size="sm"
                             type="button"
-                            aria-label={t("manager:theme.templates.delete")}
-                            title={t("manager:theme.templates.delete")}
-                            onClick={() => setPendingDeleteId(template.id)}
+                            onClick={() => handleEditTemplate(template)}
                           >
-                            <Trash2 className="size-4" aria-hidden />
+                            {t("manager:theme.templates.edit", {
+                              defaultValue: "Bearbeiten",
+                            })}
                           </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              type="button"
+                              aria-label={t("manager:theme.templates.export", {
+                                defaultValue: "Vorlage exportieren",
+                              })}
+                              title={t("manager:theme.templates.export", {
+                                defaultValue: "Vorlage exportieren",
+                              })}
+                              onClick={() => handleExportTemplate(template)}
+                            >
+                              <Download className="size-4" aria-hidden />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="icon"
+                              type="button"
+                              aria-label={t("manager:theme.templates.delete")}
+                              title={t("manager:theme.templates.delete")}
+                              onClick={() => setPendingDeleteId(template.id)}
+                            >
+                              <Trash2 className="size-4" aria-hidden />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </SectionCard>
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
+            </div>
 
+            {/* ── RIGHT: live preview (sticky) ───────────────────────── */}
+            <div className="xl:sticky xl:top-4">
+              <ThemePreviewPanel theme={draft} />
+            </div>
           </div>
 
-          {/* ── RIGHT: live preview (sticky) ───────────────────────── */}
-          <div className="xl:sticky xl:top-4">
-            <ThemePreviewPanel theme={draft} />
-          </div>
+          {/* Skeleton transfer / custom CSS+JS / reset — integrated here so all
+            theming lives under the Design tab (no separate Skeleton tab). */}
+          <ConfigSkeleton />
         </div>
-      </div>
       </motion.div>
 
       <ActionFooter>
@@ -819,13 +851,11 @@ const ConfigTheme = () => {
         }}
         title={t("manager:theme.templates.delete")}
         description={t("manager:theme.templates.deleteConfirm", {
-          name:
-            templates.find((tpl) => tpl.id === pendingDeleteId)?.name ?? "",
+          name: templates.find((tpl) => tpl.id === pendingDeleteId)?.name ?? "",
         })}
         confirmLabel={t("common:delete")}
         onConfirm={handleDeleteTemplate}
       />
-
     </>
   )
 }

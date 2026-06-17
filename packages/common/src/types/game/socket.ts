@@ -16,7 +16,11 @@ import type {
 import type { Status, StatusDataMap } from "@razzoozle/common/types/game/status"
 import type { ManagerConfig } from "@razzoozle/common/types/manager"
 import type { Submission } from "@razzoozle/common/types/submission"
-import type { Theme, ThemeRevision, ThemeTemplate } from "@razzoozle/common/types/theme"
+import type {
+  Theme,
+  ThemeRevision,
+  ThemeTemplate,
+} from "@razzoozle/common/types/theme"
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
@@ -164,6 +168,8 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.SET_SKELETON_ASSET_SUCCESS]: (_data: {
     kind: "css" | "js"
   }) => void
+  // Reset-to-default acknowledgement (the new default theme rides the THEME broadcast).
+  [EVENTS.MANAGER.RESET_SKELETON_SUCCESS]: () => void
   [EVENTS.MANAGER.BACKGROUND_UPLOADED]: (_data: {
     slot: ThemeSlot
     path: string
@@ -337,6 +343,7 @@ export interface ClientToServerEvents {
     kind: "css" | "js"
     content: string
   }) => void
+  [EVENTS.MANAGER.RESET_SKELETON]: () => void
   [EVENTS.MANAGER.UPLOAD_BACKGROUND]: (_data: {
     slot: ThemeSlot
     dataUrl: string

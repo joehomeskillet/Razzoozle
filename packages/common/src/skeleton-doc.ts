@@ -247,7 +247,8 @@ skeleton.zip
 ├─ demo/             open in a browser to preview & test your theme
 │  ├─ phone-game.html      player answering screen (phone)
 │  ├─ lobby.html           join / lobby screen
-│  └─ presentation.html    host projector screen (answers + leaderboard + podium)
+│  ├─ presentation.html    host projector screen (answers + leaderboard + podium)
+│  └─ admin.html           manager console — THEME-INDEPENDENT (do not restyle it)
 └─ assets/
    ├─ <logo>.svg|png|webp
    └─ backgrounds/{auth,managerGame,playerGame}.webp

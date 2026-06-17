@@ -129,7 +129,10 @@ const ConsoleShell = ({
         // (m-2/sm:m-3) — flex `align-self: stretch` sizes the width, so no
         // explicit w-full / max-width / mx-auto (those capped + centered on
         // wide screens → unequal left/right vs top/bottom gaps).
-        "z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3",
+        // `console-shell` pins the brand tokens to fixed values (tokens.css) so an
+        // active skeleton/theme never recolors the admin console — it stays a
+        // stable workspace regardless of the player-facing theme.
+        "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3",
         className,
       )}
     >
@@ -210,7 +213,7 @@ const ConsoleShell = ({
           tabIndex={0}
           className={clsx(
             "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
-            "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
+            "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           )}
         >
           {children}
