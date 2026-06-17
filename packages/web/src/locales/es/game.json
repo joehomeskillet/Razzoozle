@@ -176,5 +176,58 @@
       "title": "El anfitrión finalizó la partida",
       "hint": "Gracias por jugar."
     }
+  },
+  "recap": {
+    "title": "Tu resumen",
+    "myCard": {
+      "accuracy": "Precisión",
+      "correct": "Correctas",
+      "wrong": "Incorrectas",
+      "fastest": "Respuesta más rápida",
+      "peakStreak": "Mejor racha",
+      "noFastest": "—",
+      "seconds": "{{value}} s",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "Tu momento",
+      "fastest_finger": "Dedo más rápido",
+      "most_correct": "Más respuestas correctas",
+      "most_wrong": "Intentos más valientes",
+      "longest_streak": "Mejor racha",
+      "biggest_climber": "Mayor escalador",
+      "lucky_guesser": "Golpe de suerte",
+      "comeback_kid": "Remontada de la partida",
+      "most_achievements": "Coleccionista de trofeos",
+      "hardest_question": "Resolvió la pregunta más difícil"
+    },
+    "trophies": {
+      "title": "Tus trofeos",
+      "empty": "Sin trofeos esta ronda — pero sigue jugando.",
+      "viewAll": "Ver todos los trofeos"
+    },
+    "sticker": {
+      "create": "Crear pegatina",
+      "creating": "Creando pegatina …",
+      "shared": "Pegatina compartida.",
+      "copied": "Pegatina copiada al portapapeles.",
+      "downloaded": "Pegatina descargada.",
+      "error": "No se pudo crear la pegatina.",
+      "share": "Compartir pegatina"
+    },
+    "superlative": {
+      "fastest_finger": "Dedo más rápido",
+      "most_correct": "Más aciertos",
+      "most_wrong": "Fallo más valiente",
+      "longest_streak": "Racha más larga",
+      "biggest_climber": "Mayor escalador",
+      "lucky_guesser": "El afortunado",
+      "comeback_kid": "Remontada del juego",
+      "most_achievements": "Coleccionista de trofeos",
+      "hardest_question": "Pregunta más difícil"
+    },
+    "podiumCue": "Y ahora: el podio",
+    "advance": "Siguiente",
+    "awardsTitle": "Premios"
   }
 }

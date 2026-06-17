@@ -176,5 +176,58 @@
       "title": "The host ended the game",
       "hint": "Thanks for playing."
     }
+  },
+  "recap": {
+    "title": "Your recap",
+    "myCard": {
+      "accuracy": "Accuracy",
+      "correct": "Correct",
+      "wrong": "Wrong",
+      "fastest": "Fastest answer",
+      "peakStreak": "Longest streak",
+      "noFastest": "—",
+      "seconds": "{{value}} s",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "Your highlight",
+      "fastest_finger": "Fastest finger",
+      "most_correct": "Most correct answers",
+      "most_wrong": "Bravest misses",
+      "longest_streak": "Longest streak",
+      "biggest_climber": "Biggest climber",
+      "lucky_guesser": "Lucky guesser",
+      "comeback_kid": "Comeback of the game",
+      "most_achievements": "Trophy collector",
+      "hardest_question": "Cracked the toughest question"
+    },
+    "trophies": {
+      "title": "Your trophies",
+      "empty": "No trophies this round — but keep playing.",
+      "viewAll": "View all trophies"
+    },
+    "sticker": {
+      "create": "Create sticker",
+      "creating": "Creating sticker …",
+      "shared": "Sticker shared.",
+      "copied": "Sticker copied to clipboard.",
+      "downloaded": "Sticker downloaded.",
+      "error": "Could not create the sticker.",
+      "share": "Share sticker"
+    },
+    "superlative": {
+      "fastest_finger": "Fastest finger",
+      "most_correct": "Most correct answers",
+      "most_wrong": "Bravest misses",
+      "longest_streak": "Longest streak",
+      "biggest_climber": "Biggest climber",
+      "lucky_guesser": "Lucky guesser",
+      "comeback_kid": "Comeback of the game",
+      "most_achievements": "Trophy collector",
+      "hardest_question": "Hardest question"
+    },
+    "podiumCue": "And now: the podium",
+    "advance": "Next",
+    "awardsTitle": "Awards"
   }
 }

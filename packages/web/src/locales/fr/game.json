@@ -176,5 +176,58 @@
       "title": "L'hôte a mis fin à la partie",
       "hint": "Merci d'avoir joué."
     }
+  },
+  "recap": {
+    "title": "Ton bilan",
+    "myCard": {
+      "accuracy": "Précision",
+      "correct": "Bonnes",
+      "wrong": "Mauvaises",
+      "fastest": "Réponse la plus rapide",
+      "peakStreak": "Meilleure série",
+      "noFastest": "—",
+      "seconds": "{{value}} s",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "Ton moment fort",
+      "fastest_finger": "Doigt le plus rapide",
+      "most_correct": "Plus de bonnes réponses",
+      "most_wrong": "Tentatives les plus courageuses",
+      "longest_streak": "Meilleure série",
+      "biggest_climber": "Plus grande remontée",
+      "lucky_guesser": "Coup de chance",
+      "comeback_kid": "Remontada de la partie",
+      "most_achievements": "Collectionneur de trophées",
+      "hardest_question": "A résolu la question la plus dure"
+    },
+    "trophies": {
+      "title": "Tes trophées",
+      "empty": "Aucun trophée cette manche — mais continue à jouer.",
+      "viewAll": "Voir tous les trophées"
+    },
+    "sticker": {
+      "create": "Créer un sticker",
+      "creating": "Création du sticker …",
+      "shared": "Sticker partagé.",
+      "copied": "Sticker copié dans le presse-papiers.",
+      "downloaded": "Sticker téléchargé.",
+      "error": "Impossible de créer le sticker.",
+      "share": "Partager le sticker"
+    },
+    "superlative": {
+      "fastest_finger": "Doigt le plus rapide",
+      "most_correct": "Le plus de bonnes réponses",
+      "most_wrong": "Échec le plus courageux",
+      "longest_streak": "Plus longue série",
+      "biggest_climber": "Plus grande remontée",
+      "lucky_guesser": "Le veinard",
+      "comeback_kid": "Remontada de la partie",
+      "most_achievements": "Collectionneur de trophées",
+      "hardest_question": "Question la plus dure"
+    },
+    "podiumCue": "Et maintenant : le podium",
+    "advance": "Suivant",
+    "awardsTitle": "Récompenses"
   }
 }

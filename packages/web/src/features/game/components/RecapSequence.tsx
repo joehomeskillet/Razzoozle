@@ -1,0 +1,191 @@
+/**
+ * RecapSequence — manager big-screen superlative reveal that plays BEFORE the
+ * podium. Walks the awarded `superlatives` one card at a time (click to advance
+ * + an auto-advance timer), each card showing a playful German label + emoji for
+ * the award key, the winner name, and the formatted value. Ends on a "Podium"
+ * cue and calls `onComplete` so the parent can flip to the podium reveal.
+ *
+ * Reduced-motion safe via `useReveal` (opacity-only fallback, no fabricated
+ * motion). Pure presentation: no socket / store writes — labels come from i18n
+ * (`game:recap.superlative.<key>`) with the emoji mapped locally.
+ */
+
+import type { Superlative, SuperlativeKey } from "@razzoozle/common/types/game"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { AnimatePresence, motion } from "motion/react"
+import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+
+interface Props {
+  superlatives: Superlative[]
+  /** Fired once the final "Podium" cue has been shown (or the sequence skipped). */
+  onComplete?: () => void
+  /** ms each superlative card stays before auto-advancing. */
+  autoAdvanceMs?: number
+}
+
+// Playful emoji per award key — labels themselves live in i18n (du-form).
+const SUPERLATIVE_EMOJI: Record<SuperlativeKey, string> = {
+  fastest_finger: "⚡",
+  most_correct: "🎯",
+  most_wrong: "🙈",
+  longest_streak: "🔥",
+  biggest_climber: "🧗",
+  lucky_guesser: "🍀",
+  comeback_kid: "🚀",
+  most_achievements: "🏅",
+  hardest_question: "🧠",
+}
+
+const DEFAULT_AUTO_MS = 3200
+
+/**
+ * Formats a superlative's numeric `value` for display.
+ *   fastest_finger  → ms → "X.Xs"
+ *   hardest_question→ correct% → "XX %"
+ *   everything else → raw count.
+ */
+function formatValue(key: SuperlativeKey, value: number): string {
+  if (key === "fastest_finger") {
+    return `${(value / 1000).toFixed(1)}s`
+  }
+  if (key === "hardest_question") {
+    return `${Math.round(value)} %`
+  }
+  return `${value}`
+}
+
+const RecapSequence = ({
+  superlatives,
+  onComplete,
+  autoAdvanceMs = DEFAULT_AUTO_MS,
+}: Props) => {
+  const { t } = useTranslation()
+  const reveal = useReveal()
+
+  // Step state machine: 0..n-1 are the superlative cards, `n` is the final
+  // "Podium" cue. Held in one index so click + timer share a single source.
+  const total = superlatives.length
+  const [step, setStep] = useState(0)
+
+  const isFinalCue = step >= total
+
+  const advance = useCallback(() => {
+    setStep((s) => Math.min(s + 1, total))
+  }, [total])
+
+  // Auto-advance through the cards; the final cue holds briefly then completes.
+  useEffect(() => {
+    if (total === 0) {
+      onComplete?.()
+      return
+    }
+    if (isFinalCue) {
+      const done = setTimeout(() => onComplete?.(), 1400)
+      return () => clearTimeout(done)
+    }
+    const timer = setTimeout(advance, autoAdvanceMs)
+    return () => clearTimeout(timer)
+  }, [step, total, isFinalCue, advance, autoAdvanceMs, onComplete])
+
+  if (total === 0) return null
+
+  const current = superlatives[step]
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={advance}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          advance()
+        }
+      }}
+      aria-label={t("game:recap.advance", { defaultValue: "Weiter" })}
+      className="absolute inset-0 z-40 flex w-full cursor-pointer flex-col items-center justify-center gap-8 px-6 text-center focus-visible:outline-none"
+    >
+      {/* Title + progress */}
+      <motion.h2
+        className="text-2xl font-bold text-white/90 drop-shadow-lg md:text-3xl"
+        variants={reveal.item()}
+        initial="hidden"
+        animate="visible"
+        transition={reveal.spring}
+      >
+        {t("game:recap.awardsTitle", { defaultValue: "Auszeichnungen" })}
+      </motion.h2>
+
+      <AnimatePresence mode="wait">
+        {!isFinalCue && current ? (
+          <motion.div
+            key={`card-${step}`}
+            className="flex flex-col items-center gap-5"
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            transition={reveal.spring}
+          >
+            <span
+              className="text-7xl drop-shadow-lg md:text-8xl lg:text-9xl"
+              aria-hidden
+            >
+              {SUPERLATIVE_EMOJI[current.key]}
+            </span>
+
+            <p className="text-3xl font-extrabold text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+              {t(`game:recap.superlative.${current.key}`, {
+                defaultValue: current.key.replace(/_/g, " "),
+              })}
+            </p>
+
+            <p className="text-4xl font-black text-[var(--color-accent)] drop-shadow-md md:text-5xl lg:text-6xl">
+              {current.winnerName}
+            </p>
+
+            <p className="rounded-full bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums drop-shadow md:text-3xl">
+              {formatValue(current.key, current.value)}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="final-cue"
+            className="flex flex-col items-center gap-4"
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            transition={reveal.spring}
+          >
+            <span className="text-7xl drop-shadow-lg md:text-8xl" aria-hidden>
+              🏆
+            </span>
+            <p className="text-4xl font-black text-white drop-shadow-lg md:text-5xl">
+              {t("game:recap.podiumCue", {
+                defaultValue: "Und jetzt: Das Podium",
+              })}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Progress dots — one per card; the final cue lights them all. */}
+      <div className="flex items-center gap-2" aria-hidden>
+        {superlatives.map((s, i) => (
+          <span
+            key={s.key}
+            className={
+              i <= step || isFinalCue
+                ? "h-2.5 w-2.5 rounded-full bg-white"
+                : "h-2.5 w-2.5 rounded-full bg-white/30"
+            }
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default RecapSequence

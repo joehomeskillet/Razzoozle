@@ -170,5 +170,58 @@
   "reward": {
     "bonusPoints": "奖励",
     "dismiss": "关闭"
+  },
+  "recap": {
+    "title": "你的战绩",
+    "myCard": {
+      "accuracy": "正确率",
+      "correct": "答对",
+      "wrong": "答错",
+      "fastest": "最快作答",
+      "peakStreak": "最长连胜",
+      "noFastest": "—",
+      "seconds": "{{value}} 秒",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "你的高光时刻",
+      "fastest_finger": "手速最快",
+      "most_correct": "答对最多",
+      "most_wrong": "最勇敢的尝试",
+      "longest_streak": "最长连胜",
+      "biggest_climber": "逆袭最猛",
+      "lucky_guesser": "幸运之星",
+      "comeback_kid": "本局逆转王",
+      "most_achievements": "奖杯收藏家",
+      "hardest_question": "攻克最难题目"
+    },
+    "trophies": {
+      "title": "你的奖杯",
+      "empty": "本局没有奖杯 —— 继续加油。",
+      "viewAll": "查看全部奖杯"
+    },
+    "sticker": {
+      "create": "生成贴纸",
+      "creating": "正在生成贴纸 …",
+      "shared": "贴纸已分享。",
+      "copied": "贴纸已复制到剪贴板。",
+      "downloaded": "贴纸已下载。",
+      "error": "无法生成贴纸。",
+      "share": "分享贴纸"
+    },
+    "superlative": {
+      "fastest_finger": "最快手指",
+      "most_correct": "最多正确",
+      "most_wrong": "最勇敢的失误",
+      "longest_streak": "最长连击",
+      "biggest_climber": "最大逆袭者",
+      "lucky_guesser": "幸运儿",
+      "comeback_kid": "本场逆转",
+      "most_achievements": "奖杯收藏家",
+      "hardest_question": "最难的题"
+    },
+    "podiumCue": "现在：领奖台",
+    "advance": "下一个",
+    "awardsTitle": "奖项"
   }
 }

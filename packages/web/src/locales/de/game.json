@@ -176,5 +176,58 @@
       "title": "Der Host hat das Spiel beendet",
       "hint": "Danke fürs Mitspielen."
     }
+  },
+  "recap": {
+    "title": "Deine Bilanz",
+    "myCard": {
+      "accuracy": "Trefferquote",
+      "correct": "Richtig",
+      "wrong": "Falsch",
+      "fastest": "Schnellste Antwort",
+      "peakStreak": "Längste Serie",
+      "noFastest": "—",
+      "seconds": "{{value}} s",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "Dein Highlight",
+      "fastest_finger": "Schnellster Finger",
+      "most_correct": "Meiste richtige Antworten",
+      "most_wrong": "Tapferster Fehlversuch",
+      "longest_streak": "Längste Serie",
+      "biggest_climber": "Größter Aufsteiger",
+      "lucky_guesser": "Glückspilz",
+      "comeback_kid": "Comeback des Spiels",
+      "most_achievements": "Trophäensammler",
+      "hardest_question": "Knackige Frage geknackt"
+    },
+    "trophies": {
+      "title": "Deine Trophäen",
+      "empty": "In dieser Runde keine Trophäen — aber spiel weiter.",
+      "viewAll": "Alle Trophäen ansehen"
+    },
+    "sticker": {
+      "create": "Sticker erstellen",
+      "creating": "Sticker wird erstellt …",
+      "shared": "Sticker geteilt.",
+      "copied": "Sticker in die Zwischenablage kopiert.",
+      "downloaded": "Sticker heruntergeladen.",
+      "error": "Sticker konnte nicht erstellt werden.",
+      "share": "Sticker teilen"
+    },
+    "superlative": {
+      "fastest_finger": "Schnellster Finger",
+      "most_correct": "Meiste richtige Antworten",
+      "most_wrong": "Tapferster Fehlversuch",
+      "longest_streak": "Längste Serie",
+      "biggest_climber": "Größter Aufsteiger",
+      "lucky_guesser": "Glückspilz",
+      "comeback_kid": "Comeback des Spiels",
+      "most_achievements": "Trophäensammler",
+      "hardest_question": "Härteste Frage"
+    },
+    "podiumCue": "Und jetzt: Das Podium",
+    "advance": "Weiter",
+    "awardsTitle": "Auszeichnungen"
   }
 }

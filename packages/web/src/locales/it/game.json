@@ -176,5 +176,58 @@
       "title": "L'host ha terminato la partita",
       "hint": "Grazie per aver giocato."
     }
+  },
+  "recap": {
+    "title": "Il tuo riepilogo",
+    "myCard": {
+      "accuracy": "Precisione",
+      "correct": "Corrette",
+      "wrong": "Sbagliate",
+      "fastest": "Risposta più veloce",
+      "peakStreak": "Serie migliore",
+      "noFastest": "—",
+      "seconds": "{{value}} s",
+      "streakValue": "{{count}}×"
+    },
+    "highlight": {
+      "title": "Il tuo momento",
+      "fastest_finger": "Dito più veloce",
+      "most_correct": "Più risposte corrette",
+      "most_wrong": "Tentativi più coraggiosi",
+      "longest_streak": "Serie migliore",
+      "biggest_climber": "Maggiore scalatore",
+      "lucky_guesser": "Colpo di fortuna",
+      "comeback_kid": "Rimonta della partita",
+      "most_achievements": "Collezionista di trofei",
+      "hardest_question": "Ha risolto la domanda più difficile"
+    },
+    "trophies": {
+      "title": "I tuoi trofei",
+      "empty": "Nessun trofeo in questo turno — ma continua a giocare.",
+      "viewAll": "Vedi tutti i trofei"
+    },
+    "sticker": {
+      "create": "Crea sticker",
+      "creating": "Creazione sticker …",
+      "shared": "Sticker condiviso.",
+      "copied": "Sticker copiato negli appunti.",
+      "downloaded": "Sticker scaricato.",
+      "error": "Impossibile creare lo sticker.",
+      "share": "Condividi sticker"
+    },
+    "superlative": {
+      "fastest_finger": "Dito più veloce",
+      "most_correct": "Più risposte giuste",
+      "most_wrong": "Errore più coraggioso",
+      "longest_streak": "Serie più lunga",
+      "biggest_climber": "Maggiore rimonta",
+      "lucky_guesser": "Il fortunato",
+      "comeback_kid": "Rimonta della partita",
+      "most_achievements": "Collezionista di trofei",
+      "hardest_question": "Domanda più difficile"
+    },
+    "podiumCue": "E ora: il podio",
+    "advance": "Avanti",
+    "awardsTitle": "Premi"
   }
 }
