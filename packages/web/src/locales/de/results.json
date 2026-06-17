@@ -7,6 +7,9 @@
     "loading": "Endstand wird geladen",
     "notFound": "Diesen Endstand gibt es nicht mehr. Vielleicht wurde er entfernt.",
     "rank": "Platz {{rank}}",
-    "points": "{{count}} Punkte"
+    "points": "{{count}} Punkte",
+    "playSelf": "Selbst spielen",
+    "hostYourOwn": "Mach dein eigenes Quiz",
+    "createSticker": "Sticker erstellen"
   }
 }

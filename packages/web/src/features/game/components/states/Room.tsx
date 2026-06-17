@@ -11,10 +11,7 @@ import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
 import { teamDot } from "@razzoozle/web/features/game/utils/teams"
-import {
-  STAGGER,
-  useReveal,
-} from "@razzoozle/web/features/game/animation/presets"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
@@ -22,6 +19,13 @@ import QRCode from "@razzoozle/web/components/QRCode"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+const LOBBY_SLOTS = [
+  { top: "16%", left: "8%" }, { top: "33%", left: "13%" }, { top: "50%", left: "7%" }, { top: "67%", left: "13%" }, { top: "84%", left: "9%" },
+  { top: "16%", left: "92%" }, { top: "33%", left: "87%" }, { top: "50%", left: "93%" }, { top: "67%", left: "87%" }, { top: "84%", left: "91%" },
+  { top: "88%", left: "26%" }, { top: "92%", left: "42%" }, { top: "90%", left: "58%" }, { top: "92%", left: "74%" },
+  { top: "11%", left: "30%" }, { top: "9%", left: "70%" }, { top: "24%", left: "22%" }, { top: "24%", left: "78%" }, { top: "70%", left: "22%" }, { top: "70%", left: "78%" },
+] as const
 
 interface Props {
   data: ManagerStatusDataMap["SHOW_ROOM"]
@@ -134,10 +138,10 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
 
         <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
           <AlertDialog.Trigger asChild>
-            <div className="group relative flex h-64 w-64 shrink-0 cursor-pointer rounded-xl bg-white p-3">
+            <div className="group relative flex shrink-0 cursor-pointer rounded-xl bg-white p-4">
               <QRCode
-                className="h-full w-full"
-                size={300}
+                className="h-auto w-auto"
+                size={240}
                 value={buildJoinUrl(inviteCode, webUrl)}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-xl opacity-0 transition-opacity group-hover:opacity-100">
@@ -205,50 +209,44 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </button>
       </div>
 
-      {/* Lobby roster: each card fades/rises in on its own id key via a cheap
-          composited tween (opacity/transform) — NO `layout` spring on this
-          player-scaled list (~200 players), so an append never forces a per-join
-          reflow + position spring across the whole roster. Stagger = fast token. */}
-      <motion.div
-        className="flex flex-wrap gap-3"
-        variants={reveal.container(STAGGER.fast)}
-        initial="hidden"
-        animate="visible"
-      >
+      {/* Joined players: round avatars floating around the screen, name below. */}
+      <div className="pointer-events-none fixed inset-0 z-0">
         <AnimatePresence initial={false}>
-          {playerList.map((player) => (
-            <motion.div
-              key={player.id}
-              variants={reveal.item()}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              transition={reveal.tween()}
-              className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
-            >
-              {player.teamId && teamDot(player.teamId) && (
-                <span
-                  className={`size-4 shrink-0 rounded-full ${teamDot(player.teamId)} ring-2 ring-white/40`}
-                  aria-label={player.teamId}
-                  title={player.teamId}
-                />
-              )}
-              <Avatar src={player.avatar} name={player.username} size={40} />
-              <span className="text-3xl drop-shadow-sm">{player.username}</span>
-              <button
-                type="button"
-                onClick={() => setKickTarget(player)}
-                aria-label={t("manager:kickPlayer.aria", {
-                  name: player.username,
-                })}
-                className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          {playerList.map((player, i) => {
+            const pos = LOBBY_SLOTS[i % LOBBY_SLOTS.length]
+            return (
+              <motion.div
+                key={player.id}
+                className="absolute"
+                style={{ top: pos.top, left: pos.left, x: "-50%", y: "-50%" }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={reveal.tween()}
               >
-                <X className="size-4" />
-              </button>
-            </motion.div>
-          ))}
+                <div className="lobby-bob" style={{ animationDelay: `${(i % 7) * -0.7}s` }}>
+                  <button
+                    type="button"
+                    onClick={() => setKickTarget(player)}
+                    aria-label={t("manager:kickPlayer.aria", { name: player.username })}
+                    className="pointer-events-auto flex cursor-pointer flex-col items-center gap-1.5 focus-visible:outline-none"
+                  >
+                    <span className="relative">
+                      <Avatar src={player.avatar} name={player.username} size={72} />
+                      {player.teamId && teamDot(player.teamId) && (
+                        <span className={`absolute -right-0.5 -bottom-0.5 size-4 rounded-full ${teamDot(player.teamId)} ring-2 ring-white`} aria-hidden />
+                      )}
+                    </span>
+                    <span className="max-w-28 truncate text-lg font-bold text-[color:var(--color-field-ink)] drop-shadow-sm">
+                      {player.username}
+                    </span>
+                  </button>
+                </div>
+              </motion.div>
+            )
+          })}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Single shared kick confirmation — opened by any roster card's X button. */}
       <AlertDialog.Root

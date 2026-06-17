@@ -7,6 +7,9 @@
     "loading": "Loading the final standings",
     "notFound": "This result is no longer available. It may have been removed.",
     "rank": "Rank {{rank}}",
-    "points": "{{count}} points"
+    "points": "{{count}} points",
+    "playSelf": "Play it yourself",
+    "hostYourOwn": "Host your own quiz",
+    "createSticker": "Create sticker"
   }
 }

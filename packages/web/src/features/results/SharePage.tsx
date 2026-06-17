@@ -3,12 +3,15 @@ import type { SharedResult } from "@razzoozle/common/types/game"
 import Background from "@razzoozle/web/components/Background"
 import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
+import TrophySticker from "@razzoozle/web/features/game/components/TrophySticker"
 import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
+import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { Share2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -18,6 +21,14 @@ const ReactConfetti = lazy(() => import("react-confetti"))
 
 interface Props {
   id: string
+}
+
+/** Valid #rgb/#rrggbb else spec fallback (colorSecondary). */
+const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+function safeBg(hex: string | null | undefined): string {
+  return typeof hex === "string" && HEX_RE.test(hex.trim())
+    ? hex.trim()
+    : "#2e1065"
 }
 
 const medalColor = [
@@ -60,6 +71,70 @@ const Medal = ({ rank }: { rank: number }) => {
   )
 }
 
+// ─── Winner sticker (opt-in, rank 1 only) ─────────────────────────────────────
+// Mirrors PlayerFinished's ShareStickerButton: an off-screen <TrophySticker/>
+// capture root + an opt-in button that snapshots it to PNG via useStickerExport.
+
+const WinnerStickerButton = ({
+  name,
+  points,
+  subject,
+}: {
+  name: string
+  points: number
+  subject: string
+}) => {
+  const { t } = useTranslation()
+  const theme = useThemeStore((s) => s.theme)
+  const captureRef = useRef<HTMLDivElement>(null)
+  const { exportSticker, isExporting } = useStickerExport()
+
+  const onCreate = async () => {
+    const node = captureRef.current
+    if (!node) return
+    try {
+      const outcome = await exportSticker(node, {
+        backgroundColor: safeBg(theme.colorSecondary),
+      })
+      toast.success(t(`game:recap.sticker.${outcome}`))
+    } catch (err) {
+      // User cancelled the native share sheet — not an error, stay silent.
+      if (err instanceof Error && err.name === "AbortError") return
+      toast.error(t("game:recap.sticker.error"))
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onCreate}
+        disabled={isExporting}
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-base font-bold text-white shadow-lg focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60 focus-visible:outline-none disabled:opacity-60"
+      >
+        <Share2 className="size-5" aria-hidden />
+        {isExporting
+          ? t("game:recap.sticker.creating")
+          : t("results:share.createSticker")}
+      </button>
+
+      {/* Off-screen capture root for useStickerExport. */}
+      <div
+        ref={captureRef}
+        aria-hidden
+        style={{ position: "fixed", left: -99999, top: 0 }}
+      >
+        <TrophySticker
+          rank={1}
+          name={name}
+          points={points}
+          subject={subject}
+        />
+      </div>
+    </>
+  )
+}
+
 const SharePage = ({ id }: Props) => {
   const { connect, isConnected, socket } = useSocket()
   const { t, i18n } = useTranslation()
@@ -92,14 +167,17 @@ const SharePage = ({ id }: Props) => {
   useEvent(EVENTS.RESULTS.SHARED_DATA, handleSharedData)
 
   useEffect(() => {
-    if (result) return
+    // Only arm the not-found timer once we're actually connected and still have
+    // no result — arming before connection would flash "not found" during the
+    // initial socket handshake. Cleared on unmount or when data arrives.
+    if (result || !isConnected) return
 
     const timer = setTimeout(() => {
       setNotFound(true)
     }, 6000)
 
     return () => clearTimeout(timer)
-  }, [id, result])
+  }, [id, result, isConnected])
 
   const formattedDate = useMemo(() => {
     if (!result?.date) return ""
@@ -168,6 +246,7 @@ const SharePage = ({ id }: Props) => {
 
   const top3 = result.players ? result.players.slice(0, 3) : []
   const restPlayers = result.players ? result.players.slice(3) : []
+  const winner = result.players?.[0]
 
   return (
     <Background field="cream">
@@ -310,6 +389,34 @@ const SharePage = ({ id }: Props) => {
           <Share2 className="size-5" aria-hidden />
           <span>{t("results:share.copyLink")}</span>
         </Button>
+
+        {/* ── Host-conversion CTA ── A stranger landing on /r/:id can spin up
+            their own game (primary) or self-host the project (quiet). */}
+        <div className="mt-10 flex w-full max-w-xs flex-col items-center gap-3">
+          {winner && (
+            <WinnerStickerButton
+              name={winner.username}
+              points={winner.points}
+              subject={result.subject}
+            />
+          )}
+
+          <a
+            href="/"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-center text-base font-bold text-white shadow-lg focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60 focus-visible:outline-none"
+          >
+            {t("results:share.playSelf")}
+          </a>
+
+          <a
+            href="https://github.com/joehomeskillet/Razzoozle"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-primary)] underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:outline-none"
+          >
+            {t("results:share.hostYourOwn")}
+          </a>
+        </div>
       </div>
     </Background>
   )
