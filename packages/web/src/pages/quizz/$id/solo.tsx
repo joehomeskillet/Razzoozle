@@ -224,7 +224,7 @@ const FinishedScreen = ({
           <div className="mt-3 inline-block rounded-2xl border border-[var(--border-hairline)] bg-white px-8 py-3 shadow-sm">
             <AnimatedPoints
               to={totalPoints}
-              className="text-6xl font-black tabular-nums text-yellow-500 drop-shadow-[0_2px_8px_rgba(250,204,21,0.35)]"
+              className="text-6xl font-black tabular-nums text-yellow-500"
             />
             <span className="ml-2 text-lg text-[color:var(--color-field-ink)]/60">
               pts

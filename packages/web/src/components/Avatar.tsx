@@ -1,5 +1,5 @@
 import clsx from "clsx"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { twMerge } from "tailwind-merge"
 
 interface Props {
@@ -49,6 +49,11 @@ const getInitials = (value: string): string => {
 // image fails to load. Pure presentation — no socket/store coupling.
 const Avatar = ({ src, name, size = 40, className }: Props) => {
   const [errored, setErrored] = useState(false)
+
+  useEffect(() => {
+    setErrored(false)
+  }, [src])
+
   const showImage = Boolean(src) && !errored
 
   return (

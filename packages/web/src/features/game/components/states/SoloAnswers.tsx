@@ -312,7 +312,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                         resultReady &&
                           isPicked &&
                           (lastResult.correct
-                            ? "!bg-[var(--state-correct)] shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                            ? "!bg-[var(--state-correct)] ring-2 ring-[var(--state-correct)]"
                             : "!bg-[var(--state-wrong)]"),
                       )}
                       label={ANSWERS_LABELS[key]}
@@ -405,7 +405,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                       resultReady &&
                         isPicked &&
                         (lastResult.correct
-                          ? "!bg-[var(--state-correct)] shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                          ? "!bg-[var(--state-correct)] ring-2 ring-[var(--state-correct)]"
                           : "!bg-[var(--state-wrong)]"),
                     )}
                     label={ANSWERS_LABELS[key]}
