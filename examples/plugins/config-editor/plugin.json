@@ -1,0 +1,17 @@
+{
+  "formatVersion": 1,
+  "id": "config-editor",
+  "version": "1.0.0",
+  "name": "Config Editor",
+  "capabilities": ["MANAGER_TAB", "CONFIG"],
+  "tab": {
+    "nameKey": "Config Editor",
+    "icon": "Settings",
+    "gated": "always"
+  },
+  "hooks": {
+    "client": "ui.js"
+  },
+  "config": {},
+  "sandbox": "none"
+}

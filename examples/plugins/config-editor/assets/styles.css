@@ -1,0 +1,7 @@
+/* Optional public asset for the Config Editor example plugin. Served at
+   /plugins/config-editor/assets/styles.css (anything under assets/** is
+   public). ui.js inlines its own styles, so this file just demonstrates that
+   the assets/** surface works and is included in the install ZIP. */
+.config-editor-saved {
+  color: var(--color-primary, #4f46e5);
+}
