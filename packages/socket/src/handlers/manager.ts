@@ -29,6 +29,7 @@ import {
   saveBackgroundImage,
   saveCatalogEntry,
   saveSubmission,
+  setSkeletonAsset,
   setTheme,
   toPublicAISettings,
   updateQuizz,
@@ -74,6 +75,36 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         )
       }
     }),
+  )
+
+  socket.on(
+    EVENTS.MANAGER.SET_SKELETON_ASSET,
+    manager.withAuth(
+      socket,
+      (payload: { kind: "css" | "js"; content: string }) => {
+        try {
+          if (payload?.kind !== "css" && payload?.kind !== "js") {
+            throw new Error("errors:skeleton.invalidKind")
+          }
+
+          if (typeof payload.content !== "string") {
+            throw new Error("errors:skeleton.invalidContent")
+          }
+
+          const theme = setSkeletonAsset(payload.kind, payload.content)
+          socket.broadcast.emit(EVENTS.MANAGER.THEME, theme)
+          socket.emit(EVENTS.MANAGER.THEME, theme)
+          socket.emit(EVENTS.MANAGER.SET_SKELETON_ASSET_SUCCESS, {
+            kind: payload.kind,
+          })
+        } catch (error) {
+          socket.emit(
+            EVENTS.MANAGER.THEME_ERROR,
+            error instanceof Error ? error.message : "errors:theme.saveFailed",
+          )
+        }
+      },
+    ),
   )
 
   socket.on(

@@ -1,4 +1,5 @@
 import {
+  EVENTS,
   WS_DEFAULT_PORT,
   WS_DEFLATE_THRESHOLD_BYTES,
   WS_MAX_HTTP_BUFFER_BYTES,
@@ -6,6 +7,7 @@ import {
   WS_PING_TIMEOUT_MS,
 } from "@razzoozle/common/constants"
 import type { Server } from "@razzoozle/common/types/game/socket"
+import type { Theme } from "@razzoozle/common/types/theme"
 import { aiSocketHandlers } from "@razzoozle/socket/handlers/ai"
 import { catalogSocketHandlers } from "@razzoozle/socket/handlers/catalog"
 import { displaySocketHandlers } from "@razzoozle/socket/handlers/display"
@@ -20,7 +22,10 @@ import { themeTemplateSocketHandlers } from "@razzoozle/socket/handlers/theme-te
 import type { SocketHandler } from "@razzoozle/socket/handlers/types"
 import { cleanupStaleAvatars, initConfig } from "@razzoozle/socket/services/config"
 import Registry from "@razzoozle/socket/services/registry"
-import { dispatchHttp } from "@razzoozle/socket/services/http-routes"
+import {
+  dispatchHttp,
+  registerThemeBroadcaster,
+} from "@razzoozle/socket/services/http-routes"
 import { logger, socketLogger } from "@razzoozle/socket/services/logger"
 import { connectedSockets } from "@razzoozle/socket/services/prom"
 import { createServer } from "http"
@@ -71,6 +76,13 @@ const httpServer = createServer((req, res) => {
 })
 
 io.attach(httpServer)
+
+// Wire the skeleton-import HTTP route (services/http-routes.ts) to broadcast the
+// new theme to every connected client, mirroring the MANAGER.SET_THEME socket
+// path so an uploaded skeleton applies live without a reload.
+registerThemeBroadcaster((theme) => {
+  io.emit(EVENTS.MANAGER.THEME, theme as Theme)
+})
 
 // FROZEN BOOT LOG (P0-2): deploy.sh greps `grep -qF "Socket server running on
 // port <PORT>"`; the prefix AND interpolated port must stay on stdout, emitted

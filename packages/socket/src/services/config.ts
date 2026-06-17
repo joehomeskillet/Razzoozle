@@ -57,6 +57,7 @@ import { gameResultValidator } from "@razzoozle/socket/services/validators"
 import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
+import { renderSkeletonDoc } from "@razzoozle/common/skeleton-doc"
 import { z } from "zod"
 import type {
   Submission,
@@ -66,6 +67,7 @@ import type { MediaMeta } from "@razzoozle/common/types/media"
 import fs from "fs"
 import { basename, extname, relative, resolve } from "path"
 import { nanoid } from "nanoid"
+import JSZip from "jszip"
 
 export type { GameConfig } from "@razzoozle/common/validators/game-config"
 
@@ -123,6 +125,23 @@ const MEDIA_ROOT = "media"
 const MEDIA_IMAGE_MIME = /^image\/(?:png|jpeg|webp)$/u
 const MEDIA_AUDIO_MIME = /^audio\/(?:mpeg|mp3|wav|ogg)$/u
 const DATA_URL_RE = /^data:([^;,]+);base64,(.+)$/u
+const SKELETON_FORMAT_VERSION = 1
+const SKELETON_ASSET_MAX_BYTES = 512 * 1024
+const SKELETON_TOTAL_MAX_BYTES = 32 * 1024 * 1024
+const SKELETON_ENTRY_MAX = 200
+const SKELETON_ASSET_EXT = new Set([
+  "svg",
+  "webp",
+  "png",
+  "jpg",
+  "jpeg",
+  "woff2",
+])
+const SKELETON_BACKGROUND_SLOTS = [
+  "auth",
+  "managerGame",
+  "playerGame",
+] as const
 
 const ensureDir = (dir: string): void => {
   if (!fs.existsSync(dir)) {
@@ -1724,6 +1743,214 @@ export const setTheme = (
   fs.writeFileSync(getPath("theme/theme.json"), JSON.stringify(theme, null, 2))
 
   return theme
+}
+
+const skeletonSourcePath = (value: string | null): string | null => {
+  if (!value) {
+    return null
+  }
+
+  if (value.startsWith("/media/") || value.startsWith("/theme/")) {
+    return getPath(value.slice(1))
+  }
+
+  return null
+}
+
+export const buildSkeletonZip = async (): Promise<Buffer> => {
+  const theme = getTheme()
+  const zip = new JSZip()
+
+  zip.file(
+    "skeleton.json",
+    JSON.stringify(
+      {
+        formatVersion: SKELETON_FORMAT_VERSION,
+        name: theme.appTitle || "razzoozle",
+        theme,
+      },
+      null,
+      2,
+    ),
+  )
+
+  const addAsset = (value: string | null, entryDir: string): void => {
+    const src = skeletonSourcePath(value)
+
+    if (!src || !fs.existsSync(src) || !value) {
+      return
+    }
+
+    zip.file(`${entryDir}/${basename(value)}`, fs.readFileSync(src))
+  }
+
+  addAsset(theme.logo, "assets")
+  addAsset(theme.backgrounds.auth, "assets/backgrounds")
+  addAsset(theme.backgrounds.managerGame, "assets/backgrounds")
+  addAsset(theme.backgrounds.playerGame, "assets/backgrounds")
+
+  const cssFile = getPath("theme/skeleton.css")
+  if (fs.existsSync(cssFile)) {
+    zip.file("theme.css", fs.readFileSync(cssFile, "utf-8"))
+  }
+
+  const jsFile = getPath("theme/skeleton.js")
+  if (fs.existsSync(jsFile)) {
+    zip.file("theme.js", fs.readFileSync(jsFile, "utf-8"))
+  }
+
+  zip.file("SKELETON.md", renderSkeletonDoc(theme))
+
+  return (await zip.generateAsync({ type: "nodebuffer" })) as Buffer
+}
+
+export const importSkeletonZip = async (buf: Buffer): Promise<Theme> => {
+  const zip = await JSZip.loadAsync(buf)
+  const entries = Object.values(zip.files)
+
+  if (entries.length > SKELETON_ENTRY_MAX) {
+    throw new Error("errors:skeleton.tooManyEntries")
+  }
+
+  const buffers = new Map<string, Buffer>()
+  let totalBytes = 0
+
+  for (const entry of entries) {
+    if (entry.dir) {
+      continue
+    }
+
+    const entryBuffer = await entry.async("nodebuffer")
+    totalBytes += entryBuffer.byteLength
+
+    if (totalBytes > SKELETON_TOTAL_MAX_BYTES) {
+      throw new Error("errors:skeleton.tooLarge")
+    }
+
+    buffers.set(entry.name, entryBuffer)
+  }
+
+  const manifest = buffers.get("skeleton.json")
+
+  if (!manifest) {
+    throw new Error("errors:skeleton.missingManifest")
+  }
+
+  const parsedJson = JSON.parse(manifest.toString("utf-8")) as unknown
+  const theme: Theme = themeValidator.parse(
+    (parsedJson as { theme?: unknown }).theme,
+  )
+
+  for (const entry of entries) {
+    if (entry.dir || !entry.name.startsWith("assets/")) {
+      continue
+    }
+
+    const content = buffers.get(entry.name)
+    const base = basename(entry.name)
+    const expectedBase = entry.name.replace(/^assets\/(backgrounds\/)?/u, "")
+
+    if (
+      !content ||
+      base !== expectedBase ||
+      base.includes("/") ||
+      base.includes("\\") ||
+      base.includes("..") ||
+      base === ""
+    ) {
+      continue
+    }
+
+    const ext = extname(base).slice(1).toLowerCase()
+
+    if (!SKELETON_ASSET_EXT.has(ext)) {
+      continue
+    }
+
+    const isBackground = entry.name.startsWith("assets/backgrounds/")
+    const dest = isBackground
+      ? getPath(`media/backgrounds/${base}`)
+      : getPath(`theme/${base}`)
+    ensureDir(resolve(dest, ".."))
+    fs.writeFileSync(dest, content)
+
+    if (!isBackground && basename(theme.logo ?? "") === base) {
+      theme.logo = `/theme/${base}`
+    }
+
+    if (isBackground) {
+      for (const slot of SKELETON_BACKGROUND_SLOTS) {
+        if (basename(theme.backgrounds[slot] ?? "") === base) {
+          theme.backgrounds[slot] = `/media/backgrounds/${base}`
+        }
+      }
+    }
+  }
+
+  const css = buffers.get("theme.css")
+  if (css) {
+    if (css.byteLength > SKELETON_ASSET_MAX_BYTES) {
+      throw new Error("errors:skeleton.assetTooLarge")
+    }
+
+    ensureDir(getPath("theme"))
+    fs.writeFileSync(getPath("theme/skeleton.css"), css.toString("utf-8"))
+    theme.customCssEnabled = true
+  }
+
+  const js = buffers.get("theme.js")
+  if (js) {
+    if (js.byteLength > SKELETON_ASSET_MAX_BYTES) {
+      throw new Error("errors:skeleton.assetTooLarge")
+    }
+
+    ensureDir(getPath("theme"))
+    fs.writeFileSync(getPath("theme/skeleton.js"), js.toString("utf-8"))
+    theme.customJsEnabled = true
+  }
+
+  theme.skeletonVersion = (theme.skeletonVersion ?? 0) + 1
+
+  return setTheme(theme)
+}
+
+export const getSkeletonAsset = (kind: "css" | "js"): string => {
+  const file = getPath(
+    kind === "css" ? "theme/skeleton.css" : "theme/skeleton.js",
+  )
+
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : ""
+}
+
+export const setSkeletonAsset = (
+  kind: "css" | "js",
+  content: string,
+): Theme => {
+  if (typeof content !== "string") {
+    throw new Error("errors:skeleton.invalidContent")
+  }
+
+  if (Buffer.byteLength(content) > SKELETON_ASSET_MAX_BYTES) {
+    throw new Error("errors:skeleton.assetTooLarge")
+  }
+
+  ensureDir(getPath("theme"))
+  fs.writeFileSync(
+    getPath(kind === "css" ? "theme/skeleton.css" : "theme/skeleton.js"),
+    content,
+  )
+
+  const theme = getTheme()
+
+  if (kind === "css") {
+    theme.customCssEnabled = true
+  } else {
+    theme.customJsEnabled = true
+  }
+
+  theme.skeletonVersion = (theme.skeletonVersion ?? 0) + 1
+
+  return setTheme(theme)
 }
 
 // ---- Theme revisions (per-save version ring) ------------------------------
