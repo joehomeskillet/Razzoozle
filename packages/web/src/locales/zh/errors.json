@@ -15,6 +15,7 @@
   },
   "game": {
     "expired": "游戏已过期",
+    "gameEnded": "游戏已结束",
     "invalidAnswer": "答案无效",
     "kickedByManager": "你已被主持人移出游戏",
     "managerAlreadyConnected": "主持人已连接",

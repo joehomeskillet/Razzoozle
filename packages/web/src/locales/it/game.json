@@ -63,12 +63,16 @@
     "uploading": "Caricamento…",
     "uploaded": "Avatar caricato",
     "skip": "Salta",
-    "genericLabel": "Avatar",
     "generate": "Genera avatar",
     "reroll": "Rimescola",
     "styleLabel": "Stile",
     "useThis": "Usa questo",
     "preview": "Anteprima",
+    "tooLarge": "L'immagine è troppo grande",
+    "uploadFailed": "Impossibile leggere questa immagine",
+    "previewUse": "Usa questo avatar",
+    "previewSelected": "Avatar selezionato",
+    "uploadHeading": "Carica la tua immagine",
     "style": {
       "bottts": "Robot",
       "thumbs": "Pollici",
@@ -152,7 +156,8 @@
     "red": "Rosso",
     "blue": "Blu",
     "green": "Verde",
-    "yellow": "Giallo"
+    "yellow": "Giallo",
+    "pick": "Scegli una squadra"
   },
   "solo": {
     "play": "Gioca da solo",
@@ -204,7 +209,9 @@
     "trophies": {
       "title": "I tuoi trofei",
       "empty": "Nessun trofeo in questo turno — ma continua a giocare.",
-      "viewAll": "Vedi tutti i trofei"
+      "viewAll": "Vedi tutti i trofei",
+      "badgeAria": "{{name}}, {{count}}×",
+      "badgeAriaNew": "{{name}}, nuovo, {{count}}×"
     },
     "sticker": {
       "create": "Crea sticker",

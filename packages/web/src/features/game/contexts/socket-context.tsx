@@ -311,12 +311,18 @@ export const useEvent = <E extends keyof ServerToClientEvents>(
   const { socket } = useSocket()
 
   useEffect(() => {
-    // oxlint-disable-next-line no-explicit-any, no-unsafe-argument
-    socket.on(event, callback as any)
+    // Bind on/off through a signature generic over the event map so the event
+    // and its callback stay tied to the same `E`. socket.io's per-key overloads
+    // can't be resolved against a still-generic `E`, so we narrow the methods
+    // (not the callback to `any`) — the typed-socket contract is preserved.
+    type Listen = (_event: E, _callback: ServerToClientEvents[E]) => void
+    const on = socket.on.bind(socket) as Listen
+    const off = socket.off.bind(socket) as Listen
+
+    on(event, callback)
 
     return () => {
-      // oxlint-disable-next-line no-explicit-any, no-unsafe-argument
-      socket.off(event, callback as any)
+      off(event, callback)
     }
   }, [socket, event, callback])
 }

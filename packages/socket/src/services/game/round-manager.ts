@@ -1,4 +1,3 @@
-// oxlint-disable typescript/no-unnecessary-condition
 import {
   EVENTS,
   FIRST_CORRECT_BONUS,
@@ -2049,7 +2048,12 @@ export class RoundManager {
           (v) => v > 0,
         ),
         // most_achievements: highest full-game badge count (skip if zero).
-        award("most_achievements", (s) => s.achievementCount, max, (v) => v > 0),
+        award(
+          "most_achievements",
+          (s) => s.achievementIds.length,
+          max,
+          (v) => v > 0,
+        ),
       ]
 
     const superlatives: Superlative[] = []
@@ -2234,6 +2238,13 @@ export class RoundManager {
       })
 
       this.leaderboard.forEach((player, index) => {
+        // Bots have no real socket — emitting to a `bot:<id>` target would
+        // pollute playerStatus + push to a nonexistent room. Skip the emit; the
+        // index still advances so each human keeps its live (unfiltered)
+        // `index + 1` rank, unchanged from before.
+        if (player.isBot) {
+          return
+        }
         // PER-PLAYER recap: this player's own card + the single award they won
         // (if any). Bots carry no recap entry, so this is simply absent for them.
         const myPlayerRecap = this.recapStats.has(player.clientId)

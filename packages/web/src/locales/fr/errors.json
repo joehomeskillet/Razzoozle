@@ -10,6 +10,7 @@
   },
   "game": {
     "expired": "La partie a expiré",
+    "gameEnded": "La partie est terminée",
     "invalidAnswer": "Réponse invalide",
     "kickedByManager": "Vous avez été expulsé par le manager",
     "managerAlreadyConnected": "Un manager est déjà connecté",

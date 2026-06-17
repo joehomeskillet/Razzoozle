@@ -55,6 +55,13 @@ import {
 } from "@razzoozle/socket/services/submissionRateLimit"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { z } from "zod"
+import { timingSafeEqual } from "crypto"
+
+// Pre-decode cap for the socket PLUGIN_INSTALL base64 ZIP, mirroring the 16 MB
+// raw-byte limit the HTTP /api/plugins/import path enforces before decoding.
+// base64 encodes 3 bytes per 4 chars, so the char limit = ceil(bytes / 3) * 4.
+const PLUGIN_ZIP_MAX_BYTES = 16 * 1024 * 1024
+const PLUGIN_ZIP_MAX_B64_LEN = Math.ceil(PLUGIN_ZIP_MAX_BYTES / 3) * 4
 
 export const managerSocketHandlers = ({ socket }: SocketContext) => {
   const registry = Registry.getInstance()
@@ -153,6 +160,15 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         try {
           if (typeof payload?.zipBase64 !== "string") {
             throw new Error("errors:plugin.invalidPayload")
+          }
+
+          // Pre-decode size cap: reject before allocating the decoded Buffer so a
+          // huge base64 string can't trigger a memory-amplification DoS. Mirrors
+          // the 16 MB raw-byte limit the HTTP /api/plugins/import path enforces
+          // (readRawBody) — base64 inflates ~4/3, so cap the string length at the
+          // char-count that decodes to at most PLUGIN_ZIP_MAX_BYTES.
+          if (payload.zipBase64.length > PLUGIN_ZIP_MAX_B64_LEN) {
+            throw new Error("errors:plugin.tooLarge")
           }
 
           const buf = Buffer.from(payload.zipBase64, "base64")
@@ -668,7 +684,16 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         return
       }
 
-      if (password !== config.managerPassword) {
+      // Constant-time compare to avoid leaking the password via response timing.
+      // timingSafeEqual throws on unequal-length buffers, so a length mismatch is
+      // itself a rejection (checked first, short-circuiting the compare).
+      const presented = Buffer.from(typeof password === "string" ? password : "")
+      const expected = Buffer.from(config.managerPassword)
+
+      if (
+        presented.length !== expected.length ||
+        !timingSafeEqual(presented, expected)
+      ) {
         socket.emit(
           EVENTS.MANAGER.ERROR_MESSAGE,
           "errors:manager.invalidPassword",

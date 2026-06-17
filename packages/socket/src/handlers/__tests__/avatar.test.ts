@@ -14,9 +14,10 @@ import path from "path"
 const PNG_1PX =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
 
-// Mirrors @dicebear/core toDataUri() output: a url-encoded "data:image/svg+xml,…".
+// Mirrors @dicebear/core v9 toDataUri() output: "data:image/svg+xml;utf8,…"
+// with the SVG body run through encodeURIComponent.
 const SVG_AVATAR =
-  "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2010%2010%22%3E%3Crect%20width%3D%2210%22%20height%3D%2210%22%20fill%3D%22%23abc%22%2F%3E%3C%2Fsvg%3E"
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2010%2010%22%3E%3Crect%20width%3D%2210%22%20height%3D%2210%22%20fill%3D%22%23abc%22%2F%3E%3C%2Fsvg%3E"
 
 const makeQuizz = (): Quizz => ({
   subject: "Avatar",
@@ -209,7 +210,7 @@ describe("player avatars", () => {
     await game.join(playerSocket as unknown as Socket, "Alice")
     gameSocketHandlers(ctxOf(playerSocket))
 
-    const oversized = `data:image/svg+xml,${"a".repeat(AVATAR_SVG_MAX_CHARS + 1)}`
+    const oversized = `data:image/svg+xml;utf8,${"a".repeat(AVATAR_SVG_MAX_CHARS + 1)}`
     playerSocket.handlers.get(EVENTS.PLAYER.SET_AVATAR)!({
       gameId: game.gameId,
       avatar: oversized,

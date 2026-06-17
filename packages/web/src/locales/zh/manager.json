@@ -462,7 +462,12 @@
       "delete": "删除",
       "deleteConfirm": "确定要删除模板“{{name}}”吗",
       "emptyHeadline": "暂无模板",
-      "none": "尚未保存任何模板"
+      "none": "尚未保存任何模板",
+      "importError": "无效的模板文件",
+      "readError": "无法读取文件",
+      "import": "导入模板",
+      "export": "导出模板",
+      "edit": "编辑"
     },
     "revisions": {
       "title": "版本",

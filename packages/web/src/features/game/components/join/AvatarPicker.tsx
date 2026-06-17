@@ -40,6 +40,11 @@ const AvatarPicker = ({ onDone }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [style, setStyle] = useState<AvatarStyle>(AVATAR_STYLES[0]!)
   const [seed, setSeed] = useState<string>(() => makeSeed(username, 0))
+  // Upload outcome surfaced to assistive tech via a live region (the toasts are
+  // visual-only). Errors use role="alert" (assertive); successes role="status".
+  const [status, setStatus] = useState<
+    { tone: "error" | "success"; message: string } | undefined
+  >(undefined)
   const rollCount = useRef(0)
   const { t } = useTranslation()
 
@@ -86,7 +91,9 @@ const AvatarPicker = ({ onDone }: Props) => {
     }
 
     if (file.size > AVATAR_MAX_BYTES) {
-      toast.error(t("game:avatar.upload"))
+      const message = t("game:avatar.tooLarge")
+      setStatus({ tone: "error", message })
+      toast.error(message)
 
       return
     }
@@ -100,18 +107,26 @@ const AvatarPicker = ({ onDone }: Props) => {
 
         if (typeof result === "string") {
           choose(result)
-          toast.success(t("game:avatar.uploaded"))
+          const message = t("game:avatar.uploaded")
+          setStatus({ tone: "success", message })
+          toast.success(message)
         }
 
         setUploading(false)
       }
 
       reader.onerror = () => {
+        const message = t("game:avatar.uploadFailed")
+        setStatus({ tone: "error", message })
+        toast.error(message)
         setUploading(false)
       }
 
       reader.readAsDataURL(file)
     } catch {
+      const message = t("game:avatar.uploadFailed")
+      setStatus({ tone: "error", message })
+      toast.error(message)
       setUploading(false)
     }
   }
@@ -121,14 +136,18 @@ const AvatarPicker = ({ onDone }: Props) => {
       <p className="text-lg font-bold text-gray-800">{t("game:avatar.title")}</p>
 
       {/* Generate mode: live preview + style segmented control + re-roll. */}
-      <div className="flex w-full flex-col items-center gap-3">
+      <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white/40 p-4">
         <p className="text-sm font-semibold text-gray-600">
           {t("game:avatar.generate")}
         </p>
 
         <button
           type="button"
-          aria-label={t("game:avatar.preview")}
+          aria-label={
+            selected === generated
+              ? t("game:avatar.previewSelected")
+              : t("game:avatar.previewUse")
+          }
           aria-pressed={selected === generated}
           disabled={!generated}
           onClick={() => generated && choose(generated)}
@@ -166,19 +185,9 @@ const AvatarPicker = ({ onDone }: Props) => {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button variant="secondary" size="sm" onClick={reroll}>
-            {t("game:avatar.reroll")}
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={!generated}
-            onClick={() => generated && choose(generated)}
-          >
-            {t("game:avatar.useThis")}
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={reroll}>
+          {t("game:avatar.reroll")}
+        </Button>
       </div>
 
       <input
@@ -189,7 +198,12 @@ const AvatarPicker = ({ onDone }: Props) => {
         onChange={handleFile}
       />
 
-      <div className="flex flex-col items-center gap-2">
+      {/* Upload mode: own surface so the two ways to set an avatar read as
+          distinct choices. */}
+      <div className="flex w-full flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white/40 p-4">
+        <p className="text-sm font-semibold text-gray-600">
+          {t("game:avatar.uploadHeading")}
+        </p>
         <Button
           variant="secondary"
           size="sm"
@@ -198,13 +212,25 @@ const AvatarPicker = ({ onDone }: Props) => {
         >
           {uploading ? t("game:avatar.uploading") : t("game:avatar.upload")}
         </Button>
-
-        {onDone && (
-          <Button variant="ghost" size="sm" onClick={() => onDone()}>
-            {t("game:avatar.skip")}
-          </Button>
-        )}
       </div>
+
+      {/* AT announcement for upload outcomes (the toasts are visual-only). The
+          role drives politeness, so no explicit aria-live is needed. */}
+      <p
+        role={status?.tone === "error" ? "alert" : "status"}
+        className={clsx(
+          "min-h-5 text-sm font-semibold",
+          status?.tone === "error" ? "text-red-600" : "text-gray-600",
+        )}
+      >
+        {status?.message ?? ""}
+      </p>
+
+      {onDone && (
+        <Button variant="ghost" size="sm" onClick={() => onDone()}>
+          {t("game:avatar.skip")}
+        </Button>
+      )}
     </div>
   )
 }

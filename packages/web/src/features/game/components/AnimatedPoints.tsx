@@ -4,9 +4,12 @@
  * Lifted out of Leaderboard.tsx so both the host leaderboard and the solo
  * finished screen can reuse the same count-up. When the user prefers reduced
  * motion the spring is skipped entirely and the final value renders instantly.
+ *
+ * The rounded value is rendered straight from a MotionValue child, so the spring
+ * drives the text node directly — no per-frame React setState / re-render.
  */
-import { useReducedMotion, useSpring, useTransform } from "motion/react"
-import { useEffect, useState } from "react"
+import { motion, useReducedMotion, useSpring, useTransform } from "motion/react"
+import { useEffect } from "react"
 
 import { SPRING_COUNT } from "@razzoozle/web/features/game/animation/presets"
 
@@ -22,26 +25,20 @@ const AnimatedPoints = ({ to, from = 0, className }: Props) => {
   const reduced = useReducedMotion() ?? false
   const spring = useSpring(from, SPRING_COUNT)
   const display = useTransform(spring, (value) => Math.round(value))
-  const [displayValue, setDisplayValue] = useState(from)
 
   useEffect(() => {
     // Reduced motion → jump straight to the final value, no spring.
     if (reduced) {
-      setDisplayValue(to)
+      spring.jump(to)
       return
     }
     spring.set(to)
-    const unsubscribe = display.on("change", (latest) => {
-      setDisplayValue(latest)
-    })
-
-    return unsubscribe
-  }, [to, reduced, spring, display])
+  }, [to, reduced, spring])
 
   return (
-    <span className={className ?? "tabular-nums drop-shadow-md"}>
-      {displayValue}
-    </span>
+    <motion.span className={className ?? "tabular-nums drop-shadow-md"}>
+      {display}
+    </motion.span>
   )
 }
 

@@ -303,6 +303,7 @@
       "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
       "emptyHeadline": "Aún no hay plantillas",
       "none": "Aún no hay plantillas guardadas",
+      "edit": "Editar",
       "importError": "Archivo de plantilla no válido",
       "readError": "No se pudo leer el archivo",
       "import": "Importar plantilla",

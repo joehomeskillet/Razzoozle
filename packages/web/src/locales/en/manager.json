@@ -463,6 +463,7 @@
       "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
       "emptyHeadline": "No templates yet",
       "none": "No templates saved yet",
+      "edit": "Edit",
       "importError": "Invalid template file",
       "readError": "Could not read the file",
       "import": "Import template",

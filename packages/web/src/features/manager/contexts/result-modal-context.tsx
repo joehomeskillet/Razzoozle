@@ -41,6 +41,17 @@ interface ResultModalContextType {
 
 const ResultModalContext = createContext<ResultModalContextType | null>(null)
 
+// A fully-typed empty QuestionResult for the out-of-range / no-questions
+// fallback below. Every required field carries an inert default (the cooldown/
+// time bounds mirror the zod questionValidator) so the modal renders an empty
+// table without a partial `as unknown as` cast.
+const EMPTY_QUESTION_RESULT: QuestionResult = {
+  question: "",
+  cooldown: 3,
+  time: 5,
+  playerAnswers: [],
+}
+
 type Props = PropsWithChildren<{
   result: GameResult
   onClose: () => void
@@ -58,9 +69,7 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
   // A result with zero questions (or an out-of-range index) has no question to
   // show; fall back to a safe empty question so the modal renders an empty
   // table instead of crashing on `questionResult.playerAnswers`.
-  const questionResult =
-    result.questions[questionIndex] ??
-    ({ playerAnswers: [] } as unknown as QuestionResult)
+  const questionResult = result.questions[questionIndex] ?? EMPTY_QUESTION_RESULT
 
   const answeredCount = questionResult.playerAnswers.filter(
     // A record counts as answered if it carries any answer payload: the scalar

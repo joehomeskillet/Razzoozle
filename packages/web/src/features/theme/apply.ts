@@ -1,5 +1,7 @@
 import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
 import { THEME_TOKENS } from "@razzoozle/common/theme-tokens"
+import { themeValidator } from "@razzoozle/common/validators/theme"
+import type { RazzoozleGlobal } from "@razzoozle/web/features/manager/plugins/host"
 
 // Resolve a dot-path (e.g. "stateColors.correct") into a nested object.
 const get = (obj: unknown, path: string): unknown =>
@@ -14,7 +16,15 @@ const get = (obj: unknown, path: string): unknown =>
 // (bg-primary, etc.) reference --color-* via var(), so overriding them at runtime
 // re-colors the whole UI. Other tokens are consumed via bg-[var(--x)] classes.
 export const applyTheme = (theme: Theme) => {
-  const t: Theme = { ...DEFAULT_THEME, ...theme }
+  // Shallow-merge top-level fields, but deep-merge `animation`: a partial nested
+  // object (e.g. only springStiffness from an old theme.json) would otherwise
+  // replace the whole block and leave springDamping/scales undefined, which
+  // flows into useReveal as `stiffness: undefined`. Backfill from DEFAULT_THEME.
+  const t: Theme = {
+    ...DEFAULT_THEME,
+    ...theme,
+    animation: { ...DEFAULT_THEME.animation, ...theme.animation },
+  }
   const { style } = document.documentElement
   style.setProperty("--color-primary", t.colorPrimary)
   style.setProperty("--color-secondary", t.colorSecondary)
@@ -70,8 +80,9 @@ export const applyTheme = (theme: Theme) => {
       // Minimal documented global the skeleton JS can read. MERGE (never
       // reassign) so we preserve any registerTab/api fields the manager plugin
       // host (manager/plugins/host.ts) merged on — a full reassign here would
-      // wipe them on every theme broadcast / save / preview slider drag.
-      const w = window as unknown as { razzoozle?: Record<string, unknown> }
+      // wipe them on every theme broadcast / save / preview slider drag. Shares
+      // the RazzoozleGlobal shape with the host so both sides agree on the type.
+      const w = window as unknown as { razzoozle?: RazzoozleGlobal }
       w.razzoozle = Object.assign(w.razzoozle ?? {}, {
         theme: t,
         skeletonVersion: t.skeletonVersion,
@@ -113,7 +124,7 @@ export const fetchTheme = async (): Promise<Theme> => {
     const parsed: unknown = await res.json()
 
     // Guard against valid-but-unexpected JSON (null, an array, a primitive):
-    // only spread when it's a plain object, otherwise keep the pure default.
+    // only merge when it's a plain object, otherwise keep the pure default.
     if (
       typeof parsed !== "object" ||
       parsed === null ||
@@ -122,7 +133,14 @@ export const fetchTheme = async (): Promise<Theme> => {
       return DEFAULT_THEME
     }
 
-    return { ...DEFAULT_THEME, ...(parsed as Partial<Theme>) }
+    // Backfill defaults first (so a partial/old theme.json keeps validating),
+    // then run it through the zod validator instead of an unchecked
+    // `as Partial<Theme>` cast. safeParse normalizes nested defaults and rejects
+    // malformed values (bad hex, out-of-range numbers); on failure we fall back
+    // to the bundled default rather than apply an invalid theme.
+    const result = themeValidator.safeParse({ ...DEFAULT_THEME, ...parsed })
+
+    return result.success ? result.data : DEFAULT_THEME
   } catch {
     return DEFAULT_THEME
   }

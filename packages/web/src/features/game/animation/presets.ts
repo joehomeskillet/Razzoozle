@@ -43,16 +43,8 @@ export type AnimationTokens = {
   staggerScale: number
 }
 
-/** Primary lifecycle spring — matches the dominant existing feel (300 / 24). */
-export const SPRING: Transition = { type: "spring", stiffness: 300, damping: 24 }
-/** Gentler settle for larger surfaces / full-screen entrances. */
-export const SPRING_SOFT: Transition = {
-  type: "spring",
-  stiffness: 210,
-  damping: 26,
-}
-/** Snappy feedback for press / lock-in / pop. */
-export const SPRING_SNAP: Transition = {
+/** Snappy feedback for press / lock-in / pop (internal — exposed via useReveal.snap). */
+const SPRING_SNAP: Transition = {
   type: "spring",
   stiffness: 400,
   damping: 28,
@@ -97,23 +89,18 @@ export const fadeUp = (distance = RISE): Variants => ({
   visible: { opacity: 1, y: 0 },
 })
 
-export const fadeIn = (): Variants => ({
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-})
-
 export const scaleIn = (from = 0.92): Variants => ({
   hidden: { opacity: 0, scale: from },
   visible: { opacity: 1, scale: 1 },
 })
 
 /** Overshoot pop — for medals, result "moment of truth", reward badges. */
-export const popIn = (from = 0.6): Variants => ({
+const popIn = (from = 0.6): Variants => ({
   hidden: { opacity: 0, scale: from },
   visible: { opacity: 1, scale: [from, 1.08, 1] },
 })
 
-export const staggerContainer = (
+const staggerContainer = (
   stagger: number = STAGGER.base,
   delayChildren = 0,
 ): Variants => ({
@@ -146,6 +133,14 @@ export interface Reveal {
   tween: (duration?: number, ease?: Bezier) => Transition
 }
 
+/** Fallback tokens — keep in sync with the zod themeValidator (animation block). */
+const FALLBACK_TOKENS: AnimationTokens = {
+  springStiffness: 300,
+  springDamping: 24,
+  durationScale: 1,
+  staggerScale: 1,
+}
+
 /**
  * Reduced-motion-aware bundle. Prefer this over the raw tokens in components:
  * it guarantees the opacity-only fallback and stagger collapse without each file
@@ -161,10 +156,24 @@ export const useReveal = (
   const reduced = useReducedMotion() ?? false
   const themeAnimation = useThemeStore((s) => s.theme.animation)
 
-  const { springStiffness, springDamping, durationScale, staggerScale } = {
-    ...themeAnimation,
-    ...override,
-  }
+  // Default every field so a partial / `undefined`-carrying override can never
+  // produce a NaN spring stiffness/damping or zero-ed scale.
+  const springStiffness =
+    override?.springStiffness ??
+    themeAnimation?.springStiffness ??
+    FALLBACK_TOKENS.springStiffness
+  const springDamping =
+    override?.springDamping ??
+    themeAnimation?.springDamping ??
+    FALLBACK_TOKENS.springDamping
+  const durationScale =
+    override?.durationScale ??
+    themeAnimation?.durationScale ??
+    FALLBACK_TOKENS.durationScale
+  const staggerScale =
+    override?.staggerScale ??
+    themeAnimation?.staggerScale ??
+    FALLBACK_TOKENS.staggerScale
 
   const instant: Transition = { duration: DURATION.instant }
   const spring: Transition = {

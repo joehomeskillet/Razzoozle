@@ -31,6 +31,21 @@ const SLIDERS: Array<{
   { key: "staggerScale", min: 0, max: 3, step: 0.05 },
 ]
 
+// Range styling — strip the native track/thumb and redraw both for every engine
+// so the slider reads as a themed control on the light console surface instead of
+// the raw browser default. Arbitrary variants keep it scoped to this input (no
+// global CSS), `accent-color` is dropped since we paint the thumb ourselves.
+const RANGE_CLASS = [
+  "h-11 w-full cursor-pointer appearance-none bg-transparent",
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+  // WebKit / Blink track + thumb
+  "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200",
+  "[&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-primary)] [&::-webkit-slider-thumb]:shadow-sm",
+  // Firefox / Gecko track + thumb
+  "[&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-gray-200",
+  "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-primary)] [&::-moz-range-thumb]:shadow-sm",
+].join(" ")
+
 // Static mock rows for the live preview — no game state, no secrets.
 const PREVIEW_ROWS = [1, 2, 3, 4]
 
@@ -85,7 +100,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
               aria-label={label}
               aria-valuetext={String(current)}
               onChange={(e) => setToken(key)(Number(e.target.value))}
-              className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className={RANGE_CLASS}
             />
           </LabelRow>
         )

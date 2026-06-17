@@ -35,6 +35,9 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const [totalPlayers, setTotalPlayers] = useState(0)
   const [qrOpen, setQrOpen] = useState(false)
   const [pairCode, setPairCode] = useState("")
+  // Single shared kick dialog — the targeted player (null = closed). Mounting one
+  // dialog subtree instead of one per roster card keeps a ~200-player lobby light.
+  const [kickTarget, setKickTarget] = useState<Player | null>(null)
   const qrContentRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -225,55 +228,63 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               )}
               <Avatar src={player.avatar} name={player.username} size={40} />
               <span className="text-3xl drop-shadow-sm">{player.username}</span>
-              <AlertDialog.Root>
-                <AlertDialog.Trigger asChild>
-                  <button
-                    type="button"
-                    aria-label={t("manager:kickPlayer.aria", {
-                      name: player.username,
-                    })}
-                    className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </AlertDialog.Trigger>
-                <AlertDialog.Portal>
-                  <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-                  <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-black">
-                    <AlertDialog.Title className="text-xl font-bold">
-                      {t("manager:kickPlayer.title")}
-                    </AlertDialog.Title>
-                    <AlertDialog.Description className="mt-2 text-gray-600">
-                      {t("manager:kickPlayer.description", {
-                        name: player.username,
-                      })}
-                    </AlertDialog.Description>
-                    <div className="mt-6 flex justify-end gap-3">
-                      <AlertDialog.Cancel asChild>
-                        <button
-                          type="button"
-                          className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
-                        >
-                          {t("common:cancel")}
-                        </button>
-                      </AlertDialog.Cancel>
-                      <AlertDialog.Action asChild>
-                        <button
-                          type="button"
-                          onClick={() => kickPlayer(player.id)}
-                          className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-                        >
-                          {t("manager:kickPlayer.confirm")}
-                        </button>
-                      </AlertDialog.Action>
-                    </div>
-                  </AlertDialog.Content>
-                </AlertDialog.Portal>
-              </AlertDialog.Root>
+              <button
+                type="button"
+                onClick={() => setKickTarget(player)}
+                aria-label={t("manager:kickPlayer.aria", {
+                  name: player.username,
+                })}
+                className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/20 text-white transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <X className="size-4" />
+              </button>
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
+
+      {/* Single shared kick confirmation — opened by any roster card's X button. */}
+      <AlertDialog.Root
+        open={kickTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setKickTarget(null)
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+          <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-black">
+            <AlertDialog.Title className="text-xl font-bold">
+              {t("manager:kickPlayer.title")}
+            </AlertDialog.Title>
+            <AlertDialog.Description className="mt-2 text-gray-600">
+              {t("manager:kickPlayer.description", {
+                name: kickTarget?.username ?? "",
+              })}
+            </AlertDialog.Description>
+            <div className="mt-6 flex justify-end gap-3">
+              <AlertDialog.Cancel asChild>
+                <button
+                  type="button"
+                  className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+                >
+                  {t("common:cancel")}
+                </button>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (kickTarget) kickPlayer(kickTarget.id)
+                  }}
+                  className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                >
+                  {t("manager:kickPlayer.confirm")}
+                </button>
+              </AlertDialog.Action>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </section>
   )
 }

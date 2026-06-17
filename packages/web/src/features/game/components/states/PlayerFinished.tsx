@@ -122,19 +122,33 @@ const HighlightBadge = ({
   const { t } = useTranslation()
   const reveal = useReveal()
 
+  // Gold tier comes from the theme tier-gold token (not a hardcoded amber ramp),
+  // so a re-themed skeleton recolors the highlight badge too. Ring is a 2px gold
+  // border + the tier-gold glow (inline box-shadow), since a Tailwind shadow/ring
+  // utility would be overridden by the inline box-shadow.
   return (
     <motion.div
-      className="flex w-full flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-amber-400/90 to-amber-600/90 px-5 py-4 text-center shadow-lg ring-2 ring-amber-200/60"
+      className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 px-5 py-4 text-center text-[#451a03]"
+      style={{
+        background:
+          "linear-gradient(to bottom right, color-mix(in srgb, var(--tier-gold), white 18%), color-mix(in srgb, var(--tier-gold), black 22%))",
+        borderColor: "color-mix(in srgb, var(--tier-gold), white 35%)",
+        boxShadow: "var(--tier-gold-glow)",
+      }}
       variants={reveal.pop()}
       initial="hidden"
       animate="visible"
       transition={reveal.spring}
     >
-      <Trophy className="size-7 text-amber-950 drop-shadow" aria-hidden />
-      <span className="text-xs font-bold tracking-widest text-amber-950/80 uppercase">
+      <Trophy
+        className="size-7 drop-shadow"
+        style={{ color: "color-mix(in srgb, var(--tier-gold), black 55%)" }}
+        aria-hidden
+      />
+      <span className="text-xs font-bold tracking-widest uppercase opacity-80">
         {t("game:recap.highlight.title")}
       </span>
-      <span className="text-xl font-extrabold text-amber-950 drop-shadow-sm">
+      <span className="text-xl font-extrabold drop-shadow-sm">
         {t(`game:recap.highlight.${highlight.key}`)}
       </span>
     </motion.div>
@@ -149,11 +163,18 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
 
   // Cumulative counts (localStorage) include this game's badges once Result.tsx
   // has persisted them. Merge defensively so the summary is correct even if the
-  // FINISHED screen renders before/without a per-round Result persist.
+  // FINISHED screen renders before/without a per-round Result persist — including
+  // when the SAME badge was earned multiple times this game (e.g. first_responder
+  // per round). Take max(stored, thisGameCount): once persisted, stored already
+  // includes this game (>= thisGameCount); until then, fall back to thisGameCount.
   const stored = readStoredAchievements()
-  const counts: Record<string, number> = { ...stored }
+  const thisGameCounts: Record<string, number> = {}
   for (const id of thisGame) {
-    if ((stored[id] ?? 0) === 0) counts[id] = (counts[id] ?? 0) + 1
+    thisGameCounts[id] = (thisGameCounts[id] ?? 0) + 1
+  }
+  const counts: Record<string, number> = { ...stored }
+  for (const [id, c] of Object.entries(thisGameCounts)) {
+    counts[id] = Math.max(stored[id] ?? 0, c)
   }
 
   // Only the ids unlocked at least once (cumulative), grouped by tier.
@@ -219,13 +240,16 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
                 const name = t(`game:achievements.${id}.name`, {
                   defaultValue: id.replace(/_/g, " "),
                 })
+                const aria = isNew
+                  ? t("game:recap.trophies.badgeAriaNew", { name, count })
+                  : t("game:recap.trophies.badgeAria", { name, count })
                 return (
                   <div
                     key={id}
                     title={name}
-                    aria-label={`${name}${isNew ? ", neu" : ""}, ${count}×`}
+                    aria-label={aria}
                     className={clsx(
-                      "relative flex flex-col items-center gap-1 rounded-xl px-2 py-2",
+                      "relative flex flex-col items-center gap-1 rounded-2xl px-2 py-2",
                       isNew
                         ? `bg-gradient-to-br ring-2 ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
                         : "bg-white/5 ring-1 ring-white/10",
@@ -370,7 +394,7 @@ const PlayerFinished = ({ data }: Props) => {
       </motion.p>
 
       <motion.p
-        className="mt-2 rounded bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums"
+        className="mt-2 rounded-2xl bg-black/40 px-6 py-2 text-2xl font-bold text-white tabular-nums"
         variants={reveal.item()}
         transition={reveal.spring}
       >

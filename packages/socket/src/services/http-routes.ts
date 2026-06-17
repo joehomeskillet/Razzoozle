@@ -603,13 +603,15 @@ const handlePluginAsset = (
     return
   }
 
-  // Long cache: an installed plugin's files are immutable for a given version
-  // (a re-import changes the id/version), mirroring how skeleton assets are
-  // served with versioned, cacheable URLs.
+  // A plugin's files live at a STABLE url (/plugins/<id>/ui.js) and a same-id
+  // reinstall keeps that url, so `immutable` would defeat the cache-bust — the
+  // browser would never re-fetch the new bytes. Serve cacheable but always
+  // revalidated (max-age=0, must-revalidate) so a reinstall is picked up while
+  // an unchanged file still 304s.
   res.writeHead(200, {
     "content-type": resolved.contentType,
     "content-length": resolved.buffer.byteLength,
-    "cache-control": "public, max-age=31536000, immutable",
+    "cache-control": "public, max-age=0, must-revalidate",
   })
   res.end(resolved.buffer)
 }

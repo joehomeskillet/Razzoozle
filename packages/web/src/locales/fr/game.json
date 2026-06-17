@@ -63,12 +63,16 @@
     "uploading": "Envoi…",
     "uploaded": "Avatar importé",
     "skip": "Passer",
-    "genericLabel": "Avatar",
     "generate": "Générer un avatar",
     "reroll": "Mélanger",
     "styleLabel": "Style",
     "useThis": "Utiliser celui-ci",
     "preview": "Aperçu",
+    "tooLarge": "L'image est trop volumineuse",
+    "uploadFailed": "Impossible de lire cette image",
+    "previewUse": "Utiliser cet avatar",
+    "previewSelected": "Avatar sélectionné",
+    "uploadHeading": "Importe ta propre image",
     "style": {
       "bottts": "Robots",
       "thumbs": "Pouces",
@@ -152,7 +156,8 @@
     "red": "Rouge",
     "blue": "Bleu",
     "green": "Vert",
-    "yellow": "Jaune"
+    "yellow": "Jaune",
+    "pick": "Choisis une équipe"
   },
   "solo": {
     "play": "Jouer en solo",
@@ -204,7 +209,9 @@
     "trophies": {
       "title": "Tes trophées",
       "empty": "Aucun trophée cette manche — mais continue à jouer.",
-      "viewAll": "Voir tous les trophées"
+      "viewAll": "Voir tous les trophées",
+      "badgeAria": "{{name}}, {{count}}×",
+      "badgeAriaNew": "{{name}}, nouveau, {{count}}×"
     },
     "sticker": {
       "create": "Créer un sticker",

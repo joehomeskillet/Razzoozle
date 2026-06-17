@@ -37,18 +37,10 @@ import {
   setPluginConfig,
 } from "@razzoozle/socket/services/config"
 
-// Re-export so plugin-adjacent host code keeps a single import surface.
-export { assertSafeId }
-
 // The capability badge a plugin MUST declare (in manifest/InstalledPlugin
 // capabilities) for its server hook to be loaded. UI-only plugins (no server
 // capability) are skipped entirely — their hooks.server, if any, is inert.
 export const SERVER_CAPABILITY = "SERVER_HANDLER"
-
-// A custom-HTTP-route capability is DEFERRED in WP3: declared-but-inert. A
-// plugin may list it, but the runtime registers no HTTP route for it (socket
-// event handlers only). Documented here so the badge has a stable name.
-export const HTTP_ROUTE_CAPABILITY = "HTTP_ROUTE"
 
 // The host API surface handed to a plugin's register(hostApi). NAMESPACED +
 // capability-aware: it never exposes the raw io/socket. on() registrations are
@@ -204,16 +196,46 @@ const buildHostApi = (plugin: InstalledPlugin): PluginHostApi => {
   }
 }
 
-// Re-exported for tests + callers that need the host-api shape without loading.
-export const hostApiFor = (plugin: InstalledPlugin): PluginHostApi =>
-  buildHostApi(plugin)
-
 // Should this plugin's server hook be loaded? It must declare the SERVER
 // capability AND have a resolvable on-disk server hook (manifest hooks.server).
 const hasServerHook = (plugin: InstalledPlugin): boolean =>
   plugin.enabled &&
   plugin.capabilities.includes(SERVER_CAPABILITY) &&
   pluginServerPath(plugin.id) !== null
+
+// The minimal shape a plugin server hook may export: a top-level register()
+// and/or a default export (function or { register }). Resolved by extractRegister.
+type PluginModule = {
+  register?: unknown
+  default?: unknown
+}
+
+type RegisterFn = (api: PluginHostApi) => unknown
+
+// Narrow a dynamically-imported module to its register() function, accepting
+// `export function register`, `export default register`, or
+// `export default { register }`. Returns null when no register() is exported.
+const extractRegister = (mod: PluginModule): RegisterFn | null => {
+  if (typeof mod.register === "function") {
+    return mod.register as RegisterFn
+  }
+
+  const def = mod.default
+
+  if (
+    def &&
+    typeof def === "object" &&
+    typeof (def as { register?: unknown }).register === "function"
+  ) {
+    return (def as { register: RegisterFn }).register
+  }
+
+  if (typeof def === "function") {
+    return def as RegisterFn
+  }
+
+  return null
+}
 
 // Load + run a single plugin's server hook. Capability-gated, fully crash-
 // isolated: a server.js that throws on import OR inside register() is caught,
@@ -271,21 +293,13 @@ export const loadPlugin = async (plugin: InstalledPlugin): Promise<boolean> => {
     // each (re)load resolves to a fresh URL. version usually bumps on reinstall;
     // a timestamp guarantees freshness even when it doesn't.
     const cacheBust = `?v=${encodeURIComponent(plugin.version)}&t=${Date.now()}`
-    const mod = (await import(pathToFileURL(serverPath).href + cacheBust)) as {
-      register?: unknown
-      default?: unknown
-    }
+    const mod = (await import(
+      pathToFileURL(serverPath).href + cacheBust
+    )) as PluginModule
 
-    const register =
-      (typeof mod.register === "function" && mod.register) ||
-      (mod.default &&
-        typeof mod.default === "object" &&
-        typeof (mod.default as { register?: unknown }).register === "function" &&
-        (mod.default as { register: unknown }).register) ||
-      (typeof mod.default === "function" && mod.default) ||
-      null
+    const register = extractRegister(mod)
 
-    if (typeof register !== "function") {
+    if (!register) {
       throw new Error("server hook exports no register() function")
     }
 
@@ -297,9 +311,7 @@ export const loadPlugin = async (plugin: InstalledPlugin): Promise<boolean> => {
     // caught by the surrounding catch (loadPlugin returns false, plugin
     // marked errored, enabled NOT flipped) so a broken server.js never
     // crashes the host via an unhandled rejection.
-    const teardown = await Promise.resolve(
-      (register as (api: PluginHostApi) => unknown)(buildHostApi(plugin)),
-    )
+    const teardown = await Promise.resolve(register(buildHostApi(plugin)))
 
     if (typeof teardown === "function") {
       loaded.teardown = teardown as () => void

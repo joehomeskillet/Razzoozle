@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import {
   useEvent,
   useSocket,
@@ -18,7 +19,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 import { type DragEvent, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -39,12 +40,19 @@ const ConfigPlugins = () => {
   const { socket } = useSocket()
   const { t } = useTranslation()
   const { plugins } = useConfig()
-  const reducedMotion = useReducedMotion()
+  const reveal = useReveal()
 
   // True while an install ZIP is in flight. Cleared on PLUGIN_CONFIG (success)
   // OR ERROR_MESSAGE (failure) so the spinner never gets stuck (regression we
   // hit before). The file read itself also clears it on reader error.
   const [installing, setInstalling] = useState(false)
+  // THIS manager initiated the in-flight install. PLUGIN_CONFIG is broadcast to
+  // EVERY connected manager (including ours, on any concurrent plugin change),
+  // so the flag below disambiguates "our install just landed" from "a different
+  // manager changed a plugin" — only the former clears the spinner + toasts.
+  const installRequested = useRef(false)
+  // Status message announced to assistive tech via the aria-live region below.
+  const [statusMessage, setStatusMessage] = useState("")
   // Whether a file is currently dragged over the dropzone (visual affordance).
   const [dragOver, setDragOver] = useState(false)
   // The plugin id pending an uninstall confirmation; drives the AlertDialog.
@@ -54,12 +62,16 @@ const ConfigPlugins = () => {
   const installed: InstalledPlugin[] = plugins ?? []
 
   // Server broadcasts the fresh InstalledPlugin[] after a successful install /
-  // remove / config change. Reaching here means the install (if any) landed —
-  // clear the spinner and confirm. Reading `installing` directly is safe:
-  // useEvent re-binds the handler each render (same pattern as ConfigTheme).
+  // remove / config change — to ALL managers. Only treat it as OUR install's
+  // completion when this manager actually started one (installRequested); a
+  // broadcast triggered by a concurrent manager must not clear our spinner or
+  // show a false "installed" toast. Reading state directly is safe: useEvent
+  // re-binds the handler each render (same pattern as ConfigTheme).
   useEvent(EVENTS.MANAGER.PLUGIN_CONFIG, () => {
-    if (installing) {
+    if (installing && installRequested.current) {
+      installRequested.current = false
       setInstalling(false)
+      setStatusMessage(t("manager:plugins.toast.installed"))
       toast.success(t("manager:plugins.toast.installed"))
     }
   })
@@ -75,10 +87,13 @@ const ConfigPlugins = () => {
     // plugin handlers' errors (errors:plugin.*); ignore the rest so we never
     // clear the install spinner or toast on an unrelated error.
     if (!message.startsWith("errors:plugin")) return
-    if (installing) {
+    if (installing && installRequested.current) {
+      installRequested.current = false
       setInstalling(false)
     }
-    toast.error(t(message, { defaultValue: message }))
+    const reason = t(message, { defaultValue: message })
+    setStatusMessage(reason)
+    toast.error(reason)
   })
 
   // File → base64 → PLUGIN_INSTALL { zipBase64 }. Mirrors the theme/sound
@@ -88,7 +103,9 @@ const ConfigPlugins = () => {
       return
     }
 
+    installRequested.current = true
     setInstalling(true)
+    setStatusMessage(t("manager:plugins.installing"))
 
     const reader = new FileReader()
     reader.onload = () => {
@@ -97,8 +114,11 @@ const ConfigPlugins = () => {
       })
     }
     reader.onerror = () => {
+      installRequested.current = false
       setInstalling(false)
-      toast.error(t("errors:plugin.uploadFailed", { defaultValue: "" }))
+      const reason = t("errors:plugin.uploadFailed", { defaultValue: "" })
+      setStatusMessage(reason)
+      toast.error(reason)
     }
     reader.readAsDataURL(file)
   }
@@ -157,11 +177,10 @@ const ConfigPlugins = () => {
     <>
       <motion.div
         className="flex flex-1 flex-col"
-        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={
-          reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-        }
+        variants={reveal.item()}
+        initial="hidden"
+        animate="visible"
+        transition={reveal.spring}
       >
         <div className="flex flex-col gap-6 pb-10">
           {/* ── Sicherheitswarnung ─────────────────────────────────────── */}
@@ -192,7 +211,7 @@ const ConfigPlugins = () => {
             <div
               role="button"
               tabIndex={0}
-              aria-label={t("manager:plugins.dropzone")}
+              aria-labelledby="plugin-dropzone-label"
               aria-disabled={installing}
               onClick={openFilePicker}
               onKeyDown={handleDropzoneKeyDown}
@@ -213,7 +232,10 @@ const ConfigPlugins = () => {
               ) : (
                 <Upload className="size-7 text-gray-400" aria-hidden />
               )}
-              <p className="text-sm font-semibold text-gray-700">
+              <p
+                id="plugin-dropzone-label"
+                className="text-sm font-semibold text-gray-700"
+              >
                 {installing
                   ? t("manager:plugins.installing")
                   : t("manager:plugins.dropzone")}
@@ -228,6 +250,10 @@ const ConfigPlugins = () => {
                 onChange={handleFileInput}
               />
             </div>
+            {/* Announce install progress / completion / failure to AT. */}
+            <p className="sr-only" role="status" aria-live="polite">
+              {statusMessage}
+            </p>
           </SectionCard>
 
           {/* ── Installierte Plugins ───────────────────────────────────── */}

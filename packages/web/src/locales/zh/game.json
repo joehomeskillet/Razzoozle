@@ -63,12 +63,16 @@
     "uploading": "上传中…",
     "uploaded": "头像已上传",
     "skip": "跳过",
-    "genericLabel": "头像",
     "generate": "生成头像",
     "reroll": "随机生成",
     "styleLabel": "样式",
     "useThis": "使用此头像",
     "preview": "预览",
+    "tooLarge": "图片太大了",
+    "uploadFailed": "无法读取该图片",
+    "previewUse": "使用此头像",
+    "previewSelected": "已选头像",
+    "uploadHeading": "上传你自己的图片",
     "style": {
       "bottts": "机器人",
       "thumbs": "拇指",
@@ -152,7 +156,8 @@
     "red": "红队",
     "blue": "蓝队",
     "green": "绿队",
-    "yellow": "黄队"
+    "yellow": "黄队",
+    "pick": "选择队伍"
   },
   "solo": {
     "play": "单人游玩",
@@ -170,6 +175,12 @@
   "reward": {
     "bonusPoints": "奖励",
     "dismiss": "关闭"
+  },
+  "ended": {
+    "byHost": {
+      "title": "主持人已结束游戏",
+      "hint": "感谢你的参与。"
+    }
   },
   "recap": {
     "title": "你的战绩",
@@ -198,7 +209,9 @@
     "trophies": {
       "title": "你的奖杯",
       "empty": "本局没有奖杯 —— 继续加油。",
-      "viewAll": "查看全部奖杯"
+      "viewAll": "查看全部奖杯",
+      "badgeAria": "{{name}}，{{count}}×",
+      "badgeAriaNew": "{{name}}，新，{{count}}×"
     },
     "sticker": {
       "create": "生成贴纸",

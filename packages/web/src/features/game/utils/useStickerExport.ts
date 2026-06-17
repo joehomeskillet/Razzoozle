@@ -15,7 +15,9 @@
  *        synchronously so Safari's user-gesture requirement is satisfied.
  *   L3 — Universal download: an <a download> object-URL. ALWAYS works, including
  *        non-secure contexts (bare-IP LAN over http) where canShare/clipboard
- *        are absent.
+ *        are absent. iOS Safari ignores `download` on object/blob URLs (it opens
+ *        the blob in a new tab instead of saving), so on iOS the Blob is read to
+ *        a data: URL which the `download` anchor honours in the same tab.
  *
  * Non-secure-context handling: `navigator.canShare` and `navigator.clipboard`
  * are undefined on http origins, so the waterfall short-circuits straight to the
@@ -96,15 +98,59 @@ function loadDomToBlob(): Promise<DomToBlob> {
   return _domToBlob
 }
 
-/** L3 — universal object-URL download. Works in every context, secure or not. */
-function downloadBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob)
+// iOS Safari (incl. iPadOS pretending to be desktop) — ignores `download` on
+//  blob:/object URLs and opens them in a new tab instead of saving.
+function isIosSafari(): boolean {
+  if (typeof navigator === "undefined") return false
+  const ua = navigator.userAgent
+  const isIos =
+    /iP(ad|hone|od)/.test(ua) ||
+    // iPadOS 13+ reports as Mac but has touch points.
+    (navigator.platform === "MacIntel" &&
+      typeof navigator.maxTouchPoints === "number" &&
+      navigator.maxTouchPoints > 1)
+  const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua)
+  return isIos && isSafari
+}
+
+/** Reads a Blob to a `data:` URL (used for the iOS Safari download path). */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"))
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** Triggers a same-tab download via an `<a download>` for the given URL. */
+function clickDownloadAnchor(url: string, downloadName: string): void {
   const a = document.createElement("a")
   a.href = url
-  a.download = fileName.endsWith(".png") ? fileName : `${fileName}.png`
+  a.download = downloadName
+  a.rel = "noopener"
   document.body.appendChild(a)
   a.click()
   a.remove()
+}
+
+/**
+ * L3 — universal download. Works in every context, secure or not.
+ * Desktop/Android use an object-URL `<a download>`. iOS Safari ignores
+ * `download` on object URLs (it opens a new tab), so there we read the Blob to a
+ * `data:` URL, which the `download` anchor honours in the same tab.
+ */
+async function downloadBlob(blob: Blob, fileName: string): Promise<void> {
+  const downloadName = fileName.endsWith(".png") ? fileName : `${fileName}.png`
+
+  if (isIosSafari()) {
+    const dataUrl = await blobToDataUrl(blob)
+    clickDownloadAnchor(dataUrl, downloadName)
+    return
+  }
+
+  const url = URL.createObjectURL(blob)
+  clickDownloadAnchor(url, downloadName)
   // Revoke on the next tick so the navigation/download has grabbed the URL.
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
@@ -160,7 +206,7 @@ async function runShareWaterfall(
   }
 
   // L3 — universal download (also the only path on non-secure / bare-IP LAN).
-  downloadBlob(blob, downloadName)
+  await downloadBlob(blob, downloadName)
   return "downloaded"
 }
 

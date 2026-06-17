@@ -63,12 +63,16 @@
     "uploading": "Uploading…",
     "uploaded": "Avatar uploaded",
     "skip": "Skip",
-    "genericLabel": "Avatar",
     "generate": "Generate avatar",
     "reroll": "Shuffle",
     "styleLabel": "Style",
     "useThis": "Use this",
     "preview": "Preview",
+    "tooLarge": "Image is too large",
+    "uploadFailed": "Could not read that image",
+    "previewUse": "Use this avatar",
+    "previewSelected": "Selected avatar",
+    "uploadHeading": "Upload your own",
     "style": {
       "bottts": "Robots",
       "thumbs": "Thumbs",
@@ -152,7 +156,8 @@
     "red": "Red",
     "blue": "Blue",
     "green": "Green",
-    "yellow": "Yellow"
+    "yellow": "Yellow",
+    "pick": "Pick a team"
   },
   "solo": {
     "play": "Play Solo",
@@ -204,7 +209,9 @@
     "trophies": {
       "title": "Your trophies",
       "empty": "No trophies this round — but keep playing.",
-      "viewAll": "View all trophies"
+      "viewAll": "View all trophies",
+      "badgeAria": "{{name}}, {{count}}×",
+      "badgeAriaNew": "{{name}}, new, {{count}}×"
     },
     "sticker": {
       "create": "Create sticker",

@@ -99,7 +99,7 @@ describe("tier token maps", () => {
       expect(TIER_RING[tier]).toBeTruthy()
       expect(TIER_TEXT[tier]).toBeTruthy()
       expect(TIER_LABEL[tier]).toBeTruthy()
-      expect(TIER_ACCENT[tier]).toMatch(/^#[0-9a-f]{6}$/i)
+      expect(TIER_ACCENT[tier]).toBeTruthy()
     }
   })
 

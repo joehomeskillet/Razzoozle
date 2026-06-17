@@ -285,6 +285,21 @@ const Leaderboard = ({
     return moves
   }, [oldLeaderboard, leaderboard])
 
+  // Old/new point maps — built once per leaderboard change so the per-row
+  // AnimatedPoints from/to lookups are O(1) Map gets instead of O(n) .find()
+  // scans over both arrays on every row of a ~200-player list.
+  const oldPoints = useMemo(() => {
+    const m = new Map<string, number>()
+    oldLeaderboard.forEach((p) => m.set(p.id, p.points))
+    return m
+  }, [oldLeaderboard])
+
+  const newPoints = useMemo(() => {
+    const m = new Map<string, number>()
+    leaderboard.forEach((p) => m.set(p.id, p.points))
+    return m
+  }, [leaderboard])
+
   // Derive the highest-tier unlock across all CURRENT leaderboard rows.
   const bannerInfo = useMemo(() => {
     type BestEntry = {
@@ -414,10 +429,8 @@ const Leaderboard = ({
                     </span>
                     {isAnimating ? (
                       <AnimatedPoints
-                        from={
-                          oldLeaderboard.find((u) => u.id === id)?.points ?? 0
-                        }
-                        to={leaderboard.find((u) => u.id === id)?.points ?? 0}
+                        from={oldPoints.get(id) ?? 0}
+                        to={newPoints.get(id) ?? 0}
                       />
                     ) : (
                       <span className="tabular-nums drop-shadow-md">

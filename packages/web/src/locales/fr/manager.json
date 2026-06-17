@@ -303,6 +303,7 @@
       "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
       "emptyHeadline": "Aucun modèle pour l’instant",
       "none": "Aucun modèle enregistré pour l'instant",
+      "edit": "Modifier",
       "importError": "Fichier de modèle non valide",
       "readError": "Impossible de lire le fichier",
       "import": "Importer un modèle",

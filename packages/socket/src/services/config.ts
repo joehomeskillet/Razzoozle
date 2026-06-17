@@ -166,8 +166,6 @@ const ensureMediaDirs = (): void => {
   for (const category of MEDIA_CATEGORIES) {
     ensureDir(getPath(`${MEDIA_ROOT}/${category}`))
   }
-
-  ensureDir(getPath(`${MEDIA_ROOT}/avatars/generic`))
 }
 
 const isMediaCategory = (value: string): value is MediaCategory =>
@@ -1491,11 +1489,19 @@ const readMediaManifest = (): MediaMeta[] => {
         return []
       }
 
-      // Strip any dims off the carried row, then re-attach only when BOTH are
-      // numbers — so a pre-existing row keeps loading and a stray single dim never
-      // leaks back out on a re-write (matches existing cast-through style here).
-      const { width: _w, height: _h, ...rest } = candidate
-      const base = rest as unknown as MediaMeta
+      // Construct the MediaMeta explicitly from the fields the guard above has
+      // already narrowed (no `as unknown as MediaMeta` laundering — a stray
+      // extra key on the manifest row never leaks back out on a re-write).
+      const base: MediaMeta = {
+        id: candidate.id,
+        filename: candidate.filename,
+        url: candidate.url,
+        size: candidate.size,
+        type: candidate.type,
+        category: candidate.category,
+        source: candidate.source,
+        uploadedAt: candidate.uploadedAt,
+      }
 
       // WP-6 — copy dims through only when both are numbers (clean JSON, no
       // undefined keys leaking back out on a re-write).

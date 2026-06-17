@@ -151,17 +151,20 @@ const RecapSequence = ({
 
       <AnimatePresence mode="wait">
         {!isFinalCue && current ? (
+          // Medal/card surface — the superlative reads as an award card, not bare
+          // floating text. glass-2 carries the themed blur + elevation fallbacks.
           <motion.div
             key={`card-${step}`}
-            className="relative z-10 flex flex-col items-center gap-5"
+            className="glass-2 relative z-10 flex flex-col items-center gap-5 rounded-3xl border border-white/15 bg-black/30 px-8 py-8 shadow-2xl md:px-12 md:py-10"
             variants={reveal.pop()}
             initial="hidden"
             animate="visible"
             exit="hidden"
             transition={reveal.spring}
           >
+            {/* Emoji sits in a medal disc to match the podium/achievement language. */}
             <span
-              className="text-7xl drop-shadow-lg md:text-8xl lg:text-9xl"
+              className="flex size-24 items-center justify-center rounded-full border-4 border-white/30 bg-black/35 text-6xl drop-shadow-lg md:size-32 md:text-7xl lg:text-8xl"
               aria-hidden
             >
               {SUPERLATIVE_EMOJI[current.key]}
@@ -173,7 +176,9 @@ const RecapSequence = ({
               })}
             </p>
 
-            <p className="text-4xl font-black text-[var(--color-accent)] drop-shadow-md md:text-5xl lg:text-6xl">
+            {/* Winner name uses the themeable accent; the dark pill is a contrast
+                floor so a light accent still reads on a light themed background. */}
+            <p className="rounded-full bg-black/55 px-6 py-2 text-4xl font-black text-[var(--color-accent)] drop-shadow-md md:text-5xl lg:text-6xl">
               {current.winnerName}
             </p>
 
@@ -203,13 +208,14 @@ const RecapSequence = ({
         )}
       </AnimatePresence>
 
-      {/* Progress dots — one per card; the final cue lights them all. */}
+      {/* Progress dots — one per card, filling step-by-step as the index advances
+          (a dot lights only once its card has been reached). */}
       <div className="relative z-10 flex items-center gap-2" aria-hidden>
         {superlatives.map((s, i) => (
           <span
             key={s.key}
             className={
-              i <= step || isFinalCue
+              i <= step
                 ? "h-2.5 w-2.5 rounded-full bg-white"
                 : "h-2.5 w-2.5 rounded-full bg-white/30"
             }

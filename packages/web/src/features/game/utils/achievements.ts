@@ -132,87 +132,47 @@ export function highestTier(
   )
 }
 
-// ─── Tier visual tokens ───────────────────────────────────────────────────────
-
-export interface TierStyle {
-  /** Tailwind gradient classes for badge background */
-  gradient: string
-  /** Text color for badge label */
-  textColor: string
-  /** Border/ring color */
-  ringColor: string
-  /** Label (display name key, also used as fallback) */
-  label: string
-}
-
-export const TIER_STYLES: Record<AchievementTier, TierStyle> = {
-  bronze: {
-    gradient: "from-amber-600 to-orange-700",
-    textColor: "text-white",
-    ringColor: "ring-amber-400",
-    label: "Bronze",
-  },
-  silver: {
-    gradient: "from-slate-300 to-slate-500",
-    textColor: "text-slate-900",
-    ringColor: "ring-slate-200",
-    label: "Silber",
-  },
-  gold: {
-    gradient: "from-yellow-400 to-amber-500",
-    textColor: "text-white",
-    ringColor: "ring-yellow-300",
-    label: "Gold",
-  },
-  diamant: {
-    gradient: "from-cyan-400 via-fuchsia-500 to-violet-500",
-    textColor: "text-white",
-    ringColor: "ring-cyan-200",
-    label: "Diamant",
-  },
-}
-
 // ─── Flat tier token exports (canonical, spec-aligned) ────────────────────────
-// Derived from TIER_STYLES — single source of truth, no duplication.
 
 /** Tailwind gradient background classes keyed by tier. */
 export const TIER_GRADIENT: Record<AchievementTier, string> = {
-  bronze: TIER_STYLES.bronze.gradient,
-  silver: TIER_STYLES.silver.gradient,
-  gold: TIER_STYLES.gold.gradient,
-  diamant: TIER_STYLES.diamant.gradient,
+  bronze: "from-amber-600 to-orange-700",
+  silver: "from-slate-300 to-slate-500",
+  gold: "from-yellow-400 to-amber-500",
+  diamant: "from-cyan-400 via-fuchsia-500 to-violet-500",
 }
 
 /** Tailwind ring color class keyed by tier. */
 export const TIER_RING: Record<AchievementTier, string> = {
-  bronze: TIER_STYLES.bronze.ringColor,
-  silver: TIER_STYLES.silver.ringColor,
-  gold: TIER_STYLES.gold.ringColor,
-  diamant: TIER_STYLES.diamant.ringColor,
+  bronze: "ring-amber-400",
+  silver: "ring-slate-200",
+  gold: "ring-yellow-300",
+  diamant: "ring-cyan-200",
 }
 
 /** Readable text color class on that tier's gradient background. */
 export const TIER_TEXT: Record<AchievementTier, string> = {
-  bronze: TIER_STYLES.bronze.textColor,
-  silver: TIER_STYLES.silver.textColor,
-  gold: TIER_STYLES.gold.textColor,
-  diamant: TIER_STYLES.diamant.textColor,
+  bronze: "text-white",
+  silver: "text-slate-900",
+  gold: "text-white",
+  diamant: "text-white",
 }
 
 /** Human-readable tier label (German). */
 export const TIER_LABEL: Record<AchievementTier, string> = {
-  bronze: TIER_STYLES.bronze.label,
-  silver: TIER_STYLES.silver.label,
-  gold: TIER_STYLES.gold.label,
-  diamant: TIER_STYLES.diamant.label,
+  bronze: "Bronze",
+  silver: "Silber",
+  gold: "Gold",
+  diamant: "Diamant",
 }
 
-/** Solid accent color (hex) per tier — used for reward-row left borders + washes. */
+// Solid accent color per tier — references the frozen --tier-* theme tokens so
+//  a skeleton can re-color reward-row borders + washes.
 export const TIER_ACCENT: Record<AchievementTier, string> = {
-  bronze: "#d97706",
-  silver: "#94a3b8",
-  gold: "#facc15",
-  diamant: "#a855f7",
+  bronze: "var(--tier-bronze)",
+  silver: "var(--tier-silver)",
+  gold: "var(--tier-gold)",
+  diamant: "var(--tier-diamant)",
 }
 
 export { TIER_ORDER }
@@ -248,11 +208,6 @@ export function loadAchievementMeta(): Promise<MergedAchievement[]> {
   return _mergedMetaPromise
 }
 
-export interface AchievementDisplay {
-  name: string
-  description: string
-}
-
 /**
  * Returns the display name and description for an achievement id.
  * Prefers the server-provided override (`merged.name` / `merged.description`);
@@ -262,7 +217,7 @@ export function getAchievementDisplay(
   _id: string,
   merged: MergedAchievement | undefined,
   i18nFallback: { name: string; desc: string },
-): AchievementDisplay {
+): { name: string; description: string } {
   return {
     name: merged?.name ?? i18nFallback.name,
     description: merged?.description ?? i18nFallback.desc,

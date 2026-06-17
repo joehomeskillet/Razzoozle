@@ -17,7 +17,9 @@ export const pluginManifestValidator = z.object({
   id: z.string().regex(safeId, "errors:plugin.invalidId"),
   version: z.string().min(1),
   name: z.string().min(1).max(80),
-  // Declared capability badges (purely informational in v1 — never enforced).
+  // Declared capability badges. The server runtime is capability-gated on
+  // "SERVER_HANDLER": a server hook is only loaded/run when that badge is
+  // present (see plugin-runtime SERVER_CAPABILITY). Other badges are display-only.
   capabilities: z.array(z.string()).default([]),
   // The manager tab this plugin registers. `gated` mirrors the theme-tab dev
   // gating: "always" shows it for every manager, "devMode" only when RAZZOOLE_DEV.
@@ -36,9 +38,11 @@ export const pluginManifestValidator = z.object({
     .default({ client: "ui.js" }),
   // Free-form plugin config bag (validated/owned by the plugin itself).
   config: z.record(z.string(), z.unknown()).default({}),
-  // Optional i18n bundle: { <lang>: { <key>: <string> } }.
+  // RESERVED (v2) — validated but inert in v1. Optional i18n bundle:
+  // { <lang>: { <key>: <string> } }. Not yet merged into the manager's i18next.
   i18n: z.record(z.string(), z.record(z.string(), z.string())).optional(),
-  // RESERVED — v1 only honors "none" (in-process). "iframe" is a future sandbox.
+  // RESERVED (v2) — validated but inert in v1: only "none" (in-process) is
+  // honoured; "iframe" is a future sandbox and runs nowhere yet.
   sandbox: z.enum(["none", "iframe"]).default("none"),
 })
 

@@ -1,4 +1,3 @@
-import { EVENTS } from "@razzoozle/common/constants"
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -14,9 +13,9 @@ type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 
 // Keys reserved by the built-in manager tabs. A plugin registration whose key
 // collides with one of these is rejected (logged + ignored) so a plugin can
-// never shadow or hijack a core console tab. Kept in sync with BUILTIN_TABS in
-// configurations/index.tsx — both reference this list to stay authoritative.
-export const BUILTIN_TAB_KEYS = [
+// never shadow or hijack a core console tab. Mirrors the built-in tab keys in
+// configurations/index.tsx.
+const BUILTIN_TAB_KEYS = [
   "play",
   "quizz",
   "gamemode",
@@ -35,7 +34,7 @@ export const BUILTIN_TAB_KEYS = [
 // All plugin tab keys are namespaced under this prefix. A registration whose key
 // is not `plugin:<id>` is rejected — the namespace keeps plugin keys disjoint
 // from builtins (and from each other's accidental collisions with core names).
-export const PLUGIN_TAB_PREFIX = "plugin:"
+const PLUGIN_TAB_PREFIX = "plugin:"
 
 /**
  * A manager tab contributed by a plugin's ui.js. `render` is handed the host
@@ -256,7 +255,3 @@ export const syncPluginScripts = (plugins: InstalledPlugin[]): void => {
     }
   }
 }
-
-// Re-export so the bootstrap can reference the broadcast event without a second
-// import of EVENTS in config.tsx (kept here to centralise the plugin wiring).
-export const PLUGIN_CONFIG_EVENT = EVENTS.MANAGER.PLUGIN_CONFIG
