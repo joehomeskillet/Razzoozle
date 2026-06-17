@@ -203,9 +203,10 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         </button>
       </div>
 
-      {/* Lobby roster: each card enters/leaves on its own id key. Stagger is the
-          fast token (rooms hold ~200 players) and `layout` is dropped under
-          reduced motion so reflows never fabricate movement. */}
+      {/* Lobby roster: each card fades/rises in on its own id key via a cheap
+          composited tween (opacity/transform) — NO `layout` spring on this
+          player-scaled list (~200 players), so an append never forces a per-join
+          reflow + position spring across the whole roster. Stagger = fast token. */}
       <motion.div
         className="flex flex-wrap gap-3"
         variants={reveal.container(STAGGER.fast)}
@@ -216,12 +217,11 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
           {playerList.map((player) => (
             <motion.div
               key={player.id}
-              layout={!reveal.reduced}
               variants={reveal.item()}
               initial="hidden"
               animate="visible"
               exit="hidden"
-              transition={reveal.spring}
+              transition={reveal.tween()}
               className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
             >
               {player.teamId && TEAM_DOT[player.teamId] && (

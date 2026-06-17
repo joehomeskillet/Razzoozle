@@ -412,7 +412,14 @@ const GameWrapper = ({
                   className="flex min-h-0 w-full flex-1 flex-col justify-center"
                   initial={reveal.reduced ? false : { opacity: 0, y: 8 }}
                   animate={reveal.reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                  exit={reveal.reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                  // Exit is a fast pure-opacity fade (no upward jump) so the
+                  // mode="wait" swap stays tight — no long blank gap on the
+                  // frequent Question -> Result -> Leaderboard loop.
+                  exit={
+                    reveal.reduced
+                      ? { opacity: 0 }
+                      : { opacity: 0, transition: { duration: DURATION.fast } }
+                  }
                   transition={
                     reveal.reduced
                       ? { duration: DURATION.instant }

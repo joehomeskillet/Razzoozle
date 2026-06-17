@@ -78,7 +78,8 @@ const SoloLeaderboard = ({ leaderboard, playerName, totalPoints }: Props) => {
                 key={`${entry.playerName}-${entry.answeredAt}-${i}`}
                 // `layout` makes rank shifts (entries reordering by score)
                 // glide on the lifecycle spring — a moment, not a hot-path tick.
-                layout
+                // Gated: reduced motion skips the per-row layout measurement.
+                layout={!reveal.reduced}
                 variants={reveal.item()}
                 transition={reveal.spring}
                 className={clsx(

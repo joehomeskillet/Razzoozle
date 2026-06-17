@@ -67,7 +67,7 @@ const Question = ({
         animate="visible"
       >
         <motion.h2
-          className="anim-show text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
+          className="text-center text-3xl font-bold text-white drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
           variants={reveal.item()}
           transition={reveal.spring}
         >
