@@ -1,10 +1,10 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
 import {
+  getClientId,
   useEvent,
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
-import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import {
   SectionCard,
   SubGroup,
@@ -21,9 +21,11 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-// The HTTP header the manager-gated skeleton endpoints expect. Mirrors the
-// frozen name in docs/design/skeleton-system.md §8 — the value is the manager
-// password the client already holds from login (useManagerStore.password).
+// The HTTP header the manager-gated skeleton endpoints expect (frozen name in
+// docs/design/skeleton-system.md §8). The value is the durable clientId the
+// manager's socket session authenticated with — the server checks it against
+// the logged-manager set (manager.isLoggedClientId), so this is reload-safe and
+// the password never leaves the login form.
 const MANAGER_TOKEN_HEADER = "X-Manager-Token"
 
 // Client-side guard mirroring the server's per-asset 512 KB cap (§8.2) so we
@@ -33,7 +35,7 @@ const MAX_ASSET_BYTES = 512 * 1024
 
 const ConfigSkeleton = () => {
   const { socket } = useSocket()
-  const { password } = useManagerStore()
+  const managerToken = getClientId()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
 
@@ -109,7 +111,7 @@ const ConfigSkeleton = () => {
 
     try {
       const res = await fetch("/api/skeleton/export", {
-        headers: { [MANAGER_TOKEN_HEADER]: password ?? "" },
+        headers: { [MANAGER_TOKEN_HEADER]: managerToken },
       })
 
       if (!res.ok) {
@@ -170,7 +172,7 @@ const ConfigSkeleton = () => {
       const res = await fetch("/api/skeleton/import", {
         method: "POST",
         headers: {
-          [MANAGER_TOKEN_HEADER]: password ?? "",
+          [MANAGER_TOKEN_HEADER]: managerToken,
           "Content-Type": "application/zip",
         },
         body: file,

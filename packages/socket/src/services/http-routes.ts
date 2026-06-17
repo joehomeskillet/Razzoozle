@@ -29,12 +29,12 @@ import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
 import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
 import { EVENTS } from "@razzoozle/common/constants"
 import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
+import manager from "@razzoozle/socket/services/manager"
 import {
   appendSoloResult,
   assertSafeId,
   buildSkeletonZip,
   devApiKey,
-  getGameConfig,
   getMergedAchievements,
   getQuizzById,
   getSoloResults,
@@ -192,38 +192,33 @@ const statusFrom413 = (err: unknown, fallback: number): number =>
     : fallback
 
 const authorizeManagerRequest = (req: IncomingMessage): boolean => {
-  // Accept the manager password (primary) or, in dev mode, the dev API key
-  // (matches authorizeDevRequest so the dev workflow keeps working).
-  const candidates: string[] = []
+  const headerToken = req.headers["x-manager-token"]
+  const presented = typeof headerToken === "string" ? headerToken : ""
 
-  try {
-    const pw = getGameConfig().managerPassword
-    if (pw) {
-      candidates.push(pw)
-    }
-  } catch {
-    // Config unreadable — a dev key may still authorize below.
-  }
-
-  if (isDevMode()) {
-    const devKey = devApiKey()
-    if (devKey) {
-      candidates.push(devKey)
-    }
-  }
-
-  if (candidates.length === 0) {
+  if (!presented) {
     return false
   }
 
-  const headerToken = req.headers["x-manager-token"]
-  const presented = typeof headerToken === "string" ? headerToken : ""
-  const a = Buffer.from(presented)
+  // Primary: a logged-in manager session, keyed by the durable clientId the
+  // socket handshake already uses (manager.login on MANAGER.AUTH success). This
+  // is reload-safe and never puts the manager password on an HTTP header.
+  if (manager.isLoggedClientId(presented)) {
+    return true
+  }
 
-  return candidates.some((candidate) => {
-    const b = Buffer.from(candidate)
-    return a.length === b.length && timingSafeEqual(a, b)
-  })
+  // Dev fallback: the dev API key in dev mode (matches authorizeDevRequest).
+  if (isDevMode()) {
+    const devKey = devApiKey()
+    if (devKey) {
+      const a = Buffer.from(presented)
+      const b = Buffer.from(devKey)
+      if (a.length === b.length && timingSafeEqual(a, b)) {
+        return true
+      }
+    }
+  }
+
+  return false
 }
 
 let themeBroadcaster: ((theme: unknown) => void) | null = null
