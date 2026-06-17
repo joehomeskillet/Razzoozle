@@ -111,7 +111,7 @@ const writeCookie = (name: string, value: string) => {
 // Durable client identity: stored in BOTH localStorage and a long-lived cookie,
 // recovering from whichever survives, so a reconnect always re-binds the same
 // player session (the reconnect guarantee keys on this id).
-const getClientId = (): string => {
+export const getClientId = (): string => {
   try {
     const id =
       localStorage.getItem(CLIENT_ID_KEY) ?? readCookie(CLIENT_ID_KEY) ?? uuid()

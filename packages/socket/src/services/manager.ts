@@ -43,6 +43,13 @@ class Manager {
     return this.loggedClients.has(getClientId(socket))
   }
 
+  // Session check by clientId alone (no socket) — used by the manager-gated HTTP
+  // skeleton endpoints, which authenticate via the same durable clientId the
+  // socket handshake carries (set by manager.login on MANAGER.AUTH success).
+  isLoggedClientId(clientId: string) {
+    return this.loggedClients.has(clientId)
+  }
+
   login(socket: Socket) {
     this.loggedClients.add(getClientId(socket))
   }
