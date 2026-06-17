@@ -63,7 +63,18 @@
     "uploading": "Wird hochgeladen…",
     "uploaded": "Avatar hochgeladen",
     "skip": "Überspringen",
-    "genericLabel": "Avatar"
+    "genericLabel": "Avatar",
+    "generate": "Avatar generieren",
+    "reroll": "Neu würfeln",
+    "styleLabel": "Stil",
+    "useThis": "Diesen verwenden",
+    "preview": "Vorschau",
+    "style": {
+      "bottts": "Roboter",
+      "thumbs": "Daumen",
+      "fun": "Emoji",
+      "people": "Menschen"
+    }
   },
   "pause": {
     "title": "Pause",

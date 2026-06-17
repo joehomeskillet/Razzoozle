@@ -63,7 +63,18 @@
     "uploading": "Envoi…",
     "uploaded": "Avatar importé",
     "skip": "Passer",
-    "genericLabel": "Avatar"
+    "genericLabel": "Avatar",
+    "generate": "Générer un avatar",
+    "reroll": "Mélanger",
+    "styleLabel": "Style",
+    "useThis": "Utiliser celui-ci",
+    "preview": "Aperçu",
+    "style": {
+      "bottts": "Robots",
+      "thumbs": "Pouces",
+      "fun": "Emoji",
+      "people": "Personnes"
+    }
   },
   "pause": {
     "title": "Pause",

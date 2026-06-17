@@ -63,7 +63,18 @@
     "uploading": "上传中…",
     "uploaded": "头像已上传",
     "skip": "跳过",
-    "genericLabel": "头像"
+    "genericLabel": "头像",
+    "generate": "生成头像",
+    "reroll": "随机生成",
+    "styleLabel": "样式",
+    "useThis": "使用此头像",
+    "preview": "预览",
+    "style": {
+      "bottts": "机器人",
+      "thumbs": "拇指",
+      "fun": "表情",
+      "people": "人物"
+    }
   },
   "pause": {
     "title": "暂停",

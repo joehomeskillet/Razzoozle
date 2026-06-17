@@ -63,7 +63,18 @@
     "uploading": "Caricamento…",
     "uploaded": "Avatar caricato",
     "skip": "Salta",
-    "genericLabel": "Avatar"
+    "genericLabel": "Avatar",
+    "generate": "Genera avatar",
+    "reroll": "Rimescola",
+    "styleLabel": "Stile",
+    "useThis": "Usa questo",
+    "preview": "Anteprima",
+    "style": {
+      "bottts": "Robot",
+      "thumbs": "Pollici",
+      "fun": "Emoji",
+      "people": "Persone"
+    }
   },
   "pause": {
     "title": "Pausa",

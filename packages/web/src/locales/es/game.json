@@ -63,7 +63,18 @@
     "uploading": "Subiendo…",
     "uploaded": "Avatar subido",
     "skip": "Omitir",
-    "genericLabel": "Avatar"
+    "genericLabel": "Avatar",
+    "generate": "Generar avatar",
+    "reroll": "Mezclar",
+    "styleLabel": "Estilo",
+    "useThis": "Usar este",
+    "preview": "Vista previa",
+    "style": {
+      "bottts": "Robots",
+      "thumbs": "Pulgares",
+      "fun": "Emoji",
+      "people": "Personas"
+    }
   },
   "pause": {
     "title": "Pausa",
