@@ -2400,6 +2400,72 @@ export const resolvePluginAsset = (
   }
 }
 
+// Read + validate an installed plugin's on-disk plugin.json manifest. Returns
+// null on a missing/corrupt/invalid manifest (never throws) so the plugin
+// runtime can skip a broken plugin instead of crashing the server. assertSafeId
+// guards the path before any interpolation.
+export const readPluginManifest = (id: string): PluginManifest | null => {
+  try {
+    assertSafeId(id)
+  } catch {
+    return null
+  }
+
+  const file = resolve(pluginDir(id), "plugin.json")
+
+  if (!fs.existsSync(file)) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf-8")) as unknown
+    const result = pluginManifestValidator.safeParse(parsed)
+
+    return result.success ? result.data : null
+  } catch {
+    return null
+  }
+}
+
+// Resolve the ABSOLUTE on-disk path of a plugin's server hook (manifest
+// hooks.server, e.g. "server.js"). Returns null if no server hook is declared,
+// the resolved path escapes config/plugins/<id>/, the file is missing, or it is
+// not a regular file (symlink-safe via lstatSync). The plugin runtime loads it
+// with a bundle-safe dynamic import of pathToFileURL(thisPath). The server hook
+// is NEVER served on the public asset route (resolvePluginAsset denies it).
+export const pluginServerPath = (id: string): string | null => {
+  const manifest = readPluginManifest(id)
+  const serverFile = manifest?.hooks.server
+
+  if (!serverFile) {
+    return null
+  }
+
+  // Guard the manifest-supplied filename like an asset path (no traversal /
+  // absolute / nul) before joining it under the plugin dir.
+  if (
+    serverFile.startsWith("/") ||
+    serverFile.startsWith("\\") ||
+    serverFile.includes("..") ||
+    serverFile.includes("\0")
+  ) {
+    return null
+  }
+
+  const dir = pluginDir(id)
+  const dest = resolve(dir, serverFile)
+
+  if (dest !== dir && !dest.startsWith(dir + "/")) {
+    return null
+  }
+
+  if (!fs.existsSync(dest) || !fs.lstatSync(dest).isFile()) {
+    return null
+  }
+
+  return dest
+}
+
 
 // ---- Theme revisions (per-save version ring) ------------------------------
 // A single rolling config/theme-revisions.json array (newest-first), capped at

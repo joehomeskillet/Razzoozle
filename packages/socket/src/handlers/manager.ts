@@ -43,6 +43,10 @@ import {
   updateSubmission,
 } from "@razzoozle/socket/services/config"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
+import {
+  loadPlugin,
+  unloadPlugin,
+} from "@razzoozle/socket/services/plugin-runtime"
 import Registry from "@razzoozle/socket/services/registry"
 import {
   checkGlobalSubmissionRate,
@@ -152,7 +156,11 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
           }
 
           const buf = Buffer.from(payload.zipBase64, "base64")
-          await importPluginZip(buf)
+          const installed = await importPluginZip(buf)
+          // WP3: run the plugin's server hook if it declares one (install =
+          // enabled). The runtime capability-gates + crash-isolates the load,
+          // so a broken server.js never fails the install.
+          await loadPlugin(installed)
           broadcastPlugins()
         } catch (error) {
           socket.emit(
@@ -172,6 +180,9 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
           throw new Error("errors:plugin.invalidPayload")
         }
 
+        // WP3: tear down the server hook (handlers + teardown) BEFORE the
+        // files are deleted.
+        unloadPlugin(payload.id)
         removePlugin(payload.id)
         broadcastPlugins()
       } catch (error) {

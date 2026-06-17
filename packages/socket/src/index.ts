@@ -28,6 +28,11 @@ import {
   registerPluginBroadcaster,
   registerThemeBroadcaster,
 } from "@razzoozle/socket/services/http-routes"
+import {
+  attachPluginsToSocket,
+  loadEnabledPlugins,
+  setPluginIo,
+} from "@razzoozle/socket/services/plugin-runtime"
 import { logger, socketLogger } from "@razzoozle/socket/services/logger"
 import { connectedSockets } from "@razzoozle/socket/services/prom"
 import { createServer } from "http"
@@ -79,6 +84,13 @@ const httpServer = createServer((req, res) => {
 
 io.attach(httpServer)
 
+// Hand the plugin runtime the live socket.io Server so it can hot-bind plugin
+// event handlers onto connected sockets + broadcast on plugin namespaces. Set
+// BEFORE any plugin loads or any socket connects. The runtime keeps it as the
+// untyped raw Server (plugin "plugin:<id>:<event>" names are not in the strict
+// typed event map).
+setPluginIo(io)
+
 // Wire the skeleton-import HTTP route (services/http-routes.ts) to broadcast the
 // new theme to every connected client, mirroring the MANAGER.SET_THEME socket
 // path so an uploaded skeleton applies live without a reload.
@@ -121,6 +133,13 @@ void registry
     registry.startSnapshotTask()
   })
 
+// Load every enabled plugin that declares a server hook (manifest hooks.server
+// + the SERVER_HANDLER capability). Fully crash-isolated per plugin — a broken
+// server.js is caught + logged inside the runtime and never blocks boot.
+void loadEnabledPlugins().catch((error: unknown) => {
+  logger.error({ err: error }, "loadEnabledPlugins failed")
+})
+
 const socketHandlers: SocketHandler[] = [
   managerSocketHandlers,
   quizzSocketHandlers,
@@ -157,6 +176,11 @@ io.on("connection", (socket) => {
   socketHandlers.forEach((handler) => {
     handler({ io, socket })
   })
+
+  // After the builtin handlers, attach any currently-registered plugin handlers
+  // so a plugin loaded before this client connected receives its namespaced
+  // events. loadPlugin() handles the inverse (hot-bind onto existing sockets).
+  attachPluginsToSocket(socket)
 })
 
 // On a graceful redeploy/shutdown, snapshot the LATEST state BEFORE cleanup so

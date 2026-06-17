@@ -2,7 +2,7 @@
 
 - **Date:** 2026-06-17
 - **Branch:** `feat/plugin-system` (to be cut after the avatar/sound/animation waves merge)
-- **Status:** Approved design → implementation (gated on Wave C commit)
+- **Status:** SHIPPED (v1) on `feat/plugin-system` — WP1, WP2 (+security hardening), WP4, WP5, WP6, **and WP3 (in-process `server.js` execution)**. (WP3 was briefly deferred 2026-06-17, then built by user decision the same day.) WP3 = bundle-safe dynamic-import loader (`plugin-runtime.ts`) + namespaced/capability-gated host API (`SERVER_HANDLER`) + boot-load/hot-bind/teardown + error isolation; plugin-registered custom HTTP routes (`HTTP_ROUTE`) remain deferred/declared-inert, and the `sandbox` field stays reserved for a future untrusted-source iframe tier.
 - **Source:** 6-agent read-only design recon (3 maps → 2 proposals → judge synthesis) + user decisions
 
 ## Summary
