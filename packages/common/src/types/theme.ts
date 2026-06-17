@@ -33,6 +33,36 @@ export const DEFAULT_THEME: Theme = {
     managerGame: null,
     playerGame: null,
   },
+  teamColors: {
+    red: "#ef4444",
+    blue: "#3b82f6",
+    green: "#22c55e",
+    yellow: "#facc15",
+  },
+  tierColors: {
+    bronze: "#b45309",
+    silver: "#9ca3af",
+    gold: "#eab308",
+    diamant: "#38bdf8",
+  },
+  stateColors: {
+    correct: "#22c55e",
+    wrong: "#ef4444",
+  },
+  rankColors: {
+    up: "#10b981",
+    down: "#f43f5e",
+  },
+  timerUrgent: "#ff3b30",
+  streakColor: "#b45309",
+  surfaceMuted: "#374151",
+  footerColors: {
+    bg: "#ffffff",
+    text: "#1f2937",
+  },
+  customCssEnabled: false,
+  customJsEnabled: false,
+  skeletonVersion: 0,
 }
 
 // A named, savable preset of a full Theme (stored one-per-file under

@@ -9,6 +9,7 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
+import { teamDot } from "@razzoozle/web/features/game/utils/teams"
 import {
   STAGGER,
   useReveal,
@@ -20,15 +21,6 @@ import QRCode from "@razzoozle/web/components/QRCode"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
-
-// Team indicator colours for the manager lobby (inline dot on player card).
-// Kept consistent with the player-side picker and TeamLeaderboard.
-const TEAM_DOT: Record<string, string> = {
-  red: "bg-red-500",
-  blue: "bg-blue-500",
-  green: "bg-green-500",
-  yellow: "bg-yellow-400",
-}
 
 interface Props {
   data: ManagerStatusDataMap["SHOW_ROOM"]
@@ -224,9 +216,9 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               transition={reveal.tween()}
               className="bg-primary flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-white"
             >
-              {player.teamId && TEAM_DOT[player.teamId] && (
+              {player.teamId && teamDot(player.teamId) && (
                 <span
-                  className={`size-4 shrink-0 rounded-full ${TEAM_DOT[player.teamId]} ring-2 ring-white/40`}
+                  className={`size-4 shrink-0 rounded-full ${teamDot(player.teamId)} ring-2 ring-white/40`}
                   aria-label={player.teamId}
                   title={player.teamId}
                 />

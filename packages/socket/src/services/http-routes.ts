@@ -27,14 +27,18 @@ import {
 } from "@razzoozle/common/validators/client-events"
 import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
 import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
+import { EVENTS } from "@razzoozle/common/constants"
 import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
 import {
   appendSoloResult,
   assertSafeId,
+  buildSkeletonZip,
   devApiKey,
+  getGameConfig,
   getMergedAchievements,
   getQuizzById,
   getSoloResults,
+  importSkeletonZip,
   isDevMode,
 } from "@razzoozle/socket/services/config"
 import { createLogger, requestLogger } from "@razzoozle/socket/services/logger"
@@ -90,6 +94,7 @@ const textAttachment = (
 }
 
 const BODY_LIMIT_BYTES = 64 * 1024 // 64 KB — enough for any valid payload
+const SKELETON_IMPORT_MAX = 16 * 1024 * 1024
 
 export const readBody = (req: IncomingMessage): Promise<unknown> =>
   new Promise((resolve, reject) => {
@@ -139,11 +144,97 @@ export const readBody = (req: IncomingMessage): Promise<unknown> =>
     req.on("error", reject)
   })
 
+const readRawBody = (
+  req: IncomingMessage,
+  maxBytes: number,
+): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
+    const tooLarge = () =>
+      reject(Object.assign(new Error("Payload Too Large"), { status: 413 }))
+
+    const contentLength = Number(req.headers["content-length"] ?? 0)
+    if (contentLength > maxBytes) {
+      req.pause()
+      tooLarge()
+      return
+    }
+
+    const chunks: Buffer[] = []
+    let accumulated = 0
+    let aborted = false
+
+    req.on("data", (chunk: Buffer) => {
+      if (aborted) {
+        return
+      }
+      accumulated += chunk.byteLength
+      if (accumulated > maxBytes) {
+        aborted = true
+        req.pause()
+        tooLarge()
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on("end", () => {
+      if (aborted) {
+        return
+      }
+      resolve(Buffer.concat(chunks))
+    })
+    req.on("error", reject)
+  })
+
 const statusFrom413 = (err: unknown, fallback: number): number =>
   err instanceof Error &&
   (err as NodeJS.ErrnoException & { status?: number }).status === 413
     ? 413
     : fallback
+
+const authorizeManagerRequest = (req: IncomingMessage): boolean => {
+  // Accept the manager password (primary) or, in dev mode, the dev API key
+  // (matches authorizeDevRequest so the dev workflow keeps working).
+  const candidates: string[] = []
+
+  try {
+    const pw = getGameConfig().managerPassword
+    if (pw) {
+      candidates.push(pw)
+    }
+  } catch {
+    // Config unreadable — a dev key may still authorize below.
+  }
+
+  if (isDevMode()) {
+    const devKey = devApiKey()
+    if (devKey) {
+      candidates.push(devKey)
+    }
+  }
+
+  if (candidates.length === 0) {
+    return false
+  }
+
+  const headerToken = req.headers["x-manager-token"]
+  const presented = typeof headerToken === "string" ? headerToken : ""
+  const a = Buffer.from(presented)
+
+  return candidates.some((candidate) => {
+    const b = Buffer.from(candidate)
+    return a.length === b.length && timingSafeEqual(a, b)
+  })
+}
+
+let themeBroadcaster: ((theme: unknown) => void) | null = null
+
+export const themeBroadcastEvent = EVENTS.MANAGER.THEME
+
+export const registerThemeBroadcaster = (
+  fn: (theme: unknown) => void,
+): void => {
+  themeBroadcaster = fn
+}
 
 // ── client-events token bucket (per clientId, NEVER per-IP) ─────────────────
 // Venues share a NAT IP, so a per-IP limiter would throttle a whole room. The
@@ -383,6 +474,54 @@ const handleSoloScore = (
   })()
 }
 
+const handleSkeletonExport = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
+  if (!authorizeManagerRequest(req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  void (async () => {
+    try {
+      const buf = await buildSkeletonZip()
+      res.writeHead(200, {
+        "content-type": "application/zip",
+        "content-disposition": 'attachment; filename="razzoozle-skeleton.zip"',
+        "content-length": buf.byteLength,
+      })
+      res.end(buf)
+    } catch (err) {
+      jsonError(res, 500, err instanceof Error ? err.message : "error")
+    }
+  })()
+}
+
+const handleSkeletonImport = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
+  if (!authorizeManagerRequest(req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  void (async () => {
+    try {
+      const buf = await readRawBody(req, SKELETON_IMPORT_MAX)
+      const theme = await importSkeletonZip(buf)
+      if (themeBroadcaster) {
+        themeBroadcaster(theme)
+      }
+      jsonOk(res, { ok: true, theme })
+    } catch (err) {
+      const status = statusFrom413(err, 400)
+      jsonError(res, status, err instanceof Error ? err.message : "error")
+    }
+  })()
+}
+
 // ── Route table (single source of truth) ────────────────────────────────────
 // Each entry carries a regex matcher with one optional capture group (the id),
 // the doc metadata, and the handler. `dev` routes are fail-closed.
@@ -448,6 +587,21 @@ export const routes: Route[] = [
     match: /^\/api\/v1\/health$/,
     handle: (_req, res) =>
       jsonOk(res, { status: "ok", ts: new Date().toISOString() }),
+  },
+  {
+    method: "GET",
+    path: "/api/skeleton/export",
+    summary: "Export the active theme + assets as a skeleton ZIP (manager-gated).",
+    match: /^\/api\/skeleton\/export$/,
+    handle: (req, res) => handleSkeletonExport(req, res),
+  },
+  {
+    method: "POST",
+    path: "/api/skeleton/import",
+    summary:
+      "Import a skeleton ZIP and apply it as the active theme (manager-gated).",
+    match: /^\/api\/skeleton\/import$/,
+    handle: (req, res) => handleSkeletonImport(req, res),
   },
   {
     method: "POST",

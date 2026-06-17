@@ -51,7 +51,9 @@
     "autoTitle": "Mode auto : avance automatiquement",
     "fullscreen": "Plein écran",
     "mute": "Couper le son",
-    "unmute": "Activer le son"
+    "unmute": "Activer le son",
+    "hapticsOff": "Vibration désactivée",
+    "hapticsOn": "Vibration activée"
   },
   "sending": "envoi…",
   "avatar": {

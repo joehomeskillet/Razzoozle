@@ -1,4 +1,14 @@
 import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
+import { THEME_TOKENS } from "@razzoozle/common/theme-tokens"
+
+// Resolve a dot-path (e.g. "stateColors.correct") into a nested object.
+const get = (obj: unknown, path: string): unknown =>
+  path
+    .split(".")
+    .reduce<unknown>(
+      (o, k) => (o as Record<string, unknown> | null | undefined)?.[k],
+      obj,
+    )
 
 // Apply theme values as CSS custom properties on <html>. Tailwind v4 utilities
 // (bg-primary, etc.) reference --color-* via var(), so overriding them at runtime
@@ -17,12 +27,67 @@ export const applyTheme = (theme: Theme) => {
   style.setProperty("--radius-theme", `${t.radius}px`)
   style.setProperty("--bg-scrim", `${t.scrim / 100}`)
 
+  // Registry loop — the 1:1 color tokens (teams, tiers, state, rank, misc). The
+  // derived vars (-ring/-text/-glow/-soft/--timer-track) track these via
+  // color-mix in index.css with zero JS. The `?? DEFAULT_THEME` fallback also
+  // covers a shallow-merged partial nested object.
+  for (const tok of THEME_TOKENS) {
+    const v = get(t, tok.path) ?? get(DEFAULT_THEME, tok.path)
+    if (typeof v === "string") style.setProperty(tok.cssVar, v)
+  }
+
   // data-theme-style drives all glass CSS in index.css. "flat" is the default and
   // is a no-op (no glass rules match), so the Südhang look is preserved exactly.
   document.documentElement.dataset.themeStyle = t.style ?? "flat"
 
   if (typeof document !== "undefined") {
     document.title = t.appTitle?.trim() ?? "Razzoozle"
+
+    // Skeleton CSS override — idempotent <link> keyed by id, version-busted so a
+    // skeletonVersion bump reloads the file. Removed when disabled.
+    const ensureLink = (enabled: boolean, v: number) => {
+      const id = "skeleton-css"
+      let el = document.getElementById(id) as HTMLLinkElement | null
+      if (!enabled) {
+        el?.remove()
+        return
+      }
+      if (!el) {
+        el = document.createElement("link")
+        el.id = id
+        el.rel = "stylesheet"
+        document.head.appendChild(el)
+      }
+      el.href = `/theme/skeleton.css?v=${v}`
+    }
+    ensureLink(t.customCssEnabled, t.skeletonVersion)
+
+    // Skeleton JS override — same idempotent pattern with a <script> appended to
+    // <body>. Re-injecting on a version bump loads the new file (old side effects
+    // persist until a full reload — documented ceiling). Manager-gated; this is
+    // stored-XSS by design (see contract §1).
+    if (typeof window !== "undefined") {
+      // Minimal documented global the skeleton JS can read.
+      ;(window as unknown as { razzoozle?: unknown }).razzoozle = {
+        theme: t,
+        skeletonVersion: t.skeletonVersion,
+      }
+    }
+    const ensureScript = (enabled: boolean, v: number) => {
+      const id = "skeleton-js"
+      let el = document.getElementById(id) as HTMLScriptElement | null
+      if (!enabled) {
+        el?.remove()
+        return
+      }
+      if (!el) {
+        el = document.createElement("script")
+        el.id = id
+        document.body.appendChild(el)
+      }
+      el.src = `/theme/skeleton.js?v=${v}`
+    }
+    ensureScript(t.customJsEnabled, t.skeletonVersion)
   }
 }
 

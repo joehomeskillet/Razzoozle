@@ -160,6 +160,10 @@ export interface ServerToClientEvents {
   // Theme events
   [EVENTS.MANAGER.THEME]: (_theme: Theme) => void
   [EVENTS.MANAGER.SET_THEME_SUCCESS]: (_theme: Theme) => void
+  // Skeleton CSS/JS text-edit success (mirrors SET_THEME_SUCCESS).
+  [EVENTS.MANAGER.SET_SKELETON_ASSET_SUCCESS]: (_data: {
+    kind: "css" | "js"
+  }) => void
   [EVENTS.MANAGER.BACKGROUND_UPLOADED]: (_data: {
     slot: ThemeSlot
     path: string
@@ -327,6 +331,12 @@ export interface ClientToServerEvents {
   // Theme actions
   [EVENTS.MANAGER.GET_THEME]: () => void
   [EVENTS.MANAGER.SET_THEME]: (_theme: Theme) => void
+  // Skeleton CSS/JS text edit (manager-auth-gated server-side). Writes the
+  // file, toggles the matching *Enabled flag, bumps version, broadcasts THEME.
+  [EVENTS.MANAGER.SET_SKELETON_ASSET]: (_payload: {
+    kind: "css" | "js"
+    content: string
+  }) => void
   [EVENTS.MANAGER.UPLOAD_BACKGROUND]: (_data: {
     slot: ThemeSlot
     dataUrl: string

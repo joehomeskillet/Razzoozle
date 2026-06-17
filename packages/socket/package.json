@@ -17,6 +17,7 @@
   "dependencies": {
     "@razzoozle/common": "workspace:*",
     "dayjs": "^1.11.20",
+    "jszip": "^3.10.1",
     "nanoid": "^5.1.11",
     "pino": "^9.5.0",
     "prom-client": "^15.1.3",

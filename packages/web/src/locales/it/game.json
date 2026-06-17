@@ -52,7 +52,9 @@
     "autoTitle": "Modalità auto: avanza automaticamente",
     "fullscreen": "Schermo intero",
     "mute": "Disattiva audio",
-    "unmute": "Attiva audio"
+    "unmute": "Attiva audio",
+    "hapticsOff": "Vibrazione disattivata",
+    "hapticsOn": "Vibrazione attivata"
   },
   "avatar": {
     "title": "Il tuo avatar",

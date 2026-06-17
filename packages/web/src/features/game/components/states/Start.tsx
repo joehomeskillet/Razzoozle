@@ -3,6 +3,7 @@ import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
+import { hapticCountdown } from "@razzoozle/web/features/game/utils/haptics"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import clsx from "clsx"
 import { AnimatePresence, motion } from "motion/react"
@@ -31,6 +32,7 @@ const Start = ({ data: { time, subject } }: Props) => {
 
   useEvent(EVENTS.GAME.COOLDOWN, (sec) => {
     sfxBoump()
+    if (sec <= 3) hapticCountdown()
     setCooldown(sec)
   })
 

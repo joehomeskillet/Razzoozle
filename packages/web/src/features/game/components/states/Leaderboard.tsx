@@ -8,7 +8,6 @@ import Fire from "@razzoozle/web/features/game/components/icons/Fire"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
 import {
   ACHIEVEMENT_META,
-  TIER_GRADIENT,
   TIER_INDEX,
   TIER_LABEL,
   getAchievementDisplay,
@@ -23,6 +22,19 @@ interface Props {
   data: ManagerStatusDataMap["SHOW_LEADERBOARD"]
 }
 
+// Tokenized tier banner gradient — built from the frozen --tier-* CSS vars so a
+// skeleton can re-color leaderboard banners. Defaults match the prior palette.
+const TIER_GRADIENT_VAR: Record<AchievementTier, string> = {
+  bronze:
+    "linear-gradient(to right, var(--tier-bronze), color-mix(in srgb, var(--tier-bronze), black 18%))",
+  silver:
+    "linear-gradient(to right, var(--tier-silver), color-mix(in srgb, var(--tier-silver), black 18%))",
+  gold:
+    "linear-gradient(to right, var(--tier-gold), color-mix(in srgb, var(--tier-gold), black 12%))",
+  diamant:
+    "linear-gradient(to right, var(--tier-diamant), color-mix(in srgb, var(--tier-diamant), black 12%))",
+}
+
 // ─── Streak badge ─────────────────────────────────────────────────────────────
 
 const StreakBadge = ({ streak }: { streak: number }) => (
@@ -34,7 +46,7 @@ const StreakBadge = ({ streak }: { streak: number }) => (
         animate={{ opacity: 1, scale: 1, x: 0 }}
         exit={{ opacity: 0, scale: 0.5, x: -10 }}
         transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        className="ml-2 flex items-center gap-1 rounded-full bg-amber-700 p-1"
+        className="ml-2 flex items-center gap-1 rounded-full bg-[var(--streak-color)] p-1"
       >
         <Fire className="size-7" />
       </motion.div>
@@ -64,8 +76,8 @@ const RankDeltaChip = ({ move, delta }: { move: RankMove; delta: number }) => {
         "flex flex-shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5",
         "text-xs font-bold tabular-nums leading-none",
         up
-          ? "bg-emerald-500/25 text-emerald-100"
-          : "bg-rose-500/25 text-rose-100",
+          ? "bg-[var(--rank-up-soft)] text-emerald-100"
+          : "bg-[var(--rank-down-soft)] text-rose-100",
       ].join(" ")}
     >
       <span aria-hidden="true">{up ? "▲" : "▼"}</span>
@@ -147,10 +159,10 @@ interface BannerProps {
 }
 
 const BANNER_GLOW: Record<AchievementTier, string> = {
-  bronze: "",
-  silver: "",
-  gold: "shadow-[0_0_32px_rgba(250,204,21,0.55)]",
-  diamant: "shadow-[0_0_40px_rgba(34,211,238,0.6)]",
+  bronze: "var(--tier-bronze-glow)",
+  silver: "var(--tier-silver-glow)",
+  gold: "var(--tier-gold-glow)",
+  diamant: "var(--tier-diamant-glow)",
 }
 
 const CelebratoryBanner = ({
@@ -178,12 +190,13 @@ const CelebratoryBanner = ({
               ? { duration: 0.3 }
               : { type: "spring", stiffness: 300, damping: 20 }
           }
+          style={{
+            backgroundImage: TIER_GRADIENT_VAR[tier],
+            boxShadow: BANNER_GLOW[tier],
+          }}
           className={[
             "mb-4 flex items-center gap-3 rounded-2xl px-5 py-3",
-            "bg-gradient-to-r",
-            TIER_GRADIENT[tier],
             "text-white font-bold drop-shadow-xl",
-            BANNER_GLOW[tier],
           ]
             .filter(Boolean)
             .join(" ")}

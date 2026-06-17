@@ -22,6 +22,11 @@ import {
 } from "@razzoozle/web/features/game/utils/answers"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { fireCenterSalvo } from "@razzoozle/web/features/game/utils/confetti"
+import {
+  hapticError,
+  hapticSuccess,
+  hapticTap,
+} from "@razzoozle/web/features/game/utils/haptics"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { motion } from "motion/react"
 import clsx from "clsx"
@@ -121,9 +126,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
 
     if (lastResult.correct) {
       sfxCorrect()
+      hapticSuccess()
       fireCenterSalvo(reduced)
     } else {
       sfxWrong()
+      hapticError()
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, lastResult])
@@ -160,6 +167,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     if (submitted) return
     setSelectedKey(key)
     sfxPop()
+    hapticTap()
     setSubmitted(true)
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerId: key })
@@ -171,12 +179,14 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     )
     sfxPop()
+    hapticTap()
   }
 
   const submitMultiSelect = () => {
     if (submitted) return
     setSubmitted(true)
     sfxPop()
+    hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerIds: multiSelectedKeys })
   }
@@ -187,6 +197,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     if (!trimmed) return
     setSubmitted(true)
     sfxPop()
+    hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: trimmed })
   }
@@ -195,6 +206,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     if (submitted) return
     setSubmitted(true)
     sfxPop()
+    hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerId: sliderValue })
   }
@@ -296,8 +308,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                         resultReady &&
                           isPicked &&
                           (lastResult.correct
-                            ? "!bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
-                            : "!bg-red-500"),
+                            ? "!bg-[var(--state-correct)] shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                            : "!bg-[var(--state-wrong)]"),
                       )}
                       label={ANSWERS_LABELS[key]}
                       disabled={submitted}
@@ -389,8 +401,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                       resultReady &&
                         isPicked &&
                         (lastResult.correct
-                          ? "!bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
-                          : "!bg-red-500"),
+                          ? "!bg-[var(--state-correct)] shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                          : "!bg-[var(--state-wrong)]"),
                     )}
                     label={ANSWERS_LABELS[key]}
                     disabled={submitted}

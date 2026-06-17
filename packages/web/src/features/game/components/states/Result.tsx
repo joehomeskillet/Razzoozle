@@ -6,6 +6,12 @@ import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { SFX } from "@razzoozle/web/features/game/utils/constants"
 import { playFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
+import {
+  hapticAchievement,
+  hapticError,
+  hapticSuccess,
+  hapticWin,
+} from "@razzoozle/web/features/game/utils/haptics"
 import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
 import {
   ACHIEVEMENT_META,
@@ -105,10 +111,13 @@ const Result = ({
     // playFirstCorrectSound() is itself gated on the mute store.
     if (firstCorrect) {
       playFirstCorrectSound()
+      hapticWin()
     } else if (correct) {
       sfxResults()
+      hapticSuccess()
     } else if (!poll) {
       sfxWrong()
+      hapticError()
     }
     // oxlint-disable-next-line
   }, [sfxResults])
@@ -126,10 +135,19 @@ const Result = ({
       .filter((t): t is NonNullable<typeof t> => t !== undefined)
     const top = highestTier(tiers)
 
-    if (top === "diamant") sfxDiamant()
-    else if (top === "gold") sfxGold()
-    else if (top === "silver") sfxSilver()
-    else if (top === "bronze") sfxBronze()
+    if (top === "diamant") {
+      sfxDiamant()
+      hapticAchievement("diamant")
+    } else if (top === "gold") {
+      sfxGold()
+      hapticAchievement("gold")
+    } else if (top === "silver") {
+      sfxSilver()
+      hapticAchievement("silver")
+    } else if (top === "bronze") {
+      sfxBronze()
+      hapticAchievement("bronze")
+    }
 
     // Small delay so the popup animation starts first
     const timer = setTimeout(() => {

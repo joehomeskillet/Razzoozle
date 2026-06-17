@@ -5,17 +5,10 @@ import Loader from "@razzoozle/web/components/Loader"
 import AvatarPicker from "@razzoozle/web/features/game/components/join/AvatarPicker"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { teamSwatch } from "@razzoozle/web/features/game/utils/teams"
 import { motion } from "motion/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-
-// CSS colour map for the 4 fixed team swatches (client-side only, no i18n needed).
-const TEAM_SWATCH: Record<Team, { bg: string; ring: string; label: string }> = {
-  red: { bg: "bg-red-500", ring: "ring-red-700", label: "text-red-900" },
-  blue: { bg: "bg-blue-500", ring: "ring-blue-700", label: "text-blue-900" },
-  green: { bg: "bg-green-500", ring: "ring-green-700", label: "text-green-900" },
-  yellow: { bg: "bg-yellow-400", ring: "ring-yellow-600", label: "text-yellow-900" },
-}
 
 interface Props {
   data: PlayerStatusDataMap["WAIT"]
@@ -94,7 +87,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           </p>
           <div className="flex gap-3" role="group" aria-label={t("game:teams.pick", { defaultValue: "Team wählen" })}>
             {TEAMS.map((team) => {
-              const swatch = TEAM_SWATCH[team]
+              const swatch = teamSwatch(team)
               const isSelected = selectedTeam === team
               const handleSelect = () => {
                 setSelectedTeam(team)

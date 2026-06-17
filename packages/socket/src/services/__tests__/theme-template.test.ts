@@ -9,7 +9,7 @@
 
 import { EVENTS } from "@razzoozle/common/constants"
 import type { Quizz } from "@razzoozle/common/types/game"
-import type { Theme } from "@razzoozle/common/types/theme"
+import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import fs from "fs"
@@ -29,6 +29,7 @@ const loadConfig = async (): Promise<ConfigModule> => {
 
 // A theme object that satisfies themeValidator (every required field present).
 const VALID_THEME: Theme = {
+  ...DEFAULT_THEME,
   style: "flat",
   colorPrimary: "#ff9900",
   colorSecondary: "#1a140b",

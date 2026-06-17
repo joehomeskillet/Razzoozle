@@ -3,6 +3,7 @@ import {
   EVENTS,
   type ThemeSlot,
 } from "@razzoozle/common/constants"
+import { THEME_TOKENS } from "@razzoozle/common/theme-tokens"
 import {
   DEFAULT_THEME,
   type Theme,
@@ -33,7 +34,9 @@ import {
   BookMarked,
   Download,
   Image as ImageIcon,
+  Palette,
   RotateCcw,
+  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react"
@@ -70,6 +73,70 @@ const BG_SLOTS: Array<{
     aspect: "aspect-[9/16]",
   },
 ]
+
+// Registry-driven token pickers (contract §10). The two cards below render every
+// THEME_TOKENS entry as a color input bound to its dot-path; grouping the doc's
+// five `group`s into two cards keeps the editor compact. Order within a card
+// follows THEME_TOKENS so it matches the SKELETON.md doc + applyTheme loop.
+const TOKEN_CARDS: Array<{
+  /** Stable i18n suffix + dev-default heading. */
+  key: string
+  defaultTitle: string
+  /** THEME_TOKENS `group` values rendered in this card, in order. */
+  groups: string[]
+}> = [
+  { key: "teamsTiers", defaultTitle: "Teams & Tiers", groups: ["Teams", "Tiers"] },
+  {
+    key: "statesMisc",
+    defaultTitle: "States & Misc",
+    groups: ["State", "Rank", "Misc"],
+  },
+]
+
+// Read a dot-path (e.g. "footerColors.bg") off a Theme, falling back to the
+// default so a shallow-merged partial nested object still yields a string.
+const getTokenColor = (theme: Theme, path: string): string => {
+  const read = (obj: unknown): unknown =>
+    path
+      .split(".")
+      .reduce<unknown>(
+        (o, k) => (o as Record<string, unknown> | null | undefined)?.[k],
+        obj,
+      )
+  const value = read(theme)
+
+  return typeof value === "string" ? value : (read(DEFAULT_THEME) as string)
+}
+
+// Immutably set a dot-path on a Theme, cloning every object level on the way
+// down (mirrors the nested `backgrounds`/`teamColors` spread updates already in
+// this file) so existing sibling keys are preserved and React sees new refs.
+const setTokenColor = (theme: Theme, path: string, hex: string): Theme => {
+  const keys = path.split(".")
+
+  const assign = (obj: Record<string, unknown>, i: number): Record<string, unknown> => {
+    const key = keys[i] as string
+
+    if (i === keys.length - 1) {
+      return { ...obj, [key]: hex }
+    }
+
+    const child = obj[key]
+
+    return {
+      ...obj,
+      [key]: assign(
+        (child && typeof child === "object" ? child : {}) as Record<
+          string,
+          unknown
+        >,
+        i + 1,
+      ),
+    }
+  }
+
+  return assign(theme as unknown as Record<string, unknown>, 0) as unknown as Theme
+}
 
 const ConfigTheme = () => {
   const { socket } = useSocket()
@@ -181,6 +248,13 @@ const ConfigTheme = () => {
     answerColors[index] = hex
     preview({ ...draft, answerColors })
   }
+
+  // Registry-driven setter for a THEME_TOKENS dot-path (e.g. "tierColors.gold");
+  // rides the same preview() → applyTheme() live-preview + draft path as the
+  // hand-written color fields above. Saving uses the unchanged MANAGER.SET_THEME
+  // flow — the full Theme draft already carries these fields.
+  const setTokenValue = (path: string) => (hex: string) =>
+    preview(setTokenColor(draft, path, hex))
 
   // AssetPreview hands back a File (its own size guard runs first); we keep a
   // defensive MAX_UPLOAD_BYTES check before streaming over the socket.
@@ -469,6 +543,52 @@ const ConfigTheme = () => {
                 )
               })}
             </FormSection>
+
+            {/* ── Spiel-Farben (Token-Registry) ────────────────────────
+                Registry-driven pickers for every THEME_TOKENS color (teams,
+                tiers, correct/wrong, rank deltas, timer, streak, muted surface,
+                footer). Each binds to its dot-path in the draft; saving rides
+                the unchanged MANAGER.SET_THEME flow. Defaults are a visual
+                no-op, so leaving these untouched keeps the current look. */}
+            {TOKEN_CARDS.map((card) => {
+              const tokens = THEME_TOKENS.filter((tok) =>
+                card.groups.includes(tok.group),
+              )
+
+              if (tokens.length === 0) {
+                return null
+              }
+
+              return (
+                <SectionCard
+                  key={card.key}
+                  icon={
+                    card.key === "teamsTiers" ? (
+                      <Palette className="size-5" />
+                    ) : (
+                      <Sparkles className="size-5" />
+                    )
+                  }
+                  title={t(`manager:theme.tokens.${card.key}.title`, {
+                    defaultValue: card.defaultTitle,
+                  })}
+                  description={t(`manager:theme.tokens.${card.key}.description`, {
+                    defaultValue: "",
+                  })}
+                >
+                  {tokens.map((tok) => (
+                    <ColorPickerField
+                      key={tok.path}
+                      label={t(`manager:theme.tokens.fields.${tok.path}`, {
+                        defaultValue: tok.label,
+                      })}
+                      value={getTokenColor(draft, tok.path)}
+                      onChange={setTokenValue(tok.path)}
+                    />
+                  ))}
+                </SectionCard>
+              )
+            })}
 
             {/* ── Logo ─────────────────────────────────────────────── */}
             <FormSection title={t("manager:theme.logo")}>
