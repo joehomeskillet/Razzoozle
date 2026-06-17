@@ -4,6 +4,10 @@
     "usernameTooLong": "Le pseudo ne peut pas dépasser 20 caractères",
     "usernameTooShort": "Le pseudo doit faire au moins 4 caractères"
   },
+  "avatar": {
+    "tooLarge": "Ton avatar est trop volumineux.",
+    "invalid": "Cet avatar n’est pas pris en charge."
+  },
   "game": {
     "expired": "La partie a expiré",
     "invalidAnswer": "Réponse invalide",

@@ -4,6 +4,10 @@
     "usernameTooLong": "Il nome utente non può superare i 20 caratteri",
     "usernameTooShort": "Il nome utente non può avere meno di 4 caratteri"
   },
+  "avatar": {
+    "tooLarge": "Il tuo avatar è troppo grande.",
+    "invalid": "Questo avatar non è supportato."
+  },
   "game": {
     "expired": "Partita terminata",
     "invalidAnswer": "Risposta non valida",

@@ -265,6 +265,12 @@ export type Team = (typeof TEAMS)[number]
 // Max decoded size for an uploaded ephemeral player avatar.
 export const AVATAR_MAX_BYTES = 4_000_000
 
+// Max length (in chars) for an inline SVG data-URI avatar (our DiceBear-generated
+// avatars, "data:image/svg+xml,…"). These render safely in <img> with no script
+// execution, so they are stored verbatim — no WebP transcode — and only need a
+// length cap to bound the persisted/broadcast payload.
+export const AVATAR_SVG_MAX_CHARS = 64 * 1024
+
 // Max decoded size for a public /submit image upload (8 MB, matching the
 // background cap). Enforced server-side before saveMediaFile; mirrored client-side
 // as a pre-emit guard. saveMediaFile/mediaUploadValidator enforce NO size on their

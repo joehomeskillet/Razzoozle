@@ -4,6 +4,10 @@
     "usernameTooLong": "Der Benutzername darf nicht mehr als 20 Zeichen haben",
     "usernameTooShort": "Der Benutzername muss mindestens 4 Zeichen haben"
   },
+  "avatar": {
+    "tooLarge": "Dein Avatar ist zu gross.",
+    "invalid": "Dieser Avatar wird nicht unterstuetzt."
+  },
   "display": {
     "invalidCode": "Ungültiger oder abgelaufener Kopplungs-Code",
     "notConnected": "Die Satelliten-Anzeige ist nicht mehr verbunden",

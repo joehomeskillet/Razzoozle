@@ -4,6 +4,10 @@
     "usernameTooLong": "用户名不能超过 20 个字符",
     "usernameTooShort": "用户名不能少于 4 个字符"
   },
+  "avatar": {
+    "tooLarge": "你的头像太大了。",
+    "invalid": "不支持此头像。"
+  },
   "display": {
     "invalidCode": "配对码无效或已过期",
     "notConnected": "卫星显示屏已断开连接",

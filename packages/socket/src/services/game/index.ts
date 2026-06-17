@@ -1,4 +1,9 @@
-import { AVATARS_GENERIC, BOT, EVENTS } from "@razzoozle/common/constants"
+import {
+  AVATARS_GENERIC,
+  AVATAR_SVG_MAX_CHARS,
+  BOT,
+  EVENTS,
+} from "@razzoozle/common/constants"
 import type {
   GameSummary,
   Player,
@@ -459,6 +464,21 @@ class Game {
     const value = result.data.avatar
 
     if ((AVATARS_GENERIC as readonly string[]).includes(value)) {
+      return value
+    }
+
+    // SVG data-URIs (our DiceBear-generated avatars) are tiny and render safely in
+    // <img> with no script execution, so we store them verbatim — no WebP transcode
+    // (saveEphemeralAvatar's decodeDataUrl only accepts raster/base64 data and would
+    // reject these). Only a length cap is needed to bound the payload. Raster uploads
+    // still go through saveEphemeralAvatar below, unchanged.
+    if (value.startsWith("data:image/svg+xml")) {
+      if (value.length > AVATAR_SVG_MAX_CHARS) {
+        socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:avatar.tooLarge")
+
+        return undefined
+      }
+
       return value
     }
 

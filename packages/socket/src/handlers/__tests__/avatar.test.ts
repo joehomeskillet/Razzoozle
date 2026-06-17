@@ -1,4 +1,9 @@
-import { AVATAR_MAX_BYTES, AVATARS_GENERIC, EVENTS } from "@razzoozle/common/constants"
+import {
+  AVATAR_MAX_BYTES,
+  AVATAR_SVG_MAX_CHARS,
+  AVATARS_GENERIC,
+  EVENTS,
+} from "@razzoozle/common/constants"
 import type { Quizz } from "@razzoozle/common/types/game"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
@@ -9,6 +14,10 @@ import path from "path"
 
 const PNG_1PX =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
+
+// Mirrors @dicebear/core toDataUri() output: a url-encoded "data:image/svg+xml,…".
+const SVG_AVATAR =
+  "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2010%2010%22%3E%3Crect%20width%3D%2210%22%20height%3D%2210%22%20fill%3D%22%23abc%22%2F%3E%3C%2Fsvg%3E"
 
 const makeQuizz = (): Quizz => ({
   subject: "Avatar",
@@ -183,6 +192,79 @@ describe("player avatars", () => {
         path.join(tmpDir, "media", "avatars", game.gameId, "player-sock.webp"),
       ),
     ).toBe(true)
+  })
+
+  it("SET_AVATAR accepts an SVG data-URI avatar and stores it inline (no transcode)", async () => {
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
+
+    const managerSocket = makeFakeSocket("manager-sock", "manager-client")
+    const game = new Game(
+      fakeIo as unknown as Server,
+      managerSocket as unknown as Socket,
+      makeQuizz(),
+    )
+    Registry.getInstance().addGame(game)
+
+    const playerSocket = makeFakeSocket("player-sock", "player-client")
+    await game.join(playerSocket as unknown as Socket, "Alice")
+    gameSocketHandlers(ctxOf(playerSocket))
+
+    playerSocket.handlers.get(EVENTS.PLAYER.SET_AVATAR)!({
+      gameId: game.gameId,
+      avatar: SVG_AVATAR,
+    })
+
+    await vi.waitFor(() => {
+      expect(game.players[0]?.avatar).toBe(SVG_AVATAR)
+    })
+
+    // Stored verbatim as the SVG data-URI, NOT transcoded to a /media/.../*.webp path.
+    expect(game.players[0]?.avatar).not.toContain("/media/avatars/")
+    expect(game.players[0]?.avatar).not.toContain(".webp")
+    expect(
+      fs.existsSync(path.join(tmpDir, "media", "avatars", game.gameId)),
+    ).toBe(false)
+    expect(
+      playerSocket.emitted.some((e) => e.event === EVENTS.GAME.ERROR_MESSAGE),
+    ).toBe(false)
+  })
+
+  it("rejects an oversized SVG data-URI avatar with errors:avatar.tooLarge", async () => {
+    const { default: Game } = await import("@razzoozle/socket/services/game")
+    const { gameSocketHandlers } = await import("@razzoozle/socket/handlers/game")
+    const { default: Registry } = await import("@razzoozle/socket/services/registry")
+
+    const managerSocket = makeFakeSocket("manager-sock", "manager-client")
+    const game = new Game(
+      fakeIo as unknown as Server,
+      managerSocket as unknown as Socket,
+      makeQuizz(),
+    )
+    Registry.getInstance().addGame(game)
+
+    const playerSocket = makeFakeSocket("player-sock", "player-client")
+    await game.join(playerSocket as unknown as Socket, "Alice")
+    gameSocketHandlers(ctxOf(playerSocket))
+
+    const oversized = `data:image/svg+xml,${"a".repeat(AVATAR_SVG_MAX_CHARS + 1)}`
+    playerSocket.handlers.get(EVENTS.PLAYER.SET_AVATAR)!({
+      gameId: game.gameId,
+      avatar: oversized,
+    })
+
+    await vi.waitFor(() => {
+      expect(
+        playerSocket.emitted.some(
+          (e) =>
+            e.event === EVENTS.GAME.ERROR_MESSAGE &&
+            e.payload === "errors:avatar.tooLarge",
+        ),
+      ).toBe(true)
+    })
+
+    expect(game.players[0]?.avatar).toBeUndefined()
   })
 
   it("rejects oversized uploaded avatars", async () => {
