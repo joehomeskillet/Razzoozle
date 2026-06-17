@@ -19,7 +19,12 @@ const Background = ({
   const [bgFailed, setBgFailed] = useState(false)
 
   return (
-    <section className="relative flex min-h-dvh flex-col items-center justify-center">
+    // `justify-center-safe` (safe center): short pages (login/lobby/loader) stay
+    // vertically centred, but when content is taller than the viewport — e.g. the
+    // full /trophies gallery on a phone — it falls back to top alignment instead
+    // of centring the overflow above the scroll origin. Plain `justify-center`
+    // clips the top out of reach on mobile, trapping the page (no scroll-up).
+    <section className="relative flex min-h-dvh flex-col items-center justify-center-safe">
       <div className="fixed inset-0 overflow-hidden">
         {authBg && !plain && !bgFailed ? (
           <img
