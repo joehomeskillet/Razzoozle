@@ -151,7 +151,7 @@ const GameWrapper = ({
           The whole badge is now a trigger: clicking it enlarges the QR (reusing
           the Room.tsx AlertDialog pattern) and exposes the host's Pause/Resume
           controls + a reconnect hint. */}
-      {manager && inviteCode && (
+      {manager && inviteCode && statusName !== STATUS.SHOW_ROOM && (
         <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
           <AlertDialog.Trigger asChild>
             <button

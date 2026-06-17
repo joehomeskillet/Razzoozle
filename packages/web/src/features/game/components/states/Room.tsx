@@ -8,6 +8,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
 import { teamDot } from "@razzoozle/web/features/game/utils/teams"
 import {
@@ -40,6 +41,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const [kickTarget, setKickTarget] = useState<Player | null>(null)
   const qrContentRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
+  const { theme } = useThemeStore()
   const reveal = useReveal()
 
   const pairDisplay = () => {
@@ -103,8 +105,13 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const handleCloseQrCode = () => setQrOpen(false)
 
   return (
-    <section className="glass-2 relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-2">
-      <div className="mb-10 flex flex-col-reverse items-center gap-3 md:flex-row md:items-stretch">
+    <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-2">
+      {theme.logo ? (
+        <img src={theme.logo} alt={theme.appTitle ?? "Razzoozle"} className="mb-6 h-12 w-auto select-none md:h-16" />
+      ) : (
+        <h1 className="mb-6 text-4xl font-extrabold text-[color:var(--game-fg)]">{theme.appTitle ?? "Razzoozle"}</h1>
+      )}
+      <div className="mb-10 flex flex-col items-center gap-5">
         <div className="flex flex-col gap-3 md:flex-row">
           <div className="flex flex-col items-center justify-center rounded-xl bg-white px-6 py-4 md:flex-row">
             <div>
@@ -127,10 +134,10 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
 
         <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
           <AlertDialog.Trigger asChild>
-            <div className="group relative flex h-40 shrink-0 cursor-pointer rounded-xl bg-white p-2">
+            <div className="group relative flex h-64 w-64 shrink-0 cursor-pointer rounded-xl bg-white p-3">
               <QRCode
-                className="h-auto w-auto"
-                size={144}
+                className="h-full w-full"
+                size={300}
                 value={buildJoinUrl(inviteCode, webUrl)}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-xl opacity-0 transition-opacity group-hover:opacity-100">
@@ -170,15 +177,15 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         {t(text)}
       </h2>
 
-      <div className="mb-4 flex items-center justify-center rounded-lg bg-black/40 px-6 py-3">
-        <span className="text-2xl font-bold text-white drop-shadow-md">
+      <div className="mb-4 flex items-center justify-center rounded-lg bg-white px-6 py-3 shadow-sm">
+        <span className="text-2xl font-bold text-[color:var(--color-field-ink)]">
           {t("game:playersJoined")}
           {totalPlayers}
         </span>
       </div>
 
-      <div className="mb-6 flex items-center gap-2 rounded-lg bg-black/40 px-4 py-2">
-        <span className="text-sm font-semibold text-white/70">
+      <div className="mb-6 flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm">
+        <span className="text-sm font-semibold text-[color:var(--color-field-ink)]/70">
           {t("manager:satellite.codeLabel")}
         </span>
         <input
