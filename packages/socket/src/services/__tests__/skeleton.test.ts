@@ -48,7 +48,12 @@ describe("skeleton export/import", () => {
       ...DEFAULT_THEME,
       colorPrimary: "#123456",
       stateColors: { correct: "#0f0f0f", wrong: "#abcdef" },
-      teamColors: { red: "#111111", blue: "#222222", green: "#333333", yellow: "#444444" },
+      teamColors: {
+        red: "#111111",
+        blue: "#222222",
+        green: "#333333",
+        yellow: "#444444",
+      },
     }
     config.setTheme(theme)
 
@@ -80,6 +85,22 @@ describe("skeleton export/import", () => {
     expect(css).toContain("--color-primary: #abcdef;")
     const js = await zip.file("theme.js")!.async("string")
     expect(js).toContain("window.razzoozle")
+  })
+
+  it("ships animations.css + themed demo preview pages", async () => {
+    const config = await loadConfig()
+    config.setTheme({ ...DEFAULT_THEME, colorPrimary: "#abcdef" })
+
+    const zip = await JSZip.loadAsync(await config.buildSkeletonZip())
+
+    expect(zip.file("animations.css")).not.toBeNull()
+    expect(zip.file("demo/phone-game.html")).not.toBeNull()
+    expect(zip.file("demo/lobby.html")).not.toBeNull()
+    expect(zip.file("demo/presentation.html")).not.toBeNull()
+
+    // The demo pages are themed from the live theme (colorPrimary baked in).
+    const phone = await zip.file("demo/phone-game.html")!.async("string")
+    expect(phone).toContain("#abcdef")
   })
 
   it("ships + restores custom CSS/JS and flips the enable flags", async () => {

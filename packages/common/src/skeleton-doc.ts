@@ -232,6 +232,9 @@ A **skeleton** is a ZIP that restyles the entire Razzoozle game. It can carry:
 - **theme tokens** (\`skeleton.json\`) — the JSON theme (colors, radius, style…),
 - a free-form **\`theme.css\`** override (full CSS, runs after the base styles),
 - a free-form **\`theme.js\`** script that runs on **every connected client**,
+- **\`animations.css\`** — the in-game motion vocabulary as CSS tokens + keyframes,
+- **\`demo/*.html\`** — themed, animated preview screens you can OPEN in a browser
+  to test a theme (phone game, lobby, presentation),
 - **assets** (logo + per-screen backgrounds).
 
 \`\`\`
@@ -239,11 +242,23 @@ skeleton.zip
 ├─ skeleton.json     { "formatVersion": 1, "name": string, "theme": Theme }
 ├─ theme.css         your CSS override (a scaffold of the live theme if unset)
 ├─ theme.js          JS run on ALL clients, manager-gated (a commented stub if unset)
+├─ animations.css    in-game motion vocabulary (CSS tokens + keyframes)
 ├─ SKELETON.md       generated on export; ignored on import
+├─ demo/             open in a browser to preview & test your theme
+│  ├─ phone-game.html      player answering screen (phone)
+│  ├─ lobby.html           join / lobby screen
+│  └─ presentation.html    host projector screen (answers + leaderboard + podium)
 └─ assets/
    ├─ <logo>.svg|png|webp
    └─ backgrounds/{auth,managerGame,playerGame}.webp
 \`\`\`
+
+**To test a theme:** edit \`skeleton.json\` (values) and/or \`theme.css\` (structure) and
+\`theme.js\`, then open \`demo/phone-game.html\`, \`demo/lobby.html\` and
+\`demo/presentation.html\` — they load \`../theme.css\` + \`../animations.css\` and are
+driven by the same CSS variables + animation keyframes as the live game, so what you
+see is what the players get. On import only \`skeleton.json\`, \`theme.css\`, \`theme.js\`
+and \`assets/\` are applied; \`animations.css\`, \`SKELETON.md\` and \`demo/\` are reference-only.
 
 Every token's runtime default equals the current hardcoded value, so a theme
 that only changes a few tokens stays visually consistent everywhere else.
