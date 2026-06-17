@@ -131,6 +131,7 @@
     "ki": "AI",
     "results": "Results",
     "design": "Design",
+    "plugins": "Plugins",
     "skeleton": "Skeleton",
     "satellite": "Satellite",
     "submissions": "Suggestions",
@@ -139,6 +140,32 @@
     "achievements": "Achievements",
     "running": "Running Games",
     "dev": "Dev"
+  },
+  "plugins":   {
+    "title": "Plugins",
+    "install": "Install plugin",
+    "installHint": "Upload a plugin as a ZIP archive.",
+    "dropzone": "Drag a ZIP here or click to choose",
+    "installing": "Installing …",
+    "installed": "Installed plugins",
+    "empty": "No plugins installed yet",
+    "emptyHint": "Installed plugins will appear here.",
+    "uninstall": "Remove",
+    "uninstallConfirm": "Do you really want to remove the plugin “{{name}}”?",
+    "toast": {
+      "installed": "Plugin installed"
+    },
+    "warning": {
+      "title": "Plugins run with full access",
+      "body": "Plugins get full access to the manager and the server. Only install code you trust."
+    },
+    "capabilities": {
+      "tab": "Own tab",
+      "ui": "Interface",
+      "server": "Server hook",
+      "config": "Settings",
+      "i18n": "Translations"
+    }
   },
   "dev": {
     "redactionNotice": "Passwords, API tokens and answer solutions are never logged.",

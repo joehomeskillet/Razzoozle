@@ -67,11 +67,15 @@ export const applyTheme = (theme: Theme) => {
     // persist until a full reload — documented ceiling). Manager-gated; this is
     // stored-XSS by design (see contract §1).
     if (typeof window !== "undefined") {
-      // Minimal documented global the skeleton JS can read.
-      ;(window as unknown as { razzoozle?: unknown }).razzoozle = {
+      // Minimal documented global the skeleton JS can read. MERGE (never
+      // reassign) so we preserve any registerTab/api fields the manager plugin
+      // host (manager/plugins/host.ts) merged on — a full reassign here would
+      // wipe them on every theme broadcast / save / preview slider drag.
+      const w = window as unknown as { razzoozle?: Record<string, unknown> }
+      w.razzoozle = Object.assign(w.razzoozle ?? {}, {
         theme: t,
         skeletonVersion: t.skeletonVersion,
-      }
+      })
     }
     const ensureScript = (enabled: boolean, v: number) => {
       const id = "skeleton-js"

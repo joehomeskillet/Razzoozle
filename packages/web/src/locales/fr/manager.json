@@ -129,6 +129,7 @@
     "quizz": "Quizz",
     "results": "Résultats",
     "design": "Apparence",
+    "plugins": "Extensions",
     "skeleton": "Skeleton",
     "satellite": "Satellite",
     "submissions": "Propositions",
@@ -138,6 +139,32 @@
     "gamemode": "Mode",
     "achievements": "Succès",
     "dev": "Dev"
+  },
+  "plugins":   {
+    "title": "Extensions",
+    "install": "Installer une extension",
+    "installHint": "Téléverse une extension sous forme d'archive ZIP.",
+    "dropzone": "Glisse un ZIP ici ou clique pour choisir",
+    "installing": "Installation …",
+    "installed": "Extensions installées",
+    "empty": "Aucune extension installée",
+    "emptyHint": "Les extensions installées apparaîtront ici.",
+    "uninstall": "Supprimer",
+    "uninstallConfirm": "Veux-tu vraiment supprimer l'extension « {{name}} » ?",
+    "toast": {
+      "installed": "Extension installée"
+    },
+    "warning": {
+      "title": "Les extensions s'exécutent avec un accès complet",
+      "body": "Les extensions obtiennent un accès complet au gestionnaire et au serveur. N'installe que du code de confiance."
+    },
+    "capabilities": {
+      "tab": "Onglet dédié",
+      "ui": "Interface",
+      "server": "Hook serveur",
+      "config": "Réglages",
+      "i18n": "Traductions"
+    }
   },
   "dev": {
     "redactionNotice": "Les mots de passe, jetons d'API et solutions de réponse ne sont jamais journalisés.",

@@ -8,6 +8,11 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import Configurations from "@razzoozle/web/features/manager/components/configurations"
+import {
+  initManagerPluginHost,
+  setHostConfig,
+  syncPluginScripts,
+} from "@razzoozle/web/features/manager/plugins/host"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 
@@ -16,6 +21,13 @@ const ManagerConfigPage = () => {
   const { setGameId, setInviteCode, setStatus, setConfig, config, password } =
     useManagerStore()
   const navigate = useNavigate()
+
+  // Install the manager-only plugin host global (window.razzoozle.registerTab +
+  // api) exactly once on mount. Idempotent + StrictMode-safe; merges onto any
+  // skeleton-theme global apply.ts may have set.
+  useEffect(() => {
+    initManagerPluginHost()
+  }, [])
 
   // Re-authenticate on every (re)connect. The manager auth lives only in the
   // server's in-memory loggedClients set, so a server restart (deploy) wipes it
@@ -31,6 +43,25 @@ const ManagerConfigPage = () => {
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)
+    // Keep the plugin host's read-only config snapshot in sync, and reconcile
+    // injected plugin ui.js scripts against the (possibly embedded) plugin list.
+    setHostConfig(data)
+    syncPluginScripts(data.plugins ?? [])
+  })
+
+  // Live plugin-list broadcasts (install/remove/enable from WP5). Re-injects or
+  // removes ui.js scripts so a freshly enabled plugin's tab appears without a
+  // reload; a removed/disabled plugin's script (and its tab) disappears.
+  useEvent(EVENTS.MANAGER.PLUGIN_CONFIG, (plugins) => {
+    syncPluginScripts(plugins)
+    // Mirror the new list into the host config snapshot so api.config.plugins
+    // stays current between full CONFIG pushes.
+    const current = useManagerStore.getState().config
+    if (current) {
+      const next = { ...current, plugins }
+      setConfig(next)
+      setHostConfig(next)
+    }
   })
 
   useEvent(EVENTS.MANAGER.GAME_CREATED, ({ gameId, inviteCode }) => {

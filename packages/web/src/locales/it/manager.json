@@ -120,6 +120,7 @@
     "quizz": "Quiz",
     "results": "Risultati",
     "design": "Design",
+    "plugins": "Plugin",
     "skeleton": "Skeleton",
     "satellite": "Satellite",
     "submissions": "Proposte",
@@ -129,6 +130,32 @@
     "gamemode": "Modalità",
     "achievements": "Obiettivi",
     "dev": "Dev"
+  },
+  "plugins":   {
+    "title": "Plugin",
+    "install": "Installa plugin",
+    "installHint": "Carica un plugin come archivio ZIP.",
+    "dropzone": "Trascina qui uno ZIP o clicca per scegliere",
+    "installing": "Installazione …",
+    "installed": "Plugin installati",
+    "empty": "Nessun plugin installato",
+    "emptyHint": "I plugin installati appariranno qui.",
+    "uninstall": "Rimuovi",
+    "uninstallConfirm": "Vuoi davvero rimuovere il plugin «{{name}}»?",
+    "toast": {
+      "installed": "Plugin installato"
+    },
+    "warning": {
+      "title": "I plugin vengono eseguiti con accesso completo",
+      "body": "I plugin ottengono accesso completo al gestore e al server. Installa solo codice di cui ti fidi."
+    },
+    "capabilities": {
+      "tab": "Scheda dedicata",
+      "ui": "Interfaccia",
+      "server": "Hook del server",
+      "config": "Impostazioni",
+      "i18n": "Traduzioni"
+    }
   },
   "dev": {
     "redactionNotice": "Password, token API e soluzioni delle risposte non vengono mai registrati.",

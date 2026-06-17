@@ -129,6 +129,7 @@
     "ki": "KI",
     "results": "Ergebnisse",
     "design": "Design",
+    "plugins": "Plugins",
     "skeleton": "Skeleton",
     "satellite": "Satellit",
     "submissions": "Vorschläge",
@@ -137,6 +138,32 @@
     "achievements": "Achievements",
     "running": "Laufende Spiele",
     "dev": "Dev"
+  },
+  "plugins":   {
+    "title": "Plugins",
+    "install": "Plugin installieren",
+    "installHint": "Lade ein Plugin als ZIP-Archiv hoch.",
+    "dropzone": "ZIP hierher ziehen oder zum Auswählen klicken",
+    "installing": "Wird installiert …",
+    "installed": "Installierte Plugins",
+    "empty": "Noch keine Plugins installiert",
+    "emptyHint": "Installierte Plugins erscheinen hier.",
+    "uninstall": "Entfernen",
+    "uninstallConfirm": "Möchtest du das Plugin „{{name}}“ wirklich entfernen?",
+    "toast": {
+      "installed": "Plugin installiert"
+    },
+    "warning": {
+      "title": "Plugins laufen mit vollem Zugriff",
+      "body": "Plugins erhalten vollen Zugriff auf die Verwaltung und den Server. Installiere nur Code, dem du vertraust."
+    },
+    "capabilities": {
+      "tab": "Eigener Tab",
+      "ui": "Oberfläche",
+      "server": "Server-Hook",
+      "config": "Einstellungen",
+      "i18n": "Übersetzungen"
+    }
   },
   "dev": {
     "redactionNotice": "Passwörter, API-Tokens und Antwortlösungen werden nie protokolliert.",

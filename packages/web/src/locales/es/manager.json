@@ -129,6 +129,7 @@
     "quizz": "Cuestionario",
     "results": "Resultados",
     "design": "Diseño",
+    "plugins": "Complementos",
     "skeleton": "Skeleton",
     "satellite": "Satélite",
     "submissions": "Sugerencias",
@@ -138,6 +139,32 @@
     "gamemode": "Modo",
     "achievements": "Logros",
     "dev": "Dev"
+  },
+  "plugins":   {
+    "title": "Complementos",
+    "install": "Instalar complemento",
+    "installHint": "Sube un complemento como archivo ZIP.",
+    "dropzone": "Arrastra un ZIP aquí o haz clic para elegir",
+    "installing": "Instalando …",
+    "installed": "Complementos instalados",
+    "empty": "Aún no hay complementos instalados",
+    "emptyHint": "Los complementos instalados aparecerán aquí.",
+    "uninstall": "Eliminar",
+    "uninstallConfirm": "¿Seguro que quieres eliminar el complemento «{{name}}»?",
+    "toast": {
+      "installed": "Complemento instalado"
+    },
+    "warning": {
+      "title": "Los complementos se ejecutan con acceso total",
+      "body": "Los complementos obtienen acceso total al panel y al servidor. Instala solo código en el que confíes."
+    },
+    "capabilities": {
+      "tab": "Pestaña propia",
+      "ui": "Interfaz",
+      "server": "Hook de servidor",
+      "config": "Ajustes",
+      "i18n": "Traducciones"
+    }
   },
   "dev": {
     "redactionNotice": "Las contraseñas, los tokens de API y las soluciones de respuestas nunca se registran.",

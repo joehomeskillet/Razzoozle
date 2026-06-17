@@ -131,6 +131,7 @@
     "ki": "AI",
     "results": "结果",
     "design": "设计",
+    "plugins": "插件",
     "skeleton": "皮肤包",
     "satellite": "卫星屏",
     "submissions": "建议",
@@ -138,6 +139,32 @@
     "gamemode": "模式",
     "achievements": "成就",
     "dev": "开发"
+  },
+  "plugins":   {
+    "title": "插件",
+    "install": "安装插件",
+    "installHint": "以 ZIP 压缩包上传插件。",
+    "dropzone": "将 ZIP 拖拽到此处，或点击选择",
+    "installing": "正在安装…",
+    "installed": "已安装的插件",
+    "empty": "尚未安装任何插件",
+    "emptyHint": "已安装的插件将显示在此处。",
+    "uninstall": "移除",
+    "uninstallConfirm": "确定要移除插件“{{name}}”吗？",
+    "toast": {
+      "installed": "插件已安装"
+    },
+    "warning": {
+      "title": "插件以完整权限运行",
+      "body": "插件将获得对管理后台和服务器的完整访问权限。请仅安装你信任的代码。"
+    },
+    "capabilities": {
+      "tab": "专属选项卡",
+      "ui": "界面",
+      "server": "服务器钩子",
+      "config": "设置",
+      "i18n": "翻译"
+    }
   },
   "dev": {
     "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",
