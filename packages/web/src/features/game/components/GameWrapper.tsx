@@ -398,7 +398,12 @@ const GameWrapper = ({
             <div
               aria-disabled={!isConnected}
               className={clsx(
-                "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-24 lg:pb-4",
+                "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2",
+                // Manager keeps a tall bottom pad on mobile to clear the fixed QR
+                // rejoin badge; players have no badge and an in-flow footer, so a
+                // small pad — pb-24 left a huge gap between the answer tiles and the
+                // white player bar on phone portrait.
+                manager ? "pb-24 lg:pb-4" : "pb-4",
                 !isConnected && "pointer-events-none opacity-60 select-none",
               )}
             >
