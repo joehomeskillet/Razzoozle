@@ -9,7 +9,6 @@ import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderb
 import {
   ACHIEVEMENT_META,
   TIER_INDEX,
-  TIER_LABEL,
   getAchievementDisplay,
   loadAchievementMeta,
 } from "@razzoozle/web/features/game/utils/achievements"
@@ -173,6 +172,7 @@ const CelebratoryBanner = ({
   show,
 }: BannerProps) => {
   const reduced = useReducedMotion() ?? false
+  const { t } = useTranslation()
 
   return (
     <AnimatePresence>
@@ -181,7 +181,7 @@ const CelebratoryBanner = ({
           key="banner"
           role="status"
           aria-live="polite"
-          aria-label={`${playerName} holt ${TIER_LABEL[tier]}: ${achievementName}`}
+          aria-label={`${playerName} ${t("game:achievementBanner.wins")} ${t(`game:tier.${tier}`)}: ${achievementName}`}
           initial={{ opacity: 0, y: reduced ? 0 : -24, scale: reduced ? 1 : 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: reduced ? 0 : -16 }}
@@ -207,11 +207,11 @@ const CelebratoryBanner = ({
           {/* Text */}
           <span className="flex flex-col leading-tight">
             <span className="text-sm font-semibold opacity-80 tabular-nums">
-              {TIER_LABEL[tier]}
+              {t(`game:tier.${tier}`)}
             </span>
             <span className="text-base lg:text-lg">
               <span className="font-extrabold">{playerName}</span>
-              {" holt "}
+              {" "}{t("game:achievementBanner.wins")}{" "}
               {icon}{" "}
               <span className="italic">{achievementName}</span>
             </span>

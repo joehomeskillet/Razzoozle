@@ -42,6 +42,9 @@
     "averageGuess": "Average guess: {{value}}"
   },
   "pollThanks": "Thanks for your vote",
+  "tier": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamant": "Diamond" },
+  "locked": "locked",
+  "achievementBanner": { "wins": "grabs" },
   "submittedBy": "submitted by {{name}}",
   "typeAnswerPlaceholder": "Type your answer...",
   "submitAnswer": "Submit",

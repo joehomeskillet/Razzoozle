@@ -158,7 +158,7 @@ export const TIER_TEXT: Record<AchievementTier, string> = {
   diamant: "text-white",
 }
 
-/** Human-readable tier label (German). */
+/** Human-readable tier label (German fallback; UI uses i18n `game:tier.*`). */
 export const TIER_LABEL: Record<AchievementTier, string> = {
   bronze: "Bronze",
   silver: "Silber",

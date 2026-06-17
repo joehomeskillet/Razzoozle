@@ -18,11 +18,11 @@ import {
 import {
   ACHIEVEMENT_META,
   TIER_GRADIENT,
-  TIER_LABEL,
   TIER_RING,
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
 import { motion } from "motion/react"
+import { useTranslation } from "react-i18next"
 
 // ─── Size map ────────────────────────────────────────────────────────────────
 
@@ -91,11 +91,12 @@ const AchievementMedal = ({
   className = "",
 }: AchievementMedalProps) => {
   const reveal = useReveal()
+  const { t } = useTranslation()
 
   const meta = ACHIEVEMENT_META[id]
   const icon = meta?.icon ?? "🏅"
   const displayName = meta
-    ? `${TIER_LABEL[tier]} — ${id.replace(/_/g, " ")}`
+    ? `${t(`game:tier.${tier}`)} — ${id.replace(/_/g, " ")}`
     : id.replace(/_/g, " ")
 
   const showAnimatedRing =

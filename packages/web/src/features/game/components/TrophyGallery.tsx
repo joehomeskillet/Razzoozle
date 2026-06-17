@@ -11,7 +11,6 @@ import type { MergedAchievement } from "@razzoozle/common/achievements"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import {
   ACHIEVEMENT_META,
-  TIER_LABEL,
   TIER_GRADIENT,
   TIER_RING,
   TIER_TEXT,
@@ -62,7 +61,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
   const unlockedCount = visibleMetas.filter((m) => (counts[m.id] ?? 0) > 0).length
 
   return (
-    <section aria-label={TIER_LABEL[tier]} className="space-y-3">
+    <section aria-label={t(`game:tier.${tier}`)} className="space-y-3">
       {/* Tier header pill */}
       <div className="flex items-center gap-2">
         <h3
@@ -72,7 +71,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
             TIER_TEXT[tier],
           )}
         >
-          {TIER_LABEL[tier]}
+          {t(`game:tier.${tier}`)}
         </h3>
         <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
           {unlockedCount} / {enabledCount}
@@ -99,7 +98,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
                   ? `bg-gradient-to-br ring-2 shadow-lg ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
                   : "bg-black/5 opacity-40 grayscale ring-1 ring-white/10",
               )}
-              aria-label={`${display.name}${unlocked ? `, ${count}×` : ", gesperrt"}`}
+              aria-label={`${display.name}${unlocked ? `, ${count}×` : `, ${t("game:locked")}`}`}
             >
               {/* Medallion — full colour when unlocked, inherits grayscale from parent when locked */}
               <AchievementMedal

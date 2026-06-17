@@ -103,9 +103,14 @@ describe("tier token maps", () => {
     }
   })
 
-  it("uses German tier labels", () => {
-    expect(TIER_LABEL.silver).toBe("Silber")
-    expect(TIER_LABEL.diamant).toBe("Diamant")
+  it("defines a label for every tier (language-agnostic)", () => {
+    expect(Object.keys(TIER_LABEL).sort()).toEqual(
+      [...ALL_TIERS].sort(),
+    )
+    for (const tier of ALL_TIERS) {
+      expect(typeof TIER_LABEL[tier]).toBe("string")
+      expect(TIER_LABEL[tier].length).toBeGreaterThan(0)
+    }
   })
 })
 

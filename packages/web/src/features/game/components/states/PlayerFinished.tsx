@@ -8,7 +8,6 @@ import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   ACHIEVEMENT_META,
   TIER_GRADIENT,
-  TIER_LABEL,
   TIER_ORDER,
   TIER_RING,
   TIER_TEXT,
@@ -231,7 +230,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
                 TIER_TEXT[tier],
               )}
             >
-              {TIER_LABEL[tier]}
+              {t(`game:tier.${tier}`)}
             </span>
             <div className="flex flex-wrap gap-2">
               {ids.map((id) => {

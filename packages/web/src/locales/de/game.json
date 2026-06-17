@@ -42,6 +42,9 @@
     "streakTitle": "Serie",
     "streakValue": "+{{percent}}%"
   },
+  "tier": { "bronze": "Bronze", "silver": "Silber", "gold": "Gold", "diamant": "Diamant" },
+  "locked": "gesperrt",
+  "achievementBanner": { "wins": "holt" },
   "submittedBy": "eingereicht von {{name}}",
   "typeAnswerPlaceholder": "Antwort eingeben...",
   "submitAnswer": "Absenden",

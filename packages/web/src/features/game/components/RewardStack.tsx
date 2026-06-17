@@ -26,7 +26,6 @@ import {
   ACHIEVEMENT_META,
   TIER_ACCENT,
   TIER_INDEX,
-  TIER_LABEL,
   getAchievementDisplay,
   loadAchievementMeta,
   type AchievementMeta,
@@ -106,7 +105,7 @@ const RewardStack = ({
           />
         ),
         title: display.name,
-        badge: TIER_LABEL[meta.tier],
+        badge: t(`game:tier.${meta.tier}`),
         accent: TIER_ACCENT[meta.tier],
         durationMs:
           meta.tier === "diamant" ? 7000 : meta.tier === "gold" ? 6000 : 4500,
