@@ -57,7 +57,11 @@ import { gameResultValidator } from "@razzoozle/socket/services/validators"
 import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
-import { renderSkeletonDoc } from "@razzoozle/common/skeleton-doc"
+import {
+  renderSkeletonCss,
+  renderSkeletonDoc,
+  renderSkeletonJs,
+} from "@razzoozle/common/skeleton-doc"
 import { z } from "zod"
 import type {
   Submission,
@@ -1789,15 +1793,24 @@ export const buildSkeletonZip = async (): Promise<Buffer> => {
   addAsset(theme.backgrounds.managerGame, "assets/backgrounds")
   addAsset(theme.backgrounds.playerGame, "assets/backgrounds")
 
+  // Always ship theme.css / theme.js: the saved custom override if one exists,
+  // otherwise a generated scaffold (the bundle is meant to carry css + js, and
+  // the scaffold gives an LLM a concrete starting point).
   const cssFile = getPath("theme/skeleton.css")
-  if (fs.existsSync(cssFile)) {
-    zip.file("theme.css", fs.readFileSync(cssFile, "utf-8"))
-  }
+  zip.file(
+    "theme.css",
+    fs.existsSync(cssFile)
+      ? fs.readFileSync(cssFile, "utf-8")
+      : renderSkeletonCss(theme),
+  )
 
   const jsFile = getPath("theme/skeleton.js")
-  if (fs.existsSync(jsFile)) {
-    zip.file("theme.js", fs.readFileSync(jsFile, "utf-8"))
-  }
+  zip.file(
+    "theme.js",
+    fs.existsSync(jsFile)
+      ? fs.readFileSync(jsFile, "utf-8")
+      : renderSkeletonJs(),
+  )
 
   zip.file("SKELETON.md", renderSkeletonDoc(theme))
 

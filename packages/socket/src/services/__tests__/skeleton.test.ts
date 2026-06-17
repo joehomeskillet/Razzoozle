@@ -64,6 +64,24 @@ describe("skeleton export/import", () => {
     expect(config.getTheme().colorPrimary).toBe("#123456")
   })
 
+  it("always ships theme.css + theme.js + SKELETON.md (scaffold when unset)", async () => {
+    const config = await loadConfig()
+    config.setTheme({ ...DEFAULT_THEME, colorPrimary: "#abcdef" })
+
+    const buf = await config.buildSkeletonZip()
+    const zip = await JSZip.loadAsync(buf)
+
+    expect(zip.file("skeleton.json")).not.toBeNull()
+    expect(zip.file("theme.css")).not.toBeNull()
+    expect(zip.file("theme.js")).not.toBeNull()
+    expect(zip.file("SKELETON.md")).not.toBeNull()
+
+    const css = await zip.file("theme.css")!.async("string")
+    expect(css).toContain("--color-primary: #abcdef;")
+    const js = await zip.file("theme.js")!.async("string")
+    expect(js).toContain("window.razzoozle")
+  })
+
   it("ships + restores custom CSS/JS and flips the enable flags", async () => {
     const config = await loadConfig()
     config.setTheme({ ...DEFAULT_THEME })

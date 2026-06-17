@@ -21,6 +21,89 @@ function fmt(value: unknown): string {
 }
 
 /**
+ * renderSkeletonCss — a scaffold `theme.css` reflecting the LIVE theme, exported
+ * when the instance has no custom override yet (so the ZIP always ships a CSS
+ * file — the spec requires css/js/images in the bundle, and it gives an LLM a
+ * concrete starting point). Pure function.
+ *
+ * The token VALUES are controlled by `skeleton.json` (applyTheme sets them as
+ * inline CSS variables at runtime, which beat a stylesheet `:root`), so this
+ * file documents them for reference and is meant for *structural* overrides
+ * (custom selectors, fonts, animations) the tokens can't express.
+ */
+export function renderSkeletonCss(theme: Theme): string {
+  const vars: [string, string][] = [
+    ["--color-primary", theme.colorPrimary],
+    ["--color-secondary", theme.colorSecondary],
+    ["--color-text", theme.colorText],
+    ["--color-accent", theme.accentColor],
+    ["--answer-1", theme.answerColors[0]],
+    ["--answer-2", theme.answerColors[1]],
+    ["--answer-3", theme.answerColors[2]],
+    ["--answer-4", theme.answerColors[3]],
+    ["--answer-text", theme.answerTextColor],
+    ["--radius-theme", `${theme.radius}px`],
+    ["--bg-scrim", `${theme.scrim / 100}`],
+    // Registry tokens (teams / tiers / state / rank / timer / misc).
+    ...THEME_TOKENS.map((tok): [string, string] => {
+      const value = getPath(theme, tok.path)
+      return [tok.cssVar, typeof value === "string" ? value : ""]
+    }),
+  ]
+
+  const reference = vars
+    .filter(([, value]) => value !== "")
+    .map(([name, value]) => `     ${name}: ${value};`)
+    .join("\n")
+
+  return `/* ============================================================
+   Razzoozle skeleton — theme.css
+   Optional custom-CSS override, injected as a <link> on every game screen.
+
+   NOTE: color/radius/scrim VALUES come from skeleton.json (the theme tokens).
+   applyTheme sets them as inline CSS variables at runtime, so re-declaring them
+   in :root here will NOT override them — change a value in skeleton.json instead.
+   Use THIS file for things tokens can't express: custom selectors, @font-face,
+   animations, layout tweaks. Key selectors to target are listed in SKELETON.md.
+
+   Current theme variables (reference — set values via skeleton.json):
+${reference}
+   [data-theme-style] = "${theme.style}"
+   ============================================================ */
+
+/* --- your custom override rules below --- */
+/* Example:
+[data-theme-style="glass"] .leaderboard-row {
+  backdrop-filter: blur(10px) saturate(1.4);
+}
+*/
+`
+}
+
+/**
+ * renderSkeletonJs — a commented `theme.js` stub exported when the instance has
+ * no custom script yet. Documents the runtime global + the XSS caveat and gives
+ * a copy-paste starting point. Pure function.
+ */
+export function renderSkeletonJs(): string {
+  return `// ============================================================
+// Razzoozle skeleton — theme.js
+// Runs on EVERY connected client (player phones + host) after the theme applies.
+// WARNING: manager-gated, but this is stored-XSS by design — paste only trusted
+// code; it executes on every player's device.
+//
+// Available global:
+//   window.razzoozle = { theme, skeletonVersion }
+//     - theme: the full resolved Theme object (see skeleton.json / SKELETON.md)
+//     - skeletonVersion: integer, bumps on every skeleton change
+// ============================================================
+
+// Example (uncomment to try):
+// console.log("[skeleton] primary color:", window.razzoozle?.theme?.colorPrimary)
+`
+}
+
+/**
  * renderSkeletonDoc — pure function. Generates the SKELETON.md LLM contract doc
  * from the live theme + the THEME_TOKENS registry. No side effects, no I/O.
  *
@@ -154,8 +237,8 @@ A **skeleton** is a ZIP that restyles the entire Razzoozle game. It can carry:
 \`\`\`
 skeleton.zip
 ├─ skeleton.json     { "formatVersion": 1, "name": string, "theme": Theme }
-├─ theme.css         (optional) free CSS override
-├─ theme.js          (optional) free JS — runs on ALL clients (manager-gated)
+├─ theme.css         your CSS override (a scaffold of the live theme if unset)
+├─ theme.js          JS run on ALL clients, manager-gated (a commented stub if unset)
 ├─ SKELETON.md       generated on export; ignored on import
 └─ assets/
    ├─ <logo>.svg|png|webp
