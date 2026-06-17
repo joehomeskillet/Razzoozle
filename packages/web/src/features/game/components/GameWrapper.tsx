@@ -23,6 +23,12 @@ import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzoozle/web/features/game/utils/constants"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import clsx from "clsx"
+import { AnimatePresence, motion } from "motion/react"
+import {
+  useReveal,
+  DURATION,
+  EASE,
+} from "@razzoozle/web/features/game/animation/presets"
 import {
   LogOut,
   Maximize,
@@ -61,6 +67,7 @@ const GameWrapper = ({
   const { theme } = useThemeStore()
   const { muted, toggle: toggleMuted } = useSoundStore()
   const { t } = useTranslation()
+  const reveal = useReveal()
   const [isDisabled, setIsDisabled] = useState(false)
   const [autoOn, setAutoOn] = useState(false)
   const [qrOpen, setQrOpen] = useState(false)
@@ -395,7 +402,26 @@ const GameWrapper = ({
                 !isConnected && "pointer-events-none opacity-60 select-none",
               )}
             >
-              {children}
+              {/* State-transition choreography: each game screen cross-fades as
+                  the status changes, giving one continuous flow across the whole
+                  game loop. Keyed by statusName so per-question re-animation
+                  stays inside Question.tsx. Reduced motion -> instant opacity. */}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={statusName ?? "none"}
+                  className="flex min-h-0 w-full flex-1 flex-col justify-center"
+                  initial={reveal.reduced ? false : { opacity: 0, y: 8 }}
+                  animate={reveal.reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={reveal.reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                  transition={
+                    reveal.reduced
+                      ? { duration: DURATION.instant }
+                      : { duration: DURATION.base, ease: EASE.out }
+                  }
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {!manager && (
