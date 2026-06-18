@@ -303,58 +303,12 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
         </h1>
       </header>
 
-      {/*
-        Body wrapper — owns the flex sizing and anchors the scroll-fade
-        affordances. The scrollbar is deliberately hidden (a conscious
-        decision), so on mobile it's otherwise unclear that more content
-        follows. Two pointer-events-none gradient masks at the top/bottom
-        edges signal "more above / more below". They use CSS scroll-driven
-        animations so the top mask hides at scrollTop 0 and the bottom mask
-        hides once the end is reached; browsers without scroll() timelines
-        simply keep both masks visible (a harmless, still-useful hint).
-        Reduced-motion is honoured below — the masks become a static, even
-        affordance instead of fading with scroll position.
-      */}
+      {/* Body wrapper — owns the flex sizing for the single scroll owner. */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <style>{`
-          .submit-scroll-fade {
-            opacity: 1;
-          }
-          .submit-scroll-body {
-            scroll-timeline-name: --submit-scroll-tl;
-            scroll-timeline-axis: block;
-          }
-          @supports (animation-timeline: scroll()) {
-            .submit-scroll-fade--top {
-              opacity: 0;
-              animation: submit-fade-reveal linear both;
-              animation-timeline: --submit-scroll-tl;
-              animation-range: 0 2rem;
-            }
-            .submit-scroll-fade--bottom {
-              opacity: 0;
-              animation: submit-fade-reveal linear both reverse;
-              animation-timeline: --submit-scroll-tl;
-              animation-range: calc(100% - 2rem) 100%;
-            }
-          }
-          @keyframes submit-fade-reveal {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .submit-scroll-fade {
-              opacity: 1;
-              animation: none;
-            }
-          }
-        `}</style>
-
         {/* Sunken gray surface so the white form cards read clearly. This is
-            the single scroll owner; the fade masks (rendered just after it)
-            ride its named scroll timeline. Extra pb keeps the last block
-            clear of the sticky submit bar. */}
-        <div className="submit-scroll-body flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 pb-10 [scrollbar-width:none] sm:p-6 sm:pb-12 [&::-webkit-scrollbar]:hidden">
+            the single scroll owner. Extra pb keeps the last block clear of the
+            sticky submit bar. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50 p-4 pb-10 [scrollbar-width:none] sm:p-6 sm:pb-12 [&::-webkit-scrollbar]:hidden">
           <p className="mb-4 text-sm leading-6 text-gray-600">
             {t("submit:form.subtitle")}
           </p>
@@ -480,20 +434,6 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
         </div>
         </div>
 
-        {/* Scroll-fade masks — rendered AFTER the scroller so they can
-            reference its named scroll timeline (a named timeline is only
-            visible to following siblings). Absolutely positioned + z-10, so
-            DOM order doesn't change where they paint. */}
-        {/* Top edge — paper-cream fade hinting at content above. */}
-        <div
-          aria-hidden
-          className="submit-scroll-fade submit-scroll-fade--top pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-gray-50 to-transparent"
-        />
-        {/* Bottom edge — fade hinting at content hidden under the submit bar. */}
-        <div
-          aria-hidden
-          className="submit-scroll-fade submit-scroll-fade--bottom pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-gray-50 to-transparent"
-        />
       </div>
 
       {/* Footer submit bar — pinned to the panel bottom. */}
