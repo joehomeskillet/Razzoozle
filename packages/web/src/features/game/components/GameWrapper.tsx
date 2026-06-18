@@ -18,6 +18,10 @@ import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { useHapticsStore } from "@razzoozle/web/features/game/stores/haptics"
+import {
+  hapticConfirm,
+  isHapticsSupported,
+} from "@razzoozle/web/features/game/utils/haptics"
 import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
 import { MANAGER_SKIP_BTN } from "@razzoozle/web/features/game/utils/constants"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
@@ -67,6 +71,7 @@ const GameWrapper = ({
   const { questionStates, setQuestionStates } = useQuestionStore()
   const { muted, toggle: toggleMuted } = useSoundStore()
   const { enabled: hapticsEnabled, toggle: toggleHaptics } = useHapticsStore()
+  const hapticsSupported = isHapticsSupported()
   const { t } = useTranslation()
   const reveal = useReveal()
   const [isDisabled, setIsDisabled] = useState(false)
@@ -345,13 +350,25 @@ const GameWrapper = ({
                   variant="secondary"
                   size="icon"
                   className="min-h-11 min-w-11"
-                  onClick={toggleHaptics}
+                  disabled={!hapticsSupported}
+                  onClick={() => {
+                    const wasEnabled = hapticsEnabled
+                    toggleHaptics()
+                    if (!wasEnabled) hapticConfirm()
+                  }}
                   aria-pressed={hapticsEnabled}
-                  title={t(
-                    hapticsEnabled
-                      ? "game:controls.hapticsOff"
-                      : "game:controls.hapticsOn",
-                  )}
+                  title={
+                    !hapticsSupported
+                      ? t("game:controls.hapticsUnsupported", {
+                          defaultValue:
+                            "Vibration auf diesem Gerät nicht unterstützt",
+                        })
+                      : t(
+                          hapticsEnabled
+                            ? "game:controls.hapticsOff"
+                            : "game:controls.hapticsOn",
+                        )
+                  }
                   aria-label={t(
                     hapticsEnabled
                       ? "game:controls.hapticsOff"
