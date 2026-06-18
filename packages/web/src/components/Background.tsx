@@ -22,16 +22,14 @@ const Background = ({
   const isCream = field === "cream"
 
   return (
-    // `justify-center-safe` (safe center): short pages (login/lobby/loader) stay
-    // vertically centred, but when content is taller than the viewport — e.g. the
-    // full /trophies gallery on a phone — it falls back to top alignment instead
-    // of centring the overflow above the scroll origin. Plain `justify-center`
-    // clips the top out of reach on mobile, trapping the page (no scroll-up).
-    // Pages with tall content opt into `align="top"` (justify-start) so they flow
-    // from the top and scroll naturally on every browser, incl. iOS Safari.
+    // h-dvh + overflow-hidden keeps this root locked to the viewport so the
+    // body (touch-none) never scrolls. Center pages (landing etc.) stay
+    // vertically centered via justify-center-safe and fit without overflow.
+    // /trophies (align="top") supplies its own internal scroll container as
+    // a direct flex child after the logo (flex min-h-0 flex-1 overflow-y-auto).
     <section
-      className={`relative flex min-h-dvh flex-col items-center touch-pan-y ${
-        align === "top" ? "justify-start py-8" : "justify-center-safe"
+      className={`relative flex h-dvh flex-col items-center overflow-hidden ${
+        align === "top" ? "pt-8" : "justify-center-safe"
       }`}
       style={isCream ? { color: "var(--color-field-ink)" } : undefined}
     >
