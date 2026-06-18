@@ -67,6 +67,7 @@ export const themeValidator = z.object({
           iconCount: 12,
         },
       }),
+    animatedCss: z.string().max(20000).default(""),
   }),
   // Skeleton-system token additions — every field is optional with a Zod
   // `.default(...)` so old theme.json files (and DEFAULT_THEME) stay valid and

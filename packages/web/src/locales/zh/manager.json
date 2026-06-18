@@ -505,7 +505,18 @@
       },
       "speed": "速度",
       "intensity": "强度",
-      "iconCount": "图标"
+      "iconCount": "图标",
+      "toggle": "动态背景",
+      "mode": {
+        "animated": "动态",
+        "wallpaper": "壁纸"
+      },
+      "css": {
+        "title": "CSS 编辑器",
+        "description": "为动态背景自定义 CSS（例如覆盖 .cb-blob、关键帧）。",
+        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
+      },
+      "uploadDisabled": "动态背景已启用"
     },
     "sounds": {
       "title": "音效",

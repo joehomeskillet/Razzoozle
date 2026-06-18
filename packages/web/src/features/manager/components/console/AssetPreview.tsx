@@ -35,6 +35,8 @@ export interface AssetPreviewProps {
   className?: string
   /** Optional overlay rendered inside the tile, on top of a shown image. */
   overlay?: ReactNode
+  /** When true, dim the card + block the upload control (e.g. animated bg active). */
+  disabled?: boolean
 }
 
 /**
@@ -59,6 +61,7 @@ const AssetPreview = ({
   defaultLabel,
   className,
   overlay,
+  disabled = false,
 }: AssetPreviewProps) => {
   const { t } = useTranslation()
   // Swap to the placeholder when the hosted file fails to load (e.g. 404).
@@ -79,7 +82,7 @@ const AssetPreview = ({
     // Allow re-selecting the same file after an error.
     e.target.value = ""
 
-    if (!file) {
+    if (!file || disabled) {
       return
     }
 
@@ -94,7 +97,13 @@ const AssetPreview = ({
   }
 
   return (
-    <div className={clsx("flex flex-col gap-2", className)}>
+    <div
+      className={clsx(
+        "flex flex-col gap-2",
+        disabled && "pointer-events-none opacity-50",
+        className,
+      )}
+    >
       <div
         className={clsx(
           "relative w-full overflow-hidden rounded-xl bg-gray-50 outline-1 -outline-offset-1 outline-gray-200",
@@ -135,12 +144,12 @@ const AssetPreview = ({
             white) with an AA focus ring; the native control keeps a11y.
           */}
           <label
-            aria-disabled={uploading}
+            aria-disabled={uploading || disabled}
             className={clsx(
               "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-white shadow-sm transition-colors",
               "bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]",
               "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white",
-              uploading && "cursor-not-allowed opacity-60",
+              (uploading || disabled) && "cursor-not-allowed opacity-60",
             )}
           >
             {uploading ? (
@@ -153,7 +162,7 @@ const AssetPreview = ({
               type="file"
               accept={accept}
               className="sr-only"
-              disabled={uploading}
+              disabled={uploading || disabled}
               onChange={handleChange}
             />
           </label>
@@ -169,6 +178,14 @@ const AssetPreview = ({
           )}
         </div>
       </div>
+
+      {disabled && (
+        <p className="text-sm font-medium text-gray-500">
+          {t("manager:theme.animatedBg.uploadDisabled", {
+            defaultValue: "Animierter Hintergrund aktiv",
+          })}
+        </p>
+      )}
 
       {displayError && (
         <p className="text-sm font-semibold text-red-600" role="alert">

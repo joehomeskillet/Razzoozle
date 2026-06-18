@@ -653,6 +653,13 @@ const ConfigTheme = () => {
                     backgrounds: { ...draft.backgrounds, animated },
                   })
                 }
+                cssValue={draft.backgrounds.animatedCss ?? ""}
+                onCssChange={(animatedCss) =>
+                  preview({
+                    ...draft,
+                    backgrounds: { ...draft.backgrounds, animatedCss },
+                  })
+                }
               />
 
               {/* ── Logo ─────────────────────────────────────────────── */}
@@ -694,26 +701,33 @@ const ConfigTheme = () => {
                 </LabelRow>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {BG_SLOTS.map(({ key, labelKey, aspect }) => (
-                    <AssetPreviewCard
-                      key={key}
-                      label={t(labelKey)}
-                      value={draft.backgrounds[key] ?? null}
-                      fit="cover"
-                      aspect={aspect}
-                      scrim={draft.scrim}
-                      accept="image/png,image/jpeg,image/webp"
-                      uploading={pendingSlot === key}
-                      error={
-                        slotErrors[key]
-                          ? t(slotErrors[key] as string)
-                          : undefined
-                      }
-                      onUpload={handleUpload(key)}
-                      onReset={clearBackground(key)}
-                      defaultLabel={t("manager:theme.default")}
-                    />
-                  ))}
+                  {BG_SLOTS.map(({ key, labelKey, aspect }) => {
+                    const animatedOn =
+                      (draft.backgrounds.animated?.[key]?.type ?? "none") ===
+                      "creamBackdrop"
+
+                    return (
+                      <AssetPreviewCard
+                        key={key}
+                        label={t(labelKey)}
+                        value={draft.backgrounds[key] ?? null}
+                        fit="cover"
+                        aspect={aspect}
+                        scrim={draft.scrim}
+                        accept="image/png,image/jpeg,image/webp"
+                        uploading={pendingSlot === key}
+                        disabled={animatedOn}
+                        error={
+                          slotErrors[key]
+                            ? t(slotErrors[key] as string)
+                            : undefined
+                        }
+                        onUpload={handleUpload(key)}
+                        onReset={clearBackground(key)}
+                        defaultLabel={t("manager:theme.default")}
+                      />
+                    )
+                  })}
                 </div>
               </SectionCard>
 

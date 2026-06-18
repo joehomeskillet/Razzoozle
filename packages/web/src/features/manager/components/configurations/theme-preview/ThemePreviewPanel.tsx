@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
 import CreamBackdrop from "@razzoozle/web/components/CreamBackdrop"
+import { sanitizeAnimatedCss } from "@razzoozle/web/features/theme/sanitizeAnimatedCss"
 import clsx from "clsx"
 import { Eye, Trophy } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
@@ -22,21 +23,25 @@ const MOCK_PODIUM: Array<{ rank: number; score: number }> = [
 ]
 
 // A single dimmed-background mock card. The background image (if any) sits
-// behind a black scrim at the draft's scrim%, mirroring <Background>.
+// behind a black scrim at the draft's scrim%, mirroring <Background>. When
+// `animated` is set, a scoped CreamBackdrop replaces the wallpaper (the static
+// background is hidden by passing `background={null}`).
 const MockCard = ({
   label,
   background,
+  animated,
   children,
 }: {
   label: string
   background: string | null
+  animated?: { speed: number; intensity: number; iconCount: number } | null
   children: ReactNode
 }) => (
   <div className="overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-gray-200">
     <p className="bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-500">
       {label}
     </p>
-    <div className="relative isolate h-36">
+    <div className="relative isolate h-36 overflow-hidden">
       {background ? (
         <img
           src={background}
@@ -53,12 +58,26 @@ const MockCard = ({
           }}
         />
       )}
+      {/* Scoped animated backdrop — CreamBackdrop's root is fixed/-z-10; this
+          absolute wrapper clips it to the card and pushes it behind content. */}
+      {animated && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-60 [&>.cream-backdrop]:absolute [&>.cream-backdrop]:z-0"
+          aria-hidden
+        >
+          <CreamBackdrop
+            speed={animated.speed}
+            intensity={animated.intensity}
+            iconCount={animated.iconCount}
+          />
+        </div>
+      )}
       <div
         className="pointer-events-none absolute inset-0 bg-black"
         style={{ opacity: "var(--bg-scrim)" }}
         aria-hidden
       />
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-white">
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 text-white">
         {children}
       </div>
     </div>
@@ -80,10 +99,23 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
   const [a1, a2, a3, a4] = theme.answerColors
   const appTitle = theme.appTitle?.trim()
 
-  // Old themes may predate `animated`; fall back to the shipped default.
-  const animatedAuth =
-    theme.backgrounds.animated?.auth ??
-    DEFAULT_THEME.backgrounds.animated.auth
+  // Per-screen animated configs. Old themes may predate `animated`; fall back to
+  // the shipped default. A card swaps its wallpaper for the animated backdrop
+  // only when its slot type is "creamBackdrop".
+  const animAuth =
+    theme.backgrounds.animated?.auth ?? DEFAULT_THEME.backgrounds.animated.auth
+  const animPlayer =
+    theme.backgrounds.animated?.playerGame ??
+    DEFAULT_THEME.backgrounds.animated.playerGame
+  const animManager =
+    theme.backgrounds.animated?.managerGame ??
+    DEFAULT_THEME.backgrounds.animated.managerGame
+
+  const authOn = animAuth.type === "creamBackdrop"
+  const playerOn = animPlayer.type === "creamBackdrop"
+  const managerOn = animManager.type === "creamBackdrop"
+
+  const customCss = sanitizeAnimatedCss(theme.backgrounds.animatedCss)
 
   // All theme vars live here and nowhere else — read by the var() refs below.
   const scopeStyle = {
@@ -103,23 +135,10 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
       style={scopeStyle}
       className={clsx("flex w-full flex-col gap-3", className)}
     >
+      {/* Reflect the editor's custom backdrop CSS inside the preview. Manager-
+          trusted CSS, same trust model as the skeleton custom CSS. */}
+      {customCss && <style>{customCss}</style>}
       <div className="relative isolate overflow-hidden rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200">
-        {/* Scoped animated backdrop — subtle preview of the auth-slot config.
-            CreamBackdrop's root is fixed/-z-10; this absolute wrapper clips it to
-            the card. Rendered only when the slot's type is creamBackdrop. */}
-        {animatedAuth.type === "creamBackdrop" && (
-          <div
-            className="pointer-events-none absolute inset-0 z-0 opacity-60 [&>.cream-backdrop]:absolute [&>.cream-backdrop]:z-0"
-            aria-hidden
-          >
-            <CreamBackdrop
-              speed={animatedAuth.speed}
-              intensity={animatedAuth.intensity}
-              iconCount={animatedAuth.iconCount}
-            />
-          </div>
-        )}
-
         <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-gray-500" aria-hidden />
@@ -132,7 +151,16 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
           {/* ── (1) Beitritt / Join ──────────────────────────────── */}
           <MockCard
             label={t("manager:theme.preview.join", { defaultValue: "Beitritt" })}
-            background={theme.backgrounds.auth}
+            background={authOn ? null : theme.backgrounds.auth}
+            animated={
+              authOn
+                ? {
+                    speed: animAuth.speed,
+                    intensity: animAuth.intensity,
+                    iconCount: animAuth.iconCount,
+                  }
+                : null
+            }
           >
             {theme.logo ? (
               <img
@@ -168,7 +196,16 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
             label={t("manager:theme.preview.question", {
               defaultValue: "Frage",
             })}
-            background={theme.backgrounds.playerGame}
+            background={playerOn ? null : theme.backgrounds.playerGame}
+            animated={
+              playerOn
+                ? {
+                    speed: animPlayer.speed,
+                    intensity: animPlayer.intensity,
+                    iconCount: animPlayer.iconCount,
+                  }
+                : null
+            }
           >
             <p className="w-full rounded-md bg-white/90 px-2 py-1 text-center text-xs font-bold text-gray-900">
               {MOCK_QUESTION}
@@ -194,7 +231,16 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
             label={t("manager:theme.preview.leaderboard", {
               defaultValue: "Rangliste",
             })}
-            background={theme.backgrounds.managerGame}
+            background={managerOn ? null : theme.backgrounds.managerGame}
+            animated={
+              managerOn
+                ? {
+                    speed: animManager.speed,
+                    intensity: animManager.intensity,
+                    iconCount: animManager.iconCount,
+                  }
+                : null
+            }
           >
             <div className="flex w-full flex-col gap-1">
               {MOCK_PODIUM.map(({ rank, score }) => (

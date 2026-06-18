@@ -23,6 +23,7 @@ export interface ThemeBackgrounds {
     managerGame: AnimatedBackgroundConfig
     playerGame: AnimatedBackgroundConfig
   }
+  animatedCss: string
 }
 
 // Single source of truth is the zod validator: a parsed/persisted theme IS a
@@ -61,6 +62,7 @@ export const DEFAULT_THEME: Theme = {
         iconCount: 12,
       },
     },
+    animatedCss: "",
   },
   teamColors: {
     red: "#ef4444",

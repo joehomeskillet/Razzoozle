@@ -9,6 +9,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { applyTheme, fetchTheme } from "@razzoozle/web/features/theme/apply"
+import { sanitizeAnimatedCss } from "@razzoozle/web/features/theme/sanitizeAnimatedCss"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   createRootRoute,
@@ -36,12 +37,17 @@ const ThemedBackdrop = () => {
   const cfg = theme.backgrounds?.animated?.[slotFromPath(pathname)]
   if (cfg?.type === "none") return null
 
+  const safeCss = sanitizeAnimatedCss(theme.backgrounds?.animatedCss)
+
   return (
-    <CreamBackdrop
-      speed={cfg?.speed}
-      intensity={cfg?.intensity}
-      iconCount={cfg?.iconCount}
-    />
+    <>
+      <CreamBackdrop
+        speed={cfg?.speed}
+        intensity={cfg?.intensity}
+        iconCount={cfg?.iconCount}
+      />
+      {safeCss && <style>{safeCss}</style>}
+    </>
   )
 }
 

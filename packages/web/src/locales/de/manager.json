@@ -503,7 +503,18 @@
       },
       "speed": "Geschwindigkeit",
       "intensity": "Intensität",
-      "iconCount": "Symbole"
+      "iconCount": "Symbole",
+      "toggle": "Animierter Hintergrund",
+      "mode": {
+        "animated": "Animiert",
+        "wallpaper": "Wallpaper"
+      },
+      "css": {
+        "title": "CSS-Editor",
+        "description": "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
+        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
+      },
+      "uploadDisabled": "Animierter Hintergrund aktiv"
     },
     "sounds": {
       "title": "Sounds",

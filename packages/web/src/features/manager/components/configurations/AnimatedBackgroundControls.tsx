@@ -15,6 +15,10 @@ export interface AnimatedBackgroundControlsProps {
   value: ThemeBackgrounds["animated"]
   /** Persist a per-slot field change back into the draft Theme. */
   onChange: (next: ThemeBackgrounds["animated"]) => void
+  /** Custom CSS for the animated background (draft.backgrounds.animatedCss). */
+  cssValue: string
+  /** Persist the CSS edit back into the draft Theme. */
+  onCssChange: (next: string) => void
 }
 
 type SlotKey = keyof ThemeBackgrounds["animated"]
@@ -34,23 +38,6 @@ const SLOTS: Array<{ key: SlotKey; labelKey: string; fallback: string }> = [
     key: "playerGame",
     labelKey: "manager:theme.animatedBg.slot.playerGame",
     fallback: "Spieler-Handy",
-  },
-]
-
-const TYPE_OPTIONS: Array<{
-  value: AnimatedBackgroundConfig["type"]
-  labelKey: string
-  fallback: string
-}> = [
-  {
-    value: "none",
-    labelKey: "manager:theme.animatedBg.type.none",
-    fallback: "Keiner",
-  },
-  {
-    value: "creamBackdrop",
-    labelKey: "manager:theme.animatedBg.type.creamBackdrop",
-    fallback: "Cream-Backdrop",
   },
 ]
 
@@ -106,16 +93,20 @@ const RANGE_CLASS = [
 
 /**
  * AnimatedBackgroundControls — edits `draft.backgrounds.animated` per slot
- * (auth / managerGame / playerGame). Each slot has a type selector
- * (none | creamBackdrop) plus three range sliders (speed / intensity /
- * iconCount). Slider bounds mirror the zod themeValidator (animatedBg) so the
+ * (auth / managerGame / playerGame). Each slot is a clean ON/OFF toggle:
+ * ON → type "creamBackdrop" (animated) revealing the three range sliders
+ * (speed / intensity / iconCount); OFF → type "none" (wallpaper), sliders
+ * hidden. Slider bounds mirror the zod themeValidator (animatedBg) so the
  * editor can never produce a rejected value — keep in sync with
- * packages/common/src/validators/theme.ts. Saving rides the unchanged
+ * packages/common/src/validators/theme.ts. A single global CSS editor at the
+ * bottom edits `draft.backgrounds.animatedCss`. Saving rides the unchanged
  * MANAGER.SET_THEME flow (these fields live under the draft's backgrounds).
  */
 const AnimatedBackgroundControls = ({
   value,
   onChange,
+  cssValue,
+  onCssChange,
 }: AnimatedBackgroundControlsProps) => {
   const { t } = useTranslation()
 
@@ -136,7 +127,8 @@ const AnimatedBackgroundControls = ({
     >
       {SLOTS.map((slot) => {
         const config = value[slot.key]
-        const disabled = config.type === "none"
+        const animatedOn = config.type === "creamBackdrop"
+        const switchId = `anim-bg-${slot.key}-toggle`
 
         return (
           <SubGroup key={slot.key}>
@@ -145,72 +137,114 @@ const AnimatedBackgroundControls = ({
                 {t(slot.labelKey, { defaultValue: slot.fallback })}
               </p>
 
-              {/* Type selector — segmented two-button group. */}
-              <div
-                role="radiogroup"
-                aria-label={t(slot.labelKey, { defaultValue: slot.fallback })}
-                className="inline-flex rounded-lg bg-gray-100 p-1 outline-1 -outline-offset-1 outline-gray-200"
-              >
-                {TYPE_OPTIONS.map((option) => {
-                  const active = config.type === option.value
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() =>
-                        setField(slot.key, "type")(option.value)
-                      }
-                      className={`min-h-9 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                        active
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      {t(option.labelKey, { defaultValue: option.fallback })}
-                    </button>
-                  )
-                })}
+              {/* ON/OFF toggle switch — animated ⇄ wallpaper. */}
+              <div className="flex items-center gap-3">
+                <button
+                  id={switchId}
+                  type="button"
+                  role="switch"
+                  aria-checked={animatedOn}
+                  aria-label={t("manager:theme.animatedBg.toggle", {
+                    defaultValue: "Animierter Hintergrund",
+                  })}
+                  onClick={() =>
+                    setField(slot.key, "type")(
+                      animatedOn ? "none" : "creamBackdrop",
+                    )
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                    animatedOn ? "bg-[var(--color-primary)]" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`inline-block size-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      animatedOn ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                <label
+                  htmlFor={switchId}
+                  className="text-sm font-medium text-gray-600"
+                >
+                  {animatedOn
+                    ? t("manager:theme.animatedBg.mode.animated", {
+                        defaultValue: "Animiert",
+                      })
+                    : t("manager:theme.animatedBg.mode.wallpaper", {
+                        defaultValue: "Wallpaper",
+                      })}
+                </label>
               </div>
 
-              {/* Speed / intensity / iconCount sliders. Disabled when type=none. */}
-              {SLIDERS.map(({ key, min, max, step, labelKey, fallback }) => {
-                const current = config[key]
-                const label = t(labelKey, { defaultValue: fallback })
-                const inputId = `anim-bg-${slot.key}-${key}`
+              {/* Speed / intensity / iconCount sliders — only in animated mode. */}
+              {animatedOn &&
+                SLIDERS.map(({ key, min, max, step, labelKey, fallback }) => {
+                  const current = config[key]
+                  const label = t(labelKey, { defaultValue: fallback })
+                  const inputId = `anim-bg-${slot.key}-${key}`
 
-                return (
-                  <LabelRow
-                    key={key}
-                    label={`${label} (${current})`}
-                    htmlFor={inputId}
-                  >
-                    <input
-                      id={inputId}
-                      type="range"
-                      min={min}
-                      max={max}
-                      step={step}
-                      value={current}
-                      disabled={disabled}
-                      aria-label={label}
-                      aria-valuetext={String(current)}
-                      onChange={(e) =>
-                        setField(slot.key, key)(Number(e.target.value))
-                      }
-                      className={
-                        disabled ? `${RANGE_CLASS} opacity-50` : RANGE_CLASS
-                      }
-                    />
-                  </LabelRow>
-                )
-              })}
+                  return (
+                    <LabelRow
+                      key={key}
+                      label={`${label} (${current})`}
+                      htmlFor={inputId}
+                    >
+                      <input
+                        id={inputId}
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={step}
+                        value={current}
+                        aria-label={label}
+                        aria-valuetext={String(current)}
+                        onChange={(e) =>
+                          setField(slot.key, key)(Number(e.target.value))
+                        }
+                        className={RANGE_CLASS}
+                      />
+                    </LabelRow>
+                  )
+                })}
             </div>
           </SubGroup>
         )
       })}
+
+      {/* ── CSS editor (global, rides the draft save) ─────────────────── */}
+      <SubGroup>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-gray-700">
+            {t("manager:theme.animatedBg.css.title", {
+              defaultValue: "CSS-Editor",
+            })}
+          </p>
+          <p className="text-sm text-gray-500">
+            {t("manager:theme.animatedBg.css.description", {
+              defaultValue:
+                "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
+            })}
+          </p>
+          <label htmlFor="anim-bg-css" className="sr-only">
+            {t("manager:theme.animatedBg.css.title", {
+              defaultValue: "CSS-Editor",
+            })}
+          </label>
+          <textarea
+            id="anim-bg-css"
+            value={cssValue}
+            onChange={(e) => onCssChange(e.target.value)}
+            spellCheck={false}
+            rows={12}
+            placeholder={t("manager:theme.animatedBg.css.placeholder", {
+              defaultValue:
+                "/* .cream-backdrop .cb-blob--a { background: ... } */",
+            })}
+            className="min-h-48 w-full resize-y rounded-lg bg-gray-900 p-3 font-mono text-sm text-gray-100 outline-1 -outline-offset-1 outline-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          />
+        </div>
+      </SubGroup>
     </SectionCard>
   )
 }

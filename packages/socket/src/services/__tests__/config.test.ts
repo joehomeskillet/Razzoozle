@@ -52,6 +52,7 @@ const VALID_THEME = {
     managerGame: null,
     playerGame: null,
     animated: DEFAULT_THEME.backgrounds.animated,
+    animatedCss: "",
   },
 }
 
