@@ -285,7 +285,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
       className="relative z-10 flex max-h-[92svh] min-h-0 w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl"
     >
       {/* Branded header band — same treatment as the /manager/config console. */}
-      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
+      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-center gap-2 font-bold text-gray-900">
             <SubmitBrand />
