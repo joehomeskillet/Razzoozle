@@ -1,4 +1,5 @@
-import type { Theme } from "@razzoozle/common/types/theme"
+import { DEFAULT_THEME, type Theme } from "@razzoozle/common/types/theme"
+import CreamBackdrop from "@razzoozle/web/components/CreamBackdrop"
 import clsx from "clsx"
 import { Eye, Trophy } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
@@ -79,6 +80,11 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
   const [a1, a2, a3, a4] = theme.answerColors
   const appTitle = theme.appTitle?.trim()
 
+  // Old themes may predate `animated`; fall back to the shipped default.
+  const animatedAuth =
+    theme.backgrounds.animated?.auth ??
+    DEFAULT_THEME.backgrounds.animated.auth
+
   // All theme vars live here and nowhere else — read by the var() refs below.
   const scopeStyle = {
     "--color-primary": theme.colorPrimary,
@@ -97,7 +103,24 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
       style={scopeStyle}
       className={clsx("flex w-full flex-col gap-3", className)}
     >
-      <div className="rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200">
+      <div className="relative isolate overflow-hidden rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200">
+        {/* Scoped animated backdrop — subtle preview of the auth-slot config.
+            CreamBackdrop's root is fixed/-z-10; this absolute wrapper clips it to
+            the card. Rendered only when the slot's type is creamBackdrop. */}
+        {animatedAuth.type === "creamBackdrop" && (
+          <div
+            className="pointer-events-none absolute inset-0 z-0 opacity-60 [&>.cream-backdrop]:absolute [&>.cream-backdrop]:z-0"
+            aria-hidden
+          >
+            <CreamBackdrop
+              speed={animatedAuth.speed}
+              intensity={animatedAuth.intensity}
+              iconCount={animatedAuth.iconCount}
+            />
+          </div>
+        )}
+
+        <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-gray-500" aria-hidden />
           <h3 className="font-semibold text-gray-900">
@@ -203,6 +226,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               ))}
             </div>
           </MockCard>
+        </div>
         </div>
       </div>
     </div>

@@ -44,6 +44,7 @@ const VALID_THEME: Theme = {
     auth: null,
     managerGame: null,
     playerGame: null,
+    animated: DEFAULT_THEME.backgrounds.animated,
   },
 }
 

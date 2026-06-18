@@ -2,6 +2,14 @@ import type { z } from "zod"
 
 import type { themeValidator } from "@razzoozle/common/validators/theme"
 
+export type AnimatedBackgroundType = "none" | "creamBackdrop"
+export interface AnimatedBackgroundConfig {
+  type: AnimatedBackgroundType
+  speed: number
+  intensity: number
+  iconCount: number
+}
+
 export interface ThemeBackgrounds {
   // Start / join / manager-login / result screens (the <Background> wrapper)
   auth: string | null
@@ -9,6 +17,12 @@ export interface ThemeBackgrounds {
   managerGame: string | null
   // The player's in-game screen (phone)
   playerGame: string | null
+  // Per-slot animated background config (defaults reproduce the current look)
+  animated: {
+    auth: AnimatedBackgroundConfig
+    managerGame: AnimatedBackgroundConfig
+    playerGame: AnimatedBackgroundConfig
+  }
 }
 
 // Single source of truth is the zod validator: a parsed/persisted theme IS a
@@ -32,6 +46,21 @@ export const DEFAULT_THEME: Theme = {
     auth: null,
     managerGame: null,
     playerGame: null,
+    animated: {
+      auth: { type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 },
+      managerGame: {
+        type: "creamBackdrop",
+        speed: 1,
+        intensity: 1,
+        iconCount: 12,
+      },
+      playerGame: {
+        type: "creamBackdrop",
+        speed: 1,
+        intensity: 1,
+        iconCount: 12,
+      },
+    },
   },
   teamColors: {
     red: "#ef4444",

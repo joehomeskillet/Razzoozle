@@ -89,13 +89,13 @@ body {
 }
 
 .cb-blob { position: absolute; border-radius: 50%; filter: blur(64px); will-change: transform; }
-.cb-blob--a { width: 44rem; height: 44rem; top: -12rem; left: -10rem; background: color-mix(in srgb, var(--color-primary) 22%, transparent); opacity: .5; animation: cb-drift-a 34s ease-in-out infinite; }
-.cb-blob--b { width: 40rem; height: 40rem; bottom: -14rem; right: -10rem; background: color-mix(in srgb, var(--color-accent) 20%, transparent); opacity: .45; animation: cb-drift-b 42s ease-in-out infinite; }
-.cb-blob--c { width: 32rem; height: 32rem; top: 28%; left: 38%; background: color-mix(in srgb, var(--color-primary) 13%, transparent); opacity: .4; animation: cb-drift-c 50s ease-in-out infinite; }
+.cb-blob--a { width: 44rem; height: 44rem; top: -12rem; left: -10rem; background: color-mix(in srgb, var(--color-primary) 22%, transparent); opacity: .5; animation: cb-drift-a calc(34s / var(--cb-speed, 1)) ease-in-out infinite; }
+.cb-blob--b { width: 40rem; height: 40rem; bottom: -14rem; right: -10rem; background: color-mix(in srgb, var(--color-accent) 20%, transparent); opacity: .45; animation: cb-drift-b calc(42s / var(--cb-speed, 1)) ease-in-out infinite; }
+.cb-blob--c { width: 32rem; height: 32rem; top: 28%; left: 38%; background: color-mix(in srgb, var(--color-primary) 13%, transparent); opacity: .4; animation: cb-drift-c calc(50s / var(--cb-speed, 1)) ease-in-out infinite; }
 .cb-ico { position: absolute; height: auto; opacity: .13; will-change: transform; }
-.cb-fa { animation: cb-float-1 30s ease-in-out infinite; }
-.cb-fb { animation: cb-float-2 26s ease-in-out infinite; }
-.cb-fc { animation: cb-float-3 36s ease-in-out infinite; }
+.cb-fa { animation: cb-float-1 calc(30s / var(--cb-speed, 1)) ease-in-out infinite; }
+.cb-fb { animation: cb-float-2 calc(26s / var(--cb-speed, 1)) ease-in-out infinite; }
+.cb-fc { animation: cb-float-3 calc(36s / var(--cb-speed, 1)) ease-in-out infinite; }
 @keyframes cb-float-3 { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(-1rem,-1.2rem) rotate(8deg); } }
 @keyframes cb-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(6rem,4rem) scale(1.12); } }
 @keyframes cb-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-5rem,-6rem) scale(1.1); } }

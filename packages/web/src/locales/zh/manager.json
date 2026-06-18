@@ -492,6 +492,21 @@
       "previewLabel": "预览",
       "replay": "重播"
     },
+    "animatedBg": {
+      "title": "动态背景",
+      "slot": {
+        "auth": "开始 / 加入",
+        "managerGame": "主持人屏幕",
+        "playerGame": "玩家手机"
+      },
+      "type": {
+        "none": "无",
+        "creamBackdrop": "奶油背景"
+      },
+      "speed": "速度",
+      "intensity": "强度",
+      "iconCount": "图标"
+    },
     "sounds": {
       "title": "音效",
       "description": "为每个声槽上传自定义音效。留空 = 默认音效。",

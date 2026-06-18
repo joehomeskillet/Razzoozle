@@ -17,6 +17,18 @@ const assetRef = z
   )
   .nullable()
 
+// Per-slot animated background config. Defaults reproduce the current look
+// (CreamBackdrop, full speed/intensity, all 12 floating icons) so this is a
+// visual no-op until the manager UI changes it.
+const animatedBg = z
+  .object({
+    type: z.enum(["none", "creamBackdrop"]).default("creamBackdrop"),
+    speed: z.number().min(0.25).max(3).default(1), // animation speed multiplier (1 = current)
+    intensity: z.number().min(0).max(1).default(1), // blob/visual opacity multiplier (1 = current)
+    iconCount: z.number().int().min(0).max(12).default(12), // floating icons (12 = current)
+  })
+  .default({ type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 })
+
 export const themeValidator = z.object({
   style: z.enum(["flat", "glass"]).default("flat"),
   colorPrimary: hexColor,
@@ -34,6 +46,27 @@ export const themeValidator = z.object({
     auth: assetRef,
     managerGame: assetRef,
     playerGame: assetRef,
+    animated: z
+      .object({
+        auth: animatedBg,
+        managerGame: animatedBg,
+        playerGame: animatedBg,
+      })
+      .default({
+        auth: { type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 },
+        managerGame: {
+          type: "creamBackdrop",
+          speed: 1,
+          intensity: 1,
+          iconCount: 12,
+        },
+        playerGame: {
+          type: "creamBackdrop",
+          speed: 1,
+          intensity: 1,
+          iconCount: 12,
+        },
+      }),
   }),
   // Skeleton-system token additions — every field is optional with a Zod
   // `.default(...)` so old theme.json files (and DEFAULT_THEME) stay valid and

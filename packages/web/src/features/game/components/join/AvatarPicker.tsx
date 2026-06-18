@@ -9,7 +9,7 @@ import {
 } from "@razzoozle/web/features/game/utils/dicebear"
 import type { AvatarStyle } from "@razzoozle/web/features/game/utils/dicebear"
 import clsx from "clsx"
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -31,6 +31,12 @@ const makeSeed = (username: string, counter: number): string => {
 // seed) or upload an image (converted to a size-capped data-URL). The selection
 // is persisted to the player store and broadcast to the server via
 // PLAYER.SET_AVATAR so the host roster / leaderboard / podium can render it.
+//
+// The big preview always shows the player's CURRENT stored avatar (`selected`,
+// seeded from player.avatar which is auto-assigned on join). No avatar is
+// generated on mount — every user action (re-roll, style change, upload)
+// generates and applies immediately via choose(), so preview === stored ===
+// lobby at all times.
 const AvatarPicker = ({ onDone }: Props) => {
   const { socket } = useSocket()
   const { player, setAvatar } = usePlayerStore()
@@ -40,6 +46,9 @@ const AvatarPicker = ({ onDone }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [style, setStyle] = useState<AvatarStyle>(AVATAR_STYLES[0]!)
   const [seed, setSeed] = useState<string>(() => makeSeed(username, 0))
+  // Disable the generate controls while an async generateAvatar() is in flight
+  // so rapid taps don't race each other.
+  const [generating, setGenerating] = useState(false)
   // Upload outcome surfaced to assistive tech via a live region (the toasts are
   // visual-only). Errors use role="alert" (assertive); successes role="status".
   const [status, setStatus] = useState<
@@ -47,26 +56,6 @@ const AvatarPicker = ({ onDone }: Props) => {
   >(undefined)
   const rollCount = useRef(0)
   const { t } = useTranslation()
-
-  // SVG data-URI for the current (style, seed) pair. generateAvatar is async
-  // (the @dicebear libs are dynamically imported / code-split), so we recompute
-  // it in an effect when style/seed change. While it is undefined the preview
-  // falls back to the initials Avatar and the "use" actions are disabled.
-  const [generated, setGenerated] = useState<string | undefined>(undefined)
-
-  useEffect(() => {
-    let cancelled = false
-
-    generateAvatar(style, seed).then((uri) => {
-      if (!cancelled) {
-        setGenerated(uri)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [style, seed])
 
   const choose = (value: string) => {
     setSelected(value)
@@ -76,9 +65,30 @@ const AvatarPicker = ({ onDone }: Props) => {
     onDone?.()
   }
 
+  // Generate a DiceBear avatar for (style, seed) and apply it immediately so the
+  // lobby updates in real time. generateAvatar is async (the @dicebear libs are
+  // dynamically imported / code-split), so we await before choosing.
+  const applyGenerated = async (nextStyle: AvatarStyle, nextSeed: string) => {
+    setGenerating(true)
+
+    try {
+      const uri = await generateAvatar(nextStyle, nextSeed)
+      choose(uri)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const reroll = () => {
     rollCount.current += 1
-    setSeed(makeSeed(username, rollCount.current))
+    const nextSeed = makeSeed(username, rollCount.current)
+    setSeed(nextSeed)
+    void applyGenerated(style, nextSeed)
+  }
+
+  const handleStyleChange = (nextStyle: AvatarStyle) => {
+    setStyle(nextStyle)
+    void applyGenerated(nextStyle, seed)
   }
 
   const handleFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +145,8 @@ const AvatarPicker = ({ onDone }: Props) => {
     <div className="glass-2 flex w-full flex-col items-center gap-4">
       <p className="text-lg font-bold text-gray-800">{t("game:avatar.title")}</p>
 
-      {/* Generate mode: live preview + style segmented control + re-roll. */}
+      {/* Generate mode: current-avatar preview + style segmented control +
+          re-roll. The preview always reflects the applied (stored) avatar. */}
       <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white/40 p-4">
         <p className="text-sm font-semibold text-gray-600">
           {t("game:avatar.generate")}
@@ -143,22 +154,15 @@ const AvatarPicker = ({ onDone }: Props) => {
 
         <button
           type="button"
-          aria-label={
-            selected === generated
-              ? t("game:avatar.previewSelected")
-              : t("game:avatar.previewUse")
-          }
-          aria-pressed={selected === generated}
-          disabled={!generated}
-          onClick={() => generated && choose(generated)}
+          aria-label={t("game:avatar.previewSelected")}
+          aria-pressed={true}
+          disabled={generating || !selected}
+          onClick={() => selected && choose(selected)}
           className={clsx(
-            "rounded-full transition",
-            selected === generated
-              ? "outline-3 outline-offset-2 outline-[var(--color-primary)]"
-              : "outline-2 outline-offset-2 outline-transparent hover:outline-gray-300",
+            "rounded-full outline-3 outline-offset-2 outline-[var(--color-primary)] transition",
           )}
         >
-          <Avatar src={generated} name={username} size={96} />
+          <Avatar src={selected} name={username} size={96} />
         </button>
 
         <div
@@ -171,7 +175,8 @@ const AvatarPicker = ({ onDone }: Props) => {
               key={value}
               type="button"
               aria-pressed={style === value}
-              onClick={() => setStyle(value)}
+              disabled={generating}
+              onClick={() => handleStyleChange(value)}
               className={clsx(
                 "min-h-11 rounded-lg border px-3 text-sm font-semibold transition-colors",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
@@ -185,7 +190,12 @@ const AvatarPicker = ({ onDone }: Props) => {
           ))}
         </div>
 
-        <Button variant="secondary" size="sm" onClick={reroll}>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={generating}
+          onClick={reroll}
+        >
           {t("game:avatar.reroll")}
         </Button>
       </div>

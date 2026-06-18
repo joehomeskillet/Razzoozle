@@ -10,8 +10,40 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { applyTheme, fetchTheme } from "@razzoozle/web/features/theme/apply"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
-import { createRootRoute, Outlet } from "@tanstack/react-router"
+import {
+  createRootRoute,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router"
 import { useEffect } from "react"
+
+type BackdropSlot = "auth" | "managerGame" | "playerGame"
+
+const slotFromPath = (pathname: string): BackdropSlot => {
+  if (pathname.startsWith("/party")) return "playerGame"
+  if (pathname.startsWith("/manager") || pathname.startsWith("/display"))
+    return "managerGame"
+  return "auth"
+}
+
+const ThemedBackdrop = () => {
+  const { theme } = useThemeStore()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  // Theme not loaded yet → render the default backdrop so first paint matches.
+  if (!theme) return <CreamBackdrop />
+
+  const cfg = theme.backgrounds?.animated?.[slotFromPath(pathname)]
+  if (cfg?.type === "none") return null
+
+  return (
+    <CreamBackdrop
+      speed={cfg?.speed}
+      intensity={cfg?.intensity}
+      iconCount={cfg?.iconCount}
+    />
+  )
+}
 
 const GameLayout = () => {
   const { isConnected, connect } = useSocket()
@@ -48,7 +80,7 @@ const GameLayout = () => {
         Zum Inhalt springen
       </a>
       <main id="main" className="antialiased">
-        <CreamBackdrop />
+        <ThemedBackdrop />
         <Outlet />
       </main>
     </>

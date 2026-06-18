@@ -61,7 +61,10 @@ const SoloShell = ({
   const reduced = useReducedMotion() ?? false
 
   return (
-    <section className="relative flex h-dvh overflow-hidden">
+    <section
+      className="relative flex h-dvh overflow-hidden"
+      style={{ "--game-fg": "#0E1120" } as React.CSSProperties}
+    >
       <div className="z-10 flex w-full flex-1 flex-col justify-between">
         {/* Top bar: question counter */}
         <div className="flex w-full items-center justify-between gap-2 p-4">

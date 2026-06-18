@@ -492,6 +492,21 @@
       "previewLabel": "Preview",
       "replay": "Replay"
     },
+    "animatedBg": {
+      "title": "Animated background",
+      "slot": {
+        "auth": "Start & join",
+        "managerGame": "Host screen",
+        "playerGame": "Player phone"
+      },
+      "type": {
+        "none": "None",
+        "creamBackdrop": "Cream backdrop"
+      },
+      "speed": "Speed",
+      "intensity": "Intensity",
+      "iconCount": "Icons"
+    },
     "sounds": {
       "title": "Sounds",
       "description": "Upload a custom sound per slot. Empty = default sound.",

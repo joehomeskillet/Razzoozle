@@ -29,6 +29,7 @@ import {
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
 import AnimationControls from "@razzoozle/web/features/manager/components/configurations/AnimationControls"
+import AnimatedBackgroundControls from "@razzoozle/web/features/manager/components/configurations/AnimatedBackgroundControls"
 import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
@@ -636,6 +637,22 @@ const ConfigTheme = () => {
               <AnimationControls
                 value={draft.animation}
                 onChange={(animation) => preview({ ...draft, animation })}
+              />
+
+              {/* ── Animierter Hintergrund (per-slot type + speed/intensity/iconCount) ──
+                Edits draft.backgrounds.animated; the live preview reflects the
+                auth-slot config. Saving rides the unchanged MANAGER.SET_THEME flow. */}
+              <AnimatedBackgroundControls
+                value={
+                  draft.backgrounds.animated ??
+                  DEFAULT_THEME.backgrounds.animated
+                }
+                onChange={(animated) =>
+                  preview({
+                    ...draft,
+                    backgrounds: { ...draft.backgrounds, animated },
+                  })
+                }
               />
 
               {/* ── Logo ─────────────────────────────────────────────── */}

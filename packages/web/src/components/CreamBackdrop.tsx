@@ -19,12 +19,22 @@ const ICONS: { I: typeof GraduationCap; cls: string; style: CSSProperties }[] = 
   { I: Microscope, cls: "cb-ico cb-fc", style: { bottom: "27%", right: "15%", width: "4rem", color: "var(--color-accent)" } },
 ]
 
-const CreamBackdrop = () => (
-  <div aria-hidden className="cream-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+interface Props {
+  speed?: number
+  intensity?: number
+  iconCount?: number
+}
+
+const CreamBackdrop = ({ speed = 1, intensity = 1, iconCount = 12 }: Props) => (
+  <div
+    aria-hidden
+    className="cream-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    style={{ opacity: intensity, "--cb-speed": speed } as CSSProperties}
+  >
     <span className="cb-blob cb-blob--a" />
     <span className="cb-blob cb-blob--b" />
     <span className="cb-blob cb-blob--c" />
-    {ICONS.map(({ I, cls, style }, i) => (
+    {ICONS.slice(0, iconCount).map(({ I, cls, style }, i) => (
       <I key={i} className={cls} style={style} strokeWidth={1.5} aria-hidden />
     ))}
   </div>

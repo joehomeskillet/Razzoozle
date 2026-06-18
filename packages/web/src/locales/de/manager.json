@@ -490,6 +490,21 @@
       "previewLabel": "Vorschau",
       "replay": "Abspielen"
     },
+    "animatedBg": {
+      "title": "Animierter Hintergrund",
+      "slot": {
+        "auth": "Start / Beitritt",
+        "managerGame": "Host-Bildschirm",
+        "playerGame": "Spieler-Handy"
+      },
+      "type": {
+        "none": "Keiner",
+        "creamBackdrop": "Cream-Backdrop"
+      },
+      "speed": "Geschwindigkeit",
+      "intensity": "Intensität",
+      "iconCount": "Symbole"
+    },
     "sounds": {
       "title": "Sounds",
       "description": "Eigene Klänge pro Slot hochladen. Leer = Standardklang.",
