@@ -61,28 +61,6 @@ const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 // pendingSlot, which can misattribute a save error to an in-flight upload slot.
 type ThemeAction = "upload" | "save" | "template"
 
-const BG_SLOTS: Array<{
-  key: BackgroundSlot
-  labelKey: string
-  aspect: string
-}> = [
-  {
-    key: "auth",
-    labelKey: "manager:theme.bgSlots.auth",
-    aspect: "aspect-[16/10]",
-  },
-  {
-    key: "managerGame",
-    labelKey: "manager:theme.bgSlots.managerGame",
-    aspect: "aspect-video",
-  },
-  {
-    key: "playerGame",
-    labelKey: "manager:theme.bgSlots.playerGame",
-    aspect: "aspect-[9/16]",
-  },
-]
-
 // Registry-driven token pickers (contract §10). The two cards below render every
 // THEME_TOKENS entry as a color input bound to its dot-path; grouping the doc's
 // five `group`s into two cards keeps the editor compact. Order within a card
@@ -660,6 +638,28 @@ const ConfigTheme = () => {
                     backgrounds: { ...draft.backgrounds, animatedCss },
                   })
                 }
+                renderWallpaperUpload={(key) => (
+                  <div className="max-w-[200px]">
+                    <AssetPreviewCard
+                      label={t("manager:theme.default")}
+                      value={draft.backgrounds[key] ?? null}
+                      fit="cover"
+                      aspect="aspect-video"
+                      compact
+                      scrim={draft.scrim}
+                      accept="image/png,image/jpeg,image/webp"
+                      uploading={pendingSlot === key}
+                      error={
+                        slotErrors[key]
+                          ? t(slotErrors[key] as string)
+                          : undefined
+                      }
+                      onUpload={handleUpload(key)}
+                      onReset={clearBackground(key)}
+                      defaultLabel={t("manager:theme.default")}
+                    />
+                  </div>
+                )}
               />
 
               {/* ── Logo ─────────────────────────────────────────────── */}
@@ -699,36 +699,6 @@ const ConfigTheme = () => {
                     className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   />
                 </LabelRow>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {BG_SLOTS.map(({ key, labelKey, aspect }) => {
-                    const animatedOn =
-                      (draft.backgrounds.animated?.[key]?.type ?? "none") ===
-                      "creamBackdrop"
-
-                    return (
-                      <AssetPreviewCard
-                        key={key}
-                        label={t(labelKey)}
-                        value={draft.backgrounds[key] ?? null}
-                        fit="cover"
-                        aspect={aspect}
-                        scrim={draft.scrim}
-                        accept="image/png,image/jpeg,image/webp"
-                        uploading={pendingSlot === key}
-                        disabled={animatedOn}
-                        error={
-                          slotErrors[key]
-                            ? t(slotErrors[key] as string)
-                            : undefined
-                        }
-                        onUpload={handleUpload(key)}
-                        onReset={clearBackground(key)}
-                        defaultLabel={t("manager:theme.default")}
-                      />
-                    )
-                  })}
-                </div>
               </SectionCard>
 
               {/* ── Sounds (per-slot upload / test / reset) ────────────

@@ -23,19 +23,32 @@ interface Props {
   speed?: number
   intensity?: number
   iconCount?: number
+  color?: string
 }
 
-const CreamBackdrop = ({ speed = 1, intensity = 1, iconCount = 12 }: Props) => (
+const CreamBackdrop = ({ speed = 1, intensity = 1, iconCount = 12, color = "" }: Props) => (
   <div
     aria-hidden
     className="cream-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-    style={{ opacity: intensity, "--cb-speed": speed } as CSSProperties}
+    style={
+      {
+        opacity: intensity,
+        "--cb-speed": speed,
+        ...(color ? { "--cb-color": color } : {}),
+      } as CSSProperties
+    }
   >
     <span className="cb-blob cb-blob--a" />
     <span className="cb-blob cb-blob--b" />
     <span className="cb-blob cb-blob--c" />
     {ICONS.slice(0, iconCount).map(({ I, cls, style }, i) => (
-      <I key={i} className={cls} style={style} strokeWidth={1.5} aria-hidden />
+      <I
+        key={i}
+        className={cls}
+        style={{ ...style, ...(color ? { color } : {}) }}
+        strokeWidth={1.5}
+        aria-hidden
+      />
     ))}
   </div>
 )

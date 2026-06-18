@@ -2,13 +2,17 @@ import type {
   AnimatedBackgroundConfig,
   ThemeBackgrounds,
 } from "@razzoozle/common/types/theme"
+import ColorPickerField from "@razzoozle/web/components/ui/ColorPickerField"
 import LabelRow from "@razzoozle/web/components/ui/LabelRow"
 import {
   SectionCard,
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
 import { Sparkles } from "lucide-react"
+import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
+
+type SlotKey = keyof ThemeBackgrounds["animated"]
 
 export interface AnimatedBackgroundControlsProps {
   /** The draft's per-slot animated-background config (draft.backgrounds.animated). */
@@ -19,9 +23,9 @@ export interface AnimatedBackgroundControlsProps {
   cssValue: string
   /** Persist the CSS edit back into the draft Theme. */
   onCssChange: (next: string) => void
+  /** Render the relocated static-wallpaper upload tile for a slot (wallpaper mode). */
+  renderWallpaperUpload?: (slot: SlotKey) => ReactNode
 }
-
-type SlotKey = keyof ThemeBackgrounds["animated"]
 
 const SLOTS: Array<{ key: SlotKey; labelKey: string; fallback: string }> = [
   {
@@ -107,6 +111,7 @@ const AnimatedBackgroundControls = ({
   onChange,
   cssValue,
   onCssChange,
+  renderWallpaperUpload,
 }: AnimatedBackgroundControlsProps) => {
   const { t } = useTranslation()
 
@@ -177,36 +182,56 @@ const AnimatedBackgroundControls = ({
                 </label>
               </div>
 
-              {/* Speed / intensity / iconCount sliders — only in animated mode. */}
-              {animatedOn &&
-                SLIDERS.map(({ key, min, max, step, labelKey, fallback }) => {
-                  const current = config[key]
-                  const label = t(labelKey, { defaultValue: fallback })
-                  const inputId = `anim-bg-${slot.key}-${key}`
+              {animatedOn ? (
+                <>
+                  <ColorPickerField
+                    label={t("manager:theme.animatedBg.color", {
+                      defaultValue: "Farbe",
+                    })}
+                    value={config.color || "#7c3aed"}
+                    onChange={setField(slot.key, "color")}
+                  />
+                  {SLIDERS.map(({ key, min, max, step, labelKey, fallback }) => {
+                    const current = config[key]
+                    const label = t(labelKey, { defaultValue: fallback })
+                    const inputId = `anim-bg-${slot.key}-${key}`
 
-                  return (
-                    <LabelRow
-                      key={key}
-                      label={`${label} (${current})`}
-                      htmlFor={inputId}
-                    >
-                      <input
-                        id={inputId}
-                        type="range"
-                        min={min}
-                        max={max}
-                        step={step}
-                        value={current}
-                        aria-label={label}
-                        aria-valuetext={String(current)}
-                        onChange={(e) =>
-                          setField(slot.key, key)(Number(e.target.value))
-                        }
-                        className={RANGE_CLASS}
-                      />
-                    </LabelRow>
-                  )
-                })}
+                    return (
+                      <LabelRow
+                        key={key}
+                        label={`${label} (${current})`}
+                        htmlFor={inputId}
+                      >
+                        <input
+                          id={inputId}
+                          type="range"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={current}
+                          aria-label={label}
+                          aria-valuetext={String(current)}
+                          onChange={(e) =>
+                            setField(slot.key, key)(Number(e.target.value))
+                          }
+                          className={RANGE_CLASS}
+                        />
+                      </LabelRow>
+                    )
+                  })}
+                </>
+              ) : (
+                renderWallpaperUpload && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs font-medium text-gray-500">
+                      {t("manager:theme.animatedBg.wallpaper", {
+                        defaultValue: "Hintergrundbild",
+                      })}
+                    </p>
+                    {renderWallpaperUpload(slot.key)}
+                  </div>
+                )
+              )}
             </div>
           </SubGroup>
         )

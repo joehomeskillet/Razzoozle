@@ -37,6 +37,8 @@ export interface AssetPreviewProps {
   overlay?: ReactNode
   /** When true, dim the card + block the upload control (e.g. animated bg active). */
   disabled?: boolean
+  /** When true, render a visibly smaller/compact thumbnail tile. */
+  compact?: boolean
 }
 
 /**
@@ -62,6 +64,7 @@ const AssetPreview = ({
   className,
   overlay,
   disabled = false,
+  compact = false,
 }: AssetPreviewProps) => {
   const { t } = useTranslation()
   // Swap to the placeholder when the hosted file fails to load (e.g. 404).
@@ -108,6 +111,7 @@ const AssetPreview = ({
         className={clsx(
           "relative w-full overflow-hidden rounded-xl bg-gray-50 outline-1 -outline-offset-1 outline-gray-200",
           aspect,
+          compact && "max-h-28",
         )}
       >
         {showImage ? (
@@ -123,8 +127,10 @@ const AssetPreview = ({
           />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-1.5 text-gray-400">
-            <ImageIcon className="size-7" aria-hidden />
-            <span className="text-xs font-medium">{defaultLabel}</span>
+            <ImageIcon className={clsx(compact ? "size-5" : "size-7")} aria-hidden />
+            <span className={clsx("font-medium", compact ? "text-[0.625rem]" : "text-xs")}>
+              {defaultLabel}
+            </span>
           </div>
         )}
         {showImage && overlay}
@@ -146,7 +152,8 @@ const AssetPreview = ({
           <label
             aria-disabled={uploading || disabled}
             className={clsx(
-              "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-white shadow-sm transition-colors",
+              "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold text-white shadow-sm transition-colors",
+              compact ? "min-h-9 px-2 text-xs" : "min-h-11 px-3 text-sm",
               "bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]",
               "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white",
               (uploading || disabled) && "cursor-not-allowed opacity-60",

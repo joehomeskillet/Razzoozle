@@ -506,6 +506,8 @@
       "speed": "Speed",
       "intensity": "Intensity",
       "iconCount": "Icons",
+      "color": "Color",
+      "wallpaper": "Background image",
       "toggle": "Animated background",
       "mode": {
         "animated": "Animated",

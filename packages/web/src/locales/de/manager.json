@@ -504,6 +504,8 @@
       "speed": "Geschwindigkeit",
       "intensity": "Intensität",
       "iconCount": "Symbole",
+      "color": "Farbe",
+      "wallpaper": "Hintergrundbild",
       "toggle": "Animierter Hintergrund",
       "mode": {
         "animated": "Animiert",

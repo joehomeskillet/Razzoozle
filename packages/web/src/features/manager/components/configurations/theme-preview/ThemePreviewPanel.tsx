@@ -34,7 +34,7 @@ const MockCard = ({
 }: {
   label: string
   background: string | null
-  animated?: { speed: number; intensity: number; iconCount: number } | null
+  animated?: { speed: number; intensity: number; iconCount: number; color: string } | null
   children: ReactNode
 }) => (
   <div className="overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-gray-200">
@@ -52,10 +52,7 @@ const MockCard = ({
       ) : (
         <div
           className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--color-secondary), var(--color-primary))",
-          }}
+          style={{ background: "var(--color-field-cream)" }}
         />
       )}
       {/* Scoped animated backdrop — CreamBackdrop's root is fixed/-z-10; this
@@ -69,15 +66,18 @@ const MockCard = ({
             speed={animated.speed}
             intensity={animated.intensity}
             iconCount={animated.iconCount}
+            color={animated.color}
           />
         </div>
       )}
-      <div
-        className="pointer-events-none absolute inset-0 bg-black"
-        style={{ opacity: "var(--bg-scrim)" }}
-        aria-hidden
-      />
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 text-white">
+      {background && (
+        <div
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: "var(--bg-scrim)" }}
+          aria-hidden
+        />
+      )}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 text-[color:var(--color-field-ink)]">
         {children}
       </div>
     </div>
@@ -158,6 +158,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                     speed: animAuth.speed,
                     intensity: animAuth.intensity,
                     iconCount: animAuth.iconCount,
+                    color: animAuth.color,
                   }
                 : null
             }
@@ -203,6 +204,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                     speed: animPlayer.speed,
                     intensity: animPlayer.intensity,
                     iconCount: animPlayer.iconCount,
+                    color: animPlayer.color,
                   }
                 : null
             }
@@ -238,6 +240,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                     speed: animManager.speed,
                     intensity: animManager.intensity,
                     iconCount: animManager.iconCount,
+                    color: animManager.color,
                   }
                 : null
             }

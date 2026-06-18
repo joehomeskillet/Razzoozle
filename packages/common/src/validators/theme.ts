@@ -26,8 +26,9 @@ const animatedBg = z
     speed: z.number().min(0.25).max(3).default(1), // animation speed multiplier (1 = current)
     intensity: z.number().min(0).max(1).default(1), // blob/visual opacity multiplier (1 = current)
     iconCount: z.number().int().min(0).max(12).default(12), // floating icons (12 = current)
+    color: z.union([hexColor, z.literal("")]).default(""), // hex tint for the backdrop ("" = theme-derived)
   })
-  .default({ type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 })
+  .default({ type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12, color: "" })
 
 export const themeValidator = z.object({
   style: z.enum(["flat", "glass"]).default("flat"),
@@ -53,18 +54,26 @@ export const themeValidator = z.object({
         playerGame: animatedBg,
       })
       .default({
-        auth: { type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 },
+        auth: {
+          type: "creamBackdrop",
+          speed: 1,
+          intensity: 1,
+          iconCount: 12,
+          color: "",
+        },
         managerGame: {
           type: "creamBackdrop",
           speed: 1,
           intensity: 1,
           iconCount: 12,
+          color: "",
         },
         playerGame: {
           type: "creamBackdrop",
           speed: 1,
           intensity: 1,
           iconCount: 12,
+          color: "",
         },
       }),
     animatedCss: z.string().max(20000).default(""),

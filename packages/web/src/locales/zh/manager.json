@@ -506,6 +506,8 @@
       "speed": "速度",
       "intensity": "强度",
       "iconCount": "图标",
+      "color": "颜色",
+      "wallpaper": "背景图片",
       "toggle": "动态背景",
       "mode": {
         "animated": "动态",

@@ -8,6 +8,7 @@ export interface AnimatedBackgroundConfig {
   speed: number
   intensity: number
   iconCount: number
+  color: string
 }
 
 export interface ThemeBackgrounds {
@@ -48,18 +49,26 @@ export const DEFAULT_THEME: Theme = {
     managerGame: null,
     playerGame: null,
     animated: {
-      auth: { type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12 },
+      auth: {
+        type: "creamBackdrop",
+        speed: 1,
+        intensity: 1,
+        iconCount: 12,
+        color: "",
+      },
       managerGame: {
         type: "creamBackdrop",
         speed: 1,
         intensity: 1,
         iconCount: 12,
+        color: "",
       },
       playerGame: {
         type: "creamBackdrop",
         speed: 1,
         intensity: 1,
         iconCount: 12,
+        color: "",
       },
     },
     animatedCss: "",
