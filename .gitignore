@@ -4,3 +4,12 @@
 .secrets
 release.json
 web2satellite/rpi-img-builder/
+
+# Internal orchestration state + agent guide — not for publishing
+/CLAUDE.md
+/.claude/
+/design.md
+/docs/design/
+/memory/
+/AGENTS.md
+/GEMINI.md
