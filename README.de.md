@@ -4,7 +4,7 @@
 
 # Razzoozle
 
-### Eine selbstgehostete Open-Source-Plattform für Live-Quizze — verpackt in einer violetten Liquid-Glass-Oberfläche.
+### Eine selbst-gehostete, quelloffene Live-Quiz-Plattform — mit klarem, flachem **Cream**-Design (und einem optionalen Liquid-Glass-Theme).
 
 🌐 [English](README.md) · **Deutsch** · [中文](README.zh.md)
 
@@ -15,7 +15,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-350%2B-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-500%2B-3DBFA0)
 
 **[▶ Live-Demo](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[Problem melden](https://github.com/joehomeskillet/Razzoozle/issues)** · *geforkt von [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -25,7 +25,7 @@
 
 ## 🧩 Was ist das?
 
-Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer, Events und Spieleabende. Eine Gastgeberin oder ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, die Spielenden treten per PIN von ihren Handys aus bei, und alle wetteifern um die schnellste Antwort — schnellere richtige Antworten geben mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu aufgebaut rund um einen unverwechselbaren **violetten Liquid-Glass**-Look, mit einem vom Manager gesteuerten Theming-System, Gamification, Team- und Solo-Modus sowie lokaler KI-Bildgenerierung — und dabei behält es das klassische Kahoot-artige Erlebnis aus Presenter und Handy (farbige Antwortkacheln mit Formen, ein Countdown, ein Siegertreppchen).
+Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer, Events und Spieleabende. Eine Gastgeberin oder ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, die Spielenden treten per PIN von ihren Handys aus bei, und alle wetteifern um die schnellste Antwort — schnellere richtige Antworten geben mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu aufgebaut rund um ein klares, flaches **Cream**-Design (Liquid-Glass ist jetzt ein optionales Theme), mit einem vom Manager gesteuerten Theming-System, Gamification, Team- und Solo-Modus sowie lokaler KI-Bildgenerierung — und dabei behält es das klassische Kahoot-artige Erlebnis aus Presenter und Handy (farbige Antwortkacheln mit Formen, ein Countdown, ein Siegertreppchen).
 
 > Razzoozle ist ein unabhängiges Open-Source-Projekt. Es steht in keiner Verbindung zu Kahoot!® oder einer anderen kommerziellen Quizplattform, wird von diesen nicht unterstützt und ist nicht mit ihnen verbunden.
 
@@ -53,8 +53,15 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme-Cockpit** — ein Live-„Design“-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (ein violettes **Liquid-Glass**-Preset und ein flacher Standard) sowie kontrastbewusste Farbwähler. |
-| 🧊 | **Liquid-Glass-UI** — eine optional aktivierbare Glassmorphism-Theme-Variante (mattierte, weichgezeichnete Flächen), die die flache Basis nie antastet. |
+| 🎨 | **Theme-Cockpit** — ein Live-„Design“-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (flacher **Cream**-Standard + optionales violettes **Liquid-Glass**-Preset) sowie kontrastbewusste Farbwähler. |
+| 🍦 | **Flaches Cream-Design** — warme flache Cream-Oberfläche mit lebendigem animiertem Hintergrund (treibende Blobs + schwebende Schul-/Wissens-Icons), flaches „Zig“-Wortmarke/Logo, Ink-auf-Cream-Antwortkacheln. |
+| 🧊 | **Liquid-Glass-UI** — eine optional aktivierbare Glassmorphism-Theme-Variante (mattierte, weichgezeichnete Flächen, Legacy-Look), die die flache Basis nie antastet. |
+| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler bekommt einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenes Bild hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, Podest und Auszeichnungen. |
+| 🏅 | **End-Auszeichnungen (Recap)** — animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-King…) mit Avatar + Name des Gewinners, im Autoplay automatisch getaktet. |
+| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins“-Tab. |
+| 📦 | **Skeleton-Theme-ZIPs** — ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton“: Design-Tokens + CSS + JS + SKELETON.md-Contract). |
+| 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
+| 🔗 | **Teilbare Ergebnisse** — schöne Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „Selbst spielen / Selbst hosten“-CTAs und herunterladbare Gewinner-Sticker. |
 | 🎯 | **Kahoot-treue Spielbildschirme** — Antwortkacheln mit den klassischen Form-Icons (Dreieck / Raute / Kreis / Quadrat), ein kreisförmiger Countdown-Timer, ein Zähler für eingegangene Antworten und ein animiertes Siegertreppchen. |
 | 🏆 | **Gamification** — 15 Erfolge, Medaillen, Serien, Konfetti und Klangsignale, dazu eine persönliche Trophäengalerie. |
 | 👥 | **Team-Modus** — rote, blaue, grüne und gelbe Teams mit einer Live-Team-Rangliste. |
@@ -65,7 +72,7 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 | 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
 | 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. |
 
-Untermauert von **350+ automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
+Untermauert von **500+ automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
 
 ---
 

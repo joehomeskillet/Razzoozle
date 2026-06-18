@@ -4,7 +4,7 @@
 
 # Razzoozle
 
-### A self-hosted, open-source live quiz platform — wrapped in a violet liquid-glass interface.
+### A self-hosted, open-source live quiz platform — with a clean, flat **cream** design (and an optional liquid-glass theme).
 
 🌐 **English** · [Deutsch](README.de.md) · [中文](README.zh.md)
 
@@ -15,7 +15,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-350%2B-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-500%2B-3DBFA0)
 
 **[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -25,7 +25,7 @@
 
 ## 🧩 What is this?
 
-Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and everyone races to answer — faster correct answers score more. It is a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), rebuilt around a distinctive **violet liquid-glass** look with a manager-driven theming system, gamification, team & solo play and local AI image generation — while keeping the classic Kahoot-style presenter + phone experience (colored answer tiles with shapes, a countdown, a podium).
+Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and everyone races to answer — faster correct answers score more. It is a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), rebuilt around a clean, flat **cream** design (liquid-glass is now an optional theme) with a manager-driven theming system, gamification, team & solo play and local AI image generation — while keeping the classic Kahoot-style presenter + phone experience (colored answer tiles with shapes, a countdown, a podium).
 
 > Razzoozle is an independent open-source project. It is not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
 
@@ -53,19 +53,26 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a violet **liquid-glass** preset + a flat default) and contrast-aware colour pickers. |
-| 🧊 | **Liquid-glass UI** — an opt-in glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
+| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a flat **cream** default + an optional violet **liquid-glass** preset) and contrast-aware colour pickers. |
+| ☕ | **Flat cream design** — a warm flat cream interface with a living animated backdrop (drifting blobs + floating school/knowledge icons), a flat "Zig" wordmark/logo, and ink-on-cream answer tiles. |
+| 🧊 | **Liquid-glass UI** — an optional, legacy glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
 | 🎯 | **Kahoot-faithful game screens** — answer tiles with the classic shape icons (triangle / diamond / circle / square), a circular countdown timer, an answers-received counter, and an animated podium. |
+| 🧑‍🎨 | **Player avatars** — each player gets a generated DiceBear avatar (pick a style + reroll, or upload your own); avatars float around the lobby and appear on leaderboards, the podium and the awards. |
 | 🏆 | **Gamification** — 15 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |
+| 🥇 | **End-game awards recap** — an animated superlatives sequence (fastest finger, biggest climber, longest streak, comeback kid…) showing each winner's avatar + name, auto-paced in autoplay. |
 | 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
 | ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
+| 🔌 | **Plugin system** — manager-installable ZIP add-ons with their own "Plugins" tab. |
+| 📦 | **Skeleton theme ZIPs** — download/upload a whole-game theme as an LLM-readable ZIP ("skeleton": design tokens + CSS + JS + a SKELETON.md contract). |
+| 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
+| 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
 | 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
 | 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
 | 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
 | 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
 
-Backed by **350+ automated tests**, a path-traversal + `ws`-CVE security pass, and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
+Backed by **500+ automated tests**, a path-traversal + `ws`-CVE security pass, and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
 ---
 
