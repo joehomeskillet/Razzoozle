@@ -57,12 +57,14 @@ const AvatarPicker = ({ onDone }: Props) => {
   const rollCount = useRef(0)
   const { t } = useTranslation()
 
+  // Apply an avatar: persist it and broadcast to the server so the lobby updates
+  // live. This deliberately does NOT close the picker — the player keeps tweaking
+  // (style / re-roll / upload) until they explicitly tap "Fertig" (onDone).
   const choose = (value: string) => {
     setSelected(value)
     setAvatar(value)
     // Typed socket maps SET_AVATAR payload to `unknown`; server validates.
     socket.emit(EVENTS.PLAYER.SET_AVATAR, { avatar: value })
-    onDone?.()
   }
 
   // Generate a DiceBear avatar for (style, seed) and apply it immediately so the
@@ -238,7 +240,7 @@ const AvatarPicker = ({ onDone }: Props) => {
 
       {onDone && (
         <Button variant="ghost" size="sm" onClick={() => onDone()}>
-          {t("game:avatar.skip")}
+          {t("game:avatar.done", { defaultValue: "Fertig" })}
         </Button>
       )}
     </div>

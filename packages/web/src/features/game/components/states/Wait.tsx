@@ -1,6 +1,7 @@
 import { EVENTS, TEAMS } from "@razzoozle/common/constants"
 import type { Team } from "@razzoozle/common/constants"
 import type { PlayerStatusDataMap } from "@razzoozle/common/types/game/status"
+import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
 import AvatarPicker from "@razzoozle/web/features/game/components/join/AvatarPicker"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -67,6 +68,18 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
         >
           <AvatarPicker onDone={() => setShowPicker(false)} />
         </motion.div>
+      )}
+
+      {isLobby && !showPicker && (
+        <div className="mt-8 flex w-full justify-center">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowPicker(true)}
+          >
+            {t("game:avatar.change", { defaultValue: "Avatar ändern" })}
+          </Button>
+        </div>
       )}
 
       {/* Team picker — only rendered in the lobby of a team-mode game. The
