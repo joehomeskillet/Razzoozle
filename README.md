@@ -37,7 +37,7 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 
 | Presenter / host | Player phone |
 | :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/phone.webp" width="200" alt="Player phone" /> |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/phone.webp" width="200" alt="Player phone" /> <img src="docs/screenshots/avatar.webp" width="200" alt="Avatar selection" /> |
 
 | Desktop game client | Manager · theme cockpit |
 | :---: | :---: |
