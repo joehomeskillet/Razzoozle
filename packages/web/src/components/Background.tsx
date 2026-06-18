@@ -11,7 +11,12 @@ import { type PropsWithChildren } from "react"
 const Background = ({
   children,
   field = "ink",
-}: PropsWithChildren<{ plain?: boolean; field?: "cream" | "ink" }>) => {
+  align = "center",
+}: PropsWithChildren<{
+  plain?: boolean
+  field?: "cream" | "ink"
+  align?: "center" | "top"
+}>) => {
   const { theme } = useThemeStore()
   const appTitle = theme.appTitle?.trim()
   const isCream = field === "cream"
@@ -22,8 +27,12 @@ const Background = ({
     // full /trophies gallery on a phone — it falls back to top alignment instead
     // of centring the overflow above the scroll origin. Plain `justify-center`
     // clips the top out of reach on mobile, trapping the page (no scroll-up).
+    // Pages with tall content opt into `align="top"` (justify-start) so they flow
+    // from the top and scroll naturally on every browser, incl. iOS Safari.
     <section
-      className="relative flex min-h-dvh flex-col items-center justify-center-safe touch-pan-y"
+      className={`relative flex min-h-dvh flex-col items-center touch-pan-y ${
+        align === "top" ? "justify-start py-8" : "justify-center-safe"
+      }`}
       style={isCream ? { color: "var(--color-field-ink)" } : undefined}
     >
       {/* Brand above the login: a custom uploaded logo wins; otherwise show the

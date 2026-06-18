@@ -8,7 +8,7 @@ const TrophiesPage = () => {
   const { t } = useTranslation()
 
   return (
-    <Background field="cream">
+    <Background field="cream" align="top">
       <div className="mx-auto w-full max-w-3xl px-4">
         <a
           href="/"
