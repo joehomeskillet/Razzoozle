@@ -14,6 +14,7 @@ import clsx from "clsx"
 import {
   Check,
   FileAudio,
+  Film,
   Filter,
   Images,
   Info,
@@ -100,9 +101,13 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           </Dialog.Title>
 
           {item.type === "audio" ? (
-            <div className="mt-4 flex aspect-video w-full items-center justify-center rounded-lg bg-gray-50">
-              <FileAudio className="size-12 text-gray-300" aria-hidden />
-            </div>
+            <audio controls src={item.url} className="mt-4 w-full" />
+          ) : item.type === "video" ? (
+            <video
+              controls
+              src={item.url}
+              className="mt-4 aspect-video w-full rounded-lg bg-gray-50"
+            />
           ) : (
             <img
               src={item.url}
@@ -510,7 +515,7 @@ const ConfigMedia = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,audio/*"
+            accept="image/*,audio/*,video/*"
             multiple
             className="hidden"
             onChange={handleUpload}
@@ -674,6 +679,8 @@ const ConfigMedia = () => {
                 <div className="flex aspect-video items-center justify-center bg-gray-50">
                   {item.type === "audio" ? (
                     <FileAudio className="size-10 text-gray-300" aria-hidden />
+                  ) : item.type === "video" ? (
+                    <Film className="size-10 text-gray-300" aria-hidden />
                   ) : (
                     <img
                       src={item.url}

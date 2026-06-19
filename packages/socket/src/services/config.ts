@@ -136,6 +136,7 @@ const MEDIA_MANIFEST = "media-manifest.json"
 const MEDIA_ROOT = "media"
 const MEDIA_IMAGE_MIME = /^image\/(?:png|jpeg|webp)$/u
 const MEDIA_AUDIO_MIME = /^audio\/(?:mpeg|mp3|wav|ogg)$/u
+const MEDIA_VIDEO_MIME = /^video\/(?:mp4|webm|ogg)$/u
 const DATA_URL_RE = /^data:([^;,]+);base64,(.+)$/u
 const SKELETON_FORMAT_VERSION = 1
 const SKELETON_ASSET_MAX_BYTES = 512 * 1024
@@ -1480,7 +1481,9 @@ const readMediaManifest = (): MediaMeta[] => {
         typeof candidate.filename !== "string" ||
         typeof candidate.url !== "string" ||
         typeof candidate.size !== "number" ||
-        (candidate.type !== "image" && candidate.type !== "audio") ||
+        (candidate.type !== "image" &&
+          candidate.type !== "audio" &&
+          candidate.type !== "video") ||
         typeof candidate.category !== "string" ||
         !isMediaCategory(candidate.category) ||
         (candidate.source !== "upload" &&
@@ -1561,6 +1564,18 @@ const extensionForMime = (mime: string): string => {
     return ".ogg"
   }
 
+  if (mime === "video/mp4") {
+    return ".mp4"
+  }
+
+  if (mime === "video/webm") {
+    return ".webm"
+  }
+
+  if (mime === "video/ogg") {
+    return ".ogv"
+  }
+
   throw new Error("errors:media.invalidDataUrl")
 }
 
@@ -1631,7 +1646,7 @@ const createMediaMeta = (input: {
   filename: string
   category: MediaCategory
   size: number
-  type: "image" | "audio"
+  type: "image" | "audio" | "video"
   source: MediaMeta["source"]
   // WP-6 — optional image dimensions; only written when both are present.
   width?: number
@@ -1663,10 +1678,14 @@ export const saveMediaFile = async (
 ): Promise<MediaMeta> => {
   const { mime, buffer } = decodeDataUrl(
     dataUrl,
-    /^(?:image|audio)\//u,
+    /^(?:image|audio|video)\//u,
     "errors:media.invalidDataUrl",
   )
-  const inferredType = mime.startsWith("audio/") ? "audio" : "image"
+  const inferredType = mime.startsWith("video/")
+    ? "video"
+    : mime.startsWith("audio/")
+      ? "audio"
+      : "image"
   const resolvedCategory =
     category ?? (inferredType === "audio" ? "audio" : "questions")
 
@@ -1679,6 +1698,10 @@ export const saveMediaFile = async (
   }
 
   if (inferredType === "audio" && !MEDIA_AUDIO_MIME.test(mime)) {
+    throw new Error("errors:media.invalidDataUrl")
+  }
+
+  if (inferredType === "video" && !MEDIA_VIDEO_MIME.test(mime)) {
     throw new Error("errors:media.invalidDataUrl")
   }
 
@@ -2458,6 +2481,9 @@ const PLUGIN_MIME: Record<string, string> = {
   mp3: "audio/mpeg",
   wav: "audio/wav",
   ogg: "audio/ogg",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  ogv: "video/ogg",
   woff2: "font/woff2",
   woff: "font/woff",
   ttf: "font/ttf",

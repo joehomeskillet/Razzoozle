@@ -7,7 +7,7 @@ export interface MediaMeta {
   filename: string
   url: string
   size: number
-  type: "image" | "audio"
+  type: "image" | "audio" | "video"
   category: MediaCategory
   source: "upload" | "ai" | "theme"
   uploadedAt: string
