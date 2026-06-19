@@ -674,7 +674,8 @@
     "ended": "游戏已结束。"
   },
   "auto": {
-    "nextIn": "{{seconds}} 秒后继续"
+    "nextIn": "{{seconds}} 秒后继续",
+    "countdownLabel": "自动前进倒计时"
   },
   "exit": {
     "title": "确定要结束游戏吗？",

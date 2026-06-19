@@ -646,7 +646,8 @@
     "ended": "Partita terminata."
   },
   "auto": {
-    "nextIn": "Avanti tra {{seconds}}s"
+    "nextIn": "Avanti tra {{seconds}}s",
+    "countdownLabel": "Conto alla rovescia automatico"
   },
   "exit": {
     "title": "Terminare davvero la partita?",

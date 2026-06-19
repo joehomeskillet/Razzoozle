@@ -264,5 +264,9 @@
     "achievement_unlock": "Bonus débloqué",
     "slowest_player": "Le plus lent",
     "most_wrong": "Le plus de mauvaises réponses"
+  },
+  "timer": {
+    "remaining_one": "{{count}} seconde restante",
+    "remaining_other": "{{count}} secondes restantes"
   }
 }

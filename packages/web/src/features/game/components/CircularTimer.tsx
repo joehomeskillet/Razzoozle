@@ -1,4 +1,5 @@
 import clsx from "clsx"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   /** Remaining whole seconds to display in the centre and drive the ring. */
@@ -49,6 +50,7 @@ const URGENT_STROKE = "var(--timer-urgent)"
  * (Razzoozle) themes.
  */
 const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
+  const { t } = useTranslation()
   // Clamp the displayed seconds and the fill fraction so a late/early tick or a
   // bad `total` (0/NaN) can never produce a negative offset or a NaN dash.
   const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
@@ -76,9 +78,7 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
       style={{ width: size, height: size }}
       role="timer"
       aria-live="off"
-      aria-label={`${displaySeconds} ${
-        displaySeconds === 1 ? "second" : "seconds"
-      } remaining`}
+      aria-label={t("game:timer.remaining", { count: displaySeconds })}
     >
       <svg
         className="h-full w-full -rotate-90"

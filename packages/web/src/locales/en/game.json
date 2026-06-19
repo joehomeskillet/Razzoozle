@@ -259,5 +259,9 @@
     "achievement_unlock": "Bonus Unlocked",
     "slowest_player": "Slowest",
     "most_wrong": "Most Wrong Answers"
+  },
+  "timer": {
+    "remaining_one": "{{count}} second remaining",
+    "remaining_other": "{{count}} seconds remaining"
   }
 }

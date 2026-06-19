@@ -672,7 +672,8 @@
     "ended": "Spiel beendet."
   },
   "auto": {
-    "nextIn": "Weiter in {{seconds}}s"
+    "nextIn": "Weiter in {{seconds}}s",
+    "countdownLabel": "Automatischer Countdown"
   },
   "exit": {
     "title": "Spiel wirklich beenden?",

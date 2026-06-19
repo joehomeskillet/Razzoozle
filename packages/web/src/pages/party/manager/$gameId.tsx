@@ -66,6 +66,9 @@ const AutoAdvanceCountdown = ({ ms }: { ms: number | undefined }) => {
         <div
           className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-field-ink)]/10"
           role="progressbar"
+          aria-label={t("manager:auto.countdownLabel", {
+            defaultValue: "Auto-advance countdown",
+          })}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(pct)}

@@ -646,7 +646,8 @@
     "ended": "Partida finalizada."
   },
   "auto": {
-    "nextIn": "Siguiente en {{seconds}}s"
+    "nextIn": "Siguiente en {{seconds}}s",
+    "countdownLabel": "Cuenta atrás automática"
   },
   "exit": {
     "title": "¿Seguro que quieres finalizar la partida?",

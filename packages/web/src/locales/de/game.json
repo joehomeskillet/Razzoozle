@@ -259,5 +259,9 @@
     "achievement_unlock": "Bonus freigeschaltet",
     "slowest_player": "Langsamster",
     "most_wrong": "Meisten falschen Antworten"
+  },
+  "timer": {
+    "remaining_one": "Noch {{count}} Sekunde",
+    "remaining_other": "Noch {{count}} Sekunden"
   }
 }

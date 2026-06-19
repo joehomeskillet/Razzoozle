@@ -646,7 +646,8 @@
     "ended": "Partie terminée."
   },
   "auto": {
-    "nextIn": "Suite dans {{seconds}}s"
+    "nextIn": "Suite dans {{seconds}}s",
+    "countdownLabel": "Compte à rebours automatique"
   },
   "exit": {
     "title": "Vraiment mettre fin à la partie ?",
