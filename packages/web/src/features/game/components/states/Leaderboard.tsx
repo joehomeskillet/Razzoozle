@@ -36,22 +36,25 @@ const TIER_GRADIENT_VAR: Record<AchievementTier, string> = {
 
 // ─── Streak badge ─────────────────────────────────────────────────────────────
 
-const StreakBadge = ({ streak }: { streak: number }) => (
-  <AnimatePresence>
-    {streak >= 2 && (
-      <motion.div
-        key="streak"
-        initial={{ opacity: 0, scale: 0.5, x: -10 }}
-        animate={{ opacity: 1, scale: 1, x: 0 }}
-        exit={{ opacity: 0, scale: 0.5, x: -10 }}
-        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        className="ml-2 flex items-center gap-1 rounded-full bg-[var(--streak-color)] p-1"
-      >
-        <Fire className="size-7" />
-      </motion.div>
-    )}
-  </AnimatePresence>
-)
+const StreakBadge = ({ streak }: { streak: number }) => {
+  const reveal = useReveal()
+  return (
+    <AnimatePresence>
+      {streak >= 2 && (
+        <motion.div
+          key="streak"
+          initial={{ opacity: 0, scale: reveal.reduced ? 1 : 0.5, x: reveal.reduced ? 0 : -10 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          exit={{ opacity: 0, scale: reveal.reduced ? 1 : 0.5, x: reveal.reduced ? 0 : -10 }}
+          transition={reveal.spring}
+          className="ml-2 flex items-center gap-1 rounded-full bg-[var(--streak-color)] p-1"
+        >
+          <Fire className="size-7" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 // ─── Climber / faller rank-delta emphasis ────────────────────────────────────
 
@@ -386,7 +389,7 @@ const Leaderboard = ({
               return (
                 <motion.div
                   key={id}
-                  layout
+                  layout={!reveal.reduced}
                   initial={{ opacity: 0, y: 50 }}
                   animate={{
                     opacity: 1,
@@ -398,14 +401,14 @@ const Leaderboard = ({
                   exit={{
                     opacity: 0,
                     y: 50,
-                    transition: { duration: 0.2 },
+                    transition: reveal.tween(0.2),
                   }}
                   transition={{
                     layout: reveal.spring,
                     default: reveal.spring,
                     scale: reveal.reduced
                       ? reveal.spring
-                      : { duration: 0.45, ease: "easeOut" },
+                      : reveal.tween(0.45),
                   }}
                   className={[
                     "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
