@@ -63,7 +63,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   }
 
   useEvent(EVENTS.DISPLAY.PAIR_SUCCESS, () => {
-    toast.success("Satellit-Display verbunden")
+    toast.success(t("manager:satellite.paired"))
     setPairCode("")
   })
 
@@ -229,7 +229,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
                     type="button"
                     onClick={() => setKickTarget(player)}
                     aria-label={t("manager:kickPlayer.aria", { name: player.username })}
-                    className="pointer-events-auto flex cursor-pointer flex-col items-center gap-1.5 focus-visible:outline-none"
+                    className="pointer-events-auto flex cursor-pointer flex-col items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
                   >
                     <span className="relative">
                       <Avatar src={player.avatar} name={player.username} size={72} />

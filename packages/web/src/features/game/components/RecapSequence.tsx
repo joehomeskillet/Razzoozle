@@ -323,7 +323,7 @@ const RecapSequence = ({
             className={
               i <= step
                 ? "h-2.5 w-2.5 rounded-full bg-white"
-                : "h-2.5 w-2.5 rounded-full bg-white"
+                : "h-2.5 w-2.5 rounded-full bg-white/40"
             }
           />
         ))}
