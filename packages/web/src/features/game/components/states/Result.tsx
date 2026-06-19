@@ -18,6 +18,7 @@ import {
   ACHIEVEMENT_META,
   highestTier,
 } from "@razzoozle/web/features/game/utils/achievements"
+import { persistAchievements } from "@razzoozle/web/features/game/utils/achievementsStore"
 import { fireTierConfetti } from "@razzoozle/web/features/game/utils/confetti"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useEffect, useRef } from "react"
@@ -27,23 +28,6 @@ import { motion } from "motion/react"
 
 interface Props {
   data: CommonStatusDataMap["SHOW_RESULT"]
-}
-
-const LS_KEY = "rahoot_achievements"
-
-/** Read the {id: count} map from localStorage, increment the given ids, write back. */
-function persistAchievements(ids: string[]): void {
-  if (ids.length === 0) return
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    const stored: Record<string, number> = raw ? JSON.parse(raw) : {}
-    for (const id of ids) {
-      stored[id] = (stored[id] ?? 0) + 1
-    }
-    localStorage.setItem(LS_KEY, JSON.stringify(stored))
-  } catch {
-    // localStorage unavailable — silently skip
-  }
 }
 
 const Result = ({

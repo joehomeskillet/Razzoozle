@@ -480,11 +480,14 @@ const handleSoloScore = (
       }
 
       const { playerName, score } = parsed.data
-      // Quiz-existence check before persisting: mirrors handleSoloGet /
-      // handleCheckAnswer (getQuizzById throws → the catch responds 404). This
-      // prevents appendSoloResult from creating a results file for an id that
-      // has no quiz.
-      getQuizzById(id!)
+      // Quiz must exist before we persist a score: 404 (not the outer 500) when
+      // missing; a real write failure below still surfaces as 500.
+      try {
+        getQuizzById(id!)
+      } catch {
+        jsonError(res, 404, `Quizz "${id}" not found`)
+        return
+      }
       appendSoloResult(id!, {
         playerName,
         score,
