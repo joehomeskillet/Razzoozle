@@ -32,6 +32,7 @@ import AnimationControls from "@razzoozle/web/features/manager/components/config
 import AnimatedBackgroundControls from "@razzoozle/web/features/manager/components/configurations/AnimatedBackgroundControls"
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
+import { setTokenColor } from "@razzoozle/web/features/manager/utils/setTokenColor"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
 import {
   isThemeReadyMessage,
@@ -104,42 +105,6 @@ const getTokenColor = (theme: Theme, path: string): string => {
   const value = read(theme)
 
   return typeof value === "string" ? value : (read(DEFAULT_THEME) as string)
-}
-
-// Immutably set a dot-path on a Theme, cloning every object level on the way
-// down (mirrors the nested `backgrounds`/`teamColors` spread updates already in
-// this file) so existing sibling keys are preserved and React sees new refs.
-const setTokenColor = (theme: Theme, path: string, hex: string): Theme => {
-  const keys = path.split(".")
-
-  const assign = (
-    obj: Record<string, unknown>,
-    i: number,
-  ): Record<string, unknown> => {
-    const key = keys[i] as string
-
-    if (i === keys.length - 1) {
-      return { ...obj, [key]: hex }
-    }
-
-    const child = obj[key]
-
-    return {
-      ...obj,
-      [key]: assign(
-        (child && typeof child === "object" ? child : {}) as Record<
-          string,
-          unknown
-        >,
-        i + 1,
-      ),
-    }
-  }
-
-  return assign(
-    theme as unknown as Record<string, unknown>,
-    0,
-  ) as unknown as Theme
 }
 
 const ConfigTheme = () => {

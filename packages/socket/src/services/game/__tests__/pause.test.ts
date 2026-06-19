@@ -128,4 +128,30 @@ describe("RoundManager pause/resume", () => {
     expect(getCurrentQuestion(ctx.round)).toBe(0)
     expect(answerCount(ctx.round)).toBe(0)
   })
+
+  // Pin every status isPausableStatus() allows (SHOW_LEADERBOARD covered
+  // above). These guard the SHOW_ROOM widen (status.ts TODO) so a future
+  // narrowing of the pausable set is caught.
+  it.each([
+    [STATUS.SHOW_START, { text: "Get ready" }],
+    [STATUS.SHOW_PREPARED, { text: "Prepared" }],
+    [STATUS.SHOW_ROOM, { text: "Room", inviteCode: "ABCDEF" }],
+    [STATUS.WAIT, { text: "Waiting" }],
+  ])("allows pause at %s", (status, data) => {
+    const ctx = buildRound({
+      quizz: makeQuizz(),
+      players: [makePlayer("alice")],
+      lowLatency: DISABLED_LL,
+    })
+
+    setStarted(ctx.round, true)
+    setCurrentStatus(ctx.round, status, data)
+
+    ctx.round.pause()
+
+    expect(ctx.broadcasts.at(-1)).toEqual({
+      status: STATUS.PAUSED,
+      data: { reason: "paused" },
+    })
+  })
 })
