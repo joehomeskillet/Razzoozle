@@ -101,3 +101,37 @@ Worker = **edit files only, no git**; orchestrator runs gates + commits per wave
 
 ## Out of scope (NOT changing)
 Game logic in `round-manager.ts`; new deps; new abstractions beyond `safeHex` + `useNowSeconds` + the two extractions; framer-motion/gsap; any behavior change (all WPs behavior-preserving or additive).
+
+---
+
+## FINAL STATUS (2026-06-19) — branch `feat/health-cleanup-2026-06-19`, NOT pushed
+
+Final gate (quiescent tree, HEAD 64a8c95): **types PASS · test PASS · build PASS · lint 25** (down from 27 baseline). Test totals: socket 465, web 98 (+25 tests added across the audit). Every commit individually gated. All changes behavior-preserving or additive — zero game-logic change.
+
+### Shipped (8 code/test commits + plan)
+- **W0** `d056740` types: widen `SET_GAME_CONFIG` payload to include `lowLatencyEnabled` — fixes the pre-existing `tsc -b` TS2353; green baseline for attribution.
+- **W1** `963a5d8` i18n parity: es/fr/it/zh `results`+`game`, all 6 `common` (+back/networkError). Deterministic translations.
+- **W2** `a61299d` a11y/ui: kick-button focus-visible ring + `PAIR_SUCCESS` toast i18n (Room); RecapSequence inactive-dot opacity.
+- **W3** `7d679a0` motion/a11y: Leaderboard `layout` + StreakBadge gated on `reveal.reduced`; row transitions on the `useReveal` contract.
+- **W4** `5b43319` tests: SHOW_ROUND_RECAP interposition (+4) + swAutoReload loop guards (+4).
+- **W5a** `8e7190a` a11y/i18n: CircularTimer aria-label i18n + named auto-advance progressbar (+timer/countdown keys ×6).
+- **W5b** `63557e6` a11y: CatalogPickerModal focus-trap (initial focus, Tab containment, restore).
+- **W6** `d37750f` test+extract: `apply.test` fetchTheme fallbacks (+5); `setTokenColor` → manager/utils + tests (+3); pause characterization (+4).
+- **W9** `64a8c95` refactor/lint: `safeHex`+`HEX_RE` → `game/utils/color.ts` (3× dup collapsed, −22 LOC); AchievementBurst boolean-compare (lint 27→25).
+
+### Deferred / dropped — with rationale (engineering judgment, not omission)
+- **W7 type-contract (D1/D3D10/D7):** D1 `z.input` widening = large blast radius + the `.transform()` z.input≠z.output trap; `SET_GAME_CONFIG` has no validator and achievements validate internally → churn with behavior-drift risk; the ~198 `as unknown` are deliberate runtime-validated boundary casts. Type-only churn, regression risk > gain. **Not done.**
+- **W8 C-track splits (C1/C2 config.ts, C7 socket-context, C4 ConfigTheme):** relocation-only on working, tested files. config.ts's only cycle-free split needs a new shared-helpers abstraction (violates no-new-abstractions), or redirecting every caller (wider scope), or a fragile re-export cycle. socket-context (491 LOC) isn't oversized. Net +files, zero DRY/behavior benefit. **Dropped.** (H5 `setTokenColor` was kept only because it added *test coverage*, not navigability.)
+- **B4 (useNowSeconds dedup):** the two tickers carry a `[displays.length]` interval-reset dep; a clean shared hook ticks on `[]` → behavior change. Two 6-line tickers aren't a maintenance burden. **Dropped.**
+- **J4 (AchievementMedal durations→tokens):** the 1.8s/2.2s are `repeat:Infinity` ambient pulse/glow timings; no matching reveal-`DURATION` token exists; tokenizing = inventing tokens. File already uses tokens where they apply. **Dropped (phantom).**
+- **A1 (drop `export` on PLUGIN_FORMAT_VERSION):** documented manifest-version constant, public-API-by-intent; removing `export` saves one keyword, risks a future import. **Left as-is.**
+- **B3 / F2 / F6 / WP-LOG:** test-helper dedup, manager-popover focus-traps, solo auto-advance (behavior change), registry console→logger — deferred per review (low value / behavior-change / verify-or-skip).
+- **B2 (safeHex)** — originally scoped as phantom (one grep missed the bare regex); re-verified as a *genuine* 3-file byte-identical `HEX_RE` dup → shipped in W9.
+
+### Residual lint (25, all pre-existing/cosmetic, untouched by policy)
+- 2× `round-manager.ts` `as`→`!` style — won't touch core game logic for a style lint.
+- 4× `round-manager.roundRecap.test.ts` cast-style (incl. double-casts `!` can't express).
+- ~19× `examples/plugins/config-editor/ui.js` (no-var/func-names) — shipped vanilla-JS plugin demo; not polishing demo code.
+
+### Merge
+Operator-gated. `razzoozle-cd` deploys only on `main` push from a separate clone — branch is safe at rest. Recommend: review the 9 commits, then fast-forward/squash-merge `feat/health-cleanup-2026-06-19` → `main`.
