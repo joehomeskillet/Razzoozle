@@ -2858,6 +2858,9 @@ export const getSoloResults = (id: string): SoloScoreEntry[] => {
   }
 }
 
+// Bound unbounded per-quiz solo-results growth: keep only the most recent entries
+const SOLO_RESULTS_MAX_ENTRIES = 1000
+
 export const appendSoloResult = (id: string, entry: SoloScoreEntry): void => {
   assertSafeId(id)
 
@@ -2867,8 +2870,13 @@ export const appendSoloResult = (id: string, entry: SoloScoreEntry): void => {
   const existing = getSoloResults(id)
   existing.push(entry)
 
+  const capped =
+    existing.length > SOLO_RESULTS_MAX_ENTRIES
+      ? existing.slice(-SOLO_RESULTS_MAX_ENTRIES)
+      : existing
+
   fs.writeFileSync(
     getPath(`solo-results/${id}.json`),
-    JSON.stringify(existing, null, 2),
+    JSON.stringify(capped, null, 2),
   )
 }

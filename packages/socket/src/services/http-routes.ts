@@ -48,6 +48,7 @@ import {
   resolvePluginAsset,
 } from "@razzoozle/socket/services/config"
 import { createLogger, requestLogger } from "@razzoozle/socket/services/logger"
+import { checkGlobalSoloRate } from "@razzoozle/socket/services/submissionRateLimit"
 import {
   clientLogLines,
   pushClientLog,
@@ -382,6 +383,10 @@ const handleClientEvents = (
 }
 
 const handleSoloGet = (res: ServerResponse, id: string | undefined): void => {
+  if (!checkGlobalSoloRate()) {
+    jsonError(res, 429, "rate limited")
+    return
+  }
   try {
     assertSafeId(id ?? "")
     const quiz = getQuizzById(id!)
@@ -400,6 +405,10 @@ const handleCheckAnswer = (
   res: ServerResponse,
   id: string | undefined,
 ): void => {
+  if (!checkGlobalSoloRate()) {
+    jsonError(res, 429, "rate limited")
+    return
+  }
   void (async () => {
     try {
       assertSafeId(id ?? "")
@@ -455,6 +464,10 @@ const handleSoloScore = (
   res: ServerResponse,
   id: string | undefined,
 ): void => {
+  if (!checkGlobalSoloRate()) {
+    jsonError(res, 429, "rate limited")
+    return
+  }
   void (async () => {
     try {
       assertSafeId(id ?? "")
@@ -467,6 +480,11 @@ const handleSoloScore = (
       }
 
       const { playerName, score } = parsed.data
+      // Quiz-existence check before persisting: mirrors handleSoloGet /
+      // handleCheckAnswer (getQuizzById throws → the catch responds 404). This
+      // prevents appendSoloResult from creating a results file for an id that
+      // has no quiz.
+      getQuizzById(id!)
       appendSoloResult(id!, {
         playerName,
         score,

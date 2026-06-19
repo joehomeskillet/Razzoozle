@@ -3,6 +3,9 @@ import type { Player } from "@razzoozle/common/types/game"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import { usernameValidator } from "@razzoozle/common/validators/auth"
 
+// Hard cap on concurrent players per game (DoS / resource guard).
+const MAX_PLAYERS_PER_GAME = 200
+
 export class PlayerManager {
   private readonly io: Server
   private readonly gameId: string
@@ -55,6 +58,12 @@ export class PlayerManager {
 
     if (result.error) {
       socket.emit(EVENTS.GAME.ERROR_MESSAGE, result.error.issues[0].message)
+
+      return
+    }
+
+    if (this.players.length >= MAX_PLAYERS_PER_GAME) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:game.gameFull")
 
       return
     }

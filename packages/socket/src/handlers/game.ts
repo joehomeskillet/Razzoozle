@@ -118,6 +118,18 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
+    // Global active-game cap: bound concurrent in-memory games so an
+    // unauthenticated flood of CREATE events can't exhaust server memory. No
+    // manager-auth gate here — CREATE happens before auth in the host flow, so
+    // the cap alone bounds the DoS without breaking create-before-auth.
+    const MAX_ACTIVE_GAMES = 100
+
+    if (registry.getGameCount() >= MAX_ACTIVE_GAMES) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:game.serverBusy")
+
+      return
+    }
+
     const game = new Game(io, socket, quizz)
     registry.addGame(game)
   })

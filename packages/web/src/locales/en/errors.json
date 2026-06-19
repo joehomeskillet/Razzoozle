@@ -16,13 +16,15 @@
   "game": {
     "expired": "Game expired",
     "gameEnded": "The game has ended",
+    "gameFull": "This game is full",
     "invalidAnswer": "Invalid answer",
     "kickedByManager": "You have been kicked by the manager",
     "managerAlreadyConnected": "Manager already connected",
     "managerDisconnected": "Manager disconnected",
     "noPlayersConnected": "No players connected",
     "notFound": "Game not found",
-    "playerAlreadyConnected": "Player already connected"
+    "playerAlreadyConnected": "Player already connected",
+    "serverBusy": "Server busy, please try again later"
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",

@@ -131,6 +131,64 @@ export const checkImageGenHourlyLimit = (key: string): boolean => {
   return true
 }
 
+// ── Global server-wide solo-API rate (brute-force / DoS bound) ────────────────
+// A coarse server-wide ceiling for the public solo endpoints so no single actor
+// (or botnet of distinct identities) can hammer the solo API in aggregate.
+// Fixed-window counter; resets every GLOBAL_WINDOW_MS (reuses the 60 s window).
+export const GLOBAL_SOLO_MAX = 120 // max 120 solo calls/min server-wide
+
+const soloGlobalState: RateState = { count: 0, windowStart: 0 }
+
+export const checkGlobalSoloRate = (): boolean => {
+  const now = Date.now()
+
+  if (now - soloGlobalState.windowStart > GLOBAL_WINDOW_MS) {
+    soloGlobalState.windowStart = now
+    soloGlobalState.count = 1
+
+    return true
+  }
+
+  if (soloGlobalState.count >= GLOBAL_SOLO_MAX) {
+    return false
+  }
+
+  soloGlobalState.count += 1
+
+  return true
+}
+
+// ── Server-wide auth-failure throttle (brute-force / DoS bound) ───────────────
+// A coarse server-wide ceiling on FAILED authentications so an attacker cannot
+// brute-force credentials/tokens. Fixed-window counter; resets every
+// GLOBAL_WINDOW_MS. recordAuthFailure() counts a failure; isAuthThrottled()
+// reports whether the current window has crossed MAX_AUTH_FAILURES.
+export const MAX_AUTH_FAILURES = 10 // max 10 failed auths/min server-wide
+
+const authFailState: RateState = { count: 0, windowStart: 0 }
+
+export const recordAuthFailure = (): void => {
+  const now = Date.now()
+
+  if (now - authFailState.windowStart > GLOBAL_WINDOW_MS) {
+    authFailState.windowStart = now
+    authFailState.count = 1
+
+    return
+  }
+
+  authFailState.count += 1
+}
+
+export const isAuthThrottled = (): boolean => {
+  const now = Date.now()
+
+  return (
+    now - authFailState.windowStart <= GLOBAL_WINDOW_MS &&
+    authFailState.count >= MAX_AUTH_FAILURES
+  )
+}
+
 // Pending-moderation-queue cap (hard stop). The handler reads the live pending
 // count from config and rejects above this ceiling before persisting.
 export const PENDING_QUEUE_CAP = 200

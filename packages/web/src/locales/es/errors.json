@@ -11,13 +11,15 @@
   "game": {
     "expired": "Partida expirada",
     "gameEnded": "La partida ha terminado",
+    "gameFull": "Esta partida está llena",
     "invalidAnswer": "Respuesta inválida",
     "kickedByManager": "Has sido expulsado por el administrador",
     "managerAlreadyConnected": "El administrador ya está conectado",
     "managerDisconnected": "El administrador se ha desconectado",
     "noPlayersConnected": "No hay jugadores conectados",
     "notFound": "Partida no encontrada",
-    "playerAlreadyConnected": "El jugador ya está conectado"
+    "playerAlreadyConnected": "El jugador ya está conectado",
+    "serverBusy": "Servidor ocupado, inténtalo más tarde"
   },
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",

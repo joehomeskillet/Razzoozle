@@ -16,13 +16,15 @@
   "game": {
     "expired": "游戏已过期",
     "gameEnded": "游戏已结束",
+    "gameFull": "该游戏已满",
     "invalidAnswer": "答案无效",
     "kickedByManager": "你已被主持人移出游戏",
     "managerAlreadyConnected": "主持人已连接",
     "managerDisconnected": "主持人已断开连接",
     "noPlayersConnected": "没有玩家连接",
     "notFound": "未找到游戏",
-    "playerAlreadyConnected": "玩家已连接"
+    "playerAlreadyConnected": "玩家已连接",
+    "serverBusy": "服务器繁忙，请稍后再试"
   },
   "manager": {
     "failedToReadConfig": "读取游戏配置失败",

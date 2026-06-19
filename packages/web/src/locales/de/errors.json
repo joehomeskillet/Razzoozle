@@ -16,13 +16,15 @@
   "game": {
     "expired": "Spiel abgelaufen",
     "gameEnded": "Das Spiel ist beendet",
+    "gameFull": "Dieses Spiel ist voll",
     "invalidAnswer": "Ungültige Antwort",
     "kickedByManager": "Du wurdest vom Manager entfernt",
     "managerAlreadyConnected": "Manager bereits verbunden",
     "managerDisconnected": "Manager getrennt",
     "noPlayersConnected": "Keine Spieler verbunden",
     "notFound": "Spiel nicht gefunden",
-    "playerAlreadyConnected": "Spieler bereits verbunden"
+    "playerAlreadyConnected": "Spieler bereits verbunden",
+    "serverBusy": "Server ausgelastet, bitte später erneut versuchen"
   },
   "manager": {
     "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",

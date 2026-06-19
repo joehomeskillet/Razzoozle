@@ -51,7 +51,9 @@ import Registry from "@razzoozle/socket/services/registry"
 import {
   checkGlobalSubmissionRate,
   checkRateLimit,
+  isAuthThrottled,
   PENDING_QUEUE_CAP,
+  recordAuthFailure,
 } from "@razzoozle/socket/services/submissionRateLimit"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { z } from "zod"
@@ -684,6 +686,15 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         return
       }
 
+      // Server-wide brute-force throttle: once too many failed auths land inside
+      // the window, reject every attempt with the SAME invalidPassword key (do
+      // not reveal the throttle). The window self-expires by time.
+      if (isAuthThrottled()) {
+        socket.emit(EVENTS.MANAGER.ERROR_MESSAGE, "errors:manager.invalidPassword")
+
+        return
+      }
+
       // Constant-time compare to avoid leaking the password via response timing.
       // timingSafeEqual throws on unequal-length buffers, so a length mismatch is
       // itself a rejection (checked first, short-circuiting the compare).
@@ -694,6 +705,7 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         presented.length !== expected.length ||
         !timingSafeEqual(presented, expected)
       ) {
+        recordAuthFailure()
         socket.emit(
           EVENTS.MANAGER.ERROR_MESSAGE,
           "errors:manager.invalidPassword",
