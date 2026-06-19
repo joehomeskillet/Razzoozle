@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "id": "starter",
+  "version": "0.1.0",
+  "name": "Starter Addon",
+  "capabilities": ["MANAGER_TAB"],
+  "tab": {
+    "nameKey": "Starter Addon",
+    "icon": "Puzzle",
+    "gated": "always"
+  },
+  "hooks": { "client": "ui.js" },
+  "config": {},
+  "sandbox": "none"
+}

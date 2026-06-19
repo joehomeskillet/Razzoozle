@@ -31,6 +31,14 @@
         "typescript/no-unsafe-argument": "off",
         "typescript/no-unnecessary-condition": "off"
       }
+    },
+    {
+      "files": ["examples/**/*.js"],
+      "rules": {
+        "no-var": "off",
+        "object-shorthand": "off",
+        "func-names": "off"
+      }
     }
   ],
   "rules": {

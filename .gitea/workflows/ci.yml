@@ -27,6 +27,9 @@ jobs:
       - name: Typecheck (all packages)
         run: corepack pnpm -r run types
 
+      - name: Lint (warn-only)
+        run: corepack pnpm lint || true
+
       - name: Test (all packages with a test script)
         run: corepack pnpm -r --if-present run test
 

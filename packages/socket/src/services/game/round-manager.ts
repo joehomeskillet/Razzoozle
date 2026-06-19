@@ -927,7 +927,7 @@ export class RoundManager {
           .filter((r) => r.aIsCorrect && r.aResponseTimeMs !== null)
           .map((r) => ({
             clientId: r.clientId,
-            metric: r.aResponseTimeMs as number,
+            metric: r.aResponseTimeMs!,
           })),
         "min",
         (ms) => ms,
@@ -1004,7 +1004,7 @@ export class RoundManager {
           .filter((r) => r.answeredThisRound && r.aResponseTimeMs !== null)
           .map((r) => ({
             clientId: r.clientId,
-            metric: r.aResponseTimeMs as number,
+            metric: r.aResponseTimeMs!,
           })),
         "max",
         (ms) => ms,

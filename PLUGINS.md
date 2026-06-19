@@ -168,3 +168,17 @@ public files in `assets/` and your client entry in `ui.js`.
 
 Installs reject duplicate ids and unsafe ids; a prior `index.json` is snapshotted
 to a rolling revision ring before each mutation.
+
+## AI provider base URL — server-side request within the manager-trust boundary
+
+The manager-configurable AI provider base URL (set via the auth-gated
+`MANAGER.SET_SETTINGS`) drives a **server-side** fetch to
+`${baseUrl}/chat/completions` (`packages/socket/src/services/ai-provider.ts`),
+and `MANAGER.TEST_PROVIDER` (`packages/socket/src/handlers/ai.ts`) issues the same
+server-side request. This is a server-side-request (SSRF) capability, but it sits
+entirely **within the manager-trust boundary**: only an authenticated manager can
+set the base URL — the same trust level under which manager-uploaded addon JS
+already runs. There is intentionally **no host allowlist** (it would break
+legitimate self-hosted / proxy endpoints and adds no protection against a trusted
+manager). Operators running Razzoozle in a semi-trusted, multi-manager setting
+should be aware that a manager can point this fetch at internal hosts.
