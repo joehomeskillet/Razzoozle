@@ -273,7 +273,8 @@
       "question": "Question",
       "leaderboard": "Classement",
       "interactive": "Cliquer pour un aperçu interactif",
-      "static": "Aperçu en image"
+      "static": "Aperçu en image",
+      "openWindow": "Ouvrir l’aperçu en direct"
     },
     "contrast": {
       "hint": "Contraste",

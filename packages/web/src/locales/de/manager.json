@@ -431,7 +431,8 @@
       "question": "Frage",
       "leaderboard": "Rangliste",
       "interactive": "Klicken für interaktive Vorschau",
-      "static": "Vorschau als Bild"
+      "static": "Vorschau als Bild",
+      "openWindow": "Live-Vorschau öffnen"
     },
     "contrast": {
       "hint": "Kontrast",

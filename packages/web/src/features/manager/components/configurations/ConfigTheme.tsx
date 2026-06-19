@@ -33,6 +33,14 @@ import AnimatedBackgroundControls from "@razzoozle/web/features/manager/componen
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
+import {
+  isThemeReadyMessage,
+  openThemePreviewChannel,
+  postThemeDraft,
+  THEME_PREVIEW_ROUTE,
+  THEME_PREVIEW_WINDOW_FEATURES,
+  THEME_PREVIEW_WINDOW_NAME,
+} from "@razzoozle/web/features/theme/preview-channel"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   BookMarked,
@@ -142,12 +150,13 @@ const ConfigTheme = () => {
   const [draft, setDraft] = useState<Theme>({ ...DEFAULT_THEME, ...theme })
   // The single slot whose upload is currently in flight (one at a time).
   const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
-  // The top live preview defaults to a static thumbnail (pointer-events-none)
-  // with a click affordance; clicking switches it to an interactive preview.
-  const [previewInteractive, setPreviewInteractive] = useState(false)
   // The theme operation currently awaiting a server response, used to route a
   // context-free THEME_ERROR to the right handler / pending-state cleanup.
   const pendingActionRef = useRef<ThemeAction | null>(null)
+  const channelRef = useRef<BroadcastChannel | null>(null)
+  const previewWindowRef = useRef<Window | null>(null)
+  // Latest draft, read inside the channel message listener to avoid a stale closure.
+  const draftRef = useRef<Theme>(draft)
   // Hidden file input for importing a template JSON (client-only round-trip).
   const templateFileInputRef = useRef<HTMLInputElement>(null)
   // Slot-scoped upload error, surfaced inline next to the slot's controls.
@@ -226,6 +235,35 @@ const ConfigTheme = () => {
     socket.emit(EVENTS.THEME_TEMPLATE.LIST)
   }, [socket])
 
+  // Open the cross-window preview channel once. When the preview window mounts
+  // it posts a "ready" message; we answer by re-sending the current draft so a
+  // window opened mid-edit immediately shows the latest theme.
+  useEffect(() => {
+    const channel = openThemePreviewChannel()
+    channelRef.current = channel
+    if (!channel) {
+      return
+    }
+    const onMessage = (e: MessageEvent) => {
+      if (isThemeReadyMessage(e.data)) {
+        postThemeDraft(channelRef.current, draftRef.current)
+      }
+    }
+    channel.addEventListener("message", onMessage)
+    return () => {
+      channel.removeEventListener("message", onMessage)
+      channel.close()
+      channelRef.current = null
+    }
+  }, [])
+
+  // Keep the ref current for the ready-handshake re-post, and stream every draft
+  // change (whatever setter produced it — not only preview()) to the live window.
+  useEffect(() => {
+    draftRef.current = draft
+    postThemeDraft(channelRef.current, draft)
+  }, [draft])
+
   useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
 
   useEvent(EVENTS.THEME_TEMPLATE.SAVE_SUCCESS, () => {
@@ -297,6 +335,22 @@ const ConfigTheme = () => {
       ...prev,
       backgrounds: { ...prev.backgrounds, [slot]: null },
     }))
+
+  // Open (or focus) the standalone live-preview window. BroadcastChannel carries
+  // the draft updates; the returned handle is kept only to focus an existing window.
+  const openPreviewWindow = () => {
+    if (previewWindowRef.current && !previewWindowRef.current.closed) {
+      previewWindowRef.current.focus()
+      return
+    }
+    previewWindowRef.current = window.open(
+      THEME_PREVIEW_ROUTE,
+      THEME_PREVIEW_WINDOW_NAME,
+      THEME_PREVIEW_WINDOW_FEATURES,
+    )
+    // Push the current draft once; the window also re-requests via its "ready" handshake.
+    postThemeDraft(channelRef.current, draft)
+  }
 
   const handleSave = () => {
     pendingActionRef.current = "save"
@@ -429,36 +483,21 @@ const ConfigTheme = () => {
             interactive, an inset corner button toggles back to the thumbnail.
           */}
           <div className="relative">
-            <ThemePreviewPanel
-              theme={draft}
-              className={previewInteractive ? undefined : "pointer-events-none"}
-            />
-            {previewInteractive ? (
-              <button
-                type="button"
-                onClick={() => setPreviewInteractive(false)}
-                className="absolute top-3 right-3 z-20 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm outline-1 -outline-offset-1 outline-gray-200 transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              >
-                {t("manager:theme.preview.static", {
-                  defaultValue: "Vorschau als Bild",
+            <ThemePreviewPanel theme={draft} className="pointer-events-none" />
+            <button
+              type="button"
+              onClick={openPreviewWindow}
+              aria-label={t("manager:theme.preview.openWindow", {
+                defaultValue: "Live-Vorschau öffnen",
+              })}
+              className="absolute inset-0 z-20 flex items-end justify-center rounded-2xl bg-transparent p-4 transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            >
+              <span className="rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm outline-1 -outline-offset-1 outline-gray-200">
+                {t("manager:theme.preview.openWindow", {
+                  defaultValue: "Live-Vorschau öffnen",
                 })}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setPreviewInteractive(true)}
-                aria-label={t("manager:theme.preview.interactive", {
-                  defaultValue: "Klicken für interaktive Vorschau",
-                })}
-                className="absolute inset-0 z-20 flex items-end justify-center rounded-2xl bg-transparent p-4 transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              >
-                <span className="rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm outline-1 -outline-offset-1 outline-gray-200">
-                  {t("manager:theme.preview.interactive", {
-                    defaultValue: "Klicken für interaktive Vorschau",
-                  })}
-                </span>
-              </button>
-            )}
+              </span>
+            </button>
           </div>
 
           {/*

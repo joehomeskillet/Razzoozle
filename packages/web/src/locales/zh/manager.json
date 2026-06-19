@@ -433,7 +433,8 @@
       "question": "题目",
       "leaderboard": "排行榜",
       "interactive": "点击查看交互式预览",
-      "static": "以图片形式预览"
+      "static": "以图片形式预览",
+      "openWindow": "打开实时预览"
     },
     "contrast": {
       "hint": "对比度",

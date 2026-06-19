@@ -431,7 +431,8 @@
       "question": "Question",
       "leaderboard": "Leaderboard",
       "interactive": "Click for interactive preview",
-      "static": "Preview as image"
+      "static": "Preview as image",
+      "openWindow": "Open live preview"
     },
     "contrast": {
       "hint": "Contrast",
