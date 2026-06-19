@@ -667,6 +667,7 @@ const ConfigTheme = () => {
                 <AssetPreview
                   className="max-w-[160px]"
                   compact
+                  hideLabel
                   label={t("manager:theme.logo")}
                   value={draft.logo ?? null}
                   fit="contain"

@@ -39,6 +39,8 @@ export interface AssetPreviewProps {
   disabled?: boolean
   /** When true, render a visibly smaller/compact thumbnail tile. */
   compact?: boolean
+  /** When true, suppress the visible caption `<p>` (label still used as `<img alt>`). */
+  hideLabel?: boolean
 }
 
 /**
@@ -65,6 +67,7 @@ const AssetPreview = ({
   overlay,
   disabled = false,
   compact = false,
+  hideLabel = false,
 }: AssetPreviewProps) => {
   const { t } = useTranslation()
   // Swap to the placeholder when the hosted file fails to load (e.g. 404).
@@ -138,9 +141,11 @@ const AssetPreview = ({
 
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-            {label}
-          </p>
+          {!hideLabel && (
+            <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              {label}
+            </p>
+          )}
           {hint && <p className="truncate text-sm text-gray-500">{hint}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
