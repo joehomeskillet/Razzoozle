@@ -38,6 +38,16 @@ import {
   formatRoundRecapValue,
   roundRecapLabelKey,
 } from "@razzoozle/web/features/game/recap/formatRoundRecap"
+import {
+  ICON_PATHS,
+  ICON_VIEWBOX,
+  type IconName,
+} from "@razzoozle/web/features/game/achievements/iconRegistry"
+import {
+  ROUND_RECAP_GLYPH,
+  SUPERLATIVE_GLYPH,
+  RECAP_FINAL_GLYPH,
+} from "@razzoozle/web/features/game/recap/recapVisuals"
 import { AnimatePresence, motion } from "motion/react"
 import type { Transition } from "motion/react"
 import { useCallback, useEffect, useState } from "react"
@@ -92,6 +102,8 @@ function formatSuperlativeValue(key: SuperlativeKey, value: number): string {
 interface RecapCard {
   key: string
   emoji: string
+  /** Material-Symbol glyph rendered in the medal disc. */
+  glyph: IconName
   /** i18n key for the label. */
   label: string
   /** Fallback shown if the i18n key is missing. */
@@ -119,6 +131,7 @@ const RecapSequence = ({
       ? roundAwards.slice(0, 3).map((a) => ({
           key: a.key,
           emoji: ROUND_RECAP_EMOJI[a.key],
+          glyph: ROUND_RECAP_GLYPH[a.key],
           label: roundRecapLabelKey(a.key),
           labelFallback: a.key.replace(/_/g, " "),
           winnerName: a.winnerName,
@@ -128,6 +141,7 @@ const RecapSequence = ({
       : (superlatives ?? []).map((s) => ({
           key: s.key,
           emoji: SUPERLATIVE_EMOJI[s.key],
+          glyph: SUPERLATIVE_GLYPH[s.key],
           label: `game:recap.superlative.${s.key}`,
           labelFallback: s.key.replace(/_/g, " "),
           winnerName: s.winnerName,
@@ -262,12 +276,18 @@ const RecapSequence = ({
             exit={flip.exit}
             transition={flipTransition}
           >
-            {/* Emoji sits in a medal disc to match the podium/achievement language. */}
+            {/* Glyph sits in a medal disc to match the podium/achievement language. */}
             <span
-              className="flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 text-6xl md:size-32 md:text-7xl lg:text-8xl"
+              className="flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-32"
               aria-hidden
             >
-              {current.emoji}
+              <svg
+                viewBox={ICON_VIEWBOX}
+                className="size-14 md:size-20 text-[color:var(--color-field-ink)]"
+                aria-hidden
+              >
+                <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
+              </svg>
             </span>
 
             <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-4xl lg:text-5xl">
@@ -301,9 +321,13 @@ const RecapSequence = ({
             exit={flip.exit}
             transition={flipTransition}
           >
-            <span className="text-7xl drop-shadow-lg md:text-8xl" aria-hidden>
-              🏆
-            </span>
+            <svg
+              viewBox={ICON_VIEWBOX}
+              className="size-24 md:size-28 text-[color:var(--game-fg)] drop-shadow-lg"
+              aria-hidden
+            >
+              <path d={ICON_PATHS[RECAP_FINAL_GLYPH]} fill="currentColor" />
+            </svg>
             <p className="text-4xl font-black text-[color:var(--game-fg)] md:text-5xl">
               {t("game:recap.podiumCue", {
                 defaultValue: "Und jetzt: Das Podium",
