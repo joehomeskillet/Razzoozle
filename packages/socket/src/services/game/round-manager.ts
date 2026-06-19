@@ -112,6 +112,7 @@ export class RoundManager {
   private startTime = 0
   private leaderboard: Player[] = []
   private tempOldLeaderboard: Player[] | null = null
+  private tempRoundRecap: RoundRecapAward[] | null = null
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
   private autoTimer: ReturnType<typeof setTimeout> | null = null
@@ -1787,6 +1788,7 @@ export class RoundManager {
     // rows carry `avatar` (bug #4 fix) without leaking achievement intermediates.
     this.leaderboard = cleanedSorted
     this.tempOldLeaderboard = oldLeaderboard
+    this.tempRoundRecap = roundRecap
     this.playersAnswers = []
 
     // Low-latency mode: the question is over — drop any pending throttled count
@@ -2517,8 +2519,12 @@ export class RoundManager {
       ...(this.autoMode
         ? { autoAdvanceMs: RoundManager.AUTO_LEADERBOARD_MS }
         : {}),
+      ...(this.tempRoundRecap && this.tempRoundRecap.length > 0
+        ? { roundRecap: this.tempRoundRecap }
+        : {}),
     })
 
     this.tempOldLeaderboard = null
+    this.tempRoundRecap = null
   }
 }

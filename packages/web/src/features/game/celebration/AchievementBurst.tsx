@@ -1,10 +1,11 @@
 /**
- * AchievementBurst — an animated, centered toast-column of newly-unlocked
+ * AchievementBurst — an animated, centered cluster of newly-unlocked
  * achievements that overlays the post-game podium.
  *
- * Each freshly-earned badge pops in (staggered, overshoot) as a tier-gradient
- * pill; reduced motion degrades to a static opacity-only reveal. The container
- * is `pointer-events-none` so it never blocks the podium / share buttons beneath.
+ * Each freshly-earned badge pops in (staggered, overshoot) as a compact
+ * tier-gradient emoji disc; reduced motion degrades to a static opacity-only
+ * reveal. The container is `pointer-events-none` so it never blocks the
+ * podium / share buttons beneath.
  *
  * Presentation only — no socket, store, or network imports. Cream visual
  * language is applied purely through the shared tier tokens + Tailwind classes.
@@ -15,7 +16,6 @@ import {
   ACHIEVEMENT_META,
   TIER_GRADIENT,
   TIER_RING,
-  TIER_TEXT,
 } from "@razzoozle/web/features/game/utils/achievements"
 import type { AchievementMeta } from "@razzoozle/web/features/game/utils/achievements"
 import clsx from "clsx"
@@ -63,31 +63,30 @@ const AchievementBurst = ({
 
   return (
     <motion.div
-      className="pointer-events-none flex w-full max-w-sm flex-col items-center gap-2"
+      className="pointer-events-none flex max-w-md flex-wrap items-center justify-center gap-2"
       variants={reveal.container()}
       initial="hidden"
       animate={active === false ? "hidden" : "visible"}
     >
       {badges.map(({ id, meta }) => {
         const tier = meta.tier
+        const label = t(`${meta.i18nKey}.name`, { defaultValue: id })
         return (
           <motion.div
             key={id}
+            title={label}
+            aria-label={label}
             variants={reveal.pop()}
             transition={reveal.snap}
             className={clsx(
-              "flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2",
+              "flex size-12 items-center justify-center rounded-full bg-gradient-to-br",
               "shadow-lg ring-2",
               TIER_GRADIENT[tier],
               TIER_RING[tier],
-              TIER_TEXT[tier],
             )}
           >
-            <span className="select-none text-lg leading-none" aria-hidden>
+            <span className="select-none text-xl leading-none" aria-hidden>
               {meta.icon}
-            </span>
-            <span className="text-sm font-semibold leading-tight">
-              {t(`${meta.i18nKey}.name`, { defaultValue: id })}
             </span>
           </motion.div>
         )

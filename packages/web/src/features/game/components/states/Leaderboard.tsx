@@ -6,6 +6,7 @@ import AchievementMedal from "@razzoozle/web/features/game/components/Achievemen
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import Fire from "@razzoozle/web/features/game/components/icons/Fire"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
+import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import {
   ACHIEVEMENT_META,
   TIER_INDEX,
@@ -225,7 +226,7 @@ const CelebratoryBanner = ({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const Leaderboard = ({
-  data: { oldLeaderboard, leaderboard, teamStandings },
+  data: { oldLeaderboard, leaderboard, teamStandings, roundRecap },
 }: Props) => {
   const reveal = useReveal()
   const [displayedLeaderboard, setDisplayedLeaderboard] =
@@ -357,6 +358,9 @@ const Leaderboard = ({
         {t("game:leaderboard")}
       </h2>
 
+      {/* Per-round recap strip — same card the phone shows; null when empty */}
+      <RoundRecapStrip awards={roundRecap ?? []} />
+
       {/* Celebratory banner — highest-tier unlock across this round */}
       {bannerInfo && (
         <CelebratoryBanner
@@ -391,9 +395,9 @@ const Leaderboard = ({
                   animate={{
                     opacity: 1,
                     y: 0,
-                    // Cheap opacity-only lift for climbers; fallers dim slightly.
+                    // One-shot overshoot pulse for climbers; reduced-motion holds at 1.
                     // No fabricated motion — useReveal honours reduced via reveal.spring.
-                    scale: reveal.reduced ? 1 : climbing ? 1.015 : 1,
+                    scale: climbing && !reveal.reduced ? [1, 1.06, 1] : 1,
                   }}
                   exit={{
                     opacity: 0,
@@ -402,15 +406,17 @@ const Leaderboard = ({
                   }}
                   transition={{
                     layout: reveal.spring,
-                    scale: reveal.spring,
                     default: reveal.spring,
+                    scale: reveal.reduced
+                      ? reveal.spring
+                      : { duration: 0.45, ease: "easeOut" },
                   }}
                   className={[
                     "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
                     // Cheap CSS ring/opacity emphasis — keeps the ~200-row hot path light.
                     "transition-shadow",
                     climbing
-                      ? "shadow-[0_0_0_2px_rgba(16,185,129,0.6)]"
+                      ? "shadow-[0_0_0_3px_rgba(16,185,129,0.7)]"
                       : "",
                     falling ? "opacity-80" : "",
                   ]

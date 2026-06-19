@@ -138,6 +138,9 @@ interface ManagerExtraStatus {
     // the client can render a local countdown. OPTIONAL — present only while
     // auto-mode is on and an advance is armed; absent otherwise.
     autoAdvanceMs?: number
+    // Per-round recap awards (same array the players get on SHOW_RESULT) so the
+    // manager big-screen can show the round highlights. OPTIONAL + additive.
+    roundRecap?: RoundRecapAward[]
   }
 }
 
