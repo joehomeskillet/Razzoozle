@@ -37,10 +37,7 @@ afterEach(() => {
 
 // ── local harness ────────────────────────────────────────────────────────────
 
-const choiceQuizz = (
-  count = 1,
-  q: Partial<Question> = {},
-): Quizz =>
+const choiceQuizz = (count = 1, q: Partial<Question> = {}): Quizz =>
   ({
     subject: "Achievements",
     questions: Array.from({ length: count }, (_, i) => ({
@@ -69,7 +66,8 @@ const setCurrentQuestion = (ctx: CapturedRound, index: number): void => {
 }
 
 const enableTeamMode = (ctx: CapturedRound): void => {
-  ;(ctx.round as unknown as { opts: { teamMode?: boolean } }).opts.teamMode = true
+  ;(ctx.round as unknown as { opts: { teamMode?: boolean } }).opts.teamMode =
+    true
 }
 
 // Apply a merged achievements config to an already-built round. RoundManager
@@ -107,9 +105,7 @@ const achievementsFor = (
 ): string[] | undefined => {
   const found = [...ctx.sends]
     .reverse()
-    .find(
-      (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
-    )
+    .find((s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT)
 
   return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.achievements
 }
@@ -122,9 +118,7 @@ const myPointsFor = (
 ): number | undefined => {
   const found = [...ctx.sends]
     .reverse()
-    .find(
-      (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
-    )
+    .find((s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT)
 
   return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.myPoints
 }
@@ -137,9 +131,7 @@ const bonusPointsFor = (
 ): number | undefined => {
   const found = [...ctx.sends]
     .reverse()
-    .find(
-      (s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT,
-    )
+    .find((s) => s.target === playerSocketId && s.status === STATUS.SHOW_RESULT)
 
   return (found?.data as StatusDataMap["SHOW_RESULT"] | undefined)?.bonusPoints
 }
@@ -154,7 +146,9 @@ const rosterRowFor = (
     ctx.round as unknown as {
       opts: { players: { getAll: () => Player[] } }
     }
-  ).opts.players.getAll().find((p) => p.clientId === clientId)
+  ).opts.players
+    .getAll()
+    .find((p) => p.clientId === clientId)
 
 // The internal round leaderboard row (this.leaderboard) for a clientId — the
 // source rows that feed SHOW_LEADERBOARD / FINISHED.
@@ -171,9 +165,7 @@ const leaderboardRowFor = (
 const gameCounterFor = (
   ctx: CapturedRound,
   clientId: string,
-):
-  | { answered: number; correct: number; ever: boolean }
-  | undefined =>
+): { answered: number; correct: number; ever: boolean } | undefined =>
   (
     ctx.round as unknown as {
       gameCounters: Map<
@@ -862,11 +854,7 @@ describe("team standings", () => {
   })
 
   it("aggregate member points per team, sorted desc, when team mode is ON", () => {
-    const players = [
-      makePlayer("a"),
-      makePlayer("b"),
-      makePlayer("c"),
-    ]
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c")]
     players[0].points = 300
     players[0].teamId = "red"
     players[1].points = 100
@@ -935,6 +923,10 @@ describe("leaderboard avatar (bug #4)", () => {
     answerAt(ctx, "a", 1, QUESTION_START + 1_000)
     answerAt(ctx, "b", 0, QUESTION_START + 2_000)
     callShowResults(ctx)
+    // The first showLeaderboard() now interposes the per-round recap screen
+    // (SHOW_ROUND_RECAP) on a non-last round with a non-empty recap; the SECOND
+    // call advances to the real leaderboard. Call twice to reach the board.
+    ctx.round.showLeaderboard()
     ctx.round.showLeaderboard()
 
     const lb = ctx.sends.find((s) => s.status === STATUS.SHOW_LEADERBOARD)
@@ -966,6 +958,9 @@ describe("leaderboard avatar (bug #4)", () => {
     })
     answerAt(ctx, "a", 1, QUESTION_START + 500)
     callShowResults(ctx)
+    // First showLeaderboard() may interpose SHOW_ROUND_RECAP (non-last round,
+    // non-empty recap); the second reaches the real leaderboard.
+    ctx.round.showLeaderboard()
     ctx.round.showLeaderboard()
 
     const lb = ctx.sends.find((s) => s.status === STATUS.SHOW_LEADERBOARD)

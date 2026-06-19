@@ -9,6 +9,7 @@ import Question from "@razzoozle/web/features/game/components/states/Question"
 import Responses from "@razzoozle/web/features/game/components/states/Responses"
 import Result from "@razzoozle/web/features/game/components/states/Result"
 import Room from "@razzoozle/web/features/game/components/states/Room"
+import RoundRecap from "@razzoozle/web/features/game/components/states/RoundRecap"
 import Start from "@razzoozle/web/features/game/components/states/Start"
 import Wait from "@razzoozle/web/features/game/components/states/Wait"
 
@@ -53,6 +54,7 @@ export const GAME_STATE_COMPONENTS_MANAGER = {
   ...GAME_STATE_COMPONENTS,
   [STATUS.SHOW_ROOM]: Room,
   [STATUS.SHOW_RESPONSES]: Responses,
+  [STATUS.SHOW_ROUND_RECAP]: RoundRecap,
   [STATUS.SHOW_LEADERBOARD]: Leaderboard,
   [STATUS.FINISHED]: Podium,
 }
@@ -83,6 +85,7 @@ export const MANAGER_SKIP_EVENTS = {
   [STATUS.SHOW_ROOM]: EVENTS.MANAGER.START_GAME,
   [STATUS.SELECT_ANSWER]: EVENTS.MANAGER.ABORT_QUIZ,
   [STATUS.SHOW_RESPONSES]: EVENTS.MANAGER.SHOW_LEADERBOARD,
+  [STATUS.SHOW_ROUND_RECAP]: EVENTS.MANAGER.SHOW_LEADERBOARD,
   [STATUS.SHOW_LEADERBOARD]: EVENTS.MANAGER.NEXT_QUESTION,
 } as const satisfies Partial<
   Record<keyof typeof GAME_STATE_COMPONENTS_MANAGER, string>
@@ -103,6 +106,7 @@ export const MANAGER_SKIP_BTN = {
   [STATUS.SELECT_ANSWER]: "common:skip",
   [STATUS.SHOW_RESULT]: null,
   [STATUS.SHOW_RESPONSES]: "common:next",
+  [STATUS.SHOW_ROUND_RECAP]: "common:next",
   [STATUS.SHOW_LEADERBOARD]: "common:next",
   [STATUS.FINISHED]: "common:exit",
   [STATUS.WAIT]: null,

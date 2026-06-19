@@ -20,6 +20,10 @@ export const STATUS = {
   SELECT_ANSWER: "SELECT_ANSWER",
   SHOW_RESULT: "SHOW_RESULT",
   SHOW_RESPONSES: "SHOW_RESPONSES",
+  // Manager-only interstitial: the per-round recap highlights get their OWN
+  // full-screen page (reusing RecapSequence) BETWEEN the answer reveal and the
+  // leaderboard. Players never receive it.
+  SHOW_ROUND_RECAP: "SHOW_ROUND_RECAP",
   SHOW_LEADERBOARD: "SHOW_LEADERBOARD",
   FINISHED: "FINISHED",
   WAIT: "WAIT",
@@ -134,6 +138,9 @@ interface ManagerExtraStatus {
     // OPTIONAL + additive.
     roundRecap?: RoundRecapAward[]
   }
+  // Manager-only per-round recap screen (its OWN full-screen page). Carries the
+  // same RoundRecapAward[] the players see inline on SHOW_RESULT.
+  SHOW_ROUND_RECAP: { roundRecap: RoundRecapAward[] }
   SHOW_LEADERBOARD: {
     oldLeaderboard: Player[]
     leaderboard: Player[]

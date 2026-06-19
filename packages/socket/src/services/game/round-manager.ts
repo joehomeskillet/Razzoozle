@@ -113,6 +113,11 @@ export class RoundManager {
   private leaderboard: Player[] = []
   private tempOldLeaderboard: Player[] | null = null
   private tempRoundRecap: RoundRecapAward[] | null = null
+  // True once the per-round recap screen (SHOW_ROUND_RECAP) has been emitted for
+  // the current round, so showLeaderboard() only interposes it ONCE (first call
+  // → recap screen, second call → real leaderboard). Reset each round in
+  // showResults().
+  private roundRecapShown = false
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
   private autoTimer: ReturnType<typeof setTimeout> | null = null
@@ -278,17 +283,8 @@ export class RoundManager {
     const AUTO_RESULT_MS = RoundManager.AUTO_RESULT_MS
     const AUTO_LEADERBOARD_MS = RoundManager.AUTO_LEADERBOARD_MS
 
-    this.autoTimer = setTimeout(() => {
-      if (!this.started || !this.autoMode) {
-        return
-      }
-
-      this.showLeaderboard()
-
-      if (!this.started) {
-        return
-      }
-
+    // After the leaderboard dwell, advance to the next question (honouring pause).
+    const advanceToNext = () => {
       this.autoTimer = setTimeout(() => {
         if (this.paused) {
           void this.waitWhilePaused().then(() => {
@@ -314,6 +310,40 @@ export class RoundManager {
           void this.newQuestion()
         }
       }, AUTO_LEADERBOARD_MS)
+    }
+
+    this.autoTimer = setTimeout(() => {
+      if (!this.started || !this.autoMode) {
+        return
+      }
+
+      // First hop off the result screen: showLeaderboard() may divert to the
+      // per-round recap screen (manager-only). Detect via roundRecapShown.
+      this.showLeaderboard()
+
+      if (!this.started) {
+        return
+      }
+
+      if (this.roundRecapShown) {
+        // We are on the recap screen — hold it for AUTO_RESULT_MS, then the
+        // SECOND showLeaderboard() passes the guard and shows the real board.
+        this.autoTimer = setTimeout(() => {
+          if (!this.started || !this.autoMode) {
+            return
+          }
+
+          this.showLeaderboard()
+
+          if (!this.started) {
+            return
+          }
+
+          advanceToNext()
+        }, AUTO_RESULT_MS)
+      } else {
+        advanceToNext()
+      }
     }, AUTO_RESULT_MS)
   }
 
@@ -334,10 +364,7 @@ export class RoundManager {
     this.pauseState = { status, data }
   }
 
-  private broadcast<T extends Status>(
-    status: T,
-    data: StatusDataMap[T],
-  ): void {
+  private broadcast<T extends Status>(status: T, data: StatusDataMap[T]): void {
     this.rememberPauseState(status, data)
     this.opts.broadcast(status, data)
   }
@@ -1034,9 +1061,7 @@ export class RoundManager {
     const rankBefore = new Map<string, number>()
 
     if (hasPriorRound) {
-      const preRanked = [...currentPlayers].sort(
-        (a, b) => b.points - a.points,
-      )
+      const preRanked = [...currentPlayers].sort((a, b) => b.points - a.points)
       preRanked.forEach((p, index) => {
         rankBefore.set(p.clientId, index + 1)
       })
@@ -1231,7 +1256,8 @@ export class RoundManager {
 
         // pointsBefore is captured BEFORE the mutation below (from the snapshot
         // taken before this map ran), so it is the player's pre-round total.
-        const myPointsBefore = pointsBefore.get(player.clientId) ?? player.points
+        const myPointsBefore =
+          pointsBefore.get(player.clientId) ?? player.points
 
         const streakBefore = player.streak
         // Streak multiplier: +10% per consecutive correct, capped at +50%.
@@ -1390,7 +1416,8 @@ export class RoundManager {
           : undefined
         award(
           "climber",
-          climbedBefore !== undefined && climbedBefore - rankAfter >= climberMinUp,
+          climbedBefore !== undefined &&
+            climbedBefore - rankAfter >= climberMinUp,
         )
 
         // ── Gold ──────────────────────────────────────────────────────────────
@@ -1509,11 +1536,7 @@ export class RoundManager {
         recap.worstRankEver = Math.max(recap.worstRankEver, index + 1)
 
         // luckyGuess: a correct answer that landed in the last ~10% of the timer.
-        if (
-          row.aIsCorrect &&
-          rt !== null &&
-          rt >= 0.9 * question.time * 1000
-        ) {
+        if (row.aIsCorrect && rt !== null && rt >= 0.9 * question.time * 1000) {
           recap.luckyGuess = true
         }
 
@@ -1794,6 +1817,7 @@ export class RoundManager {
     this.leaderboard = cleanedSorted
     this.tempOldLeaderboard = oldLeaderboard
     this.tempRoundRecap = roundRecap
+    this.roundRecapShown = false
     this.playersAnswers = []
 
     // Low-latency mode: the question is over — drop any pending throttled count
@@ -1952,9 +1976,7 @@ export class RoundManager {
       // above already proved the shapes match the question type). dedupe the
       // multi-select keys so a client can't pad the histogram with repeats.
       answerId: isMultiSelect || isTextAnswer ? -1 : (answerId as number),
-      answerIds: isMultiSelect
-        ? [...new Set(answerId as number[])]
-        : undefined,
+      answerIds: isMultiSelect ? [...new Set(answerId as number[])] : undefined,
       answerText: isTextAnswer ? answerText : undefined,
       points: timeToPoint(this.startTime, question.time),
     })
@@ -2272,33 +2294,55 @@ export class RoundManager {
     const max = (a: number, b: number): boolean => a > b
     const min = (a: number, b: number): boolean => a < b
 
-    const winners: Array<{ clientId: string; superlative: Superlative } | null> =
-      [
-        // fastest_finger: lowest single-answer time (only players who answered).
-        award("fastest_finger", (s) => s.fastestMs, min),
-        // most_correct: highest correct count (skip if nobody got any right).
-        award("most_correct", (s) => s.correct, max, (v) => v > 0),
-        // most_wrong (playful): highest wrong count (skip if nobody was wrong).
-        award("most_wrong", (s) => s.wrong, max, (v) => v > 0),
-        // longest_streak: highest peak streak (skip if nobody built one).
-        award("longest_streak", (s) => s.peakStreak, max, (v) => v > 0),
-        // biggest_climber: largest single-round upward rank move.
-        award("biggest_climber", (s) => s.bestClimb, max, (v) => v > 0),
-        // lucky_guesser: a player who landed a correct answer in the last ~10%.
-        award(
-          "lucky_guesser",
-          (s) => (s.luckyGuess ? s.correct : null),
-          max,
-          (v) => v > 0,
-        ),
-        // most_achievements: highest full-game badge count (skip if zero).
-        award(
-          "most_achievements",
-          (s) => s.achievementIds.length,
-          max,
-          (v) => v > 0,
-        ),
-      ]
+    const winners: Array<{
+      clientId: string
+      superlative: Superlative
+    } | null> = [
+      // fastest_finger: lowest single-answer time (only players who answered).
+      award("fastest_finger", (s) => s.fastestMs, min),
+      // most_correct: highest correct count (skip if nobody got any right).
+      award(
+        "most_correct",
+        (s) => s.correct,
+        max,
+        (v) => v > 0,
+      ),
+      // most_wrong (playful): highest wrong count (skip if nobody was wrong).
+      award(
+        "most_wrong",
+        (s) => s.wrong,
+        max,
+        (v) => v > 0,
+      ),
+      // longest_streak: highest peak streak (skip if nobody built one).
+      award(
+        "longest_streak",
+        (s) => s.peakStreak,
+        max,
+        (v) => v > 0,
+      ),
+      // biggest_climber: largest single-round upward rank move.
+      award(
+        "biggest_climber",
+        (s) => s.bestClimb,
+        max,
+        (v) => v > 0,
+      ),
+      // lucky_guesser: a player who landed a correct answer in the last ~10%.
+      award(
+        "lucky_guesser",
+        (s) => (s.luckyGuess ? s.correct : null),
+        max,
+        (v) => v > 0,
+      ),
+      // most_achievements: highest full-game badge count (skip if zero).
+      award(
+        "most_achievements",
+        (s) => s.achievementIds.length,
+        max,
+        (v) => v > 0,
+      ),
+    ]
 
     const superlatives: Superlative[] = []
     const highlightByClient = new Map<
@@ -2405,7 +2449,40 @@ export class RoundManager {
     return { manager, perPlayer }
   }
 
+  // Manager-only interstitial: the per-round recap highlights get their OWN
+  // full-screen page (reusing RecapSequence) BEFORE the leaderboard, instead of
+  // cramping the answer-reveal screen. Players are unaffected (they keep their
+  // inline recap on SHOW_RESULT). Only reached when tempRoundRecap is non-empty.
+  // Does NOT clear tempRoundRecap — showLeaderboard() still reads it for the
+  // SHOW_LEADERBOARD payload and clears it there.
+  showRoundRecap(): void {
+    // Leaving the post-results screen — drop its FIX 8/9 bookkeeping so a late
+    // setAutoMode(true) can't re-arm / re-send a screen that is gone.
+    this.resultScreenActive = false
+    this.lastResultPayloads.clear()
+    this.roundRecapShown = true
+    this.send(this.opts.getManagerId(), STATUS.SHOW_ROUND_RECAP, {
+      roundRecap: this.tempRoundRecap ?? [],
+    })
+  }
+
   showLeaderboard(): void {
+    // First hop off the answer-reveal screen: divert to the per-round recap
+    // screen (its OWN full-screen page) when there is a non-empty recap that
+    // has not been shown yet. NOT on the last round — that goes straight to
+    // FINISHED / Podium, which owns the end-of-game recap.
+    const isLastRoundForRecap =
+      this.currentQuestion + 1 === this.opts.quizz.questions.length
+    if (
+      !isLastRoundForRecap &&
+      !this.roundRecapShown &&
+      this.tempRoundRecap &&
+      this.tempRoundRecap.length > 0
+    ) {
+      this.showRoundRecap()
+      return
+    }
+
     // We are leaving the post-results screen: drop its FIX 8/9 bookkeeping so a
     // late setAutoMode(true) can't re-arm / re-send a screen that is gone.
     this.resultScreenActive = false
