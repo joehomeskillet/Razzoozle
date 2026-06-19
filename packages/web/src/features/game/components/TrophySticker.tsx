@@ -32,6 +32,7 @@ import {
 } from "@razzoozle/web/features/game/utils/achievements"
 import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import { useTranslation } from "react-i18next"
+import AchievementBadge from "@razzoozle/web/features/game/achievements/AchievementBadge"
 
 // ─── Format presets (logical px; pixelRatio 2 emits double) ───────────────────
 
@@ -71,7 +72,8 @@ const FALLBACK = {
     gold: "#eab308",
     silver: "#9ca3af",
     bronze: "#b45309",
-  } as Record<"gold" | "silver" | "bronze", string>,
+    diamant: "#38bdf8",
+  } as Record<"gold" | "silver" | "bronze" | "diamant", string>,
 } as const
 
 const RANK_TIER: Record<1 | 2 | 3, "gold" | "silver" | "bronze"> = {
@@ -132,50 +134,51 @@ const FONT_STACK =
 const POINTS_FMT = new Intl.NumberFormat("de-DE")
 
 // ─── Static mini-medallion (achievements row) ─────────────────────────────────
-// Inline-hex variant of AchievementMedal's visual language: tier-gradient disc,
-// light ring, static sheen, centered emoji glyph. No motion.
+// Renders AchievementBadge fully static (animated={false}) with literal-hex
+// colorOverride so the foreignObject capture stays correct (no CSS var / oklch).
+// Colors are derived from the sticker's own per-tier hex resolution (tierHex).
 
 interface MiniMedalProps {
-  icon: string
+  id: string
+  tier: AchievementTier
   tierHex: string
   size: number
 }
 
-const MiniMedal = ({ icon, tierHex, size }: MiniMedalProps) => (
-  <span
-    style={{
-      position: "relative",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: `${size}px`,
-      height: `${size}px`,
-      borderRadius: "9999px",
-      background: discGradient(tierHex),
-      border: `2px solid ${rgba("#ffffff", 0.55)}`,
-      boxShadow: `0 2px 6px ${rgba("#000000", 0.25)}`,
-      overflow: "hidden",
-    }}
-  >
-    {/* Static diagonal sheen */}
+// Map MiniMedal's px size to AchievementBadge's discrete size token.
+function badgeSize(size: number): "sm" | "md" | "lg" {
+  if (size <= 32) return "sm"
+  if (size <= 52) return "md"
+  return "lg"
+}
+
+const MiniMedal = ({ id, tier, tierHex, size }: MiniMedalProps) => {
+  // Reuse the sticker's discGradient endpoints as literal-hex stops, the
+  // resolved tier hex as the ring, and a tier-appropriate icon hex.
+  const gradientFrom = lighten(tierHex, 0.18)
+  const gradientTo = darken(tierHex, 0.22)
+  const icon = tier === "silver" ? "#1e293b" : "#ffffff"
+
+  return (
     <span
       style={{
-        position: "absolute",
-        inset: 0,
-        background: `linear-gradient(135deg, ${rgba("#ffffff", 0.3)} 0%, ${rgba("#ffffff", 0)} 55%)`,
-      }}
-    />
-    <span
-      style={{
-        position: "relative",
-        lineHeight: 1,
-        fontSize: `${Math.round(size * 0.5)}px`,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: `${size}px`,
+        height: `${size}px`,
       }}
     >
-      {icon}
+      <AchievementBadge
+        id={id}
+        tier={tier}
+        size={badgeSize(size)}
+        animated={false}
+        colorOverride={{ gradientFrom, gradientTo, ring: tierHex, icon }}
+      />
     </span>
-  </span>
-)
+  )
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -222,17 +225,15 @@ const TrophySticker = ({
       const meta = ACHIEVEMENT_META[id]
       if (!meta) return null
       const t = meta.tier as AchievementTier
-      // Diamant maps to the theme diamant token; the 3 podium tiers use spec hex.
+      // Diamant and other tiers use dedicated theme colors; fallback to spec hex.
       const aTierHex = safeHex(
         theme.tierColors?.[t],
-        t === "diamant"
-          ? "#38bdf8"
-          : FALLBACK.tier[t as "gold" | "silver" | "bronze"],
+        FALLBACK.tier[t],
       )
-      return { id, icon: meta.icon ?? "🏅", tierHex: aTierHex }
+      return { id, tier: t, tierHex: aTierHex }
     })
     .filter(
-      (x): x is { id: string; icon: string; tierHex: string } => x !== null,
+      (x): x is { id: string; tier: AchievementTier; tierHex: string } => x !== null,
     )
     .slice(0, 3)
 
@@ -464,10 +465,10 @@ const TrophySticker = ({
             whiteSpace: "nowrap",
           }}
         >
-          „{subject}“
+          „{subject}"
         </span>
 
-        {/* Optional achievements row (up to 3 static mini-medallions) */}
+        {/* Optional achievements row (up to 3 static mini-medallions with SVG icons) */}
         {shownAchievements.length > 0 && (
           <div
             style={{
@@ -481,7 +482,8 @@ const TrophySticker = ({
             {shownAchievements.map((a) => (
               <MiniMedal
                 key={a.id}
-                icon={a.icon}
+                id={a.id}
+                tier={a.tier}
                 tierHex={a.tierHex}
                 size={miniSize}
               />
