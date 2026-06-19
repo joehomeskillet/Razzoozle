@@ -1762,6 +1762,11 @@ export class RoundManager {
         question.type === "type-answer" ? question.acceptedAnswers : undefined,
       matchMode:
         question.type === "type-answer" ? question.matchMode : undefined,
+      // Per-round recap awards — same highlights the phone shows on SHOW_RESULT
+      // — so the presenter/projector displays them at result-reveal time too.
+      // Read from the local `roundRecap` const (computed above); safe to read
+      // here, well before tempRoundRecap is cleared after SHOW_LEADERBOARD.
+      ...(roundRecap.length > 0 ? { roundRecap } : {}),
     })
 
     this.questionsHistory.push({

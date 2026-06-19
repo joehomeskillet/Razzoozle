@@ -129,6 +129,10 @@ interface ManagerExtraStatus {
     textResponses?: Record<string, number>
     acceptedAnswers?: string[]
     matchMode?: "exact" | "normalized" | "fuzzy"
+    // Per-round recap awards (same as players see on SHOW_RESULT) so the
+    // manager can display the round highlights during answer statistics.
+    // OPTIONAL + additive.
+    roundRecap?: RoundRecapAward[]
   }
   SHOW_LEADERBOARD: {
     oldLeaderboard: Player[]
