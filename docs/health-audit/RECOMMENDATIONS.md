@@ -91,3 +91,18 @@ Adds one `.oxlintrc.json` override `{ files:["examples/**/*.js"], rules:{ "no-va
 
 ## Recommended next action
 Implement the **P0 + S1 + S2** security/DoS cluster as one small file-disjoint wave (all effort-S, all in `socket/handlers` + `services/{config,http-routes,registry}`), each behind a test. These are behavior-changing (new guards), so the operator should confirm the limits (max players/game, max active games, entries-per-quiz). The rest can follow as test-coverage and polish waves.
+
+---
+
+## IMPLEMENTATION STATUS (2026-06-19) — branch `feat/health-cleanup-2026-06-19`, NOT pushed
+
+All 23 vetted recommendations implemented across 4 staged, individually-gated waves, **except S6 (deferred, documented)**. Plus the requested **addon skeleton**. Final gate: types ✅ · test ✅ · build ✅ · **lint 0** (from 27 at audit start). Tests: socket 487, web 105 (+29 over the recs work; +54 over the whole engagement).
+
+**Wave A — security/DoS** (`6737dd1`): S0 solo-score quiz-existence + 1000-cap · S1 max 200 players/game · S2 max 100 active games · S3 120/min rate-limit on solo routes · S4 MANAGER.AUTH brute-force throttle (10/60s). All limits are tunable named constants.
+**Wave B — tests** (`1c8ca87`): T1 plugin-zip security · T2 solo endpoints (caught+fixed a real 500-vs-404 bug) · T3 getSoloResults corruption+cap · T4 team-standings exclusion · T5 persistAchievements (extracted+tested) · S5 /r/:id OG injection-escaping.
+**Wave C — a11y/i18n/perf** (`688d63e`): A1 slider aria · A2 text-input name · A3 placeholder contrast (AA) · A4 Room label · A5 SharePage i18n · P-1 lazy DiceBear (1.9 MB off the join path) · P-2 stale-comment fix.
+**Wave D — DX/CI + docs + addon** (`ab1d37f`, this commit): D1 oxlint scopes examples/ · D2 warn-only oxlint in CI · D3 round-manager `as`→`!` · D4 deleted redundant `.github` CI mirror · D5 pinned oxlint · S7 documented the AI-baseUrl SSRF (in-trust-boundary) · **addon skeleton** `examples/plugins/starter/` (plugin.json + ui.js host-API stub + ADDON-SKELETON.md) · lint driven to 0.
+
+**Deferred (1):** **S6** vite ≥8.0.16 — dev-only advisory, not prod-exploitable (prod serves a prebuilt dist; vite never runs there). Bumping risks the build for ~nil security gain; do it in a routine dependency-maintenance pass with full CI.
+
+**Merge:** operator-gated. `razzoozle-cd` only deploys on a `main` push from its separate clone, so the branch is safe at rest.
