@@ -16,6 +16,7 @@ import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import ScoreToast from "@razzoozle/web/features/game/components/ScoreToast"
+import SoloRewardToast from "@razzoozle/web/features/game/components/SoloRewardToast"
 import SoloAnswers from "@razzoozle/web/features/game/components/states/SoloAnswers"
 import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
@@ -287,6 +288,7 @@ const SoloPlayPage = () => {
     totalPoints,
     leaderboard,
     lastResult,
+    lastAchievements,
     error,
     loadQuiz,
     setPlayerName,
@@ -487,6 +489,11 @@ const SoloPlayPage = () => {
       <ScoreToast
         correct={lastResult?.correct ?? false}
         points={lastResult?.points ?? 0}
+        visible={phase === "result" && lastResult !== null}
+      />
+
+      <SoloRewardToast
+        achievementIds={lastAchievements}
         visible={phase === "result" && lastResult !== null}
       />
     </>

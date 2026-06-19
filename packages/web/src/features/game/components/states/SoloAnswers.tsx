@@ -13,7 +13,6 @@ import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
-import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
@@ -40,7 +39,7 @@ interface Props {
 }
 
 const SoloAnswers = ({ quizzId, question }: Props) => {
-  const { submitAnswer, lastResult, lastAchievements, phase } = useSoloStore()
+  const { submitAnswer, lastResult, phase } = useSoloStore()
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -221,19 +220,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
-        {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
-            self-fetches meta + honors reduced-motion. ids = server sharpshooter
-            ∪ client-derived streak badges (merged + deduped in the solo store).
-            Displayed at top-center with card styling matching the question counter. */}
-        {resultReady && lastAchievements.length > 0 && (
-          <div className="flex min-h-11 items-center rounded-lg border border-[var(--border-hairline)] bg-white px-4 shadow-sm">
-            <RewardStack
-              achievementIds={lastAchievements}
-              visible={resultReady}
-            />
-          </div>
-        )}
-
         <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question.question}</Markdown>
         </h2>
