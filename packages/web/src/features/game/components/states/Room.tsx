@@ -16,7 +16,7 @@ import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import { Maximize2, X } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import QRCode from "@razzoozle/web/components/QRCode"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -47,6 +47,19 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const reveal = useReveal()
+
+  // Re-seed the local roster from the store snapshot. NEW_PLAYER mutates
+  // `playerList` directly (so single joins still animate in one-by-one), but on a
+  // HOST RECONNECT the store is repopulated with the full roster snapshot
+  // (carrying each player's avatar) and the local list would otherwise stay
+  // stale — rendering avatar-less rows. The store is the source of truth, so we
+  // overwrite from it. AnimatePresence keys by player.id, so already-present rows
+  // keep their mounted DOM (no enter-animation re-trigger, no flicker, no
+  // double-add — this is a replace, not an append); only genuinely new ids get
+  // the join animation and removed ids exit.
+  useEffect(() => {
+    setPlayerList(players)
+  }, [players])
 
   const pairDisplay = () => {
     if (!gameId || pairCode.trim().length === 0) {
