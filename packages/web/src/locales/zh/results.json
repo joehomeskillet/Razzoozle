@@ -7,6 +7,9 @@
     "loading": "正在加载最终排名",
     "notFound": "此结果已不再可用，可能已被删除。",
     "rank": "第 {{rank}} 名",
-    "points": "{{count}} 分"
+    "points": "{{count}} 分",
+    "playSelf": "自己来玩",
+    "hostYourOwn": "创建你自己的测验",
+    "createSticker": "创建贴纸"
   }
 }

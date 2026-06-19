@@ -88,6 +88,16 @@
     "resumeGame": "Reprendre la partie"
   },
   "playerReconnected": "{{name}} s'est reconnecté",
+  "achievementBanner": {
+    "wins": "remporte"
+  },
+  "locked": "verrouillé",
+  "tier": {
+    "bronze": "Bronze",
+    "silver": "Argent",
+    "gold": "Or",
+    "diamant": "Diamant"
+  },
   "achievements": {
     "gallery": {
       "title": "Trophées",

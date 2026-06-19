@@ -90,6 +90,16 @@
     "resumeGame": "继续游戏"
   },
   "playerReconnected": "{{name}} 已重新上线",
+  "achievementBanner": {
+    "wins": "获得"
+  },
+  "locked": "锁定",
+  "tier": {
+    "bronze": "青铜",
+    "silver": "白银",
+    "gold": "黄金",
+    "diamant": "钻石"
+  },
   "achievements": {
     "gallery": {
       "title": "奖杯",

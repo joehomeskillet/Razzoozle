@@ -88,6 +88,16 @@
     "resumeGame": "Reanudar juego"
   },
   "playerReconnected": "{{name}} se ha reconectado",
+  "achievementBanner": {
+    "wins": "consigue"
+  },
+  "locked": "bloqueado",
+  "tier": {
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "diamant": "Diamante"
+  },
   "achievements": {
     "gallery": {
       "title": "Trofeos",

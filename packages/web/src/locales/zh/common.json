@@ -1,4 +1,6 @@
 {
+  "back": "返回",
+  "networkError": "网络错误",
   "cancel": "取消",
   "confirm": "确认",
   "connecting": "连接中…",

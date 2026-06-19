@@ -7,6 +7,9 @@
     "loading": "Cargando la clasificación final",
     "notFound": "Este resultado ya no está disponible. Es posible que se haya eliminado.",
     "rank": "Puesto {{rank}}",
-    "points": "{{count}} puntos"
+    "points": "{{count}} puntos",
+    "playSelf": "Jugar yo mismo",
+    "hostYourOwn": "Crea tu propio cuestionario",
+    "createSticker": "Crear pegatina"
   }
 }

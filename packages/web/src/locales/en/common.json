@@ -1,4 +1,6 @@
 {
+  "back": "Back",
+  "networkError": "Network error",
   "cancel": "Cancel",
   "confirm": "Confirm",
   "connecting": "Connecting...",

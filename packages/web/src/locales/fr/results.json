@@ -7,6 +7,9 @@
     "loading": "Chargement du classement final",
     "notFound": "Ce résultat n'est plus disponible. Il a peut-être été supprimé.",
     "rank": "Rang {{rank}}",
-    "points": "{{count}} points"
+    "points": "{{count}} points",
+    "playSelf": "Jouer moi-même",
+    "hostYourOwn": "Crée ton propre quiz",
+    "createSticker": "Créer un autocollant"
   }
 }

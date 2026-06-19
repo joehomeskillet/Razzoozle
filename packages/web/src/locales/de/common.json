@@ -1,4 +1,6 @@
 {
+  "back": "Zurück",
+  "networkError": "Netzwerkfehler",
   "cancel": "Abbrechen",
   "confirm": "Bestätigen",
   "connecting": "Verbinden...",
