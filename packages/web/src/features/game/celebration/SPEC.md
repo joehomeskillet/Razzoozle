@@ -103,7 +103,9 @@ The genuinely-new piece: an animated **queue** of newly-unlocked achievements.
 - Layout: a centered vertical stack / toast-column overlay. Each badge: a pill/card
   with `TIER_GRADIENT[tier]` bg gradient, `TIER_RING[tier]` ring, `TIER_TEXT[tier]`
   text, rounded-full, the `meta.icon` emoji, and the i18n label
-  (`t(meta.i18nKey, { defaultValue: id })`).
+  (`t(`${meta.i18nKey}.name`, { defaultValue: id })` — the `.name` leaf; the bare
+  `meta.i18nKey` node is an object `{ name, desc }`, resolving it directly returns
+  an object, not a string).
 - Animation: stagger the badges in with `reveal.container()` + `reveal.pop()` +
   `reveal.snap` (overshoot pop), gated by `active` (default true). Reduced motion →
   badges still render (opacity-only via reveal), no scale pop, no stagger.

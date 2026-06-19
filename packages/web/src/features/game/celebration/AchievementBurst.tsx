@@ -87,7 +87,7 @@ const AchievementBurst = ({
               {meta.icon}
             </span>
             <span className="text-sm font-semibold leading-tight">
-              {t(meta.i18nKey, { defaultValue: id })}
+              {t(`${meta.i18nKey}.name`, { defaultValue: id })}
             </span>
           </motion.div>
         )
