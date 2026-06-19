@@ -169,7 +169,7 @@ const Result = ({
   const unlockedIds = achievements ?? []
 
   return (
-    <section className="glass-3 relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-[var(--shadow-flat)]">
+    <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)]">
       {!poll && (
         // Moment of truth: the verdict icon pops in (overshoot scale) so the
         // correct/wrong reveal lands as a beat. Opacity-only when reduced.

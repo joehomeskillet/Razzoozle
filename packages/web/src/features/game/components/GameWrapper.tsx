@@ -36,9 +36,9 @@ import {
 import {
   LogOut,
   Maximize,
-  Maximize2,
   Pause,
   Play,
+  QrCode,
   Vibrate,
   VibrateOff,
   Volume2,
@@ -154,93 +154,6 @@ const GameWrapper = ({
       style={{ "--game-fg": "#0E1120" } as React.CSSProperties}
     >
       <div className="cream-field pointer-events-none fixed inset-0" />
-
-      {/* Host-screen rejoin badge: a player who dropped scans this QR (or types
-          the PIN shown on the slide) to come straight back to the game — their
-          identity (points/place) is recovered via the durable clientId cookie.
-          The whole badge is now a trigger: clicking it enlarges the QR (reusing
-          the Room.tsx AlertDialog pattern) and exposes the host's Pause/Resume
-          controls + a reconnect hint. */}
-      {manager && inviteCode && statusName !== STATUS.SHOW_ROOM && (
-        <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
-          <AlertDialog.Trigger asChild>
-            <button
-              type="button"
-              className="group fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex cursor-pointer items-center gap-2 rounded-lg bg-[color:var(--color-field-ink)] p-2 text-left text-white"
-              aria-label={t("game:rejoin")}
-            >
-              <div className="rounded bg-white p-1">
-                <QRCode value={buildJoinUrl(inviteCode)} size={56} />
-              </div>
-              <div className="leading-tight">
-                <div className="text-[10px] font-semibold uppercase opacity-70">
-                  {t("game:rejoin")}
-                </div>
-                <div className="font-mono text-xl font-bold tracking-widest">
-                  {inviteCode}
-                </div>
-              </div>
-              <div className="ml-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <Maximize2 className="size-4" aria-hidden />
-              </div>
-            </button>
-          </AlertDialog.Trigger>
-
-          <AlertDialog.Portal>
-            <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-            <AlertDialog.Content
-              ref={qrContentRef}
-              className="fixed top-1/2 left-1/2 z-50 flex w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-5 rounded-2xl bg-white p-6 text-black"
-            >
-              <AlertDialog.Title className="text-2xl font-bold">
-                {t("game:rejoin")}
-              </AlertDialog.Title>
-              <button
-                type="button"
-                onClick={() => setQrOpen(false)}
-                className="absolute -top-3 -right-3 rounded-full bg-white p-1.5 shadow-md hover:bg-gray-100"
-                aria-label={t("common:cancel")}
-              >
-                <X className="size-6 text-gray-700" />
-              </button>
-              <QRCode
-                className="size-56 md:size-64"
-                size={300}
-                value={buildJoinUrl(inviteCode)}
-              />
-              <div className="font-mono text-3xl font-bold tracking-widest">
-                {inviteCode}
-              </div>
-              <p className="text-center text-sm text-gray-600">
-                {t("game:pause.resumeHint")}
-              </p>
-              <div className="flex w-full justify-center gap-3">
-                {isPaused ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="min-h-11 px-5"
-                    onClick={resumeGame}
-                  >
-                    <Play className="size-5" aria-hidden />
-                    {t("game:pause.resumeGame")}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="min-h-11 px-5"
-                    onClick={pauseGame}
-                  >
-                    <Pause className="size-5" aria-hidden />
-                    {t("game:pause.pauseGame")}
-                  </Button>
-                )}
-              </div>
-            </AlertDialog.Content>
-          </AlertDialog.Portal>
-        </AlertDialog.Root>
-      )}
 
       <div className="z-10 flex w-full flex-1 flex-col justify-between">
         {!isConnected && !statusName ? (
@@ -396,6 +309,84 @@ const GameWrapper = ({
                 {manager && controls && <DisplayControl />}
                 {manager && controls && <DisplayStatusCard />}
                 {manager && controls && import.meta.env.DEV && <SimControl />}
+                {/* Rejoin QR control. Now lives inline with the other host
+                    icons (no longer a lone fixed bottom-left badge): a flat
+                    cream icon button matching the mute/haptics/fullscreen
+                    siblings. Clicking it opens the AlertDialog popover with the
+                    enlarged QR, the join PIN and the host Pause/Resume controls
+                    — a dropped player scans it (or types the PIN) to recover
+                    their identity via the durable clientId cookie. */}
+                {manager &&
+                  inviteCode &&
+                  statusName !== STATUS.SHOW_ROOM && (
+                    <AlertDialog.Root open={qrOpen} onOpenChange={setQrOpen}>
+                      <AlertDialog.Trigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="min-h-11 min-w-11"
+                          title={t("game:rejoin")}
+                          aria-label={t("game:rejoin")}
+                        >
+                          <QrCode className="size-5" aria-hidden />
+                        </Button>
+                      </AlertDialog.Trigger>
+
+                      <AlertDialog.Portal>
+                        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+                        <AlertDialog.Content
+                          ref={qrContentRef}
+                          className="fixed top-1/2 left-1/2 z-50 flex w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-5 rounded-2xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 text-[color:var(--color-field-ink)] shadow-[var(--shadow-flat)]"
+                        >
+                          <AlertDialog.Title className="text-2xl font-bold">
+                            {t("game:rejoin")}
+                          </AlertDialog.Title>
+                          <button
+                            type="button"
+                            onClick={() => setQrOpen(false)}
+                            className="absolute -top-3 -right-3 rounded-full border border-[var(--border-hairline)] bg-[var(--surface)] p-1.5 shadow-[var(--shadow-flat)] hover:brightness-95"
+                            aria-label={t("common:cancel")}
+                          >
+                            <X className="size-6 text-[color:var(--color-field-ink)]" />
+                          </button>
+                          <QRCode
+                            className="size-56 md:size-64"
+                            size={300}
+                            value={buildJoinUrl(inviteCode)}
+                          />
+                          <div className="font-mono text-3xl font-bold tracking-widest">
+                            {inviteCode}
+                          </div>
+                          <p className="text-center text-sm text-[color:var(--color-field-ink)] opacity-70">
+                            {t("game:pause.resumeHint")}
+                          </p>
+                          <div className="flex w-full justify-center gap-3">
+                            {isPaused ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="min-h-11 px-5"
+                                onClick={resumeGame}
+                              >
+                                <Play className="size-5" aria-hidden />
+                                {t("game:pause.resumeGame")}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="min-h-11 px-5"
+                                onClick={pauseGame}
+                              >
+                                <Pause className="size-5" aria-hidden />
+                                {t("game:pause.pauseGame")}
+                              </Button>
+                            )}
+                          </div>
+                        </AlertDialog.Content>
+                      </AlertDialog.Portal>
+                    </AlertDialog.Root>
+                  )}
                 {/* Fullscreen is a kiosk affordance, not a manager control:
                     show it whenever the manager chrome renders (incl. the passive
                     /display + /satellite beamer, where auto-requestFullscreen is
@@ -441,12 +432,11 @@ const GameWrapper = ({
             <div
               aria-disabled={!isConnected}
               className={clsx(
-                "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2",
-                // Manager keeps a tall bottom pad on mobile to clear the fixed QR
-                // rejoin badge; players have no badge and an in-flow footer, so a
-                // small pad — pb-24 left a huge gap between the answer tiles and the
-                // white player bar on phone portrait.
-                manager ? "pb-24 lg:pb-4" : "pb-4",
+                "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-4",
+                // The rejoin QR now lives inline in the top host-icon row (no
+                // longer a fixed bottom-left badge), so the old manager-only
+                // pb-24 pad that cleared it is gone — manager and player share
+                // the same small bottom pad.
                 !isConnected && "pointer-events-none opacity-60 select-none",
               )}
             >

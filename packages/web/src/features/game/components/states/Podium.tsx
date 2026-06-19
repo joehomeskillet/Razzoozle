@@ -2,7 +2,6 @@ import type { ManagerRecap } from "@razzoozle/common/types/game"
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Avatar from "@razzoozle/web/components/Avatar"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
-import CelebrationOverlay from "@razzoozle/web/features/game/celebration/CelebrationOverlay"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
@@ -295,23 +294,6 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
   // Rank → sticker tier mapping (1-based podium order).
   const rankOf = useMemo(() => ({ 0: 1, 1: 2, 2: 3 }) as const, [])
 
-  // Celebration overlay payload (achievement-burst only; this screen already
-  // draws its own podium + react-confetti, so renderPodium/fireConfetti are
-  // false below — the overlay adds ONLY the new achievement-burst queue).
-  const celebration = useMemo(
-    () => ({
-      podium: top.map((p) => ({
-        id: p.username,
-        name: p.username,
-        points: p.points,
-        avatar: p.avatar,
-        achievements: p.achievements,
-      })),
-      newAchievements: top[0]?.achievements ?? [],
-    }),
-    [top],
-  )
-
   return (
     <>
       {/* Superlative recap reveal — overlays the podium until it completes. */}
@@ -331,17 +313,6 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
             className="h-full w-full"
           />
         </Suspense>
-      )}
-
-      {/* Celebration overlay — fires the new achievement-burst queue only, once
-          the podium has fully revealed. Podium + confetti stay owned by this
-          screen (renderPodium / fireConfetti false) so nothing is duplicated. */}
-      {apparition >= 4 && (
-        <CelebrationOverlay
-          data={celebration}
-          renderPodium={false}
-          fireConfetti={false}
-        />
       )}
 
       {apparition >= 3 && top.length >= 3 && !reveal.reduced && (
