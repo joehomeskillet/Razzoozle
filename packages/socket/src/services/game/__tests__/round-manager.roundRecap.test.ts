@@ -334,3 +334,131 @@ describe("RoundManager.computeRoundRecap — per-round recap awards", () => {
     }
   })
 })
+
+// SHOW_ROUND_RECAP interposition: showLeaderboard() diverts ONCE to the
+// manager-only per-round recap screen (reusing RecapSequence) BEFORE the real
+// SHOW_LEADERBOARD — but never on the last round (the podium owns the end-of-game
+// recap), only when there is a non-empty recap, and only once per round
+// (roundRecapShown guard, reset by the next showResults). These drive the same
+// private showResults path and then call the public showLeaderboard() to assert
+// the interposition contract documented in round-manager.ts.
+describe("RoundManager.showLeaderboard — SHOW_ROUND_RECAP interposition", () => {
+  // N-question single-choice quizz (solution = answer index 1 for every Q).
+  const quizzN = (n: number): Quizz =>
+    ({
+      subject: "Recap",
+      questions: Array.from({ length: n }, (_, i) => ({
+        question: `Q${i + 1}`,
+        type: "choice",
+        answers: ["A", "B", "C", "D"],
+        solutions: [1],
+        cooldown: 5,
+        time: 20,
+      })),
+    }) as Quizz
+
+  // Count the manager-only SHOW_ROUND_RECAP sends captured so far.
+  const recapSends = (ctx: CapturedRound) =>
+    ctx.sends.filter(
+      (s) =>
+        s.target === "manager-socket" && s.status === STATUS.SHOW_ROUND_RECAP,
+    )
+
+  // Set the (private) currentQuestion index using the same cast style the file
+  // uses elsewhere — lets us place the round at the last (or a later) question.
+  const setCurrentQuestion = (ctx: CapturedRound, n: number): void => {
+    ;(ctx.round as unknown as { currentQuestion: number }).currentQuestion = n
+  }
+
+  // Drive a round to a NON-EMPTY tempRoundRecap: a + b correct at distinct server
+  // times (guarantees fastest_finger / first_correct), c wrong. callShowResults
+  // sets tempRoundRecap and resets roundRecapShown=false.
+  const driveRecapRound = (ctx: CapturedRound, startTime: number): void => {
+    openQuestion(ctx.round, {
+      startTime,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+    answer(ctx, "a", 1) // first + correct
+    vi.setSystemTime(startTime + 3_000)
+    answer(ctx, "b", 1) // correct, later
+    vi.setSystemTime(startTime + 6_000)
+    answer(ctx, "c", 0) // wrong
+    callShowResults(ctx)
+  }
+
+  it("interposes SHOW_ROUND_RECAP to the manager on the first showLeaderboard of a non-last round", () => {
+    const ctx = buildRound({
+      quizz: quizzN(2),
+      players: [makePlayer("a"), makePlayer("b"), makePlayer("c")],
+      lowLatency: DISABLED_LL,
+    })
+
+    // currentQuestion stays 0 ⇒ NOT the last of a 2-question quizz.
+    driveRecapRound(ctx, QUESTION_START)
+    ctx.round.showLeaderboard()
+
+    const sends = recapSends(ctx)
+    expect(sends.length).toBe(1)
+    const data = sends[0].data as { roundRecap?: RoundRecapAward[] }
+    expect(Array.isArray(data.roundRecap)).toBe(true)
+  })
+
+  it("is idempotent — a second showLeaderboard does not re-emit SHOW_ROUND_RECAP", () => {
+    const ctx = buildRound({
+      quizz: quizzN(2),
+      players: [makePlayer("a"), makePlayer("b"), makePlayer("c")],
+      lowLatency: DISABLED_LL,
+    })
+
+    driveRecapRound(ctx, QUESTION_START)
+    ctx.round.showLeaderboard() // interposes the recap, returns early
+    ctx.round.showLeaderboard() // passes the guard ⇒ real leaderboard
+
+    // The recap is emitted exactly once across both calls.
+    expect(recapSends(ctx).length).toBe(1)
+    // …and the second call produced the real SHOW_LEADERBOARD.
+    const board = ctx.sends.filter(
+      (s) => s.status === STATUS.SHOW_LEADERBOARD,
+    )
+    expect(board.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("skips SHOW_ROUND_RECAP on the last round", () => {
+    const ctx = buildRound({
+      quizz: quizzN(2),
+      players: [makePlayer("a"), makePlayer("b"), makePlayer("c")],
+      lowLatency: DISABLED_LL,
+    })
+
+    driveRecapRound(ctx, QUESTION_START)
+    // Make this the LAST round (index 1 of a 2-question quizz) before advancing.
+    setCurrentQuestion(ctx, 1)
+    ctx.round.showLeaderboard()
+
+    // Last round goes straight to FINISHED/Podium — no manager recap screen.
+    expect(recapSends(ctx).length).toBe(0)
+  })
+
+  it("resets roundRecapShown between rounds so round 2 also interposes", () => {
+    const ctx = buildRound({
+      quizz: quizzN(3),
+      players: [makePlayer("a"), makePlayer("b"), makePlayer("c")],
+      lowLatency: DISABLED_LL,
+    })
+
+    // Round 1 (currentQuestion 0) ⇒ one recap interposition.
+    driveRecapRound(ctx, QUESTION_START)
+    ctx.round.showLeaderboard()
+    expect(recapSends(ctx).length).toBe(1)
+
+    // Advance to round 2 (currentQuestion 1, still not last of 3). showResults
+    // resets roundRecapShown=false and sets a fresh tempRoundRecap, so the next
+    // showLeaderboard interposes the recap again.
+    setCurrentQuestion(ctx, 1)
+    driveRecapRound(ctx, QUESTION_START + 60_000)
+    ctx.round.showLeaderboard()
+
+    expect(recapSends(ctx).length).toBe(2)
+  })
+})
