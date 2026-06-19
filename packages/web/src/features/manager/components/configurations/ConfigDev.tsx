@@ -12,24 +12,31 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
+import AnimatedCssEditor from "@razzoozle/web/features/manager/components/configurations/AnimatedCssEditor"
+import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   Activity,
   Download,
   Gamepad2,
   KeyRound,
+  Palette,
   PlugZap,
   ScrollText,
+  Sparkles,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 // Dev tab — a read-only "developer console" for the manager. Stacked
-// SectionCards: an API Explorer that opens the self-documenting HTTP surface,
-// a live Observability panel wired to the existing manager socket events
-// (LIST_GAMES / GAMES_DATA, DISPLAY.STATUS, METRICS.SUBSCRIBE / HEALTH), and a
-// Logs card to download the recent redacted server/client log rings. It only
-// reuses already-shipped contracts and the shared console primitives — it adds
-// neither a new event, a new dep, nor a new CSS file.
+// SectionCards: theme overrides (skeleton CSS/JS + animated-background CSS)
+// relocated here from the Design tab, an API Explorer that opens the
+// self-documenting HTTP surface, a live Observability panel wired to the
+// existing manager socket events (LIST_GAMES / GAMES_DATA, DISPLAY.STATUS,
+// METRICS.SUBSCRIBE / HEALTH), and a Logs card to download the recent redacted
+// server/client log rings. It only reuses already-shipped contracts and the
+// shared console primitives — it adds neither a new event, a new dep, nor a new
+// CSS file.
 //
 // Redaction notice: passwords, API tokens and answer solutions are never logged.
 // That promise is surfaced as the API Explorer's description so it stays visible.
@@ -61,6 +68,26 @@ const ConfigDev = () => {
   // The manager's own current game — the same source LowLatencyHealth scopes to.
   // null whenever no game is live, which lets us tear down stale telemetry.
   const { gameId } = useManagerStore()
+
+  // Live theme + a local mirror of the animated-background CSS. The dev card is
+  // a minimal editor for theme.backgrounds.animatedCss: it reads the current
+  // value from the theme store, holds the edit locally, and persists on change
+  // via the same MANAGER.SET_THEME flow AnimatedBackgroundControls used (the
+  // full theme carries this field under backgrounds.animatedCss).
+  const { theme, setTheme } = useThemeStore()
+  const [animatedCss, setAnimatedCss] = useState(
+    theme.backgrounds.animatedCss ?? "",
+  )
+
+  const saveAnimatedCss = (css: string) => {
+    setAnimatedCss(css)
+    const next = {
+      ...theme,
+      backgrounds: { ...theme.backgrounds, animatedCss: css },
+    }
+    setTheme(next)
+    socket.emit(EVENTS.MANAGER.SET_THEME, next)
+  }
 
   // Append the dev API token (URL-encoded) to a same-origin DEV endpoint URL
   // when one is configured, so the manager's opens/fetches authenticate. The
@@ -166,6 +193,32 @@ const ConfigDev = () => {
 
   return (
     <div className="space-y-4">
+      {/* ── Theme overrides (relocated from the Design tab) ─────────────
+        ConfigSkeleton is prop-less and self-contained: it brings its own
+        SectionCards for the CSS-Override + JavaScript-Override editors. */}
+      <SectionCard
+        icon={<Palette className="size-5" />}
+        title={t("dev.theme.title", { defaultValue: "Theme-Overrides" })}
+        description={t("dev.theme.description", {
+          defaultValue:
+            "Freies CSS und JavaScript, das zusätzlich zum Theme auf allen Geräten geladen wird.",
+        })}
+      >
+        <ConfigSkeleton />
+      </SectionCard>
+
+      {/* ── Animated CSS — minimal theme draft wired to MANAGER.SET_THEME ── */}
+      <SectionCard
+        icon={<Sparkles className="size-5" />}
+        title={t("dev.animatedCss.title", { defaultValue: "Animated CSS" })}
+        description={t("dev.animatedCss.description", {
+          defaultValue:
+            "Eigenes CSS für den animierten Hintergrund. Speichern überträgt das aktuelle Theme.",
+        })}
+      >
+        <AnimatedCssEditor value={animatedCss} onChange={saveAnimatedCss} />
+      </SectionCard>
+
       <SectionCard
         icon={<PlugZap className="size-5" />}
         title={t("dev.api.title")}

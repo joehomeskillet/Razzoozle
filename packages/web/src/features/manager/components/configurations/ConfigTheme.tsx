@@ -30,7 +30,6 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import AnimationControls from "@razzoozle/web/features/manager/components/configurations/AnimationControls"
 import AnimatedBackgroundControls from "@razzoozle/web/features/manager/components/configurations/AnimatedBackgroundControls"
-import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { applyTheme } from "@razzoozle/web/features/theme/apply"
@@ -143,6 +142,9 @@ const ConfigTheme = () => {
   const [draft, setDraft] = useState<Theme>({ ...DEFAULT_THEME, ...theme })
   // The single slot whose upload is currently in flight (one at a time).
   const [pendingSlot, setPendingSlot] = useState<ThemeSlot | null>(null)
+  // The top live preview defaults to a static thumbnail (pointer-events-none)
+  // with a click affordance; clicking switches it to an interactive preview.
+  const [previewInteractive, setPreviewInteractive] = useState(false)
   // The theme operation currently awaiting a server response, used to route a
   // context-free THEME_ERROR to the right handler / pending-state cleanup.
   const pendingActionRef = useRef<ThemeAction | null>(null)
@@ -421,13 +423,51 @@ const ConfigTheme = () => {
         {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
         <div className="flex flex-col gap-4 pb-20">
           {/*
-          Cockpit: LEFT settings column (minmax(0,1fr)) + RIGHT sticky preview
-          column (minmax(320px,420px)) at xl; single column below. The whole
-          grid stays inside the ConsoleShell tabpanel scroller — no nested
-          overflow that would trap mobile scroll.
+            Top live preview. Static thumbnail by default (pointer-events-none +
+            click affordance); clicking switches it to an interactive preview.
+            A real focusable button toggles the state for keyboard a11y; once
+            interactive, an inset corner button toggles back to the thumbnail.
+          */}
+          <div className="relative">
+            <ThemePreviewPanel
+              theme={draft}
+              className={previewInteractive ? undefined : "pointer-events-none"}
+            />
+            {previewInteractive ? (
+              <button
+                type="button"
+                onClick={() => setPreviewInteractive(false)}
+                className="absolute top-3 right-3 z-20 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm outline-1 -outline-offset-1 outline-gray-200 transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              >
+                {t("manager:theme.preview.static", {
+                  defaultValue: "Vorschau als Bild",
+                })}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPreviewInteractive(true)}
+                aria-label={t("manager:theme.preview.interactive", {
+                  defaultValue: "Klicken für interaktive Vorschau",
+                })}
+                className="absolute inset-0 z-20 flex items-end justify-center rounded-2xl bg-transparent p-4 transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              >
+                <span className="rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm outline-1 -outline-offset-1 outline-gray-200">
+                  {t("manager:theme.preview.interactive", {
+                    defaultValue: "Klicken für interaktive Vorschau",
+                  })}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/*
+          Cockpit: single settings column. The live preview moved to the top of
+          the editor. The whole grid stays inside the ConsoleShell tabpanel
+          scroller — no nested overflow that would trap mobile scroll.
         */}
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
-            {/* ── LEFT: settings ─────────────────────────────────────── */}
+          <div className="grid grid-cols-1 gap-4 xl:items-start">
+            {/* ── Settings ───────────────────────────────────────────── */}
             <div className="flex min-w-0 flex-col gap-6">
               {/* ── App-Titel & Beschreibung ──────────────────────────── */}
               <FormSection title={t("manager:theme.branding")}>
@@ -619,8 +659,11 @@ const ConfigTheme = () => {
 
               {/* ── Animierter Hintergrund (per-slot type + speed/intensity/iconCount) ──
                 Edits draft.backgrounds.animated; the live preview reflects the
-                auth-slot config. Saving rides the unchanged MANAGER.SET_THEME flow. */}
+                auth-slot config. Saving rides the unchanged MANAGER.SET_THEME flow.
+                The CSS editor sub-block is hidden here (hideCssEditor) — it lives
+                under the Dev tab; only the color/slider/wallpaper controls stay. */}
               <AnimatedBackgroundControls
+                hideCssEditor
                 value={
                   draft.backgrounds.animated ??
                   DEFAULT_THEME.backgrounds.animated
@@ -664,7 +707,11 @@ const ConfigTheme = () => {
 
               {/* ── Logo ─────────────────────────────────────────────── */}
               <FormSection title={t("manager:theme.logo")}>
+                {/* Constrain the logo preview to a small thumbnail — only the
+                  display shrinks; upload/reset logic is unchanged. */}
                 <AssetPreview
+                  className="max-w-[160px]"
+                  compact
                   label={t("manager:theme.logo")}
                   value={draft.logo ?? null}
                   fit="contain"
@@ -838,16 +885,7 @@ const ConfigTheme = () => {
                 )}
               </SectionCard>
             </div>
-
-            {/* ── RIGHT: live preview (sticky) ───────────────────────── */}
-            <div className="xl:sticky xl:top-4">
-              <ThemePreviewPanel theme={draft} />
-            </div>
           </div>
-
-          {/* Skeleton transfer / custom CSS+JS / reset — integrated here so all
-            theming lives under the Design tab (no separate Skeleton tab). */}
-          <ConfigSkeleton />
         </div>
       </motion.div>
 

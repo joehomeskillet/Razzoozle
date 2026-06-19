@@ -4,6 +4,7 @@ import type {
 } from "@razzoozle/common/types/theme"
 import ColorPickerField from "@razzoozle/web/components/ui/ColorPickerField"
 import LabelRow from "@razzoozle/web/components/ui/LabelRow"
+import AnimatedCssEditor from "@razzoozle/web/features/manager/components/configurations/AnimatedCssEditor"
 import {
   SectionCard,
   SubGroup,
@@ -25,6 +26,12 @@ export interface AnimatedBackgroundControlsProps {
   onCssChange: (next: string) => void
   /** Render the relocated static-wallpaper upload tile for a slot (wallpaper mode). */
   renderWallpaperUpload?: (slot: SlotKey) => ReactNode
+  /**
+   * Hide the inline "CSS-Editor" sub-block. Used when the CSS editor has been
+   * relocated to the dev console and this card should only show the per-slot
+   * toggles + sliders. Defaults to false (the editor renders inline).
+   */
+  hideCssEditor?: boolean
 }
 
 const SLOTS: Array<{ key: SlotKey; labelKey: string; fallback: string }> = [
@@ -103,8 +110,10 @@ const RANGE_CLASS = [
  * hidden. Slider bounds mirror the zod themeValidator (animatedBg) so the
  * editor can never produce a rejected value — keep in sync with
  * packages/common/src/validators/theme.ts. A single global CSS editor at the
- * bottom edits `draft.backgrounds.animatedCss`. Saving rides the unchanged
- * MANAGER.SET_THEME flow (these fields live under the draft's backgrounds).
+ * bottom edits `draft.backgrounds.animatedCss` (shared AnimatedCssEditor) and
+ * can be hidden via `hideCssEditor` when it has been relocated to the dev tab.
+ * Saving rides the unchanged MANAGER.SET_THEME flow (these fields live under the
+ * draft's backgrounds).
  */
 const AnimatedBackgroundControls = ({
   value,
@@ -112,6 +121,7 @@ const AnimatedBackgroundControls = ({
   cssValue,
   onCssChange,
   renderWallpaperUpload,
+  hideCssEditor = false,
 }: AnimatedBackgroundControlsProps) => {
   const { t } = useTranslation()
 
@@ -238,38 +248,10 @@ const AnimatedBackgroundControls = ({
       })}
 
       {/* ── CSS editor (global, rides the draft save) ─────────────────── */}
-      <SubGroup>
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-gray-700">
-            {t("manager:theme.animatedBg.css.title", {
-              defaultValue: "CSS-Editor",
-            })}
-          </p>
-          <p className="text-sm text-gray-500">
-            {t("manager:theme.animatedBg.css.description", {
-              defaultValue:
-                "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
-            })}
-          </p>
-          <label htmlFor="anim-bg-css" className="sr-only">
-            {t("manager:theme.animatedBg.css.title", {
-              defaultValue: "CSS-Editor",
-            })}
-          </label>
-          <textarea
-            id="anim-bg-css"
-            value={cssValue}
-            onChange={(e) => onCssChange(e.target.value)}
-            spellCheck={false}
-            rows={12}
-            placeholder={t("manager:theme.animatedBg.css.placeholder", {
-              defaultValue:
-                "/* .cream-backdrop .cb-blob--a { background: ... } */",
-            })}
-            className="min-h-48 w-full resize-y rounded-lg bg-gray-900 p-3 font-mono text-sm text-gray-100 outline-1 -outline-offset-1 outline-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-          />
-        </div>
-      </SubGroup>
+      {/* Hidden when relocated to the dev console (hideCssEditor). */}
+      {!hideCssEditor && (
+        <AnimatedCssEditor value={cssValue} onChange={onCssChange} />
+      )}
     </SectionCard>
   )
 }
