@@ -43,13 +43,14 @@ const RoundRecapStrip = ({ awards }: Props) => {
         variants={reveal.container()}
         initial="hidden"
         animate="visible"
-        className="flex flex-wrap justify-center gap-3 md:gap-4"
+        className="flex flex-wrap items-stretch justify-center gap-3 md:gap-4"
       >
         {list.map((award) => (
           <motion.div
             key={award.key}
             variants={reveal.item()}
             transition={reveal.spring}
+            className="flex"
           >
             <RoundRecapCard award={award} />
           </motion.div>

@@ -166,7 +166,7 @@ const RecapSequence = ({
           // on the cream field, not bare floating text.
           <motion.div
             key={`card-${step}`}
-            className="relative z-10 flex flex-col items-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 shadow-xl md:px-12 md:py-10"
+            className="relative z-10 flex w-[min(90vw,28rem)] min-h-[30rem] flex-col items-center justify-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 text-center shadow-xl md:w-[32rem] md:min-h-[34rem] md:px-12 md:py-10"
             variants={reveal.pop()}
             initial="hidden"
             animate="visible"

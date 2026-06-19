@@ -55,7 +55,7 @@ const RoundRecapCard = ({ award, highlight = false }: Props) => {
     <motion.div
       animate={pulse ? { scale: [1, 1.06, 1] } : undefined}
       transition={pulse ? reveal.tween() : undefined}
-      className="flex flex-col items-center gap-2 rounded-3xl border border-[var(--border-hairline)] bg-white px-4 py-4 text-center shadow-xl md:px-5 md:py-5"
+      className="flex h-full w-40 flex-col items-center gap-2 rounded-3xl border border-[var(--border-hairline)] bg-white px-4 py-4 text-center shadow-xl md:w-44 md:px-5 md:py-5"
     >
       <span
         className="flex size-14 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 text-3xl md:size-16 md:text-4xl"
@@ -79,7 +79,9 @@ const RoundRecapCard = ({ award, highlight = false }: Props) => {
         <p className="rounded-full border border-[var(--border-hairline)] bg-gray-100 px-3 py-1 text-sm font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-base">
           {value}
         </p>
-      ) : null}
+      ) : (
+        <span className="h-8" aria-hidden />
+      )}
     </motion.div>
   )
 }
