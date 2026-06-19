@@ -32,17 +32,21 @@ const makeSeed = (username: string, counter: number): string => {
 // is persisted to the player store and broadcast to the server via
 // PLAYER.SET_AVATAR so the host roster / leaderboard / podium can render it.
 //
-// The big preview always shows the player's CURRENT stored avatar (`selected`,
-// seeded from player.avatar which is auto-assigned on join). No avatar is
-// generated on mount — every user action (re-roll, style change, upload)
-// generates and applies immediately via choose(), so preview === stored ===
-// lobby at all times.
+// The big preview reads the avatar DIRECTLY from the player store (`selected =
+// player?.avatar`) rather than keeping a private copy. The store is the single
+// client-side source of truth: choose() writes it synchronously, and Wait.tsx's
+// UPDATE_LEADERBOARD reconciler re-syncs it to the server's authoritative roster
+// value when they drift. Deriving the preview from the store (instead of a local
+// useState seeded once at mount) means the preview self-heals with that
+// reconciliation, so preview === store === lobby roster at all times.
 const AvatarPicker = ({ onDone }: Props) => {
   const { socket } = useSocket()
   const { player, setAvatar } = usePlayerStore()
   const username = player?.username ?? ""
+  // Single source of truth — the stored avatar (auto-assigned on join, updated
+  // by choose() / the lobby reconciler). No private copy to drift from it.
+  const selected = player?.avatar
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selected, setSelected] = useState<string | undefined>(player?.avatar)
   const [uploading, setUploading] = useState(false)
   const [style, setStyle] = useState<AvatarStyle>(AVATAR_STYLES[0]!)
   const [seed, setSeed] = useState<string>(() => makeSeed(username, 0))
@@ -57,11 +61,12 @@ const AvatarPicker = ({ onDone }: Props) => {
   const rollCount = useRef(0)
   const { t } = useTranslation()
 
-  // Apply an avatar: persist it and broadcast to the server so the lobby updates
-  // live. This deliberately does NOT close the picker — the player keeps tweaking
-  // (style / re-roll / upload) until they explicitly tap "Fertig" (onDone).
+  // Apply an avatar: persist it (the store is the single source of truth — the
+  // preview reads straight from it) and broadcast to the server so the lobby
+  // updates live. This deliberately does NOT close the picker — the player keeps
+  // tweaking (style / re-roll / upload) until they explicitly tap "Fertig"
+  // (onDone).
   const choose = (value: string) => {
-    setSelected(value)
     setAvatar(value)
     // Typed socket maps SET_AVATAR payload to `unknown`; server validates.
     socket.emit(EVENTS.PLAYER.SET_AVATAR, { avatar: value })

@@ -1,14 +1,19 @@
 import { EVENTS, TEAMS } from "@razzoozle/common/constants"
 import type { Team } from "@razzoozle/common/constants"
+import type { Player } from "@razzoozle/common/types/game"
 import type { PlayerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
 import AvatarPicker from "@razzoozle/web/features/game/components/join/AvatarPicker"
-import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import {
+  useEvent,
+  useSocket,
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { teamSwatch } from "@razzoozle/web/features/game/utils/teams"
 import { motion } from "motion/react"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -17,10 +22,40 @@ interface Props {
 
 const Wait = ({ data: { text, teamMode } }: Props) => {
   const { t } = useTranslation()
-  const { socket } = useSocket()
+  const { socket, clientId } = useSocket()
   const reveal = useReveal()
   const [showPicker, setShowPicker] = useState(true)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+
+  // Continuous avatar reconciliation: the server-broadcast roster
+  // (UPDATE_LEADERBOARD) is the single source of truth for every player's
+  // avatar. The local player store is set optimistically (random auto-assign on
+  // join, then picker/upload), so it can drift from what the server actually
+  // stored + re-broadcast to the lobby roster — e.g. an uploaded image the
+  // server transcoded to a /media URL, or a random avatar that lost a race. On
+  // each roster update we locate our OWN record by the durable clientId and, if
+  // the authoritative avatar differs from the local one, re-sync the store so
+  // the player's own screen (picker preview) always matches the lobby. Keyed on
+  // the existing socket event — no polling. Cheap: a single find + equality
+  // check per broadcast; only writes the store on an actual drift.
+  const reconcileAvatar = useCallback(
+    ({ leaderboard }: { leaderboard: Player[] }) => {
+      const own = leaderboard.find((p) => p.clientId === clientId)
+
+      if (!own) {
+        return
+      }
+
+      const store = usePlayerStore.getState()
+
+      if (own.avatar && own.avatar !== store.player?.avatar) {
+        store.setAvatar(own.avatar)
+      }
+    },
+    [clientId],
+  )
+
+  useEvent(EVENTS.PLAYER.UPDATE_LEADERBOARD, reconcileAvatar)
 
   // Only the lobby wait (pre-game) lets the player pick an avatar; the same WAIT
   // state is reused between questions where the picker would be out of place.
