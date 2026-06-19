@@ -28,13 +28,18 @@ import type {
   SuperlativeKey,
 } from "@razzoozle/common/types/game"
 import Avatar from "@razzoozle/web/components/Avatar"
-import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import {
+  DURATION,
+  EASE,
+  useReveal,
+} from "@razzoozle/web/features/game/animation/presets"
 import {
   ROUND_RECAP_EMOJI,
   formatRoundRecapValue,
   roundRecapLabelKey,
 } from "@razzoozle/web/features/game/recap/formatRoundRecap"
 import { AnimatePresence, motion } from "motion/react"
+import type { Transition } from "motion/react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -47,7 +52,7 @@ interface Props {
   onComplete?: () => void
   /** ms each card stays before auto-advancing. */
   autoAdvanceMs?: number
-  /** When true, cards auto-advance (10s each); when false the user advances manually. */
+  /** Opt OUT of auto-advance (defaults to true → cards advance on their own). */
   autoMode?: boolean
 }
 
@@ -64,7 +69,8 @@ const SUPERLATIVE_EMOJI: Record<SuperlativeKey, string> = {
   hardest_question: "🧠",
 }
 
-const DEFAULT_AUTO_MS = 10000
+// Sensible per-card hold; cards auto-advance by default at this cadence.
+const DEFAULT_AUTO_MS = 4000
 
 /**
  * Formats a superlative's numeric `value` for display.
@@ -101,7 +107,7 @@ const RecapSequence = ({
   roundAwards,
   onComplete,
   autoAdvanceMs = DEFAULT_AUTO_MS,
-  autoMode = false,
+  autoMode = true,
 }: Props) => {
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -159,8 +165,9 @@ const RecapSequence = ({
       const done = setTimeout(() => onComplete?.(), 1400)
       return () => clearTimeout(done)
     }
-    // Per-card auto-advance is opt-in via autoMode (10s/card); otherwise the
-    // user drives the cards manually (Weiter button / click layer), no timer.
+    // Per-card auto-advance runs by default (autoMode defaults to true) at
+    // autoAdvanceMs/card; pass autoMode={false} to drive the cards manually
+    // (Weiter button / click layer) with no timer.
     if (!autoMode) return
     if (autoStopped) return
     const timer = setTimeout(advance, autoAdvanceMs)
@@ -182,6 +189,27 @@ const RecapSequence = ({
   const awardsTitle = t("game:recap.awardsTitle", {
     defaultValue: "Auszeichnungen",
   })
+
+  // 3D card-flip transition between recap cards. Each step change re-keys the
+  // card node, so AnimatePresence mode="wait" plays the OLD card's `exit`
+  // (rotate away + fade) fully, then mounts the NEW card with `initial`→`animate`
+  // (rotate in). The content therefore swaps at the midpoint of the flip while
+  // the card edge is turned toward the viewer. Reduced motion: no rotateY at all
+  // — just an opacity crossfade (instant content swap, no fabricated spin).
+  const flipTransition: Transition = reveal.reduced
+    ? { duration: DURATION.instant }
+    : { duration: 0.5, ease: EASE.inOut }
+  const flip = reveal.reduced
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, rotateY: 90 },
+        animate: { opacity: 1, rotateY: 0 },
+        exit: { opacity: 0, rotateY: -90 },
+      }
 
   return (
     <section
@@ -215,18 +243,24 @@ const RecapSequence = ({
         {awardsTitle}
       </motion.h2>
 
+      {/* Perspective container — gives the flipping card depth so the rotateY
+          reads as a real 3D turn rather than a flat squash. */}
+      <div
+        className="relative z-10 flex w-full items-center justify-center"
+        style={{ perspective: 1200 }}
+      >
       <AnimatePresence mode="wait">
         {!isFinalCue && current ? (
           // Medal/card surface — the award reads as a flat light award card
           // on the cream field, not bare floating text.
           <motion.div
             key={`card-${step}`}
-            className="relative z-10 flex min-h-[30rem] w-[min(90vw,28rem)] flex-col items-center justify-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 text-center shadow-xl md:min-h-[34rem] md:w-[32rem] md:px-12 md:py-10"
-            variants={reveal.pop()}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            transition={reveal.spring}
+            className="relative flex min-h-[30rem] w-[min(90vw,28rem)] flex-col items-center justify-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 text-center shadow-xl md:min-h-[34rem] md:w-[32rem] md:px-12 md:py-10"
+            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+            initial={flip.initial}
+            animate={flip.animate}
+            exit={flip.exit}
+            transition={flipTransition}
           >
             {/* Emoji sits in a medal disc to match the podium/achievement language. */}
             <span
@@ -260,12 +294,12 @@ const RecapSequence = ({
         ) : (
           <motion.div
             key="final-cue"
-            className="relative z-10 flex flex-col items-center gap-4"
-            variants={reveal.pop()}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            transition={reveal.spring}
+            className="relative flex flex-col items-center gap-4"
+            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+            initial={flip.initial}
+            animate={flip.animate}
+            exit={flip.exit}
+            transition={flipTransition}
           >
             <span className="text-7xl drop-shadow-lg md:text-8xl" aria-hidden>
               🏆
@@ -278,6 +312,7 @@ const RecapSequence = ({
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* Progress dots — one per card, filling step-by-step as the index advances
           (a dot lights only once its card has been reached). */}

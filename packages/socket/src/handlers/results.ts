@@ -38,6 +38,11 @@ export const resultsSocketHandlers = ({ socket }: SocketContext) => {
         subject: result.subject,
         date: result.date,
         players: result.players,
+        // Replay the post-game recap (superlatives) on the share page when the
+        // stored result carries it. Winner names here are already shown publicly
+        // by the share page's ranking — consistent, no extra leak. Omitted when
+        // the result predates recap persistence.
+        ...(result.recap ? { recap: result.recap } : {}),
       }
       socket.emit(EVENTS.RESULTS.SHARED_DATA, shared)
     } catch (error) {

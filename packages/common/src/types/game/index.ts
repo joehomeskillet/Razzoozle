@@ -99,6 +99,10 @@ export interface GameResult {
   date: string
   players: GameResultPlayer[]
   questions: QuestionResult[]
+  // Post-game manager recap (superlatives + hardest-question callout), persisted
+  // with the result so the public share page can replay it. Optional + additive:
+  // older saved results without it keep working unchanged.
+  recap?: ManagerRecap
 }
 
 // Solo play / team mode contracts.
@@ -207,6 +211,10 @@ export interface SharedResult {
   subject: string
   date: string
   players: GameResultPlayer[]
+  // Optional post-game recap (superlatives) so the share page can replay the
+  // award reveal before the podium. Superlatives carry winner names, which the
+  // share page already displays publicly — consistent, no new leak.
+  recap?: ManagerRecap
 }
 
 // Running-games admin panel (MANAGER.LIST_GAMES / GAMES_DATA / END_GAME).

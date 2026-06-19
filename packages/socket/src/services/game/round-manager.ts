@@ -2545,6 +2545,11 @@ export class RoundManager {
             (a) => !botUsernames.has(a.playerName),
           ),
         })),
+        // Persist the manager recap so the public share page can replay the
+        // superlative reveal before the podium. Only when there are awards.
+        ...(managerRecap && managerRecap.superlatives.length > 0
+          ? { recap: managerRecap }
+          : {}),
       })
 
       // Team mode: final team standings (undefined when team mode is off, so the

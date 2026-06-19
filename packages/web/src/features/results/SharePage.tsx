@@ -3,13 +3,14 @@ import type { SharedResult } from "@razzoozle/common/types/game"
 import Background from "@razzoozle/web/components/Background"
 import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
+import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence"
 import TrophySticker from "@razzoozle/web/features/game/components/TrophySticker"
 import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
-import { Share2 } from "lucide-react"
+import { Share2, Sparkles } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -112,7 +113,7 @@ const WinnerStickerButton = ({
         disabled={isExporting}
         className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-base font-bold text-white shadow-lg focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60 focus-visible:outline-none disabled:opacity-60"
       >
-        <Share2 className="size-5" aria-hidden />
+        <Sparkles className="size-5" aria-hidden />
         {isExporting
           ? t("game:recap.sticker.creating")
           : t("results:share.createSticker")}
@@ -143,6 +144,20 @@ const SharePage = ({ id }: Props) => {
 
   const [result, setResult] = useState<SharedResult | null>(null)
   const [notFound, setNotFound] = useState(false)
+
+  // Post-game recap reveal — mirror the live Podium pattern: when the shared
+  // result carries superlatives, play the RecapSequence overlay BEFORE the
+  // podium and gate the podium's fade-in until it completes. No recap ⇒ podium
+  // shows immediately (recapDone starts true). hasRecap is recomputed from the
+  // latest `result`; recapDone is synced via the effect below once data arrives.
+  const recap = result?.recap
+  const hasRecap = !!recap && recap.superlatives.length > 0
+  const [recapDone, setRecapDone] = useState(false)
+  useEffect(() => {
+    // Start the recap gate closed only when there IS a recap; otherwise the
+    // podium is free to show right away (matches today's behaviour).
+    setRecapDone(!hasRecap)
+  }, [hasRecap])
 
   useEffect(() => {
     connect()
@@ -262,7 +277,22 @@ const SharePage = ({ id }: Props) => {
         </Suspense>
       )}
 
-      <div className="z-10 flex w-full max-w-3xl flex-col items-center px-4 pt-6 pb-20">
+      {/* Superlative recap reveal — overlays the podium until it completes,
+          mirroring the live Podium. RecapSequence supplies its own absolute
+          inset-0 z-40 placement; we only mount it (never edit it). */}
+      {hasRecap && recap && !recapDone && (
+        <RecapSequence
+          superlatives={recap.superlatives}
+          onComplete={() => setRecapDone(true)}
+        />
+      )}
+
+      <div
+        className={clsx(
+          "z-10 flex w-full max-w-3xl flex-col items-center px-4 pt-6 pb-20 transition-opacity",
+          { "opacity-0": hasRecap && !recapDone },
+        )}
+      >
         <header className="mb-8 text-center">
           <p className="text-xs font-semibold tracking-wide uppercase text-[color:var(--color-field-ink)]/70">
             {t("results:share.title")}

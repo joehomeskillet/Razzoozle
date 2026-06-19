@@ -37,10 +37,29 @@ const gameResultPlayerValidator = z.object({
   rank: z.number(),
 })
 
+// Optional post-game recap, persisted alongside the result so the public share
+// page can replay the superlative reveal. Loosely typed (superlatives array +
+// optional hardest-question callout) — mirrors ManagerRecap in @razzoozle/common.
+// Optional so older result files without it still validate.
+const managerRecapValidator = z.object({
+  superlatives: z.array(
+    z.object({
+      key: z.string(),
+      winnerName: z.string(),
+      winnerAvatar: z.string().optional(),
+      value: z.number(),
+    }),
+  ),
+  hardestQuestion: z
+    .object({ questionIndex: z.number(), correctPct: z.number() })
+    .optional(),
+})
+
 export const gameResultValidator = z.object({
   id: z.string(),
   subject: z.string(),
   date: z.string(),
   players: z.array(gameResultPlayerValidator),
   questions: z.array(z.unknown()),
+  recap: managerRecapValidator.optional(),
 })

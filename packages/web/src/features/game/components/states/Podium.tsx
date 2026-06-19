@@ -13,7 +13,7 @@ import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExpor
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
-import { Share2 } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { motion } from "motion/react"
 import { Suspense, lazy, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
@@ -270,7 +270,7 @@ const PodiumStickerButton = ({
         disabled={isExporting}
         className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[var(--border-hairline)] bg-white px-3 py-1.5 text-sm font-semibold text-[color:var(--color-field-ink)] shadow-sm transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]/60 focus-visible:outline-none disabled:opacity-60"
       >
-        <Share2 className="size-4" aria-hidden />
+        <Sparkles className="size-4" aria-hidden />
         {label}
       </button>
     </>
