@@ -8,10 +8,6 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
-import {
-  AVATAR_STYLES,
-  generateAvatar,
-} from "@razzoozle/web/features/game/utils/dicebear"
 
 import { useNavigate } from "@tanstack/react-router"
 import { type KeyboardEvent, useRef, useState } from "react"
@@ -21,7 +17,7 @@ const USERNAME_MAX_LENGTH = 20
 
 const Username = () => {
   const { socket } = useSocket()
-  const { gameId, login, setStatus, setAvatar } = usePlayerStore()
+  const { gameId, login, setStatus } = usePlayerStore()
   const navigate = useNavigate()
   const [username, setUsername] = useState("")
   const [error, setError] = useState(false)
@@ -55,26 +51,6 @@ const Username = () => {
     login(username)
 
     navigate({ to: "/party/$gameId", params: { gameId: joinedGameId } })
-
-    // Auto-assign a random DiceBear avatar the moment the player enters the
-    // lobby, so the host roster shows a diverse avatar immediately — before they
-    // ever open the picker. generateAvatar is async (the @dicebear libs are
-    // code-split), so this is fire-and-forget and does NOT block navigation; the
-    // avatar resolves a beat later. If the player later picks/uploads, that
-    // overrides via the same SET_AVATAR path.
-    const style =
-      AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)]!
-    const seed =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${username}-${Date.now()}`
-
-    generateAvatar(style, seed).then((uri) => {
-      // A fast pick/upload can land before this async random resolves — don't clobber it.
-      if (usePlayerStore.getState().player?.avatar) return
-      setAvatar(uri)
-      socket.emit(EVENTS.PLAYER.SET_AVATAR, { avatar: uri })
-    })
   })
 
   return (

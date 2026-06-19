@@ -10,6 +10,7 @@
     "points": "{{count}} points",
     "playSelf": "Play it yourself",
     "hostYourOwn": "Host your own quiz",
-    "createSticker": "Create sticker"
+    "createSticker": "Create sticker",
+    "shareTitle": "Standings"
   }
 }

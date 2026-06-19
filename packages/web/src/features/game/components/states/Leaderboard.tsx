@@ -267,7 +267,7 @@ const Leaderboard = ({
 
   // Climber / faller emphasis — rank delta (old index → new index) per player.
   // Cheap O(n) map built once per leaderboard change; consulted with a Map lookup
-  // in render so a ~200-row list stays light (no per-row .findIndex scans).
+  // in render so a top-5 (server-sliced) list stays light (no per-row .findIndex scans).
   const rankMoves = useMemo(() => {
     const oldRank = new Map<string, number>()
     oldLeaderboard.forEach((p, i) => oldRank.set(p.id, i))
@@ -290,7 +290,7 @@ const Leaderboard = ({
 
   // Old/new point maps — built once per leaderboard change so the per-row
   // AnimatedPoints from/to lookups are O(1) Map gets instead of O(n) .find()
-  // scans over both arrays on every row of a ~200-player list.
+  // scans over both arrays on every row of a top-5 (server-sliced) list.
   const oldPoints = useMemo(() => {
     const m = new Map<string, number>()
     oldLeaderboard.forEach((p) => m.set(p.id, p.points))
@@ -412,7 +412,7 @@ const Leaderboard = ({
                   }}
                   className={[
                     "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
-                    // Cheap CSS ring/opacity emphasis — keeps the ~200-row hot path light.
+                    // Cheap CSS ring/opacity emphasis — keeps the top-5 (server-sliced) hot path light.
                     "transition-shadow",
                     climbing
                       ? "shadow-[0_0_0_3px_rgba(16,185,129,0.7)]"

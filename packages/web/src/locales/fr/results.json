@@ -10,6 +10,7 @@
     "points": "{{count}} points",
     "playSelf": "Jouer moi-même",
     "hostYourOwn": "Crée ton propre quiz",
-    "createSticker": "Créer un autocollant"
+    "createSticker": "Créer un autocollant",
+    "shareTitle": "Classement"
   }
 }

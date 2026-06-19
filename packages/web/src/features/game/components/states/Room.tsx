@@ -197,6 +197,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
           onChange={(e) => setPairCode(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && pairDisplay()}
           placeholder="ABC123"
+          aria-label={t("manager:satellite.codeLabel")}
           maxLength={6}
           className="w-28 rounded-md bg-white/90 px-2 py-1 text-center font-mono text-lg font-bold tracking-widest text-black uppercase outline-none"
         />

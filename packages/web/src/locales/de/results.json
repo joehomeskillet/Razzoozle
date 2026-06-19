@@ -10,6 +10,7 @@
     "points": "{{count}} Punkte",
     "playSelf": "Selbst spielen",
     "hostYourOwn": "Mach dein eigenes Quiz",
-    "createSticker": "Sticker erstellen"
+    "createSticker": "Sticker erstellen",
+    "shareTitle": "Rangliste"
   }
 }

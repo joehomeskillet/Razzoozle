@@ -10,6 +10,7 @@
     "points": "{{count}} puntos",
     "playSelf": "Jugar yo mismo",
     "hostYourOwn": "Crea tu propio cuestionario",
-    "createSticker": "Crear pegatina"
+    "createSticker": "Crear pegatina",
+    "shareTitle": "Clasificación"
   }
 }

@@ -10,6 +10,7 @@
     "points": "{{count}} 分",
     "playSelf": "自己来玩",
     "hostYourOwn": "创建你自己的测验",
-    "createSticker": "创建贴纸"
+    "createSticker": "创建贴纸",
+    "shareTitle": "排行榜"
   }
 }

@@ -214,7 +214,7 @@ const SharePage = ({ id }: Props) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: result?.subject || "Standings",
+          title: result?.subject || t("results:share.shareTitle", { defaultValue: "Standings" }),
           url: window.location.href,
         })
       } catch (err) {

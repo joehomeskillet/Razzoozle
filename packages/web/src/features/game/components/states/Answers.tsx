@@ -479,10 +479,11 @@ const Answers = ({
               }}
               disabled={submitted}
               placeholder={t("game:typeAnswerPlaceholder")}
+              aria-label={t("game:typeAnswerPlaceholder")}
               autoFocus
               autoComplete="off"
               autoCorrect="off"
-              className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/40 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             />
             <button
               type="button"
@@ -545,6 +546,10 @@ const Answers = ({
               value={sliderValue}
               disabled={submitted}
               onChange={(e) => setSliderValue(Number(e.target.value))}
+              aria-label={t("game:sliderAnswerLabel", {
+                defaultValue: "Answer value",
+              })}
+              aria-valuetext={`${sliderValue}${unit ? ` ${unit}` : ""}`}
               className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--color-field-ink)]/5 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
             />
             <div className="flex w-full justify-between text-sm font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
