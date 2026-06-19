@@ -53,6 +53,15 @@ const SVG_SIZE: Record<"sm" | "md" | "lg", string> = {
   lg: "w-8 h-8", // ~32px inner SVG
 }
 
+// Live-mode glyph color per tier (inline, so it never inherits dark ink).
+// Contrast-picked against each tier gradient's mid-tone.
+const LIVE_GLYPH_HEX: Record<"bronze" | "silver" | "gold" | "diamant", string> = {
+  bronze: "#ffffff",
+  silver: "#0E1120",
+  gold: "#0E1120",
+  diamant: "#ffffff",
+}
+
 // ─── Optional color override (literal hex for the PNG-capture subtree) ────────
 
 export interface AchievementBadgeColorOverride {
@@ -153,7 +162,7 @@ const AchievementBadge = ({
     : undefined
   const iconStyle = usingOverride
     ? { color: colorOverride?.icon ?? "#ffffff" }
-    : undefined
+    : { color: LIVE_GLYPH_HEX[tier] }
 
   // Tier Tailwind classes only when NOT overriding (override drives inline hex).
   const discTierClasses = usingOverride

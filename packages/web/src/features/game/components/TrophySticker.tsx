@@ -157,7 +157,7 @@ const MiniMedal = ({ id, tier, tierHex, size }: MiniMedalProps) => {
   // resolved tier hex as the ring, and a tier-appropriate icon hex.
   const gradientFrom = lighten(tierHex, 0.18)
   const gradientTo = darken(tierHex, 0.22)
-  const icon = tier === "silver" ? "#1e293b" : "#ffffff"
+  const icon = tier === "bronze" || tier === "diamant" ? "#ffffff" : "#1e293b"
 
   return (
     <span
@@ -200,10 +200,11 @@ const TrophySticker = ({
   const honorific = t(`game:recap.sticker.honorific.${rank}`)
   const pointsUnit = t("game:recap.sticker.points")
 
-  // ── Resolve every token to a literal hex/rgba (spec §3) ──
-  const bgStart = safeHex(theme.colorSecondary, FALLBACK.bgStart)
-  const bgEnd = safeHex(theme.colorPrimary, FALLBACK.bgEnd)
-  const textColor = safeHex(theme.colorText, FALLBACK.text)
+  // ── Cream paper field (literal hex; matches body --color-field-cream) ──
+  const CREAM = "#F4F1EA"
+  const bgStart = lighten(CREAM, 0.45)
+  const bgEnd = darken(CREAM, 0.06)
+  const textColor = "#0E1120" // ink — page text on cream
   const accent = safeHex(theme.accentColor, FALLBACK.accent)
   const footerBg = safeHex(theme.footerColors?.bg, FALLBACK.footerBg)
   const footerText = safeHex(theme.footerColors?.text, FALLBACK.footerText)
@@ -238,11 +239,11 @@ const TrophySticker = ({
     .slice(0, 3)
 
   // Size tokens scale modestly for the taller story frame.
-  const discSize = isStory ? 260 : 200
-  const numeralSize = isStory ? 110 : 88
-  const nameSize = isStory ? 44 : 38
-  const pointsSize = isStory ? 56 : 48
-  const miniSize = isStory ? 56 : 46
+  const discSize = isStory ? 210 : 150
+  const numeralSize = isStory ? 92 : 70
+  const nameSize = isStory ? 40 : 34
+  const pointsSize = isStory ? 50 : 44
+  const miniSize = isStory ? 50 : 42
 
   return (
     <div
@@ -268,7 +269,7 @@ const TrophySticker = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "28px 32px 0 32px",
+          padding: "20px 32px 0 32px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -333,7 +334,7 @@ const TrophySticker = ({
           justifyContent: "center",
           textAlign: "center",
           padding: "0 32px",
-          gap: isStory ? "22px" : "16px",
+          gap: isStory ? "16px" : "10px",
         }}
       >
         <span
@@ -386,7 +387,7 @@ const TrophySticker = ({
               position: "relative",
               fontSize: `${numeralSize}px`,
               fontWeight: 900,
-              color: textColor,
+              color: "#ffffff",
               lineHeight: 1,
               textShadow: `2px 2px ${rgba("#000000", 0.3)}`,
             }}
