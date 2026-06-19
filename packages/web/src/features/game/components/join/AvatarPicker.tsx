@@ -244,7 +244,7 @@ const AvatarPicker = ({ onDone }: Props) => {
       </p>
 
       {onDone && (
-        <Button variant="ghost" size="sm" onClick={() => onDone()}>
+        <Button variant="primary" size="sm" onClick={() => onDone()}>
           {t("game:avatar.done", { defaultValue: "Fertig" })}
         </Button>
       )}
