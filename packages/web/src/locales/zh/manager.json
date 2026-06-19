@@ -169,6 +169,12 @@
   },
   "dev": {
     "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",
+    "theme": {
+      "title": "主题覆盖"
+    },
+    "animatedCss": {
+      "title": "动态 CSS"
+    },
     "api": {
       "title": "API 浏览器",
       "description": "自文档化的 HTTP 接口。",
@@ -425,7 +431,9 @@
       "title": "预览",
       "join": "加入",
       "question": "题目",
-      "leaderboard": "排行榜"
+      "leaderboard": "排行榜",
+      "interactive": "点击查看交互式预览",
+      "static": "以图片形式预览"
     },
     "contrast": {
       "hint": "对比度",

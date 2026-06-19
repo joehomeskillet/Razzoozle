@@ -39,8 +39,6 @@
     "export": "Export “{{name}}” as JSON",
     "exported": "Quiz exported as JSON",
     "import": "Import quiz from JSON",
-    "export": "Export “{{name}}” as JSON",
-    "exported": "Quiz exported as JSON",
     "none": "No quiz created yet",
     "notFound": "No quiz found",
     "pleaseCreate": "Please create a quiz first",
@@ -141,7 +139,7 @@
     "running": "Running Games",
     "dev": "Dev"
   },
-  "plugins":   {
+  "plugins": {
     "title": "Plugins",
     "install": "Install plugin",
     "installHint": "Upload a plugin as a ZIP archive.",
@@ -208,6 +206,12 @@
       "server": "Server logs",
       "client": "Client logs",
       "download": "Download"
+    },
+    "theme": {
+      "title": "Theme Overrides"
+    },
+    "animatedCss": {
+      "title": "Animated CSS"
     }
   },
   "media": {
@@ -425,7 +429,9 @@
       "title": "Preview",
       "join": "Join",
       "question": "Question",
-      "leaderboard": "Leaderboard"
+      "leaderboard": "Leaderboard",
+      "interactive": "Click for interactive preview",
+      "static": "Preview as image"
     },
     "contrast": {
       "hint": "Contrast",

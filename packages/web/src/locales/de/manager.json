@@ -206,6 +206,12 @@
       "server": "Server-Logs",
       "client": "Client-Logs",
       "download": "Herunterladen"
+    },
+    "theme": {
+      "title": "Theme-Overrides"
+    },
+    "animatedCss": {
+      "title": "Animated CSS"
     }
   },
   "media": {
@@ -423,7 +429,9 @@
       "title": "Vorschau",
       "join": "Beitritt",
       "question": "Frage",
-      "leaderboard": "Rangliste"
+      "leaderboard": "Rangliste",
+      "interactive": "Klicken für interaktive Vorschau",
+      "static": "Vorschau als Bild"
     },
     "contrast": {
       "hint": "Kontrast",

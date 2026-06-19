@@ -169,6 +169,12 @@
   },
   "dev": {
     "redactionNotice": "Las contraseñas, los tokens de API y las soluciones de respuestas nunca se registran.",
+    "theme": {
+      "title": "Sobrescrituras de tema"
+    },
+    "animatedCss": {
+      "title": "CSS animado"
+    },
     "api": {
       "title": "Explorador de API",
       "description": "Superficie HTTP autodocumentada.",
@@ -265,7 +271,9 @@
       "title": "Vista previa",
       "join": "Unirse",
       "question": "Pregunta",
-      "leaderboard": "Clasificación"
+      "leaderboard": "Clasificación",
+      "interactive": "Haz clic para la vista previa interactiva",
+      "static": "Vista previa como imagen"
     },
     "contrast": {
       "hint": "Contraste",

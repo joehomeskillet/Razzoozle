@@ -208,6 +208,12 @@
       "server": "Journaux du serveur",
       "client": "Journaux du client",
       "download": "Télécharger"
+    },
+    "theme": {
+      "title": "Surcharges de thème"
+    },
+    "animatedCss": {
+      "title": "CSS animé"
     }
   },
   "satellite": {
@@ -265,7 +271,9 @@
       "title": "Aperçu",
       "join": "Rejoindre",
       "question": "Question",
-      "leaderboard": "Classement"
+      "leaderboard": "Classement",
+      "interactive": "Cliquer pour un aperçu interactif",
+      "static": "Aperçu en image"
     },
     "contrast": {
       "hint": "Contraste",

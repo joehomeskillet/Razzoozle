@@ -199,6 +199,12 @@
       "server": "Log del server",
       "client": "Log del client",
       "download": "Scarica"
+    },
+    "theme": {
+      "title": "Sovrascritture del tema"
+    },
+    "animatedCss": {
+      "title": "CSS animato"
     }
   },
   "satellite": {
@@ -265,7 +271,9 @@
       "title": "Anteprima",
       "join": "Partecipa",
       "question": "Domanda",
-      "leaderboard": "Classifica"
+      "leaderboard": "Classifica",
+      "interactive": "Clicca per l’anteprima interattiva",
+      "static": "Anteprima come immagine"
     },
     "contrast": {
       "hint": "Contrasto",
