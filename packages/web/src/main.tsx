@@ -1,6 +1,7 @@
 import "@fontsource-variable/rubik/wght.css"
 import Toaster from "@razzoozle/web/components/Toaster"
 import { socketClient } from "@razzoozle/web/features/game/contexts/socket-context"
+import { initSwAutoReload } from "@razzoozle/web/features/game/utils/swAutoReload"
 import "@razzoozle/web/i18n"
 import "@razzoozle/web/index.css"
 import { routeTree } from "@razzoozle/web/route.gen"
@@ -21,6 +22,11 @@ const root = document.getElementById("root")
 if (!root) {
   throw new Error("Root element not found")
 }
+
+// Auto-reload the open app once when a new service worker (= new deploy) takes
+// control, guarded so it never fires during an active question. See
+// features/game/utils/swAutoReload.ts.
+initSwAutoReload()
 
 createRoot(root).render(
   <StrictMode>
