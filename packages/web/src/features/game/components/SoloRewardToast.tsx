@@ -24,7 +24,7 @@ const SoloRewardToast = ({ achievementIds, visible }: Props) => {
       className="pointer-events-none fixed left-1/2 z-[59] w-[min(92vw,24rem)] -translate-x-1/2"
       style={{ top: "calc(max(1.5rem, env(safe-area-inset-top)) + 5rem)" }}
     >
-      <RewardStack achievementIds={achievementIds} visible={visible} />
+      <RewardStack achievementIds={achievementIds} visible={visible} tone="toast" />
     </div>,
     document.body,
   )

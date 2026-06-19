@@ -34,6 +34,8 @@ export interface RewardRowProps {
   value?: string
   badge?: string
   accent: string
+  /** Card sizing tone. "toast" matches ScoreToast (px-5 py-3 shadow-xl); default "compact". */
+  tone?: "compact" | "toast"
   reduced: boolean
   /** Theme-tuned lifecycle spring (already reduced-aware) from the parent's useReveal(). */
   spring: Transition
@@ -50,6 +52,7 @@ const RewardRow = ({
   value,
   badge,
   accent,
+  tone = "compact",
   reduced,
   spring,
   durationMs,
@@ -119,7 +122,7 @@ const RewardRow = ({
       onMouseLeave={resume}
       onFocus={pause}
       onBlur={resume}
-      className="group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white py-2.5 pr-3 pl-2.5 text-[color:var(--color-field-ink)] shadow-md pointer-events-auto"
+      className={`group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)] pointer-events-auto ${tone === "toast" ? "px-5 py-3 shadow-xl" : "py-2.5 pr-3 pl-2.5 shadow-md"}`}
       style={{ borderLeft: `4px solid ${accent}` }}
     >
       {/* Leading accent wash */}

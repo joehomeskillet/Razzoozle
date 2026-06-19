@@ -53,6 +53,8 @@ interface Props {
   firstCorrect?: boolean
   achievementIds: string[]
   visible: boolean
+  /** Card sizing tone forwarded to each RewardRow. */
+  tone?: "compact" | "toast"
   // Sum of achievement bonus points unlocked this round (already in myPoints).
   bonusPoints?: number
 }
@@ -64,6 +66,7 @@ const RewardStack = ({
   firstCorrect,
   achievementIds,
   visible,
+  tone,
   bonusPoints,
 }: Props) => {
   const reveal = useReveal()
@@ -216,6 +219,7 @@ const RewardStack = ({
               value={item.value}
               badge={item.badge}
               accent={item.accent}
+              tone={tone}
               reduced={reduced}
               spring={reveal.spring}
               durationMs={item.durationMs}
