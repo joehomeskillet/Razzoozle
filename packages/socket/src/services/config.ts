@@ -633,9 +633,25 @@ export const getGameConfig = (): GameConfig => {
   return gameConfigValidator.parse({})
 }
 
-export const updateGameConfig = (patch: { teamMode?: boolean }): GameConfig => {
+export const updateGameConfig = (patch: {
+  teamMode?: boolean
+  // The `lowLatencyMode.enabled` master switch, flattened for the manager
+  // toggle. Deep-merged below so the other lowLatencyMode sub-fields are kept.
+  lowLatencyEnabled?: boolean
+}): GameConfig => {
   const current = getGameConfig()
-  const merged = { ...current, ...patch }
+  const { lowLatencyEnabled, ...flatPatch } = patch
+  const merged = {
+    ...current,
+    ...flatPatch,
+    // Only touch the nested enabled flag when the caller provided it; keep the
+    // rest of the persisted lowLatencyMode block intact.
+    ...(lowLatencyEnabled === undefined
+      ? {}
+      : {
+          lowLatencyMode: { ...current.lowLatencyMode, enabled: lowLatencyEnabled },
+        }),
+  }
   const result = gameConfigValidator.safeParse(merged)
 
   if (!result.success) {

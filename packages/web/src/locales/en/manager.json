@@ -613,7 +613,13 @@
     "teamMode": "Team mode",
     "teamModeHint": "Players pick a team (red, blue, green, yellow). Requires a restart of the game.",
     "teamModeEnabled": "Team mode enabled",
-    "teamModeDisabled": "Team mode disabled"
+    "teamModeDisabled": "Team mode disabled",
+    "lowLatency": "Low-latency mode",
+    "lowLatencyTitle": "Low-latency mode",
+    "lowLatencyDescription": "Tunes timing for fast play: clock sync, answer acknowledgement and throttled leaderboard updates. Also shows the latency health panel for the host.",
+    "lowLatencyHint": "Reduces perceived delay. Requires a restart of the game.",
+    "lowLatencyEnabled": "Low-latency mode enabled",
+    "lowLatencyDisabled": "Low-latency mode disabled"
   },
   "achievementsConfig": {
     "title": "Configure Achievements",

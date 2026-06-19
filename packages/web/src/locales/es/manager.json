@@ -587,7 +587,13 @@
     "teamMode": "Modo por equipos",
     "teamModeHint": "Los jugadores eligen un equipo (rojo, azul, verde, amarillo). Requiere reiniciar la partida.",
     "teamModeEnabled": "Modo por equipos activado",
-    "teamModeDisabled": "Modo por equipos desactivado"
+    "teamModeDisabled": "Modo por equipos desactivado",
+    "lowLatency": "Modo de baja latencia",
+    "lowLatencyTitle": "Modo de baja latencia",
+    "lowLatencyDescription": "Optimiza la sincronización para un juego rápido: sincronización del reloj, confirmación de respuestas y actualizaciones limitadas de la clasificación. También muestra el panel de latencia para el anfitrión.",
+    "lowLatencyHint": "Reduce el retraso percibido. Requiere reiniciar la partida.",
+    "lowLatencyEnabled": "Modo de baja latencia activado",
+    "lowLatencyDisabled": "Modo de baja latencia desactivado"
   },
   "achievementsConfig": {
     "title": "Configurar logros",

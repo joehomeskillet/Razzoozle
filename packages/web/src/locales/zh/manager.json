@@ -615,7 +615,13 @@
     "teamMode": "团队模式",
     "teamModeHint": "玩家选择一个队伍（红、蓝、绿、黄）。需要重启游戏。",
     "teamModeEnabled": "团队模式已启用",
-    "teamModeDisabled": "团队模式已禁用"
+    "teamModeDisabled": "团队模式已禁用",
+    "lowLatency": "低延迟模式",
+    "lowLatencyTitle": "低延迟模式",
+    "lowLatencyDescription": "为快速游戏优化时序：时钟同步、答题确认和受限的排行榜更新。同时为主持人显示延迟状态面板。",
+    "lowLatencyHint": "降低感知延迟。需要重启游戏。",
+    "lowLatencyEnabled": "低延迟模式已启用",
+    "lowLatencyDisabled": "低延迟模式已禁用"
   },
   "achievementsConfig": {
     "title": "配置成就",

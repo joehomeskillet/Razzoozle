@@ -635,7 +635,13 @@
     "teamMode": "Team-Modus",
     "teamModeHint": "Spieler wählen ein Team (Rot, Blau, Grün, Gelb). Erfordert einen Neustart des Spiels.",
     "teamModeEnabled": "Team-Modus aktiviert",
-    "teamModeDisabled": "Team-Modus deaktiviert"
+    "teamModeDisabled": "Team-Modus deaktiviert",
+    "lowLatency": "Low-Latency-Modus",
+    "lowLatencyTitle": "Low-Latency-Modus",
+    "lowLatencyDescription": "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
+    "lowLatencyHint": "Reduziert die wahrgenommene Verzögerung. Erfordert einen Neustart des Spiels.",
+    "lowLatencyEnabled": "Low-Latency-Modus aktiviert",
+    "lowLatencyDisabled": "Low-Latency-Modus deaktiviert"
   },
   "achievements": {
     "active": "aktiv"

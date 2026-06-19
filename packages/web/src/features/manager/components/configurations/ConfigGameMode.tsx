@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -25,8 +26,13 @@ const ConfigGameMode = () => {
   const { t } = useTranslation()
   const config = useConfig()
   const [teamMode, setTeamMode] = useState(config.teamMode ?? false)
+  const [lowLatency, setLowLatency] = useState(config.lowLatencyEnabled ?? false)
   const [saving, setSaving] = useState(false)
+  const [savingLowLatency, setSavingLowLatency] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lowLatencyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
   // the saved value back after a save (and on reconnect), so re-sync local state
@@ -35,11 +41,20 @@ const ConfigGameMode = () => {
     setTeamMode(config.teamMode ?? false)
   }, [config.teamMode])
 
+  useEffect(() => {
+    const next = config.lowLatencyEnabled ?? false
+    setLowLatency(next)
+    setLowLatencyPref(next)
+  }, [config.lowLatencyEnabled])
+
   // Clear any pending optimistic-toast timeout on unmount.
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current !== null) {
         clearTimeout(saveTimeoutRef.current)
+      }
+      if (lowLatencyTimeoutRef.current !== null) {
+        clearTimeout(lowLatencyTimeoutRef.current)
       }
     }
   }, [])
@@ -67,6 +82,39 @@ const ConfigGameMode = () => {
               })
             : t("manager:gameMode.teamModeDisabled", {
                 defaultValue: "Team-Modus deaktiviert",
+              }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
+  const handleLowLatencyToggle = useCallback(
+    (next: boolean) => {
+      setLowLatency(next)
+      setSavingLowLatency(true)
+      // Mirror the choice into localStorage so the in-game manager chrome
+      // (GameWrapper, outside ConfigProvider) can gate the LowLatencyHealth
+      // widget without re-reading the server config.
+      setLowLatencyPref(next)
+
+      // Emit a partial patch; server merges `lowLatencyEnabled` into the
+      // persisted lowLatencyMode.enabled flag (mirrors the teamMode toggle).
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { lowLatencyEnabled: next })
+
+      // ponytail: server SET_GAME_CONFIG has no ack; toast is optimistic
+      if (lowLatencyTimeoutRef.current !== null) {
+        clearTimeout(lowLatencyTimeoutRef.current)
+      }
+      lowLatencyTimeoutRef.current = setTimeout(() => {
+        setSavingLowLatency(false)
+        toast.success(
+          next
+            ? t("manager:gameMode.lowLatencyEnabled", {
+                defaultValue: "Low-Latency-Modus aktiviert",
+              })
+            : t("manager:gameMode.lowLatencyDisabled", {
+                defaultValue: "Low-Latency-Modus deaktiviert",
               }),
         )
       }, 300)
@@ -122,6 +170,29 @@ const ConfigGameMode = () => {
             })}
           </div>
         )}
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.lowLatencyTitle", {
+          defaultValue: "Low-Latency-Modus",
+        })}
+        description={t("manager:gameMode.lowLatencyDescription", {
+          defaultValue:
+            "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
+        })}
+      >
+        <ToggleField
+          label={t("manager:gameMode.lowLatency", {
+            defaultValue: "Low-Latency-Modus",
+          })}
+          description={t("manager:gameMode.lowLatencyHint", {
+            defaultValue:
+              "Reduziert die wahrgenommene Verzögerung. Erfordert einen Neustart des Spiels.",
+          })}
+          checked={lowLatency}
+          onChange={handleLowLatencyToggle}
+          disabled={savingLowLatency}
+        />
       </FormSection>
     </div>
   )

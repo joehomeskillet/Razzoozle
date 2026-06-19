@@ -25,6 +25,7 @@ export const emitConfig = (socket: SocketContext["socket"]) =>
     media: getMediaList(),
     themeTemplates: getThemeTemplatesMeta(),
     teamMode: getGameConfig().teamMode,
+    lowLatencyEnabled: getGameConfig().lowLatencyMode.enabled,
     achievements: getMergedAchievements(),
     devMode: isDevMode(),
     devApiKey: devApiKey(),

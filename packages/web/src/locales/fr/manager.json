@@ -587,7 +587,13 @@
     "teamMode": "Mode équipe",
     "teamModeHint": "Les joueurs choisissent une équipe (rouge, bleu, vert, jaune). Nécessite un redémarrage de la partie.",
     "teamModeEnabled": "Mode équipe activé",
-    "teamModeDisabled": "Mode équipe désactivé"
+    "teamModeDisabled": "Mode équipe désactivé",
+    "lowLatency": "Mode faible latence",
+    "lowLatencyTitle": "Mode faible latence",
+    "lowLatencyDescription": "Optimise la synchronisation pour un jeu rapide : synchronisation de l'horloge, accusé de réception des réponses et mises à jour limitées du classement. Affiche aussi le panneau de latence pour l'hôte.",
+    "lowLatencyHint": "Réduit la latence perçue. Nécessite un redémarrage de la partie.",
+    "lowLatencyEnabled": "Mode faible latence activé",
+    "lowLatencyDisabled": "Mode faible latence désactivé"
   },
   "achievementsConfig": {
     "title": "Configurer les succès",

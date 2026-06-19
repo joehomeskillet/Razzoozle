@@ -8,6 +8,7 @@ import DisplayControl from "@razzoozle/web/features/manager/components/DisplayCo
 import DisplayStatusCard from "@razzoozle/web/features/manager/components/DisplayStatusCard"
 import SimControl from "@razzoozle/web/features/manager/components/SimControl"
 import LowLatencyHealth from "@razzoozle/web/features/game/components/LowLatencyHealth"
+import { getLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
 import { preloadFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
 import {
   useEvent,
@@ -72,6 +73,10 @@ const GameWrapper = ({
   const { muted, toggle: toggleMuted } = useSoundStore()
   const { enabled: hapticsEnabled, toggle: toggleHaptics } = useHapticsStore()
   const hapticsSupported = isHapticsSupported()
+  // Host opt-in for the LowLatencyHealth diagnostic widget. Mirrors the
+  // manager's persisted low-latency toggle (server config) via localStorage,
+  // since GameWrapper renders outside the manager ConfigProvider. Default off.
+  const [lowLatencyEnabled] = useState(getLowLatencyPref)
   const { t } = useTranslation()
   const reveal = useReveal()
   const [isDisabled, setIsDisabled] = useState(false)
@@ -381,10 +386,13 @@ const GameWrapper = ({
                     <VibrateOff className="size-5" aria-hidden />
                   )}
                 </Button>
-                {/* Low-latency health widget. Self-hides unless the server emits
-                    a health snapshot (i.e. low-latency mode is on), so it is
-                    inert in normal mode. */}
-                {manager && controls && <LowLatencyHealth />}
+                {/* Low-latency health widget. Opt-in: only mounts when the
+                    manager activated Low-Latency-Modus (lowLatencyEnabled pref).
+                    Even then it self-hides until the server emits a health
+                    snapshot, so it stays inert in normal mode. */}
+                {manager && controls && lowLatencyEnabled && (
+                  <LowLatencyHealth />
+                )}
                 {manager && controls && <DisplayControl />}
                 {manager && controls && <DisplayStatusCard />}
                 {manager && controls && import.meta.env.DEV && <SimControl />}

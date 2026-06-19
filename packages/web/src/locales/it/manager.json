@@ -587,7 +587,13 @@
     "teamMode": "Modalità squadre",
     "teamModeHint": "I giocatori scelgono una squadra (rosso, blu, verde, giallo). Richiede il riavvio della partita.",
     "teamModeEnabled": "Modalità squadre attivata",
-    "teamModeDisabled": "Modalità squadre disattivata"
+    "teamModeDisabled": "Modalità squadre disattivata",
+    "lowLatency": "Modalità a bassa latenza",
+    "lowLatencyTitle": "Modalità a bassa latenza",
+    "lowLatencyDescription": "Ottimizza i tempi per un gioco veloce: sincronizzazione dell'orologio, conferma delle risposte e aggiornamenti limitati della classifica. Mostra anche il pannello di latenza per l'host.",
+    "lowLatencyHint": "Riduce il ritardo percepito. Richiede il riavvio della partita.",
+    "lowLatencyEnabled": "Modalità a bassa latenza attivata",
+    "lowLatencyDisabled": "Modalità a bassa latenza disattivata"
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",
