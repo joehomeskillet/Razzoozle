@@ -245,5 +245,16 @@
     "podiumCue": "现在：领奖台",
     "advance": "下一个",
     "awardsTitle": "奖项"
+  },
+  "roundRecap": {
+    "title": "本轮亮点",
+    "fastest_finger": "手速最快",
+    "first_correct": "率先答对",
+    "streak": "连胜",
+    "highest_round_score": "本轮最佳得分",
+    "rank_climber": "逆袭最猛",
+    "achievement_unlock": "解锁奖励",
+    "slowest_player": "最慢",
+    "most_wrong": "答错最多"
   }
 }

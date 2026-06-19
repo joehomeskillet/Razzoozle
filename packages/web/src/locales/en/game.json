@@ -248,5 +248,16 @@
     "podiumCue": "And now: the podium",
     "advance": "Next",
     "awardsTitle": "Awards"
+  },
+  "roundRecap": {
+    "title": "Round Highlights",
+    "fastest_finger": "Fastest Finger",
+    "first_correct": "First Correct Answer",
+    "streak": "Streak",
+    "highest_round_score": "Best Round Score",
+    "rank_climber": "Biggest Climber",
+    "achievement_unlock": "Bonus Unlocked",
+    "slowest_player": "Slowest",
+    "most_wrong": "Most Wrong Answers"
   }
 }

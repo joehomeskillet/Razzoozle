@@ -243,5 +243,16 @@
     "podiumCue": "E ora: il podio",
     "advance": "Avanti",
     "awardsTitle": "Premi"
+  },
+  "roundRecap": {
+    "title": "Momenti salienti del round",
+    "fastest_finger": "Dito più veloce",
+    "first_correct": "Prima risposta corretta",
+    "streak": "Serie",
+    "highest_round_score": "Miglior punteggio del round",
+    "rank_climber": "Maggiore scalatore",
+    "achievement_unlock": "Bonus sbloccato",
+    "slowest_player": "Più lento",
+    "most_wrong": "Più risposte sbagliate"
   }
 }

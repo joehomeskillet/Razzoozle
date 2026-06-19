@@ -243,5 +243,16 @@
     "podiumCue": "Et maintenant : le podium",
     "advance": "Suivant",
     "awardsTitle": "Récompenses"
+  },
+  "roundRecap": {
+    "title": "Temps forts du tour",
+    "fastest_finger": "Doigt le plus rapide",
+    "first_correct": "Première bonne réponse",
+    "streak": "Série",
+    "highest_round_score": "Meilleur score du tour",
+    "rank_climber": "Plus grande remontée",
+    "achievement_unlock": "Bonus débloqué",
+    "slowest_player": "Le plus lent",
+    "most_wrong": "Le plus de mauvaises réponses"
   }
 }

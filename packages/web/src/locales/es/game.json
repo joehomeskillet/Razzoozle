@@ -243,5 +243,16 @@
     "podiumCue": "Y ahora: el podio",
     "advance": "Siguiente",
     "awardsTitle": "Premios"
+  },
+  "roundRecap": {
+    "title": "Lo mejor de la ronda",
+    "fastest_finger": "Dedo más rápido",
+    "first_correct": "Primer acierto",
+    "streak": "Racha",
+    "highest_round_score": "Mejor puntuación de la ronda",
+    "rank_climber": "Mayor escalador",
+    "achievement_unlock": "Bonus desbloqueado",
+    "slowest_player": "El más lento",
+    "most_wrong": "Más respuestas incorrectas"
   }
 }

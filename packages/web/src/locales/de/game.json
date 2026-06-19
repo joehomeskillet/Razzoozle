@@ -248,5 +248,16 @@
     "podiumCue": "Und jetzt: Das Podium",
     "advance": "Weiter",
     "awardsTitle": "Auszeichnungen"
+  },
+  "roundRecap": {
+    "title": "Höhepunkte der Runde",
+    "fastest_finger": "Schnellster Finger",
+    "first_correct": "Erste richtige Antwort",
+    "streak": "Serie",
+    "highest_round_score": "Beste Rundenpunkte",
+    "rank_climber": "Grösster Aufsteiger",
+    "achievement_unlock": "Bonus freigeschaltet",
+    "slowest_player": "Langsamster",
+    "most_wrong": "Meisten falschen Antworten"
   }
 }
