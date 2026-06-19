@@ -1,0 +1,13 @@
+- generic [ref=e2]:
+  - link "Zum Inhalt springen" [ref=e3] [cursor=pointer]:
+    - /url: "#main"
+  - main [ref=e4]:
+    - generic [ref=e5]:
+      - img "logo" [ref=e6]
+      - heading "Razzoozle" [level=1] [ref=e7]
+      - img [ref=e8]
+      - heading "Loading..." [level=2] [ref=e10]
+      - link "Razzoozle - v1.0.0" [ref=e11] [cursor=pointer]:
+        - /url: https://github.com/joehomeskillet/Razzoozle
+        - img [ref=e12]
+        - text: Razzoozle - v1.0.0

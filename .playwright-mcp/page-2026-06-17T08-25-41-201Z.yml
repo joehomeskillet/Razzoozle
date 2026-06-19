@@ -1,0 +1,23 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: Frage 3/10
+    - img "Countdown 12 Sekunden" [ref=e5]:
+      - generic [ref=e8]: "12"
+    - generic [ref=e9]: 12 geantwortet
+  - generic [ref=e10]: Was ist die Hauptstadt der Schweiz?
+  - generic [ref=e11]:
+    - button "▲ Bern" [ref=e12] [cursor=pointer]:
+      - generic [ref=e13]: ▲
+      - generic [ref=e14]: Bern
+    - button "◆ Zürich" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ◆
+      - generic [ref=e17]: Zürich
+    - button "● Genf" [ref=e18] [cursor=pointer]:
+      - generic [ref=e19]: ●
+      - generic [ref=e20]: Genf
+    - button "■ Basel" [ref=e21] [cursor=pointer]:
+      - generic [ref=e22]: ■
+      - generic [ref=e23]: Basel
+  - generic [ref=e24]:
+    - generic [ref=e25]: Anna
+    - generic [ref=e26]: 3 200

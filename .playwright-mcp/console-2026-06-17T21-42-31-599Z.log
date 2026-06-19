@@ -1,0 +1,13 @@
+[     782ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ https://razzoozle.joelduss.xyz/manager:0
+[  509149ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://razzoozle.joelduss.xyz/ws/?EIO=4&transport=polling&t=lv0ar0k4:0
+[  509150ms] [ERROR] Connection error: xhr poll error @ https://razzoozle.joelduss.xyz/assets/socket-context-CdEjgr_g.js:0
+[  510699ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ https://razzoozle.joelduss.xyz/manager:0
+[ 2353296ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://razzoozle.joelduss.xyz/ws/?EIO=4&transport=polling&t=myj83yii:0
+[ 2353298ms] [ERROR] Connection error: xhr poll error @ https://razzoozle.joelduss.xyz/assets/socket-context-CdEjgr_g.js:0
+[ 2356378ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ https://razzoozle.joelduss.xyz/manager:0
+[ 2434162ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://razzoozle.joelduss.xyz/ws/?EIO=4&transport=polling&t=n09p73xh:0
+[ 2434163ms] [ERROR] Connection error: xhr poll error @ https://razzoozle.joelduss.xyz/assets/socket-context-CdEjgr_g.js:0
+[ 2436430ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ https://razzoozle.joelduss.xyz/manager:0
+[ 3178985ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://razzoozle.joelduss.xyz/ws/?EIO=4&transport=polling&t=ng8btyp5:0
+[ 3178988ms] [ERROR] Connection error: xhr poll error @ https://razzoozle.joelduss.xyz/assets/socket-context-CdEjgr_g.js:0
+[ 3180475ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ https://razzoozle.joelduss.xyz/manager:0

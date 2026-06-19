@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - link "Zum Inhalt springen" [ref=e2] [cursor=pointer]:
+      - /url: "#main"
+    - main:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
+        - img
