@@ -1,7 +1,6 @@
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
-import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
@@ -35,7 +34,6 @@ const Responses = ({
     textResponses,
     acceptedAnswers,
     matchMode,
-    roundRecap,
   },
 }: Props) => {
   const isSlider = type === "slider"
@@ -90,8 +88,6 @@ const Responses = ({
           <Markdown>{question}</Markdown>
         </h2>
 
-        <RoundRecapStrip awards={roundRecap ?? []} />
-
         {isTypeAnswer ? (
           <div className="mx-auto w-full max-w-4xl px-4">
             {/* Accepted answers legend */}
@@ -130,7 +126,7 @@ const Responses = ({
                         "flex items-center justify-between rounded-xl px-4 py-2",
                         isMatch
                           ? "bg-[var(--state-correct-soft)] text-green-100"
-                          : "bg-white border border-[var(--border-hairline)] text-[color:var(--color-field-ink)]/70",
+                          : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
                       )}
                     >
                       <span className="font-semibold">{text}</span>
