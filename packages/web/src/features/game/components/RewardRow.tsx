@@ -158,7 +158,7 @@ const RewardRow = ({
         type="button"
         aria-label={dismissLabel ?? "Dismiss"}
         onClick={() => onDismiss(id)}
-        className="relative z-20 shrink-0 rounded-full p-1 text-[color:var(--color-field-ink)]/40 opacity-0 transition hover:bg-black/5 hover:text-[color:var(--color-field-ink)] focus-visible:bg-black/5 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
+        className="relative z-20 shrink-0 rounded-full p-1 text-[color:var(--color-field-ink)]/40 opacity-0 transition hover:bg-gray-100 hover:text-[color:var(--color-field-ink)] focus-visible:bg-gray-100 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
       >
         <X className="size-4" aria-hidden="true" />
       </button>

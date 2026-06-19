@@ -139,8 +139,8 @@ const Medal = ({ rank }: { rank: number }) => {
       )}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-        <div className="absolute top-[30%] left-1/2 h-6 w-[160%] -translate-x-1/2 -rotate-40 bg-white/25" />
-        <div className="absolute top-[70%] left-1/2 h-3 w-[160%] -translate-x-1/2 -rotate-40 bg-white/25" />
+        <div className="absolute top-[30%] left-1/2 h-6 w-[160%] -translate-x-1/2 -rotate-40 bg-white/60" />
+        <div className="absolute top-[70%] left-1/2 h-3 w-[160%] -translate-x-1/2 -rotate-40 bg-white/60" />
       </div>
       <p className="relative z-10">{rank}</p>
     </div>

@@ -6,7 +6,6 @@ import AchievementMedal from "@razzoozle/web/features/game/components/Achievemen
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import Fire from "@razzoozle/web/features/game/components/icons/Fire"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
-import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import {
   ACHIEVEMENT_META,
   TIER_INDEX,
@@ -226,7 +225,7 @@ const CelebratoryBanner = ({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const Leaderboard = ({
-  data: { oldLeaderboard, leaderboard, teamStandings, roundRecap },
+  data: { oldLeaderboard, leaderboard, teamStandings },
 }: Props) => {
   const reveal = useReveal()
   const [displayedLeaderboard, setDisplayedLeaderboard] =
@@ -357,9 +356,6 @@ const Leaderboard = ({
       <h2 className="mb-6 text-5xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
         {t("game:leaderboard")}
       </h2>
-
-      {/* Per-round recap strip — same card the phone shows; null when empty */}
-      <RoundRecapStrip awards={roundRecap ?? []} />
 
       {/* Celebratory banner — highest-tier unlock across this round */}
       {bannerInfo && (

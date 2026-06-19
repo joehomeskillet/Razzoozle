@@ -169,7 +169,7 @@ const Result = ({
   const unlockedIds = achievements ?? []
 
   return (
-    <section className="glass-3 relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
+    <section className="glass-3 relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-[var(--shadow-flat)]">
       {!poll && (
         // Moment of truth: the verdict icon pops in (overshoot scale) so the
         // correct/wrong reveal lands as a beat. Opacity-only when reduced.
@@ -209,7 +209,7 @@ const Result = ({
         // Points payoff: emphasised pop, delayed a touch behind the verdict so
         // the score reads as the reward beat. Opacity-only when reduced.
         <motion.span
-          className="mt-2 rounded-[var(--radius-theme)] bg-black/40 px-4 py-2 text-2xl font-bold text-white tabular-nums drop-shadow-lg"
+          className="mt-2 rounded-[var(--radius-theme)] bg-[color:var(--color-field-ink)] px-4 py-2 text-2xl font-bold text-white tabular-nums"
           variants={reveal.pop(0.7)}
           initial="hidden"
           animate="visible"

@@ -76,7 +76,7 @@ const TeamLeaderboard = ({ standings }: Props) => {
                 </span>
 
                 {/* Progress bar */}
-                <div className="flex-1 overflow-hidden rounded-full bg-black/10">
+                <div className="flex-1 overflow-hidden rounded-full bg-gray-200">
                   <motion.div
                     className={`h-3 rounded-full ${colors.bar}`}
                     initial={{ width: 0 }}

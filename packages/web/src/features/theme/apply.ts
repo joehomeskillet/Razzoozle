@@ -59,9 +59,11 @@ export const applyTheme = (theme: Theme) => {
     if (typeof v === "string") style.setProperty(tok.cssVar, v)
   }
 
-  // data-theme-style drives all glass CSS in index.css. "flat" is the default and
-  // is a no-op (no glass rules match), so the Südhang look is preserved exactly.
-  document.documentElement.dataset.themeStyle = t.style ?? "flat"
+  // data-theme-style drives all glass CSS in index.css. The app is cream-flat
+  // only now: the user-facing glass toggle was removed, so we always force "flat"
+  // (a no-op against the gated glass rules) even if a persisted theme still holds
+  // style: "glass". This guarantees the app can never get stuck in glass.
+  document.documentElement.dataset.themeStyle = "flat"
 
   if (typeof document !== "undefined") {
     document.title = t.appTitle?.trim() ?? "Razzoozle"

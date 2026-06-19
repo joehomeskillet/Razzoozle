@@ -73,7 +73,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
         >
           {t(`game:tier.${tier}`)}
         </h3>
-        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
+        <span className="rounded-full bg-[#F4F1EA] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
           {unlockedCount} / {enabledCount}
         </span>
       </div>
@@ -96,7 +96,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
                 "relative flex flex-col items-center gap-2 rounded-2xl px-3 py-4 transition-opacity",
                 unlocked
                   ? `bg-gradient-to-br ring-2 shadow-lg ${TIER_GRADIENT[tier]} ${TIER_RING[tier]}`
-                  : "bg-black/5 opacity-40 grayscale ring-1 ring-white/10",
+                  : "bg-gray-200 opacity-50 grayscale ring-1 ring-gray-300",
               )}
               aria-label={`${display.name}${unlocked ? `, ${count}×` : `, ${t("game:locked")}`}`}
             >
@@ -132,7 +132,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
               {unlocked && (
                 <span
                   className={clsx(
-                    "absolute right-2 top-2 rounded-full bg-black/30 px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
+                    "absolute right-2 top-2 rounded-full bg-[#2B2B33] px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
                     TIER_TEXT[tier],
                   )}
                   aria-hidden
@@ -196,7 +196,7 @@ const TrophyGallery = () => {
         <h2 className="text-2xl font-extrabold text-[color:var(--color-field-ink)]">
           {t("game:achievements.gallery.title", "Trophäen")}
         </h2>
-        <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs tabular-nums text-[color:var(--color-field-ink)]/60">
+        <span className="rounded-full bg-[#F4F1EA] px-2 py-0.5 text-xs tabular-nums text-[color:var(--color-field-ink)]/60">
           {totalUnlocked} / {enabledIds.size}
         </span>
       </header>

@@ -137,7 +137,7 @@ const LowLatencyHealth = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-black/85 p-3 text-sm text-white shadow-xl backdrop-blur">
+        <div className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[#1B1830] p-3 text-sm text-white shadow-xl">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-bold">{t("manager:lowLatency.title")}</span>
             <span className="text-[10px] text-white/40">

@@ -541,55 +541,6 @@ const ConfigTheme = () => {
                     className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   />
                 </LabelRow>
-
-                {/* Stil / Style — Flat (Südhang) vs. Glass (Liquid-Glass).
-                  Writes theme.style into the draft and live-previews via
-                  preview() → applyTheme(), which sets data-theme-style on
-                  <html> so the scoped glass CSS in index.css activates. */}
-                <LabelRow
-                  label={t("manager:theme.style.label", {
-                    defaultValue: "Stil",
-                  })}
-                  htmlFor="theme-style-flat"
-                >
-                  <div
-                    role="radiogroup"
-                    aria-label={t("manager:theme.style.label", {
-                      defaultValue: "Stil",
-                    })}
-                    className="inline-flex rounded-lg bg-gray-100 p-1 outline-1 -outline-offset-1 outline-gray-200"
-                  >
-                    {(
-                      [
-                        { value: "flat", fallback: "Flach" },
-                        { value: "glass", fallback: "Glas" },
-                      ] as const
-                    ).map(({ value: styleOption, fallback }) => {
-                      const active = (draft.style ?? "flat") === styleOption
-                      return (
-                        <button
-                          id={`theme-style-${styleOption}`}
-                          key={styleOption}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          onClick={() =>
-                            preview({ ...draft, style: styleOption })
-                          }
-                          className={`min-h-9 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                            active
-                              ? "bg-white text-gray-900 shadow-sm"
-                              : "text-gray-500 hover:text-gray-700"
-                          }`}
-                        >
-                          {t(`manager:theme.style.${styleOption}`, {
-                            defaultValue: fallback,
-                          })}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </LabelRow>
               </FormSection>
 
               {/* ── Farben ───────────────────────────────────────────── */}

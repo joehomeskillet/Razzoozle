@@ -161,7 +161,7 @@ const GameWrapper = ({
           <AlertDialog.Trigger asChild>
             <button
               type="button"
-              className="group fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex cursor-pointer items-center gap-2 rounded-lg bg-black/60 p-2 text-left text-white"
+              className="group fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-20 flex cursor-pointer items-center gap-2 rounded-lg bg-[color:var(--color-field-ink)] p-2 text-left text-white"
               aria-label={t("game:rejoin")}
             >
               <div className="rounded bg-white p-1">
@@ -256,7 +256,7 @@ const GameWrapper = ({
               <div
                 role="status"
                 aria-live="polite"
-                className="fixed top-0 right-0 left-0 z-50 flex items-center justify-center gap-3 bg-black/80 px-4 py-2 text-center text-sm font-bold text-white"
+                className="fixed top-0 right-0 left-0 z-50 flex items-center justify-center gap-3 bg-[color:var(--color-field-ink)] px-4 py-2 text-center text-sm font-bold text-white"
               >
                 <Loader className="h-5" />
                 {t("common:reconnecting")}

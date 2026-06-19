@@ -153,7 +153,7 @@ const ManagerGamePage = () => {
 
       <AlertDialog.Root open={confirmExit} onOpenChange={setConfirmExit}>
         <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
           <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-white p-6 shadow-xl">
             <AlertDialog.Title className="text-xl font-bold text-gray-900">
               {t("manager:exit.title", {

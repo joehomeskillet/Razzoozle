@@ -1,7 +1,6 @@
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
-import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
@@ -35,7 +34,6 @@ const Responses = ({
     textResponses,
     acceptedAnswers,
     matchMode,
-    roundRecap,
   },
 }: Props) => {
   const isSlider = type === "slider"
@@ -89,10 +87,6 @@ const Responses = ({
         <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           <Markdown>{question}</Markdown>
         </h2>
-
-        {/* Per-round recap strip — same card the phone shows on SHOW_RESULT;
-            renders nothing when there are no awards. */}
-        <RoundRecapStrip awards={roundRecap ?? []} />
 
         {isTypeAnswer ? (
           <div className="mx-auto w-full max-w-4xl px-4">
@@ -210,7 +204,7 @@ const Responses = ({
                       : "height 320ms cubic-bezier(0.16,1,0.3,1)",
                   }}
                 >
-                  <span className="w-full bg-black/10 text-center text-lg font-bold text-white tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-white tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                     {responses[key] || 0}
                   </span>
                 </div>

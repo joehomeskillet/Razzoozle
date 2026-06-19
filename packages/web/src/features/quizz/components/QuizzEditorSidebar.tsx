@@ -274,7 +274,7 @@ const QuizzEditorSidebar = () => {
                           aria-label={t("quizz:reorderSlideLabel", {
                             index: index + 1,
                           })}
-                          className="absolute top-1/2 left-0.5 z-10 -translate-y-1/2 rounded-sm bg-white/90 p-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                          className="absolute top-1/2 left-0.5 z-10 -translate-y-1/2 rounded-sm bg-white p-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                         >
                           <GripVertical className="size-3.5" />
                         </button>

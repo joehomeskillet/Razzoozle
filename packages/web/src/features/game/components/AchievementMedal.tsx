@@ -58,7 +58,7 @@ const PulseRing = ({ tier }: PulseRingProps) => {
   // diamant
   return (
     <motion.span
-      className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-cyan-400/50 via-fuchsia-500/50 to-violet-500/50 blur-sm"
+      className="absolute -inset-0.5 rounded-full ring-2 ring-cyan-300"
       animate={{ opacity: [0.3, 0.8, 0.3] }}
       transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
       aria-hidden

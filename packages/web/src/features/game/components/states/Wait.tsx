@@ -99,7 +99,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           initial="hidden"
           animate="visible"
           transition={reveal.spring}
-          className="mt-8 w-full max-w-md rounded-xl bg-white/95 p-4 shadow-lg"
+          className="mt-8 w-full max-w-md rounded-xl bg-white p-4 shadow-lg"
         >
           <AvatarPicker onDone={() => setShowPicker(false)} />
         </motion.div>
@@ -128,7 +128,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           initial="hidden"
           animate="visible"
           transition={reveal.spring}
-          className="mt-4 w-full max-w-md rounded-xl bg-white/95 px-4 py-3 shadow-lg"
+          className="mt-4 w-full max-w-md rounded-xl bg-white px-4 py-3 shadow-lg"
         >
           <p className="mb-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
             {t("game:teams.pick", { defaultValue: "Team wählen" })}
