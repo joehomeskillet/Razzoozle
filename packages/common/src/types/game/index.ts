@@ -230,3 +230,37 @@ export type GamesDataPayload = GameSummary[]
 export interface EndGamePayload {
   gameId: string
 }
+
+// ─── Per-round recap awards (additive, optional) ──────────────────────────────
+// Distinct from the end-game Superlative/ManagerRecap: these are short, per-round
+// highlights shown on the Kahoot-style Result screen after EACH round. Computed
+// server-side (up to 3 per round) and attached to SHOW_RESULT.roundRecap. Old
+// clients ignore the field. Labels resolve via i18n `game:roundRecap.<key>`.
+export type RoundRecapKey =
+  | "fastest_finger"
+  | "first_correct"
+  | "streak"
+  | "highest_round_score"
+  | "rank_climber"
+  | "achievement_unlock"
+  | "slowest_player"
+  | "most_wrong"
+
+export interface RoundRecapAward {
+  key: RoundRecapKey
+  /** Display name of the player who won this award this round. */
+  winnerName: string
+  /** Winner avatar URL (generic-set URL or uploaded data-URL); falls back to initials. */
+  winnerAvatar?: string
+  /**
+   * Numeric value for display, interpreted per key by formatRoundRecap:
+   *   fastest_finger      → answer time in ms (→ "X.Xs")
+   *   streak              → streak length (count)
+   *   highest_round_score → round points (count)
+   *   rank_climber        → spots climbed (count)
+   *   most_wrong          → wrong-answer count
+   *   slowest_player      → answer time in ms (→ "X.Xs")
+   *   first_correct / achievement_unlock → omit (no value)
+   */
+  value?: number
+}

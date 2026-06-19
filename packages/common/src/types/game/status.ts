@@ -4,6 +4,7 @@ import type {
   PlayerRecap,
   QuestionMedia,
   QuestionType,
+  RoundRecapAward,
   TeamStanding,
 } from "@razzoozle/common/types/game"
 
@@ -87,6 +88,10 @@ export interface CommonStatusDataMap {
     // local countdown. OPTIONAL — present only while auto-mode is on and an
     // advance is armed; absent (manual mode / old clients ignore it) otherwise.
     autoAdvanceMs?: number
+    // Per-round recap awards (fastest finger, first correct, streak, …). OPTIONAL
+    // + additive: up to 3 awards computed server-side per round; old clients
+    // ignore it. Same value on every player's SHOW_RESULT (game-wide highlights).
+    roundRecap?: RoundRecapAward[]
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }

@@ -2,6 +2,7 @@ import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
+import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
@@ -62,6 +63,7 @@ const Result = ({
     bonusPoints,
     correctAnswer,
     playerCount,
+    roundRecap,
   },
 }: Props) => {
   const player = usePlayerStore()
@@ -226,6 +228,7 @@ const Result = ({
         visible={true}
         bonusPoints={bonusPoints}
       />
+      <RoundRecapStrip awards={roundRecap ?? []} />
     </section>
   )
 }
