@@ -15,7 +15,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-500%2B-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
 **[▶ Live-Demo](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[Problem melden](https://github.com/joehomeskillet/Razzoozle/issues)** · *geforkt von [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -59,6 +59,7 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 | 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler bekommt einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenes Bild hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, Podest und Auszeichnungen. |
 | 🏅 | **End-Auszeichnungen (Recap)** — animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-King…) mit Avatar + Name des Gewinners, im Autoplay automatisch getaktet. |
 | 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins“-Tab. |
+| 🧩 | **Manager-Addons** — lade JavaScript-Addons hoch, aktiviere und konfiguriere sie direkt in der Manager-Konsole (eigener Tab, Capability-Badges, persistierte Konfiguration); bringt ein Copy-paste-Starter-Skeleton (`examples/plugins/starter/`) samt Authoring-Contract mit. |
 | 📦 | **Skeleton-Theme-ZIPs** — ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton“: Design-Tokens + CSS + JS + SKELETON.md-Contract). |
 | 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
 | 🔗 | **Teilbare Ergebnisse** — schöne Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „Selbst spielen / Selbst hosten“-CTAs und herunterladbare Gewinner-Sticker. |
@@ -72,7 +73,7 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 | 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
 | 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. |
 
-Untermauert von **500+ automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
+Untermauert von **592 automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE, einer gehärteten unauthentifizierten Angriffsfläche (Limits für Spieler pro Spiel und für aktive Spiele, rate-limitierte öffentliche Endpunkte, Brute-Force-Drosselung der Manager-Auth) sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
 
 ---
 

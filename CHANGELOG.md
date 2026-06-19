@@ -8,6 +8,47 @@ deployment is `razzoozle.joelduss.xyz`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.0] — 2026-06-19
+
+Code-health, security and accessibility release, plus a new manager addon
+system. Full audit and recommendation ledger in `docs/health-audit/`.
+
+### Added
+
+- **Manager addon system** — upload, enable, and configure JavaScript addons
+  from the manager console (own tab, capability badges, persisted config). Ships
+  a copy-paste starter skeleton (`examples/plugins/starter/`) with an authoring
+  contract (`ADDON-SKELETON.md`).
+
+### Security
+
+- **Hardened the unauthenticated surface** — per-game player cap and active-game
+  cap, a quiz-existence check plus an entry cap on solo-score submission, a
+  server-wide rate limit on the public solo endpoints, and a brute-force throttle
+  on manager authentication. All limits are tunable named constants.
+
+### Changed
+
+- **Accessibility** — labelled answer sliders and text inputs with value
+  announcements, AA-contrast placeholders, a labelled lobby pair-code input,
+  reduced-motion-gated leaderboard animation, and focus-trapped modals.
+- **Performance** — the ~1.9 MB avatar (DiceBear) bundle is now lazy-loaded off
+  the universal join path (initials fallback until the picker is opened).
+- **i18n** — locale parity across en/de/es/fr/it/zh and a localized share title.
+- **Tooling** — lint driven to zero (oxlint), a CI lint step added, `oxlint`
+  pinned, and assorted de-duplication / extraction refactors.
+
+### Fixed
+
+- Solo-score endpoint returned `500` instead of `404` for an unknown quiz id.
+
+### Tests
+
+- Suite now at **592 automated tests**, with new coverage for the security
+  guards (zip-slip / rate-limit / caps) and previously untested critical paths
+  (solo endpoints, team standings, theme + achievement persistence).
+
+
 ## [1.0.0] — 2026-06-15
 
 First public Razzoozle release — [github.com/joehomeskillet/Razzoozle](https://github.com/joehomeskillet/Razzoozle).

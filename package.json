@@ -1,6 +1,6 @@
 {
   "name": "razzoozle",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "packageManager": "pnpm@11.5.1",
   "scripts": {
     "dev": "dotenv -e .env -- pnpm -r --parallel dev",

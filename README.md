@@ -15,7 +15,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-500%2B-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
 **[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -66,6 +66,7 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
 | ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
 | 🔌 | **Plugin system** — manager-installable ZIP add-ons with their own "Plugins" tab. |
+| 🧩 | **Manager addons** — upload, enable, and configure JavaScript addons from the manager console (own tab, capability badges, persisted config); ships a copy-paste starter skeleton (`examples/plugins/starter/`) with an authoring contract. |
 | 📦 | **Skeleton theme ZIPs** — download/upload a whole-game theme as an LLM-readable ZIP ("skeleton": design tokens + CSS + JS + a SKELETON.md contract). |
 | 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
 | 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
@@ -74,7 +75,7 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 | 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
 | 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
 
-Backed by **500+ automated tests**, a path-traversal + `ws`-CVE security pass, and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
+Backed by **592 automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game player and active-game caps, rate-limited public endpoints, manager-auth brute-force throttling), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
 ---
 

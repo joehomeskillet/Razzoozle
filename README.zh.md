@@ -15,7 +15,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-500%2B-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
 **[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[📚 Docs](docs/)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -65,6 +65,7 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 | ✍️ | **更多题型** —— 在经典单选之外，新增多选、填空作答和滑块。 |
 | 🤝 | **社区题目** —— 一个公开的投稿页面，配管理员审核队列，外加可复用的题目目录和测验存档。 |
 | 🧩 | **插件系统** —— 管理员可安装的 ZIP 插件，拥有独立的"插件"标签页。 |
+| 🧰 | **管理员附加组件（Addons）** —— 从管理员控制台上传、启用并配置 JavaScript 附加组件（独立标签页、能力徽章、持久化配置）；并附带一个可复制粘贴的入门 skeleton（`examples/plugins/starter/`），含编写约定。 |
 | 📦 | **Skeleton 主题 ZIP** —— 将整个游戏主题作为 LLM 可读的 ZIP（"skeleton"：设计令牌 + CSS + JS + SKELETON.md 约定）下载/上传。 |
 | 📳 | **移动端触感反馈** —— 玩家手机上的可选振动反馈（倒计时、答题），尊重 reduced-motion。 |
 | 🔗 | **可分享的结果** —— 每个结果的精美链接预览（Open Graph unfurl）、带有"自己来玩 / 自己托管"行动号召的结果页，以及可下载的获胜者贴纸。 |
@@ -72,7 +73,7 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 | 🌍 | **6 种语言 + PWA** —— 英语、德语、法语、西班牙语、意大利语、中文；可安装、支持离线感知。 |
 | 📺 | **投影仪 kiosk 模式 + 可靠性** —— 一个 `/display` 投影仪视图、低延迟模式、崩溃恢复、断线重连，以及一个用于 AI 工具控制的 MCP 服务器。 |
 
-由 **500+ 项自动化测试**支撑，经过路径遍历 + `ws`-CVE 安全检查，以及一个基于健康检查门控的 Docker 部署。已通过 **600 名并发玩家**的负载测试。
+由 **592 项自动化测试**支撑，经过路径遍历 + `ws`-CVE 安全检查，一个加固后的未鉴权攻击面（每局玩家数与活跃对局数上限、限流的公开端点、管理员鉴权暴力破解节流），以及一个基于健康检查门控的 Docker 部署。已通过 **600 名并发玩家**的负载测试。
 
 ---
 
