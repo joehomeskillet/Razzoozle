@@ -221,6 +221,19 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
+        {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
+            self-fetches meta + honors reduced-motion. ids = server sharpshooter
+            ∪ client-derived streak badges (merged + deduped in the solo store).
+            Displayed at top-center with card styling matching the question counter. */}
+        {resultReady && lastAchievements.length > 0 && (
+          <div className="flex min-h-11 items-center rounded-lg border border-[var(--border-hairline)] bg-white px-4 shadow-sm">
+            <RewardStack
+              achievementIds={lastAchievements}
+              visible={resultReady}
+            />
+          </div>
+        )}
+
         <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question.question}</Markdown>
         </h2>
@@ -237,16 +250,6 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             <CircularTimer seconds={countdown} total={question.time} size={72} />
           </div>
         </div>
-
-        {/* BOUNDED solo badges — reuse the SHARED RewardStack verbatim. It
-            self-fetches meta + honors reduced-motion. ids = server sharpshooter
-            ∪ client-derived streak badges (merged + deduped in the solo store). */}
-        {resultReady && lastAchievements.length > 0 && (
-          <RewardStack
-            achievementIds={lastAchievements}
-            visible={resultReady}
-          />
-        )}
 
         {isTypeAnswer ? (
           <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">

@@ -220,10 +220,6 @@ const Responses = ({
             {answerList.map((answer, key) => (
               <AnswerButton
                 key={key}
-                className={clsx(answerColor(key), {
-                  // oxlint-disable-next-line typescript/no-unnecessary-condition
-                  "opacity-65": responses && !solutionList.includes(key),
-                })}
                 label={answerLabel(key)}
                 correct={solutionList.includes(key)}
               >
