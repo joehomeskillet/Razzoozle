@@ -8,7 +8,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { X } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 interface CatalogPickerModalProps {
@@ -35,6 +35,8 @@ const CatalogPickerModal = ({
   const { t } = useTranslation()
   const [entries, setEntries] = useState<CatalogEntry[]>([])
   const [search, setSearch] = useState("")
+  const sectionRef = useRef<HTMLElement>(null)
+  const restoreRef = useRef<HTMLElement | null>(null)
 
   const requestCatalog = useCallback(() => {
     socket.emit(EVENTS.CATALOG.LIST)
@@ -61,6 +63,23 @@ const CatalogPickerModal = ({
 
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [onClose, open])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    restoreRef.current = document.activeElement as HTMLElement | null
+    const raf = requestAnimationFrame(() => {
+      const first = sectionRef.current?.querySelector<HTMLElement>(
+        'input, button, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      first?.focus()
+    })
+    return () => {
+      cancelAnimationFrame(raf)
+      restoreRef.current?.focus?.()
+    }
+  }, [open])
 
   useEvent(
     EVENTS.CATALOG.DATA,
@@ -94,10 +113,34 @@ const CatalogPickerModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6">
       <section
+        ref={sectionRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="catalog-picker-title"
         className="flex max-h-[88svh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") {
+            return
+          }
+          const nodes = sectionRef.current?.querySelectorAll<HTMLElement>(
+            'input, button, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+          )
+          if (!nodes || nodes.length === 0) {
+            return
+          }
+          const list = Array.from(nodes).filter(
+            (el) => !el.hasAttribute("disabled"),
+          )
+          const firstEl = list[0]
+          const lastEl = list[list.length - 1]
+          if (event.shiftKey && document.activeElement === firstEl) {
+            event.preventDefault()
+            lastEl.focus()
+          } else if (!event.shiftKey && document.activeElement === lastEl) {
+            event.preventDefault()
+            firstEl.focus()
+          }
+        }}
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
           <h2
