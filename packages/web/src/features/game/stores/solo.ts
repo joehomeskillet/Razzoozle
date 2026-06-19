@@ -116,7 +116,7 @@ const initialState = {
   answers: [] as SoloQuestionResult[],
   leaderboard: [] as SoloScoreEntry[],
   error: null as string | null,
-  autoAdvance: true,
+  autoAdvance: false,
 }
 
 export const useSoloStore = create<SoloState>((set, get) => ({
