@@ -18,7 +18,7 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
       oxlint:
-        specifier: latest
+        specifier: ^1.69.0
         version: 1.69.0(oxlint-tsgolint@0.22.1)
       oxlint-tsgolint:
         specifier: ^0.22.1

@@ -18,7 +18,7 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "latest",
     "dotenv-cli": "^11.0.0",
-    "oxlint": "latest",
+    "oxlint": "^1.69.0",
     "oxlint-tsgolint": "^0.22.1",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",

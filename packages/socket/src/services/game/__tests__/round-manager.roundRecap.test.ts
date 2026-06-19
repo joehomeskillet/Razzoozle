@@ -135,7 +135,7 @@ const assertEntryValid = (award: RoundRecapAward): void => {
     expect(typeof award.value).toBe("number")
     expect(Number.isFinite(award.value)).toBe(true)
     // ms response time within the question window is non-negative.
-    expect(award.value as number).toBeGreaterThanOrEqual(0)
+    expect(award.value!).toBeGreaterThanOrEqual(0)
   }
 
   if (NO_VALUE_KEYS.has(award.key)) {
@@ -173,7 +173,7 @@ describe("RoundManager.computeRoundRecap — per-round recap awards", () => {
 
     const recap = recapOf(ctx)
     expect(recap).toBeDefined()
-    const awards = recap as RoundRecapAward[]
+    const awards = recap!
     expect(Array.isArray(awards)).toBe(true)
     expect(awards.length).toBeGreaterThan(0)
     expect(awards.length).toBeLessThanOrEqual(3)
@@ -240,7 +240,7 @@ describe("RoundManager.computeRoundRecap — per-round recap awards", () => {
 
     callShowResults(ctx)
 
-    const awards = recapOf(ctx) as RoundRecapAward[]
+    const awards = recapOf(ctx)!
     const fastest = awards.find((a) => a.key === "fastest_finger")
     expect(fastest).toBeDefined()
     expect(typeof fastest?.value).toBe("number")
@@ -268,7 +268,7 @@ describe("RoundManager.computeRoundRecap — per-round recap awards", () => {
 
     callShowResults(ctx)
 
-    const awards = recapOf(ctx) as RoundRecapAward[]
+    const awards = recapOf(ctx)!
     const firstCorrect = awards.find((a) => a.key === "first_correct")
     if (firstCorrect !== undefined) {
       // first_correct is a no-value key.
