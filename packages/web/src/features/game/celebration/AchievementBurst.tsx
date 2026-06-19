@@ -54,7 +54,7 @@ const AchievementBurst = ({
 
   // Fire onComplete once, after the badges have had time to play in.
   useEffect(() => {
-    if (count === 0 || active === false || !onComplete) return
+    if (count === 0 || !active || !onComplete) return
     const timer = window.setTimeout(onComplete, 1600)
     return () => window.clearTimeout(timer)
   }, [count, active, onComplete])
@@ -66,7 +66,7 @@ const AchievementBurst = ({
       className="pointer-events-none flex max-w-md flex-wrap items-center justify-center gap-2"
       variants={reveal.container()}
       initial="hidden"
-      animate={active === false ? "hidden" : "visible"}
+      animate={active ? "visible" : "hidden"}
     >
       {badges.map(({ id, meta }) => {
         const tier = meta.tier

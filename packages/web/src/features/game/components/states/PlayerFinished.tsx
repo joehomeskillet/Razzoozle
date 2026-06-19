@@ -14,6 +14,7 @@ import {
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
 import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
+import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import clsx from "clsx"
 import { Share2, Trophy } from "lucide-react"
@@ -48,14 +49,6 @@ function isPlayerRecap(
     "myRecap" in recap &&
     recap.myRecap !== undefined
   )
-}
-
-/** Valid #rgb/#rrggbb else spec fallback (colorSecondary). */
-const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-function safeBg(hex: string | null | undefined): string {
-  return typeof hex === "string" && HEX_RE.test(hex.trim())
-    ? hex.trim()
-    : "#2e1065"
 }
 
 // ─── myRecap stat card ────────────────────────────────────────────────────────
@@ -310,7 +303,7 @@ const ShareStickerButton = ({
     if (!node) return
     try {
       const outcome = await exportSticker(node, {
-        backgroundColor: safeBg(theme.colorSecondary),
+        backgroundColor: safeHex(theme.colorSecondary, "#2e1065"),
       })
       toast.success(t(`game:recap.sticker.${outcome}`))
     } catch (err) {

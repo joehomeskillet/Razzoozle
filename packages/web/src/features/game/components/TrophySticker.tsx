@@ -30,6 +30,7 @@ import {
   ACHIEVEMENT_META,
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
+import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import { useTranslation } from "react-i18next"
 
 // ─── Format presets (logical px; pixelRatio 2 emits double) ───────────────────
@@ -80,15 +81,6 @@ const RANK_TIER: Record<1 | 2 | 3, "gold" | "silver" | "bronze"> = {
 }
 
 // ─── Color helpers — resolve to literal #rrggbb / rgba(), never color-mix ─────
-
-const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-
-/** Returns `hex` if it's a valid #rgb/#rrggbb string, else `fallback`. */
-function safeHex(hex: string | null | undefined, fallback: string): string {
-  return typeof hex === "string" && HEX_RE.test(hex.trim())
-    ? hex.trim()
-    : fallback
-}
 
 /** Parses #rgb / #rrggbb → [r,g,b] (0–255). Assumes already validated. */
 function hexToRgb(hex: string): [number, number, number] {

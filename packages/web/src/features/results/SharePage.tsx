@@ -7,6 +7,7 @@ import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence
 import TrophySticker from "@razzoozle/web/features/game/components/TrophySticker"
 import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
+import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
@@ -22,14 +23,6 @@ const ReactConfetti = lazy(() => import("react-confetti"))
 
 interface Props {
   id: string
-}
-
-/** Valid #rgb/#rrggbb else spec fallback (colorSecondary). */
-const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-function safeBg(hex: string | null | undefined): string {
-  return typeof hex === "string" && HEX_RE.test(hex.trim())
-    ? hex.trim()
-    : "#2e1065"
 }
 
 const medalColor = [
@@ -95,7 +88,7 @@ const WinnerStickerButton = ({
     if (!node) return
     try {
       const outcome = await exportSticker(node, {
-        backgroundColor: safeBg(theme.colorSecondary),
+        backgroundColor: safeHex(theme.colorSecondary, "#2e1065"),
       })
       toast.success(t(`game:recap.sticker.${outcome}`))
     } catch (err) {
