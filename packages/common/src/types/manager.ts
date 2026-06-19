@@ -21,6 +21,11 @@ export interface ManagerConfig {
   // reflects the saved value instead of always defaulting to off. Optional for
   // back-compat: an old emitConfig payload (or a missing config) reads as off.
   teamMode?: boolean
+  // Persisted low-latency-mode master switch (lowLatencyMode.enabled), flattened
+  // and round-tripped so the manager toggle reflects the saved value and the
+  // host can gate the LowLatencyHealth widget. Optional for back-compat: absent
+  // in old emitConfig payloads → reads as off.
+  lowLatencyEnabled?: boolean
   // Merged achievement config (registry defaults + manager overrides).
   // Optional for back-compat; absent in old payloads → client falls back to defaults.
   achievements?: MergedAchievement[]
