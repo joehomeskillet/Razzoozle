@@ -85,14 +85,14 @@ const PodiumBlock = ({ celebrant, rank, active, shape }: BlockProps) => {
       <p className="overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]">
         {celebrant.name}
       </p>
-      <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+      <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
         <motion.div
           variants={reveal.pop()}
           initial="hidden"
           animate={active ? "visible" : "hidden"}
           transition={reveal.snap}
           className={clsx(
-            "flex aspect-square size-16 items-center justify-center rounded-full text-3xl font-extrabold text-[#0E1120] md:size-20 md:text-4xl",
+            "flex aspect-square size-16 items-center justify-center rounded-full text-3xl font-extrabold text-[color:var(--color-field-ink)] md:size-20 md:text-4xl",
             MEDAL_FILL[rank],
           )}
         >

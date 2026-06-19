@@ -61,7 +61,7 @@ const Question = ({
           question (mount-on-key). reduced-motion → opacity-only via useReveal. */}
       <motion.div
         key={question}
-        className="glass-3 flex w-full flex-1 flex-col items-center justify-center gap-4 py-6 lg:gap-6"
+        className="flex w-full flex-1 flex-col items-center justify-center gap-4 py-6 lg:gap-6"
         variants={reveal.container()}
         initial="hidden"
         animate="visible"

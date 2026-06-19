@@ -40,7 +40,7 @@ export const DEFAULT_THEME: Theme = {
   answerTextColor: "#ffffff",
   accentColor: "#ff9900",
   radius: 16,
-  scrim: 40,
+  scrim: 0,
   appTitle: null,
   logo: null,
   showBranding: true,

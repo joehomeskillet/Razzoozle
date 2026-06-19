@@ -64,7 +64,7 @@ const Username = () => {
   })
 
   return (
-    <Card className="glass-2">
+    <Card>
       <label htmlFor="username" className="sr-only">
         {t("game:usernameLabel")}
       </label>

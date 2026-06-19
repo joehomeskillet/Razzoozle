@@ -82,9 +82,7 @@ const ListRow = ({
   return (
     <div
       className={clsx(
-        // `glass-1` is a no-op unless [data-theme-style="glass"] is set on <html>
-        // (scoped in index.css), so the flat Südhang baseline is unchanged.
-        "glass-1 flex min-h-11 items-center gap-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200",
+        "flex min-h-11 items-center gap-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200",
         className,
       )}
     >

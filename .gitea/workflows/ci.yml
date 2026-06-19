@@ -11,6 +11,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Enforce the load-bearing design.md guardrails (no active backdrop-blur,
+      # no gated glass-* on live surfaces, scrim 0). Fast, no deps needed.
+      - name: Design guardrails
+        run: bash scripts/check-guardrails.sh
+
       # The socket transcodes images to WebP via the `cwebp` CLI (config.ts:
       # saveEphemeralAvatar / saveBackgroundImage / saveMediaFile). The Dockerfile
       # runner stage installs Alpine's `libwebp-tools` for this; the CI container is

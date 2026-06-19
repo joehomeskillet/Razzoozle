@@ -73,7 +73,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
         >
           {t(`game:tier.${tier}`)}
         </h3>
-        <span className="rounded-full bg-[#F4F1EA] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
+        <span className="rounded-full bg-[var(--color-field-cream)] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-field-ink)]/60">
           {unlockedCount} / {enabledCount}
         </span>
       </div>
@@ -196,7 +196,7 @@ const TrophyGallery = () => {
         <h2 className="text-2xl font-extrabold text-[color:var(--color-field-ink)]">
           {t("game:achievements.gallery.title", "Trophäen")}
         </h2>
-        <span className="rounded-full bg-[#F4F1EA] px-2 py-0.5 text-xs tabular-nums text-[color:var(--color-field-ink)]/60">
+        <span className="rounded-full bg-[var(--color-field-cream)] px-2 py-0.5 text-xs tabular-nums text-[color:var(--color-field-ink)]/60">
           {totalUnlocked} / {enabledIds.size}
         </span>
       </header>

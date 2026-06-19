@@ -109,13 +109,13 @@ const medalColor = [
     background: "bg-[var(--tier-gold)]",
     border: "border-yellow-600",
     // gold tier → ink label (ink reads on the light-gold fill)
-    text: "text-[#0E1120]",
+    text: "text-[color:var(--color-field-ink)]",
   },
   {
     background: "bg-[var(--tier-silver)]",
     border: "border-gray-200",
     // silver tier → ink label
-    text: "text-[#0E1120]",
+    text: "text-[color:var(--color-field-ink)]",
   },
   {
     background: "bg-[var(--tier-bronze)]",
@@ -362,7 +362,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
               >
                 {top[1].username}
               </p>
-              <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <motion.div
                   variants={reveal.pop()}
                   initial="hidden"
@@ -414,7 +414,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
             >
               {top[0].username}
             </p>
-            <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+            <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
               <motion.div
                 variants={reveal.pop()}
                 initial="hidden"
@@ -463,7 +463,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
               >
                 {top[2].username}
               </p>
-              <div className="glass-2 flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
                 <motion.div
                   variants={reveal.pop()}
                   initial="hidden"

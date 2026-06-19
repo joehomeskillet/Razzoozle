@@ -376,7 +376,7 @@ const Leaderboard = ({
         <TeamLeaderboard standings={teamStandings} />
       )}
 
-      <div className="glass-2 flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-2">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(
             ({ id, username, points, streak, avatar, achievements }) => {
@@ -411,7 +411,7 @@ const Leaderboard = ({
                       : reveal.tween(0.45),
                   }}
                   className={[
-                    "glass-1 flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
+                    "flex w-full flex-col gap-1 rounded-xl bg-[var(--color-accent)] p-3 text-3xl font-bold text-[var(--accent-contrast-text)] lg:text-[clamp(1.5rem,4vh,4rem)]",
                     // Cheap CSS ring/opacity emphasis — keeps the top-5 (server-sliced) hot path light.
                     "transition-shadow",
                     climbing

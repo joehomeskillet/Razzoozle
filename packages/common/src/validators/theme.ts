@@ -39,7 +39,7 @@ export const themeValidator = z.object({
   answerTextColor: hexColor.default("#ffffff"),
   accentColor: hexColor.default("#ff9900"),
   radius: z.number().min(0).max(40).default(16),
-  scrim: z.number().min(0).max(100).default(40),
+  scrim: z.number().min(0).max(100).default(0),
   appTitle: z.string().max(40).nullable().default(null),
   logo: assetRef.default(null),
   showBranding: z.boolean().default(true),

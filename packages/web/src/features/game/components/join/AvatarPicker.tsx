@@ -149,7 +149,7 @@ const AvatarPicker = ({ onDone }: Props) => {
   }
 
   return (
-    <div className="glass-2 flex w-full flex-col items-center gap-4">
+    <div className="flex w-full flex-col items-center gap-4">
       <p className="text-lg font-bold text-gray-800">{t("game:avatar.title")}</p>
 
       {/* Generate mode: current-avatar preview + style segmented control +
