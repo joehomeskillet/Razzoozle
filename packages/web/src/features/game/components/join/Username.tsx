@@ -8,6 +8,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { AVATAR_STYLES } from "@razzoozle/web/features/game/utils/dicebear"
 
 import { useNavigate } from "@tanstack/react-router"
 import { type KeyboardEvent, useRef, useState } from "react"
@@ -17,7 +18,7 @@ const USERNAME_MAX_LENGTH = 20
 
 const Username = () => {
   const { socket } = useSocket()
-  const { gameId, login, setStatus } = usePlayerStore()
+  const { gameId, login, setStatus, setAvatar } = usePlayerStore()
   const navigate = useNavigate()
   const [username, setUsername] = useState("")
   const [error, setError] = useState(false)
@@ -37,7 +38,16 @@ const Username = () => {
     }
 
     setError(false)
-    socket.emit(EVENTS.PLAYER.LOGIN, { gameId, data: { username } })
+    const style =
+      AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)]!
+    const seed =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${username}-${Date.now()}`
+    const avatar = `dicebear:${style}:${seed}`
+
+    setAvatar(avatar)
+    socket.emit(EVENTS.PLAYER.LOGIN, { gameId, data: { username, avatar } })
   }
 
   const handleKeyDown = (event: KeyboardEvent) => {

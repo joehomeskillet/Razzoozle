@@ -41,6 +41,7 @@ import { createInviteCode } from "@razzoozle/socket/utils/game"
 import { v7 as uuid } from "uuid"
 
 const registry = Registry.getInstance()
+const DICEBEAR_IDENTITY_RE = /^dicebear:[a-z]+:.+$/
 
 // Serializable crash-recovery snapshot for a single game. Only STABLE state is
 // captured — never live sockets, timers, or a mid-question's partial answers.
@@ -461,6 +462,16 @@ class Game {
     }
 
     const value = result.data.avatar
+
+    if (value.startsWith("dicebear:")) {
+      if (value.length <= 200 && DICEBEAR_IDENTITY_RE.test(value)) {
+        return value
+      }
+
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:avatar.invalid")
+
+      return undefined
+    }
 
     // SVG data-URIs (our DiceBear-generated avatars) are tiny and render safely in
     // <img> with no script execution, so we store them verbatim — no WebP transcode
