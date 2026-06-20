@@ -51,6 +51,7 @@ import { metrics } from "@razzoozle/socket/services/metrics"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
 import { nanoid } from "nanoid"
+import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -763,6 +764,7 @@ export class RoundManager {
         : {}),
       submittedBy: question.submittedBy,
     })
+    emitLifecycle("onQuestionShown", { gameId: this.opts.gameId, status: "SHOW_QUESTION", data: {} })
 
     if (!this.started) {
       return
@@ -1780,6 +1782,7 @@ export class RoundManager {
           ? { autoAdvanceMs: RoundManager.AUTO_RESULT_MS }
           : {}),
       })
+    emitLifecycle("onResult", { gameId: this.opts.gameId, status: "SHOW_RESULT", data: {} })
     })
 
     // The post-results screen is now on display: a subsequent setAutoMode(true)
@@ -2598,6 +2601,7 @@ export class RoundManager {
         // automatically (client display-only; old clients ignore it).
         autoMode: this.autoMode,
       })
+    emitLifecycle("onGameEnd", { gameId: this.opts.gameId, status: "FINISHED", data: {} })
 
       this.leaderboard.forEach((player, index) => {
         // Bots have no real socket — emitting to a `bot:<id>` target would
@@ -2642,6 +2646,7 @@ export class RoundManager {
         ? { roundRecap: this.tempRoundRecap }
         : {}),
     })
+    emitLifecycle("onLeaderboard", { gameId: this.opts.gameId, status: "SHOW_LEADERBOARD", data: {} })
 
     this.tempOldLeaderboard = null
     this.tempRoundRecap = null

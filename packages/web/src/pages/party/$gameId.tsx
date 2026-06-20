@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
 import Ended from "@razzoozle/web/features/game/components/states/Ended"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
+import PluginRenderSlot from "@razzoozle/web/features/game/components/PluginRenderSlot"
 import {
   socketClient,
   useClockSync,
@@ -160,6 +161,7 @@ const PlayerGamePage = () => {
   return (
     <GameWrapper statusName={status.name}>
       {CurrentComponent && <CurrentComponent data={status.data as never} />}
+      {CurrentComponent && <PluginRenderSlot status={status.name} data={status.data} />}
     </GameWrapper>
   )
 }

@@ -28,7 +28,10 @@
 
 import { pathToFileURL } from "node:url"
 import type { Server as RawServer, Socket as RawSocket } from "socket.io"
-import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
+import type {
+  InstalledPlugin,
+  PluginLifecycleHook,
+} from "@razzoozle/common/validators/plugin"
 import { EVENTS } from "@razzoozle/common/constants"
 import {
   assertSafeId,
@@ -392,3 +395,28 @@ export const loadEnabledPlugins = async (): Promise<void> => {
 
 // Test/introspection helper: is a plugin currently loaded (server hook ran)?
 export const isPluginLoaded = (id: string): boolean => registry.has(id)
+
+// v2 LIFECYCLE DISPATCH: emit a lifecycle hook to all loaded plugins. Fire-and-
+// forget; each plugin is crash-isolated so a throwing plugin never breaks the
+// game round. Plugins that don't have a listener registered on the lifecycle
+// event are silently skipped. This is called from round-manager at strategic
+// game state transitions (onQuestionShown, onResult, onLeaderboard, onGameEnd).
+export const emitLifecycle = (
+  hook: PluginLifecycleHook,
+  payload: { gameId: string; status: string; data: unknown },
+): void => {
+  if (!ioRef) {
+    return
+  }
+
+  for (const loaded of registry.values()) {
+    try {
+      ioRef.emit(wireEvent(loaded.id, `lifecycle:${hook}`), payload)
+    } catch (error) {
+      console.error(
+        `[plugin:${loaded.id}] lifecycle hook "${hook}" failed:`,
+        error,
+      )
+    }
+  }
+}

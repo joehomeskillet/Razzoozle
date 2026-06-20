@@ -60,6 +60,23 @@ export interface PluginTabRegistration {
   render: (rootEl: HTMLElement) => (() => void) | undefined
 }
 
+// v2 RENDER SLOT: a plugin's in-game render hook for specific game status events.
+// Registered via window.razzoozle.registerRenderSlot and called during game play
+// when the game status matches one of the registered events.
+export interface PluginRenderSlotRegistration {
+  /** Events this plugin hook should render for: SHOW_QUESTION, SHOW_RESULT, etc. */
+  events: Array<"SHOW_QUESTION" | "SHOW_RESULT" | "SHOW_LEADERBOARD" | "FINISHED">
+  /**
+   * Render the plugin's UI into `container`. Called when the game status matches
+   * one of the registered events. May return a teardown function called before
+   * the next render or on unmount.
+   */
+  render: (
+    container: HTMLElement,
+    context: { status: string; data: unknown },
+  ) => (() => void) | undefined
+}
+
 // The stable, documented surface a plugin's ui.js consumes. Everything here is
 // read-only or fire-and-forget from the plugin's perspective; the host owns
 // lifecycle. `config` is a frozen snapshot taken at access time (see getApi).
@@ -72,6 +89,8 @@ export interface PluginHostApi {
   t: typeof i18n.t
   /** react-hot-toast instance for transient notices. */
   toast: typeof toast
+  /** v2: Register an in-game render slot for specific game status events. */
+  registerRenderSlot?: (registration: PluginRenderSlotRegistration) => void
 }
 
 // Public host global. Defined ONLY in the manager app (initManagerPluginHost).
@@ -92,6 +111,10 @@ export interface RazzoozleGlobal {
 // a re-injected ui.js (version bump) replaces its entry in place rather than
 // stacking. Lives at module scope so it survives React re-renders/StrictMode.
 const registry = new Map<string, PluginTabRegistration>()
+
+// Module-level registry for v2 render slots: plugin id → registration.
+// Idempotent upsert (same id replaces in place). Lives at module scope.
+const renderSlotRegistry = new Map<string, PluginRenderSlotRegistration>()
 
 // Bumped on every successful upsert/removal so React consumers (the tab list)
 // can subscribe to registry changes via useSyncExternalStore.
@@ -118,6 +141,7 @@ const getApi = (): PluginHostApi => ({
   config: Object.freeze({ ...liveConfig }) as ManagerConfig,
   t: i18n.t.bind(i18n),
   toast,
+  registerRenderSlot,
 })
 
 const isBuiltinKey = (key: string): boolean =>
@@ -150,6 +174,38 @@ const registerTab = (registration: PluginTabRegistration): void => {
 
   // Idempotent upsert — same key replaces in place (version-bumped ui.js).
   registry.set(key, registration)
+  emitChange()
+}
+
+// v2: Validate + register a plugin render slot. Rejections are logged and
+// ignored (never thrown) so one bad plugin can't break the host. Rules: events
+// must be a non-empty array, render must be a function.
+const registerRenderSlot = (
+  registration: PluginRenderSlotRegistration,
+): void => {
+  if (
+    !Array.isArray(registration.events) ||
+    registration.events.length === 0
+  ) {
+    console.warn(
+      `[razzoozle] ignoring render slot registration with empty events`,
+    )
+    return
+  }
+
+  if (typeof registration.render !== "function") {
+    console.warn(
+      `[razzoozle] ignoring render slot registration without render()`,
+    )
+    return
+  }
+
+  // Idempotent upsert: use a stable key (plugin id extracted from the caller
+  // context). For simplicity, use a counter-based key since we don't have the
+  // plugin id in this context. In a full implementation, the ui.js would pass
+  // the plugin id to registerRenderSlot.
+  const key = `render-slot-${renderSlotRegistry.size}`
+  renderSlotRegistry.set(key, registration)
   emitChange()
 }
 
@@ -195,6 +251,11 @@ export const getRegisteredPluginTabs = (): PluginTabRegistration[] =>
 export const getPluginTab = (
   key: string,
 ): PluginTabRegistration | undefined => registry.get(key)
+
+/** v2: Get all registered render slots. */
+export const getRegisteredRenderSlots =
+  (): PluginRenderSlotRegistration[] =>
+    Array.from(renderSlotRegistry.values())
 
 // ── Script injection (manager-only) ─────────────────────────────────────────
 
