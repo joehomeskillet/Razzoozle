@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Demo en vivo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Informar de un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *bifurcado de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Demo en vivo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App de Windows (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Informar de un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *bifurcado de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -80,6 +80,13 @@ Razzoozle es un **juego de cuestionarios** autoalojado y en tiempo real para aul
 | 📺 | **Kiosco de proyector + fiabilidad** — una vista de proyector `/display`, modo de baja latencia, recuperación ante caídas, reconexión y un servidor MCP para el control mediante herramientas de IA. |
 
 Respaldado por **592 pruebas automatizadas**, un repaso de seguridad contra path-traversal y la CVE de `ws`, una superficie no autenticada endurecida (límites de jugadores por partida y de partidas activas, endpoints públicos con límite de tasa, estrangulamiento por fuerza bruta de la autenticación del manager) y un despliegue Docker con comprobación de salud. Probado bajo carga con **600 jugadores simultáneos**.
+
+---
+
+## 📲 Apps y complementos
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — la primera app de escritorio nativa para **Windows** de Razzoozle. Aloja y gestiona partidas desde tu equipo, sin necesidad de navegador.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un ligero servicio de encuentro / descubrimiento que ayuda a los clientes a encontrarse entre sí. Solo descubrimiento — nunca retransmite el juego.
 
 ---
 

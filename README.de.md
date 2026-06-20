@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Live-Demo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Problem melden](https://github.com/joehomeskillet/Razzoozle/issues)** · *geforkt von [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Live-Demo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows-App (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Problem melden](https://github.com/joehomeskillet/Razzoozle/issues)** · *geforkt von [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -78,6 +78,13 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 | 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. |
 
 Untermauert von **592 automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE, einer gehärteten unauthentifizierten Angriffsfläche (Limits für Spieler pro Spiel und für aktive Spiele, rate-limitierte öffentliche Endpunkte, Brute-Force-Drosselung der Manager-Auth) sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
+
+---
+
+## 📲 Apps & Begleiter
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — die erste native **Windows**-Desktop-App für Razzoozle. Hoste und verwalte Spiele direkt von deinem Rechner, ganz ohne Browser.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — ein schlanker Rendezvous- / Discovery-Dienst, über den sich Clients gegenseitig finden. Nur zur Discovery — das Gameplay wird niemals weitergeleitet.
 
 ---
 

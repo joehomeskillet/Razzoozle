@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[🌐 项目展示](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows 应用（Beta）](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 项目展示](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -78,6 +78,13 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 | 📺 | **投影仪 kiosk 模式 + 可靠性** —— 一个 `/display` 投影仪视图、低延迟模式、崩溃恢复、断线重连，以及一个用于 AI 工具控制的 MCP 服务器。 |
 
 由 **592 项自动化测试**支撑，经过路径遍历 + `ws`-CVE 安全检查，一个加固后的未鉴权攻击面（每局玩家数与活跃对局数上限、限流的公开端点、管理员鉴权暴力破解节流），以及一个基于健康检查门控的 Docker 部署。已通过 **600 名并发玩家**的负载测试。
+
+---
+
+## 📲 应用与配套
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop)（Beta）** — Razzoozle 的首个原生 **Windows** 桌面应用。直接在你的电脑上托管和管理对局，无需浏览器。
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — 一个轻量的会合 / 发现服务，帮助客户端相互找到彼此。仅用于发现 — 绝不中转游戏数据。
 
 ---
 

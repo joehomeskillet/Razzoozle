@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *forké depuis [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App Windows (Bêta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *forké depuis [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -80,6 +80,13 @@ Razzoozle est un **jeu de quiz** en temps réel et auto-hébergé pour les salle
 | 📺 | **Kiosque beamer + fiabilité** — une vue projecteur `/display`, un mode à faible latence, la récupération après plantage, la reconnexion et un serveur MCP pour le contrôle par des outils d'IA. |
 
 Soutenu par **592 tests automatisés**, une passe de sécurité contre le path-traversal et la CVE de `ws`, une surface non authentifiée durcie (plafonds de joueurs par partie et de parties actives, points de terminaison publics à débit limité, limitation du brute-force de l'authentification manager) et un déploiement Docker contrôlé par l'état de santé. Testé en charge jusqu'à **600 joueurs simultanés**.
+
+---
+
+## 📲 Applications & compagnons
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Bêta)** — la première application de bureau native **Windows** pour Razzoozle. Hébergez et gérez vos parties depuis votre machine, sans navigateur.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un léger service de rendez-vous / découverte qui aide les clients à se trouver. Découverte uniquement — il ne relaie jamais le jeu.
 
 ---
 

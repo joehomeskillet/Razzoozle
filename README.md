@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows app (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -80,6 +80,13 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 | 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
 
 Backed by **592 automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game player and active-game caps, rate-limited public endpoints, manager-auth brute-force throttling), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
+
+---
+
+## 📲 Apps & companions
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — the first native **Windows** desktop app for Razzoozle. Host and manage games from your machine, no browser required.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — a lightweight rendezvous / discovery service that helps clients find each other. Discovery only — it never relays gameplay.
 
 ---
 

@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Demo dal vivo](https://razzoozle.joelduss.xyz)** · **[🌐 Vetrina](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Segnala un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork da [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Demo dal vivo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App Windows (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Vetrina](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Segnala un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork da [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -80,6 +80,13 @@ Razzoozle è un **gioco a quiz** in tempo reale e self-hosted per aule, eventi e
 | 📺 | **Kiosk beamer + affidabilità** — una vista proiettore `/display`, modalità a bassa latenza, ripristino dopo i crash, riconnessione e un server MCP per il controllo da strumenti IA. |
 
 Supportato da **592 test automatizzati**, un controllo di sicurezza contro il path-traversal e la CVE di `ws`, una superficie non autenticata irrobustita (limiti di giocatori per partita e di partite attive, endpoint pubblici a frequenza limitata, throttling del brute-force sull'autenticazione del manager) e un deploy Docker controllato dallo stato di salute. Testato sotto carico fino a **600 giocatori simultanei**.
+
+---
+
+## 📲 App e companion
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — la prima app desktop nativa per **Windows** di Razzoozle. Ospita e gestisci le partite dal tuo computer, senza bisogno del browser.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un leggero servizio di rendezvous / discovery che aiuta i client a trovarsi a vicenda. Solo discovery — non inoltra mai il gameplay.
 
 ---
 
