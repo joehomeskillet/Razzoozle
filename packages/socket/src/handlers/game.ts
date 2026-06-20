@@ -3,6 +3,7 @@ import { inviteCodeValidator } from "@razzoozle/common/validators/auth"
 import { setAvatarValidator } from "@razzoozle/common/validators/avatar"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
+  getGameConfig,
   getQuizz,
   saveAchievementsConfig,
   updateGameConfig,
@@ -151,12 +152,21 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
-    socket.emit(EVENTS.GAME.SUCCESS_ROOM, game.gameId)
+    socket.emit(EVENTS.GAME.SUCCESS_ROOM, {
+      gameId: game.gameId,
+      requireIdentifier: (() => {
+        try {
+          return getGameConfig().requireIdentifier ?? false
+        } catch {
+          return false
+        }
+      })(),
+    })
   })
 
   socket.on(EVENTS.PLAYER.LOGIN, ({ gameId, data }) =>
     withGame(gameId, socket, (game) => {
-      void game.join(socket, data.username, data.avatar)
+      void game.join(socket, data.username, data.avatar, data.identifier)
     }),
   )
 

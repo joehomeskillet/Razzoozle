@@ -1,10 +1,18 @@
+import { createHash } from "node:crypto"
 import { EVENTS } from "@razzoozle/common/constants"
 import type { Player } from "@razzoozle/common/types/game"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import { usernameValidator } from "@razzoozle/common/validators/auth"
+import { getGameConfig } from "@razzoozle/socket/services/config"
 
 // Hard cap on concurrent players per game (DoS / resource guard).
 const MAX_PLAYERS_PER_GAME = 200
+
+// I2 — Privacy-first identifier salt for pseudonymous assignment tracking.
+// Per-server salt via environment variable; constant fallback for dev/test.
+// ponytail: server ops can rotate salt via RAZZOOZLE_IDENTIFIER_SALT env var.
+const IDENTIFIER_SALT =
+  process.env.RAZZOOZLE_IDENTIFIER_SALT ?? "razzoozle-default-salt"
 
 export class PlayerManager {
   private readonly io: Server
@@ -34,7 +42,27 @@ export class PlayerManager {
     this.getJoinLocked = getJoinLocked
   }
 
-  join(socket: Socket, username: string, avatar?: string): void {
+  // I2 — Compute salted SHA-256 hash of pseudonymous identifier (lowercase + trimmed).
+  // Deterministic: same identifier+salt → same hash always.
+  // Salted: prevents rainbow table attacks (per-server unique salt).
+  // Lowercased: case-insensitive matching ('Alice' and 'alice' hash identically).
+  // NEVER logs the raw identifier (PII protection).
+  private computeIdentifierHash(identifier: string): string {
+    return createHash("sha256")
+      .update(`${IDENTIFIER_SALT}:${identifier.trim().toLowerCase()}`)
+      .digest("hex")
+  }
+
+  // I2 — Strip identifierHash before broadcast (privacy: back-end assignment
+  // tracking only, never visible in live game UI or to manager/players).
+  private stripIdentifierHash(
+    player: Player,
+  ): Omit<Player, "identifierHash"> {
+    const { identifierHash: _, ...safe } = player
+    return safe
+  }
+
+  join(socket: Socket, username: string, avatar?: string, identifier?: string): void {
     const clientId = socket.handshake.auth.clientId as string
 
     // Disentangle "the game has ended" from "you are a duplicate active
@@ -90,8 +118,23 @@ export class PlayerManager {
       ...(avatar ? { avatar } : {}),
     }
 
+    // I2 — Compute and set identifierHash if the game requires identification
+    // AND the client supplied a non-empty identifier. Opt-in, guest-default.
+    try {
+      const config = getGameConfig()
+      if (config.requireIdentifier && identifier?.trim()) {
+        player.identifierHash = this.computeIdentifierHash(identifier)
+      }
+    } catch {
+      // Config read error: fall back to guest mode (no identifier).
+      // The game continues normally; identifierHash stays undefined.
+    }
+
     this.players.push(player)
-    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
+    // I2: Strip identifierHash before broadcast (never visible to manager/players).
+    this.io
+      .to(this.getManagerId())
+      .emit(EVENTS.MANAGER.NEW_PLAYER, this.stripIdentifierHash(player))
     this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
     socket.emit(EVENTS.GAME.SUCCESS_JOIN, this.gameId)
   }
@@ -104,7 +147,10 @@ export class PlayerManager {
   // the whole batch so N bots don't trigger N count emits.
   addBot(player: Player): void {
     this.players.push(player)
-    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
+    // I2: Strip identifierHash before broadcast (bots never have identifiers anyway).
+    this.io
+      .to(this.getManagerId())
+      .emit(EVENTS.MANAGER.NEW_PLAYER, this.stripIdentifierHash(player))
   }
 
   kick(socket: Socket, playerId: string): boolean {
@@ -171,10 +217,13 @@ export class PlayerManager {
   }
 
   broadcastPlayerUpdate(player: Player): void {
-    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
+    // I2: Strip identifierHash before broadcast (never visible to manager/players).
+    const safe = this.stripIdentifierHash(player)
+    this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, safe)
+    const safeLeaderboard = this.players.map((p) => this.stripIdentifierHash(p))
     this.io
       .to(this.gameId)
-      .emit(EVENTS.PLAYER.UPDATE_LEADERBOARD, { leaderboard: this.players })
+      .emit(EVENTS.PLAYER.UPDATE_LEADERBOARD, { leaderboard: safeLeaderboard })
   }
 
   replace(players: Player[]): void {
@@ -206,6 +255,8 @@ export class PlayerManager {
   // live `connected` flag are intentionally dropped — on restore they are
   // reconstructed as id:"" / connected:false until a real socket re-binds via
   // the existing clientId-based reconnect flow. Pure read; no behaviour change.
+  // I2: Intentionally omit identifierHash from snapshots (back-end tracking only,
+  // never persisted; reconstructed on re-join if requireIdentifier is still true).
   toSnapshot(): Array<{
     clientId: string
     username: string

@@ -22,6 +22,8 @@ const Username = () => {
   const navigate = useNavigate()
   const [username, setUsername] = useState("")
   const [error, setError] = useState(false)
+  const [identifier, setIdentifier] = useState("")
+  const [requireIdentifier, setRequireIdentifier] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const { t } = useTranslation()
 
@@ -47,7 +49,14 @@ const Username = () => {
     const avatar = `dicebear:${style}:${seed}`
 
     setAvatar(avatar)
-    socket.emit(EVENTS.PLAYER.LOGIN, { gameId, data: { username, avatar } })
+    socket.emit(EVENTS.PLAYER.LOGIN, {
+      gameId,
+      data: {
+        username,
+        avatar,
+        ...(requireIdentifier && identifier.trim() ? { identifier: identifier.trim() } : {}),
+      },
+    })
   }
 
   const handleKeyDown = (event: KeyboardEvent) => {
@@ -55,6 +64,14 @@ const Username = () => {
       handleLogin()
     }
   }
+
+  useEvent(EVENTS.GAME.SUCCESS_ROOM, (roomPayload) => {
+    // Extract requireIdentifier from room payload (object or legacy string)
+    const require = typeof roomPayload === "object" && roomPayload !== null && "requireIdentifier" in roomPayload
+      ? roomPayload.requireIdentifier ?? false
+      : false
+    setRequireIdentifier(require)
+  })
 
   useEvent(EVENTS.GAME.SUCCESS_JOIN, (joinedGameId) => {
     setStatus(STATUS.WAIT, { text: "game:waitingForPlayers" })
@@ -95,6 +112,25 @@ const Username = () => {
         >
           {t("game:usernameRequired")}
         </p>
+      )}
+      {requireIdentifier && (
+        <>
+          <label htmlFor="identifier" className="sr-only">
+            {t("game:join.identifier", { defaultValue: "Kennung (optional)" })}
+          </label>
+          <Input
+            id="identifier"
+            className="mt-2 text-center"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder={t("game:join.identifier", { defaultValue: "Kennung (optional)" })}
+            autoComplete="off"
+            aria-describedby="identifier-hint"
+          />
+          <p id="identifier-hint" className="mt-1 text-xs text-gray-500">
+            {t("game:join.identifierHint", { defaultValue: "Optional for assignment tracking" })}
+          </p>
+        </>
       )}
       <Button className="mt-4" onClick={handleLogin}>
         {t("common:submit")}

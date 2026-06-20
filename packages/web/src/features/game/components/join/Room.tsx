@@ -65,10 +65,14 @@ const Room = () => {
     startJoin(cleanPin)
   }
 
-  useEvent(EVENTS.GAME.SUCCESS_ROOM, (gameId) => {
+  useEvent(EVENTS.GAME.SUCCESS_ROOM, (roomPayload) => {
     clearJoinTimeout()
     setIsJoining(false)
-    join(gameId)
+    // Handle both legacy string payload and new object payload
+    const gameId = typeof roomPayload === "string" ? roomPayload : roomPayload?.gameId
+    if (gameId) {
+      join(gameId)
+    }
   })
 
   // The auth page surfaces game:errorMessage as a toast; here we just unwind the

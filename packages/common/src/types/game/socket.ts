@@ -107,7 +107,7 @@ export interface ServerToClientEvents {
     name: Status
     data: StatusDataMap[Status]
   }) => void
-  [EVENTS.GAME.SUCCESS_ROOM]: (_data: string) => void
+  [EVENTS.GAME.SUCCESS_ROOM]: (_data: { gameId: string; requireIdentifier?: boolean }) => void
   [EVENTS.GAME.SUCCESS_JOIN]: (_gameId: string) => void
   [EVENTS.GAME.TOTAL_PLAYERS]: (_count: number) => void
   [EVENTS.GAME.ERROR_MESSAGE]: (_message: string) => void
@@ -413,7 +413,14 @@ export interface ClientToServerEvents {
   // Player actions
   [EVENTS.PLAYER.JOIN]: (_inviteCode: string) => void
   [EVENTS.PLAYER.LOGIN]: (
-    _message: MessageWithoutStatus<{ username: string; avatar?: string }>,
+    _message: MessageWithoutStatus<{
+      username: string
+      avatar?: string
+      // I2 — Privacy-first pseudonymous identifier (opt-in, guest-default).
+      // Client supplies raw identifier string; server computes salted SHA-256 hash
+      // IF the game config requireIdentifier is true. OPTIONAL — absent for guest play.
+      identifier?: string
+    }>,
   ) => void
   // Player avatar selection/upload (generic id or data URL)
   [EVENTS.PLAYER.SET_AVATAR]: (_payload: unknown) => void

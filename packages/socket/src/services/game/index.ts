@@ -414,9 +414,9 @@ class Game {
 
   // Player actions
 
-  join(socket: Socket, username: string, avatar?: string) {
+  join(socket: Socket, username: string, avatar?: string, identifier?: string) {
     if (!avatar) {
-      this.playerManager.join(socket, username)
+      this.playerManager.join(socket, username, undefined, identifier)
       // Per-quiz theme (#28): a player joining mid-lobby must see the same
       // themed lobby-wait background as everyone already in the room. No-op when
       // the quiz has no themeId / no matching template. Emitted only to the
@@ -434,7 +434,7 @@ class Game {
         return
       }
 
-      this.playerManager.join(socket, username, resolvedAvatar)
+      this.playerManager.join(socket, username, resolvedAvatar, identifier)
       this.applyQuizTheme(socket.id)
       this.sendLobbyWait(socket)
     })()
