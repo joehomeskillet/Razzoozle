@@ -25,6 +25,9 @@ import { useTranslation } from "react-i18next"
 
 import type { AchievementBurstProps } from "./types"
 
+import { ICON_PATHS, ICON_VIEWBOX } from '@razzoozle/web/features/game/achievements/iconRegistry'
+import { getAchievementVisual } from '@razzoozle/web/features/game/achievements/achievementVisuals'
+
 /** Cap visible badges so the queue stays bounded. */
 const MAX_BADGES = 8
 
@@ -71,6 +74,8 @@ const AchievementBurst = ({
       {badges.map(({ id, meta }) => {
         const tier = meta.tier
         const label = t(`${meta.i18nKey}.name`, { defaultValue: id })
+        const visual = getAchievementVisual(id)
+        const glyphPath = ICON_PATHS[visual.glyph]
         return (
           <motion.div
             key={id}
@@ -85,9 +90,14 @@ const AchievementBurst = ({
               TIER_RING[tier],
             )}
           >
-            <span className="select-none text-xl leading-none" aria-hidden>
-              {meta.icon}
-            </span>
+            <svg
+              viewBox={ICON_VIEWBOX}
+              className="w-6 h-6 select-none leading-none"
+              style={{ color: '#ffffff' }}
+              aria-hidden
+            >
+              <path d={glyphPath} fill="currentColor" />
+            </svg>
           </motion.div>
         )
       })}

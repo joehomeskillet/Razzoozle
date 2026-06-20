@@ -355,7 +355,7 @@ const Leaderboard = ({
   }, [leaderboard, mergedList, t])
 
   return (
-    <section className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-2">
+    <section className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-start px-2">
       <h2 className="mb-6 text-5xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
         {t("game:leaderboard")}
       </h2>
@@ -376,7 +376,7 @@ const Leaderboard = ({
         <TeamLeaderboard standings={teamStandings} />
       )}
 
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-2 overflow-y-auto min-h-0 touch-pan-y overscroll-contain">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(
             ({ id, username, points, streak, avatar, achievements }) => {
