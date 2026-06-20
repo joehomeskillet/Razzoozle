@@ -1,4 +1,5 @@
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
+import Markdown from "@razzoozle/web/components/Markdown"
 import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
@@ -186,7 +187,7 @@ const Result = ({
           wrong-answer (Too bad) screen. Never shown for poll or correct. */}
       {!poll && !correct && correctAnswer && (
         <p className="mt-2 text-lg font-semibold text-[color:var(--game-fg)]">
-          {t("game:slider.correctAnswer")}: {correctAnswer}
+          {t("game:slider.correctAnswer")}: <Markdown>{correctAnswer}</Markdown>
         </p>
       )}
       {!poll && correct && (
