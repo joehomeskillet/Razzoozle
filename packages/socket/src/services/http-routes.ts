@@ -27,6 +27,8 @@ import {
   clientEventValidator,
 } from "@razzoozle/common/validators/client-events"
 import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
+import type { Assignment } from "@razzoozle/common/validators/assignment"
+import { assignmentValidator } from "@razzoozle/common/validators/assignment"
 import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
 import { EVENTS } from "@razzoozle/common/constants"
 import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
@@ -40,6 +42,8 @@ import {
   getMergedAchievements,
   getResultById,
   getQuizzById,
+  getAssignment,
+  saveAssignment,
   getSoloResults,
   importPluginZip,
   importSkeletonZip,
@@ -47,6 +51,7 @@ import {
   readPlugins,
   resolvePluginAsset,
 } from "@razzoozle/socket/services/config"
+import { nanoid } from "nanoid"
 import { createLogger, requestLogger } from "@razzoozle/socket/services/logger"
 import { checkGlobalSoloRate } from "@razzoozle/socket/services/submissionRateLimit"
 import {
@@ -382,11 +387,18 @@ const handleClientEvents = (
   })()
 }
 
-const handleSoloGet = (res: ServerResponse, id: string | undefined): void => {
+const handleSoloGet = (res: ServerResponse, id: string | undefined, assignmentId?: string): void => {
   if (!checkGlobalSoloRate()) {
     jsonError(res, 429, "rate limited")
     return
   }
+
+  // Check assignment deadline if assignmentId provided (from query param or caller)
+  if (assignmentId && !checkAssignmentDeadline(assignmentId)) {
+    jsonError(res, 403, "assignment_closed")
+    return
+  }
+
   try {
     assertSafeId(id ?? "")
     const quiz = getQuizzById(id!)
@@ -479,7 +491,14 @@ const handleSoloScore = (
         return
       }
 
-      const { playerName, score } = parsed.data
+      const { playerName, score, assignmentId } = parsed.data
+
+      // Check assignment deadline if provided
+      if (assignmentId && !checkAssignmentDeadline(assignmentId)) {
+        jsonError(res, 403, "assignment_closed")
+        return
+      }
+
       // Quiz must exist before we persist a score: 404 (not the outer 500) when
       // missing; a real write failure below still surfaces as 500.
       try {
@@ -492,7 +511,7 @@ const handleSoloScore = (
         playerName,
         score,
         answeredAt: new Date().toISOString(),
-      })
+      }, assignmentId)
 
       const leaderboard = getSoloResults(id!).sort((a, b) => b.score - a.score)
       jsonOk(res, { leaderboard })
@@ -707,6 +726,126 @@ const handleResultOg = (
 // Each entry carries a regex matcher with one optional capture group (the id),
 // the doc metadata, and the handler. `dev` routes are fail-closed.
 
+
+const handleCreateAssignment = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
+  if (!authorizeManagerRequest(req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  void (async () => {
+    try {
+      const body = await readBody(req) as Record<string, unknown>
+      const { quizzId, deadline, maxAttempts, requireIdentifier, showCorrectAnswers } = body
+
+      if (typeof quizzId !== "string") {
+        jsonError(res, 400, "quizzId required")
+        return
+      }
+
+      // Validate quizzId exists
+      try {
+        getQuizzById(quizzId)
+      } catch {
+        jsonError(res, 404, `Quizz "${quizzId}" not found`)
+        return
+      }
+
+      const id = nanoid()
+      const assignment: Assignment = {
+        id,
+        quizzId,
+        createdAt: Date.now(),
+        deadline: deadline ? Number(deadline) : undefined,
+        maxAttempts: maxAttempts ? Number(maxAttempts) : undefined,
+        requireIdentifier: requireIdentifier === true,
+        showCorrectAnswers: showCorrectAnswers === true,
+      }
+
+      const result = assignmentValidator.safeParse(assignment)
+      if (!result.success) {
+        jsonError(res, 400, result.error.issues[0]!.message)
+        return
+      }
+
+      saveAssignment(result.data)
+      jsonOk(res, { id })
+    } catch (err) {
+      const status = statusFrom413(err, 400)
+      jsonError(res, status, err instanceof Error ? err.message : "Error")
+    }
+  })()
+}
+
+const handleGetAssignment = (
+  _req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  try {
+    assertSafeId(id ?? "")
+    const assignment = getAssignment(id!)
+
+    if (!assignment) {
+      jsonError(res, 404, "Assignment not found")
+      return
+    }
+
+    jsonOk(res, assignment)
+  } catch (err) {
+    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
+  }
+}
+
+const handleGetAssignmentResults = (
+  _req: IncomingMessage,
+  res: ServerResponse,
+  id: string | undefined,
+): void => {
+  if (!authorizeManagerRequest(_req)) {
+    jsonError(res, 401, "unauthorized")
+    return
+  }
+
+  try {
+    assertSafeId(id ?? "")
+    const assignment = getAssignment(id!)
+
+    if (!assignment) {
+      jsonError(res, 404, "Assignment not found")
+      return
+    }
+
+    // Get solo results and filter by assignmentId
+    const results = getSoloResults(assignment.quizzId).filter(
+      (r) => (r as unknown as Record<string, unknown>).assignmentId === id,
+    )
+
+    jsonOk(res, { results })
+  } catch (err) {
+    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
+  }
+}
+
+// Helper to check assignment deadline
+const checkAssignmentDeadline = (assignmentId?: string): boolean => {
+  if (!assignmentId) return true
+
+  const assignment = getAssignment(assignmentId)
+  if (!assignment) return true
+
+  if (assignment.deadline && Date.now() > assignment.deadline) {
+    return false
+  }
+
+  // I2: maxAttempts needs identifier to track per-player attempt count (not implemented in MVP)
+
+  return true
+}
+
 interface Route extends RouteDoc {
   match: RegExp
   dev?: boolean
@@ -898,6 +1037,27 @@ export const routes: Route[] = [
         }
       })()
     },
+  },
+  {
+    method: "POST",
+    path: "/api/assignment",
+    summary: "Create a new assignment (manager-gated).",
+    match: /^\/api\/assignment$/,
+    handle: (req, res) => handleCreateAssignment(req, res),
+  },
+  {
+    method: "GET",
+    path: "/api/assignment/:id",
+    summary: "Get assignment metadata (public read).",
+    match: /^\/api\/assignment\/([^/]+)$/,
+    handle: (_req, res, id) => handleGetAssignment(_req, res, id),
+  },
+  {
+    method: "GET",
+    path: "/api/assignment/:id/results",
+    summary: "Get solo results filtered by assignmentId (manager-gated).",
+    match: /^\/api\/assignment\/([^/]+)\/results$/,
+    handle: (req, res, id) => handleGetAssignmentResults(req, res, id),
   },
 ]
 

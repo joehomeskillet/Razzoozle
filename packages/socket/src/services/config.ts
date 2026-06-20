@@ -65,6 +65,10 @@ import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
 import {
+  assignmentValidator,
+  type Assignment,
+} from "@razzoozle/common/validators/assignment"
+import {
   renderSkeletonCss,
   renderSkeletonDoc,
   renderSkeletonJs,
@@ -568,6 +572,12 @@ export const initConfig = () => {
 
   if (!fs.existsSync(soloResultsDir)) {
     fs.mkdirSync(soloResultsDir, { recursive: true })
+  }
+
+  const assignmentsDir = getPath("assignments")
+
+  if (!fs.existsSync(assignmentsDir)) {
+    fs.mkdirSync(assignmentsDir, { recursive: true })
   }
 
   // Manager-editable achievements config. Seed an empty record so a fresh config
@@ -2824,6 +2834,7 @@ export interface SoloScoreEntry {
   playerName: string
   score: number
   answeredAt: string
+  assignmentId?: string
 }
 
 export const getSoloResults = (id: string): SoloScoreEntry[] => {
@@ -2864,13 +2875,16 @@ export const getSoloResults = (id: string): SoloScoreEntry[] => {
 // Bound unbounded per-quiz solo-results growth: keep only the most recent entries
 const SOLO_RESULTS_MAX_ENTRIES = 1000
 
-export const appendSoloResult = (id: string, entry: SoloScoreEntry): void => {
+export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId?: string): void => {
   assertSafeId(id)
 
   const dir = getPath("solo-results")
   ensureDir(dir)
 
   const existing = getSoloResults(id)
+  if (assignmentId) {
+    entry.assignmentId = assignmentId
+  }
   existing.push(entry)
 
   const capped =
@@ -2883,3 +2897,62 @@ export const appendSoloResult = (id: string, entry: SoloScoreEntry): void => {
     JSON.stringify(capped, null, 2),
   )
 }
+
+// ---- Assignments (config/assignments/:id.json) --------------------------------
+// Each file is a JSON Assignment object (id, quizzId, createdAt, deadline?, 
+// maxAttempts?, requireIdentifier?, showCorrectAnswers?). Mirrors solo-results
+// persistence: reads are tolerant of missing/corrupt files, writes use ensureDir.
+
+export const saveAssignment = (assignment: Assignment): void => {
+  assertSafeId(assignment.id)
+
+  const dir = getPath("assignments")
+  ensureDir(dir)
+
+  fs.writeFileSync(
+    getPath(`assignments/${assignment.id}.json`),
+    JSON.stringify(assignment, null, 2),
+  )
+}
+
+export const getAssignment = (id: string): Assignment | null => {
+  assertSafeId(id)
+
+  const filePath = getPath(`assignments/${id}.json`)
+
+  if (!fs.existsSync(filePath)) {
+    return null
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+    const result = assignmentValidator.safeParse(JSON.parse(raw))
+
+    return result.success ? result.data : null
+  } catch {
+    return null
+  }
+}
+
+export const listAssignments = (): Assignment[] => {
+  const dir = getPath("assignments")
+
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith(".json"))
+    .flatMap((file) => {
+      try {
+        const raw = fs.readFileSync(getPath(`assignments/${file}`), "utf-8")
+        const result = assignmentValidator.safeParse(JSON.parse(raw))
+
+        return result.success ? [result.data] : []
+      } catch {
+        return []
+      }
+    })
+}
+

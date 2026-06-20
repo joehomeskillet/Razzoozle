@@ -28,6 +28,7 @@ export const soloScoreSubmitValidator = z.object({
       }),
     )
     .optional(),
+  assignmentId: z.string().optional(),
 })
 
 export type SoloScoreSubmitInput = z.infer<typeof soloScoreSubmitValidator>
