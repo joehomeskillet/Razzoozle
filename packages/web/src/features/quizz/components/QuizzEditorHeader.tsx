@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import { useReducedMotion } from "motion/react"
+import { Play } from "lucide-react"
 
 const SUBJECT_INPUT_ID = "quizz-subject-input"
 const SUBJECT_ERROR_ID = "quizz-subject-error"
@@ -206,6 +207,12 @@ const QuizzEditorHeader = () => {
     return () => window.removeEventListener("beforeunload", onBeforeUnload)
   }, [isDirty])
 
+  const handleTestPlay = () => {
+    if (quizzId) {
+      window.open(`/quizz/${quizzId}/solo`, "_blank", "noopener,noreferrer")
+    }
+  }
+
   return (
     <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 shadow-sm sm:px-6">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -247,6 +254,24 @@ const QuizzEditorHeader = () => {
       </div>
 
       <div className="flex shrink-0 gap-2">
+        {quizzId && (
+          <Button
+            size="sm"
+            className="focus-visible:outline-primary min-h-11 bg-gray-100 px-4 font-semibold text-gray-700 hover:bg-gray-200"
+            onClick={handleTestPlay}
+            title={t("quizz:editor.testPlay", {
+              defaultValue: "Probe spielen",
+            })}
+            aria-label={t("quizz:editor.testPlay", {
+              defaultValue: "Probe spielen",
+            })}
+          >
+            <Play className="size-5" />
+            {t("quizz:editor.testPlay", {
+              defaultValue: "Probe spielen",
+            })}
+          </Button>
+        )}
         <Button
           size="sm"
           className="focus-visible:outline-primary min-h-11 bg-gray-100 px-4 font-semibold text-gray-700 hover:bg-gray-200"
