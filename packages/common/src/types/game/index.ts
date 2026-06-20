@@ -29,6 +29,10 @@ export interface Player {
   avatar?: string
   achievements?: string[]
   teamId?: string
+  // NEW — pseudonymous salted hash for opt-in assignment tracking (Welle-2).
+  // Only set by server when an assignment requires identification; absent for
+  // legacy games or guest play. Optional for back-compat.
+  identifierHash?: string
 }
 
 export interface Answer {

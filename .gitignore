@@ -13,3 +13,9 @@ web2satellite/rpi-img-builder/
 /memory/
 /AGENTS.md
 /GEMINI.md
+
+# build/test debris (auto-added — do not commit)
+rz-*.png
+.playwright-mcp/
+tsconfig.tsbuildinfo
+*.bak

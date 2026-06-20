@@ -100,6 +100,9 @@ export interface CommonStatusDataMap {
     // + additive: up to 3 awards computed server-side per round; old clients
     // ignore it. Same value on every player's SHOW_RESULT (game-wide highlights).
     roundRecap?: RoundRecapAward[]
+    // Scoring mode used in this game ('speed' for time-decay, 'accuracy' for
+    // full base points on correct). OPTIONAL/additive; old clients ignore it.
+    scoringMode?: "speed" | "accuracy"
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }

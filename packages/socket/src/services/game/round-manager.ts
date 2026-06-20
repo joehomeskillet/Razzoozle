@@ -106,6 +106,11 @@ export interface RoundManagerOptions {
   // test fakes => the constructor falls back to the registry defaults, so the
   // SHIPPED hardcoded behaviour is preserved.
   achievements?: MergedAchievement[]
+  // Scoring mode snapshot, read ONCE at game creation (like teamMode).
+  // When "accuracy", correct answers earn full base points regardless of speed;
+  // "speed" (default) uses time-decay. OPTIONAL — absent in unit-test fakes
+  // => treated as "speed" (normal, speed-weighted behaviour).
+  scoringMode?: "speed" | "accuracy"
 }
 
 export class RoundManager {
@@ -2005,7 +2010,7 @@ export class RoundManager {
       answerId: isMultiSelect || isTextAnswer ? -1 : (answerId as number),
       answerIds: isMultiSelect ? [...new Set(answerId as number[])] : undefined,
       answerText: isTextAnswer ? answerText : undefined,
-      points: timeToPoint(this.startTime, question.time),
+      points: timeToPoint(this.startTime, question.time, this.opts.scoringMode),
     })
 
     // Achievements (ALL modes): stamp the server receive time so showResults can

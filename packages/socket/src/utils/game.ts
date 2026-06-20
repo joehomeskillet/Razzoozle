@@ -43,7 +43,7 @@ export const createInviteCode = (length = 6) => {
 export const normalizeFilename = (subject: string) => {
   const slug = subject
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/gu, "")
+    .replace(/[̀-ͯ]/gu, "")
     .toLowerCase()
     .trim()
     .replace(/\s+/gu, "-")
@@ -55,12 +55,27 @@ export const normalizeFilename = (subject: string) => {
   return `${slug}-${shortId}`
 }
 
-export const timeToPoint = (startTime: number, secondes: number): number => {
+export const timeToPoint = (
+  startTime: number,
+  secondes: number,
+  mode: "speed" | "accuracy" = "speed",
+): number => {
   let points = MAX_POINTS
 
   const actualTime = Date.now()
   const tempsPasseEnSecondes = (actualTime - startTime) / 1000
 
+  // If the time window has passed, return 0 regardless of mode.
+  if (tempsPasseEnSecondes > secondes) {
+    return 0
+  }
+
+  // Accuracy mode: return full base points for answers within the window (no time decay).
+  if (mode === "accuracy") {
+    return points
+  }
+
+  // Speed mode: apply time decay (existing behavior).
   points -= (MAX_POINTS / secondes) * tempsPasseEnSecondes
   points = Math.max(0, points)
 

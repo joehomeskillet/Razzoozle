@@ -29,10 +29,12 @@ const ConfigGameMode = () => {
   const [lowLatency, setLowLatency] = useState(config.lowLatencyEnabled ?? false)
   const [joinLocked, setJoinLocked] = useState(config.joinLocked ?? false)
   const [randomizeAnswers, setRandomizeAnswers] = useState(config.randomizeAnswers ?? false)
+  const [scoringMode, setScoringMode] = useState<"speed" | "accuracy">(config.scoringMode ?? "speed")
   const [saving, setSaving] = useState(false)
   const [savingLowLatency, setSavingLowLatency] = useState(false)
   const [savingJoinLocked, setSavingJoinLocked] = useState(false)
   const [savingRandomizeAnswers, setSavingRandomizeAnswers] = useState(false)
+  const [savingScoringMode, setSavingScoringMode] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lowLatencyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -43,6 +45,7 @@ const ConfigGameMode = () => {
   const randomizeAnswersTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
+  const scoringModeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
   // the saved value back after a save (and on reconnect), so re-sync local state
@@ -65,6 +68,10 @@ const ConfigGameMode = () => {
     setRandomizeAnswers(config.randomizeAnswers ?? false)
   }, [config.randomizeAnswers])
 
+  useEffect(() => {
+    setScoringMode(config.scoringMode ?? "speed")
+  }, [config.scoringMode])
+
   // Clear any pending optimistic-toast timeout on unmount.
   useEffect(() => {
     return () => {
@@ -79,6 +86,9 @@ const ConfigGameMode = () => {
       }
       if (randomizeAnswersTimeoutRef.current !== null) {
         clearTimeout(randomizeAnswersTimeoutRef.current)
+      }
+      if (scoringModeTimeoutRef.current !== null) {
+        clearTimeout(scoringModeTimeoutRef.current)
       }
     }
   }, [])
@@ -202,6 +212,32 @@ const ConfigGameMode = () => {
     [socket, t],
   )
 
+  const handleScoringModeChange = useCallback(
+    (next: "speed" | "accuracy") => {
+      setScoringMode(next)
+      setSavingScoringMode(true)
+
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { scoringMode: next })
+
+      if (scoringModeTimeoutRef.current !== null) {
+        clearTimeout(scoringModeTimeoutRef.current)
+      }
+      scoringModeTimeoutRef.current = setTimeout(() => {
+        setSavingScoringMode(false)
+        toast.success(
+          next === "accuracy"
+            ? t("manager:gameMode.accuracyMode", {
+                defaultValue: "Genauigkeitsmodus",
+              })
+            : t("manager:gameMode.speedMode", {
+                defaultValue: "Geschwindigkeitsmodus",
+              }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
   const teamLabelMap = useMemo<Record<string, string>>(
     () => ({
       red: t("game:teams.red", { defaultValue: "Rot" }),
@@ -317,6 +353,51 @@ const ConfigGameMode = () => {
           onChange={handleRandomizeAnswersToggle}
           disabled={savingRandomizeAnswers}
         />
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.scoringTitle", {
+          defaultValue: "Wertung",
+        })}
+        description={t("manager:gameMode.scoringDescription", {
+          defaultValue:
+            "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
+        })}
+      >
+        <div className="space-y-2">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="scoring"
+              value="speed"
+              checked={scoringMode === "speed"}
+              onChange={() => handleScoringModeChange("speed")}
+              disabled={savingScoringMode}
+              className="h-4 w-4"
+            />
+            <span className="text-sm font-medium text-gray-900">
+              {t("manager:gameMode.speedMode", {
+                defaultValue: "Geschwindigkeit",
+              })}
+            </span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="scoring"
+              value="accuracy"
+              checked={scoringMode === "accuracy"}
+              onChange={() => handleScoringModeChange("accuracy")}
+              disabled={savingScoringMode}
+              className="h-4 w-4"
+            />
+            <span className="text-sm font-medium text-gray-900">
+              {t("manager:gameMode.accuracyMode", {
+                defaultValue: "Genauigkeit",
+              })}
+            </span>
+          </label>
+        </div>
       </FormSection>
     </div>
   )

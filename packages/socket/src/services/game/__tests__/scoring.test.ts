@@ -347,3 +347,109 @@ describe("flag OFF = byte-identical scoring + no deadline gate, no ack", () => {
     expect(count?.payload).toBe(1)
   })
 })
+
+
+describe("scoring mode (speed vs accuracy)", () => {
+  it("awards full base points in accuracy mode regardless of speed", () => {
+    const ll = enabledLL()
+    const ctx = buildRound({
+      quizz: QUIZZ,
+      players: [makePlayer("alice")],
+      lowLatency: ll,
+      scoringMode: "accuracy",
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll,
+      questionTimeSec: 20,
+    })
+
+    // Answer after 10 seconds (normally 500 points in speed mode).
+    vi.setSystemTime(QUESTION_START + 10_000)
+    ctx.round.selectAnswer(makeSocket("alice").socket, 1, "msg-1")
+
+    // In accuracy mode, should be full 1000 points (no time decay).
+    expect(answeredPoints(ctx.round, "alice")).toBe(1000)
+  })
+
+  it("applies time decay in speed mode (default)", () => {
+    const ll = enabledLL()
+    const ctx = buildRound({
+      quizz: QUIZZ,
+      players: [makePlayer("alice")],
+      lowLatency: ll,
+      scoringMode: "speed",
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll,
+      questionTimeSec: 20,
+    })
+
+    // Answer after 10 seconds (half the window).
+    vi.setSystemTime(QUESTION_START + 10_000)
+    ctx.round.selectAnswer(makeSocket("alice").socket, 1, "msg-1")
+
+    // In speed mode, should be 500 points (1000 - (1000/20)*10).
+    expect(answeredPoints(ctx.round, "alice")).toBe(500)
+  })
+
+  it("defaults to speed mode when no mode is specified", () => {
+    const ll = enabledLL()
+    const ctx = buildRound({
+      quizz: QUIZZ,
+      players: [makePlayer("alice")],
+      lowLatency: ll,
+      // No scoringMode specified; should default to 'speed'
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll,
+      questionTimeSec: 20,
+    })
+
+    vi.setSystemTime(QUESTION_START + 10_000)
+    ctx.round.selectAnswer(makeSocket("alice").socket, 1, "msg-1")
+
+    // Should apply time decay (speed mode).
+    expect(answeredPoints(ctx.round, "alice")).toBe(500)
+  })
+
+  it("awards zero points for answers submitted after the time window in both modes", () => {
+    // Use normal (LL disabled) mode so answers aren't rejected by deadline gate
+    const off = buildRound({
+      quizz: QUIZZ,
+      players: [makePlayer("alice")],
+      lowLatency: DISABLED_LL,
+      scoringMode: "speed",
+    })
+    openQuestion(off.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+
+    // 25 seconds after start (5s past the 20s window), timeToPoint returns 0.
+    vi.setSystemTime(QUESTION_START + 25_000)
+    off.round.selectAnswer(makeSocket("alice").socket, 1, "msg-1")
+    expect(answeredPoints(off.round, "alice")).toBe(0)
+
+    // Reset for accuracy mode test
+    const offAccuracy = buildRound({
+      quizz: QUIZZ,
+      players: [makePlayer("bob")],
+      lowLatency: DISABLED_LL,
+      scoringMode: "accuracy",
+    })
+    openQuestion(offAccuracy.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+
+    // In accuracy mode, answer submitted past window still gets 0 from timeToPoint.
+    vi.setSystemTime(QUESTION_START + 25_000)
+    offAccuracy.round.selectAnswer(makeSocket("bob").socket, 1, "msg-2")
+    expect(answeredPoints(offAccuracy.round, "bob")).toBe(0)
+  })
+})

@@ -640,6 +640,7 @@ export const updateGameConfig = (patch: {
   lowLatencyEnabled?: boolean
   joinLocked?: boolean
   randomizeAnswers?: boolean
+  scoringMode?: "speed" | "accuracy"
 }): GameConfig => {
   const current = getGameConfig()
   const { lowLatencyEnabled, ...flatPatch } = patch

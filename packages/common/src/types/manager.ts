@@ -34,6 +34,10 @@ export interface ManagerConfig {
   // answer tile order per question while keeping canonical indices for scoring.
   // Optional for back-compat: absent in old payloads → reads as false (off).
   randomizeAnswers?: boolean
+  // Persisted scoring-mode flag. When 'accuracy', correct answers earn full base
+  // points regardless of speed; 'speed' (default) uses time-decay. Optional for
+  // back-compat: absent in old payloads → reads as 'speed'.
+  scoringMode?: "speed" | "accuracy"
   // Merged achievement config (registry defaults + manager overrides).
   // Optional for back-compat; absent in old payloads → client falls back to defaults.
   achievements?: MergedAchievement[]

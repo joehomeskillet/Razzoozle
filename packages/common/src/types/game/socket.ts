@@ -457,7 +457,7 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.PAUSE_GAME]: (_message: { gameId?: string }) => void
   [EVENTS.MANAGER.RESUME_GAME]: (_message: { gameId?: string }) => void
   // Partial game-config patch (manager-auth-gated server-side)
-  [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean; randomizeAnswers?: boolean }) => void
+  [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean; randomizeAnswers?: boolean; scoringMode?: "speed" | "accuracy" }) => void
   // Achievements config patch (manager-auth-gated server-side)
   [EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG]: (_payload: {
     config: Record<

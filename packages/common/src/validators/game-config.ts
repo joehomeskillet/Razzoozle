@@ -40,6 +40,8 @@ export const gameConfigValidator = z.object({
   lowLatencyMode: lowLatencyModeValidator,
   joinLocked: z.boolean().optional(),
   randomizeAnswers: z.boolean().optional(),
+  scoringMode: z.enum(["speed", "accuracy"]).optional(),
+  requireIdentifier: z.boolean().optional(),
 })
 
 export type GameConfig = z.infer<typeof gameConfigValidator>
