@@ -217,6 +217,10 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   // Show result feedback inline when server responded (phase === "result")
   const resultReady = phase === "result" && lastResult !== null
 
+  // Render order: for solo, always use canonical order (no displayOrder from server).
+  // SAFETY: all tile references use the canonical index key, not the visual position.
+  const renderOrder = question.answers?.map((_, i) => i) ?? []
+
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
@@ -270,7 +274,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               {t("quizz:multipleSelect.selectHint")}
             </p>
             <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-              {(question.answers ?? []).map((answer, key) => {
+              {renderOrder.map((key: number) => {
+                const answer = question.answers?.[key]
                 const isPicked = multiSelectedKeys.includes(key)
                 return (
                   <motion.div
@@ -309,7 +314,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                       disabled={submitted}
                       onClick={handleMultiAnswer(key)}
                     >
-                      <Markdown>{answer}</Markdown>
+                      <Markdown>{answer || ""}</Markdown>
                     </AnswerButton>
                   </motion.div>
                 )
@@ -362,7 +367,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
           </div>
         ) : (
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-            {(question.answers ?? []).map((answer, key) => {
+            {renderOrder.map((key: number) => {
+              const answer = question.answers?.[key]
               const isPicked = selectedKey === key
               return (
                 <motion.div
@@ -404,7 +410,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
                     disabled={submitted}
                     onClick={handleAnswer(key)}
                   >
-                    <Markdown>{answer}</Markdown>
+                    <Markdown>{answer || ""}</Markdown>
                   </AnswerButton>
                 </motion.div>
               )

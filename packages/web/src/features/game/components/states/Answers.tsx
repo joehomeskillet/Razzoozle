@@ -11,6 +11,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
+import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
@@ -68,6 +69,7 @@ const Answers = ({
   const muted = useSoundStore((s) => s.muted)
   const llActive = useLowLatencyStore((s) => s.active)
   const clockOffsetMs = useLowLatencyStore((s) => s.offsetMs)
+  const displayOrder = useQuestionStore((s) => s.displayOrder)
   // Resume signal: did the server tell us we already answered this question?
   const resumeAnswered = useAnswerStore(
     (s) => s.alreadyAnswered && s.gameId === gameId,
@@ -403,6 +405,11 @@ const Answers = ({
   // pop is fine here (not the per-tap hot path).
   const answerLockedIn = choiceLocked || submitted
 
+  // Render order: display displayOrder permutation if present, otherwise canonical.
+  // SAFETY: all tile references (colors, labels, handler keys) use the canonical
+  // index key, not the visual position.
+  const renderOrder = displayOrder ?? answers?.map((_, i) => i) ?? []
+
   return (
     <div className="flex min-h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
@@ -503,22 +510,25 @@ const Answers = ({
               {t("quizz:multipleSelect.selectHint")}
             </p>
             <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-              {(answers ?? []).map((answer, key) => (
-                <AnswerButton
-                  key={key}
-                  className={clsx(
-                    ANSWERS_COLORS[key],
-                    !submitted && PRESS_FEEDBACK,
-                    submitted && "opacity-50",
-                    multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
-                  )}
-                  label={ANSWERS_LABELS[key]}
-                  disabled={submitted}
-                  onClick={handleMultiAnswer(key)}
-                >
-                  <Markdown>{answer}</Markdown>
-                </AnswerButton>
-              ))}
+              {renderOrder.map((key: number) => {
+                const answer = answers?.[key]
+                return (
+                  <AnswerButton
+                    key={key}
+                    className={clsx(
+                      ANSWERS_COLORS[key],
+                      !submitted && PRESS_FEEDBACK,
+                      submitted && "opacity-50",
+                      multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
+                    )}
+                    label={ANSWERS_LABELS[key]}
+                    disabled={submitted}
+                    onClick={handleMultiAnswer(key)}
+                  >
+                    <Markdown>{answer || ""}</Markdown>
+                  </AnswerButton>
+                )
+              })}
             </div>
             <button
               type="button"
@@ -575,31 +585,34 @@ const Answers = ({
           </div>
         ) : (
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-            {(answers ?? []).map((answer, key) => (
-              <AnswerButton
-                key={key}
-                className={clsx(
-                  ANSWERS_COLORS[key],
-                  // Per-tap press feedback (CSS-only, reduced-motion-safe) while
-                  // the tile is still tappable. Once locked we drop it so the
-                  // dim/ring lock-in state below reads cleanly.
-                  !choiceLocked && PRESS_FEEDBACK,
-                  // Instant local feedback: dim the un-chosen buttons once a
-                  // choice is locked in (low-latency / resumed). Normal mode
-                  // never sets selectedKey/choiceLocked, so this is inert there.
-                  choiceLocked &&
-                    selectedKey !== null &&
-                    selectedKey !== key &&
-                    "opacity-40",
-                  choiceLocked && selectedKey === key && "ring-4 ring-white/80",
-                )}
-                label={ANSWERS_LABELS[key]}
-                disabled={choiceLocked}
-                onClick={handleAnswer(key)}
-              >
-                <Markdown>{answer}</Markdown>
-              </AnswerButton>
-            ))}
+            {renderOrder.map((key: number) => {
+              const answer = answers?.[key]
+              return (
+                <AnswerButton
+                  key={key}
+                  className={clsx(
+                    ANSWERS_COLORS[key],
+                    // Per-tap press feedback (CSS-only, reduced-motion-safe) while
+                    // the tile is still tappable. Once locked we drop it so the
+                    // dim/ring lock-in state below reads cleanly.
+                    !choiceLocked && PRESS_FEEDBACK,
+                    // Instant local feedback: dim the un-chosen buttons once a
+                    // choice is locked in (low-latency / resumed). Normal mode
+                    // never sets selectedKey/choiceLocked, so this is inert there.
+                    choiceLocked &&
+                      selectedKey !== null &&
+                      selectedKey !== key &&
+                      "opacity-40",
+                    choiceLocked && selectedKey === key && "ring-4 ring-white/80",
+                  )}
+                  label={ANSWERS_LABELS[key]}
+                  disabled={choiceLocked}
+                  onClick={handleAnswer(key)}
+                >
+                  <Markdown>{answer || ""}</Markdown>
+                </AnswerButton>
+              )
+            })}
           </div>
         )}
       </div>

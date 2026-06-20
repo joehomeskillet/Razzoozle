@@ -28,14 +28,19 @@ const ConfigGameMode = () => {
   const [teamMode, setTeamMode] = useState(config.teamMode ?? false)
   const [lowLatency, setLowLatency] = useState(config.lowLatencyEnabled ?? false)
   const [joinLocked, setJoinLocked] = useState(config.joinLocked ?? false)
+  const [randomizeAnswers, setRandomizeAnswers] = useState(config.randomizeAnswers ?? false)
   const [saving, setSaving] = useState(false)
   const [savingLowLatency, setSavingLowLatency] = useState(false)
   const [savingJoinLocked, setSavingJoinLocked] = useState(false)
+  const [savingRandomizeAnswers, setSavingRandomizeAnswers] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lowLatencyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
   const joinLockedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
+  const randomizeAnswersTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
 
@@ -56,6 +61,10 @@ const ConfigGameMode = () => {
     setJoinLocked(config.joinLocked ?? false)
   }, [config.joinLocked])
 
+  useEffect(() => {
+    setRandomizeAnswers(config.randomizeAnswers ?? false)
+  }, [config.randomizeAnswers])
+
   // Clear any pending optimistic-toast timeout on unmount.
   useEffect(() => {
     return () => {
@@ -67,6 +76,9 @@ const ConfigGameMode = () => {
       }
       if (joinLockedTimeoutRef.current !== null) {
         clearTimeout(joinLockedTimeoutRef.current)
+      }
+      if (randomizeAnswersTimeoutRef.current !== null) {
+        clearTimeout(randomizeAnswersTimeoutRef.current)
       }
     }
   }, [])
@@ -155,6 +167,34 @@ const ConfigGameMode = () => {
               })
             : t("manager:gameMode.lobbyUnlocked", {
                 defaultValue: "Lobby entsperrt",
+              }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
+  const handleRandomizeAnswersToggle = useCallback(
+    (next: boolean) => {
+      setRandomizeAnswers(next)
+      setSavingRandomizeAnswers(true)
+
+      // Emit a partial patch; server merges it into the persisted GameConfig.
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { randomizeAnswers: next })
+
+      // ponytail: server SET_GAME_CONFIG has no ack; toast is optimistic
+      if (randomizeAnswersTimeoutRef.current !== null) {
+        clearTimeout(randomizeAnswersTimeoutRef.current)
+      }
+      randomizeAnswersTimeoutRef.current = setTimeout(() => {
+        setSavingRandomizeAnswers(false)
+        toast.success(
+          next
+            ? t("manager:gameMode.randomizeAnswersEnabled", {
+                defaultValue: "Antworten werden gemischt",
+              })
+            : t("manager:gameMode.randomizeAnswersDisabled", {
+                defaultValue: "Antwortreihenfolge fest",
               }),
         )
       }, 300)
@@ -253,6 +293,29 @@ const ConfigGameMode = () => {
           checked={joinLocked}
           onChange={handleJoinLockedToggle}
           disabled={savingJoinLocked}
+        />
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.randomizeAnswersTitle", {
+          defaultValue: "Antwortreihenfolge",
+        })}
+        description={t("manager:gameMode.randomizeAnswersDescription", {
+          defaultValue:
+            "Mischt die Reihenfolge der Antwortoptionen pro Frage zufällig, während die kanonischen Indizes für die Bewertung erhalten bleiben.",
+        })}
+      >
+        <ToggleField
+          label={t("manager:gameMode.randomizeAnswers", {
+            defaultValue: "Antworten mischen",
+          })}
+          description={t("manager:gameMode.randomizeAnswersHint", {
+            defaultValue:
+              "Randomisiert die Anzeigereihenfolge der Antworten pro Frage.",
+          })}
+          checked={randomizeAnswers}
+          onChange={handleRandomizeAnswersToggle}
+          disabled={savingRandomizeAnswers}
         />
       </FormSection>
     </div>

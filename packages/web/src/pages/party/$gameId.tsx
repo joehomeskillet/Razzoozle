@@ -26,7 +26,7 @@ const PlayerGamePage = () => {
   const { socket } = useSocket()
   const { gameId: gameIdParam } = useParams({ from: "/party/$gameId" })
   const { status, setPlayer, setGameId, setStatus, reset } = usePlayerStore()
-  const { setQuestionStates } = useQuestionStore()
+  const { setQuestionStates, setDisplayOrder } = useQuestionStore()
   const setLowLatencyActive = useLowLatencyStore((s) => s.setActive)
   const setAlreadyAnswered = useAnswerStore((s) => s.setAlreadyAnswered)
   const { t } = useTranslation()
@@ -80,6 +80,14 @@ const PlayerGamePage = () => {
 
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
     if (name in GAME_STATE_COMPONENTS) {
+      // Capture displayOrder when a new question arrives for shuffled answers.
+      if (name === STATUS.SHOW_QUESTION) {
+        const questionData = data as {
+          displayOrder?: number[]
+        }
+        setDisplayOrder(questionData?.displayOrder)
+      }
+
       // Detect low-latency mode from the presence of server-timing anchors and
       // track the latest server sequence. All reads optional/guarded so a
       // normal-mode (anchor-less) payload is a no-op here.
