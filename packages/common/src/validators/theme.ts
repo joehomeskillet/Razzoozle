@@ -36,7 +36,7 @@ export const themeValidator = z.object({
   colorSecondary: hexColor,
   colorText: hexColor.default("#ffffff"),
   answerColors: z.tuple([hexColor, hexColor, hexColor, hexColor]),
-  answerTextColor: hexColor.default("#ffffff"),
+  answerTextColor: hexColor.default("#0B0B12"),
   accentColor: hexColor.default("#ff9900"),
   radius: z.number().min(0).max(40).default(16),
   scrim: z.number().min(0).max(100).default(0),

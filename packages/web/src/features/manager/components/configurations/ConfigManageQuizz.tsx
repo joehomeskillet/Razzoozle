@@ -327,7 +327,7 @@ const ConfigManageQuizz = () => {
               aria-label={t("manager:quizz.sort", {
                 defaultValue: "Sortieren",
               })}
-              className="focus-visible:border-primary min-h-11 w-full rounded-xl border-2 border-gray-300 p-2 font-semibold focus-visible:outline-none sm:w-auto"
+              className="focus-visible:border-primary min-h-11 w-full rounded-xl border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-none sm:w-auto"
             >
               <option value="name-asc">
                 {t("manager:quizz.sortNameAsc", {

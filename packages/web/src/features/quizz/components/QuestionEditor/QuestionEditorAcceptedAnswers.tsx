@@ -60,7 +60,7 @@ const QuestionEditorAcceptedAnswers = () => {
         {acceptedAnswers.map((answer, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
-              className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
               placeholder={t("quizz:typeAnswer.acceptedAnswerPlaceholder")}
               value={answer}
               onChange={(e) => updateAnswer(i, e.target.value)}
@@ -101,7 +101,7 @@ const QuestionEditorAcceptedAnswers = () => {
               matchMode: e.target.value as MatchMode,
             })
           }
-          className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-gray-800 outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          className="rounded-lg border border-[var(--border-hairline)] bg-white px-2 py-1.5 text-gray-800 outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
         >
           {MATCH_MODES.map((mode) => (
             <option key={mode} value={mode}>

@@ -37,7 +37,7 @@ export const DEFAULT_THEME: Theme = {
   colorSecondary: "#2e1065",
   colorText: "#ffffff",
   answerColors: ["#E69F00", "#56B4E9", "#3DBFA0", "#CC79A7"],
-  answerTextColor: "#ffffff",
+  answerTextColor: "#0B0B12",
   accentColor: "#ff9900",
   radius: 16,
   scrim: 0,

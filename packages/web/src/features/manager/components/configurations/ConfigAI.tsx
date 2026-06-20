@@ -377,7 +377,7 @@ const ConfigAI = () => {
               id="ai-text-provider"
               value={settings.text.activeProvider}
               onChange={(event) => setActiveProvider(event.target.value)}
-              className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+              className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
             >
               <option value={AI_PROVIDER_OFF}>{t("manager:ai.off")}</option>
               {settings.text.providers.map((provider) => (
@@ -645,7 +645,7 @@ const ConfigAI = () => {
                             resolution: Number(event.target.value),
                           })
                         }
-                        className="min-h-11 w-full rounded-lg border-2 border-gray-300 p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+                        className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
                       >
                         {IMAGE_RESOLUTIONS.map((size) => (
                           <option key={size} value={size}>

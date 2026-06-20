@@ -217,7 +217,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         <button
           type="button"
           onClick={pairDisplay}
-          className="bg-primary rounded-md px-3 py-1.5 text-sm font-bold text-white"
+          className="bg-primary rounded-md px-3 py-1.5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           {t("manager:satellite.pair")}
         </button>

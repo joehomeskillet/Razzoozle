@@ -113,13 +113,13 @@ const SimControl = () => {
                   addBots()
                 }
               }}
-              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-bold outline-none focus:border-gray-500"
+              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-bold outline-none focus-visible:border-[var(--color-primary)]"
             />
             <button
               type="button"
               onClick={addBots}
               disabled={!gameId || count < 1 || windowOpen}
-              className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+              className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("manager:sim.add")}
             </button>

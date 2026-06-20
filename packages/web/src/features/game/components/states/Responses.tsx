@@ -95,7 +95,7 @@ const Responses = ({
               {(acceptedAnswers ?? []).map((a) => (
                 <span
                   key={a}
-                  className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-300"
+                  className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-800"
                 >
                   {a}
                 </span>
@@ -125,7 +125,7 @@ const Responses = ({
                       className={clsx(
                         "flex items-center justify-between rounded-xl px-4 py-2",
                         isMatch
-                          ? "bg-[var(--state-correct-soft)] text-green-100"
+                          ? "bg-[var(--state-correct-soft)] text-green-800"
                           : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
                       )}
                     >
@@ -204,7 +204,7 @@ const Responses = ({
                       : "height 320ms cubic-bezier(0.16,1,0.3,1)",
                   }}
                 >
-                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-white tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-[var(--color-field-ink)] tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                     {responses[key] || 0}
                   </span>
                 </div>

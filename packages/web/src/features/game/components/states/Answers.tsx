@@ -490,7 +490,7 @@ const Answers = ({
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -525,7 +525,7 @@ const Answers = ({
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
               className={clsx(
-                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -566,7 +566,7 @@ const Answers = ({
               onClick={submitSlider}
               disabled={submitted}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >

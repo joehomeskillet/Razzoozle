@@ -31,7 +31,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   // Neutral actions — paper-white surface, gray border, gray-700 text (AA).
   // Ring uses the runtime accent so it reads against the light surface.
   secondary:
-    "bg-white text-gray-700 border border-gray-300 shadow-sm " +
+    "bg-white text-gray-700 border border-[var(--border-hairline)] shadow-sm " +
     "hover:bg-gray-50 active:bg-gray-100 " +
     "focus-visible:outline-[var(--color-primary)]",
   // Destructive — reject/delete. White text on red-600 (AA). White ring.

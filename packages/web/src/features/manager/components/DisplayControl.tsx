@@ -133,13 +133,13 @@ const DisplayControl = () => {
               placeholder={t("manager:satellite.codePlaceholder")}
               aria-label={t("manager:satellite.codeLabel")}
               maxLength={6}
-              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus:border-gray-500"
+              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus-visible:border-[var(--color-primary)]"
             />
             <button
               type="button"
               onClick={pair}
               disabled={!gameId || code.trim().length === 0}
-              className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+              className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("manager:satellite.pair")}
             </button>
