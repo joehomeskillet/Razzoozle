@@ -18,12 +18,50 @@ const visible = () =>
 const canVibrate = () =>
   isHapticsSupported() && visible() && useHapticsStore.getState().enabled
 
-const fire = (pattern: number | number[]) => {
-  if (!canVibrate()) return
+// iOS haptic fallback using switch-click trick for Safari with no Vibration API
+const iosHapticTick = () => {
   try {
-    navigator.vibrate(pattern)
+    const label = document.createElement("label")
+    label.setAttribute("aria-hidden", "true")
+    label.style.display = "none"
+    const input = document.createElement("input")
+    input.type = "checkbox"
+    input.setAttribute("switch", "")
+    label.appendChild(input)
+    document.head.appendChild(label)
+    label.click()
+    document.head.removeChild(label)
   } catch {
-    // some engines throw if vibration is currently disallowed — ignore
+    /* ignore */
+  }
+}
+
+// Fallback for iOS Safari when navigator.vibrate is unavailable
+const fireWithIosFallback = (pattern: number | number[]) => {
+  if (!canVibrate()) return
+
+  // Primary path: navigator.vibrate (Android/desktop)
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(pattern)
+    } catch {
+      /* ignore */
+    }
+    return
+  }
+
+  // iOS Safari fallback: use switch-click trick if on coarse pointer (touch) device
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    const pulses = Array.isArray(pattern) ? pattern : [pattern]
+    // Count non-zero elements as haptic ticks (skip pause durations)
+    let tickCount = 0
+    for (let i = 0; i < pulses.length; i += 2) {
+      if (pulses[i] > 0) tickCount++
+    }
+    // Space ticks ~120ms apart
+    for (let i = 0; i < tickCount; i++) {
+      setTimeout(iosHapticTick, i * 120)
+    }
   }
 }
 
@@ -46,15 +84,15 @@ if (typeof window !== "undefined") {
   window.addEventListener("touchend", prime, { once: true, passive: true })
 }
 
-export const hapticTap = () => fire(25) // answer tap / coin
-export const hapticSuccess = () => fire([45]) // correct
-export const hapticError = () => fire([140, 50, 140]) // wrong (stutter rumble)
-export const hapticWin = () => fire([70, 40, 70, 40, 160]) // first-correct / podium
-export const hapticCountdown = () => fire(40) // per tick (last 3s only)
+export const hapticTap = () => fireWithIosFallback(25) // answer tap / coin
+export const hapticSuccess = () => fireWithIosFallback([45]) // correct
+export const hapticError = () => fireWithIosFallback([140, 50, 140]) // wrong (stutter rumble)
+export const hapticWin = () => fireWithIosFallback([70, 40, 70, 40, 160]) // first-correct / podium
+export const hapticCountdown = () => fireWithIosFallback(40) // per tick (last 3s only)
 export const hapticAchievement = (
   tier: "bronze" | "silver" | "gold" | "diamant",
 ) =>
-  fire(
+  fireWithIosFallback(
     { bronze: [40], silver: [40, 30, 40], gold: [60, 40, 60], diamant: [90, 40, 90, 40, 140] }[
       tier
     ] ?? [45],
