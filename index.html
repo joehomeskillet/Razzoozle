@@ -216,6 +216,8 @@
 html.js [data-reveal]{opacity:0;transform:translateY(14px);transition:opacity .55s cubic-bezier(.16,1,.3,1),transform .55s cubic-bezier(.16,1,.3,1)}
 html.js [data-reveal].in{opacity:1;transform:none}
 .logo-card img{filter:grayscale(1);opacity:.78;transition:filter .25s ease,opacity .25s ease}
+.logo-card .lsvg{width:30px;height:30px;color:var(--ink-soft);opacity:.78;transition:opacity .25s ease}
+.logo-card:hover .lsvg,.logo-card:focus-within .lsvg{opacity:1}
 .logo-card:hover img,.logo-card:focus-within img{filter:none;opacity:1}
 .site{transition:box-shadow .25s ease,background-color .25s ease}
 .site.scrolled{box-shadow:0 1px 0 var(--border-hairline),0 10px 28px -18px rgba(14,17,32,.22)}
@@ -331,41 +333,71 @@ html.js [data-reveal].in{opacity:1;transform:none}
 
       <div class="showcase-row">
         <div class="shot-wrap">
-          <img class="shot" src="shots/join.webp" width="1100" height="688" loading="lazy" decoding="async" alt="The lobby screen with the game PIN and a QR code to join" data-i18n="show.r1.alt" data-i18n-attr="alt" />
+          <img class="shot" src="shots/lobby.webp" width="1100" height="619" loading="lazy" decoding="async" alt="A presenter lobby filling up with dozens of player avatars" data-i18n="show.r1.alt" data-i18n-attr="alt" />
         </div>
         <div class="shot-copy">
           <h3 data-i18n="show.r1.h">Join in seconds</h3>
-          <p data-i18n="show.r1.p">Host on the big screen; players scan a QR code or punch in the game PIN and play from their own phones — no app, no signup.</p>
+          <p data-i18n="show.r1.p">Host on the big screen; players scan a QR code or type the game PIN and play from their own phones — no app, no signup. Load-tested to hundreds of players.</p>
         </div>
       </div>
 
       <div class="showcase-row">
         <div class="shot-wrap">
-          <img class="shot" src="shots/cockpit.webp" width="1100" height="688" loading="lazy" decoding="async" alt="The manager Design tab — a live theme cockpit with colours, backgrounds and logo" data-i18n="show.r2.alt" data-i18n-attr="alt" />
+          <img class="shot" src="shots/question.webp" width="1100" height="619" loading="lazy" decoding="async" alt="A live question with the answer distribution on the presenter screen" data-i18n="show.r2.alt" data-i18n-attr="alt" />
         </div>
         <div class="shot-copy">
-          <h3 data-i18n="show.r2.h">A live theme cockpit</h3>
-          <p data-i18n="show.r2.p">Recolor the whole game from the manager Design tab — colors, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.</p>
+          <h3 data-i18n="show.r2.h">Answer, then see the split</h3>
+          <p data-i18n="show.r2.p">Four colour-and-shape answer tiles and a live timer on every phone — then the whole room watches the answer distribution land on the big screen.</p>
         </div>
       </div>
 
       <div class="showcase-row">
         <div class="shot-wrap">
-          <img class="shot portrait" src="shots/leaderboard.webp" width="1100" height="2381" loading="lazy" decoding="async" alt="A phone leaderboard with ranks, scores and medals" data-i18n="show.r3.alt" data-i18n-attr="alt" />
+          <img class="shot" src="shots/leaderboard.webp" width="1100" height="619" loading="lazy" decoding="async" alt="A live leaderboard with an achievement banner" data-i18n="show.r3.alt" data-i18n-attr="alt" />
         </div>
         <div class="shot-copy">
           <h3 data-i18n="show.r3.h">Gamification that lands</h3>
-          <p data-i18n="show.r3.p">Live leaderboards with overtake animations, 15 achievements, medals, streaks, confetti and sound — plus a personal trophy gallery and an end-of-game awards recap.</p>
+          <p data-i18n="show.r3.p">Live leaderboards with overtake animations, 15 achievements, medals, streaks and sound — plus a personal trophy gallery you keep between games.</p>
         </div>
       </div>
 
       <div class="showcase-row">
         <div class="shot-wrap">
-          <img class="shot portrait" src="shots/question.webp" width="1100" height="2381" loading="lazy" decoding="async" alt="A phone question screen with four colored answer tiles" data-i18n="show.r4.alt" data-i18n-attr="alt" />
+          <img class="shot" src="shots/podium-confetti.gif" width="1100" height="619" loading="lazy" decoding="async" alt="An animated winners' podium raining confetti" data-i18n="show.r4.alt" data-i18n-attr="alt" />
         </div>
         <div class="shot-copy">
-          <h3 data-i18n="show.r4.h">Play it your way</h3>
-          <p data-i18n="show.r4.p">Multiple-choice, type-answer and slider questions; classic host mode, team mode, or solo practice via a share link. Works as an installable PWA, even offline.</p>
+          <h3 data-i18n="show.r4.h">A confetti finale</h3>
+          <p data-i18n="show.r4.p">Every game ends on an animated winners' podium — confetti, medals and one-tap shareable winner stickers.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot" src="shots/recap.webp" width="1100" height="619" loading="lazy" decoding="async" alt="An end-of-game awards screen" data-i18n="show.r5.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r5.h">Awards & round recaps</h3>
+          <p data-i18n="show.r5.p">After each round, a recap; at the end, the awards — first responder, biggest climber, longest streak, trophy collector and more.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot" src="shots/solo.webp" width="1100" height="619" loading="lazy" decoding="async" alt="The solo play screen with four answer tiles" data-i18n="show.r6.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r6.h">Solo, anytime</h3>
+          <p data-i18n="show.r6.p">Share a solo link and play any quiz alone at your own pace, with its own score history — perfect for practice or async play.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot" src="shots/cockpit.webp" width="1100" height="619" loading="lazy" decoding="async" alt="The manager Design tab — a live theme cockpit" data-i18n="show.r7.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r7.h">A live theme cockpit</h3>
+          <p data-i18n="show.r7.p">Recolour the whole game from the manager Design tab — colours, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.</p>
         </div>
       </div>
     </div>
@@ -390,8 +422,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <div class="logo-card"><img src="https://cdn.simpleicons.org/tailwindcss" alt="" loading="lazy" /><span class="lname">Tailwind CSS</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/pwa" alt="" loading="lazy" /><span class="lname">PWA</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/framer" alt="" loading="lazy" /><span class="lname">Motion</span></div>
-            <div class="logo-card"><span class="pill" aria-hidden="true">TS</span><span class="lname">TanStack Router</span></div>
-            <div class="logo-card"><span class="pill" aria-hidden="true">Zu</span><span class="lname">Zustand</span></div>
+            <div class="logo-card"><svg class="lsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6"/><path d="M8.3 6.7c5 .5 8 1.6 8.4 4"/></svg><span class="lname">TanStack Router</span></div>
+            <div class="logo-card"><svg class="lsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 13l9 5 9-5"/></svg><span class="lname">Zustand</span></div>
           </div>
         </div>
 
@@ -403,7 +435,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <div class="logo-card"><img src="https://cdn.simpleicons.org/zod" alt="" loading="lazy" /><span class="lname">Zod</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/i18next" alt="" loading="lazy" /><span class="lname">i18next</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/prometheus" alt="" loading="lazy" /><span class="lname">Prometheus</span></div>
-            <div class="logo-card"><span class="pill" aria-hidden="true">P</span><span class="lname">Pino</span></div>
+            <div class="logo-card"><svg class="lsvg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 6.5 11H9l-4 6h5.2v3h2.6v-3H18l-4-6h2.5L12 2Z"/></svg><span class="lname">Pino</span></div>
           </div>
         </div>
 
@@ -664,17 +696,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "See it in action",
       "show.title": "A full live-quiz platform, not a demo",
       "show.r1.h": "Join in seconds",
-      "show.r1.p": "Host on the big screen; players scan a QR code or punch in the game PIN and play from their own phones — no app, no signup.",
-      "show.r1.alt": "The lobby screen with the game PIN and a QR code to join",
-      "show.r2.h": "A live theme cockpit",
-      "show.r2.p": "Recolor the whole game from the manager Design tab — colors, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.",
-      "show.r2.alt": "The manager Design tab — a live theme cockpit with colours, backgrounds and logo",
+      "show.r1.p": "Host on the big screen; players scan a QR code or type the game PIN and play from their own phones — no app, no signup. Load-tested to hundreds of players.",
+      "show.r1.alt": "A presenter lobby filling up with dozens of player avatars",
+      "show.r2.h": "Answer, then see the split",
+      "show.r2.p": "Four colour-and-shape answer tiles and a live timer on every phone — then the whole room watches the answer distribution land on the big screen.",
+      "show.r2.alt": "A live question with the answer distribution on the presenter screen",
       "show.r3.h": "Gamification that lands",
-      "show.r3.p": "Live leaderboards with overtake animations, 15 achievements, medals, streaks, confetti and sound — plus a personal trophy gallery and an end-of-game awards recap.",
-      "show.r3.alt": "A phone leaderboard with ranks, scores and medals",
-      "show.r4.h": "Play it your way",
-      "show.r4.p": "Multiple-choice, type-answer and slider questions; classic host mode, team mode, or solo practice via a share link. Works as an installable PWA, even offline.",
-      "show.r4.alt": "A phone question screen with four colored answer tiles",
+      "show.r3.p": "Live leaderboards with overtake animations, 15 achievements, medals, streaks and sound — plus a personal trophy gallery you keep between games.",
+      "show.r3.alt": "A live leaderboard with an achievement banner",
+      "show.r4.h": "A confetti finale",
+      "show.r4.p": "Every game ends on an animated winners' podium — confetti, medals and one-tap shareable winner stickers.",
+      "show.r4.alt": "An animated winners' podium raining confetti",
+      "show.r5.h": "Awards & round recaps",
+      "show.r5.p": "After each round, a recap; at the end, the awards — first responder, biggest climber, longest streak, trophy collector and more.",
+      "show.r5.alt": "An end-of-game awards screen",
+      "show.r6.h": "Solo, anytime",
+      "show.r6.p": "Share a solo link and play any quiz alone at your own pace, with its own score history — perfect for practice or async play.",
+      "show.r6.alt": "The solo play screen with four answer tiles",
+      "show.r7.h": "A live theme cockpit",
+      "show.r7.p": "Recolour the whole game from the manager Design tab — colours, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.",
+      "show.r7.alt": "The manager Design tab — a live theme cockpit",
       "footer.note": "Free and open source under the MIT License. Self-host it — the live instance is local-only. A friendly fork of <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Not affiliated with Kahoot!®"
     },
     de: {
@@ -748,17 +789,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "In Aktion erleben",
       "show.title": "Eine vollwertige Live-Quiz-Plattform, keine Demo",
       "show.r1.h": "In Sekunden dabei",
-      "show.r1.p": "Du hostest auf dem großen Bildschirm; die Spielenden scannen einen QR-Code oder tippen die Spiel-PIN ein und spielen von ihren eigenen Handys — keine App, keine Anmeldung.",
-      "show.r1.alt": "Der Lobby-Bildschirm mit Spiel-PIN und einem QR-Code zum Beitreten",
-      "show.r2.h": "Ein Live-Theme-Cockpit",
-      "show.r2.p": "Färbe das ganze Spiel im „Design“-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
-      "show.r2.alt": "Der „Design“-Tab im Manager — ein Live-Theme-Cockpit mit Farben, Hintergründen und Logo",
+      "show.r1.p": "Du hostest auf dem großen Bildschirm; die Spielenden scannen einen QR-Code oder tippen die Spiel-PIN ein und spielen von ihren eigenen Handys — keine App, keine Anmeldung. Auf Hunderte Spielende getestet.",
+      "show.r1.alt": "Eine Präsentator-Lobby, die sich mit Dutzenden Spieler-Avataren füllt",
+      "show.r2.h": "Antworten, dann die Verteilung sehen",
+      "show.r2.p": "Vier farb- und formcodierte Antwortfelder und ein Live-Timer auf jedem Handy — danach sieht der ganze Raum die Antwortverteilung auf dem großen Bildschirm.",
+      "show.r2.alt": "Eine Live-Frage mit Antwortverteilung auf dem Präsentator-Bildschirm",
       "show.r3.h": "Gamification, die zündet",
-      "show.r3.p": "Live-Ranglisten mit Überhol-Animationen, 15 Erfolge, Medaillen, Serien, Konfetti und Sound — dazu eine persönliche Trophäengalerie und ein End-Auszeichnungs-Recap.",
-      "show.r3.alt": "Eine Handy-Rangliste mit Plätzen, Punkten und Medaillen",
-      "show.r4.h": "Spiel es, wie du magst",
-      "show.r4.p": "Fragen mit Mehrfachauswahl, Antwort-Eintippen und Slider; klassischer Host-Modus, Team-Modus oder Solo-Übung über einen Teilen-Link. Läuft als installierbare PWA, sogar offline.",
-      "show.r4.alt": "Ein Handy-Fragebildschirm mit vier farbigen Antwortkacheln",
+      "show.r3.p": "Live-Ranglisten mit Überhol-Animationen, 15 Erfolge, Medaillen, Serien und Sound — dazu eine persönliche Trophäengalerie, die zwischen Spielen erhalten bleibt.",
+      "show.r3.alt": "Eine Live-Rangliste mit Erfolgs-Banner",
+      "show.r4.h": "Ein Konfetti-Finale",
+      "show.r4.p": "Jedes Spiel endet auf einem animierten Siegertreppchen — Konfetti, Medaillen und teilbare Sieger-Sticker mit einem Tipp.",
+      "show.r4.alt": "Ein animiertes Siegertreppchen mit Konfettiregen",
+      "show.r5.h": "Auszeichnungen & Runden-Recaps",
+      "show.r5.p": "Nach jeder Runde ein Recap; am Ende die Auszeichnungen — First Responder, größter Aufsteiger, längste Serie, Trophäensammler und mehr.",
+      "show.r5.alt": "Ein Auszeichnungs-Bildschirm am Spielende",
+      "show.r6.h": "Solo, jederzeit",
+      "show.r6.p": "Teile einen Solo-Link und spiele jedes Quiz allein in deinem Tempo, mit eigener Punktehistorie — ideal zum Üben oder für asynchrones Spielen.",
+      "show.r6.alt": "Der Solo-Spielbildschirm mit vier Antwortfeldern",
+      "show.r7.h": "Ein Live-Theme-Cockpit",
+      "show.r7.p": "Färbe das ganze Spiel im „Design“-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
+      "show.r7.alt": "Der „Design“-Tab im Manager — ein Live-Theme-Cockpit",
       "footer.note": "Frei und quelloffen unter der MIT-Lizenz. Selbst hosten — die Live-Instanz ist nur lokal erreichbar. Ein freundlicher Fork von <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Steht in keiner Verbindung zu Kahoot!®"
     },
     zh: {
@@ -832,17 +882,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "实际效果一览",
       "show.title": "一个完整的实时答题平台，而非演示",
       "show.r1.h": "几秒即可加入",
-      "show.r1.p": "主持人在大屏幕上开局；玩家扫描二维码或输入游戏 PIN 码，用自己的手机即可游玩 —— 无需 App，无需注册。",
-      "show.r1.alt": "带有游戏 PIN 码和加入二维码的大厅界面",
-      "show.r2.h": "实时主题驾驶舱",
-      "show.r2.p": "在管理员的“设计”标签页中为整个游戏重新配色 —— 颜色、各视图背景、Logo、圆角 —— 或上传一个可下载的 skeleton ZIP 主题。默认扁平奶油色，可选紫色玻璃。",
-      "show.r2.alt": "管理员的“设计”标签页 —— 一个含颜色、背景和 Logo 的实时主题驾驶舱",
+      "show.r1.p": "你在大屏幕上主持；玩家扫描二维码或输入游戏 PIN，用自己的手机即可游玩——无需应用、无需注册。已压力测试至数百名玩家。",
+      "show.r1.alt": "主持人大厅里挤满了数十个玩家头像",
+      "show.r2.h": "作答后即见分布",
+      "show.r2.p": "每部手机上都有四个按颜色与形状区分的选项和实时计时器——随后全场在大屏幕上看到答案分布。",
+      "show.r2.alt": "演示屏幕上的实时题目与答案分布",
       "show.r3.h": "真正有感的游戏化",
-      "show.r3.p": "带超越动画的实时排行榜、15 项成就、奖牌、连胜、彩带和音效 —— 外加个人奖杯陈列室和终局颁奖回顾。",
-      "show.r3.alt": "一部手机排行榜，显示名次、得分和奖牌",
-      "show.r4.h": "随你想怎么玩",
-      "show.r4.p": "支持多选、填空作答和滑块题型；经典主持人模式、团队模式，或通过分享链接进行单人练习。可作为 PWA 安装，甚至支持离线。",
-      "show.r4.alt": "一部手机题目界面，显示四个彩色答案方块",
+      "show.r3.p": "实时排行榜配超越动画、15 项成就、奖牌、连胜与音效——还有可跨场保留的个人奖杯墙。",
+      "show.r3.alt": "带成就横幅的实时排行榜",
+      "show.r4.h": "彩带满天的收官",
+      "show.r4.p": "每局都以动画领奖台收尾——彩带、奖牌，以及一键即可分享的获胜者贴纸。",
+      "show.r4.alt": "彩带纷飞的动画领奖台",
+      "show.r5.h": "奖项与每轮回顾",
+      "show.r5.p": "每轮结束有回顾；终局有奖项——最快抢答、最大黑马、最长连胜、奖杯收藏家等等。",
+      "show.r5.alt": "游戏结束时的奖项画面",
+      "show.r6.h": "随时单人畅玩",
+      "show.r6.p": "分享一个单人链接，按自己的节奏独自游玩任意测验，并有独立的分数记录——非常适合练习或异步游玩。",
+      "show.r6.alt": "带四个选项的单人游玩画面",
+      "show.r7.h": "实时主题驾驶舱",
+      "show.r7.p": "在管理员“设计”标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
+      "show.r7.alt": "管理员“设计”标签——实时主题驾驶舱",
       "footer.note": "基于 MIT 许可证免费开源。请自行托管 —— 在线实例仅限本地访问。它是 <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a> 的一个友好分支。与 Kahoot!® 无任何关联。"
     },
     es: {
@@ -916,17 +975,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "Míralo en acción",
       "show.title": "Una plataforma de cuestionarios completa, no una demo",
       "show.r1.h": "Únete en segundos",
-      "show.r1.p": "El anfitrión presenta en la pantalla grande; los jugadores escanean un código QR o teclean el PIN de la partida y juegan desde su propio móvil — sin app, sin registro.",
-      "show.r1.alt": "La pantalla de la sala de espera con el PIN de la partida y un código QR para unirse",
-      "show.r2.h": "Una cabina de temas en vivo",
-      "show.r2.p": "Cambia el color de toda la partida desde la pestaña de Diseño del panel — colores, fondos por vista, logo, radio — o suelta un tema skeleton ZIP descargable. Crema plano por defecto, glass violeta opcional.",
-      "show.r2.alt": "La pestaña de Diseño del panel — una cabina de temas en vivo con colores, fondos y logo",
-      "show.r3.h": "Gamificación que se nota",
-      "show.r3.p": "Clasificaciones en vivo con animaciones de adelantamiento, 15 logros, medallas, rachas, confeti y sonido — además de una galería de trofeos personal y un repaso de premios al terminar la partida.",
-      "show.r3.alt": "Una clasificación en el móvil con puestos, puntuaciones y medallas",
-      "show.r4.h": "Juega a tu manera",
-      "show.r4.p": "Preguntas de opción múltiple, de respuesta escrita y de deslizador; modo anfitrión clásico, modo equipo o práctica en solitario mediante un enlace. Funciona como PWA instalable, incluso sin conexión.",
-      "show.r4.alt": "La pantalla de una pregunta en el móvil con cuatro fichas de respuesta de colores",
+      "show.r1.p": "Tú presentas en la pantalla grande; los jugadores escanean un código QR o escriben el PIN y juegan desde sus móviles — sin app, sin registro. Probado con cientos de jugadores.",
+      "show.r1.alt": "Una sala de presentador llenándose de docenas de avatares de jugadores",
+      "show.r2.h": "Responde y mira el reparto",
+      "show.r2.p": "Cuatro fichas de respuesta por color y forma y un temporizador en vivo en cada móvil — luego toda la sala ve la distribución de respuestas en la pantalla grande.",
+      "show.r2.alt": "Una pregunta en vivo con la distribución de respuestas en la pantalla del presentador",
+      "show.r3.h": "Gamificación que cala",
+      "show.r3.p": "Clasificaciones en vivo con animaciones de adelantamiento, 15 logros, medallas, rachas y sonido — además de una galería de trofeos personal que conservas entre partidas.",
+      "show.r3.alt": "Una clasificación en vivo con un banner de logro",
+      "show.r4.h": "Un final con confeti",
+      "show.r4.p": "Cada partida termina en un podio animado de ganadores — confeti, medallas y pegatinas de ganador que se comparten con un toque.",
+      "show.r4.alt": "Un podio de ganadores animado lloviendo confeti",
+      "show.r5.h": "Premios y resúmenes de ronda",
+      "show.r5.p": "Tras cada ronda, un resumen; al final, los premios — primer acierto, mayor escalador, racha más larga, coleccionista de trofeos y más.",
+      "show.r5.alt": "Una pantalla de premios al final de la partida",
+      "show.r6.h": "En solitario, cuando quieras",
+      "show.r6.p": "Comparte un enlace solo y juega cualquier cuestionario tú solo a tu ritmo, con su propio historial de puntos — ideal para practicar o jugar en diferido.",
+      "show.r6.alt": "La pantalla de juego en solitario con cuatro fichas de respuesta",
+      "show.r7.h": "Una cabina de temas en vivo",
+      "show.r7.p": "Recolorea todo el juego desde la pestaña Diseño del gestor — colores, fondos por vista, logo, radio — o suelta un tema ZIP de esqueleto descargable. Crema plano por defecto, violeta glass opcional.",
+      "show.r7.alt": "La pestaña Diseño del gestor — una cabina de temas en vivo",
       "footer.note": "Gratis y de código abierto bajo la Licencia MIT. Autoalójalo — la instancia en vivo es solo local. Un fork amistoso de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sin relación con Kahoot!®"
     },
     fr: {
@@ -1000,17 +1068,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "Voyez-le à l'œuvre",
       "show.title": "Une vraie plateforme de quiz en direct, pas une démo",
       "show.r1.h": "Rejoignez en quelques secondes",
-      "show.r1.p": "L'animateur anime sur grand écran ; les joueurs scannent un QR code ou saisissent le PIN de la partie et jouent depuis leur propre téléphone — sans app, sans inscription.",
-      "show.r1.alt": "L'écran du salon avec le PIN de la partie et un QR code pour rejoindre",
-      "show.r2.h": "Un cockpit de thèmes en direct",
-      "show.r2.p": "Recolorez toute la partie depuis l'onglet Design du manager — couleurs, arrière-plans par vue, logo, rayon — ou déposez un thème skeleton ZIP téléchargeable. Crème plat par défaut, glass violet en option.",
-      "show.r2.alt": "L'onglet Design du manager — un cockpit de thèmes en direct avec couleurs, arrière-plans et logo",
-      "show.r3.h": "Une gamification qui fait mouche",
-      "show.r3.p": "Des classements en direct avec animations de dépassement, 15 succès, des médailles, des séries, des confettis et du son — plus une galerie de trophées personnelle et une remise de prix en fin de partie.",
-      "show.r3.alt": "Un classement sur téléphone avec rangs, scores et médailles",
-      "show.r4.h": "Jouez à votre façon",
-      "show.r4.p": "Des questions à choix multiple, à réponse saisie et au curseur ; mode animateur classique, mode équipe ou entraînement en solo via un lien. Fonctionne comme une PWA installable, même hors ligne.",
-      "show.r4.alt": "L'écran d'une question sur téléphone avec quatre tuiles de réponse colorées",
+      "show.r1.p": "Vous animez sur grand écran ; les joueurs scannent un QR code ou saisissent le PIN et jouent depuis leur téléphone — sans appli, sans inscription. Testé jusqu'à des centaines de joueurs.",
+      "show.r1.alt": "Un lobby de présentateur se remplissant de dizaines d'avatars de joueurs",
+      "show.r2.h": "Répondez, puis voyez la répartition",
+      "show.r2.p": "Quatre tuiles de réponse par couleur et forme et un minuteur en direct sur chaque téléphone — puis toute la salle voit la répartition des réponses sur grand écran.",
+      "show.r2.alt": "Une question en direct avec la répartition des réponses sur l'écran du présentateur",
+      "show.r3.h": "Une gamification qui marque",
+      "show.r3.p": "Classements en direct avec animations de dépassement, 15 succès, médailles, séries et son — ainsi qu'une galerie de trophées personnelle conservée d'une partie à l'autre.",
+      "show.r3.alt": "Un classement en direct avec une bannière de succès",
+      "show.r4.h": "Un final en confettis",
+      "show.r4.p": "Chaque partie se termine sur un podium animé — confettis, médailles et autocollants de gagnant partageables en un geste.",
+      "show.r4.alt": "Un podium des gagnants animé sous une pluie de confettis",
+      "show.r5.h": "Récompenses et récaps de manche",
+      "show.r5.p": "Après chaque manche, un récap ; à la fin, les récompenses — premier à répondre, plus grande remontée, plus longue série, collectionneur de trophées et plus.",
+      "show.r5.alt": "Un écran de récompenses en fin de partie",
+      "show.r6.h": "En solo, quand vous voulez",
+      "show.r6.p": "Partagez un lien solo et jouez à n'importe quel quiz seul, à votre rythme, avec son propre historique de scores — parfait pour s'entraîner ou jouer en différé.",
+      "show.r6.alt": "L'écran de jeu solo avec quatre tuiles de réponse",
+      "show.r7.h": "Un cockpit de thèmes en direct",
+      "show.r7.p": "Recolorez tout le jeu depuis l'onglet Design du manager — couleurs, arrière-plans par vue, logo, rayon — ou déposez un thème ZIP « skeleton » téléchargeable. Crème plat par défaut, violet glass en option.",
+      "show.r7.alt": "L'onglet Design du manager — un cockpit de thèmes en direct",
       "footer.note": "Gratuit et open-source sous la Licence MIT. Auto-hébergez-le — l'instance en direct est uniquement locale. Un fork amical de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sans aucun lien avec Kahoot!®"
     },
     it: {
@@ -1084,17 +1161,26 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.kicker": "Guardalo in azione",
       "show.title": "Una piattaforma di quiz dal vivo completa, non una demo",
       "show.r1.h": "Entra in pochi secondi",
-      "show.r1.p": "Il conduttore conduce sul grande schermo; i giocatori scansionano un QR code o digitano il PIN della partita e giocano dal proprio telefono — senza app, senza registrazione.",
-      "show.r1.alt": "La schermata della sala d'attesa con il PIN della partita e un QR code per entrare",
-      "show.r2.h": "Una cabina dei temi dal vivo",
-      "show.r2.p": "Ricolora l'intera partita dalla scheda Design del manager — colori, sfondi per ogni vista, logo, raggio — oppure carica un tema skeleton ZIP scaricabile. Crema piatto per impostazione predefinita, glass viola opzionale.",
-      "show.r2.alt": "La scheda Design del manager — una cabina dei temi dal vivo con colori, sfondi e logo",
-      "show.r3.h": "Una gamification che si sente",
-      "show.r3.p": "Classifiche in tempo reale con animazioni di sorpasso, 15 obiettivi, medaglie, serie, coriandoli e suono — più una galleria di trofei personale e un riepilogo dei premi a fine partita.",
-      "show.r3.alt": "Una classifica su telefono con posizioni, punteggi e medaglie",
-      "show.r4.h": "Gioca come piace a te",
-      "show.r4.p": "Domande a scelta multipla, a risposta digitata e a cursore; modalità conduttore classica, modalità squadra o allenamento in solitaria tramite un link. Funziona come PWA installabile, anche offline.",
-      "show.r4.alt": "La schermata di una domanda su telefono con quattro caselle di risposta colorate",
+      "show.r1.p": "Tu conduci sul grande schermo; i giocatori scansionano un QR code o digitano il PIN e giocano dai propri telefoni — niente app, niente registrazione. Testato con centinaia di giocatori.",
+      "show.r1.alt": "Una lobby del presentatore che si riempie di decine di avatar dei giocatori",
+      "show.r2.h": "Rispondi, poi vedi la distribuzione",
+      "show.r2.p": "Quattro tessere di risposta per colore e forma e un timer dal vivo su ogni telefono — poi tutta la sala vede la distribuzione delle risposte sul grande schermo.",
+      "show.r2.alt": "Una domanda dal vivo con la distribuzione delle risposte sullo schermo del presentatore",
+      "show.r3.h": "Gamification che lascia il segno",
+      "show.r3.p": "Classifiche dal vivo con animazioni di sorpasso, 15 obiettivi, medaglie, serie e suono — più una galleria di trofei personale che conservi tra una partita e l'altra.",
+      "show.r3.alt": "Una classifica dal vivo con un banner obiettivo",
+      "show.r4.h": "Un finale di coriandoli",
+      "show.r4.p": "Ogni partita si chiude su un podio animato dei vincitori — coriandoli, medaglie e adesivi del vincitore condivisibili con un tocco.",
+      "show.r4.alt": "Un podio dei vincitori animato sotto una pioggia di coriandoli",
+      "show.r5.h": "Premi e riepiloghi di round",
+      "show.r5.p": "Dopo ogni round, un riepilogo; alla fine, i premi — primo a rispondere, migliore scalatore, serie più lunga, collezionista di trofei e altro.",
+      "show.r5.alt": "Una schermata dei premi a fine partita",
+      "show.r6.h": "Da solo, quando vuoi",
+      "show.r6.p": "Condividi un link solo e gioca a qualsiasi quiz da solo al tuo ritmo, con la sua cronologia punti — perfetto per esercitarti o giocare in asincrono.",
+      "show.r6.alt": "La schermata di gioco in solitaria con quattro tessere di risposta",
+      "show.r7.h": "Una cabina di regia dei temi dal vivo",
+      "show.r7.p": "Ricolora l'intero gioco dalla scheda Design del manager — colori, sfondi per vista, logo, raggio — o carica un tema ZIP « skeleton » scaricabile. Crema piatto di default, viola glass opzionale.",
+      "show.r7.alt": "La scheda Design del manager — una cabina di regia dei temi dal vivo",
       "footer.note": "Gratuito e open-source sotto la Licenza MIT. Fai self-hosting — l'istanza dal vivo è solo locale. Un fork amichevole di <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Senza alcun legame con Kahoot!®"
     }
   };
