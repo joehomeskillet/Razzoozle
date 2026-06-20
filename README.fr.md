@@ -21,7 +21,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
 
-**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *forké depuis [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App Windows (Bêta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *forké depuis [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
