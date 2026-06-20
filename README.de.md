@@ -81,6 +81,13 @@ Untermauert von **592 automatisierten Tests**, einem Sicherheits-Durchlauf gegen
 
 ---
 
+## 📲 Apps & Begleiter
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — die erste native **Windows**-Desktop-App für Razzoozle. Hoste und verwalte Spiele direkt von deinem Rechner, ganz ohne Browser.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — ein schlanker Rendezvous- / Discovery-Dienst, über den sich Clients gegenseitig finden. Nur zur Discovery — das Gameplay wird niemals weitergeleitet.
+
+---
+
 ## ⚙️ Voraussetzungen
 
 **Mit Docker (empfohlen):** Docker + Docker Compose.

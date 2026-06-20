@@ -83,6 +83,13 @@ Soutenu par **592 tests automatisés**, une passe de sécurité contre le path-t
 
 ---
 
+## 📲 Applications & compagnons
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Bêta)** — la première application de bureau native **Windows** pour Razzoozle. Hébergez et gérez vos parties depuis votre machine, sans navigateur.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un léger service de rendez-vous / découverte qui aide les clients à se trouver. Découverte uniquement — il ne relaie jamais le jeu.
+
+---
+
 ## ⚙️ Prérequis
 
 **Avec Docker (recommandé) :** Docker + Docker Compose.

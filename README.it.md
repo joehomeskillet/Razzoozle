@@ -83,6 +83,13 @@ Supportato da **592 test automatizzati**, un controllo di sicurezza contro il pa
 
 ---
 
+## 📲 App e companion
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — la prima app desktop nativa per **Windows** di Razzoozle. Ospita e gestisci le partite dal tuo computer, senza bisogno del browser.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un leggero servizio di rendezvous / discovery che aiuta i client a trovarsi a vicenda. Solo discovery — non inoltra mai il gameplay.
+
+---
+
 ## ⚙️ Prerequisiti
 
 **Con Docker (consigliato):** Docker + Docker Compose.
