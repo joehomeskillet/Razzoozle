@@ -1807,6 +1807,13 @@ export class RoundManager {
           // when not applicable (matches PlayerAnswerRecord).
           answerIds: playerAnswer?.answerIds ?? null,
           answerText: playerAnswer?.answerText ?? null,
+          // ms from question start to answer; null when no answer or legacy results.
+          responseMs: (() => {
+            const receivedAt = this.answerReceivedAt.get(player.clientId)
+            return receivedAt !== undefined
+              ? Math.max(0, receivedAt - this.startTime)
+              : null
+          })(),
         }
       }),
     })

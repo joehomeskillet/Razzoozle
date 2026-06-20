@@ -765,3 +765,59 @@ describe("correct answer is revealed ONLY in the post-question RESULT payload", 
   })
 })
 
+
+// ── responseMs: response time tracking ────────────────────────────────────────
+
+describe("responseMs persisted in questionsHistory playerAnswers", () => {
+  it("captures response time (ms from question start to answer) for answered players", () => {
+    const players = [makePlayer("instant"), makePlayer("slow"), makePlayer("silent")]
+    const ctx = buildRound({
+      quizz: quizzOf({ solutions: [1] }),
+      players,
+      lowLatency: DISABLED_LL,
+    })
+    openQuestion(ctx.round, {
+      startTime: QUESTION_START,
+      ll: DISABLED_LL,
+      questionTimeSec: 20,
+    })
+
+    // Player 1: answers at t+0 (instant)
+    answer(ctx, "instant", 1)
+
+    // Player 2: answers at t+5000ms (slow)
+    vi.setSystemTime(QUESTION_START + 5000)
+    answer(ctx, "slow", 0)
+
+    // Player 3: does not answer
+    vi.setSystemTime(QUESTION_START) // Reset for consistency
+
+    callShowResults(ctx)
+
+    // Access questionsHistory via internal reflection (like helpers.ts does)
+    const round = ctx.round as unknown as {
+      questionsHistory: Array<{ playerAnswers: Array<{ playerName: string; responseMs?: number | null }> }>
+    }
+    const lastQuestionResult = round.questionsHistory[0]
+    expect(lastQuestionResult).toBeDefined()
+
+    const instantAnswer = lastQuestionResult.playerAnswers.find(
+      (a) => a.playerName === "instant",
+    )
+    const slowAnswer = lastQuestionResult.playerAnswers.find(
+      (a) => a.playerName === "slow",
+    )
+    const silentAnswer = lastQuestionResult.playerAnswers.find(
+      (a) => a.playerName === "silent",
+    )
+
+    // Instant answerer should have responseMs = 0 (answered at start time)
+    expect(instantAnswer?.responseMs).toBe(0)
+
+    // Slow answerer should have responseMs = 5000 (answered 5 seconds later)
+    expect(slowAnswer?.responseMs).toBe(5000)
+
+    // Silent player should have responseMs = null (no answer)
+    expect(silentAnswer?.responseMs).toBeNull()
+  })
+})

@@ -81,6 +81,8 @@ export interface PlayerAnswerRecord {
   answerIds?: number[] | null
   // Type-answer submitted text; null/absent when not applicable.
   answerText?: string | null
+  // ms from question start to this player's answer; null/absent for no-answer or legacy results.
+  responseMs?: number | null
 }
 
 export type QuestionResult = Question & {
