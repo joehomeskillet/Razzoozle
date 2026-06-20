@@ -83,6 +83,13 @@ Backed by **592 automated tests**, a path-traversal + `ws`-CVE security pass, a 
 
 ---
 
+## 📲 Apps & companions
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — the first native **Windows** desktop app for Razzoozle. Host and manage games from your machine, no browser required.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — a lightweight rendezvous / discovery service that helps clients find each other. Discovery only — it never relays gameplay.
+
+---
+
 ## ⚙️ Prerequisites
 
 **With Docker (recommended):** Docker + Docker Compose.

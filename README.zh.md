@@ -81,6 +81,13 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 
 ---
 
+## 📲 应用与配套
+
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop)（Beta）** — Razzoozle 的首个原生 **Windows** 桌面应用。直接在你的电脑上托管和管理对局，无需浏览器。
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — 一个轻量的会合 / 发现服务，帮助客户端相互找到彼此。仅用于发现 — 绝不中转游戏数据。
+
+---
+
 ## ⚙️ 前置要求
 
 **使用 Docker（推荐）：** Docker + Docker Compose。
