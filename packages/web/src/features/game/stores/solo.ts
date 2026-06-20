@@ -64,6 +64,7 @@ export interface SoloQuestionResult {
 
 interface SoloState {
   quizzId: string | null
+  assignmentId?: string
   subject: string
   questions: SoloQuestion[]
   currentIndex: number
@@ -89,6 +90,7 @@ interface SoloState {
 
   // Actions
   setQuizzId: (id: string) => void
+  setAssignmentId: (assignmentId: string | undefined) => void
   loadQuiz: (id: string) => Promise<void>
   setPlayerName: (name: string) => void
   startGame: () => void
@@ -104,6 +106,7 @@ interface SoloState {
 
 const initialState = {
   quizzId: null,
+  assignmentId: undefined,
   subject: "",
   questions: [] as SoloQuestion[],
   currentIndex: 0,
@@ -123,6 +126,8 @@ export const useSoloStore = create<SoloState>((set, get) => ({
   ...initialState,
 
   setQuizzId: (quizzId) => set({ quizzId }),
+
+  setAssignmentId: (assignmentId) => set({ assignmentId }),
 
   loadQuiz: async (id: string) => {
     set({ phase: "loading", error: null, quizzId: id })
@@ -263,9 +268,14 @@ export const useSoloStore = create<SoloState>((set, get) => ({
   toggleAutoAdvance: () => set((s) => ({ autoAdvance: !s.autoAdvance })),
 
   finishGame: async (id: string) => {
-    const { playerName, totalPoints, answers } = get()
+    const { playerName, totalPoints, answers, assignmentId } = get()
     try {
-      const res = await fetch(`/api/quizz/${encodeURIComponent(id)}/solo-score`, {
+      let url = `/api/quizz/${encodeURIComponent(id)}/solo-score`
+      if (assignmentId) {
+        url += `?assignmentId=${encodeURIComponent(assignmentId)}`
+      }
+
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
