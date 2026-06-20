@@ -3,7 +3,7 @@ import type {
   PlayerAnswerRecord,
   QuestionResult,
 } from "@razzoozle/common/types/game"
-import { matchAnswer } from "@razzoozle/web/features/game/utils/text-match"
+import { isAnswerCorrect as isAnswerCorrectPure } from "@razzoozle/web/features/manager/utils/answerCorrectness"
 import {
   createContext,
   useContext,
@@ -82,66 +82,12 @@ export const ResultModalProvider = ({ children, result, onClose }: Props) => {
       pa.answerId !== null,
   ).length
 
-  const sliderThreshold =
-    questionResult.type === "slider" &&
-    questionResult.min != null &&
-    questionResult.max != null
-      ? Math.max(
-          questionResult.step ?? 0,
-          (questionResult.max - questionResult.min) * 0.05,
-        )
-      : null
-
   // Single source of truth for per-player correctness, so the table and the
-  // aggregate counts can never drift apart (previously the 5% slider tolerance
-  // was duplicated in ResultModalTable).
-  const isAnswerCorrect = (pa: PlayerAnswerRecord) => {
-    if (questionResult.type === "poll") {
-      return false
-    }
-
-    if (questionResult.type === "type-answer") {
-      if (!pa.answerText) {
-        return false
-      }
-
-      // Mirror the server's scoring: normalized/exact/fuzzy match against the
-      // authored accepted answers.
-      return matchAnswer(
-        pa.answerText,
-        questionResult.acceptedAnswers ?? [],
-        questionResult.matchMode ?? "normalized",
-      )
-    }
-
-    if (questionResult.type === "multiple-select") {
-      // All-or-nothing set equality vs the correct solutions — mirrors the
-      // server-side evalAnswer.
-      if (!pa.answerIds || pa.answerIds.length === 0) {
-        return false
-      }
-
-      const solutions = questionResult.solutions ?? []
-
-      if (pa.answerIds.length !== solutions.length) {
-        return false
-      }
-
-      const selectedSet = new Set(pa.answerIds)
-
-      return solutions.every((s) => selectedSet.has(s))
-    }
-
-    if (pa.answerId === null) {
-      return false
-    }
-
-    if (sliderThreshold !== null && questionResult.correct != null) {
-      return Math.abs(pa.answerId - questionResult.correct) <= sliderThreshold
-    }
-
-    return (questionResult.solutions ?? []).includes(pa.answerId)
-  }
+  // aggregate counts can never drift apart. The logic is extracted to a pure
+  // helper (answerCorrectness.ts) so it can be reused across the manager UI
+  // and export functions.
+  const isAnswerCorrect = (pa: PlayerAnswerRecord) =>
+    isAnswerCorrectPure(questionResult, pa)
 
   const correctCount =
     questionResult.playerAnswers.filter(isAnswerCorrect).length

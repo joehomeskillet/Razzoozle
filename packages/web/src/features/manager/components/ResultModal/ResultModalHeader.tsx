@@ -1,8 +1,13 @@
 import * as RadixDialog from "@radix-ui/react-dialog"
 import { RESULT_MODAL_TITLE_ID } from "@razzoozle/web/features/manager/components/ResultModal"
 import { useResultModal } from "@razzoozle/web/features/manager/contexts/result-modal-context"
-import { exportResultCsv } from "@razzoozle/web/features/manager/utils/resultExport"
-import { ChevronLeft, ChevronRight, Download, X } from "lucide-react"
+import {
+  exportQuestionsCsv,
+  exportResultCsv,
+  exportResultJson,
+  type QuestionsCsvLabels,
+} from "@razzoozle/web/features/manager/utils/resultExport"
+import { ChevronLeft, ChevronRight, Download, FileJson, FileText, X } from "lucide-react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -28,6 +33,33 @@ const ResultModalHeader = () => {
     toast.success(t("manager:result.export.done"))
   }
 
+  // Export full GameResult as JSON for complete data ownership.
+  const handleExportJson = () => {
+    exportResultJson(result)
+    toast.success(t("manager:result.export.done"))
+  }
+
+  // Export per-question per-player answers as CSV.
+  const handleExportQuestionsCsv = () => {
+    const labels: QuestionsCsvLabels = {
+      questionNo: t("manager:result.table.questionNo", { defaultValue: "Frage" }),
+      question: t("manager:result.table.question", { defaultValue: "Frage" }),
+      player: t("manager:result.table.player"),
+      answer: t("manager:result.table.answered", { defaultValue: "Antwort" }),
+      correct: t("manager:result.table.correctIncorrect", {
+        defaultValue: "Korrekt",
+      }),
+      responseMs: t("manager:result.table.responseMs", {
+        defaultValue: "Antwortzeit (ms)",
+      }),
+      yes: t("manager:result.table.yes", { defaultValue: "Ja" }),
+      no: t("manager:result.table.no", { defaultValue: "Nein" }),
+    }
+
+    exportQuestionsCsv(result, labels, displayName)
+    toast.success(t("manager:result.export.done"))
+  }
+
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 px-5 py-3">
       <RadixDialog.Title asChild>
@@ -49,12 +81,36 @@ const ResultModalHeader = () => {
         </span>
         <button
           type="button"
-          aria-label={t("manager:result.export.csv")}
-          title={t("manager:result.export.csv")}
+          aria-label={t("manager:result.export.csv", { defaultValue: "CSV" })}
+          title={t("manager:result.export.csv", { defaultValue: "CSV" })}
           onClick={handleExportCsv}
           className="rounded p-1 text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
         >
           <Download className="size-5" />
+        </button>
+        <button
+          type="button"
+          aria-label={t("manager:result.export.questionsCsv", {
+            defaultValue: "Fragen-CSV",
+          })}
+          title={t("manager:result.export.questionsCsv", {
+            defaultValue: "Fragen-CSV",
+          })}
+          onClick={handleExportQuestionsCsv}
+          className="rounded p-1 text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+        >
+          <FileText className="size-5" />
+        </button>
+        <button
+          type="button"
+          aria-label={t("manager:result.export.json", {
+            defaultValue: "JSON",
+          })}
+          title={t("manager:result.export.json", { defaultValue: "JSON" })}
+          onClick={handleExportJson}
+          className="rounded p-1 text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+        >
+          <FileJson className="size-5" />
         </button>
         <button
           type="button"

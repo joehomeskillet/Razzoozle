@@ -1,4 +1,5 @@
 import type { GameResult } from "@razzoozle/common/types/game"
+import { isAnswerCorrect } from "@razzoozle/web/features/manager/utils/answerCorrectness"
 
 // Quote a single CSV field per RFC 4180: wrap in double quotes and double any
 // embedded quote, so commas/quotes/newlines in a username can't break the grid.
@@ -69,6 +70,134 @@ export const downloadResultCsv = (csv: string, subject: string, date: string) =>
   const a = document.createElement("a")
   a.href = url
   a.download = csvFilename(subject, date)
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+// Trigger a client-side download of `json` as a UTF-8 JSON file via a transient
+// object-URL anchor. No backend round-trip; the blob is built from the already
+// loaded GameResult.
+export const downloadResultJson = (json: string, subject: string, date: string) => {
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = csvFilename(subject, date).replace(".csv", ".json")
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+// Export the full GameResult as JSON for complete data ownership.
+export const exportResultJson = (
+  result: GameResult,
+  subject: string = result.subject,
+  date: string = result.date,
+) => {
+  const json = JSON.stringify(result, null, 2)
+  downloadResultJson(json, subject, date)
+}
+
+export interface QuestionsCsvLabels {
+  questionNo: string
+  question: string
+  player: string
+  answer: string
+  correct: string
+  responseMs: string
+  yes: string
+  no: string
+}
+
+// Build the CSV text for per-question per-player answers: one header row + one
+// row per (question × playerAnswer). Columns: question number, question text,
+// player (display name), answer (plain text), correct (yes/no or empty for polls),
+// response time (ms). `displayName` honors the anonymise toggle. Uses csvField
+// for RFC 4180 safety + BOM for UTF-8 Excel compatibility.
+export const buildQuestionsCsv = (
+  result: GameResult,
+  labels: QuestionsCsvLabels,
+  displayName: (_name: string) => string,
+): string => {
+  const header = [
+    labels.questionNo,
+    labels.question,
+    labels.player,
+    labels.answer,
+    labels.correct,
+    labels.responseMs,
+  ]
+
+  const rows: (string | number)[][] = []
+
+  for (let qi = 0; qi < result.questions.length; qi++) {
+    const question = result.questions[qi]
+
+    for (const pa of question.playerAnswers) {
+      // Format answer as plain text, mirroring ResultModalTable logic:
+      // - type-answer → pa.answerText
+      // - multiple-select → join selected option labels with "; "
+      // - slider → number + unit
+      // - choice/boolean → option label (or id if no label)
+      // - no-answer → ""
+      let answerText = ""
+
+      if (pa.answerText != null) {
+        answerText = pa.answerText
+      } else if (pa.answerIds != null && pa.answerIds.length > 0) {
+        answerText = pa.answerIds
+          .map((id) => question.answers?.[id] ?? id)
+          .join("; ")
+      } else if (pa.answerId !== null && question.type === "slider") {
+        answerText =
+          String(pa.answerId) + (question.unit ? ` ${question.unit}` : "")
+      } else if (pa.answerId !== null) {
+        answerText = String(question.answers?.[pa.answerId] ?? pa.answerId)
+      }
+
+      // Correctness: polls show empty, others show yes/no via the single source of truth
+      const correct =
+        question.type === "poll"
+          ? ""
+          : isAnswerCorrect(question, pa)
+            ? labels.yes
+            : labels.no
+
+      rows.push([
+        qi + 1,
+        question.question,
+        displayName(pa.playerName),
+        answerText,
+        correct,
+        pa.responseMs ?? "",
+      ])
+    }
+  }
+
+  const lines = [header, ...rows].map((cols) => cols.map(csvField).join(","))
+
+  return `﻿${lines.join("\r\n")}\r\n`
+}
+
+// Convenience wrapper: build + download per-question CSV in one call from a GameResult.
+export const exportQuestionsCsv = (
+  result: GameResult,
+  labels: QuestionsCsvLabels,
+  displayName: (_name: string) => string,
+) => {
+  const csv = buildQuestionsCsv(result, labels, displayName)
+  const filename = csvFilename(result.subject, result.date).replace(
+    ".csv",
+    "-fragen.csv",
+  )
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
   document.body.appendChild(a)
   a.click()
   a.remove()
