@@ -96,7 +96,7 @@
   .header-spacer { flex: 1; }
 
   /* Language switcher */
-  .lang-switch { display: inline-flex; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 999px; padding: 3px; box-shadow: var(--shadow-flat); }
+  .lang-switch { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 999px; padding: 3px; box-shadow: var(--shadow-flat); }
   .lang-switch button {
     font: inherit; font-size: .82rem; font-weight: 600;
     border: 0; background: transparent; color: var(--ink-soft);
@@ -222,6 +222,28 @@ html.js [data-reveal].in{opacity:1;transform:none}
 .hero{position:relative;isolation:isolate}
 .hero::before{content:"";position:absolute;inset:-12% -10% auto -10%;height:55%;background:radial-gradient(55% 60% at 50% 0,rgba(124,58,237,.10),rgba(255,153,0,.05) 45%,transparent 72%);pointer-events:none;z-index:-1}
 @media (prefers-reduced-motion: reduce){html.js [data-reveal]{opacity:1!important;transform:none!important;transition:none}.logo-card img{transition:none}}
+.showcases{padding:clamp(56px,9vw,104px) 0}
+.showcase-row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);align-items:center;margin-top:clamp(40px,7vw,88px)}
+.showcase-row:first-of-type{margin-top:clamp(32px,5vw,56px)}
+.showcase-row:nth-child(even) .shot-wrap{order:2}
+.shot{width:100%;height:auto;border-radius:16px;border:1px solid var(--border-hairline);box-shadow:0 28px 64px -34px rgba(14,17,32,.32);display:block}
+.shot.portrait{max-width:300px;margin-inline:auto}
+.shot-copy h3{font-size:clamp(1.35rem,2.4vw,1.85rem);line-height:1.15;margin:0 0 .5rem}
+.shot-copy p{color:#3a3a42;max-width:46ch}
+@media (max-width:760px){.showcase-row{grid-template-columns:1fr;gap:24px}.showcase-row:nth-child(even) .shot-wrap{order:0}}
+/* ===== Modes & question types ===== */
+.modes{padding:clamp(8px,2vw,24px) 0 0}
+.modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+.mode-card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:1.2rem 1.2rem;box-shadow:var(--shadow-flat);transition:transform .16s ease,box-shadow .16s ease}
+.mode-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift)}
+.mode-card .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;margin-bottom:.7rem;background:color-mix(in srgb, var(--primary) 12%, white);color:var(--primary-deep)}
+.mode-card:nth-child(3n+2) .ico{background:color-mix(in srgb, var(--accent) 18%, white);color:var(--accent-ink)}
+.mode-card .ico svg{width:20px;height:20px}
+.mode-card h3{font-size:1rem;font-weight:700;letter-spacing:-.01em;margin:0 0 .3rem;color:var(--ink)}
+.mode-card p{font-size:.9rem;color:var(--ink-soft);margin:0}
+@media (max-width:760px){.modes-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.modes-grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.mode-card:hover{transform:none}}
 </style>
 </head>
 <body>
@@ -241,6 +263,9 @@ html.js [data-reveal].in{opacity:1;transform:none}
       <button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button>
       <button type="button" data-lang="de" aria-pressed="false" lang="de">DE</button>
       <button type="button" data-lang="zh" aria-pressed="false" lang="zh">中文</button>
+      <button type="button" data-lang="es" aria-pressed="false" lang="es">ES</button>
+      <button type="button" data-lang="fr" aria-pressed="false" lang="fr">FR</button>
+      <button type="button" data-lang="it" aria-pressed="false" lang="it">IT</button>
     </div>
 
     <a class="gh-mini" href="https://github.com/joehomeskillet/Razzoozle" rel="noopener">
@@ -291,6 +316,56 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <span class="live-dot"><i></i><span data-i18n="hero.mockLive">12 joined</span></span>
             <span data-i18n="hero.mockTimer">00:18</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Feature showcase (real screenshots) ===== -->
+  <section class="showcases" aria-labelledby="showcase-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker" data-i18n="show.kicker">See it in action</p>
+        <h2 id="showcase-title" data-i18n="show.title">A full live-quiz platform, not a demo</h2>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot" src="shots/join.webp" width="1100" height="688" loading="lazy" decoding="async" alt="The lobby screen with the game PIN and a QR code to join" data-i18n="show.r1.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r1.h">Join in seconds</h3>
+          <p data-i18n="show.r1.p">Host on the big screen; players scan a QR code or punch in the game PIN and play from their own phones — no app, no signup.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot" src="shots/cockpit.webp" width="1100" height="688" loading="lazy" decoding="async" alt="The manager Design tab — a live theme cockpit with colours, backgrounds and logo" data-i18n="show.r2.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r2.h">A live theme cockpit</h3>
+          <p data-i18n="show.r2.p">Recolor the whole game from the manager Design tab — colors, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot portrait" src="shots/leaderboard.webp" width="1100" height="2381" loading="lazy" decoding="async" alt="A phone leaderboard with ranks, scores and medals" data-i18n="show.r3.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r3.h">Gamification that lands</h3>
+          <p data-i18n="show.r3.p">Live leaderboards with overtake animations, 15 achievements, medals, streaks, confetti and sound — plus a personal trophy gallery and an end-of-game awards recap.</p>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="shot-wrap">
+          <img class="shot portrait" src="shots/question.webp" width="1100" height="2381" loading="lazy" decoding="async" alt="A phone question screen with four colored answer tiles" data-i18n="show.r4.alt" data-i18n-attr="alt" />
+        </div>
+        <div class="shot-copy">
+          <h3 data-i18n="show.r4.h">Play it your way</h3>
+          <p data-i18n="show.r4.p">Multiple-choice, type-answer and slider questions; classic host mode, team mode, or solo practice via a share link. Works as an installable PWA, even offline.</p>
         </div>
       </div>
     </div>
@@ -401,6 +476,78 @@ html.js [data-reveal].in{opacity:1;transform:none}
           <h3 data-i18n="feat.f8.t">Beamer kiosk &amp; reliability</h3>
           <p data-i18n="feat.f8.d">A /display projector view, low-latency mode, crash-recovery and reconnect, and an MCP server for AI-tool control — hardened and load-tested to 600 players.</p>
         </article>
+
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg></div>
+          <h3 data-i18n="feat.f9.t">Player avatars</h3>
+          <p data-i18n="feat.f9.d">Every player gets a generated DiceBear avatar — pick a style and reroll, or upload your own. Avatars float around the lobby and show up on leaderboards, the podium and the awards.</p>
+        </article>
+
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 5-7"/></svg></div>
+          <h3 data-i18n="feat.f10.t">Self-host with metrics</h3>
+          <p data-i18n="feat.f10.d">Ships as a Docker image you run with one command. Prometheus metrics and structured pino logs are built in, so you can actually watch a live game's health.</p>
+        </article>
+
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M9 13h6M9 17h4"/></svg></div>
+          <h3 data-i18n="feat.f11.t">Built-in quiz editor</h3>
+          <p data-i18n="feat.f11.d">Author quizzes in the manager: multiple question types, a media picker for images, and an importable quiz catalog — no JSON wrangling required.</p>
+        </article>
+
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20Z"/></svg></div>
+          <h3 data-i18n="feat.f12.t">Speaks your language</h3>
+          <p data-i18n="feat.f12.d">Full UI in English, German and Chinese with an instant switch — players and hosts each get their own language.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Modes & question types ===== -->
+  <section class="modes" aria-labelledby="modes-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker" data-i18n="modes.kicker">However you play</p>
+        <h2 id="modes-title" data-i18n="modes.title">Modes &amp; question types</h2>
+      </div>
+
+      <div class="modes-grid">
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <h3 data-i18n="modes.m1.t">Classic</h3>
+          <p data-i18n="modes.m1.d">Host on the big screen.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3 data-i18n="modes.m2.t">Team</h3>
+          <p data-i18n="modes.m2.d">Red vs blue vs green vs yellow.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div>
+          <h3 data-i18n="modes.m3.t">Solo link</h3>
+          <p data-i18n="modes.m3.d">Practice or share a quiz.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg></div>
+          <h3 data-i18n="modes.q1.t">Multiple choice</h3>
+          <p data-i18n="modes.q1.d">Tap a colored shape to answer.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg></div>
+          <h3 data-i18n="modes.q2.t">Type-answer</h3>
+          <p data-i18n="modes.q2.d">Spell it out on your keyboard.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><circle cx="14" cy="12" r="3"/></svg></div>
+          <h3 data-i18n="modes.q3.t">Slider</h3>
+          <p data-i18n="modes.q3.d">Drag to the closest number.</p>
+        </article>
       </div>
     </div>
   </section>
@@ -486,12 +633,48 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f7.d": "Rich Open-Graph link previews, a result page with play-it-yourself CTAs, downloadable winner stickers, plus a manager-installable plugin and addon system.",
       "feat.f8.t": "Beamer kiosk & reliability",
       "feat.f8.d": "A /display projector view, low-latency mode, crash-recovery and reconnect, and an MCP server for AI-tool control — hardened and load-tested to 600 players.",
+      "feat.f9.t": "Player avatars",
+      "feat.f9.d": "Every player gets a generated DiceBear avatar — pick a style and reroll, or upload your own. Avatars float around the lobby and show up on leaderboards, the podium and the awards.",
+      "feat.f10.t": "Self-host with metrics",
+      "feat.f10.d": "Ships as a Docker image you run with one command. Prometheus metrics and structured pino logs are built in, so you can actually watch a live game's health.",
+      "feat.f11.t": "Built-in quiz editor",
+      "feat.f11.d": "Author quizzes in the manager: multiple question types, a media picker for images, and an importable quiz catalog — no JSON wrangling required.",
+      "feat.f12.t": "Speaks your language",
+      "feat.f12.d": "Full UI in English, German and Chinese with an instant switch — players and hosts each get their own language.",
+      "modes.kicker": "However you play",
+      "modes.title": "Modes & question types",
+      "modes.m1.t": "Classic",
+      "modes.m1.d": "Host on the big screen.",
+      "modes.m2.t": "Team",
+      "modes.m2.d": "Red vs blue vs green vs yellow.",
+      "modes.m3.t": "Solo link",
+      "modes.m3.d": "Practice or share a quiz.",
+      "modes.q1.t": "Multiple choice",
+      "modes.q1.d": "Tap a colored shape to answer.",
+      "modes.q2.t": "Type-answer",
+      "modes.q2.d": "Spell it out on your keyboard.",
+      "modes.q3.t": "Slider",
+      "modes.q3.d": "Drag to the closest number.",
       "cta.title": "Self-host it in two commands",
       "cta.sub": "Clone the repo and run it with Docker Compose. Your data stays in a local config volume — put it behind your own reverse proxy for TLS and a public name.",
       "cta.btn": "Get it on GitHub",
       "footer.github": "GitHub",
       "footer.issues": "Report an issue",
       "footer.license": "MIT License",
+      "show.kicker": "See it in action",
+      "show.title": "A full live-quiz platform, not a demo",
+      "show.r1.h": "Join in seconds",
+      "show.r1.p": "Host on the big screen; players scan a QR code or punch in the game PIN and play from their own phones — no app, no signup.",
+      "show.r1.alt": "The lobby screen with the game PIN and a QR code to join",
+      "show.r2.h": "A live theme cockpit",
+      "show.r2.p": "Recolor the whole game from the manager Design tab — colors, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.",
+      "show.r2.alt": "The manager Design tab — a live theme cockpit with colours, backgrounds and logo",
+      "show.r3.h": "Gamification that lands",
+      "show.r3.p": "Live leaderboards with overtake animations, 15 achievements, medals, streaks, confetti and sound — plus a personal trophy gallery and an end-of-game awards recap.",
+      "show.r3.alt": "A phone leaderboard with ranks, scores and medals",
+      "show.r4.h": "Play it your way",
+      "show.r4.p": "Multiple-choice, type-answer and slider questions; classic host mode, team mode, or solo practice via a share link. Works as an installable PWA, even offline.",
+      "show.r4.alt": "A phone question screen with four colored answer tiles",
       "footer.note": "Free and open source under the MIT License. Self-host it — the live instance is local-only. A friendly fork of <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Not affiliated with Kahoot!®"
     },
     de: {
@@ -534,12 +717,48 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f7.d": "Schöne Open-Graph-Link-Vorschauen, eine Ergebnisseite mit „Selbst spielen“-CTAs, herunterladbare Gewinner-Sticker, dazu ein vom Manager installierbares Plugin- und Addon-System.",
       "feat.f8.t": "Beamer-Kiosk & Zuverlässigkeit",
       "feat.f8.d": "Eine /display-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung und Reconnect sowie ein MCP-Server zur Steuerung durch KI-Tools — gehärtet und lastgetestet bis 600 Spielende.",
+      "feat.f9.t": "Spieler-Avatare",
+      "feat.f9.d": "Jeder Spielende bekommt einen generierten DiceBear-Avatar — wähle einen Stil und würfle neu, oder lade ein eigenes Bild hoch. Avatare schweben in der Lobby und erscheinen auf Ranglisten, dem Podest und den Auszeichnungen.",
+      "feat.f10.t": "Selbst hosten mit Metriken",
+      "feat.f10.d": "Wird als Docker-Image ausgeliefert, das du mit einem Befehl startest. Prometheus-Metriken und strukturierte pino-Logs sind eingebaut, sodass du die Gesundheit eines laufenden Spiels wirklich beobachten kannst.",
+      "feat.f11.t": "Eingebauter Quiz-Editor",
+      "feat.f11.d": "Erstelle Quizze direkt im Manager: mehrere Fragetypen, ein Medien-Picker für Bilder und ein importierbarer Fragenkatalog — kein JSON-Gebastel nötig.",
+      "feat.f12.t": "Spricht deine Sprache",
+      "feat.f12.d": "Vollständige Oberfläche auf Englisch, Deutsch und Chinesisch mit sofortigem Umschalten — Spielende und Gastgeber bekommen jeweils ihre eigene Sprache.",
+      "modes.kicker": "Wie auch immer du spielst",
+      "modes.title": "Modi & Fragetypen",
+      "modes.m1.t": "Klassisch",
+      "modes.m1.d": "Hoste auf dem großen Bildschirm.",
+      "modes.m2.t": "Team",
+      "modes.m2.d": "Rot gegen Blau gegen Grün gegen Gelb.",
+      "modes.m3.t": "Solo-Link",
+      "modes.m3.d": "Üben oder ein Quiz teilen.",
+      "modes.q1.t": "Mehrfachauswahl",
+      "modes.q1.d": "Tippe eine farbige Form zum Antworten.",
+      "modes.q2.t": "Antwort eintippen",
+      "modes.q2.d": "Tippe sie auf deiner Tastatur ein.",
+      "modes.q3.t": "Slider",
+      "modes.q3.d": "Zieh ihn auf die passendste Zahl.",
       "cta.title": "Selbst hosten mit zwei Befehlen",
       "cta.sub": "Klone das Repo und starte es mit Docker Compose. Deine Daten bleiben in einem lokalen Config-Volume — stell es hinter deinen eigenen Reverse-Proxy für TLS und einen öffentlichen Namen.",
       "cta.btn": "Auf GitHub holen",
       "footer.github": "GitHub",
       "footer.issues": "Problem melden",
       "footer.license": "MIT-Lizenz",
+      "show.kicker": "In Aktion erleben",
+      "show.title": "Eine vollwertige Live-Quiz-Plattform, keine Demo",
+      "show.r1.h": "In Sekunden dabei",
+      "show.r1.p": "Du hostest auf dem großen Bildschirm; die Spielenden scannen einen QR-Code oder tippen die Spiel-PIN ein und spielen von ihren eigenen Handys — keine App, keine Anmeldung.",
+      "show.r1.alt": "Der Lobby-Bildschirm mit Spiel-PIN und einem QR-Code zum Beitreten",
+      "show.r2.h": "Ein Live-Theme-Cockpit",
+      "show.r2.p": "Färbe das ganze Spiel im „Design“-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
+      "show.r2.alt": "Der „Design“-Tab im Manager — ein Live-Theme-Cockpit mit Farben, Hintergründen und Logo",
+      "show.r3.h": "Gamification, die zündet",
+      "show.r3.p": "Live-Ranglisten mit Überhol-Animationen, 15 Erfolge, Medaillen, Serien, Konfetti und Sound — dazu eine persönliche Trophäengalerie und ein End-Auszeichnungs-Recap.",
+      "show.r3.alt": "Eine Handy-Rangliste mit Plätzen, Punkten und Medaillen",
+      "show.r4.h": "Spiel es, wie du magst",
+      "show.r4.p": "Fragen mit Mehrfachauswahl, Antwort-Eintippen und Slider; klassischer Host-Modus, Team-Modus oder Solo-Übung über einen Teilen-Link. Läuft als installierbare PWA, sogar offline.",
+      "show.r4.alt": "Ein Handy-Fragebildschirm mit vier farbigen Antwortkacheln",
       "footer.note": "Frei und quelloffen unter der MIT-Lizenz. Selbst hosten — die Live-Instanz ist nur lokal erreichbar. Ein freundlicher Fork von <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Steht in keiner Verbindung zu Kahoot!®"
     },
     zh: {
@@ -582,17 +801,305 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f7.d": "精美的 Open Graph 链接预览、带“自己来玩”行动号召的结果页、可下载的获胜者贴纸，外加可由管理员安装的插件与附加组件系统。",
       "feat.f8.t": "投影仪 kiosk 与可靠性",
       "feat.f8.d": "一个 /display 投影仪视图、低延迟模式、崩溃恢复与断线重连，以及一个用于 AI 工具控制的 MCP 服务器 —— 经过加固并完成 600 名玩家的负载测试。",
+      "feat.f9.t": "玩家头像",
+      "feat.f9.d": "每位玩家获得生成的 DiceBear 头像 —— 选择风格并重新随机，或上传自己的图片。头像在大厅中漂浮，并显示在排行榜、领奖台和颁奖中。",
+      "feat.f10.t": "自托管并带指标",
+      "feat.f10.d": "以单个 Docker 镜像发布，你用一条命令即可运行。内置 Prometheus 指标和结构化的 pino 日志，让你真正能监控一局实时游戏的健康状况。",
+      "feat.f11.t": "内置测验编辑器",
+      "feat.f11.d": "在管理员中编写测验：多种题型、用于图片的媒体选择器，以及可导入的测验目录 —— 无需手动折腾 JSON。",
+      "feat.f12.t": "会说你的语言",
+      "feat.f12.d": "界面完整支持英语、德语和中文，可即时切换 —— 玩家和主持人各自使用自己的语言。",
+      "modes.kicker": "无论你怎么玩",
+      "modes.title": "模式与题型",
+      "modes.m1.t": "经典",
+      "modes.m1.d": "在大屏幕上主持。",
+      "modes.m2.t": "团队",
+      "modes.m2.d": "红队对蓝队对绿队对黄队。",
+      "modes.m3.t": "单人链接",
+      "modes.m3.d": "练习或分享一个测验。",
+      "modes.q1.t": "多选",
+      "modes.q1.d": "点按彩色形状作答。",
+      "modes.q2.t": "填空作答",
+      "modes.q2.d": "用键盘把答案拼出来。",
+      "modes.q3.t": "滑块",
+      "modes.q3.d": "拖到最接近的数字。",
       "cta.title": "两条命令即可自托管",
       "cta.sub": "克隆仓库并用 Docker Compose 运行。你的数据保存在本地 config 卷中 —— 把它放在你自己的反向代理后面以获得 TLS 和公开域名。",
       "cta.btn": "前往 GitHub 获取",
       "footer.github": "GitHub",
       "footer.issues": "反馈问题",
       "footer.license": "MIT 许可证",
+      "show.kicker": "实际效果一览",
+      "show.title": "一个完整的实时答题平台，而非演示",
+      "show.r1.h": "几秒即可加入",
+      "show.r1.p": "主持人在大屏幕上开局；玩家扫描二维码或输入游戏 PIN 码，用自己的手机即可游玩 —— 无需 App，无需注册。",
+      "show.r1.alt": "带有游戏 PIN 码和加入二维码的大厅界面",
+      "show.r2.h": "实时主题驾驶舱",
+      "show.r2.p": "在管理员的“设计”标签页中为整个游戏重新配色 —— 颜色、各视图背景、Logo、圆角 —— 或上传一个可下载的 skeleton ZIP 主题。默认扁平奶油色，可选紫色玻璃。",
+      "show.r2.alt": "管理员的“设计”标签页 —— 一个含颜色、背景和 Logo 的实时主题驾驶舱",
+      "show.r3.h": "真正有感的游戏化",
+      "show.r3.p": "带超越动画的实时排行榜、15 项成就、奖牌、连胜、彩带和音效 —— 外加个人奖杯陈列室和终局颁奖回顾。",
+      "show.r3.alt": "一部手机排行榜，显示名次、得分和奖牌",
+      "show.r4.h": "随你想怎么玩",
+      "show.r4.p": "支持多选、填空作答和滑块题型；经典主持人模式、团队模式，或通过分享链接进行单人练习。可作为 PWA 安装，甚至支持离线。",
+      "show.r4.alt": "一部手机题目界面，显示四个彩色答案方块",
       "footer.note": "基于 MIT 许可证免费开源。请自行托管 —— 在线实例仅限本地访问。它是 <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a> 的一个友好分支。与 Kahoot!® 无任何关联。"
+    },
+    es: {
+      "metaDesc": "Razzoozle es una plataforma de cuestionarios estilo Kahoot en tiempo real: autoalojada, de código abierto y lista para usar. El anfitrión abre la partida en la pantalla grande y los jugadores entran con un PIN desde el móvil — clasificaciones en vivo, logros, equipos, enlaces para jugar en solitario, skeletons personalizables y PWA.",
+      "skip": "Saltar al contenido",
+      "hero.eyebrow": "Código abierto · autoalojado",
+      "hero.title": "Cuestionarios en vivo, <span class=\"hl\">a tu manera</span>.",
+      "hero.lede": "Un juego de preguntas en tiempo real y autoalojado para aulas, eventos y noches de juegos. El anfitrión abre la partida en la pantalla grande, los jugadores entran con un PIN desde el móvil y todos compiten por responder primero.",
+      "hero.ctaGithub": "Verlo en GitHub",
+      "hero.ctaFeatures": "Ver funciones",
+      "hero.statTests": "pruebas automatizadas",
+      "hero.statPlayers": "jugadores simultáneos",
+      "hero.statLangs": "idiomas + PWA",
+      "hero.mockAlt": "El móvil de un jugador mostrando el PIN de la partida y cuatro fichas de respuesta de colores",
+      "hero.mockPin": "PIN de la partida",
+      "hero.mockLive": "12 conectados",
+      "hero.mockTimer": "00:18",
+      "stack.kicker": "Bajo el capó",
+      "stack.title": "Un stack moderno y tipado",
+      "stack.sub": "Un monorepo de pnpm — React + Vite + Tailwind en el front, Node + Socket.IO + Express en el back, tipos compartidos validados con Zod y todo entregado como una única imagen de Docker.",
+      "stack.frontend": "Frontend",
+      "stack.backend": "Backend",
+      "stack.tooling": "Herramientas y despliegue",
+      "feat.kicker": "Hecho para noches de juegos",
+      "feat.title": "Todo lo que necesita un cuestionario en vivo",
+      "feat.sub": "El clásico juego estilo Kahoot, reconstruido en torno a un diseño plano color crema — con gamificación, equipos, práctica en solitario y una interfaz totalmente personalizable.",
+      "feat.f1.t": "Presentador + móvil, en tiempo real",
+      "feat.f1.d": "El anfitrión abre la partida en la pantalla grande y los jugadores entran con un PIN desde el móvil — fichas de respuesta de colores con formas, una cuenta atrás circular y un podio animado.",
+      "feat.f2.t": "Gamificación y trofeos",
+      "feat.f2.d": "15 logros, medallas, rachas, confeti y sonidos, además de una galería de trofeos personal y un repaso animado de premios al final de la partida.",
+      "feat.f3.t": "Modo equipo y juego en solitario",
+      "feat.f3.d": "Equipos rojo, azul, verde y amarillo con una clasificación de equipos en vivo — o practica cualquier cuestionario tú solo con un enlace en solitario que guarda tu propio historial de puntuaciones.",
+      "feat.f4.t": "Cabina de temas y skeletons",
+      "feat.f4.d": "Una pestaña de Diseño en vivo en el panel — colores, fondos por vista, logo, radio y un interruptor plano ⇄ glass. Descarga o sube el tema de toda la partida como un skeleton ZIP legible por una LLM.",
+      "feat.f5.t": "PWA, vibración y sin conexión",
+      "feat.f5.d": "Instalable y consciente del modo sin conexión, con vibración opcional en el móvil de los jugadores para la cuenta atrás y las respuestas — respetando el reduced-motion en todo momento.",
+      "feat.f6.t": "Imágenes con IA local",
+      "feat.f6.d": "Genera imágenes para preguntas y temas en tu propio equipo con ComfyUI (Z-Image), o conecta un proveedor en la nube — las claves de API siempre se quedan en el servidor.",
+      "feat.f7.t": "Resultados para compartir y plugins",
+      "feat.f7.d": "Vistas previas enriquecidas de enlaces con Open Graph, una página de resultados con llamadas a jugar tú mismo, pegatinas descargables para el ganador y un sistema de plugins y complementos instalables desde el panel.",
+      "feat.f8.t": "Modo kiosko para proyector y fiabilidad",
+      "feat.f8.d": "Una vista /display para proyector, modo de baja latencia, recuperación ante caídas y reconexión, y un servidor MCP para el control desde herramientas de IA — reforzado y probado con carga de hasta 600 jugadores.",
+      "feat.f9.t": "Avatares de jugador",
+      "feat.f9.d": "Cada jugador recibe un avatar generado con DiceBear — elige un estilo y vuelve a tirar, o sube el tuyo propio. Los avatares flotan por la sala de espera y aparecen en las clasificaciones, el podio y los premios.",
+      "feat.f10.t": "Autoalojado con métricas",
+      "feat.f10.d": "Se distribuye como una imagen de Docker que ejecutas con un solo comando. Incluye métricas de Prometheus y logs estructurados de pino, para que puedas vigilar de verdad la salud de una partida en vivo.",
+      "feat.f11.t": "Editor de cuestionarios integrado",
+      "feat.f11.d": "Crea cuestionarios desde el panel: varios tipos de pregunta, un selector de medios para imágenes y un catálogo de cuestionarios importable — sin tener que pelearte con JSON.",
+      "feat.f12.t": "Habla tu idioma",
+      "feat.f12.d": "Interfaz completa en inglés, alemán y chino con cambio instantáneo — cada jugador y anfitrión usa su propio idioma.",
+      "modes.kicker": "Como prefieras jugar",
+      "modes.title": "Modos y tipos de pregunta",
+      "modes.m1.t": "Clásico",
+      "modes.m1.d": "Presenta en la pantalla grande.",
+      "modes.m2.t": "Equipo",
+      "modes.m2.d": "Rojo contra azul contra verde contra amarillo.",
+      "modes.m3.t": "Enlace en solitario",
+      "modes.m3.d": "Practica o comparte un cuestionario.",
+      "modes.q1.t": "Opción múltiple",
+      "modes.q1.d": "Toca una forma de color para responder.",
+      "modes.q2.t": "Respuesta escrita",
+      "modes.q2.d": "Escríbela con tu teclado.",
+      "modes.q3.t": "Deslizador",
+      "modes.q3.d": "Arrastra hasta el número más cercano.",
+      "cta.title": "Autoalójalo en dos comandos",
+      "cta.sub": "Clona el repositorio y ejecútalo con Docker Compose. Tus datos se quedan en un volumen de configuración local — ponlo detrás de tu propio proxy inverso para tener TLS y un nombre público.",
+      "cta.btn": "Conséguelo en GitHub",
+      "footer.github": "GitHub",
+      "footer.issues": "Reportar un problema",
+      "footer.license": "Licencia MIT",
+      "show.kicker": "Míralo en acción",
+      "show.title": "Una plataforma de cuestionarios completa, no una demo",
+      "show.r1.h": "Únete en segundos",
+      "show.r1.p": "El anfitrión presenta en la pantalla grande; los jugadores escanean un código QR o teclean el PIN de la partida y juegan desde su propio móvil — sin app, sin registro.",
+      "show.r1.alt": "La pantalla de la sala de espera con el PIN de la partida y un código QR para unirse",
+      "show.r2.h": "Una cabina de temas en vivo",
+      "show.r2.p": "Cambia el color de toda la partida desde la pestaña de Diseño del panel — colores, fondos por vista, logo, radio — o suelta un tema skeleton ZIP descargable. Crema plano por defecto, glass violeta opcional.",
+      "show.r2.alt": "La pestaña de Diseño del panel — una cabina de temas en vivo con colores, fondos y logo",
+      "show.r3.h": "Gamificación que se nota",
+      "show.r3.p": "Clasificaciones en vivo con animaciones de adelantamiento, 15 logros, medallas, rachas, confeti y sonido — además de una galería de trofeos personal y un repaso de premios al terminar la partida.",
+      "show.r3.alt": "Una clasificación en el móvil con puestos, puntuaciones y medallas",
+      "show.r4.h": "Juega a tu manera",
+      "show.r4.p": "Preguntas de opción múltiple, de respuesta escrita y de deslizador; modo anfitrión clásico, modo equipo o práctica en solitario mediante un enlace. Funciona como PWA instalable, incluso sin conexión.",
+      "show.r4.alt": "La pantalla de una pregunta en el móvil con cuatro fichas de respuesta de colores",
+      "footer.note": "Gratis y de código abierto bajo la Licencia MIT. Autoalójalo — la instancia en vivo es solo local. Un fork amistoso de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sin relación con Kahoot!®"
+    },
+    fr: {
+      "metaDesc": "Razzoozle est une plateforme de quiz en temps réel façon Kahoot, auto-hébergée et open-source. L'animateur lance une partie sur grand écran, les joueurs rejoignent avec un code PIN depuis leur téléphone — classements en direct, succès, équipes, liens solo, skeletons personnalisables et PWA.",
+      "skip": "Aller au contenu",
+      "hero.eyebrow": "Open-source · auto-hébergé",
+      "hero.title": "Des quiz en direct, <span class=\"hl\">à votre façon</span>.",
+      "hero.lede": "Un jeu de quiz en temps réel et auto-hébergé pour les salles de classe, les événements et les soirées jeux. L'animateur lance une partie sur grand écran, les joueurs rejoignent avec un code PIN depuis leur téléphone, et tout le monde se dépêche de répondre.",
+      "hero.ctaGithub": "Voir sur GitHub",
+      "hero.ctaFeatures": "Voir les fonctionnalités",
+      "hero.statTests": "tests automatisés",
+      "hero.statPlayers": "joueurs simultanés",
+      "hero.statLangs": "langues + PWA",
+      "hero.mockAlt": "Le téléphone d'un joueur affichant un code PIN de partie et quatre tuiles de réponse colorées",
+      "hero.mockPin": "PIN de la partie",
+      "hero.mockLive": "12 connectés",
+      "hero.mockTimer": "00:18",
+      "stack.kicker": "Sous le capot",
+      "stack.title": "Une stack moderne et typée",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind côté front, Node + Socket.IO + Express côté back, des types partagés validés par Zod, le tout livré sous forme d'une seule image Docker.",
+      "stack.frontend": "Frontend",
+      "stack.backend": "Backend",
+      "stack.tooling": "Outils et déploiement",
+      "feat.kicker": "Conçu pour les soirées jeux",
+      "feat.title": "Tout ce qu'il faut pour un quiz en direct",
+      "feat.sub": "Le jeu classique façon Kahoot, repensé autour d'un design plat couleur crème — avec gamification, équipes, entraînement en solo et une interface entièrement personnalisable.",
+      "feat.f1.t": "Animateur + téléphone, en temps réel",
+      "feat.f1.d": "L'animateur lance une partie sur grand écran, les joueurs rejoignent avec un code PIN depuis leur téléphone — des tuiles de réponse colorées avec des formes, un compte à rebours circulaire et un podium animé.",
+      "feat.f2.t": "Gamification et trophées",
+      "feat.f2.d": "15 succès, des médailles, des séries, des confettis et des sons, ainsi qu'une galerie de trophées personnelle et une remise de prix animée en fin de partie.",
+      "feat.f3.t": "Mode équipe et jeu en solo",
+      "feat.f3.d": "Des équipes rouge, bleue, verte et jaune avec un classement d'équipes en direct — ou entraînez-vous seul sur n'importe quel quiz via un lien solo doté de son propre historique de scores.",
+      "feat.f4.t": "Cockpit de thèmes et skeletons",
+      "feat.f4.d": "Un onglet Design en direct dans le manager — couleurs, arrière-plans par vue, logo, rayon et un interrupteur plat ⇄ glass. Téléchargez ou importez le thème de toute la partie sous forme de skeleton ZIP lisible par une LLM.",
+      "feat.f5.t": "PWA, vibrations et hors ligne",
+      "feat.f5.d": "Installable et adaptée au hors ligne, avec un retour vibratoire optionnel sur le téléphone des joueurs pour le compte à rebours et les réponses — respectueuse du reduced-motion d'un bout à l'autre.",
+      "feat.f6.t": "Images par IA locale",
+      "feat.f6.d": "Générez les images des questions et des thèmes sur votre propre machine via ComfyUI (Z-Image), ou branchez un fournisseur cloud — les clés d'API restent toujours côté serveur.",
+      "feat.f7.t": "Résultats partageables et plugins",
+      "feat.f7.d": "De riches aperçus de liens Open Graph, une page de résultats avec des appels à jouer soi-même, des autocollants de gagnant téléchargeables, ainsi qu'un système de plugins et d'extensions installables depuis le manager.",
+      "feat.f8.t": "Mode kiosque vidéoprojecteur et fiabilité",
+      "feat.f8.d": "Une vue vidéoprojecteur /display, un mode basse latence, la récupération après plantage et la reconnexion, et un serveur MCP pour le pilotage par des outils d'IA — durci et testé en charge jusqu'à 600 joueurs.",
+      "feat.f9.t": "Avatars des joueurs",
+      "feat.f9.d": "Chaque joueur reçoit un avatar généré par DiceBear — choisissez un style et relancez, ou importez le vôtre. Les avatars flottent dans le salon et apparaissent sur les classements, le podium et la remise des prix.",
+      "feat.f10.t": "Auto-hébergement avec métriques",
+      "feat.f10.d": "Livré sous forme d'image Docker que vous lancez en une seule commande. Les métriques Prometheus et les logs structurés pino sont intégrés, pour que vous puissiez réellement suivre la santé d'une partie en direct.",
+      "feat.f11.t": "Éditeur de quiz intégré",
+      "feat.f11.d": "Créez des quiz dans le manager : plusieurs types de questions, un sélecteur de médias pour les images et un catalogue de quiz importable — sans avoir à bricoler du JSON.",
+      "feat.f12.t": "Parle votre langue",
+      "feat.f12.d": "Interface complète en anglais, allemand et chinois avec un changement instantané — chaque joueur et animateur a sa propre langue.",
+      "modes.kicker": "Quelle que soit votre façon de jouer",
+      "modes.title": "Modes et types de questions",
+      "modes.m1.t": "Classique",
+      "modes.m1.d": "Animez sur grand écran.",
+      "modes.m2.t": "Équipe",
+      "modes.m2.d": "Rouge contre bleu contre vert contre jaune.",
+      "modes.m3.t": "Lien solo",
+      "modes.m3.d": "Entraînez-vous ou partagez un quiz.",
+      "modes.q1.t": "Choix multiple",
+      "modes.q1.d": "Touchez une forme colorée pour répondre.",
+      "modes.q2.t": "Réponse à saisir",
+      "modes.q2.d": "Tapez-la sur votre clavier.",
+      "modes.q3.t": "Curseur",
+      "modes.q3.d": "Glissez jusqu'au nombre le plus proche.",
+      "cta.title": "Auto-hébergez-le en deux commandes",
+      "cta.sub": "Clonez le dépôt et lancez-le avec Docker Compose. Vos données restent dans un volume de configuration local — placez-le derrière votre propre reverse proxy pour le TLS et un nom public.",
+      "cta.btn": "Obtenez-le sur GitHub",
+      "footer.github": "GitHub",
+      "footer.issues": "Signaler un problème",
+      "footer.license": "Licence MIT",
+      "show.kicker": "Voyez-le à l'œuvre",
+      "show.title": "Une vraie plateforme de quiz en direct, pas une démo",
+      "show.r1.h": "Rejoignez en quelques secondes",
+      "show.r1.p": "L'animateur anime sur grand écran ; les joueurs scannent un QR code ou saisissent le PIN de la partie et jouent depuis leur propre téléphone — sans app, sans inscription.",
+      "show.r1.alt": "L'écran du salon avec le PIN de la partie et un QR code pour rejoindre",
+      "show.r2.h": "Un cockpit de thèmes en direct",
+      "show.r2.p": "Recolorez toute la partie depuis l'onglet Design du manager — couleurs, arrière-plans par vue, logo, rayon — ou déposez un thème skeleton ZIP téléchargeable. Crème plat par défaut, glass violet en option.",
+      "show.r2.alt": "L'onglet Design du manager — un cockpit de thèmes en direct avec couleurs, arrière-plans et logo",
+      "show.r3.h": "Une gamification qui fait mouche",
+      "show.r3.p": "Des classements en direct avec animations de dépassement, 15 succès, des médailles, des séries, des confettis et du son — plus une galerie de trophées personnelle et une remise de prix en fin de partie.",
+      "show.r3.alt": "Un classement sur téléphone avec rangs, scores et médailles",
+      "show.r4.h": "Jouez à votre façon",
+      "show.r4.p": "Des questions à choix multiple, à réponse saisie et au curseur ; mode animateur classique, mode équipe ou entraînement en solo via un lien. Fonctionne comme une PWA installable, même hors ligne.",
+      "show.r4.alt": "L'écran d'une question sur téléphone avec quatre tuiles de réponse colorées",
+      "footer.note": "Gratuit et open-source sous la Licence MIT. Auto-hébergez-le — l'instance en direct est uniquement locale. Un fork amical de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sans aucun lien avec Kahoot!®"
+    },
+    it: {
+      "metaDesc": "Razzoozle è una piattaforma di quiz in tempo reale in stile Kahoot: self-hosted, open-source e pronta all'uso. Il conduttore apre una partita sul grande schermo e i giocatori entrano con un PIN dal telefono — classifiche in tempo reale, obiettivi, squadre, link in solitaria, skeleton personalizzabili e PWA.",
+      "skip": "Vai al contenuto",
+      "hero.eyebrow": "Open-source · self-hosted",
+      "hero.title": "Quiz dal vivo, <span class=\"hl\">come piace a te</span>.",
+      "hero.lede": "Un gioco di quiz in tempo reale e self-hosted per aule, eventi e serate di giochi. Il conduttore apre una partita sul grande schermo, i giocatori entrano con un PIN dal telefono e tutti fanno a gara per rispondere.",
+      "hero.ctaGithub": "Guarda su GitHub",
+      "hero.ctaFeatures": "Scopri le funzioni",
+      "hero.statTests": "test automatizzati",
+      "hero.statPlayers": "giocatori in contemporanea",
+      "hero.statLangs": "lingue + PWA",
+      "hero.mockAlt": "Il telefono di un giocatore che mostra un PIN della partita e quattro caselle di risposta colorate",
+      "hero.mockPin": "PIN della partita",
+      "hero.mockLive": "12 connessi",
+      "hero.mockTimer": "00:18",
+      "stack.kicker": "Sotto il cofano",
+      "stack.title": "Uno stack moderno e tipizzato",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind sul front, Node + Socket.IO + Express sul back, tipi condivisi validati con Zod, il tutto distribuito come una singola immagine Docker.",
+      "stack.frontend": "Frontend",
+      "stack.backend": "Backend",
+      "stack.tooling": "Strumenti e distribuzione",
+      "feat.kicker": "Pensato per le serate di giochi",
+      "feat.title": "Tutto ciò che serve a un quiz dal vivo",
+      "feat.sub": "Il classico gioco in stile Kahoot, ricostruito attorno a un design piatto color crema — con gamification, squadre, allenamento in solitaria e un'interfaccia completamente personalizzabile.",
+      "feat.f1.t": "Conduttore + telefono, in tempo reale",
+      "feat.f1.d": "Il conduttore apre una partita sul grande schermo e i giocatori entrano con un PIN dal telefono — caselle di risposta colorate con forme, un conto alla rovescia circolare e un podio animato.",
+      "feat.f2.t": "Gamification e trofei",
+      "feat.f2.d": "15 obiettivi, medaglie, serie, coriandoli e suoni, oltre a una galleria di trofei personale e un riepilogo animato dei premi a fine partita.",
+      "feat.f3.t": "Modalità squadra e gioco in solitaria",
+      "feat.f3.d": "Squadre rossa, blu, verde e gialla con una classifica a squadre in tempo reale — oppure allenati da solo su qualsiasi quiz tramite un link in solitaria con la sua cronologia dei punteggi.",
+      "feat.f4.t": "Cabina dei temi e skeleton",
+      "feat.f4.d": "Una scheda Design dal vivo nel manager — colori, sfondi per ogni vista, logo, raggio e un interruttore piatto ⇄ glass. Scarica o carica il tema dell'intera partita come uno skeleton ZIP leggibile da una LLM.",
+      "feat.f5.t": "PWA, vibrazione e offline",
+      "feat.f5.d": "Installabile e pronta per l'offline, con vibrazione opzionale sul telefono dei giocatori per il conto alla rovescia e le risposte — rispettosa del reduced-motion in ogni momento.",
+      "feat.f6.t": "Immagini con IA locale",
+      "feat.f6.d": "Genera le immagini di domande e temi direttamente sul tuo dispositivo con ComfyUI (Z-Image), oppure collega un provider cloud — le chiavi API restano sempre lato server.",
+      "feat.f7.t": "Risultati condivisibili e plugin",
+      "feat.f7.d": "Ricche anteprime dei link Open Graph, una pagina dei risultati con inviti a giocare in prima persona, adesivi del vincitore scaricabili, oltre a un sistema di plugin e componenti aggiuntivi installabili dal manager.",
+      "feat.f8.t": "Modalità kiosk proiettore e affidabilità",
+      "feat.f8.d": "Una vista proiettore /display, modalità a bassa latenza, ripristino dopo i crash e riconnessione, e un server MCP per il controllo da strumenti di IA — irrobustita e testata sotto carico fino a 600 giocatori.",
+      "feat.f9.t": "Avatar dei giocatori",
+      "feat.f9.d": "Ogni giocatore riceve un avatar generato con DiceBear — scegli uno stile e rilancia, oppure carica il tuo. Gli avatar fluttuano nella sala d'attesa e compaiono nelle classifiche, sul podio e nei premi.",
+      "feat.f10.t": "Self-hosting con metriche",
+      "feat.f10.d": "Distribuito come immagine Docker che avvii con un solo comando. Metriche Prometheus e log strutturati pino sono integrati, così puoi davvero tenere d'occhio lo stato di una partita dal vivo.",
+      "feat.f11.t": "Editor di quiz integrato",
+      "feat.f11.d": "Crea quiz nel manager: diversi tipi di domanda, un selettore di media per le immagini e un catalogo di quiz importabile — senza dover smanettare con il JSON.",
+      "feat.f12.t": "Parla la tua lingua",
+      "feat.f12.d": "Interfaccia completa in inglese, tedesco e cinese con cambio istantaneo — ogni giocatore e conduttore usa la propria lingua.",
+      "modes.kicker": "Comunque tu voglia giocare",
+      "modes.title": "Modalità e tipi di domanda",
+      "modes.m1.t": "Classica",
+      "modes.m1.d": "Conduci sul grande schermo.",
+      "modes.m2.t": "Squadra",
+      "modes.m2.d": "Rossa contro blu contro verde contro gialla.",
+      "modes.m3.t": "Link in solitaria",
+      "modes.m3.d": "Allenati o condividi un quiz.",
+      "modes.q1.t": "Scelta multipla",
+      "modes.q1.d": "Tocca una forma colorata per rispondere.",
+      "modes.q2.t": "Risposta da digitare",
+      "modes.q2.d": "Scrivila con la tastiera.",
+      "modes.q3.t": "Cursore",
+      "modes.q3.d": "Trascina fino al numero più vicino.",
+      "cta.title": "Fai self-hosting in due comandi",
+      "cta.sub": "Clona il repository ed eseguilo con Docker Compose. I tuoi dati restano in un volume di configurazione locale — mettilo dietro il tuo reverse proxy per avere TLS e un nome pubblico.",
+      "cta.btn": "Scaricalo da GitHub",
+      "footer.github": "GitHub",
+      "footer.issues": "Segnala un problema",
+      "footer.license": "Licenza MIT",
+      "show.kicker": "Guardalo in azione",
+      "show.title": "Una piattaforma di quiz dal vivo completa, non una demo",
+      "show.r1.h": "Entra in pochi secondi",
+      "show.r1.p": "Il conduttore conduce sul grande schermo; i giocatori scansionano un QR code o digitano il PIN della partita e giocano dal proprio telefono — senza app, senza registrazione.",
+      "show.r1.alt": "La schermata della sala d'attesa con il PIN della partita e un QR code per entrare",
+      "show.r2.h": "Una cabina dei temi dal vivo",
+      "show.r2.p": "Ricolora l'intera partita dalla scheda Design del manager — colori, sfondi per ogni vista, logo, raggio — oppure carica un tema skeleton ZIP scaricabile. Crema piatto per impostazione predefinita, glass viola opzionale.",
+      "show.r2.alt": "La scheda Design del manager — una cabina dei temi dal vivo con colori, sfondi e logo",
+      "show.r3.h": "Una gamification che si sente",
+      "show.r3.p": "Classifiche in tempo reale con animazioni di sorpasso, 15 obiettivi, medaglie, serie, coriandoli e suono — più una galleria di trofei personale e un riepilogo dei premi a fine partita.",
+      "show.r3.alt": "Una classifica su telefono con posizioni, punteggi e medaglie",
+      "show.r4.h": "Gioca come piace a te",
+      "show.r4.p": "Domande a scelta multipla, a risposta digitata e a cursore; modalità conduttore classica, modalità squadra o allenamento in solitaria tramite un link. Funziona come PWA installabile, anche offline.",
+      "show.r4.alt": "La schermata di una domanda su telefono con quattro caselle di risposta colorate",
+      "footer.note": "Gratuito e open-source sotto la Licenza MIT. Fai self-hosting — l'istanza dal vivo è solo locale. Un fork amichevole di <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Senza alcun legame con Kahoot!®"
     }
   };
 
-  var SUPPORTED = ["en", "de", "zh"];
+  var SUPPORTED = ["en", "de", "zh", "es", "fr", "it"];
   var current = "en";
 
   function pickInitial() {
@@ -605,6 +1112,9 @@ html.js [data-reveal].in{opacity:1;transform:none}
     var nav = (navigator.language || navigator.userLanguage || "en").toLowerCase();
     if (nav.indexOf("de") === 0) return "de";
     if (nav.indexOf("zh") === 0) return "zh";
+    if (nav.indexOf("es") === 0) return "es";
+    if (nav.indexOf("fr") === 0) return "fr";
+    if (nav.indexOf("it") === 0) return "it";
     return "en";
   }
 
@@ -660,7 +1170,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
   var d=document, root=d.documentElement;
   root.classList.add('js');
   var rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var targets = d.querySelectorAll('.hero .stat, .section-head, .feature, .logo-card');
+  var targets = d.querySelectorAll('.hero .stat, .section-head, .feature, .logo-card, .showcase-row, .mode-card');
   targets.forEach(function(el,i){ el.setAttribute('data-reveal',''); el.style.transitionDelay = Math.min((i%8)*45,320)+'ms'; });
   if (rm || !('IntersectionObserver' in window)) { targets.forEach(function(el){ el.classList.add('in'); }); }
   else {
