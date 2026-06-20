@@ -39,6 +39,7 @@ export const gameConfigValidator = z.object({
   teamMode: z.boolean().default(false),
   lowLatencyMode: lowLatencyModeValidator,
   joinLocked: z.boolean().optional(),
+  randomizeAnswers: z.boolean().optional(),
 })
 
 export type GameConfig = z.infer<typeof gameConfigValidator>

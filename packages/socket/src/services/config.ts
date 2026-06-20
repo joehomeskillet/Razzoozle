@@ -639,6 +639,7 @@ export const updateGameConfig = (patch: {
   // toggle. Deep-merged below so the other lowLatencyMode sub-fields are kept.
   lowLatencyEnabled?: boolean
   joinLocked?: boolean
+  randomizeAnswers?: boolean
 }): GameConfig => {
   const current = getGameConfig()
   const { lowLatencyEnabled, ...flatPatch } = patch

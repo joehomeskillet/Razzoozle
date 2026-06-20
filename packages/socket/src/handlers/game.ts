@@ -370,11 +370,11 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     EVENTS.MANAGER.SET_GAME_CONFIG,
     managerAuth.withAuth(socket, (payload: unknown) => {
       const patchPayload = payload as
-        | { teamMode?: unknown; lowLatencyEnabled?: unknown; joinLocked?: unknown }
+        | { teamMode?: unknown; lowLatencyEnabled?: unknown; joinLocked?: unknown; randomizeAnswers?: unknown }
         | null
         | undefined
 
-      const patch: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean } = {}
+      const patch: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean; randomizeAnswers?: boolean } = {}
 
       if (typeof patchPayload?.teamMode === "boolean") {
         patch.teamMode = patchPayload.teamMode
@@ -385,12 +385,16 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       if (typeof patchPayload?.joinLocked === "boolean") {
         patch.joinLocked = patchPayload.joinLocked
       }
+      if (typeof patchPayload?.randomizeAnswers === "boolean") {
+        patch.randomizeAnswers = patchPayload.randomizeAnswers
+      }
 
       // No recognised field → nothing to persist.
       if (
         patch.teamMode === undefined &&
         patch.lowLatencyEnabled === undefined &&
-        patch.joinLocked === undefined
+        patch.joinLocked === undefined &&
+        patch.randomizeAnswers === undefined
       ) {
         return
       }

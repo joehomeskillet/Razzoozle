@@ -30,6 +30,10 @@ export interface ManagerConfig {
   // existing players and reconnects are unaffected. Optional for back-compat:
   // absent in old payloads → reads as false (unlocked).
   joinLocked?: boolean
+  // Persisted randomize-answers flag. When true, the server randomly permutes
+  // answer tile order per question while keeping canonical indices for scoring.
+  // Optional for back-compat: absent in old payloads → reads as false (off).
+  randomizeAnswers?: boolean
   // Merged achievement config (registry defaults + manager overrides).
   // Optional for back-compat; absent in old payloads → client falls back to defaults.
   achievements?: MergedAchievement[]

@@ -96,6 +96,10 @@ export interface RoundManagerOptions {
   // (the optional `teamStandings` field stays undefined). OPTIONAL — absent in
   // unit-test fakes => treated as false (normal, no-teams behaviour).
   teamMode?: boolean
+  // Randomize-answers config snapshot, read ONCE at game creation (like
+  // teamMode). When false answer order is canonical (no randomization).
+  // OPTIONAL — absent in unit-test fakes => treated as false (normal mode).
+  randomizeAnswers?: boolean
   // Manager-editable achievements config, merged with the registry defaults and
   // read ONCE at game creation (like teamMode). Drives the enable/disable gate +
   // the per-badge numeric thresholds in showResults. OPTIONAL — absent in unit-
@@ -138,6 +142,10 @@ export class RoundManager {
   // Sim mode: true while the SELECT_ANSWER window is open. Gates Game.addBots
   // (no mid-window bot injection) via isAnswerWindowOpen().
   private answerWindowOpen = false
+  // Permutation of answer indices for the current question when randomizeAnswers
+  // is enabled. Computed once when the question opens and reused for reconnects.
+  // Undefined when not randomizing or for slider/type-answer questions.
+  private currentDisplayOrder: number[] | undefined = undefined
   private paused = false
   private pauseState: { status: Status; data: StatusDataMap[Status] } | null =
     null
@@ -634,6 +642,7 @@ export class RoundManager {
       ]),
     )
     this.answerReceivedAt.clear()
+    this.currentDisplayOrder = undefined
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
@@ -719,6 +728,14 @@ export class RoundManager {
     }
     this.pauseState = null
 
+    // Generate displayOrder permutation for this question when randomizeAnswers is enabled.
+    // Store it so reconnects/re-emits use the SAME order. Reset to undefined for the next Q.
+    if (this.opts.randomizeAnswers && question && question.type !== "slider" && (question.answers?.length ?? 0) > 1) {
+      this.currentDisplayOrder = this.generateDisplayOrder(question.answers!.length)
+    } else {
+      this.currentDisplayOrder = undefined
+    }
+
     const imageMedia =
       question.media?.type === MEDIA_TYPES.IMAGE ? question.media : undefined
 
@@ -734,10 +751,13 @@ export class RoundManager {
       ...(question.type === "slider" ? {} : { answers: question.answers }),
       // Display-only attribution; undefined for non-submitted questions. Carries
       // NO correct-answer data — solutions stay server-side (anti-cheat).
+      // Optional answer-tile permutation when randomizeAnswers is enabled.
+      // Absent for slider/type-answer questions or when not randomizing.
+      ...(this.opts.randomizeAnswers && question.type !== "slider" && (question.answers?.length ?? 0) > 1
+        ? { displayOrder: this.currentDisplayOrder }
+        : {}),
       submittedBy: question.submittedBy,
     })
-
-    await sleep(question.cooldown)
 
     if (!this.started) {
       return
@@ -2620,5 +2640,18 @@ export class RoundManager {
 
     this.tempOldLeaderboard = null
     this.tempRoundRecap = null
+  }
+  // Fisher-Yates shuffle: generate a random permutation of [0..n-1].
+  // Returns the same permutation on re-calls so reconnects use the same order.
+  private generateDisplayOrder(length: number): number[] {
+    if (length <= 1) {
+      return Array.from({ length }, (_, i) => i)
+    }
+    const order = Array.from({ length }, (_, i) => i)
+    for (let i = length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]]
+    }
+    return order
   }
 }

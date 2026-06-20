@@ -40,6 +40,10 @@ export interface CommonStatusDataMap {
     // Answer TEXTS only (no solutions/correct — anti-cheat). Display-only for the
     // presenter big-screen tiles; absent for slider questions (no discrete answers).
     answers?: string[]
+    // Optional permutation of answer indices when randomizeAnswers is enabled.
+    // Absent for slider questions or when randomize is off. Lets the client render
+    // tiles in displayOrder while keeping canonical indices for scoring.
+    displayOrder?: number[]
     media?: QuestionMedia
     cooldown: number
     submittedBy?: string

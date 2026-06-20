@@ -112,6 +112,7 @@ export const buildRound = (opts: {
   quizz: Quizz
   players: Player[]
   lowLatency: LowLatencyMode
+  randomizeAnswers?: boolean
   managerId?: string
 }): CapturedRound => {
   const broadcasts: CapturedRound["broadcasts"] = []
@@ -154,6 +155,7 @@ export const buildRound = (opts: {
     onNewQuestion: () => {},
     onGameFinished: () => {},
     lowLatency: opts.lowLatency,
+    randomizeAnswers: opts.randomizeAnswers,
   })
 
   return {

@@ -130,6 +130,10 @@ class Game {
   // mid-game config edit can't change behaviour for a running game. false =>
   // every team branch in the round is skipped (normal mode).
   private readonly teamMode: boolean
+  // Randomize-answers config snapshot, read ONCE at game creation (like
+  // teamMode) so a mid-game config edit can't change a running game's behavior.
+  // false => canonical answer order (no randomization).
+  private readonly randomizeAnswers: boolean
   // Merged achievements config snapshot, read ONCE at game creation (like
   // teamMode) so a mid-game config edit can't change a running game's badges.
   // Crash-guarded — a config error falls back to the registry defaults.
@@ -242,6 +246,18 @@ class Game {
       }
     })()
 
+    
+    // Read randomizeAnswers once at game creation. Crash-guarded — falls back
+    // to false (disabled). Like teamMode, this is a read-once snapshot that
+    // can't change mid-game.
+    this.randomizeAnswers = (() => {
+      try {
+        return getGameConfig().randomizeAnswers ?? false
+      } catch {
+        return false
+      }
+    })()
+
     // Read the merged achievements config once. Crash-guarded like teamMode — a
     // config/read error returns an empty list, and RoundManager then falls back
     // to the registry defaults (shipped behaviour).
@@ -301,6 +317,7 @@ class Game {
       },
       lowLatency: this.lowLatency,
       teamMode: this.teamMode,
+      randomizeAnswers: this.randomizeAnswers,
       achievements: this.achievements,
     })
 
