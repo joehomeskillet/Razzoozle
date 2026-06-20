@@ -6,7 +6,7 @@
 
 ### A self-hosted, open-source live quiz platform — with a clean, flat **cream** design (and an optional liquid-glass theme).
 
-🌐 **English** · [Deutsch](README.de.md) · [中文](README.zh.md)
+🌐 **English** · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)

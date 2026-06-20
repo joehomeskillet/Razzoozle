@@ -6,7 +6,7 @@
 
 ### 一个自托管、开源的实时答题平台 —— 采用简洁扁平的**奶油色（cream）**设计（并提供可选的液态玻璃主题）。
 
-🌐 [English](README.md) · [Deutsch](README.de.md) · **中文**
+🌐 [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · **中文**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)

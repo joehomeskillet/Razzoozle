@@ -6,7 +6,7 @@
 
 ### Eine selbst-gehostete, quelloffene Live-Quiz-Plattform — mit klarem, flachem **Cream**-Design (und einem optionalen Liquid-Glass-Theme).
 
-🌐 [English](README.md) · **Deutsch** · [中文](README.zh.md)
+🌐 [English](README.md) · **Deutsch** · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
