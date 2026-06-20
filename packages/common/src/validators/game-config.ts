@@ -38,6 +38,7 @@ export const gameConfigValidator = z.object({
   managerPassword: z.string().default(DEFAULT_MANAGER_PASSWORD),
   teamMode: z.boolean().default(false),
   lowLatencyMode: lowLatencyModeValidator,
+  joinLocked: z.boolean().optional(),
 })
 
 export type GameConfig = z.infer<typeof gameConfigValidator>

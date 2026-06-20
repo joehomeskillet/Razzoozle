@@ -282,6 +282,75 @@ describe("PlayerManager.join", () => {
     expect(err).toHaveLength(1)
     expect(err[0].payload).toBe("errors:game.gameEnded")
   })
+
+  it("rejects a new player when joinLocked is true; emits locked error and adds no player", () => {
+    const { io, emits } = makeIo()
+    // joinLocked predicate returns true → new players cannot join
+    const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID, () => false, () => true)
+
+    const { socket, emitted, joinedRooms } = makeSocket("newbie", "newbie-sock")
+    pm.join(socket, "newbie")
+
+    // Player is not added; roster and room unchanged.
+    expect(pm.count()).toBe(0)
+    expect(joinedRooms).toEqual([])
+
+    // The joiner is told the lobby is locked.
+    const err = eventsOf(emitted, EVENTS.GAME.ERROR_MESSAGE)
+    expect(err).toHaveLength(1)
+    expect(err[0].payload).toBe("errors:game.locked")
+
+    // No success emitted.
+    expect(eventsOf(emitted, EVENTS.GAME.SUCCESS_JOIN)).toHaveLength(0)
+    // No NEW_PLAYER / TOTAL_PLAYERS broadcast.
+    expect(emits).toHaveLength(0)
+  })
+
+  it("allows an existing player to reconnect even when joinLocked is true", () => {
+    const { io, emits } = makeIo()
+    // Initially unlocked so we can seat the first player.
+    let locked = false
+    const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID, () => false, () => locked)
+
+    // First join succeeds while unlocked.
+    pm.join(makeSocket("alice", "alice-sock").socket, "alice")
+    expect(pm.count()).toBe(1)
+
+    // Now lock the lobby.
+    locked = true
+
+    // The same clientId (reconnect) is allowed through.
+    const reconnect = makeSocket("alice", "alice-sock-2")
+    pm.join(reconnect.socket, "alice")
+
+    // Still one player (no duplicate added).
+    expect(pm.count()).toBe(1)
+
+    // The reconnect gets playerAlreadyConnected (not locked).
+    const err = eventsOf(reconnect.emitted, EVENTS.GAME.ERROR_MESSAGE)
+    expect(err).toHaveLength(1)
+    expect(err[0].payload).toBe("errors:game.playerAlreadyConnected")
+  })
+
+  it("allows new players to join when joinLocked is false", () => {
+    const { io, emits } = makeIo()
+    // joinLocked predicate returns false → normal operation
+    const pm = new PlayerManager(io, GAME_ID, () => MANAGER_ID, () => false, () => false)
+
+    const { socket, emitted } = makeSocket("newbie", "newbie-sock")
+    pm.join(socket, "newbie")
+
+    // Player is added normally.
+    expect(pm.count()).toBe(1)
+    expect(pm.getAll()[0].username).toBe("newbie")
+
+    // Success is emitted.
+    const success = eventsOf(emitted, EVENTS.GAME.SUCCESS_JOIN)
+    expect(success).toHaveLength(1)
+
+    // No error emitted.
+    expect(eventsOf(emitted, EVENTS.GAME.ERROR_MESSAGE)).toHaveLength(0)
+  })
 })
 
 describe("PlayerManager.kick", () => {

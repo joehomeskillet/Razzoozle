@@ -24,7 +24,8 @@
     "noPlayersConnected": "Keine Spieler verbunden",
     "notFound": "Spiel nicht gefunden",
     "playerAlreadyConnected": "Spieler bereits verbunden",
-    "serverBusy": "Server ausgelastet, bitte später erneut versuchen"
+    "serverBusy": "Server ausgelastet, bitte später erneut versuchen",
+    "locked": "Die Lobby ist gesperrt — es können keine neuen Spieler beitreten."
   },
   "manager": {
     "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",

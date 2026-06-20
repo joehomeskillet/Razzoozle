@@ -26,6 +26,10 @@ export interface ManagerConfig {
   // host can gate the LowLatencyHealth widget. Optional for back-compat: absent
   // in old emitConfig payloads → reads as off.
   lowLatencyEnabled?: boolean
+  // Persisted join-locked flag. When true, new players cannot join the lobby;
+  // existing players and reconnects are unaffected. Optional for back-compat:
+  // absent in old payloads → reads as false (unlocked).
+  joinLocked?: boolean
   // Merged achievement config (registry defaults + manager overrides).
   // Optional for back-compat; absent in old payloads → client falls back to defaults.
   achievements?: MergedAchievement[]

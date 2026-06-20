@@ -24,7 +24,8 @@
     "noPlayersConnected": "No players connected",
     "notFound": "Game not found",
     "playerAlreadyConnected": "Player already connected",
-    "serverBusy": "Server busy, please try again later"
+    "serverBusy": "Server busy, please try again later",
+    "locked": "This game is locked — no new players can join."
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",

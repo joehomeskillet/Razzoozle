@@ -638,6 +638,7 @@ export const updateGameConfig = (patch: {
   // The `lowLatencyMode.enabled` master switch, flattened for the manager
   // toggle. Deep-merged below so the other lowLatencyMode sub-fields are kept.
   lowLatencyEnabled?: boolean
+  joinLocked?: boolean
 }): GameConfig => {
   const current = getGameConfig()
   const { lowLatencyEnabled, ...flatPatch } = patch

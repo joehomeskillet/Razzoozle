@@ -27,10 +27,15 @@ const ConfigGameMode = () => {
   const config = useConfig()
   const [teamMode, setTeamMode] = useState(config.teamMode ?? false)
   const [lowLatency, setLowLatency] = useState(config.lowLatencyEnabled ?? false)
+  const [joinLocked, setJoinLocked] = useState(config.joinLocked ?? false)
   const [saving, setSaving] = useState(false)
   const [savingLowLatency, setSavingLowLatency] = useState(false)
+  const [savingJoinLocked, setSavingJoinLocked] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lowLatencyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
+  const joinLockedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
 
@@ -47,6 +52,10 @@ const ConfigGameMode = () => {
     setLowLatencyPref(next)
   }, [config.lowLatencyEnabled])
 
+  useEffect(() => {
+    setJoinLocked(config.joinLocked ?? false)
+  }, [config.joinLocked])
+
   // Clear any pending optimistic-toast timeout on unmount.
   useEffect(() => {
     return () => {
@@ -55,6 +64,9 @@ const ConfigGameMode = () => {
       }
       if (lowLatencyTimeoutRef.current !== null) {
         clearTimeout(lowLatencyTimeoutRef.current)
+      }
+      if (joinLockedTimeoutRef.current !== null) {
+        clearTimeout(joinLockedTimeoutRef.current)
       }
     }
   }, [])
@@ -115,6 +127,34 @@ const ConfigGameMode = () => {
               })
             : t("manager:gameMode.lowLatencyDisabled", {
                 defaultValue: "Low-Latency-Modus deaktiviert",
+              }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
+  const handleJoinLockedToggle = useCallback(
+    (next: boolean) => {
+      setJoinLocked(next)
+      setSavingJoinLocked(true)
+
+      // Emit a partial patch; server merges it into the persisted GameConfig.
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { joinLocked: next })
+
+      // ponytail: server SET_GAME_CONFIG has no ack; toast is optimistic
+      if (joinLockedTimeoutRef.current !== null) {
+        clearTimeout(joinLockedTimeoutRef.current)
+      }
+      joinLockedTimeoutRef.current = setTimeout(() => {
+        setSavingJoinLocked(false)
+        toast.success(
+          next
+            ? t("manager:gameMode.lobbyLocked", {
+                defaultValue: "Lobby gesperrt",
+              })
+            : t("manager:gameMode.lobbyUnlocked", {
+                defaultValue: "Lobby entsperrt",
               }),
         )
       }, 300)
@@ -192,6 +232,27 @@ const ConfigGameMode = () => {
           checked={lowLatency}
           onChange={handleLowLatencyToggle}
           disabled={savingLowLatency}
+        />
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.lobbyTitle", {
+          defaultValue: "Lobby-Sperre",
+        })}
+        description={t("manager:gameMode.lobbyDescription", {
+          defaultValue:
+            "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
+        })}
+      >
+        <ToggleField
+          label={t("manager:gameMode.lobbyLocked", { defaultValue: "Lobby sperren" })}
+          description={t("manager:gameMode.lobbyLockedHint", {
+            defaultValue:
+              "Sperrt die Lobby für neue Spieler, während bestehende Spieler weiterhin beitreten können.",
+          })}
+          checked={joinLocked}
+          onChange={handleJoinLockedToggle}
+          disabled={savingJoinLocked}
         />
       </FormSection>
     </div>

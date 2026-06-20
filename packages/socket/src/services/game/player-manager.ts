@@ -17,6 +17,7 @@ export class PlayerManager {
   // Defaults to "never ended" so the unit harness (which omits it) and any
   // lobby-only game behave exactly as before.
   private readonly isGameEnded: () => boolean
+  private readonly getJoinLocked: () => boolean
   private players: Player[] = []
 
   constructor(
@@ -24,11 +25,13 @@ export class PlayerManager {
     gameId: string,
     getManagerId: () => string,
     isGameEnded: () => boolean = () => false,
+    getJoinLocked: () => boolean = () => false,
   ) {
     this.io = io
     this.gameId = gameId
     this.getManagerId = getManagerId
     this.isGameEnded = isGameEnded
+    this.getJoinLocked = getJoinLocked
   }
 
   join(socket: Socket, username: string, avatar?: string): void {
@@ -45,7 +48,14 @@ export class PlayerManager {
       return
     }
 
-    if (this.findByClientId(clientId)) {
+    // Check if lobby is locked for NEW players (existing players/reconnects unaffected)
+    const existing = this.findByClientId(clientId)
+    if (this.getJoinLocked() && !existing) {
+      socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:game.locked")
+
+      return
+    }
+    if (existing) {
       socket.emit(
         EVENTS.GAME.ERROR_MESSAGE,
         "errors:game.playerAlreadyConnected",

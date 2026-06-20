@@ -134,6 +134,10 @@ class Game {
   // teamMode) so a mid-game config edit can't change a running game's badges.
   // Crash-guarded — a config error falls back to the registry defaults.
   private readonly achievements: MergedAchievement[]
+  // Lobby join lock: when true, new players cannot join. Can be toggled live
+  // (unlike lowLatency/teamMode which are read-once snapshots). Accessed via
+  // a getter passed to PlayerManager so mid-game toggles take effect immediately.
+  private joinLocked: boolean
   // Health-snapshot push throttle (low-latency observability). Coalesces bursts
   // of client metric reports into at most one HEALTH emit per window so a busy
   // room can't spam the host. null when no emit is currently scheduled.
@@ -227,6 +231,17 @@ class Game {
       }
     })()
 
+    // Read joinLocked once at game creation. Unlike teamMode, this CAN be
+    // toggled live via setJoinLocked so the host can gate new players mid-game.
+    // Crash-guarded — falls back to false (unlocked).
+    this.joinLocked = (() => {
+      try {
+        return getGameConfig().joinLocked ?? false
+      } catch {
+        return false
+      }
+    })()
+
     // Read the merged achievements config once. Crash-guarded like teamMode — a
     // config/read error returns an empty list, and RoundManager then falls back
     // to the registry defaults (shipped behaviour).
@@ -249,6 +264,7 @@ class Game {
       // game is disposed. PlayerManager uses this to tell a returning player the
       // game has ENDED instead of mis-reporting playerAlreadyConnected (item 6).
       () => this.managerStatus?.name === STATUS.FINISHED,
+      () => this.joinLocked,
     )
 
     // Sim mode: bots submit via the EXISTING selectAnswer path (real dedup /
@@ -691,6 +707,10 @@ class Game {
     }
 
     return player
+  }
+
+  setJoinLocked(v: boolean) {
+    this.joinLocked = v
   }
 
   setPlayerDisconnected(socketId: string) {

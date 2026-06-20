@@ -362,18 +362,19 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   })
 
   // Persist a partial game-config patch (auth-gated — mirrors PAUSE_GAME /
-  // RESUME_GAME). Accepts `teamMode` and/or `lowLatencyEnabled` (the
-  // `lowLatencyMode.enabled` master switch); malformed or empty payloads are
-  // silently dropped (no error event, consistent with other no-op guards).
+  // RESUME_GAME). Accepts `teamMode`, `lowLatencyEnabled` (the
+  // `lowLatencyMode.enabled` master switch), and `joinLocked`; malformed or
+  // empty payloads are silently dropped (no error event, consistent with other
+  // no-op guards).
   socket.on(
     EVENTS.MANAGER.SET_GAME_CONFIG,
     managerAuth.withAuth(socket, (payload: unknown) => {
       const patchPayload = payload as
-        | { teamMode?: unknown; lowLatencyEnabled?: unknown }
+        | { teamMode?: unknown; lowLatencyEnabled?: unknown; joinLocked?: unknown }
         | null
         | undefined
 
-      const patch: { teamMode?: boolean; lowLatencyEnabled?: boolean } = {}
+      const patch: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean } = {}
 
       if (typeof patchPayload?.teamMode === "boolean") {
         patch.teamMode = patchPayload.teamMode
@@ -381,17 +382,29 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       if (typeof patchPayload?.lowLatencyEnabled === "boolean") {
         patch.lowLatencyEnabled = patchPayload.lowLatencyEnabled
       }
+      if (typeof patchPayload?.joinLocked === "boolean") {
+        patch.joinLocked = patchPayload.joinLocked
+      }
 
       // No recognised field → nothing to persist.
       if (
         patch.teamMode === undefined &&
-        patch.lowLatencyEnabled === undefined
+        patch.lowLatencyEnabled === undefined &&
+        patch.joinLocked === undefined
       ) {
         return
       }
 
       try {
         updateGameConfig(patch)
+        // Apply joinLocked live so the gate takes effect immediately (unlike
+        // teamMode/lowLatencyEnabled which are snapshots read at game creation).
+        if (patch.joinLocked !== undefined) {
+          const game = resolveOwnGame()
+          if (game) {
+            game.setJoinLocked(patch.joinLocked)
+          }
+        }
         // Round-trip the saved value back so the manager's toggle reflects the
         // persisted config rather than its optimistic local state.
         emitConfig(socket)
