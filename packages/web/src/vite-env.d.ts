@@ -32,3 +32,11 @@ declare module "canvas-confetti" {
 
   export = confetti
 }
+
+// Host-integration contract globals — see HOST_INTEGRATION.md
+interface Window {
+  /** Canonical versioned host-integration contract. */
+  __RAZZ_HOST?: { version: number; joinBase?: string }
+  /** Legacy join-base override (superseded by __RAZZ_HOST.joinBase). */
+  __RAZZ_JOIN_BASE?: string
+}

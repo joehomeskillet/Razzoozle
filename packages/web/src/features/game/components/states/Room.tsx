@@ -9,7 +9,7 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
-import { buildJoinUrl } from "@razzoozle/web/features/game/utils/joinUrl"
+import { buildJoinUrl, resolveJoinBase } from "@razzoozle/web/features/game/utils/joinUrl"
 import { teamDot } from "@razzoozle/web/features/game/utils/teams"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
@@ -34,7 +34,8 @@ interface Props {
 const Room = ({ data: { text, inviteCode } }: Props) => {
   const { gameId, password } = useManagerStore()
   const { socket } = useSocket()
-  const webUrl = window.location.origin
+  // Host override aware (desktop/relay) — falls back to window.location.origin.
+  const webUrl = resolveJoinBase()
   const { players } = useManagerStore()
   const [playerList, setPlayerList] = useState<Player[]>(players)
   const [totalPlayers, setTotalPlayers] = useState(0)
@@ -142,7 +143,11 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
 
             <div>
               <p className="text-2xl font-bold">{t("game:gamePinLabel")}</p>
-              <p className="text-6xl font-extrabold tabular-nums lg:text-[clamp(3.75rem,12vh,9rem)]">
+              <p
+                data-invite-code={inviteCode}
+                data-join-url={buildJoinUrl(inviteCode, webUrl)}
+                className="text-6xl font-extrabold tabular-nums lg:text-[clamp(3.75rem,12vh,9rem)]"
+              >
                 {inviteCode}
               </p>
             </div>
