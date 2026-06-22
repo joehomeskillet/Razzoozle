@@ -19,3 +19,11 @@ rz-*.png
 .playwright-mcp/
 tsconfig.tsbuildinfo
 *.bak
+
+# Test / QA / debug screenshots & artifacts — never sync to git
+test-results/
+playwright-report/
+**/*-snapshots/
+/live-*.png
+/smoke-*.png
+/mockup-*.png
