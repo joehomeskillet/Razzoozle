@@ -114,8 +114,8 @@ export interface GameResult {
 // Solo play / team mode contracts.
 export type SoloQuestion = Omit<
   Question,
-  "solutions" | "correct" | "acceptedAnswers"
->
+  "solutions" | "correct" | "acceptedAnswers" | "chunks"
+> & { shuffledChunks?: string[] }
 
 export interface SoloCheckAnswerRequest {
   questionIndex: number

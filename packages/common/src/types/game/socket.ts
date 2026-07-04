@@ -27,7 +27,7 @@ import type {
 } from "@razzoozle/common/types/theme"
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import type { InstalledPlugin } from "@razzoozle/common/validators/plugin"
-import { Server as ServerIO, Socket as SocketIO } from "socket.io"
+import type { Server as ServerIO, Socket as SocketIO } from "socket.io"
 
 export type Server = ServerIO<ClientToServerEvents, ServerToClientEvents>
 

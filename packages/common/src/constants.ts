@@ -309,6 +309,7 @@ export const QUESTION_TYPES = [
   "poll",
   "multiple-select",
   "type-answer",
+  "sentence-builder",
 ] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]

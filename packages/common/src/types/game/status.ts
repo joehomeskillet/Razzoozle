@@ -60,6 +60,8 @@ export interface CommonStatusDataMap {
     max?: number
     step?: number
     unit?: string
+    // Sentence-builder questions: shuffled word chips (no solution info).
+    shuffledChunks?: string[]
     // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
     // absent in normal mode and ignored by old clients. Client uses these only
     // to drive the countdown/UI (never for scoring — scoring is server-side).
@@ -92,6 +94,8 @@ export interface CommonStatusDataMap {
     // The revealed correct answer for the round, shown on the wrong-answer
     // screen. Present only when applicable (never for poll/correct).
     correctAnswer?: string
+    // Sentence-builder: authored correct order, revealed after the round.
+    correctChunks?: string[]
     // Auto-mode: ms until the screen auto-advances, so the client can render a
     // local countdown. OPTIONAL — present only while auto-mode is on and an
     // advance is armed; absent (manual mode / old clients ignore it) otherwise.

@@ -12,7 +12,7 @@ import { clientEventValidator } from "@razzoozle/common/validators/client-events
 //
 // SECURITY-BLOCKER 2: the `/api/quizz/{id}/solo` response schema is the
 // HAND-WRITTEN stripped shape below — it is NEVER derived from the full `Quizz`
-// type, so `solutions`/`correct`/`acceptedAnswers` can never leak into the
+// type, so `solutions`/`correct`/`acceptedAnswers`/`chunks` can never leak into the
 // published contract even if the Quizz type grows new secret fields.
 //
 // NEUTRAL info.title — never a brand string. The backport tree reuses this file
@@ -36,7 +36,7 @@ export interface RouteDoc {
 }
 
 // ── Hand-written stripped solo response (B2) ────────────────────────────────
-// Mirrors index.ts:152-155 which strips solutions/correct/acceptedAnswers from
+// Mirrors index.ts:152-155 which strips solutions/correct/acceptedAnswers/chunks from
 // each question. `.loose()` keeps the remaining presentational question fields
 // open without re-importing the full Quizz type.
 export const soloResponseSchema = z.object({
@@ -48,6 +48,8 @@ export const soloResponseSchema = z.object({
         // `type` is optional on the wire (defaults to "quiz" when absent),
         // matching how questions are persisted.
         type: z.string().optional(),
+        // Sentence-builder: shuffled word chips (display order only, no solution).
+        shuffledChunks: z.array(z.string()).optional(),
       })
       .loose(),
   ),

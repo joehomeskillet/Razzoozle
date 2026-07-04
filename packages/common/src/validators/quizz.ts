@@ -43,6 +43,12 @@ export const questionValidator = z
     correct: z.number().optional(),
     step: z.number().positive().optional(),
     unit: z.string().optional(),
+    // Sentence-builder: word chunks in correct order.
+    chunks: z
+      .array(z.string().min(1, "errors:quizz.chunkEmpty").max(40, "errors:quizz.chunkTooLong"))
+      .min(2)
+      .max(16)
+      .optional(),
     cooldown: z.number().int().min(3).max(15),
     time: z.number().int().min(5).max(120),
     practice: z.boolean().optional(),
@@ -97,6 +103,15 @@ export const questionValidator = z
           code: "custom",
           message: "errors:quizz.acceptedAnswersMin",
           path: ["acceptedAnswers"],
+        })
+      }
+    } else if (q.type === "sentence-builder") {
+      // Sentence-builder: needs chunks with length >= 2.
+      if (!q.chunks || q.chunks.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.tooFewChunks",
+          path: ["chunks"],
         })
       }
     } else {
