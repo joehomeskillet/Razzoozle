@@ -33,7 +33,7 @@ jobs:
         run: corepack pnpm -r run types
 
       - name: Lint (warn-only)
-        run: corepack pnpm lint || true
+        run: corepack pnpm lint
 
       - name: Test (all packages with a test script)
         run: corepack pnpm -r --if-present run test

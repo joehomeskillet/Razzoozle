@@ -118,7 +118,7 @@ export default defineConfig({
     host: "0.0.0.0",
   },
   build: {
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         // Split heavy vendor libs into their own chunks for better caching
@@ -200,7 +200,6 @@ export default defineConfig({
           if (id.includes("/@dicebear/")) {
             return "dicebear"
           }
-          return "vendor"
         },
       },
     },

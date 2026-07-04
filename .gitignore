@@ -28,3 +28,4 @@ playwright-report/
 /smoke-*.png
 /mockup-*.png
 CLAUDE-FABLE-5.md
+.serena/

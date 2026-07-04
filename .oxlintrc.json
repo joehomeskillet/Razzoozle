@@ -4,22 +4,35 @@
     "builtin": true,
     "node": true
   },
-  "jsPlugins": ["@stylistic/eslint-plugin"],
+  "jsPlugins": [
+    "@stylistic/eslint-plugin"
+  ],
   "options": {
     "typeAware": true,
     "typeCheck": true
   },
-  "plugins": ["typescript"],
+  "plugins": [
+    "typescript"
+  ],
   "overrides": [
     {
-      "files": ["packages/web/**/*.{ts,tsx}"],
-      "plugins": ["react"],
+      "files": [
+        "packages/web/**/*.{ts,tsx}"
+      ],
+      "plugins": [
+        "react"
+      ],
       "rules": {
         "react/jsx-key": "off"
       }
     },
     {
-      "files": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "scripts/**"],
+      "files": [
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "scripts/**"
+      ],
       "rules": {
         "@stylistic/line-comment-position": "off",
         "no-inline-comments": "off",
@@ -33,7 +46,9 @@
       }
     },
     {
-      "files": ["examples/**/*.js"],
+      "files": [
+        "examples/**/*.js"
+      ],
       "rules": {
         "no-var": "off",
         "object-shorthand": "off",
@@ -43,14 +58,29 @@
   ],
   "rules": {
     "@stylistic/line-comment-position": "off",
-    "@stylistic/linebreak-style": ["error", "unix"],
-    "@stylistic/multiline-comment-style": ["error", "separate-lines"],
-    "@stylistic/padded-blocks": ["error", "never"],
+    "@stylistic/linebreak-style": [
+      "error",
+      "unix"
+    ],
+    "@stylistic/multiline-comment-style": [
+      "error",
+      "separate-lines"
+    ],
+    "@stylistic/padded-blocks": [
+      "error",
+      "never"
+    ],
     "@stylistic/padding-line-between-statements": "off",
     "@stylistic/quotes": "off",
-    "@stylistic/semi": ["error", "never"],
+    "@stylistic/semi": [
+      "error",
+      "never"
+    ],
     "@stylistic/space-before-blocks": "error",
-    "@stylistic/wrap-iife": ["error", "inside"],
+    "@stylistic/wrap-iife": [
+      "error",
+      "inside"
+    ],
     "array-callback-return": "off",
     "arrow-body-style": "off",
     "capitalized-comments": "off",
@@ -58,15 +88,35 @@
     "constructor-super": "error",
     "curly": "off",
     "default-param-last": "error",
-    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
     "for-direction": "error",
     "func-names": "error",
-    "func-style": ["error", "declaration", { "allowArrowFunctions": true }],
+    "func-style": [
+      "error",
+      "declaration",
+      {
+        "allowArrowFunctions": true
+      }
+    ],
     "getter-return": "error",
-    "grouped-accessor-pairs": ["error", "getBeforeSet"],
+    "grouped-accessor-pairs": [
+      "error",
+      "getBeforeSet"
+    ],
     "guard-for-in": "error",
     "init-declarations": "off",
-    "max-classes-per-file": ["error", { "ignoreExpressions": true }],
+    "max-classes-per-file": [
+      "error",
+      {
+        "ignoreExpressions": true
+      }
+    ],
     "max-nested-callbacks": "off",
     "max-params": "off",
     "new-cap": "off",
@@ -151,7 +201,12 @@
     "no-undefined": "off",
     "no-unexpected-multiline": "error",
     "no-unmodified-loop-condition": "error",
-    "no-unneeded-ternary": ["error", { "defaultAssignment": false }],
+    "no-unneeded-ternary": [
+      "error",
+      {
+        "defaultAssignment": false
+      }
+    ],
     "no-unreachable": "error",
     "no-unsafe-finally": "error",
     "no-unsafe-negation": "error",
@@ -162,20 +217,41 @@
     "no-useless-backreference": "error",
     "no-useless-call": "error",
     "no-useless-catch": "error",
-    "no-useless-computed-key": ["error", { "enforceForClassMembers": true }],
+    "no-useless-computed-key": [
+      "error",
+      {
+        "enforceForClassMembers": true
+      }
+    ],
     "no-useless-concat": "error",
     "no-useless-constructor": "error",
     "no-useless-escape": "error",
     "no-useless-rename": "error",
     "no-useless-return": "error",
     "no-var": "error",
-    "no-warning-comments": ["error", { "terms": ["todo"] }],
+    "no-warning-comments": [
+      "error",
+      {
+        "terms": [
+          "todo"
+        ]
+      }
+    ],
     "no-with": "error",
-    "object-shorthand": ["error", "always"],
-    "operator-assignment": ["error", "always"],
+    "object-shorthand": [
+      "error",
+      "always"
+    ],
+    "operator-assignment": [
+      "error",
+      "always"
+    ],
     "prefer-const": [
       "error",
-      { "destructuring": "any", "ignoreReadBeforeAssign": false }
+      {
+        "destructuring": "any",
+        "ignoreReadBeforeAssign": false
+      }
     ],
     "prefer-destructuring": "off",
     "prefer-exponentiation-operator": "off",
@@ -193,7 +269,12 @@
     "typescript/adjacent-overload-signatures": "error",
     "typescript/array-type": "off",
     "typescript/await-thenable": "off",
-    "typescript/ban-ts-comment": ["error", { "minimumDescriptionLength": 10 }],
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "minimumDescriptionLength": 10
+      }
+    ],
     "typescript/ban-tslint-comment": "error",
     "typescript/class-literal-property-style": "error",
     "typescript/consistent-generic-constructors": "error",
@@ -269,7 +350,10 @@
     "typescript/require-await": "off",
     "typescript/restrict-plus-operands": "off",
     "typescript/restrict-template-expressions": "off",
-    "typescript/return-await": ["error", "error-handling-correctness-only"],
+    "typescript/return-await": [
+      "error",
+      "error-handling-correctness-only"
+    ],
     "typescript/triple-slash-reference": "error",
     "typescript/unbound-method": "error",
     "typescript/unified-signatures": "error",
@@ -277,5 +361,8 @@
     "use-isnan": "error",
     "valid-typeof": "error",
     "yoda": "error"
-  }
+  },
+  "ignorePatterns": [
+    "spikes/**"
+  ]
 }

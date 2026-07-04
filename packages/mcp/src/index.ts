@@ -167,7 +167,7 @@ server.registerTool(
     description: "Get the full quiz (subject + questions) by id.",
     inputSchema: { id: z.string().describe("Quiz id (from list_quizzes).") },
   },
-  ({ id }) => {
+  ({ id }: { id: string }) => {
     try {
       return ok(getQuizzById(id))
     } catch (e) {
@@ -190,7 +190,7 @@ server.registerTool(
         .describe("Array of question objects (>=1)."),
     },
   },
-  ({ subject, questions }) => {
+  ({ subject, questions }: { subject: string; questions: Array<Record<string, unknown>> }) => {
     try {
       const { id } = saveQuizz({ subject, questions })
       return ok({ id, subject, questionCount: questions.length })
@@ -207,7 +207,7 @@ server.registerTool(
     description: "Delete a quiz file by id.",
     inputSchema: { id: z.string().describe("Quiz id to delete.") },
   },
-  ({ id }) => {
+  ({ id }: { id: string }) => {
     try {
       deleteQuizz(id)
       return ok({ deleted: id })
@@ -225,7 +225,7 @@ server.registerTool(
       "Build and validate a single Question for any type with sensible defaults (cooldown 5, time 20). Returns the validated question object you can pass to create_quiz / add_question. Does NOT write anything.",
     inputSchema: questionInputShape,
   },
-  (args) => {
+  (args: Record<string, unknown>) => {
     try {
       return ok(buildQuestion(toBuildInput(args)))
     } catch (e) {
@@ -245,7 +245,7 @@ server.registerTool(
       ...questionInputShape,
     },
   },
-  (args) => {
+  (args: { quizId: string; [key: string]: unknown }) => {
     try {
       const { quizId, ...rest } = args
       const quizz = getQuizzById(quizId)
@@ -281,7 +281,7 @@ server.registerTool(
       ...questionInputShape,
     },
   },
-  (args) => {
+  (args: { quizId: string; index: number; [key: string]: unknown }) => {
     try {
       const { quizId, index, ...rest } = args
       const quizz = getQuizzById(quizId)
@@ -318,7 +318,7 @@ server.registerTool(
         .describe("0-based question index to remove."),
     },
   },
-  ({ quizId, index }) => {
+  ({ quizId, index }: { quizId: string; index: number }) => {
     try {
       const quizz = getQuizzById(quizId)
       if (index >= quizz.questions.length) {
@@ -355,7 +355,7 @@ server.registerTool(
         .describe("Image description (1-300 chars). No secrets."),
     },
   },
-  async ({ prompt }) => {
+  async ({ prompt }: { prompt: string }) => {
     try {
       const url = await generateImage(prompt)
       return ok({ url, hint: "Pass this as `mediaUrl` to a question." })
@@ -391,7 +391,7 @@ server.registerTool(
       "Get a full saved game result (players + per-question answers) by id.",
     inputSchema: { id: z.string().describe("Result id (from list_results).") },
   },
-  ({ id }) => {
+  ({ id }: { id: string }) => {
     try {
       return ok(getResultById(id))
     } catch (e) {
@@ -415,7 +415,7 @@ server.registerTool(
         .describe("Return full submission records instead of meta."),
     },
   },
-  ({ full }) => {
+  ({ full }: { full?: boolean }) => {
     try {
       return ok(full ? getSubmissions() : getSubmissionsMeta())
     } catch (e) {
@@ -431,7 +431,7 @@ server.registerTool(
     description: "Get one full submission record by id.",
     inputSchema: { id: z.string().describe("Submission id.") },
   },
-  ({ id }) => {
+  ({ id }: { id: string }) => {
     try {
       const s = getSubmissionById(id)
       return s ? ok(s) : fail(new Error(`Submission "${id}" not found`))
@@ -452,7 +452,7 @@ server.registerTool(
       quizId: z.string().describe("Quiz id to append the question to."),
     },
   },
-  ({ id, quizId }) => {
+  ({ id, quizId }: { id: string; quizId: string }) => {
     try {
       approveSubmission(id, quizId)
       return ok({ approved: id, addedTo: quizId })
@@ -483,7 +483,7 @@ server.registerTool(
         .describe("Optional topic category override."),
     },
   },
-  ({ id, reason, category }) => {
+  ({ id, reason, category }: { id: string; reason?: string; category?: "general" | "history" | "science" | "geography" | "sports" | "entertainment" | "technology" | "other" }) => {
     try {
       rejectSubmission(id, reason, category)
       return ok({ rejected: id })
@@ -559,7 +559,7 @@ server.registerTool(
         ),
     },
   },
-  ({ theme, broadcast }) => {
+  ({ theme, broadcast }: { theme: Record<string, unknown>; broadcast?: boolean }) => {
     try {
       const saved = setTheme(theme)
       let pushed = false
@@ -621,7 +621,7 @@ server.registerTool(
         .describe("Provenance chip (default manual)."),
     },
   },
-  (args) => {
+  (args: { tags?: string[]; source?: "manual" | "submission" | "editor" | "ai"; [key: string]: unknown }) => {
     try {
       const { tags, source, ...rest } = args
       const question = buildQuestion(toBuildInput(rest))
@@ -647,7 +647,7 @@ server.registerTool(
       id: z.string().describe("Catalog entry id (from list_catalog)."),
     },
   },
-  ({ id }) => {
+  ({ id }: { id: string }) => {
     try {
       deleteCatalogEntry(id)
       return ok({ deleted: id })
@@ -671,7 +671,7 @@ server.registerTool(
         .describe("True to archive (default), false to restore."),
     },
   },
-  ({ id, archived }) => {
+  ({ id, archived }: { id: string; archived?: boolean }) => {
     try {
       const next = archived ?? true
       setQuizzArchived(id, next)
@@ -708,7 +708,7 @@ server.registerTool(
         .describe("BCP-47-ish language code (default de)."),
     },
   },
-  async ({ topic, type, language }) => {
+  async ({ topic, type, language }: { topic: string; type?: "choice" | "boolean" | "multiple-select" | "type-answer"; language?: string }) => {
     try {
       return ok(await generateQuestion(topic, type, language))
     } catch (e) {
@@ -739,7 +739,7 @@ server.registerTool(
         .describe("Language code (default de)."),
     },
   },
-  async ({ topic, count, language }) => {
+  async ({ topic, count, language }: { topic: string; count: number; language?: string }) => {
     try {
       return ok(await generateQuiz(topic, count, language))
     } catch (e) {
@@ -772,7 +772,7 @@ server.registerTool(
         .describe("Language code (default de)."),
     },
   },
-  async ({ question, correct, count, language }) => {
+  async ({ question, correct, count, language }: { question: string; correct: string; count?: number; language?: string }) => {
     try {
       return ok({
         distractors: await generateDistractors(
@@ -802,7 +802,7 @@ server.registerTool(
       quizId: z.string().describe("Quiz id to host (from list_quizzes)."),
     },
   },
-  async ({ quizId }) => {
+  async ({ quizId }: { quizId: string }) => {
     try {
       const { gameId, pin } = await gameController.startGame(quizId)
       return ok({
@@ -903,7 +903,7 @@ server.registerTool(
         .describe("How many bots to add (1-50 per request; per-game cap 200)."),
     },
   },
-  ({ count }) => {
+  ({ count }: { count: number }) => {
     try {
       gameController.addBots(count)
       return ok({
