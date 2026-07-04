@@ -1,0 +1,79 @@
+{
+  "recordedAt": "2026-07-04T23:24:37.482Z",
+  "frameCount": 8,
+  "frames": [
+    {
+      "direction": "send",
+      "event": "manager:showLeaderboard",
+      "data": {
+        "gameId": "[NORMALIZED]"
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "SHOW_LEADERBOARD",
+        "data": {
+          "oldLeaderboard": [],
+          "leaderboard": []
+        }
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "SHOW_QUESTION",
+        "data": {
+          "question": "What is good answer ?",
+          "cooldown": 5,
+          "answers": [
+            "No",
+            "Good answer",
+            "No",
+            "No"
+          ]
+        }
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "SELECT_ANSWER",
+        "data": {
+          "question": "What is good answer ?",
+          "time": 15,
+          "totalPlayer": 1,
+          "answers": [
+            "No",
+            "Good answer",
+            "No",
+            "No"
+          ]
+        }
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 14
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 13
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 12
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 11
+    }
+  ]
+}

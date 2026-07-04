@@ -1,0 +1,71 @@
+{
+  "recordedAt": "2026-07-04T23:24:37.482Z",
+  "frameCount": 8,
+  "frames": [
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "SHOW_START",
+        "data": {
+          "time": 3,
+          "subject": "Example Quizz"
+        }
+      }
+    },
+    {
+      "direction": "send",
+      "event": "player:selectedAnswer",
+      "data": {
+        "gameId": "[NORMALIZED]",
+        "data": {
+          "answerKey": 1
+        }
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "WAIT",
+        "data": {
+          "text": "game:waitingForAnswers"
+        }
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:startCooldown",
+      "data": []
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 2
+    },
+    {
+      "direction": "receive",
+      "event": "game:cooldown",
+      "data": 1
+    },
+    {
+      "direction": "receive",
+      "event": "game:updateQuestion",
+      "data": {
+        "current": 1,
+        "total": 4
+      }
+    },
+    {
+      "direction": "receive",
+      "event": "game:status",
+      "data": {
+        "name": "SHOW_PREPARED",
+        "data": {
+          "totalAnswers": 4,
+          "questionNumber": 1
+        }
+      }
+    }
+  ]
+}
