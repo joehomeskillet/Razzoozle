@@ -3,6 +3,7 @@ import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/compone
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
+import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import { motion, useReducedMotion } from "motion/react"
@@ -51,6 +52,7 @@ const QuestionEditor = () => {
   const { currentQuestion } = useQuizzEditor()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
+  const isSentenceBuilder = currentQuestion.type === "sentence-builder"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
@@ -71,7 +73,7 @@ const QuestionEditor = () => {
           </div>
         </Reveal>
 
-        {!isSlider && !isTypeAnswer && (
+        {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
           <Reveal index={3}>
             <QuestionEditorAnswers />
           </Reveal>
@@ -79,6 +81,11 @@ const QuestionEditor = () => {
         {isTypeAnswer && (
           <Reveal index={3}>
             <QuestionEditorAcceptedAnswers />
+          </Reveal>
+        )}
+        {isSentenceBuilder && (
+          <Reveal index={3}>
+            <QuestionEditorSentence />
           </Reveal>
         )}
       </main>

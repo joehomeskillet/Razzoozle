@@ -49,6 +49,7 @@ class Registry {
   // Periodic crash-recovery snapshot task handle (null when not running). Set by
   // startSnapshotTask(), cleared in cleanup() so no timer leaks across restarts.
   private snapshotInterval: ReturnType<typeof setInterval> | null = null
+  private dirty = false
   private readonly EMPTY_GAME_TIMEOUT_MINUTES = 5
   // A host-less LOBBY (not-yet-started game) is reclaimed faster than an
   // in-progress game: nobody can rejoin a lobby whose manager vanished before
@@ -70,6 +71,7 @@ class Registry {
 
   addGame(game: Game): void {
     this.games.push(game)
+    this.dirty = true
     console.log(`Game ${game.gameId} added. Total games: ${this.games.length}`)
   }
 
@@ -119,6 +121,7 @@ class Registry {
   }
 
   markGameAsEmpty(game: Game): void {
+    this.dirty = true
     const alreadyEmpty = this.emptyGames.find(
       (g) => g.game.gameId === game.gameId,
     )
@@ -135,6 +138,7 @@ class Registry {
   }
 
   reactivateGame(gameId: string): void {
+    this.dirty = true
     const initialLength = this.emptyGames.length
     this.emptyGames = this.emptyGames.filter((g) => g.game.gameId !== gameId)
 
@@ -146,6 +150,7 @@ class Registry {
   }
 
   removeGame(gameId: string): boolean {
+    this.dirty = true
     const initialLength = this.games.length
     const target = this.games.find((g) => g.gameId === gameId)
     this.games = this.games.filter((g) => g.gameId !== gameId)
@@ -389,6 +394,9 @@ class Registry {
   // failure logs and continues — it must NEVER throw into the periodic task or
   // a signal handler.
   saveSnapshot(): void {
+    if (!this.dirty && this.games.length === 0) {
+      return
+    }
     try {
       // Skip trivially-empty games (no players AND not yet started): there is
       // nothing worth restoring and it keeps the file small. Anything with
@@ -414,6 +422,7 @@ class Registry {
 
       fs.writeFileSync(tmp, JSON.stringify(payload))
       fs.renameSync(tmp, file)
+      this.dirty = false
     } catch (error) {
       // Never propagate — a failed snapshot must not disrupt live gameplay.
       console.error("Failed to save registry snapshot:", error)

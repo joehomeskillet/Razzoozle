@@ -33,6 +33,12 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
+interface Chip {
+  text: string
+  originalIndex: number
+  id: string
+}
+
 interface Props {
   quizzId: string
   question: SoloQuestion
@@ -78,10 +84,24 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isSlider = question.type === "slider" && question.min != null && question.max != null
   const isMultiSelect = question.type === "multiple-select"
   const isTypeAnswer = question.type === "type-answer"
+const isSentenceBuilder = question.type === "sentence-builder" && question.shuffledChunks?.length
 
   const [sliderValue, setSliderValue] = useState(
     isSlider ? Math.round(((question.min ?? 0) + (question.max ?? 100)) / 2) : 0,
   )
+
+  // Sentence-builder: bank (shuffled chips) and placed (in tap order)
+  const [bankChips, setBankChips] = useState<Chip[]>(() => {
+    if (isSentenceBuilder && question.shuffledChunks) {
+      return question.shuffledChunks.map((text, idx) => ({
+        text,
+        originalIndex: idx,
+        id: `${idx}-${Math.random()}`,
+      }))
+    }
+    return []
+  })
+  const [placedChips, setPlacedChips] = useState<Chip[]>([])
 
   // Start countdown on mount
   useEffect(() => {
@@ -158,6 +178,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       void submitAnswer(quizzId, { answerIds: multiSelectedKeys })
     } else if (isTypeAnswer) {
       void submitAnswer(quizzId, { answerText: textAnswer.trim() || "" })
+    } else if (isSentenceBuilder) {
+      void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
     } else if (selectedKey !== null) {
       void submitAnswer(quizzId, { answerId: selectedKey })
     } else {
@@ -183,6 +205,34 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     )
     sfxPop()
     hapticTap()
+  }
+
+  const handleBankChipTap = (chip: Chip) => () => {
+    if (submitted) return
+    sfxPop()
+    hapticTap()
+    setBankChips((prev) => prev.filter((c) => c.id !== chip.id))
+    setPlacedChips((prev) => [...prev, chip])
+  }
+
+  const handlePlacedChipTap = (chipId: string) => () => {
+    if (submitted) return
+    sfxPop()
+    hapticTap()
+    const chip = placedChips.find((c) => c.id === chipId)
+    if (chip) {
+      setPlacedChips((prev) => prev.filter((c) => c.id !== chipId))
+      setBankChips((prev) => [...prev, chip])
+    }
+  }
+
+  const submitSentenceBuilder = () => {
+    if (submitted || placedChips.length === 0) return
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
   }
 
   const submitMultiSelect = () => {
@@ -363,6 +413,70 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
               className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
+            </button>
+          </div>
+        ) : isSentenceBuilder ? (
+          <div className="mx-auto mb-4 flex w-full max-w-3xl flex-col gap-4 px-4">
+            {/* Answer bar - where placed chips appear */}
+            <div className="rounded-[var(--radius-theme)] border-2 border-dashed border-[var(--border-hairline)] bg-[var(--surface)] p-4 min-h-24 flex flex-wrap items-center gap-2">
+              {placedChips.length === 0 ? (
+                <span className="text-center w-full text-[var(--answer-text)]/60">
+                  {t("game:sentenceBuilder.answerBar", { defaultValue: "Your answer" })}
+                </span>
+              ) : (
+                placedChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={handlePlacedChipTap(chip.id)}
+                    disabled={submitted}
+                    className={clsx(
+                      "inline-flex items-center px-3 py-2 rounded-[var(--radius-theme)] text-[var(--answer-text)] border border-[var(--border-hairline)] cursor-pointer hover:ring-2 hover:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed",
+                      ANSWERS_COLORS[chip.originalIndex % 4],
+                    )}
+                    aria-label={`Remove: ${chip.text}`}
+                  >
+                    {chip.text}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Word bank - shuffled chips */}
+            <div>
+              <p className="text-sm font-medium text-[var(--game-fg)] mb-2">
+                {t("game:sentenceBuilder.wordBank", { defaultValue: "Word bank" })}
+              </p>
+              <p className="text-xs text-[var(--game-fg)]/70 mb-3">
+                {t("game:sentenceBuilder.tapHint", { defaultValue: "Tap the words below to build your answer" })}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {bankChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={handleBankChipTap(chip)}
+                    disabled={submitted}
+                    className={clsx(
+                      "inline-flex items-center px-3 py-2 rounded-[var(--radius-theme)] text-[var(--answer-text)] border border-[var(--border-hairline)] cursor-pointer hover:ring-2 hover:ring-[var(--color-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity",
+                      ANSWERS_COLORS[chip.originalIndex % 4],
+                    )}
+                    aria-label={`Add: ${chip.text}`}
+                  >
+                    {chip.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="button"
+              onClick={submitSentenceBuilder}
+              disabled={submitted || placedChips.length !== (question.shuffledChunks?.length ?? 0)}
+              className="bg-[var(--color-accent)] text-[var(--accent-contrast-text)] rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            >
+              {t("game:sentenceBuilder.submit", { defaultValue: "Submit" })}
             </button>
           </div>
         ) : (

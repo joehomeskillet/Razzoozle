@@ -31,6 +31,7 @@ import type { Assignment } from "@razzoozle/common/validators/assignment"
 import { assignmentValidator } from "@razzoozle/common/validators/assignment"
 import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
 import { EVENTS } from "@razzoozle/common/constants"
+import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
 import manager from "@razzoozle/socket/services/manager"
 import {
@@ -402,10 +403,19 @@ const handleSoloGet = (res: ServerResponse, id: string | undefined, assignmentId
   try {
     assertSafeId(id ?? "")
     const quiz = getQuizzById(id!)
-    const questions = quiz.questions.map(
+    const questions = quiz.questions.map((question) => {
+      // Strip secrets: solutions, correct, acceptedAnswers, chunks
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ solutions: _s, correct: _c, acceptedAnswers: _a, ...rest }) => rest,
-    )
+      const { solutions: _s, correct: _c, acceptedAnswers: _a, chunks: _ch, ...rest } = question
+      // For sentence-builder, add shuffledChunks (a permutation of the correct chunks)
+      if (question.type === "sentence-builder" && question.chunks?.length) {
+        return {
+          ...rest,
+          shuffledChunks: shuffleChunksWithGuard(question.chunks),
+        }
+      }
+      return rest
+    })
     jsonOk(res, { subject: quiz.subject, questions })
   } catch (err) {
     jsonError(res, 404, err instanceof Error ? err.message : "Not found")

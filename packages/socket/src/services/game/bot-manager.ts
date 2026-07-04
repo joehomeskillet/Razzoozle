@@ -230,6 +230,24 @@ export class BotManager {
     return correct - min > max - correct ? min : max
   }
 
+  // sentence-builder: random permutation of question.chunks joined with space.
+  // Fisher-Yates shuffle; bots submit shuffled text (usually wrong, sometimes right).
+  private pickSentenceBuilder(question: Question): string {
+    const chunks = question.chunks ?? []
+    if (chunks.length === 0) {
+      return ""
+    }
+    // Fisher-Yates shuffle (simple 1-pass for bot variance).
+    const shuffled = [...chunks]
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const temp = shuffled[i]!
+      shuffled[i] = shuffled[j]!
+      shuffled[j] = temp
+    }
+    return shuffled.join(" ")
+  }
+
   // Synthetic socket stub: mirrors helpers.makeSocket exactly. selectAnswer only
   // reads handshake.auth.clientId, socket.id (routed to a no-op room for a bot),
   // socket.emit (LL ack, no-op) and socket.to(gameId).emit (normal-mode count,

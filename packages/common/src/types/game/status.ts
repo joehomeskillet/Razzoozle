@@ -144,6 +144,9 @@ interface ManagerExtraStatus {
     textResponses?: Record<string, number>
     acceptedAnswers?: string[]
     matchMode?: "exact" | "normalized" | "fuzzy"
+    // Sentence-builder result reveal (manager-only; same authored order as
+    // player SHOW_RESULT.correctChunks after answers are closed).
+    correctChunks?: string[]
     // Per-round recap awards (same as players see on SHOW_RESULT) so the
     // manager can display the round highlights during answer statistics.
     // OPTIONAL + additive.

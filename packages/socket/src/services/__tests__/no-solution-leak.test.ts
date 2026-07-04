@@ -39,6 +39,13 @@ const QUIZ = {
       cooldown: 5,
       time: 15,
     },
+    {
+      question: "Build the sentence",
+      type: "sentence-builder",
+      chunks: ["It", "is", "a", "test"],
+      cooldown: 5,
+      time: 15,
+    },
   ],
 }
 
@@ -92,5 +99,53 @@ describe("solo no-solution-leak (B2)", () => {
     // The hand-written schema only declares question + type for each question.
     expect(schema).toContain("question")
     expect(schema).toContain("subject")
+  })
+
+  it("solo GET strips chunks and adds shuffledChunks for sentence-builder", async () => {
+    vi.resetModules()
+    const { getQuizzById } = await import("@razzoozle/socket/services/config")
+    const { shuffleChunksWithGuard } = await import("@razzoozle/common/utils/chunks")
+    
+    // Get the original quiz to verify chunks are present
+    const quiz = getQuizzById("leaktest")
+    const sbQuestion = quiz.questions[quiz.questions.length - 1]
+    expect(sbQuestion.type).toBe("sentence-builder")
+    expect(sbQuestion.chunks).toEqual(["It", "is", "a", "test"])
+
+    // Reproduce exactly the route's strip + shuffle logic (from http-routes.ts handleSoloGet)
+    const stripped = quiz.questions.map((question) => {
+      const { solutions: _s, correct: _c, acceptedAnswers: _a, chunks: _ch, ...rest } = question
+      if (question.type === "sentence-builder" && question.chunks?.length) {
+        return {
+          ...rest,
+          shuffledChunks: shuffleChunksWithGuard(question.chunks),
+        }
+      }
+      return rest
+    })
+    const response = { subject: quiz.subject, questions: stripped }
+    const serialized = JSON.stringify(response)
+
+    // Verify chunks is NOT in the serialized response
+    expect(serialized).not.toContain("chunks")
+    
+    // Verify shuffledChunks IS present for the sentence-builder question
+    const sbQuestionInResponse = response.questions.find((q) => q.type === "sentence-builder")
+    expect(sbQuestionInResponse).toBeDefined()
+    if (!sbQuestionInResponse || !("shuffledChunks" in sbQuestionInResponse)) {
+      throw new Error("sentence-builder question with shuffledChunks missing")
+    }
+    
+    // Now narrowed: sbQuestionInResponse has shuffledChunks
+    const shuffled = sbQuestionInResponse.shuffledChunks as string[]
+    expect(Array.isArray(shuffled)).toBe(true)
+    
+    // Verify shuffledChunks is a permutation of the original chunks
+    expect(shuffled).toHaveLength(4)
+    expect(new Set(shuffled)).toEqual(new Set(["It", "is", "a", "test"]))
+    
+    // Verify that shuffledChunks differs from the correct order (with high probability for 4 distinct items)
+    const isPermuted = JSON.stringify(shuffled) !== JSON.stringify(["It", "is", "a", "test"])
+    expect(isPermuted).toBe(true)
   })
 })

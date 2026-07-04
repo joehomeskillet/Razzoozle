@@ -84,6 +84,7 @@ describe("joinUrl", () => {
 
   it("invalid overrides are rejected -> fall back to ORIGIN", () => {
     for (const bad of [
+      // eslint-disable-next-line no-script-url -- asserts the sanitizer rejects it
       "javascript:alert(1)",
       "ftp://x.example",
       "not a url",

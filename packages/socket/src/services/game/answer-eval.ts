@@ -12,6 +12,7 @@ import { SLIDER_TOLERANCE_FRACTION } from "@razzoozle/common/constants"
 import type { Question } from "@razzoozle/common/types/game"
 import {
   matchAnswer,
+  normalizeText,
 } from "@razzoozle/socket/services/game/text-match"
 
 export interface EvalInput {
@@ -32,6 +33,7 @@ export interface EvalResult {
  * - `slider`: correct within tolerance; `base` = accuracy (0..1).
  * - `multiple-select`: exact set-match of `answerIds` vs `solutions`.
  * - `type-answer`: text match per `matchMode`; base = 1 or 0.
+ * - `sentence-builder`: normalized text match against chunks.join(" "); base = 1 or 0.
  * - `poll`: always base 0 (no correct answer concept).
  */
 export function evaluateAnswer(
@@ -85,6 +87,18 @@ export function evaluateAnswer(
 
     const selectedSet = new Set(answerIds)
     const correct = solutions.every((s) => selectedSet.has(s))
+
+    return { correct, base: correct ? 1 : 0 }
+  }
+
+  // Sentence-builder: normalized text match against correct chunks in order.
+  if (question.type === "sentence-builder" && question.chunks?.length) {
+    if (!answerText) {
+      return { correct: false, base: 0 }
+    }
+
+    const correctSentence = question.chunks.join(" ")
+    const correct = normalizeText(answerText) === normalizeText(correctSentence)
 
     return { correct, base: correct ? 1 : 0 }
   }

@@ -47,6 +47,7 @@ import {
   matchAnswer,
   normalizeText,
 } from "@razzoozle/socket/services/game/text-match"
+import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
@@ -152,6 +153,9 @@ export class RoundManager {
   // is enabled. Computed once when the question opens and reused for reconnects.
   // Undefined when not randomizing or for slider/type-answer questions.
   private currentDisplayOrder: number[] | undefined = undefined
+  // Stored shuffle for sentence-builder chunks (reused for reconnects / re-joins).
+  // Computed with shuffleChunksWithGuard (never identity). Undefined for other types.
+  private currentShuffledChunks: string[] | undefined = undefined
   private paused = false
   private pauseState: { status: Status; data: StatusDataMap[Status] } | null =
     null
@@ -649,6 +653,7 @@ export class RoundManager {
     )
     this.answerReceivedAt.clear()
     this.currentDisplayOrder = undefined
+    this.currentShuffledChunks = undefined
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
@@ -742,6 +747,12 @@ export class RoundManager {
       this.currentDisplayOrder = undefined
     }
 
+    if (question.type === "sentence-builder" && question.chunks) {
+      this.currentShuffledChunks = shuffleChunksWithGuard(question.chunks)
+    } else {
+      this.currentShuffledChunks = undefined
+    }
+
     const imageMedia =
       question.media?.type === MEDIA_TYPES.IMAGE ? question.media : undefined
 
@@ -820,6 +831,9 @@ export class RoundManager {
           }
         : { answers: question.answers }),
       ...llAnchors,
+      ...(question.type === "sentence-builder"
+        ? { shuffledChunks: this.currentShuffledChunks }
+        : {}),
       // Display-only attribution; same value carried through both phases. NO
       // solutions/correct field is ever broadcast to clients (anti-cheat).
       submittedBy: question.submittedBy,
@@ -1133,7 +1147,7 @@ export class RoundManager {
     // other types. Keyed by the SAME normalization used for scoring so case/accent
     // variants collapse into one bar.
     const textResponses =
-      question.type === "type-answer"
+      question.type === "type-answer" || question.type === "sentence-builder"
         ? this.playersAnswers.reduce(
             (acc: Record<string, number>, { answerText }) => {
               const key = normalizeText(answerText ?? "")
@@ -1171,6 +1185,14 @@ export class RoundManager {
           question.matchMode ?? "normalized",
         )
 
+        return { correct, base: correct ? 1 : 0 }
+      }
+
+      if (question.type === "sentence-builder") {
+        if (!answerText || !question.chunks?.length) {
+          return { correct: false, base: 0 }
+        }
+        const correct = normalizeText(answerText) === normalizeText(question.chunks.join(" "))
         return { correct, base: correct ? 1 : 0 }
       }
 
@@ -1767,6 +1789,9 @@ export class RoundManager {
         // place" label in a solo (single-player) game (W1-D FIX 2).
         playerCount: cleanedSorted.length,
         ...(correctAnswer !== undefined ? { correctAnswer } : {}),
+        ...(question.type === "sentence-builder" && question.chunks
+          ? { correctChunks: question.chunks }
+          : {}),
         ...(unlocked ? { achievements: unlocked } : {}),
         ...(bonusPoints > 0 ? { bonusPoints } : {}),
         ...(roundRecap.length > 0 ? { roundRecap } : {}),
@@ -1813,6 +1838,8 @@ export class RoundManager {
         question.type === "type-answer" ? question.acceptedAnswers : undefined,
       matchMode:
         question.type === "type-answer" ? question.matchMode : undefined,
+      correctChunks:
+        question.type === "sentence-builder" ? question.chunks : undefined,
       // Per-round recap awards — same highlights the phone shows on SHOW_RESULT
       // — so the presenter/projector displays them at result-reveal time too.
       // Read from the local `roundRecap` const (computed above); safe to read
@@ -1919,7 +1946,7 @@ export class RoundManager {
     //     otherwise score as a (failing) answer; reject it so it can't occupy
     //     the player's one slot or pollute the histogram).
     const isMultiSelect = question.type === "multiple-select"
-    const isTextAnswer = question.type === "type-answer"
+    const isTextAnswer = question.type === "type-answer" || question.type === "sentence-builder"
     const trimmedText = answerText?.trim() ?? ""
 
     if (isMultiSelect && !Array.isArray(answerId)) {

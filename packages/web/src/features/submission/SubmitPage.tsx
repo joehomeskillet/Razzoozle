@@ -14,6 +14,7 @@ import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/compone
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
+import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import {
@@ -57,6 +58,9 @@ const ANSWER_ERROR_MESSAGES = new Set([
   "errors:quizz.solutionsMin2",
   "errors:quizz.answerEmpty",
   "errors:quizz.acceptedAnswersMin",
+  "errors:quizz.tooFewChunks",
+  "errors:quizz.chunkEmpty",
+  "errors:quizz.chunkTooLong",
 ])
 
 const resolveInvalidTarget = (
@@ -68,12 +72,13 @@ const resolveInvalidTarget = (
   }
 
   // path[0] === "question": answer-shape paths ("answers"/"acceptedAnswers"/
-  // "solutions") AND the message-keyed superRefine answer errors → answers
+  // "solutions"/"chunks") AND the message-keyed superRefine answer errors → answers
   // section. Everything else (question text, slider refine issues) → question.
   if (
     path[1] === "answers" ||
     path[1] === "acceptedAnswers" ||
     path[1] === "solutions" ||
+    path[1] === "chunks" ||
     ANSWER_ERROR_MESSAGES.has(message)
   ) {
     return "answers"
@@ -150,6 +155,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
 
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
+  const isSentenceBuilder = currentQuestion.type === "sentence-builder"
 
   useEvent(EVENTS.MANAGER.SUBMIT_SUCCESS, () => {
     setAwaiting(false)
@@ -362,7 +368,7 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
               </div>
             </RevealSection>
 
-            {!isSlider && !isTypeAnswer && (
+            {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
               <RevealSection
                 id={ANSWERS_SECTION_ID}
                 index={2}
@@ -381,6 +387,16 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
                 label={t("submit:form.section.answers")}
               >
                 <QuestionEditorAcceptedAnswers />
+              </RevealSection>
+            )}
+
+            {isSentenceBuilder && (
+              <RevealSection
+                id={ANSWERS_SECTION_ID}
+                index={2}
+                label={t("submit:form.section.answers")}
+              >
+                <QuestionEditorSentence />
               </RevealSection>
             )}
           </div>

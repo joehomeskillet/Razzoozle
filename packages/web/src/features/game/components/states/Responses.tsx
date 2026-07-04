@@ -34,10 +34,12 @@ const Responses = ({
     textResponses,
     acceptedAnswers,
     matchMode,
+    correctChunks,
   },
 }: Props) => {
   const isSlider = type === "slider"
   const isTypeAnswer = type === "type-answer"
+  const isSentenceBuilder = type === "sentence-builder"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -88,19 +90,21 @@ const Responses = ({
           <Markdown>{question}</Markdown>
         </h2>
 
-        {isTypeAnswer ? (
+        {isTypeAnswer || isSentenceBuilder ? (
           <div className="mx-auto w-full max-w-4xl px-4">
             {/* Accepted answers legend */}
-            <div className="mb-4 flex flex-wrap gap-2">
-              {(acceptedAnswers ?? []).map((a) => (
-                <span
-                  key={a}
-                  className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-800"
-                >
-                  {a}
-                </span>
-              ))}
-            </div>
+            {isTypeAnswer && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {(acceptedAnswers ?? []).map((a) => (
+                  <span
+                    key={a}
+                    className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-800"
+                  >
+                    {a}
+                  </span>
+                ))}
+              </div>
+            )}
             {/* Submitted text answers, ranked by frequency */}
             <motion.div
               className="flex flex-col gap-2"
@@ -138,6 +142,22 @@ const Responses = ({
                   )
                 })}
             </motion.div>
+            {isSentenceBuilder && correctChunks && (
+              <motion.div
+                className="mt-6 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]"
+                variants={reveal.item()}
+                transition={reveal.spring}
+              >
+                <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+                  {t("game:sentenceBuilder.correctSentence", {
+                    defaultValue: "Correct answer",
+                  })}
+                </p>
+                <p className="text-lg font-bold text-[color:var(--game-fg)]">
+                  {correctChunks.join(" ")}
+                </p>
+              </motion.div>
+            )}
           </div>
         ) : isSlider ? (
           <motion.div
@@ -214,7 +234,7 @@ const Responses = ({
         )}
       </div>
 
-      {!isSlider && !isTypeAnswer && (
+      {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
         <div>
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (

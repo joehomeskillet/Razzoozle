@@ -3,6 +3,7 @@ import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-edi
 import clsx from "clsx"
 import {
   BarChart3,
+  Blocks,
   CircleDot,
   Keyboard,
   ListChecks,
@@ -53,6 +54,12 @@ const TYPES: Array<{
     labelKey: "quizz:type.typeAnswer",
     descKey: "quizz:type.typeAnswerDesc",
     icon: Keyboard,
+  },
+  {
+    key: "sentence-builder",
+    labelKey: "quizz:type.sentenceBuilder",
+    descKey: "quizz:type.sentenceBuilderDesc",
+    icon: Blocks,
   },
 ]
 
@@ -131,6 +138,16 @@ const QuestionEditorType = () => {
         solutions: undefined,
         acceptedAnswers: currentQuestion.acceptedAnswers ?? [],
         matchMode: currentQuestion.matchMode ?? "normalized",
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "sentence-builder") {
+      updateQuestion(currentIndex, {
+        type: "sentence-builder",
+        chunks: ["", ""],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
         ...SLIDER_CLEAR,
       })
     } else {
@@ -222,9 +239,19 @@ const QuestionEditorType = () => {
                       : "text-gray-400",
                   )}
                 />
-                {t(tp.labelKey)}
+                {t(tp.labelKey, {
+                  defaultValue:
+                    tp.key === "sentence-builder" ? "Sentence builder" : undefined,
+                })}
               </span>
-              <span className="text-xs text-gray-500">{t(tp.descKey)}</span>
+              <span className="text-xs text-gray-500">
+                {t(tp.descKey, {
+                  defaultValue:
+                    tp.key === "sentence-builder"
+                      ? "Players rebuild a sentence from shuffled word chips"
+                      : undefined,
+                })}
+              </span>
             </button>
           )
         })}

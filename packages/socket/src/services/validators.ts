@@ -17,7 +17,7 @@ import { z } from "zod"
 export const selectedAnswerValidator = z.object({
   answerKey: z.number().int("errors:game.invalidAnswer"),
   answerKeys: z.array(z.number().int()).min(1).max(4).optional(),
-  answerText: z.string().max(200).optional(),
+  answerText: z.string().max(400).optional(),
   clientMessageId: z.string().optional(),
 })
 

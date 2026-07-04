@@ -32,6 +32,13 @@ const QUIZ = {
       cooldown: 5,
       time: 15,
     },
+    {
+      question: "Build the sentence",
+      type: "sentence-builder",
+      chunks: ["It", "is", "a big ball", "of gas."],
+      cooldown: 5,
+      time: 15,
+    },
   ],
 }
 
@@ -155,5 +162,44 @@ describe("solo HTTP endpoints (real port)", () => {
     expect(body.leaderboard[0]!.score).toBeGreaterThanOrEqual(
       body.leaderboard[1]!.score,
     )
+  })
+
+  it("check-answer: sentence-builder correct joined order → correct:true + points", async () => {
+    vi.resetModules()
+    ;({ server, base } = await startServer())
+    const res = await post(base, "/api/quizz/solotest/check-answer", {
+      questionIndex: 1,
+      answerText: "It is a big ball of gas.",
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { correct: boolean; points: number }
+    expect(body.correct).toBe(true)
+    expect(body.points).toBe(1000)
+  })
+
+  it("check-answer: sentence-builder wrong order → correct:false", async () => {
+    vi.resetModules()
+    ;({ server, base } = await startServer())
+    const res = await post(base, "/api/quizz/solotest/check-answer", {
+      questionIndex: 1,
+      answerText: "is It gas of ball a big.",
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { correct: boolean; points: number }
+    expect(body.correct).toBe(false)
+    expect(body.points).toBe(0)
+  })
+
+  it("check-answer: sentence-builder case/punctuation-insensitive match", async () => {
+    vi.resetModules()
+    ;({ server, base } = await startServer())
+    const res = await post(base, "/api/quizz/solotest/check-answer", {
+      questionIndex: 1,
+      answerText: "it is a big ball of gas.",
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { correct: boolean; points: number }
+    expect(body.correct).toBe(true)
+    expect(body.points).toBe(1000)
   })
 })

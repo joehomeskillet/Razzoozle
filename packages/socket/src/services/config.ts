@@ -87,6 +87,13 @@ import JSZip from "jszip"
 
 export type { GameConfig } from "@razzoozle/common/validators/game-config"
 
+// In-module cache for quizz files with mtime validation
+interface QuizzCache {
+  data: QuizzWithId
+  mtime: number
+}
+const quizzCache = new Map<string, QuizzCache>()
+
 const inContainerPath = process.env.CONFIG_PATH
 
 const getPath = (path = "") =>
@@ -760,6 +767,13 @@ export const getQuizzById = (id: string) => {
     throw new Error(`Quizz "${id}" not found`)
   }
 
+  const stat = fs.statSync(filePath)
+  const cached = quizzCache.get(filePath)
+  
+  if (cached && cached.mtime === stat.mtimeMs) {
+    return cached.data
+  }
+
   const data = fs.readFileSync(filePath, "utf-8")
   const result = quizzValidator.safeParse(JSON.parse(data))
 
@@ -767,7 +781,9 @@ export const getQuizzById = (id: string) => {
     throw new Error(`Invalid quizz "${id}"`)
   }
 
-  return { id, ...result.data }
+  const parsed = { id, ...result.data }
+  quizzCache.set(filePath, { data: parsed, mtime: stat.mtimeMs })
+  return parsed
 }
 
 export const getQuizz = () => {
@@ -819,6 +835,7 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
     throw new Error(`Quizz "${id}" not found`)
   }
 
+  quizzCache.delete(oldPath)
   fs.writeFileSync(oldPath, JSON.stringify(result.data, null, 2))
 
   return { id }
@@ -859,6 +876,7 @@ export const deleteQuizz = (id: string): void => {
     throw new Error(`Quizz "${id}" not found`)
   }
 
+  quizzCache.delete(filePath)
   fs.unlinkSync(filePath)
 }
 

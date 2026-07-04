@@ -13,17 +13,24 @@ interface AnswerState {
   gameId: string | null
   // True if the server told us this player already answered the live question.
   alreadyAnswered: boolean
+  // Sentence-builder: player's submitted chip order, revealed on SHOW_RESULT.
+  submittedChunks?: string[]
 
   setAlreadyAnswered: (_gameId: string | null, _value: boolean) => void
+  setSubmittedChunks: (_chunks: string[] | undefined) => void
   reset: () => void
 }
 
 export const useAnswerStore = create<AnswerState>((set) => ({
   gameId: null,
   alreadyAnswered: false,
+  submittedChunks: undefined,
 
   setAlreadyAnswered: (gameId, value) =>
     set({ gameId: gameId ?? null, alreadyAnswered: Boolean(value) }),
 
-  reset: () => set({ gameId: null, alreadyAnswered: false }),
+  setSubmittedChunks: (chunks) => set({ submittedChunks: chunks }),
+
+  reset: () =>
+    set({ gameId: null, alreadyAnswered: false, submittedChunks: undefined }),
 }))

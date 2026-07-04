@@ -4,6 +4,7 @@ import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleChe
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
+import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
@@ -26,6 +27,7 @@ import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 import { motion } from "motion/react"
+import clsx from "clsx"
 
 interface Props {
   data: CommonStatusDataMap["SHOW_RESULT"]
@@ -47,11 +49,13 @@ const Result = ({
     achievements,
     bonusPoints,
     correctAnswer,
+    correctChunks,
     playerCount,
     roundRecap,
   },
 }: Props) => {
   const player = usePlayerStore()
+  const submittedChunks = useAnswerStore((s) => s.submittedChunks ?? [])
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
@@ -171,6 +175,48 @@ const Result = ({
           ) : (
             <CricleXmark className="aspect-square max-h-60 w-full" />
           )}
+        </motion.div>
+      )}
+      {!poll && correctChunks && (
+        <motion.div
+          className="w-full"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          {submittedChunks.length > 0 ? (
+            <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
+              {submittedChunks.map((chunk, idx) => {
+                const isCorrect = chunk === correctChunks[idx]
+
+                return (
+                  <span
+                    key={`${chunk}-${idx}`}
+                    className={clsx(
+                      "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
+                      isCorrect
+                        ? "bg-[var(--state-correct)]"
+                        : "bg-[var(--state-wrong)]",
+                    )}
+                  >
+                    {chunk}
+                  </span>
+                )
+              })}
+            </div>
+          ) : null}
+
+          <div className="mx-auto mb-4 max-w-3xl rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]">
+            <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+              {t("game:sentenceBuilder.correctSentence", {
+                defaultValue: "Correct answer",
+              })}
+            </p>
+            <p className="text-lg font-bold text-[color:var(--game-fg)]">
+              {correctChunks.join(" ")}
+            </p>
+          </div>
         </motion.div>
       )}
       <h2 className="mt-1 text-4xl font-bold text-[color:var(--game-fg)]">
