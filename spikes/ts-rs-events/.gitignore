@@ -1,0 +1,15 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+*.rlib
+
+# Generated TypeScript files
+generated_types.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
