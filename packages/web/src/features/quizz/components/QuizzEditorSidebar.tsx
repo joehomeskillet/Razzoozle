@@ -6,12 +6,14 @@ import {
 } from "@hello-pangea/dnd"
 import { EVENTS } from "@razzoozle/common/constants"
 import type { Question } from "@razzoozle/common/types/game"
+import type { ThemeTemplate } from "@razzoozle/common/types/theme"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
-import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import CatalogPickerModal from "@razzoozle/web/features/quizz/components/CatalogPickerModal"
 import QuizzEditorCard from "@razzoozle/web/features/quizz/components/QuizzEditorCard"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import {
@@ -22,7 +24,7 @@ import {
   Trash2,
   X,
 } from "lucide-react"
-import { type MouseEvent, useRef, useState } from "react"
+import { type MouseEvent, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -40,12 +42,15 @@ const QuizzEditorSidebar = () => {
     removeQuestions,
     reorderQuestions,
     updateQuestion,
+    themeId,
   } = useQuizzEditor()
   const { socket } = useSocket()
   const { t } = useTranslation()
   const { width } = useScreenSize()
+  const globalTheme = useThemeStore((s) => s.theme)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [templates, setTemplates] = useState<ThemeTemplate[]>([])
 
   // Multi-select state. `selected` is the working set; `anchor` is the pivot for
   // Shift+click range selection (set on the last plain/ctrl click).
@@ -58,6 +63,23 @@ const QuizzEditorSidebar = () => {
   const isHorizontal = width < 768
 
   const isDragging = useRef(false)
+
+  // Request the saved templates once on mount.
+  useEffect(() => {
+    socket.emit(EVENTS.THEME_TEMPLATE.LIST)
+  }, [socket])
+
+  // Listen for template data from the server.
+  useEvent(EVENTS.THEME_TEMPLATE.DATA, setTemplates)
+
+  // Resolve the effective theme: if themeId is set and a matching template exists,
+  // use its theme; otherwise fall back to the global theme.
+  const effectiveTheme =
+    (themeId && templates.find((tpl) => tpl.id === themeId)?.theme) || globalTheme
+
+  // Derive background assets: image for the card and a gradient for color-only themes.
+  const bgImage = effectiveTheme.backgrounds.managerGame
+  const bgGradient = `linear-gradient(90deg, ${effectiveTheme.colorPrimary}, ${effectiveTheme.colorSecondary})`
 
   const clearSelection = () => {
     setSelected(new Set())
@@ -288,6 +310,8 @@ const QuizzEditorSidebar = () => {
                           onClick={handleSlideClick(index)}
                           onToggleSelect={() => toggleSelect(index)}
                           onDelete={handleDelete(index)}
+                          backgroundImage={bgImage}
+                          backgroundGradient={bgGradient}
                         />
                       </div>
                     )}

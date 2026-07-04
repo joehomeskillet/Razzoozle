@@ -43,6 +43,10 @@ interface Props {
   /** Toggle this card in/out of the selection (checkbox affordance). */
   onToggleSelect?: () => void
   onDelete: () => void
+  /** Background image asset ref (from the quiz's theme). */
+  backgroundImage?: string | null
+  /** Background gradient for color-only themes. */
+  backgroundGradient?: string
 }
 
 const QuizzEditorCard = ({
@@ -55,6 +59,8 @@ const QuizzEditorCard = ({
   onClick,
   onToggleSelect,
   onDelete,
+  backgroundImage,
+  backgroundGradient,
 }: Props) => {
   const { t } = useTranslation()
 
@@ -79,7 +85,7 @@ const QuizzEditorCard = ({
       onKeyDown={handleKeyDown}
       className={twMerge(
         clsx(
-          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 overflow-hidden rounded-xl border-2 border-gray-200 bg-white px-6 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           {
             "border-primary": isActive,
             "border-primary ring-primary ring-2 ring-offset-1": selected,
@@ -87,7 +93,22 @@ const QuizzEditorCard = ({
         ),
       )}
     >
-      <span className="absolute top-2 left-2 text-xs font-semibold text-gray-500">
+      {backgroundImage ? (
+        <img
+          src={backgroundImage}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute inset-0 size-full object-cover opacity-20 select-none"
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5"
+          style={{ background: backgroundGradient }}
+        />
+      )}
+
+      <span className="absolute top-2 left-2 z-10 text-xs font-semibold text-gray-500">
         {index + 1}
       </span>
 
@@ -103,7 +124,7 @@ const QuizzEditorCard = ({
           }}
           onKeyDown={(e) => e.stopPropagation()}
           className={clsx(
-            "absolute bottom-1.5 left-1.5 flex size-5 items-center justify-center rounded-md border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+            "absolute bottom-1.5 left-1.5 flex size-5 items-center justify-center rounded-md border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] z-20",
             selected
               ? "border-primary bg-[var(--accent-contrast)] text-white"
               : "border-gray-300 bg-white text-transparent hover:border-gray-400",
@@ -113,23 +134,25 @@ const QuizzEditorCard = ({
         </button>
       )}
 
-      <p className="truncate text-center text-xs font-semibold text-gray-700">
+      <p className="relative z-10 truncate text-center text-xs font-semibold text-gray-700">
         {question.question || t("quizz:noQuestionYet")}
       </p>
 
-      <SlideMedia media={question.media} />
+      <div className="relative z-10">
+        <SlideMedia media={question.media} />
+      </div>
 
       {question.type === "slider" ? (
-        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
+        <div className="relative z-10 flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
           {question.min}–{question.max}
           {question.unit ? ` ${question.unit}` : ""}
         </div>
       ) : question.type === "type-answer" ? (
-        <div className="flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
+        <div className="relative z-10 flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
           Aa
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-1">
+        <div className="relative z-10 grid grid-cols-2 gap-1">
           {(question.answers ?? []).map((_, i) => (
             <div
               key={i}
@@ -151,7 +174,7 @@ const QuizzEditorCard = ({
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
               aria-label={t("quizz:question.deleteQuestion")}
-              className="focus-visible:outline-primary absolute top-1.5 right-1.5 rounded-md bg-white p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="focus-visible:outline-primary absolute top-1.5 right-1.5 z-20 rounded-md bg-white p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Trash2 className="size-3.5" />
             </button>
