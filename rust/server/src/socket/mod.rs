@@ -14,6 +14,7 @@ pub struct HandlerCtx {
     pub registry: Arc<RwLock<GameRegistry>>,
     pub io: SocketIo,
     pub client_id: String,
+    pub db_pool: Option<sqlx::PgPool>,
 }
 
 pub mod clock_ping;

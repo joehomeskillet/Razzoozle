@@ -2,6 +2,7 @@ mod socket;
 mod state;
 mod media_ai;
 mod http;
+mod db;
 
 
 use razzoozle_protocol::quizz::QuestionType;
@@ -105,6 +106,8 @@ async fn main() {
 
     let registry = Arc::new(RwLock::new(GameRegistry::new(quiz_fixture)));
 
+    let db_pool = crate::db::create_pool().await;
+
     // Create Socket.IO instance
     let (layer, io) = SocketIo::builder().build_layer();
 
@@ -131,6 +134,7 @@ async fn main() {
                 registry: Arc::clone(&registry),
                 io: io_handle.clone(),
                 client_id: client_id.clone(),
+                db_pool: db_pool.clone(),
             };
             socket::register_all(&socket, &ctx);
 

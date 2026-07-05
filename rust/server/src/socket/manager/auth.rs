@@ -1,6 +1,7 @@
 //! MANAGER.AUTH, LOGOUT, RECONNECT — manager session handlers
 
 use super::super::HandlerCtx;
+use crate::db;
 use crate::http::RATE_LIMITER;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
@@ -30,8 +31,11 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                let expected_password = std::env::var("MANAGER_PASSWORD")
-                    .unwrap_or_else(|_| DEFAULT_MANAGER_PASSWORD.to_string());
+                let expected_password = match db::get_manager_password(&ctx.db_pool).await {
+                    Some(pw) => pw,
+                    None => std::env::var("MANAGER_PASSWORD")
+                        .unwrap_or_else(|_| DEFAULT_MANAGER_PASSWORD.to_string()),
+                };
 
                 if password == expected_password {
                     {
