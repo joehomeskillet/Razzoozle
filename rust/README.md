@@ -30,7 +30,8 @@ the hosted and desktop cases cheaper (RAM, cold start).
 | **2·Batch 2** | All 7 question types: choice, multiple-select, boolean, slider, poll, type-answer (fuzzy), sentence-builder | ✅ **37 engine tests + live** |
 | **2·Batch 3** | Player lifecycle: `totalPlayers` / `newPlayer` / `removePlayer`, disconnect handling, `SHOW_RESPONSES` (answer distribution) | ✅ **full game + player-leave verified live** |
 | **2·Batch 4** | Quiz loading from disk (`config/quizz/*.json`, 469 loaded) + axum HTTP routes: `GET /api/quizzes`, `GET /api/quizz/:id/solo` (solutions stripped), `POST /api/quizz/:id/check-answer` | ✅ **live-verified, no solutions leaked** |
-| 2·Batch 4b+ | solo-score recompute+persist, type-answer check-answer, auth, peripherals | 🚧 in progress |
+| **2·Batch 4b** | Unified check-answer eval (all types, points/accuracy/achievements) + `POST /solo-score` server-side recompute+cap (rejects inflated client scores) + persist to `config/solo-results/` | ✅ **inflated 999999→1000 rejected, live** |
+| 2·Batch 5+ | manager auth (password + `loggedClients`), `manager:config`, peripherals | 🚧 in progress |
 | 3/4 — Peripherals & cutover | themes, AI/media, plugins (Node sidecar), low-latency, display, shadow cutover | ⏳ later |
 
 **It plays a real, scored, multi-question game — deployed.** The Rust server runs
