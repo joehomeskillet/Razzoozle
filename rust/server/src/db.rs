@@ -127,3 +127,218 @@ pub async fn get_media_list(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
     result
 }
+
+/// Load game results metadata from the database.
+/// Returns a vector of serde_json objects with GameResultMeta shape.
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, String, chrono::DateTime<chrono::Utc>, i32)> =
+        match sqlx::query_as(
+            "SELECT id, subject, created_at, player_count FROM game_results ORDER BY created_at DESC"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch game_results from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let mut result = Vec::new();
+    for (id, subject, created_at, player_count) in rows {
+        let result_obj = serde_json::json!({
+            "id": id,
+            "subject": subject,
+            "date": created_at.to_rfc3339(),
+            "playerCount": player_count,
+        });
+        result.push(result_obj);
+    }
+
+    result
+}
+
+/// Load submissions from the database.
+/// Returns a vector of serde_json objects with SubmissionMeta shape (or array of submission objects).
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, String, String, String, String, chrono::DateTime<chrono::Utc>)> =
+        match sqlx::query_as(
+            "SELECT id, submitted_by, status, question_text, submitted_by, submitted_at \
+             FROM submissions ORDER BY submitted_at DESC"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch submissions from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let mut result = Vec::new();
+    for (id, submitted_by, status, question_text, _, submitted_at) in rows {
+        let submission_obj = serde_json::json!({
+            "id": id,
+            "submittedBy": submitted_by,
+            "submittedAt": submitted_at.to_rfc3339(),
+            "status": status,
+            "question": question_text,
+        });
+        result.push(submission_obj);
+    }
+
+    result
+}
+
+/// Load theme templates from the database.
+/// Returns a vector of serde_json objects with ThemeTemplateMeta shape (id, name).
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, String)> =
+        match sqlx::query_as(
+            "SELECT id, name FROM theme_templates ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch theme_templates from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let result = rows.into_iter()
+        .map(|(id, name)| serde_json::json!({"id": id, "name": name}))
+        .collect();
+
+    result
+}
+
+/// Load achievements configuration from the database.
+/// Returns a vector of serde_json objects with achievement config shape.
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, Option<bool>, Option<String>, Option<String>, Option<i32>)> =
+        match sqlx::query_as(
+            "SELECT id, enabled, name, description, threshold FROM achievements_config ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch achievements_config from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let result = rows.into_iter()
+        .map(|(id, enabled, name, description, threshold)| {
+            let mut obj = serde_json::json!({"id": id});
+            if let Some(e) = enabled {
+                obj["enabled"] = serde_json::json!(e);
+            }
+            if let Some(n) = name {
+                obj["name"] = serde_json::json!(n);
+            }
+            if let Some(d) = description {
+                obj["description"] = serde_json::json!(d);
+            }
+            if let Some(t) = threshold {
+                obj["threshold"] = serde_json::json!(t);
+            }
+            obj
+        })
+        .collect();
+
+    result
+}
+
+/// Load installed plugins from the database.
+/// Returns a vector of serde_json objects with InstalledPlugin shape.
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, String, String, bool, serde_json::Value, Option<serde_json::Value>)> =
+        match sqlx::query_as(
+            "SELECT id, name, version, enabled, capabilities, config FROM installed_plugins ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch installed_plugins from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let result = rows.into_iter()
+        .map(|(id, name, version, enabled, capabilities, config)| {
+            let mut obj = serde_json::json!({
+                "id": id,
+                "name": name,
+                "version": version,
+                "enabled": enabled,
+                "capabilities": capabilities,
+            });
+            if let Some(cfg) = config {
+                obj["config"] = cfg;
+            }
+            obj
+        })
+        .collect();
+
+    result
+}
+
+/// Load game configuration from the database.
+/// Returns team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode.
+/// Returns None for all fields if pool is None or DB query fails.
+pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>) {
+    let pool = match pool {
+        Some(p) => p,
+        None => return (None, None, None, None, None),
+    };
+
+    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>)> =
+        sqlx::query_as(
+            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode \
+             FROM games_config WHERE id = 1"
+        )
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten();
+
+    row.unwrap_or((None, None, None, None, None))
+}
