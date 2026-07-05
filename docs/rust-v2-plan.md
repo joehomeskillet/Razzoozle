@@ -152,3 +152,28 @@ This plan is reviewed by **LLM council** (paid multi-model peer panel) + **fusio
 Their feedback is folded in below before the fleet is dispatched.
 
 > Council/fusion findings: _(appended after review)_
+
+---
+
+## Review verdict — ADOPTED (supersedes anything above where they conflict)
+
+Vetted by frontier fusion (agy + codex, judge-synthesized, grounded in the repo) + arch (Gemini-3-Pro) + grok. User directive: **"nach empfehlungen vorgehen."** Adopted corrections:
+
+### Auth (merges findings C1-IDOR + H-clientId-spoof + the reconnect bug into ONE correct fix)
+- **Server-minted host token.** On `GAME.CREATE` (after password auth) the server mints a CSPRNG token, stores it in the game, returns it to the creating socket. **Every manager mutation** (START/REVEAL/SHOW_LEADERBOARD/NEXT/SKIP/ABORT/KICK/ADJUST_TIMER/…) requires that token, matched to the target game. Global `is_logged` stays only as the "may create games" gate. `is_game_manager(clientId, gameId)` is REJECTED — clientId is client-asserted (`main.rs:363`, Node `manager.ts:18`), so it's security theater.
+- **Server-minted player token.** On `player:join` the server mints a per-player token; `player:reconnect` resumes by that token, NOT by clientId. Fixing reconnect to "resume by clientId + keep points" as originally planned would let a spoofer hijack the victim's *live scored* session — strictly worse than today's reset-to-0. clientId is demoted to reconnect/display metadata everywhere (incl. Node HTTP endpoints currently keyed on raw clientId, `manager.ts:49-53`).
+- This is a **client-protocol change on BOTH twins** (web login/create/join/reconnect, bots, manager UI, solo HTTP) — the single most underestimated risk. Scope it as such, not "add a helper."
+- **Path-traversal:** allowlist `^[A-Za-z0-9_-]+$` on file ids (`safe_asset_id()`), NOT substring-reject `/`+`..`.
+
+### Modularization → DOMAIN modules (NOT one-file-per-handler)
+- Group by domain mirroring the Node twin's existing layout: `socket/manager.rs`, `socket/player.rs`, `socket/game.rs`, `socket/results.rs`, `http/mod.rs`. Centralized `require_manager(game_id)` / `safe_asset_id()` / rate-limit guards. 5-6 domain files still give 5-6 disjoint parallel worker lanes (blast-radius rationale preserved) without rippling every ctx change across 31 signatures, and enable side-by-side Rust/Node parity review.
+- Prefer **socketioxide-native `State<T>`** (`SocketIoBuilder::with_state`, the `state` feature is already on in Cargo.toml) over a hand-rolled closure-captured HandlerCtx; retained `SocketRef`s can leak.
+- (The already-committed `socket/clock_ping.rs` + `metrics.rs` fold into a `socket/lowlatency.rs` domain module during this phase.)
+
+### Ordering (confirmed) + prerequisite
+- **Fix in the monolith FIRST, then modularize.** The security fixes are structural (session-token store, TTL eviction task, rate limiters change the shape of shared state); finalize that shape, then extraction is pure behavior-preserving movement gated by the existing real-game CI suite (`ead1e723`). Modularizing first = re-reviewing every moved handler for security AND parity twice.
+- **Sanctioned exception:** extract the shared guard helpers (`require_manager`, `safe_asset_id`, rate-limit) into a module FIRST — the fixes need them anyway.
+- **Reconnect ↔ eviction interaction:** the TTL/finished-game eviction must explicitly clear player sessions, or "resume indefinitely" reintroduces the memory leak (C4).
+
+### v2.0 tag criteria (was missing)
+Tag v2.0 only when: all 20 findings fixed on both twins (or explicitly waived with rationale) · `rust/gate.sh` GO · the full CI real-game suite green (unit + full-game-to-FINISHED + N-player load + reconnect-keeps-score) · domain-modularized · Rust↔Node protocol parity reviewed.
