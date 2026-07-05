@@ -138,4 +138,36 @@ impl GameRegistry {
                 Some(g.manager_socket_id.clone())
             })
     }
+
+    pub fn remove_player_by_socket_id(
+        &mut self,
+        socket_id: &str,
+    ) -> Option<(String, String, String, usize)> {
+        for game_ref in self.games_by_id.values() {
+            let mut game = game_ref.lock().unwrap();
+
+            if let Some(player_index) = game
+                .players
+                .iter()
+                .position(|player| player.id == socket_id)
+            {
+                let removed_player_id = game.players[player_index].client_id.clone();
+                game.players.remove(player_index);
+                game.engine.players.retain(|player| player.id != socket_id);
+                game.engine.current_answers.remove(&removed_player_id);
+                game.engine
+                    .answer_order
+                    .retain(|client_id| client_id != &removed_player_id);
+
+                return Some((
+                    game.game_id.clone(),
+                    game.manager_socket_id.clone(),
+                    removed_player_id,
+                    game.players.len(),
+                ));
+            }
+        }
+
+        None
+    }
 }

@@ -8,15 +8,40 @@ use axum::{
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::QuestionType;
-use razzoozle_protocol::status::{GameStatus, ShowStartData, ShowQuestionData, SelectAnswerData, ShowLeaderboardData, WaitData, ShowResultData};
+use razzoozle_protocol::status::{
+    GameStatus, MatchMode, SelectAnswerData, ShowLeaderboardData, ShowQuestionData,
+    ShowResponsesData, ShowResultData, ShowStartData, WaitData,
+};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
+
+fn question_type_wire(question_type: &QuestionType) -> &'static str {
+    match question_type {
+        QuestionType::Choice => "choice",
+        QuestionType::Boolean => "boolean",
+        QuestionType::Slider => "slider",
+        QuestionType::Poll => "poll",
+        QuestionType::MultipleSelect => "multiple-select",
+        QuestionType::TypeAnswer => "type-answer",
+        QuestionType::SentenceBuilder => "sentence-builder",
+    }
+}
+
+fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
+    match match_mode {
+        "exact" => Some(MatchMode::Exact),
+        "normalized" => Some(MatchMode::Normalized),
+        "fuzzy" => Some(MatchMode::Fuzzy),
+        _ => None,
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -291,17 +316,10 @@ async fn main() {
 
                                                     // Emit SELECT_ANSWER for interactive phase
                                                     if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
-                                                        let question_type_str = question.r#type.as_ref().map(|t| {
-                                                            match t {
-                                                                QuestionType::Choice => "choice",
-                                                                QuestionType::Boolean => "boolean",
-                                                                QuestionType::Slider => "slider",
-                                                                QuestionType::Poll => "poll",
-                                                                QuestionType::MultipleSelect => "multiple-select",
-                                                                QuestionType::TypeAnswer => "type-answer",
-                                                                QuestionType::SentenceBuilder => "sentence-builder",
-                                                            }.to_string()
-                                                        });
+                                                        let question_type_str = question
+                                                            .r#type
+                                                            .as_ref()
+                                                            .map(|t| question_type_wire(t).to_string());
 
                                                         let select_answer = SelectAnswerData {
                                                             question: question.question.clone(),
@@ -478,7 +496,7 @@ async fn main() {
                                         sorted_by_points.sort_by(|a, b| b.1.cmp(&a.1));
 
                                         // Create rank map: client_id -> rank (1-based)
-                                        let mut rank_map = std::collections::HashMap::new();
+                                        let mut rank_map = HashMap::new();
                                         for (idx, (client_id, _)) in sorted_by_points.iter().enumerate() {
                                             rank_map.insert(client_id.clone(), (idx + 1) as i32);
                                         }
@@ -499,6 +517,117 @@ async fn main() {
                                                     }
                                                 }
                                             }
+                                        }
+                                    }
+
+                                    let manager_responses = {
+                                        let game = game_ref.lock().unwrap();
+                                        let question = game.engine.current_question();
+                                        let is_slider = matches!(
+                                            question.r#type.as_ref(),
+                                            Some(QuestionType::Slider)
+                                        );
+                                        let is_type_answer = matches!(
+                                            question.r#type.as_ref(),
+                                            Some(QuestionType::TypeAnswer)
+                                        );
+                                        let is_sentence_builder = matches!(
+                                            question.r#type.as_ref(),
+                                            Some(QuestionType::SentenceBuilder)
+                                        );
+                                        let collects_text = is_type_answer || is_sentence_builder;
+                                        let mut responses = HashMap::new();
+                                        let mut slider_values = Vec::new();
+                                        let mut text_responses = HashMap::new();
+
+                                        for answer in game.engine.current_answers.values() {
+                                            if let Some(answer_key) = answer.answer_input.answer_key {
+                                                *responses
+                                                    .entry(answer_key.to_string())
+                                                    .or_insert(0) += 1;
+
+                                                if is_slider {
+                                                    slider_values.push(answer_key);
+                                                }
+                                            }
+
+                                            if let Some(answer_keys) = &answer.answer_input.answer_keys {
+                                                for answer_key in answer_keys {
+                                                    *responses
+                                                        .entry(answer_key.to_string())
+                                                        .or_insert(0) += 1;
+                                                }
+                                            }
+
+                                            if collects_text {
+                                                if let Some(answer_text) = &answer.answer_input.answer_text {
+                                                    let answer_text = answer_text.trim();
+
+                                                    if !answer_text.is_empty() {
+                                                        *text_responses
+                                                            .entry(answer_text.to_string())
+                                                            .or_insert(0) += 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        let average_guess = if is_slider && !slider_values.is_empty() {
+                                            let sum: i32 = slider_values.iter().sum();
+                                            Some((sum as f64 / slider_values.len() as f64).round())
+                                        } else {
+                                            None
+                                        };
+
+                                        let status = GameStatus::ShowResponses(ShowResponsesData {
+                                            question: question.question.clone(),
+                                            responses,
+                                            solutions: question.solutions.clone().unwrap_or_default(),
+                                            answers: question.answers.clone().unwrap_or_default(),
+                                            media: question.media.clone(),
+                                            question_type: question
+                                                .r#type
+                                                .as_ref()
+                                                .map(|t| question_type_wire(t).to_string()),
+                                            correct: question.correct.map(|v| v as i32),
+                                            unit: question.unit.clone(),
+                                            average_guess,
+                                            text_responses: if text_responses.is_empty() {
+                                                None
+                                            } else {
+                                                Some(text_responses)
+                                            },
+                                            accepted_answers: if is_type_answer {
+                                                question.accepted_answers.clone()
+                                            } else {
+                                                None
+                                            },
+                                            match_mode: if is_type_answer {
+                                                question
+                                                    .match_mode
+                                                    .as_deref()
+                                                    .and_then(match_mode_from_str)
+                                            } else {
+                                                None
+                                            },
+                                            correct_chunks: if is_sentence_builder {
+                                                question.chunks.clone()
+                                            } else {
+                                                None
+                                            },
+                                            round_recap: None,
+                                        });
+
+                                        (game.manager_socket_id.clone(), status)
+                                    };
+
+                                    let (manager_socket_id, manager_status) = manager_responses;
+
+                                    if let Ok(sid) = manager_socket_id.parse() {
+                                        if let Some(manager_socket) = io_handle.get_socket(sid) {
+                                            manager_socket
+                                                .emit(constants::game::STATUS, &manager_status)
+                                                .ok();
                                         }
                                     }
 
@@ -681,17 +810,10 @@ async fn main() {
 
                                                 // Then emit SELECT_ANSWER
                                                 if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
-                                                    let question_type_str = question.r#type.as_ref().map(|t| {
-                                                        match t {
-                                                            QuestionType::Choice => "choice",
-                                                            QuestionType::Boolean => "boolean",
-                                                            QuestionType::Slider => "slider",
-                                                            QuestionType::Poll => "poll",
-                                                            QuestionType::MultipleSelect => "multiple-select",
-                                                            QuestionType::TypeAnswer => "type-answer",
-                                                            QuestionType::SentenceBuilder => "sentence-builder",
-                                                        }.to_string()
-                                                    });
+                                                    let question_type_str = question
+                                                        .r#type
+                                                        .as_ref()
+                                                        .map(|t| question_type_wire(t).to_string());
 
                                                     let select_answer = SelectAnswerData {
                                                         question: question.question.clone(),
@@ -727,8 +849,45 @@ async fn main() {
             });
 
             // Handle disconnect
+            let registry = Arc::clone(&registry);
+            let io_handle = io_handle.clone();
+            let socket_id = socket.id.to_string();
+
             socket.on_disconnect(move |_: SocketRef| {
-                info!("Client disconnected");
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let socket_id = socket_id.clone();
+
+                tokio::spawn(async move {
+                    let removed_player = {
+                        let mut registry = registry.write().await;
+                        registry.remove_player_by_socket_id(&socket_id)
+                    };
+
+                    if let Some((game_id, manager_socket_id, removed_player_id, total_players)) =
+                        removed_player
+                    {
+                        info!(
+                            "Player disconnected: gameId={}, clientId={}, totalPlayers={}",
+                            game_id, removed_player_id, total_players
+                        );
+
+                        io_handle
+                            .to(game_id.clone())
+                            .emit(constants::game::TOTAL_PLAYERS, &(total_players as i32))
+                            .ok();
+
+                        if let Ok(sid) = manager_socket_id.parse() {
+                            if let Some(manager_socket) = io_handle.get_socket(sid) {
+                                manager_socket
+                                    .emit(constants::manager::REMOVE_PLAYER, &removed_player_id)
+                                    .ok();
+                            }
+                        }
+                    } else {
+                        info!("Client disconnected: socketId={}", socket_id);
+                    }
+                });
             });
         }
     });
