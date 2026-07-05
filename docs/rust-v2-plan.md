@@ -208,3 +208,17 @@ Nobody imports `rust/protocol/bindings/`; the frontend/socket use hand-written D
 - **Server-anchored answer window + latency scoring** — we already do server-side scoring; `time_sync` clock-calibration deferred to a later wave (server window suffices vs most cheating).
 - **Validations (already correct):** server-side scoring (supabase-alt's client-side scoring is the anti-pattern), typed per-event structs → serde-tagged enum via ts-rs, identity-decoupled-from-socket (grihoot/ClassQuiz both have the socket-coupled anti-pattern we just fixed).
 - **Skip:** Redis-as-state (we're in-memory; conceptual only for future multi-instance), hand-rolled WS framing, client-side scoring.
+
+---
+
+## EXECUTION ORDER (phase-by-phase, delegated to CLI workers in worktrees, each CI-gated)
+
+Rule per phase: dispatch capability-matched CLI worker(s) in isolated worktrees → orchestrator re-gates (`rust/gate.sh` + `scripts/rust-ci-test.sh`) → merge only on GO → deploy :3012 (gated) + main → next phase. Fix-in-monolith BEFORE modularize (structural fixes change state shape).
+
+- **P1 — self-contained fixes** *(in progress)*: ✅1a correctness · ✅1b caps/eviction · 🔄1c HTTP-hardening (fix-http) · 1d ts-rs quick-wins (CI freshness gate + export GameStatus union — both S).
+- **P2 — Auth-token redesign**: server-minted host token (GAME.CREATE) gating every manager mutation + server-minted player token (join) for reconnect; clientId→metadata. Both twins + web client. actor-kit identity pattern. (CLI: cursor+grok split server/web.)
+- **P3 — Actor-pattern game loop**: one tokio task per game owns GameState; handlers `mpsc::send(GameCommand)` (clean-room from gahoot). Race-free, closes concurrency findings, becomes the module boundary. (CLI: single careful worker + heavy CI.)
+- **P4 — auto-advance-when-all-answered** (ClassQuiz pattern) + `time_sync` deferred.
+- **P5 — ts-rs load-bearing**: `#[ts(optional)]` on Option+skip fields, barrel index, repoint frontend imports, delete hand-written `common/types` duplicates. (CLI: protocol + web.)
+- **P6 — Domain modularization**: guard helpers first, then `socket/{manager,player,game,results}.rs` + `http/mod.rs` mirroring Node; consider socketioxide native `State`. Behavior no-op gated by the real-game CI suite.
+- **P7 — v2.0 release**: all 20 findings fixed both twins (or waived) · gate GO · full CI green · parity reviewed · tag `v2.0` · update READMEs + github.io.
