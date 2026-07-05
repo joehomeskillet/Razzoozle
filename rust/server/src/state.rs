@@ -178,6 +178,7 @@ pub struct Game {
     pub game_id: String,
     pub invite_code: String,
     pub manager_socket_id: String,
+    pub host_token: String,
     pub players: Vec<Player>,
     pub engine: GameState,
     // Last activity timestamp (ms since UNIX epoch)
@@ -196,10 +197,14 @@ impl Game {
             .unwrap_or_default()
             .as_millis() as u64;
 
+        // P2a — generate random host_token using uuid v4 (CSPRNG)
+        let host_token = Uuid::new_v4().to_string();
+
         Self {
             game_id,
             invite_code,
             manager_socket_id,
+            host_token,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),
             last_activity_ms: now,
