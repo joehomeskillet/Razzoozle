@@ -15,8 +15,13 @@ RUN cargo build --release -p razzoozle-server
 FROM debian:bookworm-slim AS runtime
 RUN useradd -r -u 10001 -m appuser
 COPY --from=builder /build/rust/target/release/razzoozle-server /usr/local/bin/razzoozle-server
+# Bundle quizzes into the image (no runtime mount needed)
+COPY config/quizz /config/quizz
+# Create solo-results directory for score persistence at runtime, owned by appuser
+RUN mkdir -p /config/solo-results && chown -R appuser:appuser /config
 USER appuser
 ENV PORT=3020
+ENV CONFIG_PATH=/config
 EXPOSE 3020
 # Health: GET /health -> 200
 CMD ["razzoozle-server"]
