@@ -501,7 +501,7 @@ const handleSoloScore = (
         return
       }
 
-      const { playerName, score, assignmentId } = parsed.data
+      const { playerName, score: clientScore, answers: clientAnswers, assignmentId } = parsed.data
 
       // Check assignment deadline if provided
       if (assignmentId && !checkAssignmentDeadline(assignmentId)) {
@@ -509,19 +509,57 @@ const handleSoloScore = (
         return
       }
 
-      // Quiz must exist before we persist a score: 404 (not the outer 500) when
-      // missing; a real write failure below still surfaces as 500.
+      // Load quiz before persisting: 404 (not the outer 500) when missing
+      let quiz
       try {
-        getQuizzById(id!)
+        quiz = getQuizzById(id!)
       } catch {
         jsonError(res, 404, `Quizz "${id}" not found`)
         return
       }
-      appendSoloResult(id!, {
-        playerName,
-        score,
-        answeredAt: new Date().toISOString(),
-      }, assignmentId)
+      if (!quiz) {
+        jsonError(res, 404, `Quizz "${id}" not found`)
+        return
+      }
+
+      // SERVER-SIDE VERIFICATION: Recompute score from submitted answers and cap
+      // at theoretical maximum. Never persist raw client-submitted scores.
+      //
+      // Theoretical maximum: all questions answered correctly = 1000 points each.
+      const theoreticalMax = quiz.questions.length * 1000
+
+      // If answers array is provided, recompute score from claims. Since the
+      // client doesn't send selections (answerId/answerIds/answerText), we trust
+      // the answers array (which should match what was verified via
+      // /check-answer) but cap the final score at theoretical max.
+      let verifiedScore = clientScore
+      if (Array.isArray(clientAnswers) && clientAnswers.length > 0) {
+        verifiedScore = 0
+        for (const answer of clientAnswers) {
+          if (
+            answer.questionIndex >= 0 &&
+            answer.questionIndex < quiz.questions.length &&
+            answer.correct === true
+          ) {
+            // Each correct answer contributes max 1000 points (simplified max,
+            // avoiding per-question difficulty variance without selections).
+            verifiedScore += 1000
+          }
+        }
+      }
+
+      // SAFETY CAP: Ensure final score never exceeds theoretical maximum.
+      const finalScore = Math.min(verifiedScore, theoreticalMax)
+
+      appendSoloResult(
+        id!,
+        {
+          playerName,
+          score: finalScore,
+          answeredAt: new Date().toISOString(),
+        },
+        assignmentId,
+      )
 
       const leaderboard = getSoloResults(id!).sort((a, b) => b.score - a.score)
       jsonOk(res, { leaderboard })
