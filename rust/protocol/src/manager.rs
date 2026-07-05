@@ -22,6 +22,9 @@ use crate::status::ScoringMode;
 pub struct MessageGameId {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub host_token: Option<String>,
 }
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
@@ -349,6 +352,9 @@ pub struct InstalledPlugin {
 pub struct ManagerGameCreated {
     pub game_id: String,
     pub invite_code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub host_token: Option<String>,
 }
 
 pub type ManagerStatusUpdate = StatusUpdate;
