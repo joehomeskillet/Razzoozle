@@ -10,6 +10,8 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 // Resource caps (parity with Node)
 pub const MAX_ACTIVE_GAMES: usize = 100;
@@ -21,6 +23,108 @@ pub const AVATAR_SVG_MAX_CHARS: usize = 64 * 1024;
 
 // Game eviction: TTL for finished/stale games (milliseconds)
 pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
+
+// ── Path-traversal protection ─────────────────────────────────────────────────
+// Validate asset IDs (quiz/result file names) to prevent path-traversal attacks
+lazy_static! {
+    static ref SAFE_ID_REGEX: Regex = Regex::new("^[A-Za-z0-9_-]+$").unwrap();
+}
+
+const RESERVED_IDS: &[&str] = &["__proto__", "constructor", "prototype"];
+
+/// Validate that an asset ID (quiz id, result id, etc.) is safe for use in file paths.
+/// Rejects path-traversal attempts like "../../etc/passwd" and reserved prototype-pollution keys.
+pub fn safe_asset_id(id: &str) -> Result<(), String> {
+    if !SAFE_ID_REGEX.is_match(id) {
+        return Err("Invalid asset id: contains forbidden characters".to_string());
+    }
+
+    if RESERVED_IDS.contains(&id) {
+        return Err("Invalid asset id: reserved keyword".to_string());
+    }
+
+    Ok(())
+}
+
+// ── Solo results rate limiting and caps ────────────────────────────────────────
+pub const GLOBAL_SOLO_MAX: i32 = 120; // max 120 solo calls/min server-wide
+pub const SOLO_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
+pub const SOLO_RESULTS_MAX_ENTRIES: usize = 1000; // cap solo leaderboard growth
+
+#[derive(Debug, Clone)]
+pub struct RateState {
+    pub count: i32,
+    pub window_start_ms: u64,
+}
+
+impl RateState {
+    pub fn new() -> Self {
+        Self {
+            count: 0,
+            window_start_ms: get_now_ms(),
+        }
+    }
+
+    /// Reset the window if it has expired
+    pub fn maybe_reset(&mut self, now_ms: u64) {
+        if now_ms.saturating_sub(self.window_start_ms) > SOLO_RATE_WINDOW_MS {
+            self.count = 0;
+            self.window_start_ms = now_ms;
+        }
+    }
+}
+
+pub fn get_now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+/// Rate limiter for global solo API and auth attempts
+pub struct RateLimiter {
+    solo_global: Mutex<RateState>,
+    auth_failures: Mutex<RateState>,
+}
+
+impl RateLimiter {
+    pub fn new() -> Self {
+        Self {
+            solo_global: Mutex::new(RateState::new()),
+            auth_failures: Mutex::new(RateState::new()),
+        }
+    }
+
+    /// Check if a global solo call is allowed. Returns true if allowed.
+    pub fn check_global_solo_rate(&self) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut state) = self.solo_global.lock() {
+            state.maybe_reset(now);
+
+            if state.count >= GLOBAL_SOLO_MAX {
+                return false;
+            }
+
+            state.count += 1;
+            true
+        } else {
+            true // lock failed, allow in fail-open mode
+        }
+    }
+
+    /// Record a failed auth attempt and return true if throttled.
+    pub fn record_auth_failure_and_check_throttle(&self) -> bool {
+        const MAX_AUTH_FAILURES: i32 = 10; // max 10 failed auths per 60s server-wide
+        let now = get_now_ms();
+        if let Ok(mut state) = self.auth_failures.lock() {
+            state.maybe_reset(now);
+            state.count += 1;
+            state.count > MAX_AUTH_FAILURES
+        } else {
+            false // lock failed, allow in fail-open mode
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuizFixture {
@@ -418,6 +522,30 @@ mod tests {
     }
 
     #[test]
+    fn test_safe_asset_id() {
+        // Valid IDs
+        assert!(safe_asset_id("quiz-abc123").is_ok());
+        assert!(safe_asset_id("result_001").is_ok());
+        assert!(safe_asset_id("test-123_abc").is_ok());
+
+        // Invalid: path traversal
+        assert!(safe_asset_id("../../etc/passwd").is_err());
+        assert!(safe_asset_id("../../../secret").is_err());
+        assert!(safe_asset_id("test/../etc/shadow").is_err());
+
+        // Invalid: special characters
+        assert!(safe_asset_id("test/file").is_err());
+        assert!(safe_asset_id("test\\file").is_err());
+        assert!(safe_asset_id("test;file").is_err());
+        assert!(safe_asset_id("test file").is_err());
+
+        // Reserved keywords
+        assert!(safe_asset_id("__proto__").is_err());
+        assert!(safe_asset_id("constructor").is_err());
+        assert!(safe_asset_id("prototype").is_err());
+    }
+
+    #[test]
     fn test_active_game_cap() {
         let empty_quiz = Quizz {
             subject: "Test".to_string(),
@@ -451,7 +579,7 @@ mod tests {
 
         // Create a game
         let (game_id, _) = registry.create_game("manager-1".to_string(), None).unwrap();
-        
+
         // Add players to the game
         {
             let game_ref = registry.get_game_by_id(&game_id).unwrap();

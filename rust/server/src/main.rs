@@ -19,12 +19,13 @@ use razzoozle_protocol::status::{
 use serde::{Deserialize, Serialize};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
-use state::{GameRegistry, QuizFixture};
+use state::{GameRegistry, QuizFixture, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
@@ -136,6 +137,10 @@ pub struct SoloScoreResponse {
 
 // ── HTTP handlers ────────────────────────────────────────────────────────────
 
+lazy_static! {
+    static ref RATE_LIMITER: RateLimiter = RateLimiter::new();
+}
+
 async fn handle_health() -> &'static str {
     "OK"
 }
@@ -152,6 +157,15 @@ async fn handle_get_quiz_solo(
     Path(quiz_id): Path<String>,
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
 ) -> Result<Json<SoloResponse>, (StatusCode, String)> {
+    // Path-traversal protection
+    safe_asset_id(&quiz_id)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    // Rate limiting
+    if !RATE_LIMITER.check_global_solo_rate() {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+
     let registry = registry.read().await;
     let quiz = registry
         .get_quiz_by_id(&quiz_id)
@@ -190,6 +204,15 @@ async fn handle_check_answer(
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<CheckAnswerRequest>,
 ) -> Result<Json<CheckAnswerResponse>, (StatusCode, String)> {
+    // Path-traversal protection
+    safe_asset_id(&quiz_id)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    // Rate limiting
+    if !RATE_LIMITER.check_global_solo_rate() {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+
     let registry = registry.read().await;
     let quiz = registry
         .get_quiz_by_id(&quiz_id)
@@ -254,6 +277,15 @@ async fn handle_solo_score(
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<SoloScoreRequest>,
 ) -> Result<Json<SoloScoreResponse>, (StatusCode, String)> {
+    // Path-traversal protection
+    safe_asset_id(&quiz_id)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    // Rate limiting
+    if !RATE_LIMITER.check_global_solo_rate() {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+
     let registry = registry.read().await;
 
     // Load quiz to verify it exists and calculate theoretical max
@@ -322,6 +354,13 @@ async fn handle_solo_score(
 
     leaderboard.push(result_entry);
     leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
+
+    // Cap leaderboard to prevent unbounded growth
+    let leaderboard = if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
+        leaderboard.into_iter().rev().take(SOLO_RESULTS_MAX_ENTRIES).rev().collect()
+    } else {
+        leaderboard
+    };
 
     let json_str = serde_json::to_string_pretty(&leaderboard)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JSON serialization error: {}", e)))?;
@@ -435,6 +474,14 @@ async fn main() {
                     let client_id = client_id.clone();
 
                     tokio::spawn(async move {
+                        // Auth brute-force throttle
+                        if RATE_LIMITER.record_auth_failure_and_check_throttle() {
+                            socket
+                                .emit(constants::manager::ERROR_MESSAGE, "errors:manager.authThrottled")
+                                .ok();
+                            return;
+                        }
+
                         let expected_password = std::env::var("MANAGER_PASSWORD")
                             .unwrap_or_else(|_| DEFAULT_MANAGER_PASSWORD.to_string());
 
@@ -1179,10 +1226,10 @@ async fn main() {
                                         if let Some(game_ref) = game_opt {
                                             let next_phase = {
                                                 let mut game = game_ref.lock().unwrap();
-                                                game.engine.next_or_finish().ok()
+                                                game.engine.next_or_finish()
                                             };
 
-                                            if let Some(GamePhase::Finished) = next_phase {
+                                            if let Ok(GamePhase::Finished) = next_phase {
                                                 info!("Game finished: gameId={}", game_id_clone);
                                                 let finished = razzoozle_protocol::status::FinishedData {
                                                     subject: "Quiz".to_string(),
@@ -1198,7 +1245,7 @@ async fn main() {
                                                 let status = GameStatus::Finished(finished);
                                                 io_handle.to(game_id_clone)
                                                     .emit(constants::game::STATUS, &status).ok();
-                                            } else if let Some(GamePhase::ShowQuestion) = next_phase {
+                                            } else if let Ok(GamePhase::ShowQuestion) = next_phase {
                                                 // Move to next question: call open_answers() and set engine clock
                                                 let (question_data, select_data_tuple) = {
                                                     let mut game = game_ref.lock().unwrap();
@@ -1311,10 +1358,10 @@ async fn main() {
                             if let Some(game_ref) = game_opt {
                                 let next_phase = {
                                     let mut game = game_ref.lock().unwrap();
-                                    game.engine.next_or_finish().ok()
+                                    game.engine.next_or_finish()
                                 };
 
-                                if let Some(GamePhase::Finished) = next_phase {
+                                if let Ok(GamePhase::Finished) = next_phase {
                                     info!("Game finished: gameId={}", game_id);
                                     let finished = razzoozle_protocol::status::FinishedData {
                                         subject: "Quiz".to_string(),
@@ -1329,7 +1376,7 @@ async fn main() {
                                     };
                                     let status = GameStatus::Finished(finished);
                                     io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
-                                } else if let Some(GamePhase::ShowQuestion) = next_phase {
+                                } else if let Ok(GamePhase::ShowQuestion) = next_phase {
                                     let (question_data, select_data_tuple) = {
                                         let mut game = game_ref.lock().unwrap();
                                         let question = game.engine.current_question().clone();
@@ -1429,10 +1476,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
-                                let _ = {
+                                let next_phase_result = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.next_or_finish()
                                 };
+                                if let Err(e) = next_phase_result {
+                                    warn!("SKIP_QUESTION: next_or_finish failed: {}", e);
+                                    socket.emit(constants::game::ERROR_MESSAGE, "skip failed").ok();
+                                }
                             }
                         }
                     });
