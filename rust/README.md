@@ -11,10 +11,8 @@ Node runtime. Along the way, the game's state machine (Lobby → Round → Revea
 Scoreboard) becomes compile-time-checked, and a single static binary makes both
 the hosted and desktop cases cheaper (RAM, cold start).
 
-> Full plan, phases, risks and the event inventory:
-> [`../docs/rust-port-plan.md`](../docs/rust-port-plan.md) ·
-> [`../docs/rust-port-event-inventory.md`](../docs/rust-port-event-inventory.md) ·
-> plugin-runtime decision: [`../docs/adr/rust-port-plugin-runtime.md`](../docs/adr/rust-port-plugin-runtime.md)
+> Plugin-runtime decision (Node-sidecar):
+> [`../docs/adr/rust-port-plugin-runtime.md`](../docs/adr/rust-port-plugin-runtime.md)
 
 ---
 

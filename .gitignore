@@ -29,3 +29,13 @@ playwright-report/
 /mockup-*.png
 CLAUDE-FABLE-5.md
 .serena/
+docs/superpowers/
+docs/research/
+docs/health-audit/
+docs/gaps/
+docs/bugfixes/
+docs/KAHOOT-GAP-ANALYSIS.md
+docs/KAHOOT-GAP-ANALYSIS-v2.md
+docs/rust-port-plan.md
+docs/rust-port-phase2-plan.md
+docs/rust-port-event-inventory.md
