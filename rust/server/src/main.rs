@@ -6,6 +6,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::{Question, QuestionType};
@@ -18,6 +19,7 @@ use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
 use std::collections::HashMap;
+use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -77,10 +79,10 @@ pub struct SoloResponse {
 pub struct CheckAnswerRequest {
     #[serde(rename = "questionIndex")]
     pub question_index: usize,
-    #[serde(rename = "answerKey")]
-    pub answer_key: Option<i32>,
-    #[serde(rename = "answerKeys")]
-    pub answer_keys: Option<Vec<i32>>,
+    #[serde(rename = "answerId")]
+    pub answer_id: Option<i32>,
+    #[serde(rename = "answerIds")]
+    pub answer_ids: Option<Vec<i32>>,
     #[serde(rename = "answerText")]
     pub answer_text: Option<String>,
 }
@@ -89,20 +91,45 @@ pub struct CheckAnswerRequest {
 pub struct CheckAnswerResponse {
     pub correct: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub solutions: Option<Vec<i32>>,
+    pub points: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub explanation: Option<String>,
+    pub accuracy: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub achievements: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SoloScoreSubmitAnswer {
+    #[serde(rename = "questionIndex")]
+    pub question_index: i32,
+    pub correct: bool,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SoloScoreRequest {
+    #[serde(rename = "playerName")]
+    pub player_name: String,
     pub score: i32,
-    pub time: i32,
+    pub answers: Option<Vec<SoloScoreSubmitAnswer>>,
+    #[serde(rename = "assignmentId")]
+    pub assignment_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SoloResultEntry {
+    #[serde(rename = "playerName")]
+    pub player_name: String,
+    pub score: i32,
+    #[serde(rename = "answeredAt")]
+    pub answered_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "assignmentId")]
+    pub assignment_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct SoloScoreResponse {
-    pub success: bool,
+    pub leaderboard: Vec<SoloResultEntry>,
 }
 
 // ── HTTP handlers ────────────────────────────────────────────────────────────
@@ -174,34 +201,137 @@ async fn handle_check_answer(
     }
 
     let question = &quiz.questions[payload.question_index];
-    let solutions = question.solutions.clone().unwrap_or_default();
 
-    let correct = if let Some(answer_key) = payload.answer_key {
-        solutions.contains(&answer_key)
-    } else if let Some(answer_keys) = payload.answer_keys {
-        !answer_keys.is_empty() && answer_keys.iter().all(|k| solutions.contains(k))
-            && answer_keys.len() == solutions.len()
-    } else if let Some(_answer_text) = payload.answer_text {
-        // For type-answer, would need fuzzy matching logic from Node side
-        // For now, server-side validation would be minimal
-        false
-    } else {
-        false
+    let answer_input = AnswerInput {
+        answer_key: payload.answer_id,
+        answer_keys: payload.answer_ids,
+        answer_text: payload.answer_text,
     };
 
-    Ok(Json(CheckAnswerResponse {
-        correct,
-        solutions: Some(solutions),
-        explanation: None,
-    }))
+    let eval_result = evaluate_answer(question, &answer_input);
+    let points = if eval_result.correct { 1000 } else { 0 };
+
+    let mut response = CheckAnswerResponse {
+        correct: eval_result.correct,
+        points: Some(points),
+        accuracy: None,
+        achievements: None,
+    };
+
+    // For slider questions, include accuracy
+    if question.r#type.as_ref() == Some(&QuestionType::Slider) {
+        response.accuracy = Some(eval_result.base);
+
+        // Check for sharpshooter achievement (95%+ accuracy on slider)
+        if eval_result.correct && eval_result.base * 100.0 >= 95.0 {
+            response.achievements = Some(vec!["sharpshooter".to_string()]);
+        }
+    }
+
+    Ok(Json(response))
+}
+
+fn get_solo_results_path(quiz_id: &str) -> String {
+    if let Ok(config_path) = std::env::var("CONFIG_PATH") {
+        format!("{}/solo-results/{}.json", config_path, quiz_id)
+    } else {
+        let cwd = std::env::current_dir().unwrap();
+        cwd.parent()
+            .and_then(|p| p.parent())
+            .map(|p| {
+                p.join(format!("config/solo-results/{}.json", quiz_id))
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .unwrap_or_else(|| format!("config/solo-results/{}.json", quiz_id))
+    }
 }
 
 async fn handle_solo_score(
-    Path(_quiz_id): Path<String>,
-    Json(_payload): Json<SoloScoreRequest>,
-) -> Json<SoloScoreResponse> {
-    // In full implementation, persist to config/solo-results/:quizzId.json
-    Json(SoloScoreResponse { success: true })
+    Path(quiz_id): Path<String>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
+    Json(payload): Json<SoloScoreRequest>,
+) -> Result<Json<SoloScoreResponse>, (StatusCode, String)> {
+    let registry = registry.read().await;
+
+    // Load quiz to verify it exists and calculate theoretical max
+    let quiz = registry
+        .get_quiz_by_id(&quiz_id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", quiz_id)))?;
+    drop(registry);
+
+    let theoretical_max = quiz.questions.len() as i32 * 1000;
+
+    // Recompute score from answers if provided
+    let mut verified_score = payload.score;
+    if let Some(answers) = &payload.answers {
+        if !answers.is_empty() {
+            verified_score = 0;
+            for answer in answers {
+                if answer.question_index >= 0
+                    && (answer.question_index as usize) < quiz.questions.len()
+                    && answer.correct
+                {
+                    verified_score += 1000;
+                }
+            }
+        }
+    }
+
+    // Cap at theoretical maximum
+    let final_score = std::cmp::min(verified_score, theoretical_max);
+
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let result_entry = SoloResultEntry {
+        player_name: payload.player_name,
+        score: final_score,
+        answered_at: now,
+        assignment_id: payload.assignment_id,
+    };
+
+    // Persist to file
+    let file_path = get_solo_results_path(&quiz_id);
+    let dir_path = std::path::Path::new(&file_path).parent();
+
+    if let Some(dir) = dir_path {
+        if !dir.exists() {
+            fs::create_dir_all(dir).map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to create directory: {}", e),
+                )
+            })?;
+        }
+    }
+
+    let mut leaderboard: Vec<SoloResultEntry> =
+        if std::path::Path::new(&file_path).exists() {
+            let contents = fs::read_to_string(&file_path).map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to read results file: {}", e),
+                )
+            })?;
+            serde_json::from_str(&contents).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+
+    leaderboard.push(result_entry);
+    leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
+
+    let json_str = serde_json::to_string_pretty(&leaderboard)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JSON serialization error: {}", e)))?;
+
+    fs::write(&file_path, json_str).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to write results file: {}", e),
+        )
+    })?;
+
+    Ok(Json(SoloScoreResponse { leaderboard }))
 }
 
 #[tokio::main]
