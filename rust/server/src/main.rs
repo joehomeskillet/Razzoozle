@@ -626,7 +626,9 @@ async fn main() {
         .layer(layer);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3020".into());
-    let addr = format!("127.0.0.1:{port}").parse::<SocketAddr>().unwrap();
+    // 0.0.0.0 so the server is reachable through Docker port forwarding
+    // (the host only maps it to 127.0.0.1:<hostport>, so it stays loopback-exposed).
+    let addr = format!("0.0.0.0:{port}").parse::<SocketAddr>().unwrap();
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 
     info!("Server listening on http://{}", addr);
