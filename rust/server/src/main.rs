@@ -1,3 +1,4 @@
+mod socket;
 mod state;
 mod media_ai;
 
@@ -367,6 +368,15 @@ async fn main() {
                 .to_string();
 
             info!("Client connected: client_id={}", client_id);
+
+            // Modular handlers (one file each under src/socket/). Migrating incrementally;
+            // handlers not yet moved stay inline below.
+            let ctx = socket::HandlerCtx {
+                registry: Arc::clone(&registry),
+                io: io_handle.clone(),
+                client_id: client_id.clone(),
+            };
+            socket::register_all(&socket, &ctx);
 
             // Handle GAME.CREATE event
             socket.on(constants::game::CREATE, {
@@ -1619,39 +1629,9 @@ async fn main() {
                 }
             });
 
-            // Handle CLOCK.PING — reply with server time
-            socket.on(constants::clock::PING, {
-                move |socket: SocketRef, _data: Data::<serde_json::Value>| {
-                    let server_now_ms = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .map(|d| d.as_millis() as i64)
-                        .unwrap_or(0);
+            // clock:ping + metrics handlers now live in src/socket/{clock_ping,metrics}.rs
+            // (registered above via socket::register_all).
 
-                    socket
-                        .emit(constants::clock::PONG, &serde_json::json!({ "serverNowMs": server_now_ms }))
-                        .ok();
-                }
-            });
-
-            // Handle METRICS.REPORT — accept metrics reports
-            socket.on(constants::metrics::REPORT, {
-                move |_socket: SocketRef, _data: Data::<serde_json::Value>| {
-                    // Minimal implementation: accept and acknowledge
-                    tokio::spawn(async move {
-                        // Metrics are currently no-op in basic impl
-                    });
-                }
-            });
-
-            // Handle METRICS.SUBSCRIBE — subscribe to metrics
-            socket.on(constants::metrics::SUBSCRIBE, {
-                move |socket: SocketRef, _data: Data::<serde_json::Value>| {
-                    // Minimal implementation: acknowledge subscription
-                    socket
-                        .emit(constants::metrics::HEALTH, &serde_json::json!({ "status": "ok" }))
-                        .ok();
-                }
-            });
             // Register AI/media handlers
             media_ai::register(&socket, Arc::clone(&registry), client_id.clone());
 
