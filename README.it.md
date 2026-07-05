@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -24,6 +25,36 @@
 **[▶ Demo dal vivo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App Windows (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Vetrina](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Segnala un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork da [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
+
+---
+
+## 🦀 Riscrittura in Rust — anteprima feature-complete (non è l'impostazione predefinita)
+
+Il server di gioco Node.js (`packages/socket`) è ancora quello che esegue la **produzione**
+su [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) — ogni funzionalità in
+questo README, tutti i tipi di domande, temi/scheletri, gamification, gioco a squadre e in solitaria,
+avatar DiceBear, immagini IA locali, haptic mobile, 6 lingue, ~592 test,
+testato sotto carico fino a 600 giocatori simultanei.
+
+In parallelo, una **riscrittura da zero in Rust** del server di gioco (`axum` +
+`socketioxide 0.15`) parla il protocollo socket.io *identico*, così il
+frontend non se ne accorge. È ora **feature-complete**: una partita completa con scoring
+con più domande, tutti i 7 tipi di domande, ciclo di vita dei giocatori + riconnessione,
+autenticazione del manager, quiz da disco, endpoint HTTP + solitaria, controllo di gioco
+(espulsione/saltare/interruzione/timer), bot, il kiosk `/display` e IA/media. I tipi condivisi
+sono generati da Rust tramite `ts-rs` — i tipi di rete Rust sono la fonte della verità. Viene eseguito come **container parallelo su `:3012`** insieme a Node su `:3011` e viene testato ad ogni deploy da un gate CI di gioco reale (una partita da 100 giocatori giocata fino al completamento + un test di riconnessione) — ma **non è ancora l'impostazione predefinita**; Node rimane il percorso di produzione fino a un cutover shadow.
+
+**Perché Rust:** spedire l'app desktop come **~10 MB app Tauri** (sidecar Rust)
+invece di un bundle Electron ~150 MB, una macchina di stato del gioco verificata al compile e
+un singolo binario statico.
+
+Uno sforzo parallelo di **v2.0 hardening** — una caccia ai bug multi-modello avversariale (19
+findings confermati) — sta sbarcando correzioni su entrambi i gemelli: limiti di risorse per partita +
+evizione di partite, limiti di frequenza per IP, un elenco consentiti di traversal di percorsi, corrispondenza di testo Unicode-corretta e
+autenticazione host-token coniata dal server che chiude un buco di controllo incrociato di gioco
+(IDOR). Un refactor di modularizzazione / actor-per-gioco è pianificato in seguito.
+
+**→ Dettagli, tabella di stato, build & run: [`rust/README.md`](rust/README.md)**
 
 ---
 
