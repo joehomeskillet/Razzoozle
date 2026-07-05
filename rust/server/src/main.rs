@@ -1,4 +1,5 @@
 mod state;
+mod media_ai;
 
 use axum::{
     extract::Path,
@@ -1650,6 +1651,8 @@ async fn main() {
                         .ok();
                 }
             });
+            // Register AI/media handlers
+            media_ai::register(&socket, Arc::clone(&registry), client_id.clone());
 
             // Handle disconnect
             let registry = Arc::clone(&registry);
