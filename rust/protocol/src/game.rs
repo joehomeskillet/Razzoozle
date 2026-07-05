@@ -1,0 +1,232 @@
+//! game.rs — OWNS: GAME domain C2S+S2C payloads.
+//!
+//! C2S: game:create, player:join, player:login, player:reconnect,
+//!      player:leave, player:selectedAnswer, player:setAvatar,
+//!      player:selectTeam, clock:ping.
+//! S2C: game:successRoom, game:successJoin, game:totalPlayers,
+//!      game:errorMessage, game:startCooldown, game:cooldown,
+//!      game:updateQuestion, game:playerAnswer, game:reset.
+
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
+// ============================================================================
+// Generic Message Wrappers
+// ============================================================================
+
+/// Generic wrapper for gameId + data payload
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageWithoutStatus<T> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub game_id: Option<String>,
+    pub data: T,
+}
+
+/// GameId-only message wrapper
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageGameId {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub game_id: Option<String>,
+}
+
+// ============================================================================
+// C2S Payloads (Client → Server)
+// ============================================================================
+
+/// game:create payload (C2S) — quizzId string
+pub type GameCreate = String;
+
+/// player:join payload (C2S) — invite code
+pub type PlayerJoin = String;
+
+/// player:login payload (C2S)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerLogin {
+    pub username: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+}
+
+/// player:reconnect payload (C2S)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerReconnect {
+    pub game_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_server_seq: Option<i32>,
+}
+
+/// player:leave payload (C2S)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerLeave {
+    pub game_id: String,
+}
+
+/// player:selectedAnswer payload (C2S)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerSelectedAnswer {
+    pub answer_key: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub answer_keys: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub answer_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_message_id: Option<String>,
+}
+
+/// player:setAvatar payload (C2S) — unknown type from TS
+pub type PlayerSetAvatar = serde_json::Value;
+
+/// player:selectTeam payload (C2S)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerSelectTeam {
+    pub team_id: String,
+}
+
+/// clock:ping payload (C2S) — client monotonic timestamp
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct ClockPing {
+    pub client_send_mono_ms: i64,
+}
+
+// ============================================================================
+// S2C Payloads (Server → Client)
+// ============================================================================
+
+/// game:successRoom payload (S2C)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct GameSuccessRoom {
+    pub game_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_identifier: Option<bool>,
+}
+
+/// game:successJoin payload (S2C) — gameId string
+pub type GameSuccessJoin = String;
+
+/// game:totalPlayers payload (S2C) — count number
+pub type GameTotalPlayers = i32;
+
+/// game:errorMessage payload (S2C) — message string
+pub type GameErrorMessage = String;
+
+/// game:startCooldown payload (S2C) — no data
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct GameStartCooldown {}
+
+/// game:cooldown payload (S2C) — count number
+pub type GameCooldown = i32;
+
+/// game:reset payload (S2C) — message string
+pub type GameReset = String;
+
+/// game:updateQuestion payload (S2C)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct GameUpdateQuestion {
+    pub current: i32,
+    pub total: i32,
+}
+
+/// game:playerAnswer payload (S2C) — count number
+pub type GamePlayerAnswer = i32;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_message_without_status_roundtrip() {
+        let msg = MessageWithoutStatus {
+            game_id: Some("game-123".to_string()),
+            data: json!({"test": "data"}),
+        };
+        let json = serde_json::to_value(&msg).unwrap();
+        let re_parsed: MessageWithoutStatus<serde_json::Value> =
+            serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.game_id, Some("game-123".to_string()));
+    }
+
+    #[test]
+    fn test_player_login_roundtrip() {
+        let login = PlayerLogin {
+            username: "Alice".to_string(),
+            avatar: Some("avatar-url".to_string()),
+            identifier: None,
+        };
+        let json = serde_json::to_value(&login).unwrap();
+        let re_parsed: PlayerLogin = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.username, "Alice");
+        assert_eq!(re_parsed.avatar, Some("avatar-url".to_string()));
+    }
+
+    #[test]
+    fn test_game_success_room_roundtrip() {
+        let room = GameSuccessRoom {
+            game_id: "room-456".to_string(),
+            require_identifier: Some(true),
+        };
+        let json = serde_json::to_value(&room).unwrap();
+        let re_parsed: GameSuccessRoom = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.game_id, "room-456");
+        assert_eq!(re_parsed.require_identifier, Some(true));
+    }
+
+    #[test]
+    fn test_game_update_question_roundtrip() {
+        let update = GameUpdateQuestion {
+            current: 5,
+            total: 10,
+        };
+        let json = serde_json::to_value(&update).unwrap();
+        let re_parsed: GameUpdateQuestion = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.current, 5);
+        assert_eq!(re_parsed.total, 10);
+    }
+
+    #[test]
+    fn test_player_selected_answer_roundtrip() {
+        let answer = PlayerSelectedAnswer {
+            answer_key: 2,
+            answer_keys: Some(vec![0, 2]),
+            answer_text: Some("Custom answer".to_string()),
+            client_message_id: None,
+        };
+        let json = serde_json::to_value(&answer).unwrap();
+        let re_parsed: PlayerSelectedAnswer = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.answer_key, 2);
+        assert_eq!(re_parsed.answer_keys, Some(vec![0, 2]));
+    }
+
+    #[test]
+    fn test_clock_ping_roundtrip() {
+        let ping = ClockPing {
+            client_send_mono_ms: 1234567890123i64,
+        };
+        let json = serde_json::to_value(&ping).unwrap();
+        let re_parsed: ClockPing = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.client_send_mono_ms, 1234567890123i64);
+    }
+}
