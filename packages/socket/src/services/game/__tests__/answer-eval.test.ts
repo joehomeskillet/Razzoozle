@@ -193,13 +193,18 @@ describe("evaluateAnswer — multiple-select", () => {
     })
   })
 
-  it("missing answerIds → falls through to choice path (solutions.includes check)", () => {
+  it("missing answerIds → type-routed rejection (no fallthrough)", () => {
     const q = makeMultipleSelect([0, 2])
-    // No answerIds supplied → falls through to the choice/solutions branch.
-    // answerId=0 is in solutions [0,2] → correct=true (same as choice logic).
-    expect(evaluateAnswer(q, { answerId: 0 }).correct).toBe(true)
-    // answerId=1 is NOT in solutions → correct=false.
+    // Multiple-select questions are type-routed and do NOT fall through.
+    // Missing answerIds is an invalid submission for a multiple-select question.
+    expect(evaluateAnswer(q, { answerId: 0 }).correct).toBe(false)
     expect(evaluateAnswer(q, { answerId: 1 }).correct).toBe(false)
+  })
+
+  it("undefined answerIds array → type-routed rejection", () => {
+    const q = makeMultipleSelect([0, 2])
+    // Empty submission (no answerIds) → invalid.
+    expect(evaluateAnswer(q, {}).correct).toBe(false)
   })
 })
 

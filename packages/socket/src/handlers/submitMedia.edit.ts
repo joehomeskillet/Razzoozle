@@ -18,6 +18,9 @@ import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import { enhancePrompt } from "@razzoozle/socket/services/ai-provider"
 import { generateImageFromBase } from "@razzoozle/socket/services/comfyui"
 import { assertSafeId } from "@razzoozle/socket/services/config"
+import {
+  checkGlobalSubmissionRate,
+} from "@razzoozle/socket/services/submissionRateLimit"
 import fs from "fs"
 import { relative, resolve } from "path"
 
@@ -106,6 +109,17 @@ export const registerEditHandlers = ({ socket }: SocketContext): void => {
         socket.emit(
           EVENTS.MANAGER.IMAGE_ERROR,
           "errors:submission.promptRejected",
+        )
+
+        return
+      }
+
+      // Coarse server-wide ceiling FIRST: prevent global DoS from unbounded
+      // image-gen requests across all clients. No per-user side effect.
+      if (!checkGlobalSubmissionRate()) {
+        socket.emit(
+          EVENTS.MANAGER.IMAGE_ERROR,
+          "errors:submission.rateLimited",
         )
 
         return
