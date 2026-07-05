@@ -405,6 +405,7 @@ mod tests {
             username: username.to_string(),
             points: 0,
             streak: 0,
+            player_token: None,
             is_bot: None,
             avatar: None,
             achievements: None,

@@ -23,6 +23,9 @@ pub struct Player {
     pub username: String,
     pub points: i32,
     pub streak: i32,
+    #[serde(skip)]
+    #[ts(skip)]
+    pub player_token: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_bot: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -213,6 +216,7 @@ mod tests {
             username: "Alice".to_string(),
             points: 100,
             streak: 3,
+            player_token: None,
             is_bot: None,
             avatar: Some("data:image/svg+xml,...".to_string()),
             achievements: Some(vec!["first_correct".to_string()]),

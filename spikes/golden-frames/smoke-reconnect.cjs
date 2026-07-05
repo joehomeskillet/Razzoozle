@@ -11,6 +11,7 @@ const pass = (m) => { log("PASS ✅:", m); process.exit(0); };
 setTimeout(() => fail("TIMEOUT after 60s"), 60000);
 
 let gameId, inviteCode, alice, bob;
+let aliceToken = null;
 let aliceScoreBeforeDisconnect = null, reconnected = false, loggedIn = 0;
 
 const mgr = io(URL, { auth: { clientId: "mgr-rc" }, transports: ["websocket"], reconnection: false });
@@ -36,14 +37,20 @@ function mkPlayer(cid, name) {
 // Alice: same as a player, but we hold a handle to disconnect + reconnect her.
 function mkAlice() {
   const a = io(URL, { auth: { clientId: "alice-1" }, transports: ["websocket"], reconnection: false });
-  a.on("connect", () => a.emit("player:join", inviteCode));
+  a.on("connect", () => {
+    if (reconnected) {
+      a.emit("player:reconnect", { gameId, playerToken: aliceToken });
+    } else {
+      a.emit("player:join", inviteCode);
+    }
+  });
+  a.on("player:token", (p) => { aliceToken = p && p.playerToken; });
   a.on("game:successRoom", () => a.emit("player:login", { gameId, data: { username: "Alice", avatar: "a2" } }));
   a.on("game:successJoin", () => { if (reconnected) log("Alice RE-joined after reconnect"); else if (++loggedIn === 2) { log("Alice+Bob logged in → startGame"); mgr.emit("manager:startGame", { gameId }); } });
   a.on("game:status", (s) => { if (s && s.name === "SELECT_ANSWER") a.emit("player:selectedAnswer", { gameId, data: { answerKey: 1 } }); });
   a.on("connect_error", (e) => fail("Alice connect_error " + e.message));
   return a;
 }
-
 function aliceEntry(lb) { return Array.isArray(lb) ? lb.filter((e) => (e.username || e.name) === "Alice") : []; }
 
 // manager drives the round loop + orchestrates the disconnect/reconnect between Q1 and Q2.

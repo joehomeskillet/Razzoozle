@@ -698,6 +698,8 @@ async fn main() {
                                             .emit(constants::game::SUCCESS_JOIN, &game_id_ret)
                                             .ok();
 
+
+                                        socket.emit("player:token", &serde_json::json!({"playerToken": player.player_token})).ok();
                                         if let Ok(sid) = manager_socket_id.parse() {
                                             if let Some(mgr) = io_handle.get_socket(sid) {
                                                 mgr.emit(constants::manager::NEW_PLAYER, &player).ok();
@@ -2091,24 +2093,25 @@ async fn main() {
                 }
             });
 
-            // Handle PLAYER.RECONNECT — reconnect player by clientId
+            // Handle PLAYER.RECONNECT — reconnect player by token (secure) or clientId (backward-compat)
             socket.on(constants::player::RECONNECT, {
                 let registry = Arc::clone(&registry);
                 let io_handle = io_handle.clone();
                 let socket_id = socket.id.to_string();
+                let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
                     let registry = Arc::clone(&registry);
                     let io_handle = io_handle.clone();
                     let socket_id = socket_id.clone();
+                    let client_id = client_id.clone();
 
                     tokio::spawn(async move {
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
-                        let client_id_opt = payload.get("clientId").and_then(|v| v.as_str());
+                        let player_token_opt = payload.get("playerToken").and_then(|v| v.as_str());
 
-                        if let (Some(game_id), Some(client_id)) = (game_id_opt, client_id_opt) {
+                        if let Some(game_id) = game_id_opt {
                             let game_id = game_id.to_string();
-                            let client_id = client_id.to_string();
 
                             let game_opt = {
                                 let registry = registry.read().await;
@@ -2118,29 +2121,43 @@ async fn main() {
                             if let Some(game_ref) = game_opt {
                                 let mut game = game_ref.lock().unwrap();
 
-                                // Find player by clientId
-                                if let Some(pos) = game.players.iter().position(|p| p.client_id == client_id) {
-                                    let player = game.players[pos].clone();
+                                // Find player: token-preferred (secure), fall back to handshake clientId (backward-compat)
+                                let pos_opt = if let Some(token) = player_token_opt {
+                                    game.players.iter().position(|p| p.player_token.as_deref() == Some(token))
+                                } else {
+                                    game.players.iter().position(|p| p.client_id == client_id)
+                                };
+
+                                if let Some(pos) = pos_opt {
+                                    let game_id_ret = game.game_id.clone();
                                     game.players[pos].id = socket_id.clone();
                                     game.players[pos].connected = true;
 
-                                    // Update engine players if exists
-                                    if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == client_id) {
+                                    // Update engine players
+                                    if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
                                         game.engine.players[engine_pos].id = socket_id.clone();
                                         game.engine.players[engine_pos].connected = true;
                                     }
 
+                                    // Read points/streak from engine.players (where scoring happens)
+                                    let (username, points, streak) = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                        let ep = &game.engine.players[engine_pos];
+                                        (ep.username.clone(), ep.points, ep.streak)
+                                    } else {
+                                        (game.players[pos].username.clone(), game.players[pos].points, game.players[pos].streak)
+                                    };
+
                                     drop(game);
 
                                     // Join the room
-                                    socket.join(game_id);
+                                    socket.join(game_id_ret.clone());
 
                                     // Emit reconnect success with player state
                                     socket.emit(constants::player::SUCCESS_RECONNECT, &serde_json::json!({
-                                        "playerId": player.id,
-                                        "username": player.username,
-                                        "points": player.points,
-                                        "streak": player.streak,
+                                        "playerId": socket_id,
+                                        "username": username,
+                                        "points": points,
+                                        "streak": streak,
                                     })).ok();
                                 } else {
                                     socket.emit(constants::game::ERROR_MESSAGE, "errors:game.playerNotFound").ok();
@@ -2239,10 +2256,10 @@ async fn main() {
                 tokio::spawn(async move {
                     let removed_player = {
                         let mut registry = registry.write().await;
-                        registry.remove_player_by_socket_id(&socket_id)
+                        registry.mark_player_disconnected(&socket_id)
                     };
 
-                    if let Some((game_id, manager_socket_id, removed_player_id, total_players)) =
+                    if let Some((game_id, manager_socket_id, removed_player_id, total_players, removed)) =
                         removed_player
                     {
                         info!(
@@ -2255,11 +2272,13 @@ async fn main() {
                             .emit(constants::game::TOTAL_PLAYERS, &(total_players as i32))
                             .ok();
 
-                        if let Ok(sid) = manager_socket_id.parse() {
-                            if let Some(manager_socket) = io_handle.get_socket(sid) {
-                                manager_socket
-                                    .emit(constants::manager::REMOVE_PLAYER, &removed_player_id)
-                                    .ok();
+                        if removed {
+                            if let Ok(sid) = manager_socket_id.parse() {
+                                if let Some(manager_socket) = io_handle.get_socket(sid) {
+                                    manager_socket
+                                        .emit(constants::manager::REMOVE_PLAYER, &removed_player_id)
+                                        .ok();
+                                }
                             }
                         }
                     } else {

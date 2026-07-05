@@ -241,6 +241,7 @@ impl Game {
             points: 0,
             streak: 0,
             is_bot: None,
+            player_token: Some(Uuid::new_v4().to_string()),
             avatar,
             achievements: None,
             team_id: None,
@@ -491,6 +492,53 @@ impl GameRegistry {
                     game.manager_socket_id.clone(),
                     removed_player_id,
                     game.players.len(),
+                ));
+            }
+        }
+
+        None
+    }
+
+    pub fn mark_player_disconnected(
+        &mut self,
+        socket_id: &str,
+    ) -> Option<(String, String, String, usize, bool)> {
+        for game_ref in self.games_by_id.values() {
+            let mut game = game_ref.lock().unwrap();
+
+            if let Some(player_index) = game
+                .players
+                .iter()
+                .position(|player| player.id == socket_id)
+            {
+                let removed_player_id = game.players[player_index].client_id.clone();
+
+                // Phase-aware keep-on-disconnect:
+                // If lobby (ShowRoom), remove; if started, mark disconnected only
+                let removed = if game.engine.phase == razzoozle_engine::state::GamePhase::ShowRoom {
+                    // Lobby: hard remove
+                    game.players.remove(player_index);
+                    game.engine.players.retain(|player| player.id != socket_id);
+                    game.engine.current_answers.remove(&removed_player_id);
+                    game.engine
+                        .answer_order
+                        .retain(|client_id| client_id != &removed_player_id);
+                    true
+                } else {
+                    // Mid-game: keep slot, just mark disconnected
+                    game.players[player_index].connected = false;
+                    if let Some(eng_pos) = game.engine.players.iter().position(|p| p.id == socket_id) {
+                        game.engine.players[eng_pos].connected = false;
+                    }
+                    false
+                };
+
+                return Some((
+                    game.game_id.clone(),
+                    game.manager_socket_id.clone(),
+                    removed_player_id,
+                    game.players.len(),
+                    removed,
                 ));
             }
         }
