@@ -50,6 +50,16 @@ fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
     }
 }
 
+/// Helper: Check if the payload's hostToken matches the game's host_token.
+fn is_game_host(game: &state::Game, payload: &serde_json::Value) -> bool {
+    if let Some(host_token_val) = payload.get("hostToken") {
+        if let Some(token_str) = host_token_val.as_str() {
+            return game.host_token == token_str;
+        }
+    }
+    true // Legacy: no token in payload means legacy path, already gated by is_logged
+}
+
 // ── Solo play types ─────────────────────────────────────────────────────────
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SoloQuestion {
@@ -379,6 +389,49 @@ async fn handle_solo_score(
     Ok(Json(SoloScoreResponse { leaderboard }))
 }
 
+#[cfg(test)]
+mod host_token_tests {
+    use super::*;
+
+    fn test_game() -> state::Game {
+        state::Game::new(
+            "game-1".to_string(),
+            "INVITE1".to_string(),
+            "manager-1".to_string(),
+            razzoozle_protocol::quizz::Quizz {
+                subject: "Test".to_string(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        )
+    }
+
+    #[test]
+    fn is_game_host_accepts_correct_token() {
+        let game = test_game();
+        let payload = serde_json::json!({ "hostToken": game.host_token.clone() });
+
+        assert!(is_game_host(&game, &payload));
+    }
+
+    #[test]
+    fn is_game_host_rejects_wrong_token() {
+        let game = test_game();
+        let payload = serde_json::json!({ "hostToken": "wrong-token" });
+
+        assert!(!is_game_host(&game, &payload));
+    }
+
+    #[test]
+    fn is_game_host_accepts_legacy_payload_without_token() {
+        let game = test_game();
+        let payload = serde_json::json!({ "gameId": game.game_id });
+
+        assert!(is_game_host(&game, &payload));
+    }
+}
+
 #[tokio::main]
 async fn main() {
     const DEFAULT_MANAGER_PASSWORD: &str = "PASSWORD";
@@ -439,7 +492,7 @@ async fn main() {
                         let mut registry = registry.write().await;
                         // C3 — active-game cap
                         match registry.create_game(socket_id.clone(), quiz_id) {
-                            Ok((game_id, invite_code)) => {
+                            Ok((game_id, invite_code, host_token)) => {
                                 info!(
                                     "Game created: gameId={}, inviteCode={}",
                                     game_id, invite_code
@@ -452,6 +505,7 @@ async fn main() {
                                 let payload = razzoozle_protocol::manager::ManagerGameCreated {
                                     game_id,
                                     invite_code,
+                                    host_token: Some(host_token),
                                 };
 
                                 socket
@@ -703,6 +757,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let start_result = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.start()
@@ -940,6 +1002,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let reveal_result = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.reveal(razzoozle_protocol::status::ScoringMode::Speed).ok()
@@ -1200,6 +1270,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let leaderboard_data = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.leaderboard_view().ok()
@@ -1360,6 +1438,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let next_phase = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.next_or_finish()
@@ -1480,6 +1566,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let next_phase_result = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.next_or_finish()
@@ -1526,6 +1620,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let _ = {
                                     let mut game = game_ref.lock().unwrap();
                                     game.engine.phase = GamePhase::Finished;
@@ -1558,6 +1660,7 @@ async fn main() {
                 let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
                     let _delta_seconds = payload.get("deltaSeconds").and_then(|v| v.as_i64());
                     let registry = Arc::clone(&registry);
                     let client_id = client_id.clone();
@@ -1573,6 +1676,23 @@ async fn main() {
                                 .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                 .ok();
                             return;
+                        }
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+                            }
                         }
 
                         // Timer adjustment stored in game state but no emit needed for basic impl
@@ -1611,6 +1731,14 @@ async fn main() {
                                 let registry = registry.read().await;
                                 let game_opt = registry.get_game_by_id(&game_id);
                                 if let Some(game_ref) = game_opt {
+                                    {
+                                        let game = game_ref.lock().unwrap();
+                                        if !is_game_host(&game, &payload) {
+                                            socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                            return;
+                                        }
+                                    }
+
                                     let mut game = game_ref.lock().unwrap();
                                     if let Some(pos) = game.players.iter().position(|p| p.client_id == player_id) {
                                         game.players.remove(pos);
@@ -1813,6 +1941,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let mut game = game_ref.lock().unwrap();
 
                                 // Verify caller is manager
@@ -2047,6 +2183,14 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
+                                {
+                                    let game = game_ref.lock().unwrap();
+                                    if !is_game_host(&game, &payload) {
+                                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                        return;
+                                    }
+                                }
+
                                 let mut game = game_ref.lock().unwrap();
 
                                 // Update manager socket

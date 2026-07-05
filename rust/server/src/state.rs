@@ -369,7 +369,7 @@ impl GameRegistry {
 
     /// Create a new game with the specified quiz ID, or use default if not found.
     /// Returns Err if active-game cap exceeded (C3).
-    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> Result<(String, String), &'static str> {
+    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> Result<(String, String, String), &'static str> {
         // C3 — active-game cap: reject once N concurrent games exist
         if self.games_by_id.len() >= MAX_ACTIVE_GAMES {
             return Err("errors:game.serverBusy");
@@ -384,17 +384,19 @@ impl GameRegistry {
             self.default_quiz.clone()
         };
 
-        let game = Arc::new(Mutex::new(Game::new(
+        let game = Game::new(
             game_id.clone(),
             invite_code.clone(),
             manager_socket_id,
             quiz,
-        )));
+        );
+        let host_token = game.host_token.clone();
+        let game = Arc::new(Mutex::new(game));
 
         self.games_by_code.insert(invite_code.clone(), Arc::clone(&game));
         self.games_by_id.insert(game_id.clone(), game);
 
-        Ok((game_id, invite_code))
+        Ok((game_id, invite_code, host_token))
     }
 
     /// Find a game by invite code.
@@ -613,7 +615,7 @@ mod tests {
         let mut registry = GameRegistry::new(empty_quiz);
 
         // Create a game
-        let (game_id, _) = registry.create_game("manager-1".to_string(), None).unwrap();
+        let (game_id, _, _) = registry.create_game("manager-1".to_string(), None).unwrap();
 
         // Add players to the game
         {
