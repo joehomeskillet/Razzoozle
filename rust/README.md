@@ -28,7 +28,8 @@ the hosted and desktop cases cheaper (RAM, cold start).
 | **2 — Server MVP** | Runnable `axum` + `socketioxide` server; lobby + full round loop | ✅ **deployed & verified** |
 | **2·Batch 1** | Core round loop: select-answer, time-weighted scoring + streaks, reveal (SHOW_RESULT), leaderboard, next/finish, cooldowns | ✅ **full multi-question game → FINISHED** |
 | **2·Batch 2** | All 7 question types: choice, multiple-select, boolean, slider, poll, type-answer (fuzzy), sentence-builder | ✅ **37 engine tests + live** |
-| 2·Batch 3+ | player lifecycle/reconnect, quiz loading from disk, HTTP routes, auth | 🚧 in progress |
+| **2·Batch 3** | Player lifecycle: `totalPlayers` / `newPlayer` / `removePlayer`, disconnect handling, `SHOW_RESPONSES` (answer distribution) | ✅ **full game + player-leave verified live** |
+| 2·Batch 4+ | quiz loading from disk, HTTP routes, auth, peripherals | 🚧 in progress |
 | 3/4 — Peripherals & cutover | themes, AI/media, plugins (Node sidecar), low-latency, display, shadow cutover | ⏳ later |
 
 **It plays a real, scored, multi-question game — deployed.** The Rust server runs

@@ -1,13 +1,8 @@
 // Drive a full 2-question game: manager create -> player join+login -> startGame -> SHOW_QUESTION -> SELECT_ANSWER -> player selectedAnswer (correct) -> manager reveal -> SHOW_RESULT -> manager showLeaderboard -> SHOW_LEADERBOARD (with player points > 0) -> next question -> FINISHED
 //
-// KNOWN GAPS:
-// 1. Second reveal() call fails silently because the engine phase is not transitioned to SelectAnswer during auto-advance.
-//    The server calls show_question() but not open_answers(), leaving phase in ShowQuestion instead of SelectAnswer.
-//    This prevents the second reveal from succeeding.
-// 2. Game never reaches FINISHED state due to the above gap.
-//
+// Reaches FINISHED (Batch-1 auto-advance fix). Target port: SMOKE_URL env or :3479 default.
 const { io } = require("/nvmetank1/projects/Razzoozle/source/node_modules/.pnpm/socket.io-client@4.8.3/node_modules/socket.io-client/build/cjs/index.js");
-const URL = "http://127.0.0.1:3479";
+const URL = process.env.SMOKE_URL || "http://127.0.0.1:3479";
 const seen = [];
 const done = (code) => { console.log("SEEN:", seen.join(" | ")); process.exit(code); };
 setTimeout(() => { console.log("TIMEOUT after 60s"); done(1); }, 60000);

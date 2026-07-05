@@ -40,7 +40,8 @@ server plays a **full, scored, multi-question game end-to-end** (all 7 question
 types) and is **deployed as a container on `:3012`**, parallel to the Node
 server on `:3011` — verified live against the real `socket.io-client`
 (`create → join → login → startGame → question → answer → reveal → leaderboard →
-next → FINISHED`). Remaining toward parity: player reconnect, quiz-from-disk,
+next → FINISHED`), now with **player lifecycle** (join/leave broadcasts, disconnect,
+answer distribution). Remaining toward parity: player reconnect, quiz-from-disk,
 HTTP routes, auth, then peripherals (themes/AI/plugins) and a shadow cutover.
 The live game still runs on Node. **→ [`rust/README.md`](rust/README.md)**
 
