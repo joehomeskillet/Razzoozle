@@ -261,16 +261,21 @@ async fn main() {
                                                     let question_data = game.engine.show_question(0).ok();
 
                                                     if question_data.is_some() {
-                                                        // Transition to SelectAnswer phase
-                                                        let _ = game.engine.open_answers();
-                                                        let question = game.engine.current_question().clone();
-                                                        let total_players = game.players.len() as i32;
+                                                        // Get current server time for response tracking
                                                         let server_now_ms = SystemTime::now()
                                                             .duration_since(UNIX_EPOCH)
                                                             .map(|d| d.as_millis() as i64)
                                                             .unwrap_or(0);
+
+                                                        // Set engine clock to wall-clock time for response_time_ms tracking
+                                                        game.engine.set_clock_ms(server_now_ms);
+
+                                                        // Transition to SelectAnswer phase
+                                                        let _ = game.engine.open_answers();
+                                                        let question = game.engine.current_question().clone();
+                                                        let total_players = game.players.len() as i32;
                                                         let answer_deadline_at_server_ms =
-                                                            server_now_ms + (question.time as i64);
+                                                            server_now_ms + (question.time as i64 * 1000);
 
                                                         (question_data, Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)))
                                                     } else {
@@ -370,6 +375,16 @@ async fn main() {
                                         .find(|p| p.id == socket_id)
                                         .map(|p| p.client_id.clone())
                                         .unwrap_or_else(|| socket_id);
+
+                                    // Get current server time (wall-clock) for response_time_ms calculation
+                                    let server_now_ms = SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .map(|d| d.as_millis() as i64)
+                                        .unwrap_or(0);
+
+                                    // Set engine clock to current wall-clock time so record_answer
+                                    // calculates response_time_ms correctly
+                                    game.engine.set_clock_ms(server_now_ms);
 
                                     game.engine.record_answer(&client_id, answer_key as i32).ok()
                                 };
