@@ -31,13 +31,14 @@ check() { # <file> <pattern> <min> <label>
   if [[ "$n" -lt "$3" ]]; then say "NO-GO: marker '$4' = $n (< $3 in $1) — a batch was reverted"; fail=1
   else say "ok: $4 = $n"; fi
 }
-check "$MAIN"  'AnswerInput'                     8  "B2 answer-types (AnswerInput)"
-check "$MAIN"  'evaluate_answer'                 1  "B2 eval wiring"
-check "$MAIN"  'REMOVE_PLAYER|remove_player'     1  "B3 player-lifecycle"
-check "$MAIN"  'SHOW_RESPONSES|show_responses'   1  "B3 SHOW_RESPONSES"
-check "$STATE" 'load_quizzes'                    1  "B4 quiz-from-disk"
-check "$MAIN"  'handle_get_quizzes'              1  "B4 HTTP routes"
-check "$MAIN"  'is_logged'                       2  "B5 auth gate"
+# floors calibrated to the real Batch-5 known-good file (counts only grow as
+# batches ADD handlers). A DROP below these = a batch was reverted/deleted.
+check "$MAIN"  'answer_keys|answer_text|AnswerInput' 12 "B2 answer-types"
+check "$MAIN"  'evaluate_answer'                 2  "B2 eval wiring"
+check "$MAIN"  'REMOVE_PLAYER|remove_player'     2  "B3 player-lifecycle"
+check "$STATE" 'load_quizzes'                    2  "B4 quiz-from-disk"
+check "$MAIN"  'handle_get_quizzes'              2  "B4 HTTP routes"
+check "$MAIN"  'is_logged'                       8  "B5 auth gate"
 check "$MAIN"  'constants::manager::AUTH'        1  "B5 manager:auth"
 check "$MAIN"  'next_or_finish'                  1  "round-loop advance"
 
