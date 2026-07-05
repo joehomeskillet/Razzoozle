@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -24,6 +25,20 @@
 **[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows 应用（Beta）](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 项目展示](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[反馈问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
+
+---
+
+## 🦀 Rust 重写 — 功能完整的预览版（非默认版本）
+
+Node.js 游戏服务器（`packages/socket`）仍然是 [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) 上**生产环境**运行的版本 —— 本 README 中的每一项功能、所有题型、主题/skeleton、游戏化机制、团队与单人玩法、DiceBear 头像、本地 AI 图像、移动端触感反馈、6 种语言、约 592 项测试，已通过 600 名并发玩家的负载测试。
+
+与此同时，一个从零开始的 **Rust 重写**版游戏服务器（`axum` + `socketioxide 0.15`）使用*完全相同*的 socket.io 通信协议，所以前端察觉不到差异。它现已**功能完整**：一场完整的多题计分游戏、全部 7 种题型、玩家生命周期 + 断线重连、管理员鉴权、从磁盘加载测验、HTTP + 单人端点、游戏控制（踢出 / 跳过 / 中止 / 计时器）、机器人、`/display` kiosk、以及 AI/媒体支持。共享类型由 Rust 通过 `ts-rs` 生成 —— Rust 的通信类型是唯一源。它作为**并行容器在 `:3012` 上**运行，与 Node 的 `:3011` 并行，并通过每次部署时执行一场真实游戏 CI 门控（一场 100 人的完整游戏 + 一次断线重连测试）。但它**尚未成为默认版本**；Node 仍是生产路径，直到完成遮挡式切换。
+
+**为什么选择 Rust：** 将桌面主机应用作为一个 **~10 MB 的 Tauri 应用**（Rust sidecar）发布，而不是约 150 MB 的 Electron 包；编译检查的游戏状态机；以及单个静态二进制文件。
+
+一项并行的 **v2.0 加固**工作 —— 一场对抗性的多模型查漏（19 项已确认的发现）—— 在两个分支上落地了修复：每局资源上限 + 局进化、每 IP 速率限制、路径遍历白名单、Unicode 正确的文本匹配，以及一项由服务器签发的主机令牌鉴权，关闭了一个跨局控制（IDOR）漏洞。下一步计划进行模块化 / 按游戏的 actor 模式重构。
+
+**→ 详情、状态表、构建与运行：[`rust/README.md`](rust/README.md)**
 
 ---
 
@@ -39,13 +54,15 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 
 <div align="center">
 
-| 主持人 / 主屏 | 玩家手机 |
+| 主持人 / 主屏 | 桌面游戏客户端 |
 | :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/phone.webp" width="200" alt="Player phone" /> |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
 
-| 桌面游戏客户端 | 管理员 · 主题驾驶舱 |
+| 玩家手机 | 头像选择 |
 | :---: | :---: |
-| <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> | <img src="docs/screenshots/admin.webp" width="420" alt="Manager theme cockpit" /> |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
 
 <img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
 
@@ -58,21 +75,21 @@ Razzoozle 是一个自托管、实时的**答题游戏**，适用于课堂、活
 | | 功能 |
 | --- | --- |
 | 🎨 | **主题驾驶舱** —— 一个实时的管理员"设计"标签页：颜色、各视图背景、Logo、圆角，以及一个 **扁平 ⇄ 玻璃** 风格切换开关，附带预设（扁平**奶油色**默认 + 可选的紫色**液态玻璃**预设）以及对比度感知的取色器。 |
-| 🥛 | **扁平奶油色设计** —— 温暖的扁平奶油色界面，带有动态背景（漂浮的光斑 + 漂浮的学校/知识图标）、扁平的 "Zig" 字标/徽标，以及墨色奶油底答题色块。 |
+| ☕ | **扁平奶油色设计** —— 温暖的扁平奶油色界面，带有动态背景（漂浮的光斑 + 漂浮的学校/知识图标）、扁平的 "Zig" 字标/徽标，以及墨色奶油底答题色块。 |
 | 🧊 | **液态玻璃界面（可选 / 旧版）** —— 一个可选启用的玻璃拟态主题变体（磨砂、模糊的表面），绝不触碰扁平基线。 |
 | 🎯 | **忠于 Kahoot 的游戏界面** —— 带经典形状图标（三角形 / 菱形 / 圆形 / 方形）的答案方块、一个环形倒计时计时器、一个已收到答案计数器，以及一个带动画的领奖台。 |
-| 🏆 | **游戏化** —— 15 项成就、奖牌、连胜、彩带和音效铃声，外加个人奖杯陈列室。 |
 | 🧑‍🎨 | **玩家头像** —— 每位玩家获得生成的 DiceBear 头像（选择风格 + 重新随机，或上传自己的图片）；头像在大厅中漂浮，并显示在排行榜、领奖台和颁奖中。 |
-| 🎬 | **终局颁奖回顾（Recap）** —— 动画式的"之最"序列（最快手速、最大逆袭、最长连胜、逆转之王……），显示每位获奖者的头像 + 名字，自动播放时按节奏自动推进。 |
+| 🏆 | **游戏化** —— 15 项成就、奖牌、连胜、彩带和音效铃声，外加个人奖杯陈列室。 |
+| 🥇 | **终局颁奖回顾** —— 动画式的"之最"序列（最快手速、最大逆袭、最长连胜、逆转之王……），显示每位获奖者的头像 + 名字，自动播放时按节奏自动推进。 |
 | 👥 | **团队模式** —— 红 / 蓝 / 绿 / 黄队，配实时团队排行榜。 |
 | 📱 | **单人玩法** —— 通过分享链接独自练习任意测验，拥有自己的得分历史。 |
 | ✍️ | **更多题型** —— 在经典单选之外，新增多选、填空作答和滑块。 |
-| 🤝 | **社区题目** —— 一个公开的投稿页面，配管理员审核队列，外加可复用的题目目录和测验存档。 |
-| 🧩 | **插件系统** —— 管理员可安装的 ZIP 插件，拥有独立的"插件"标签页。 |
-| 🧰 | **管理员附加组件（Addons）** —— 从管理员控制台上传、启用并配置 JavaScript 附加组件（独立标签页、能力徽章、持久化配置）；并附带一个可复制粘贴的入门 skeleton（`examples/plugins/starter/`），含编写约定。 |
+| 🔌 | **插件系统** —— 管理员可安装的 ZIP 插件，拥有独立的"插件"标签页。 |
+| 🧩 | **管理员附加组件（Addons）** —— 从管理员控制台上传、启用并配置 JavaScript 附加组件（独立标签页、能力徽章、持久化配置）；并附带一个可复制粘贴的入门 skeleton（`examples/plugins/starter/`），含编写约定。 |
 | 📦 | **Skeleton 主题 ZIP** —— 将整个游戏主题作为 LLM 可读的 ZIP（"skeleton"：设计令牌 + CSS + JS + SKELETON.md 约定）下载/上传。 |
 | 📳 | **移动端触感反馈** —— 玩家手机上的可选振动反馈（倒计时、答题），尊重 reduced-motion。 |
 | 🔗 | **可分享的结果** —— 每个结果的精美链接预览（Open Graph unfurl）、带有"自己来玩 / 自己托管"行动号召的结果页，以及可下载的获胜者贴纸。 |
+| 🤝 | **社区题目** —— 一个公开的投稿页面，配管理员审核队列，外加可复用的题目目录和测验存档。 |
 | 🖼️ | **本地 AI 图像** —— 通过 ComfyUI（Z-Image）在本地设备上生成题目/主题图像，或接入云端服务商 —— 密钥始终留在服务端。 |
 | 🌍 | **6 种语言 + PWA** —— 英语、德语、法语、西班牙语、意大利语、中文；可安装、支持离线感知。 |
 | 📺 | **投影仪 kiosk 模式 + 可靠性** —— 一个 `/display` 投影仪视图、低延迟模式、崩溃恢复、断线重连，以及一个用于 AI 工具控制的 MCP 服务器。 |
