@@ -39,3 +39,5 @@ docs/KAHOOT-GAP-ANALYSIS-v2.md
 docs/rust-port-plan.md
 docs/rust-port-phase2-plan.md
 docs/rust-port-event-inventory.md
+.env.postgres
+postgres-data/

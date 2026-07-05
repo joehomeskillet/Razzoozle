@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: razzoozle_postgres
+    environment:
+      POSTGRES_DB: razzoozle
+      POSTGRES_USER: razzoozle
+      # IMPORTANT: Replace with a generated strong password before deploying.
+      # Generate with: openssl rand -base64 32
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMe_GenStrongPasswordWith_openssl_rand_base64_32}
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U razzoozle"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - razzoozle_network
+
+networks:
+  razzoozle_network:
+    driver: bridge
