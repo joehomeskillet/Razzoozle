@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -336,6 +336,8 @@ async fn handle_solo_score(
 
 #[tokio::main]
 async fn main() {
+    const DEFAULT_MANAGER_PASSWORD: &str = "PASSWORD";
+
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
@@ -400,6 +402,54 @@ async fn main() {
                         socket
                             .emit(constants::manager::GAME_CREATED, &payload)
                             .ok();
+                    });
+                }
+            });
+
+            // Handle MANAGER.AUTH event
+            socket.on(constants::manager::AUTH, {
+                let registry = Arc::clone(&registry);
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<String>(password)| {
+                    let registry = Arc::clone(&registry);
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let expected_password = std::env::var("MANAGER_PASSWORD")
+                            .unwrap_or_else(|_| DEFAULT_MANAGER_PASSWORD.to_string());
+
+                        if password == expected_password {
+                            {
+                                let mut registry = registry.write().await;
+                                registry.login_client(client_id);
+                            }
+
+                            let empty_submissions: HashSet<String> = HashSet::new();
+                            let payload = razzoozle_protocol::manager::ManagerConfig {
+                                quizz: serde_json::json!([]),
+                                results: serde_json::json!([]),
+                                submissions: serde_json::json!(empty_submissions),
+                                media: Some(serde_json::json!([])),
+                                theme_templates: Some(serde_json::json!([])),
+                                team_mode: Some(false),
+                                low_latency_enabled: Some(false),
+                                join_locked: Some(false),
+                                randomize_answers: Some(false),
+                                scoring_mode: None,
+                                achievements: Some(serde_json::json!([])),
+                                dev_mode: Some(false),
+                                dev_api_key: None,
+                                plugins: Some(Vec::new()),
+                                observability: None,
+                            };
+
+                            socket.emit(constants::manager::CONFIG, &payload).ok();
+                        } else {
+                            socket
+                                .emit(constants::manager::ERROR_MESSAGE, "errors:manager.invalidPassword")
+                                .ok();
+                        }
                     });
                 }
             });
@@ -532,12 +582,26 @@ async fn main() {
             socket.on(constants::manager::START_GAME, {
                 let registry = Arc::clone(&registry);
                 let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
                     let registry = Arc::clone(&registry);
                     let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
 
                     tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
                         info!("manager:startGame received: gameId={:?}", game_id_opt);
 
@@ -755,12 +819,26 @@ async fn main() {
             socket.on(constants::manager::REVEAL_ANSWER, {
                 let registry = Arc::clone(&registry);
                 let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
                     let registry = Arc::clone(&registry);
                     let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
 
                     tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
                         if let Some(game_id) = game_id_opt {
@@ -1001,12 +1079,26 @@ async fn main() {
             socket.on(constants::manager::SHOW_LEADERBOARD, {
                 let registry = Arc::clone(&registry);
                 let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
                     let registry = Arc::clone(&registry);
                     let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
 
                     tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
                         if let Some(game_id) = game_id_opt {

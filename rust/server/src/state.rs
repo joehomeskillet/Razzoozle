@@ -4,7 +4,7 @@ use razzoozle_engine::state::{GameState, GamePhase};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -86,6 +86,7 @@ pub struct GameRegistry {
     games_by_id: HashMap<String, Arc<Mutex<Game>>>,
     quizzes: HashMap<String, Quizz>,
     default_quiz: Quizz,
+    logged_clients: HashSet<String>,
 }
 
 impl GameRegistry {
@@ -137,7 +138,16 @@ impl GameRegistry {
             games_by_id: HashMap::new(),
             quizzes,
             default_quiz: quiz_fixture,
+            logged_clients: HashSet::new(),
         }
+    }
+
+    pub fn is_logged(&self, client_id: &str) -> bool {
+        self.logged_clients.contains(client_id)
+    }
+
+    pub fn login_client(&mut self, client_id: String) {
+        self.logged_clients.insert(client_id);
     }
 
     /// Generate a 6-digit PIN code for the invite (matching Node.js validation).

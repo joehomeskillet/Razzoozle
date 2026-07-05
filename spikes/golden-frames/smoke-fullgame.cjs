@@ -13,6 +13,7 @@ let playerHasPoints = false;
 
 mgr.on("connect", () => {
   seen.push("connect");
+  mgr.emit("manager:auth", "PASSWORD"); // Batch 5: startGame/reveal/leaderboard are auth-gated
   mgr.emit("game:create", "quizz-1");
 });
 
