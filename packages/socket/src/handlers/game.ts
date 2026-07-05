@@ -76,7 +76,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     game.setPlayerDisconnected(socket.id)
   }
 
-  socket.on(EVENTS.PLAYER.RECONNECT, ({ gameId }) => {
+  socket.on(EVENTS.PLAYER.RECONNECT, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
+    if (typeof gameId !== "string") return
     const game = registry.getPlayerGame(gameId, clientId)
 
     if (game) {
@@ -88,7 +90,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     socket.emit(EVENTS.GAME.RESET, "errors:game.notFound")
   })
 
-  socket.on(EVENTS.MANAGER.RECONNECT, ({ gameId }) => {
+  socket.on(EVENTS.MANAGER.RECONNECT, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
+    if (typeof gameId !== "string") return
     const game = registry.getManagerGame(gameId, clientId)
 
     if (game) {
@@ -109,7 +113,8 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     socket.emit(EVENTS.GAME.RESET, "errors:game.expired")
   })
 
-  socket.on(EVENTS.GAME.CREATE, (quizzId) => {
+  socket.on(EVENTS.GAME.CREATE, (quizzId: unknown) => {
+    if (typeof quizzId !== "string") return
     const quizzList = getQuizz()
     const quizz = quizzList.find((q) => q.id === quizzId)
 
@@ -135,7 +140,8 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     registry.addGame(game)
   })
 
-  socket.on(EVENTS.PLAYER.JOIN, (inviteCode) => {
+  socket.on(EVENTS.PLAYER.JOIN, (inviteCode: unknown) => {
+    if (typeof inviteCode !== "string") return
     const result = inviteCodeValidator.safeParse(inviteCode)
 
     if (result.error) {
@@ -164,11 +170,20 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     })
   })
 
-  socket.on(EVENTS.PLAYER.LOGIN, ({ gameId, data }) =>
-    withGame(gameId, socket, (game) => {
-      void game.join(socket, data.username, data.avatar, data.identifier)
-    }),
-  )
+  socket.on(EVENTS.PLAYER.LOGIN, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown; data?: unknown } | null | undefined)?.gameId
+    const data = (payload as { gameId?: unknown; data?: unknown } | null | undefined)?.data
+    
+    withGame(typeof gameId === "string" ? gameId : undefined, socket, (game) => {
+      if (typeof data !== "object" || data === null) return
+      const dataObj = data as { username?: unknown; avatar?: unknown; identifier?: unknown }
+      const username = typeof dataObj.username === "string" ? dataObj.username : undefined
+      const avatar = typeof dataObj.avatar === "string" ? dataObj.avatar : undefined
+      const identifier = typeof dataObj.identifier === "string" ? dataObj.identifier : undefined
+      if (!username) return
+      void game.join(socket, username, avatar, identifier)
+    })
+  })
 
   socket.on(EVENTS.PLAYER.SET_AVATAR, (payload) => {
     if (typeof payload !== "object" || payload === null) {
@@ -218,12 +233,16 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }
   })
 
-  socket.on(EVENTS.MANAGER.KICK_PLAYER, ({ gameId, playerId }) =>
-    withGame(gameId, socket, (game) => game.kickPlayer(socket, playerId)),
+  socket.on(EVENTS.MANAGER.KICK_PLAYER, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown; playerId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      const playerId = (payload as { gameId?: unknown; playerId?: unknown } | null | undefined)?.playerId
+      if (typeof playerId !== "string") return
+      game.kickPlayer(socket, playerId)
+    }),
   )
 
-  socket.on(EVENTS.MANAGER.START_GAME, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.start(socket)),
+  socket.on(EVENTS.MANAGER.START_GAME, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.start(socket)),
   )
 
   // Host-only: toggle auto-advance. Routed via withAuth + getManagerGame (same
@@ -271,8 +290,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // SET_AUTO), validated by addBotsValidator; the env / ownership / window gates
   // live in game.addBots so a malformed count is rejected here but the prod-
   // safety gate is enforced server-side regardless of the handler.
-  socket.on(EVENTS.MANAGER.ADD_BOTS, ({ gameId, count }) =>
-    withGame(gameId, socket, (game) => {
+  socket.on(EVENTS.MANAGER.ADD_BOTS, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown; count?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      const count = (payload as { gameId?: unknown; count?: unknown } | null | undefined)?.count
       const parsed = addBotsValidator.safeParse({ count })
 
       if (!parsed.success) {
@@ -283,8 +303,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }),
   )
 
-  socket.on(EVENTS.PLAYER.SELECTED_ANSWER, ({ gameId, data }) =>
-    withGame(gameId, socket, (game) => {
+  socket.on(EVENTS.PLAYER.SELECTED_ANSWER, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown; data?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      const data = (payload as { gameId?: unknown; data?: unknown } | null | undefined)?.data
       // Harden against malformed/hostile payloads: require a finite integer
       // answerKey and an optional string clientMessageId, mirroring the JOIN/
       // username validation pattern. Guard `data` is an object first.
@@ -359,8 +380,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // Low-latency observability: a manager opts in to health snapshots for its own
   // game. Manager-only (resolved via getManagerGame + clientId); no-op when the
   // game isn't found or low-latency mode is off.
-  socket.on(EVENTS.METRICS.SUBSCRIBE, ({ gameId }) => {
-    if (!gameId) {
+  socket.on(EVENTS.METRICS.SUBSCRIBE, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
+    if (typeof gameId !== "string") {
       return
     }
 
@@ -457,12 +479,12 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }),
   )
 
-  socket.on(EVENTS.MANAGER.ABORT_QUIZ, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.abortRound(socket)),
+  socket.on(EVENTS.MANAGER.ABORT_QUIZ, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.abortRound(socket)),
   )
 
-  socket.on(EVENTS.MANAGER.NEXT_QUESTION, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.nextRound(socket)),
+  socket.on(EVENTS.MANAGER.NEXT_QUESTION, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.nextRound(socket)),
   )
 
   // Host-only: advance to the leaderboard screen. Routed via withAuth +
@@ -487,16 +509,17 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // NEXT_QUESTION (the round method checks socket.id === managerId). ADJUST_TIMER
   // additionally validates + clamps deltaSeconds to a sane host range so a
   // malformed/hostile value can never blow up the countdown.
-  socket.on(EVENTS.MANAGER.SKIP_QUESTION, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.skipQuestion(socket)),
+  socket.on(EVENTS.MANAGER.SKIP_QUESTION, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.skipQuestion(socket)),
   )
 
-  socket.on(EVENTS.MANAGER.REVEAL_ANSWER, ({ gameId }) =>
-    withGame(gameId, socket, (game) => game.revealAnswer(socket)),
+  socket.on(EVENTS.MANAGER.REVEAL_ANSWER, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.revealAnswer(socket)),
   )
 
-  socket.on(EVENTS.MANAGER.ADJUST_TIMER, ({ gameId, deltaSeconds }) =>
-    withGame(gameId, socket, (game) => {
+  socket.on(EVENTS.MANAGER.ADJUST_TIMER, (payload: unknown) =>
+    withGame((payload as { gameId?: unknown; deltaSeconds?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      const deltaSeconds = (payload as { gameId?: unknown; deltaSeconds?: unknown } | null | undefined)?.deltaSeconds
       if (
         typeof deltaSeconds !== "number" ||
         !Number.isFinite(deltaSeconds) ||
@@ -514,7 +537,11 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }),
   )
 
-  socket.on(EVENTS.MANAGER.LEAVE, ({ gameId }) => {
+  socket.on(EVENTS.MANAGER.LEAVE, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
+    if (typeof gameId !== "string") {
+      return
+    }
     const game = registry.getManagerGame(gameId, clientId)
 
     if (game) {
@@ -525,7 +552,11 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     }
   })
 
-  socket.on(EVENTS.PLAYER.LEAVE, ({ gameId }) => {
+  socket.on(EVENTS.PLAYER.LEAVE, (payload: unknown) => {
+    const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
+    if (typeof gameId !== "string") {
+      return
+    }
     const game = registry.getPlayerGame(gameId, clientId)
 
     if (game) {
