@@ -137,10 +137,10 @@ const LowLatencyHealth = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[#1B1830] p-3 text-sm text-white shadow-xl">
+        <div className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[var(--surface)] p-3 text-sm text-[color:var(--game-fg)] shadow-xl">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-bold">{t("manager:lowLatency.title")}</span>
-            <span className="text-[10px] text-white/40">
+            <span className="text-[10px] text-[color:var(--game-fg)]/40">
               {t("manager:lowLatency.p50p95")}
             </span>
           </div>
@@ -164,22 +164,22 @@ const LowLatencyHealth = () => {
             count={ack?.count}
           />
 
-          <div className="mt-2 border-t border-white/15 pt-2">
+          <div className="mt-2 border-t border-[color:var(--game-fg)]/15 pt-2">
             <div className="flex items-center justify-between py-0.5">
-              <span className="text-white/70">
+              <span className="text-[color:var(--game-fg)]/70">
                 {t("manager:lowLatency.reconnects")}
               </span>
               <span className="font-mono tabular-nums">{reconnectCount}</span>
             </div>
             <div className="flex items-center justify-between py-0.5">
-              <span className="text-white/70">
+              <span className="text-[color:var(--game-fg)]/70">
                 {t("manager:lowLatency.rejected")}
               </span>
               <span className="font-mono tabular-nums">{rejectedTotal}</span>
             </div>
 
             {rejectedEntries.length > 0 && (
-              <div className="mt-1 space-y-0.5 text-[11px] text-white/50">
+              <div className="mt-1 space-y-0.5 text-[11px] text-[color:var(--game-fg)]/50">
                 {rejectedEntries.map(([reason, n]) => (
                   <div
                     key={reason}

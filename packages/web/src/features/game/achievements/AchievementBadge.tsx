@@ -59,7 +59,7 @@ const LIVE_GLYPH_HEX: Record<"bronze" | "silver" | "gold" | "diamant", string> =
   bronze: "#ffffff",
   silver: "#0E1120",
   gold: "#0E1120",
-  diamant: "#ffffff",
+  diamant: "#0B0B12",
 }
 
 // ─── Optional color override (literal hex for the PNG-capture subtree) ────────

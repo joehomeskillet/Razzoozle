@@ -34,7 +34,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
   const reduced = useReducedMotion() ?? false
   const reveal = useReveal()
 
-  const accent = correct ? "#facc15" : "#ef4444"
+  const accent = correct ? "var(--color-accent)" : "var(--state-wrong)"
 
   if (typeof document === "undefined") return null
 
@@ -67,7 +67,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
               aria-hidden
               className="pointer-events-none absolute inset-y-0 left-0 w-16"
               style={{
-                background: `linear-gradient(90deg, ${accent}33, transparent)`,
+                background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 20%, transparent), transparent)`,
               }}
             />
 
@@ -85,7 +85,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
             {/* Icon circle */}
             <span
               className="relative z-10 flex size-11 shrink-0 items-center justify-center rounded-full"
-              style={{ background: `${accent}22` }}
+              style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}
             >
               {correct ? (
                 <motion.span

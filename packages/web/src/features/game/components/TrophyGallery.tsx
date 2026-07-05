@@ -132,7 +132,7 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
               {unlocked && (
                 <span
                   className={clsx(
-                    "absolute right-2 top-2 rounded-full bg-[#2B2B33] px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
+                    "absolute right-2 top-2 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
                     TIER_TEXT[tier],
                   )}
                   aria-hidden
