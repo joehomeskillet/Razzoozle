@@ -2974,3 +2974,26 @@ export const listAssignments = (): Assignment[] => {
     })
 }
 
+
+// ──────────────────────────────────────────────────────────────────────────
+// Storage Repository Integration (PHASE 1)
+// ──────────────────────────────────────────────────────────────────────────
+// Export the storage repository factory for use throughout the application.
+// This enables the storage abstraction layer to be used for reading/writing
+// game configuration and credentials.
+
+export { storageRepository, resetStorageRepository } from "@razzoozle/socket/services/storage"
+export type { StorageRepository } from "@razzoozle/socket/services/storage/storage-repository"
+
+/**
+ * Get the manager password using the storage repository.
+ * This is the primary consumer of the storage abstraction layer.
+ *
+ * When DATABASE_MODE is unset (default), this delegates to FileSystemRepository
+ * which reads from game.json (preserving existing behavior).
+ * When DATABASE_MODE='pg', this reads from Postgres.
+ */
+export const getManagerPasswordFromStorage = async (): Promise<string> => {
+  const repo = require("@razzoozle/socket/services/storage").storageRepository()
+  return repo.getManagerPassword()
+}

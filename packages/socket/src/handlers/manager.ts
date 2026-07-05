@@ -23,6 +23,7 @@ import {
   countPendingSubmissions,
   getAISettings,
   getGameConfig,
+  getManagerPasswordFromStorage,
   getQuizzById,
   getSubmissionById,
   getSubmissions,
@@ -684,11 +685,15 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
     manager.logout(socket)
   })
 
-  socket.on(EVENTS.MANAGER.AUTH, (password) => {
+  socket.on(EVENTS.MANAGER.AUTH, async (password) => {
     try {
-      const config = getGameConfig()
+      // PHASE 1: Read manager password through the storage repository.
+      // When DATABASE_MODE is unset (default), this delegates to FileSystemRepository
+      // which reads from game.json (preserving existing behavior).
+      // When DATABASE_MODE='pg', this reads from Postgres.
+      const managerPassword = await getManagerPasswordFromStorage()
 
-      if (config.managerPassword === DEFAULT_MANAGER_PASSWORD) {
+      if (managerPassword === DEFAULT_MANAGER_PASSWORD) {
         socket.emit(
           EVENTS.MANAGER.ERROR_MESSAGE,
           "errors:manager.passwordNotConfigured",
@@ -710,7 +715,7 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
       // timingSafeEqual throws on unequal-length buffers, so a length mismatch is
       // itself a rejection (checked first, short-circuiting the compare).
       const presented = Buffer.from(typeof password === "string" ? password : "")
-      const expected = Buffer.from(config.managerPassword)
+      const expected = Buffer.from(managerPassword)
 
       if (
         presented.length !== expected.length ||
