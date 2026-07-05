@@ -33,6 +33,13 @@ interface Props {
   data: CommonStatusDataMap["SHOW_RESULT"]
 }
 
+// Stable empty fallback. Selecting `s.submittedChunks ?? []` INSIDE the Zustand
+// selector returns a brand-new [] every call when submittedChunks is undefined
+// (every non-sentence-builder question), so Zustand's referential-equality check
+// always sees "changed" → re-render → re-select → infinite loop (React #185).
+// Default OUTSIDE the selector against a stable reference instead.
+const EMPTY_CHUNKS: string[] = []
+
 const Result = ({
   data: {
     correct,
@@ -55,7 +62,7 @@ const Result = ({
   },
 }: Props) => {
   const player = usePlayerStore()
-  const submittedChunks = useAnswerStore((s) => s.submittedChunks ?? [])
+  const submittedChunks = useAnswerStore((s) => s.submittedChunks) ?? EMPTY_CHUNKS
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
