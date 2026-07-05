@@ -355,12 +355,30 @@ async fn main() {
 
                     tokio::spawn(async move {
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
-                        let answer_key_opt = payload
-                            .get("data")
-                            .and_then(|v| v.get("answerKey"))
-                            .and_then(|v| v.as_i64());
 
-                        if let (Some(game_id), Some(answer_key)) = (game_id_opt, answer_key_opt) {
+                        // Extract all answer fields
+                        let data_obj = payload.get("data");
+                        let answer_key_opt = data_obj
+                            .and_then(|v| v.get("answerKey"))
+                            .and_then(|v| v.as_i64())
+                            .map(|v| v as i32);
+
+                        let answer_keys_opt = data_obj
+                            .and_then(|v| v.get("answerKeys"))
+                            .and_then(|v| v.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_i64().map(|n| n as i32))
+                                    .collect::<Vec<i32>>()
+                            })
+                            .and_then(|v| if v.is_empty() { None } else { Some(v) });
+
+                        let answer_text_opt = data_obj
+                            .and_then(|v| v.get("answerText"))
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
+
+                        if let Some(game_id) = game_id_opt {
                             let game_opt = {
                                 let registry = registry.read().await;
                                 registry.get_game_by_id(game_id)
@@ -386,7 +404,12 @@ async fn main() {
                                     // calculates response_time_ms correctly
                                     game.engine.set_clock_ms(server_now_ms);
 
-                                    game.engine.record_answer(&client_id, answer_key as i32).ok()
+                                    game.engine.record_answer(
+                                        &client_id,
+                                        answer_key_opt,
+                                        answer_keys_opt,
+                                        answer_text_opt,
+                                    ).ok()
                                 };
 
                                 if record_result.is_some() {
@@ -446,29 +469,29 @@ async fn main() {
                                     {
                                         let game = game_ref.lock().unwrap();
                                         let total_players = game.engine.players.len() as i32;
-                                        
+
                                         // Get sorted leaderboard for ranking
                                         let sorted_players: Vec<(String, i32)> = game.engine.players.iter()
                                             .map(|p| (p.client_id.clone(), p.points))
                                             .collect();
                                         let mut sorted_by_points = sorted_players.clone();
                                         sorted_by_points.sort_by(|a, b| b.1.cmp(&a.1));
-                                        
+
                                         // Create rank map: client_id -> rank (1-based)
                                         let mut rank_map = std::collections::HashMap::new();
                                         for (idx, (client_id, _)) in sorted_by_points.iter().enumerate() {
                                             rank_map.insert(client_id.clone(), (idx + 1) as i32);
                                         }
-                                        
+
                                         // Send SHOW_RESULT to each player
                                         for player in &game.engine.players {
                                             if let Some(result) = game.engine.result_for(&player.client_id) {
                                                 let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
                                                 let mut show_result_data = result.to_show_result_data(&player, total_players);
                                                 show_result_data.rank = rank;
-                                                
+
                                                 let status = GameStatus::ShowResult(show_result_data);
-                                                
+
                                                 // Send to this player's socket
                                                 if let Ok(sid) = player.id.parse() {
                                                     if let Some(player_socket) = io_handle.get_socket(sid) {
@@ -618,68 +641,81 @@ async fn main() {
                                                 io_handle.to(game_id_clone)
                                                     .emit(constants::game::STATUS, &status).ok();
                                             } else if let Some(GamePhase::ShowQuestion) = next_phase {
-                                                // Move to next question
-                                                let question_data = {
-                                                    let game = game_ref.lock().unwrap();
-                                                    game.engine.current_question().clone()
+                                                // Move to next question: call open_answers() and set engine clock
+                                                let (question_data, select_data_tuple) = {
+                                                    let mut game = game_ref.lock().unwrap();
+                                                    let question = game.engine.current_question().clone();
+
+                                                    // Get current server time for response tracking
+                                                    let server_now_ms = SystemTime::now()
+                                                        .duration_since(UNIX_EPOCH)
+                                                        .map(|d| d.as_millis() as i64)
+                                                        .unwrap_or(0);
+
+                                                    // Set engine clock to wall-clock time
+                                                    game.engine.set_clock_ms(server_now_ms);
+
+                                                    // Transition to SelectAnswer phase
+                                                    let _ = game.engine.open_answers();
+
+                                                    let total_players = game.players.len() as i32;
+                                                    let answer_deadline_at_server_ms =
+                                                        server_now_ms + (question.time as i64 * 1000);
+
+                                                    let show_question_data = ShowQuestionData {
+                                                        question: question.question.clone(),
+                                                        answers: question.answers.clone(),
+                                                        display_order: None,
+                                                        media: question.media.clone(),
+                                                        cooldown: question.cooldown,
+                                                        submitted_by: question.submitted_by.clone(),
+                                                    };
+
+                                                    (show_question_data, Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)))
                                                 };
 
-                                                let status = GameStatus::ShowQuestion(ShowQuestionData {
-                                                    question: question_data.question.clone(),
-                                                    answers: question_data.answers.clone(),
-                                                    display_order: None,
-                                                    media: question_data.media.clone(),
-                                                    cooldown: question_data.cooldown,
-                                                    submitted_by: question_data.submitted_by.clone(),
-                                                });
+                                                // Emit SHOW_QUESTION
+                                                let status = GameStatus::ShowQuestion(question_data);
                                                 io_handle.to(game_id_clone.clone())
                                                     .emit(constants::game::STATUS, &status).ok();
 
-                                                // Then SelectAnswer
-                                                let select_data = {
-                                                    let game = game_ref.lock().unwrap();
-                                                    game.engine.current_question().clone()
-                                                };
+                                                // Then emit SELECT_ANSWER
+                                                if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
+                                                    let question_type_str = question.r#type.as_ref().map(|t| {
+                                                        match t {
+                                                            QuestionType::Choice => "choice",
+                                                            QuestionType::Boolean => "boolean",
+                                                            QuestionType::Slider => "slider",
+                                                            QuestionType::Poll => "poll",
+                                                            QuestionType::MultipleSelect => "multiple-select",
+                                                            QuestionType::TypeAnswer => "type-answer",
+                                                            QuestionType::SentenceBuilder => "sentence-builder",
+                                                        }.to_string()
+                                                    });
 
-                                                let total_players = {
-                                                    let game = game_ref.lock().unwrap();
-                                                    game.players.len() as i32
-                                                };
+                                                    let select_answer = SelectAnswerData {
+                                                        question: question.question.clone(),
+                                                        answers: question.answers.clone(),
+                                                        media: question.media.clone(),
+                                                        time: question.time,
+                                                        total_player: total_players,
+                                                        question_type: question_type_str,
+                                                        min: question.min.map(|v| v as i32),
+                                                        max: question.max.map(|v| v as i32),
+                                                        step: question.step.map(|v| v as i32),
+                                                        unit: question.unit.clone(),
+                                                        shuffled_chunks: None,
+                                                        server_seq: None,
+                                                        server_now_ms: Some(server_now_ms),
+                                                        question_start_at_server_ms: Some(server_now_ms),
+                                                        answer_deadline_at_server_ms: Some(answer_deadline_at_server_ms),
+                                                        submitted_by: question.submitted_by.clone(),
+                                                    };
 
-                                                let question_type_str = select_data.r#type.as_ref().map(|t| {
-                                                    match t {
-                                                        QuestionType::Choice => "choice",
-                                                        QuestionType::Boolean => "boolean",
-                                                        QuestionType::Slider => "slider",
-                                                        QuestionType::Poll => "poll",
-                                                        QuestionType::MultipleSelect => "multiple-select",
-                                                        QuestionType::TypeAnswer => "type-answer",
-                                                        QuestionType::SentenceBuilder => "sentence-builder",
-                                                    }.to_string()
-                                                });
-
-                                                let select_answer = SelectAnswerData {
-                                                    question: select_data.question.clone(),
-                                                    answers: select_data.answers.clone(),
-                                                    media: select_data.media.clone(),
-                                                    time: select_data.time,
-                                                    total_player: total_players,
-                                                    question_type: question_type_str,
-                                                    min: select_data.min.map(|v| v as i32),
-                                                    max: select_data.max.map(|v| v as i32),
-                                                    step: select_data.step.map(|v| v as i32),
-                                                    unit: select_data.unit.clone(),
-                                                    shuffled_chunks: None,
-                                                    server_seq: None,
-                                                    server_now_ms: None,
-                                                    question_start_at_server_ms: None,
-                                                    answer_deadline_at_server_ms: None,
-                                                    submitted_by: select_data.submitted_by.clone(),
-                                                };
-
-                                                let status = GameStatus::SelectAnswer(select_answer);
-                                                io_handle.to(game_id_clone)
-                                                    .emit(constants::game::STATUS, &status).ok();
+                                                    let status = GameStatus::SelectAnswer(select_answer);
+                                                    io_handle.to(game_id_clone)
+                                                        .emit(constants::game::STATUS, &status).ok();
+                                                }
                                             }
                                         }
                                     });

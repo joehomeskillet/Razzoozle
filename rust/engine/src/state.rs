@@ -1,6 +1,7 @@
 //! state.rs — IO-free game phase state machine.
 
-use crate::scoring::{apply_first_correct_bonus, calculate_points, is_correct};
+use crate::eval::{self, AnswerInput};
+use crate::scoring::{apply_first_correct_bonus, calculate_points};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::{Question, Quizz};
 use razzoozle_protocol::status::{
@@ -52,7 +53,7 @@ impl std::error::Error for GameError {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Answer {
-    pub answer_key: i32,
+    pub answer_input: AnswerInput,
     pub response_time_ms: i64,
 }
 
@@ -163,7 +164,9 @@ impl GameState {
     pub fn record_answer(
         &mut self,
         client_id: &str,
-        answer_key: i32,
+        answer_key: Option<i32>,
+        answer_keys: Option<Vec<i32>>,
+        answer_text: Option<String>,
     ) -> Result<(), GameError> {
         if self.phase != GamePhase::SelectAnswer {
             return Err(GameError::InvalidTransition {
@@ -186,7 +189,11 @@ impl GameState {
         self.current_answers.insert(
             client_id.to_string(),
             Answer {
-                answer_key,
+                answer_input: AnswerInput {
+                    answer_key,
+                    answer_keys,
+                    answer_text,
+                },
                 response_time_ms,
             },
         );
@@ -211,7 +218,9 @@ impl GameState {
             .find(|client_id| {
                 self.current_answers
                     .get(*client_id)
-                    .is_some_and(|answer| is_correct(&question, answer.answer_key))
+                    .is_some_and(|answer| {
+                        eval::evaluate_answer(&question, &answer.answer_input).correct
+                    })
             })
             .cloned();
 
@@ -219,11 +228,12 @@ impl GameState {
 
         for player in &mut self.players {
             let answer = self.current_answers.get(&player.client_id);
-            let correct = answer
+            let eval_result = answer
                 .as_ref()
-                .is_some_and(|a| is_correct(&question, a.answer_key));
-            let base_factor = if correct { 1.0 } else { 0.0 };
-            let response_time_ms = answer.map(|a| a.response_time_ms).unwrap_or(0);
+                .map(|a| eval::evaluate_answer(&question, &a.answer_input));
+            let correct = eval_result.as_ref().is_some_and(|r| r.correct);
+            let base_factor = eval_result.as_ref().map(|r| r.base).unwrap_or(0.0);
+            let _response_time_ms = answer.map(|a| a.response_time_ms).unwrap_or(0);
             let streak_before = player.streak;
 
             let mut points = if let Some(answer) = answer {
@@ -406,9 +416,9 @@ mod tests {
     ) {
         state.open_answers().unwrap();
         state.set_clock_ms(p1_time_ms);
-        state.record_answer("player1", p1_key).unwrap();
+        state.record_answer("player1", Some(p1_key), None, None).unwrap();
         state.set_clock_ms(p2_time_ms);
-        state.record_answer("player2", p2_key).unwrap();
+        state.record_answer("player2", Some(p2_key), None, None).unwrap();
         state.reveal(ScoringMode::Speed).unwrap();
         state.leaderboard_view().unwrap();
     }
@@ -493,9 +503,9 @@ mod tests {
         state.start().unwrap();
         state.show_question(0).unwrap();
         state.open_answers().unwrap();
-        state.record_answer("player1", 1).unwrap();
+        state.record_answer("player1", Some(1), None, None).unwrap();
         assert!(matches!(
-            state.record_answer("player1", 0),
+            state.record_answer("player1", Some(0), None, None),
             Err(GameError::DuplicateAnswer { .. })
         ));
     }
