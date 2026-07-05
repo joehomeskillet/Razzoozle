@@ -28,22 +28,35 @@
 
 ---
 
-## 🦀 Rewritten in Rust (in progress)
+## 🦀 Rust rewrite — feature-complete preview (not the default)
 
-The Node.js game server is being **rewritten in Rust** (`axum` + `socketioxide`),
-speaking the identical socket.io wire protocol so the frontend never notices —
-the endgame is a **~10 MB Tauri desktop host** instead of a ~150 MB Electron
-bundle, plus a compile-time-checked game state machine and a single static binary.
+The Node.js game server (`packages/socket`) is still what runs **production**
+at [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) — every feature in
+this README, all question types, themes/skeletons, gamification, team + solo
+play, DiceBear avatars, local AI images, mobile haptics, 6 locales, ~592 tests,
+load-tested to 600 concurrent players.
 
-**Status:** protocol crate (**~200 wire types, 178 tests**) + engine done; the
-server plays a **full, scored, multi-question game end-to-end** (all 7 question
-types) and is **deployed as a container on `:3012`**, parallel to the Node
-server on `:3011` — verified live against the real `socket.io-client`
-(`create → join → login → startGame → question → answer → reveal → leaderboard →
-next → FINISHED`), now with **player lifecycle** (join/leave broadcasts, disconnect,
-answer distribution). Remaining toward parity: player reconnect, quiz-from-disk,
-HTTP routes, auth, then peripherals (themes/AI/plugins) and a shadow cutover.
-The live game still runs on Node. **→ [`rust/README.md`](rust/README.md)**
+In parallel, a ground-up **Rust rewrite** of the game server (`axum` +
+`socketioxide 0.15`) speaks the *identical* socket.io wire protocol, so the
+frontend never notices. It's now **feature-complete**: a full scored
+multi-question game, all 7 question types, player lifecycle + reconnect,
+manager auth, quiz-from-disk, HTTP + solo endpoints, game-control
+(kick/skip/abort/timer), bots, the `/display` kiosk, and AI/media. Shared types
+are generated from Rust via `ts-rs` — the Rust wire types are the source of
+truth. It runs as a **parallel container on `:3012`** alongside Node on
+`:3011` and is exercised on every deploy by a real-game CI gate (a 100-player
+game played to completion + a reconnect test) — but it is **not yet the
+default**; Node stays the production path until a shadow cutover.
+
+**Why Rust:** ship the desktop host as a **~10 MB Tauri app** (Rust sidecar)
+instead of a ~150 MB Electron bundle, a compile-checked game state machine,
+and a single static binary.
+
+A parallel **v2.0 hardening** effort — an adversarial multi-model bughunt (19
+confirmed findings) — is landing fixes on both twins: per-game resource caps +
+game eviction, per-IP rate-limits, a path-traversal allowlist, Unicode-correct
+text matching, and a server-minted host-token auth that closes a cross-game-control
+(IDOR) hole. A modularization / actor-per-game refactor is planned next.
 
 **→ Details, status table, build & run: [`rust/README.md`](rust/README.md)**
 

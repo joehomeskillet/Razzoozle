@@ -1,9 +1,14 @@
 # 🦀 Razzoozle in Rust
 
-**A ground-up Rust rewrite of the Razzoozle game server** — replacing the
-Node.js `packages/socket` (~31k LOC) with an `axum` + `socketioxide` server that
-speaks the **exact same socket.io wire protocol**, so the React frontend and
-every connected phone keep working unchanged.
+**A ground-up Rust rewrite of the Razzoozle game server** — an `axum` +
+`socketioxide` server that speaks the **exact same socket.io wire protocol**
+as the live Node.js server (`packages/socket`), so the React frontend and
+every connected phone work unchanged against either backend.
+
+**This is a preview, not a replacement.** Production traffic at
+[razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) still runs on the
+Node server. The Rust server runs feature-complete alongside it in a parallel
+container, gated by a real-game CI suite, working toward cutover.
 
 **Why Rust:** the endgame is shipping the desktop host as a **~10 MB Tauri app**
 (Rust server as a sidecar) instead of a ~150 MB Electron bundle that ships a full
@@ -23,25 +28,21 @@ the hosted and desktop cases cheaper (RAM, cold start).
 | **0 — Spike & Gate** | socketioxide talks socket.io to the real client; golden-frame baseline recorded; plugin-runtime decision (Node-sidecar) | ✅ **PASS** — no protocol blockers |
 | **1 — Protocol & types** | Every socket event/payload as a Rust type, `ts-rs` generates the TS bindings (Rust leads, one source of truth) | ✅ **9 modules, ~200 types, 178 tests** |
 | **1b — Engine logic** | Sentence-builder chunk generation + shuffle guard, ported 1:1 from TS | ✅ **19 tests** |
-| **2 — Server MVP** | Runnable `axum` + `socketioxide` server; lobby + full round loop | ✅ **deployed & verified** |
-| **2·Batch 1** | Core round loop: select-answer, time-weighted scoring + streaks, reveal (SHOW_RESULT), leaderboard, next/finish, cooldowns | ✅ **full multi-question game → FINISHED** |
-| **2·Batch 2** | All 7 question types: choice, multiple-select, boolean, slider, poll, type-answer (fuzzy), sentence-builder | ✅ **37 engine tests + live** |
-| **2·Batch 3** | Player lifecycle: `totalPlayers` / `newPlayer` / `removePlayer`, disconnect handling, `SHOW_RESPONSES` (answer distribution) | ✅ **full game + player-leave verified live** |
-| **2·Batch 4** | Quiz loading from disk (`config/quizz/*.json`, 469 loaded) + axum HTTP routes: `GET /api/quizzes`, `GET /api/quizz/:id/solo` (solutions stripped), `POST /api/quizz/:id/check-answer` | ✅ **live-verified, no solutions leaked** |
-| **2·Batch 4b** | Unified check-answer eval (all types, points/accuracy/achievements) + `POST /solo-score` server-side recompute+cap (rejects inflated client scores) + persist to `config/solo-results/` | ✅ **inflated 999999→1000 rejected, live** |
-| **2·Batch 5** | Manager auth: `manager:auth` (password), `logged_clients` set, `startGame`/`revealAnswer`/`showLeaderboard` gated → `manager:unauthorized`; `manager:config` delivery | ✅ **no-auth stalls, auth→FINISHED, live** |
-| **2·Batch 6 (core)** | Manager game-control (next/skip/abort/adjust-timer/kick-player/logout), player extras (leave/select-team/set-avatar), `clock:ping` + metrics; Docker image now bundles the quizzes (no runtime mount) | ✅ **live-verified, 469 quizzes, FINISHED** |
-| 2·Batch 6 (round 2) | reconnect, themes, shared-results, submit-question, bots, display/kiosk, AI/media (ComfyUI, SSRF-guarded) | 🚧 in progress |
-| 3/4 — Peripherals & cutover | themes, AI/media, plugins (Node sidecar), low-latency, display, shadow cutover | ⏳ later |
+| **2 — Server MVP → feature-complete** | Full scored multi-question game, all 7 question types, player lifecycle + reconnect, manager auth, quiz-from-disk, HTTP + solo endpoints, game-control (kick/skip/abort/timer), bots, display/kiosk, AI/media | ✅ **deployed :3012, feature-complete** |
+| **2.x — Real-game CI gate** | Every deploy plays a **100-player game to FINISHED + reconnect** against the running container before it's considered good | ✅ **CI gate live** |
+| **v2.0 — Hardening (in progress)** | Adversarial multi-model bughunt (19 confirmed findings) → resource caps + game eviction, per-IP rate-limits, path-traversal allowlist, Unicode-correct text matching, **server-minted host-token auth** closing a cross-game-control (IDOR) hole. Applied to both Node and Rust twins. `ts-rs` now also exports host-token/status types | 🚧 in progress |
+| **Next** | Modularization + actor-per-game refactor; shadow cutover planning | ⏳ later |
 
-**It plays a real, scored, multi-question game — deployed.** The Rust server runs
-as a container on `127.0.0.1:3012` (parallel to the Node server on :3011, not a
-replacement yet). Verified end-to-end against the real `socket.io-client` 4.8.3:
+**It plays a real, scored, multi-question game — deployed as a preview.**
+The Rust server runs as a container on `127.0.0.1:3012` (parallel to the Node
+server on :3011, **not** the default, **not** yet what production traffic
+hits). Verified end-to-end against the real `socket.io-client` 4.8.3, and
+re-verified on every deploy by the 100-player CI gate:
 
 ```
 create → join → login → startGame
   Q1: SHOW_QUESTION → SELECT_ANSWER → answer → reveal SHOW_RESULT → SHOW_LEADERBOARD (scored)
-  Q2: … → SHOW_LEADERBOARD → FINISHED            ✅ full game
+  Q2: … → SHOW_LEADERBOARD → FINISHED            ✅ full game, 100 players + reconnect
 ```
 
 **Run the deployed preview:**
@@ -60,11 +61,12 @@ docker run -d --name razzoozle-rust -p 127.0.0.1:3012:3020 -e PORT=3020 razzoozl
 |---|---|
 | [`protocol/`](protocol) | `razzoozle-protocol` — wire types for every socket event + payload, `serde` (camelCase) + `ts-rs`. **Rust is the source of truth**; `cargo test` regenerates the TS bindings. |
 | [`engine/`](engine) | `razzoozle-engine` — pure, IO-free game logic (sentence-builder chunking + Fisher-Yates shuffle with anti-identity guard). |
-| [`server/`](server) | `razzoozle-server` — `axum` HTTP + `socketioxide` namespace, in-memory game registry, the lobby → question → reveal → leaderboard loop. |
+| [`server/`](server) | `razzoozle-server` — `axum` HTTP + `socketioxide` namespace, in-memory game registry, the lobby → question → reveal → leaderboard loop, manager auth (host-token), rate-limits + resource caps. |
 
 Spikes that proved the approach live under [`../spikes/`](../spikes):
 `socketioxide-lobby` (protocol compat), `ts-rs-events` (type-gen), `golden-frames`
-(byte-level Node baseline the Rust server is diffed against).
+(byte-level Node baseline the Rust server is diffed against; also runs the
+100-player real-game CI gate).
 
 ---
 
@@ -88,6 +90,13 @@ node ../spikes/golden-frames/smoke-startgame.cjs   # expects the server on :3478
 # → GAME FLOW OK  (SHOW_START → SHOW_QUESTION)
 ```
 
+**Real-game CI gate** (what runs on every deploy):
+
+```bash
+node ../spikes/golden-frames/smoke-fullgame.cjs --players=100 --reconnect
+# → 100 players, full multi-question game, reconnect mid-round ⇒ FINISHED
+```
+
 ---
 
 ## Design notes / gotchas found during the port
@@ -102,6 +111,12 @@ node ../spikes/golden-frames/smoke-startgame.cjs   # expects the server on :3478
   keeps `skip_serializing_if`.
 - **The fixture quiz is embedded** via `include_str!(concat!(env!("CARGO_MANIFEST_DIR"), …))`
   so the binary runs from any working directory.
+- **Manager auth is now a server-minted host-token**, not a shared password
+  check alone — a client that knows a game PIN can no longer forge control
+  commands for a game it doesn't own (the IDOR the v2.0 bughunt found).
+- **Unicode-correct text matching** for type-answer questions — naive
+  byte/char-index slicing broke on multi-byte input; fuzzy-match now works on
+  grapheme clusters.
 
 ## Non-goals (kept deliberately)
 
