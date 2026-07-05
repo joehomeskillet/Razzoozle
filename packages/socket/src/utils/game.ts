@@ -81,3 +81,29 @@ export const timeToPoint = (
 
   return points
 }
+
+/**
+ * Verify host token for backward compatibility.
+ * If hostToken is present in payload, verify it matches the game's token.
+ * If absent, allow (legacy path, already gated by manager auth).
+ * Returns true if token is valid or absent (legacy), false if token is present but incorrect.
+ */
+export const isValidHostToken = (
+  game: Game,
+  payload: unknown,
+): boolean => {
+  const hostToken = (payload as Record<string, unknown> | null)?.hostToken
+  
+  // No token = legacy path (already gated by clientId/withAuth)
+  if (!hostToken) {
+    return true
+  }
+  
+  // Token present: must match exactly
+  if (typeof hostToken !== 'string') {
+    return false
+  }
+  
+  return hostToken === game.hostTokenValue
+}
+

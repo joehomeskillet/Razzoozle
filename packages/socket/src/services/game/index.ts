@@ -39,6 +39,7 @@ import { metrics } from "@razzoozle/socket/services/metrics"
 import Registry from "@razzoozle/socket/services/registry"
 import { createInviteCode } from "@razzoozle/socket/utils/game"
 import { v7 as uuid } from "uuid"
+import { randomUUID } from "crypto"
 
 const registry = Registry.getInstance()
 const DICEBEAR_IDENTITY_RE = /^dicebear:[a-z]+:.+$/
@@ -112,6 +113,7 @@ class Game {
     clientId: string
     connected: boolean
   }
+  private readonly hostToken: string
   private readonly playerManager: PlayerManager
   private readonly round: RoundManager
   private readonly cooldown: CooldownTimer
@@ -206,6 +208,8 @@ class Game {
       clientId,
       connected: Boolean(socket),
     }
+
+    this.hostToken = randomUUID()
 
     // Read the LL config once. getGameConfig() is zod-defaulted/back-compatible,
     // but guard the read so a config error can never crash game creation — fall
@@ -329,6 +333,7 @@ class Game {
       socket.emit(EVENTS.MANAGER.GAME_CREATED, {
         gameId: this.gameId,
         inviteCode: this.inviteCode,
+        hostToken: this.hostToken,
       })
 
       console.log(
@@ -377,6 +382,10 @@ class Game {
 
   get started(): boolean {
     return this.round.isStarted()
+  }
+
+  get hostTokenValue(): string {
+    return this.hostToken
   }
 
   // ── Status broadcasting ──────────────────────────────────────────────────

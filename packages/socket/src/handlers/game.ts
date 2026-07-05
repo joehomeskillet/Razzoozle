@@ -16,7 +16,7 @@ import {
   addBotsValidator,
   selectedAnswerValidator,
 } from "@razzoozle/socket/services/validators"
-import { withGame } from "@razzoozle/socket/utils/game"
+import { withGame, isValidHostToken } from "@razzoozle/socket/utils/game"
 
 export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   const registry = Registry.getInstance()
@@ -235,6 +235,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
   socket.on(EVENTS.MANAGER.KICK_PLAYER, (payload: unknown) =>
     withGame((payload as { gameId?: unknown; playerId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
       const playerId = (payload as { gameId?: unknown; playerId?: unknown } | null | undefined)?.playerId
       if (typeof playerId !== "string") return
       game.kickPlayer(socket, playerId)
@@ -242,7 +246,13 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   )
 
   socket.on(EVENTS.MANAGER.START_GAME, (payload: unknown) =>
-    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.start(socket)),
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
+      game.start(socket)
+    }),
   )
 
   // Host-only: toggle auto-advance. Routed via withAuth + getManagerGame (same
@@ -258,6 +268,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
         const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
 
         if (game) {
+          if (!isValidHostToken(game, payload)) {
+            socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+            return
+          }
           game.setAutoMode(payload?.auto === true)
         }
       },
@@ -270,6 +284,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
 
       if (game) {
+        if (!isValidHostToken(game, payload)) {
+          socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+          return
+        }
         game.pause()
       }
     }),
@@ -281,6 +299,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       const game = registry.getManagerGame(payload?.gameId ?? "", clientId)
 
       if (game) {
+        if (!isValidHostToken(game, payload)) {
+          socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+          return
+        }
         game.resume()
       }
     }),
@@ -292,6 +314,10 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // safety gate is enforced server-side regardless of the handler.
   socket.on(EVENTS.MANAGER.ADD_BOTS, (payload: unknown) =>
     withGame((payload as { gameId?: unknown; count?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
       const count = (payload as { gameId?: unknown; count?: unknown } | null | undefined)?.count
       const parsed = addBotsValidator.safeParse({ count })
 
@@ -480,7 +506,13 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   )
 
   socket.on(EVENTS.MANAGER.ABORT_QUIZ, (payload: unknown) =>
-    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.abortRound(socket)),
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
+      game.abortRound(socket)
+    }),
   )
 
   socket.on(EVENTS.MANAGER.NEXT_QUESTION, (payload: unknown) =>
@@ -510,11 +542,23 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // additionally validates + clamps deltaSeconds to a sane host range so a
   // malformed/hostile value can never blow up the countdown.
   socket.on(EVENTS.MANAGER.SKIP_QUESTION, (payload: unknown) =>
-    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.skipQuestion(socket)),
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
+      game.skipQuestion(socket)
+    }),
   )
 
   socket.on(EVENTS.MANAGER.REVEAL_ANSWER, (payload: unknown) =>
-    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => game.revealAnswer(socket)),
+    withGame((payload as { gameId?: unknown } | null | undefined)?.gameId as string | undefined, socket, (game) => {
+      if (!isValidHostToken(game, payload)) {
+        socket.emit(EVENTS.MANAGER.UNAUTHORIZED)
+        return
+      }
+      game.revealAnswer(socket)
+    }),
   )
 
   socket.on(EVENTS.MANAGER.ADJUST_TIMER, (payload: unknown) =>
