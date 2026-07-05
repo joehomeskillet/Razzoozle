@@ -8,7 +8,19 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+
+// Resource caps (parity with Node)
+pub const MAX_ACTIVE_GAMES: usize = 100;
+pub const MAX_PLAYERS_PER_GAME: usize = 200;
+pub const USERNAME_MIN_LEN: usize = 4;
+pub const USERNAME_MAX_LEN: usize = 20;
+pub const AVATAR_MAX_BYTES: usize = 4_000_000;
+pub const AVATAR_SVG_MAX_CHARS: usize = 64 * 1024;
+
+// Game eviction: TTL for finished/stale games (milliseconds)
+pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuizFixture {
@@ -34,6 +46,8 @@ pub struct Game {
     pub manager_socket_id: String,
     pub players: Vec<Player>,
     pub engine: GameState,
+    // Last activity timestamp (ms since UNIX epoch)
+    pub last_activity_ms: u64,
 }
 
 impl Game {
@@ -43,13 +57,33 @@ impl Game {
         manager_socket_id: String,
         quiz: Quizz,
     ) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
         Self {
             game_id,
             invite_code,
             manager_socket_id,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),
+            last_activity_ms: now,
         }
+    }
+
+    /// Update last activity timestamp to now
+    pub fn touch_activity(&mut self) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        self.last_activity_ms = now;
+    }
+
+    /// Check if this game has exceeded its TTL (for eviction)
+    pub fn is_stale(&self, now_ms: u64) -> bool {
+        now_ms.saturating_sub(self.last_activity_ms) > GAME_EVICTION_TTL_MS
     }
 
     /// Add a player to the game and return their player data.
@@ -161,8 +195,47 @@ impl GameRegistry {
         pin.to_string()
     }
 
+    /// Validate username (parity with Node)
+    pub fn validate_username(username: &str) -> Result<(), &'static str> {
+        if username.len() < USERNAME_MIN_LEN {
+            Err("errors:auth.usernameTooShort")
+        } else if username.len() > USERNAME_MAX_LEN {
+            Err("errors:auth.usernameTooLong")
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Validate avatar (parity with Node)
+    pub fn validate_avatar(avatar: &str) -> Result<(), &'static str> {
+        if avatar.is_empty() {
+            return Ok(()); // Avatar is optional
+        }
+
+        // SVG data-URIs have their own max length
+        if avatar.starts_with("data:image/svg+xml") {
+            if avatar.len() > AVATAR_SVG_MAX_CHARS {
+                return Err("errors:avatar.tooLarge");
+            }
+            return Ok(());
+        }
+
+        // Other data-URIs and regular avatars use byte-based cap
+        if avatar.len() > (AVATAR_MAX_BYTES as f64 * 1.4) as usize {
+            return Err("errors:avatar.tooLarge");
+        }
+
+        Ok(())
+    }
+
     /// Create a new game with the specified quiz ID, or use default if not found.
-    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> (String, String) {
+    /// Returns Err if active-game cap exceeded (C3).
+    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> Result<(String, String), &'static str> {
+        // C3 — active-game cap: reject once N concurrent games exist
+        if self.games_by_id.len() >= MAX_ACTIVE_GAMES {
+            return Err("errors:game.serverBusy");
+        }
+
         let game_id = Uuid::new_v4().to_string();
         let invite_code = Self::generate_invite_code();
 
@@ -182,7 +255,7 @@ impl GameRegistry {
         self.games_by_code.insert(invite_code.clone(), Arc::clone(&game));
         self.games_by_id.insert(game_id.clone(), game);
 
-        (game_id, invite_code)
+        Ok((game_id, invite_code))
     }
 
     /// Find a game by invite code.
@@ -213,6 +286,43 @@ impl GameRegistry {
                 let g = game.lock().unwrap();
                 Some(g.manager_socket_id.clone())
             })
+    }
+
+    /// Get the number of active games
+    pub fn game_count(&self) -> usize {
+        self.games_by_id.len()
+    }
+
+    /// C4 — Game eviction: remove stale/finished games and clear their player sessions.
+    /// Call periodically to prevent memory leaks. Clears player entries to prevent
+    /// "resume reconnect" from keeping sessions forever.
+    pub fn evict_stale_games(&mut self) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
+        let stale_games: Vec<String> = self
+            .games_by_id
+            .values()
+            .filter_map(|game_ref| {
+                let game = game_ref.lock().unwrap();
+                if game.is_stale(now) {
+                    Some(game.invite_code.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for invite_code in stale_games {
+            // Remove by invite code (which removes from games_by_code)
+            if let Some(game_ref) = self.games_by_code.remove(&invite_code) {
+                let game = game_ref.lock().unwrap();
+                // Remove from games_by_id as well
+                self.games_by_id.remove(&game.game_id);
+            }
+        }
     }
 
     pub fn remove_player_by_socket_id(
@@ -273,5 +383,102 @@ impl GameRegistry {
                 return;
             }
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_username() {
+        // Valid usernames
+        assert!(GameRegistry::validate_username("alice").is_ok());
+        assert!(GameRegistry::validate_username("1234").is_ok());
+        assert!(GameRegistry::validate_username("verylongusername123").is_ok());
+
+        // Too short
+        assert!(GameRegistry::validate_username("abc").is_err());
+
+        // Too long
+        assert!(GameRegistry::validate_username("verylongusernamethatexceedsmax").is_err());
+    }
+
+    #[test]
+    fn test_validate_avatar() {
+        // Valid avatars
+        assert!(GameRegistry::validate_avatar("").is_ok());
+        assert!(GameRegistry::validate_avatar("data:image/svg+xml;utf8,<svg></svg>").is_ok());
+        assert!(GameRegistry::validate_avatar("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==").is_ok());
+
+        // SVG too large (exceeds 64KB max)
+        let large_svg = format!("data:image/svg+xml;{}", "x".repeat(66000));
+        assert!(GameRegistry::validate_avatar(&large_svg).is_err(), "Large SVG should be rejected");
+    }
+
+    #[test]
+    fn test_active_game_cap() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut registry = GameRegistry::new(empty_quiz);
+
+        // Create MAX_ACTIVE_GAMES games
+        for i in 0..MAX_ACTIVE_GAMES {
+            let result = registry.create_game(format!("socket-{}", i), None);
+            assert!(result.is_ok(), "Game {} creation failed", i);
+        }
+
+        // 101st game should fail (cap exceeded)
+        let result = registry.create_game("socket-overflow".to_string(), None);
+        assert!(result.is_err(), "101st game should fail");
+        assert_eq!(result.unwrap_err(), "errors:game.serverBusy");
+    }
+
+    #[test]
+    fn test_game_eviction_clears_players() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut registry = GameRegistry::new(empty_quiz);
+
+        // Create a game
+        let (game_id, _) = registry.create_game("manager-1".to_string(), None).unwrap();
+        
+        // Add players to the game
+        {
+            let game_ref = registry.get_game_by_id(&game_id).unwrap();
+            let mut game = game_ref.lock().unwrap();
+            game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None);
+            game.add_player("socket-2".to_string(), "client-2".to_string(), "Bob".to_string(), None);
+        }
+
+        // Verify 2 players are in the game
+        {
+            let game_ref = registry.get_game_by_id(&game_id).unwrap();
+            let game = game_ref.lock().unwrap();
+            assert_eq!(game.players.len(), 2, "Should have 2 players");
+        }
+
+        // Mark game as stale by setting old activity timestamp
+        {
+            let game_ref = registry.get_game_by_id(&game_id).unwrap();
+            let mut game = game_ref.lock().unwrap();
+            game.last_activity_ms = 0; // Very old timestamp
+        }
+
+        // Evict stale games (should remove the game and its players)
+        registry.evict_stale_games();
+
+        // Verify game is gone
+        assert!(registry.get_game_by_id(&game_id).is_none(), "Game should be evicted");
+        assert_eq!(registry.game_count(), 0, "No games should remain");
     }
 }

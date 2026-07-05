@@ -394,25 +394,33 @@ async fn main() {
 
                     tokio::spawn(async move {
                         let mut registry = registry.write().await;
-                        let (game_id, invite_code) = registry.create_game(socket_id.clone(), quiz_id);
+                        // C3 — active-game cap
+                        match registry.create_game(socket_id.clone(), quiz_id) {
+                            Ok((game_id, invite_code)) => {
+                                info!(
+                                    "Game created: gameId={}, inviteCode={}",
+                                    game_id, invite_code
+                                );
 
-                        info!(
-                            "Game created: gameId={}, inviteCode={}",
-                            game_id, invite_code
-                        );
+                                // Join socket to the game room
+                                socket.join(game_id.clone()).ok();
 
-                        // Join socket to the game room
-                        socket.join(game_id.clone()).ok();
+                                // Emit manager:gameCreated with protocol type
+                                let payload = razzoozle_protocol::manager::ManagerGameCreated {
+                                    game_id,
+                                    invite_code,
+                                };
 
-                        // Emit manager:gameCreated with protocol type
-                        let payload = razzoozle_protocol::manager::ManagerGameCreated {
-                            game_id,
-                            invite_code,
-                        };
-
-                        socket
-                            .emit(constants::manager::GAME_CREATED, &payload)
-                            .ok();
+                                socket
+                                    .emit(constants::manager::GAME_CREATED, &payload)
+                                    .ok();
+                            }
+                            Err(e) => {
+                                socket
+                                    .emit(constants::game::ERROR_MESSAGE, e)
+                                    .ok();
+                            }
+                        }
                     });
                 }
             });
@@ -527,6 +535,19 @@ async fn main() {
 
                         match (game_id_opt, username_opt) {
                             (Some(game_id), Some(username)) => {
+                                // H — username/avatar length validation
+                                if let Err(e) = state::GameRegistry::validate_username(username) {
+                                    socket.emit(constants::game::ERROR_MESSAGE, e).ok();
+                                    return;
+                                }
+
+                                if let Some(ref av) = avatar {
+                                    if let Err(e) = state::GameRegistry::validate_avatar(av) {
+                                        socket.emit(constants::game::ERROR_MESSAGE, e).ok();
+                                        return;
+                                    }
+                                }
+
                                 let game_opt = {
                                     let registry = registry.read().await;
                                     registry.get_game_by_id(game_id)
@@ -536,6 +557,14 @@ async fn main() {
                                     Some(game_ref) => {
                                         let (game_id_ret, manager_socket_id, player, total_players) = {
                                             let mut game = game_ref.lock().unwrap();
+
+                                            // H — per-game player cap
+                                            if game.players.len() >= state::MAX_PLAYERS_PER_GAME {
+                                                drop(game);
+                                                socket.emit(constants::game::ERROR_MESSAGE, "errors:game.gameFull").ok();
+                                                return;
+                                            }
+
                                             let player = game.add_player(
                                                 socket_id.clone(),
                                                 client_id.clone(),
