@@ -15,7 +15,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn};
 
 #[tokio::main]
 async fn main() {
@@ -217,6 +217,7 @@ async fn main() {
 
                     tokio::spawn(async move {
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                        info!("manager:startGame received: gameId={:?}", game_id_opt);
 
                         if let Some(game_id) = game_id_opt {
                             let game_opt = {
@@ -225,26 +226,27 @@ async fn main() {
                             };
 
                             if let Some(game_ref) = game_opt {
-                                let start_data = {
+                                let start_result = {
                                     let mut game = game_ref.lock().unwrap();
-                                    game.engine.start().ok()
+                                    game.engine.start()
                                 };
 
-                                if let Some(start_data) = start_data {
-                                    let game_id = game_id.to_string();
-                                    info!("Game started: gameId={}", game_id);
+                                match start_result {
+                                    Ok(start_data) => {
+                                        let game_id = game_id.to_string();
+                                        info!("Game started: gameId={}", game_id);
 
-                                    // Emit SHOW_START to room
-                                    let status = GameStatus::ShowStart(start_data);
-                                    io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
+                                        // Emit SHOW_START to room
+                                        let status = GameStatus::ShowStart(start_data);
+                                        io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
 
-                                    // Schedule question flow after lead time (3 seconds from golden frames)
-                                    let io_handle = io_handle.clone();
-                                    let game_id_clone = game_id.clone();
-                                    let registry = registry.clone();
+                                        // Schedule question flow after lead time (3 seconds from golden frames)
+                                        let io_handle = io_handle.clone();
+                                        let game_id_clone = game_id.clone();
+                                        let registry = registry.clone();
 
-                                    tokio::spawn(async move {
-                                        tokio::time::sleep(Duration::from_secs(3)).await;
+                                        tokio::spawn(async move {
+                                            tokio::time::sleep(Duration::from_secs(3)).await;
 
                                         let game_opt = {
                                             let registry = registry.read().await;
@@ -307,8 +309,16 @@ async fn main() {
                                             }
                                         }
                                     });
+                                    }
+                                    Err(e) => {
+                                        warn!("startGame rejected: gameId={}, err={}", game_id, e);
+                                    }
                                 }
+                            } else {
+                                warn!("startGame: unknown gameId={}", game_id);
                             }
+                        } else {
+                            warn!("startGame: missing gameId in payload");
                         }
                     });
                 }
