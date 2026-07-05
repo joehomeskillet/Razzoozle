@@ -1654,6 +1654,366 @@ async fn main() {
             // Register AI/media handlers
             media_ai::register(&socket, Arc::clone(&registry), client_id.clone());
 
+            // Handle MANAGER.GET_THEME — serve current theme (public)
+            socket.on(constants::manager::GET_THEME, {
+                move |socket: SocketRef| {
+                    let theme_path = "config/theme/theme.json";
+
+                    let theme = if let Ok(contents) = fs::read_to_string(theme_path) {
+                        serde_json::from_str::<serde_json::Value>(&contents).ok()
+                    } else {
+                        None
+                    };
+
+                    let payload = theme.unwrap_or_else(|| serde_json::json!({}));
+                    socket.emit(constants::manager::THEME, &payload).ok();
+                }
+            });
+
+            // Handle RESULTS.GET_SHARED — read shared results by ID (public, no auth)
+            socket.on(constants::results::GET_SHARED, {
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let id_opt = payload.get("id").and_then(|v| v.as_str());
+
+                    if let Some(id) = id_opt {
+                        // Try config/solo-results first, then config/results
+                        let result_path = format!("config/solo-results/{}.json", id);
+                        let contents = fs::read_to_string(&result_path)
+                            .or_else(|_| fs::read_to_string(&format!("config/results/{}.json", id)));
+
+                        if let Ok(contents) = contents {
+                            if let Ok(mut result) = serde_json::from_str::<serde_json::Value>(&contents) {
+                                // Remove questions field for security
+                                if let serde_json::Value::Object(ref mut obj) = result {
+                                    obj.remove("questions");
+                                }
+                                socket.emit(constants::results::SHARED_DATA, &result).ok();
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Handle MANAGER.SUBMIT_QUESTION — accept live-submitted question (public submission)
+            socket.on(constants::manager::SUBMIT_QUESTION, {
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    // For now, just acknowledge the submission
+                    // Real validation happens in the Node.js layer
+                    socket.emit(constants::manager::SUBMIT_SUCCESS, &serde_json::json!({})).ok();
+                }
+            });
+
+            // Handle MANAGER.ADD_BOTS — add N bot players to game (auth-gated)
+            socket.on(constants::manager::ADD_BOTS, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        // Check auth
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                            return;
+                        }
+
+                        // Extract gameId and count
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                        let count_opt = payload.get("count").and_then(|v| v.as_i64()).map(|v| v as i32);
+
+                        if let (Some(game_id), Some(count)) = (game_id_opt, count_opt) {
+                            let game_id = game_id.to_string();
+
+                            // Check SIM_MODE
+                            if std::env::var("RAHOOT_SIM_MODE").as_deref() != Ok("1") {
+                                socket.emit(
+                                    constants::manager::ERROR_MESSAGE,
+                                    "errors:manager.simModeDisabled"
+                                ).ok();
+                                return;
+                            }
+
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let mut game = game_ref.lock().unwrap();
+
+                                // Verify caller is manager
+                                if game.manager_socket_id != socket.id.to_string() {
+                                    return;
+                                }
+
+                                // Add bots (clamped to a reasonable max per batch)
+                                let to_add = std::cmp::min(count, 100) as usize;
+                                let existing_bots = game.players.iter()
+                                    .filter(|p| p.is_bot.unwrap_or(false))
+                                    .count();
+                                let max_total = 50;
+                                let room = std::cmp::max(0, max_total - existing_bots);
+                                let actual_count = std::cmp::min(to_add, room);
+
+                                if actual_count <= 0 {
+                                    return;
+                                }
+
+                                let bot_names = vec![
+                                    "Alex", "Bailey", "Casey", "Devon", "Elliot", "Finley",
+                                    "Gemini", "Harper", "Iris", "Jordan", "Kai", "Logan",
+                                    "Morgan", "Nathan", "Oakley", "Parker", "Quinn", "Riley",
+                                    "Scout", "Taylor", "Ulysses", "Valerie", "Wilder", "Xavier",
+                                ];
+
+                                for i in 0..actual_count {
+                                    let bot_name = bot_names[i % bot_names.len()].to_string();
+                                    let bot_socket_id = format!("bot-{}", uuid::Uuid::new_v4());
+                                    let bot_client_id = format!("bot-{}", uuid::Uuid::new_v4());
+
+                                    let player = game.add_player(
+                                        bot_socket_id.clone(),
+                                        bot_client_id,
+                                        bot_name,
+                                        None,
+                                    );
+
+                                    // Mark as bot
+                                    if !game.players.is_empty() {
+                                        if let Some(last_player) = game.players.last_mut() {
+                                            last_player.is_bot = Some(true);
+                                        }
+                                    }
+
+                                    // Broadcast NEW_PLAYER
+                                    let new_player_payload = serde_json::json!({
+                                        "id": player.id,
+                                        "clientId": player.client_id,
+                                        "username": player.username,
+                                        "isBot": true,
+                                        "points": 0,
+                                        "streak": 0,
+                                        "connected": true,
+                                    });
+                                    io_handle.to(game_id.clone())
+                                        .emit(constants::manager::NEW_PLAYER, &new_player_payload)
+                                        .ok();
+                                }
+
+                                // Broadcast TOTAL_PLAYERS once
+                                let total = game.players.len() as i32;
+                                io_handle.to(game_id.clone())
+                                    .emit(constants::game::TOTAL_PLAYERS, &total)
+                                    .ok();
+
+                                drop(game);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle DISPLAY.REGISTER — register a display and get a pairing code
+            socket.on(constants::display::REGISTER, {
+                move |socket: SocketRef, _data: Data::<serde_json::Value>| {
+                    // Generate 6-char alphanumeric code
+                    use rand::Rng;
+                    let mut rng = rand::thread_rng();
+                    let charset = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+                    let code: String = (0..6)
+                        .map(|_| {
+                            let idx = rng.gen_range(0..charset.len());
+                            charset.chars().nth(idx).unwrap()
+                        })
+                        .collect();
+
+                    socket.emit(constants::display::REGISTERED, &serde_json::json!({ "code": code })).ok();
+                }
+            });
+
+            // Handle DISPLAY.PAIR — pair display to game by code
+            socket.on(constants::display::PAIR, {
+                let io_handle = io_handle.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let io_handle = io_handle.clone();
+
+                    let code_opt = payload.get("code").and_then(|v| v.as_str());
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                    if let (Some(code), Some(game_id)) = (code_opt, game_id_opt) {
+                        let game_id = game_id.to_string();
+
+                        // Verify the code exists (in a real implementation, check a pairing registry)
+                        // For now, accept any non-empty code
+                        if !code.is_empty() {
+                            // Join the display socket to the game room
+                            socket.join(game_id.clone());
+
+                            // Emit PAIR_SUCCESS to both
+                            socket.emit(constants::display::PAIR_SUCCESS, &serde_json::json!({ "gameId": game_id.clone() })).ok();
+                            io_handle.to(game_id).emit(constants::display::PAIR_SUCCESS, &serde_json::json!({ "code": code })).ok();
+                        } else {
+                            socket.emit(constants::display::PAIR_ERROR, "errors:display.invalidCode").ok();
+                        }
+                    }
+                }
+            });
+
+            // Handle DISPLAY.PING — heartbeat from paired display
+            socket.on(constants::display::PING, {
+                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let _game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                    // Update heartbeat and broadcast status
+                    // For now, just acknowledge
+                }
+            });
+
+            // Handle DISPLAY.DISCONNECT — unregister pairing code
+            socket.on(constants::display::DISCONNECT, {
+                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let _code_opt = payload.get("code").and_then(|v| v.as_str());
+                    // Remove code from pairing registry
+                    // For now, no-op
+                }
+            });
+
+            // Handle PLAYER.RECONNECT — reconnect player by clientId
+            socket.on(constants::player::RECONNECT, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let socket_id = socket.id.to_string();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let socket_id = socket_id.clone();
+
+                    tokio::spawn(async move {
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                        let client_id_opt = payload.get("clientId").and_then(|v| v.as_str());
+
+                        if let (Some(game_id), Some(client_id)) = (game_id_opt, client_id_opt) {
+                            let game_id = game_id.to_string();
+                            let client_id = client_id.to_string();
+
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let mut game = game_ref.lock().unwrap();
+
+                                // Find player by clientId
+                                if let Some(pos) = game.players.iter().position(|p| p.client_id == client_id) {
+                                    let player = game.players[pos].clone();
+                                    game.players[pos].id = socket_id.clone();
+                                    game.players[pos].connected = true;
+
+                                    // Update engine players if exists
+                                    if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == client_id) {
+                                        game.engine.players[engine_pos].id = socket_id.clone();
+                                        game.engine.players[engine_pos].connected = true;
+                                    }
+
+                                    drop(game);
+
+                                    // Join the room
+                                    socket.join(game_id);
+
+                                    // Emit reconnect success with player state
+                                    socket.emit(constants::player::SUCCESS_RECONNECT, &serde_json::json!({
+                                        "playerId": player.id,
+                                        "username": player.username,
+                                        "points": player.points,
+                                        "streak": player.streak,
+                                    })).ok();
+                                } else {
+                                    socket.emit(constants::game::ERROR_MESSAGE, "errors:game.playerNotFound").ok();
+                                }
+                            } else {
+                                socket.emit(constants::game::ERROR_MESSAGE, "errors:game.notFound").ok();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.RECONNECT — reconnect manager by clientId
+            socket.on(constants::manager::RECONNECT, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                            return;
+                        }
+
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_id = game_id.to_string();
+
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let mut game = game_ref.lock().unwrap();
+
+                                // Update manager socket
+                                game.manager_socket_id = socket.id.to_string();
+
+                                let game_id = game.game_id.clone();
+                                let players = game.players.clone();
+
+                                drop(game);
+
+                                // Join the room
+                                socket.join(game_id.clone());
+
+                                // Emit reconnect success with game state
+                                socket.emit(constants::manager::SUCCESS_RECONNECT, &serde_json::json!({
+                                    "gameId": game_id,
+                                    "status": "reconnected",
+                                    "players": players,
+                                })).ok();
+
+                                // Broadcast to room that manager reconnected
+                                io_handle.to(game_id)
+                                    .emit(constants::manager::PLAYER_RECONNECTED, &serde_json::json!({}))
+                                    .ok();
+                            } else {
+                                socket.emit(constants::game::ERROR_MESSAGE, "errors:game.notFound").ok();
+                            }
+                        }
+                    });
+                }
+            });
+
             // Handle disconnect
             let registry = Arc::clone(&registry);
             let io_handle = io_handle.clone();
