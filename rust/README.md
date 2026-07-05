@@ -29,7 +29,8 @@ the hosted and desktop cases cheaper (RAM, cold start).
 | **2·Batch 1** | Core round loop: select-answer, time-weighted scoring + streaks, reveal (SHOW_RESULT), leaderboard, next/finish, cooldowns | ✅ **full multi-question game → FINISHED** |
 | **2·Batch 2** | All 7 question types: choice, multiple-select, boolean, slider, poll, type-answer (fuzzy), sentence-builder | ✅ **37 engine tests + live** |
 | **2·Batch 3** | Player lifecycle: `totalPlayers` / `newPlayer` / `removePlayer`, disconnect handling, `SHOW_RESPONSES` (answer distribution) | ✅ **full game + player-leave verified live** |
-| 2·Batch 4+ | quiz loading from disk, HTTP routes, auth, peripherals | 🚧 in progress |
+| **2·Batch 4** | Quiz loading from disk (`config/quizz/*.json`, 469 loaded) + axum HTTP routes: `GET /api/quizzes`, `GET /api/quizz/:id/solo` (solutions stripped), `POST /api/quizz/:id/check-answer` | ✅ **live-verified, no solutions leaked** |
+| 2·Batch 4b+ | solo-score recompute+persist, type-answer check-answer, auth, peripherals | 🚧 in progress |
 | 3/4 — Peripherals & cutover | themes, AI/media, plugins (Node sidecar), low-latency, display, shadow cutover | ⏳ later |
 
 **It plays a real, scored, multi-question game — deployed.** The Rust server runs
@@ -45,8 +46,11 @@ create → join → login → startGame
 **Run the deployed preview:**
 ```bash
 docker build -f rust/Dockerfile -t razzoozle-rust:latest .
-docker run -d --name razzoozle-rust -p 127.0.0.1:3012:3020 -e PORT=3020 razzoozle-rust:latest
-# GET http://127.0.0.1:3012/health ⇒ 200 ; node spikes/golden-frames/smoke-fullgame.cjs
+# Mount config/ so the real quizzes (config/quizz/*.json) load; CONFIG_PATH points at it.
+docker run -d --name razzoozle-rust -p 127.0.0.1:3012:3020 \
+  -e PORT=3020 -e CONFIG_PATH=/config -v "$(pwd)/config:/config:ro" razzoozle-rust:latest
+# GET http://127.0.0.1:3012/health ⇒ 200 ; GET /api/quizzes ⇒ 469 ids
+# SMOKE_URL=http://127.0.0.1:3012 node spikes/golden-frames/smoke-fullgame.cjs ⇒ FINISHED
 ```
 
 ---
