@@ -5,6 +5,8 @@ use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
@@ -78,19 +80,63 @@ impl Game {
     }
 }
 
-/// Registry managing all active games.
+/// Registry managing all active games and available quizzes.
 pub struct GameRegistry {
     games_by_code: HashMap<String, Arc<Mutex<Game>>>,
     games_by_id: HashMap<String, Arc<Mutex<Game>>>,
-    quiz: Quizz,
+    quizzes: HashMap<String, Quizz>,
+    default_quiz: Quizz,
 }
 
 impl GameRegistry {
-    pub fn new(quiz: Quizz) -> Self {
+    /// Load all quizzes from the config/quizz directory or fall back to the fixture.
+    fn load_quizzes() -> HashMap<String, Quizz> {
+        let mut quizzes = HashMap::new();
+
+        // Try to load from config/quizz directory
+        let config_path = Self::get_config_path();
+        if Path::new(&config_path).exists() {
+            if let Ok(entries) = fs::read_dir(&config_path) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().map(|e| e == "json").unwrap_or(false) {
+                        if let Ok(contents) = fs::read_to_string(&path) {
+                            if let Ok(quiz) = serde_json::from_str::<Quizz>(&contents) {
+                                if let Some(filename) = path.file_stem() {
+                                    let id = filename.to_string_lossy().to_string();
+                                    quizzes.insert(id, quiz);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        quizzes
+    }
+
+    /// Get the config path (resolves to config/quizz directory).
+    fn get_config_path() -> String {
+        if let Ok(config_path) = std::env::var("CONFIG_PATH") {
+            format!("{}/quizz", config_path)
+        } else {
+            // Fallback: assume running from rust/server, config is at ../../config
+            let cwd = std::env::current_dir().unwrap();
+            cwd.parent()
+                .and_then(|p| p.parent())
+                .map(|p| p.join("config/quizz").to_string_lossy().to_string())
+                .unwrap_or_else(|| "config/quizz".to_string())
+        }
+    }
+
+    pub fn new(quiz_fixture: Quizz) -> Self {
+        let quizzes = Self::load_quizzes();
         Self {
             games_by_code: HashMap::new(),
             games_by_id: HashMap::new(),
-            quiz,
+            quizzes,
+            default_quiz: quiz_fixture,
         }
     }
 
@@ -101,16 +147,22 @@ impl GameRegistry {
         pin.to_string()
     }
 
-    /// Create a new game and return (game_id, invite_code).
-    pub fn create_game(&mut self, manager_socket_id: String) -> (String, String) {
+    /// Create a new game with the specified quiz ID, or use default if not found.
+    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> (String, String) {
         let game_id = Uuid::new_v4().to_string();
         let invite_code = Self::generate_invite_code();
+
+        let quiz = if let Some(id) = quiz_id {
+            self.quizzes.get(&id).cloned().unwrap_or_else(|| self.default_quiz.clone())
+        } else {
+            self.default_quiz.clone()
+        };
 
         let game = Arc::new(Mutex::new(Game::new(
             game_id.clone(),
             invite_code.clone(),
             manager_socket_id,
-            self.quiz.clone(),
+            quiz,
         )));
 
         self.games_by_code.insert(invite_code.clone(), Arc::clone(&game));
@@ -127,6 +179,16 @@ impl GameRegistry {
     /// Find a game by game ID.
     pub fn get_game_by_id(&self, game_id: &str) -> Option<Arc<Mutex<Game>>> {
         self.games_by_id.get(game_id).cloned()
+    }
+
+    /// Get a quiz by ID.
+    pub fn get_quiz_by_id(&self, quiz_id: &str) -> Option<Quizz> {
+        self.quizzes.get(quiz_id).cloned()
+    }
+
+    /// List all available quiz IDs.
+    pub fn list_quiz_ids(&self) -> Vec<String> {
+        self.quizzes.keys().cloned().collect()
     }
 
     /// Find the manager socket ID for a game.

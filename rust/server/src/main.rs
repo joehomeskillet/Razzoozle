@@ -1,17 +1,19 @@
 mod state;
 
 use axum::{
+    extract::Path,
     http::StatusCode,
-    routing::get,
-    Router,
+    routing::{get, post},
+    Json, Router,
 };
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::QuestionType;
+use razzoozle_protocol::quizz::{Question, QuestionType};
 use razzoozle_protocol::status::{
     GameStatus, MatchMode, SelectAnswerData, ShowLeaderboardData, ShowQuestionData,
     ShowResponsesData, ShowResultData, ShowStartData, WaitData,
 };
+use serde::{Deserialize, Serialize};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
@@ -41,6 +43,165 @@ fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
         "fuzzy" => Some(MatchMode::Fuzzy),
         _ => None,
     }
+}
+
+// ── Solo play types ─────────────────────────────────────────────────────────
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SoloQuestion {
+    pub question: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub answers: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub step: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<String>,
+    pub time: i32,
+    pub cooldown: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SoloResponse {
+    pub subject: String,
+    pub questions: Vec<SoloQuestion>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CheckAnswerRequest {
+    #[serde(rename = "questionIndex")]
+    pub question_index: usize,
+    #[serde(rename = "answerKey")]
+    pub answer_key: Option<i32>,
+    #[serde(rename = "answerKeys")]
+    pub answer_keys: Option<Vec<i32>>,
+    #[serde(rename = "answerText")]
+    pub answer_text: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CheckAnswerResponse {
+    pub correct: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub solutions: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explanation: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SoloScoreRequest {
+    pub score: i32,
+    pub time: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SoloScoreResponse {
+    pub success: bool,
+}
+
+// ── HTTP handlers ────────────────────────────────────────────────────────────
+
+async fn handle_health() -> &'static str {
+    "OK"
+}
+
+async fn handle_get_quizzes(
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
+) -> Json<Vec<String>> {
+    let registry = registry.read().await;
+    let ids = registry.list_quiz_ids();
+    Json(ids)
+}
+
+async fn handle_get_quiz_solo(
+    Path(quiz_id): Path<String>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
+) -> Result<Json<SoloResponse>, (StatusCode, String)> {
+    let registry = registry.read().await;
+    let quiz = registry
+        .get_quiz_by_id(&quiz_id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
+
+    let questions = quiz
+        .questions
+        .iter()
+        .map(|q| SoloQuestion {
+            question: q.question.clone(),
+            r#type: q.r#type.as_ref().map(|t| question_type_wire(t).to_string()),
+            media: q.media.as_ref().map(|m| {
+                serde_json::json!({
+                    "type": m.r#type,
+                    "url": m.url
+                })
+            }),
+            answers: q.answers.clone(),
+            min: q.min,
+            max: q.max,
+            step: q.step,
+            unit: q.unit.clone(),
+            time: q.time,
+            cooldown: q.cooldown,
+        })
+        .collect();
+
+    Ok(Json(SoloResponse {
+        subject: quiz.subject,
+        questions,
+    }))
+}
+
+async fn handle_check_answer(
+    Path(quiz_id): Path<String>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
+    Json(payload): Json<CheckAnswerRequest>,
+) -> Result<Json<CheckAnswerResponse>, (StatusCode, String)> {
+    let registry = registry.read().await;
+    let quiz = registry
+        .get_quiz_by_id(&quiz_id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
+
+    if payload.question_index >= quiz.questions.len() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Invalid question index".to_string(),
+        ));
+    }
+
+    let question = &quiz.questions[payload.question_index];
+    let solutions = question.solutions.clone().unwrap_or_default();
+
+    let correct = if let Some(answer_key) = payload.answer_key {
+        solutions.contains(&answer_key)
+    } else if let Some(answer_keys) = payload.answer_keys {
+        !answer_keys.is_empty() && answer_keys.iter().all(|k| solutions.contains(k))
+            && answer_keys.len() == solutions.len()
+    } else if let Some(_answer_text) = payload.answer_text {
+        // For type-answer, would need fuzzy matching logic from Node side
+        // For now, server-side validation would be minimal
+        false
+    } else {
+        false
+    };
+
+    Ok(Json(CheckAnswerResponse {
+        correct,
+        solutions: Some(solutions),
+        explanation: None,
+    }))
+}
+
+async fn handle_solo_score(
+    Path(_quiz_id): Path<String>,
+    Json(_payload): Json<SoloScoreRequest>,
+) -> Json<SoloScoreResponse> {
+    // In full implementation, persist to config/solo-results/:quizzId.json
+    Json(SoloScoreResponse { success: true })
 }
 
 #[tokio::main]
@@ -79,13 +240,18 @@ async fn main() {
                 let registry = Arc::clone(&registry);
                 let socket_id = socket.id.to_string();
 
-                move |socket: SocketRef, Data::<String>(_quizz_id)| {
+                move |socket: SocketRef, Data::<String>(quizz_id)| {
                     let registry = Arc::clone(&registry);
                     let socket_id = socket_id.clone();
+                    let quiz_id = if quizz_id.is_empty() {
+                        None
+                    } else {
+                        Some(quizz_id)
+                    };
 
                     tokio::spawn(async move {
                         let mut registry = registry.write().await;
-                        let (game_id, invite_code) = registry.create_game(socket_id.clone());
+                        let (game_id, invite_code) = registry.create_game(socket_id.clone(), quiz_id);
 
                         info!(
                             "Game created: gameId={}, inviteCode={}",
@@ -892,9 +1058,14 @@ async fn main() {
         }
     });
 
-    // Axum router with socketioxide middleware
+    // Axum router with socketioxide middleware and HTTP routes
     let app = Router::new()
-        .route("/health", get(|| async { StatusCode::OK }))
+        .route("/health", get(handle_health))
+        .route("/api/quizzes", get(handle_get_quizzes))
+        .route("/api/quizz/:id/solo", get(handle_get_quiz_solo))
+        .route("/api/quizz/:id/check-answer", post(handle_check_answer))
+        .route("/api/quizz/:id/solo-score", post(handle_solo_score))
+        .with_state(Arc::clone(&registry))
         .layer(layer);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3020".into());
