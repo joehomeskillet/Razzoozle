@@ -482,36 +482,34 @@ async fn main() {
                                     // Emit cooldown sequence (matching golden frames)
                                     let io_handle = io_handle.clone();
                                     let game_id_clone = game_id.clone();
+                                    let registry = registry.clone();
 
-                                    // Start cooldown
-                                    io_handle.to(game_id_clone.clone())
-                                        .emit(constants::game::START_COOLDOWN, &serde_json::json!([]))
-                                        .ok();
-
-                                    // Countdown cooldown ticks
+                                    // Get cooldown duration before spawning task
                                     let cooldown_secs = {
                                         let game = game_ref.lock().unwrap();
                                         game.engine.current_question().cooldown
                                     };
 
-                                    for i in (1..=cooldown_secs).rev() {
-                                        let io_handle = io_handle.clone();
-                                        let game_id = game_id_clone.clone();
-                                        tokio::spawn(async move {
-                                            tokio::time::sleep(Duration::from_secs((cooldown_secs - i + 1) as u64)).await;
-                                            io_handle.to(game_id)
-                                                .emit(constants::game::COOLDOWN, &i).ok();
-                                        });
-                                    }
-
-                                    // After cooldown, emit SHOW_PREPARED
-                                    let io_handle = io_handle.clone();
-                                    let game_id_clone = game_id_clone.clone();
-                                    let registry = registry.clone();
-
+                                    // Spawn cooldown timer task using tokio interval
                                     tokio::spawn(async move {
-                                        tokio::time::sleep(Duration::from_secs(cooldown_secs as u64 + 1)).await;
+                                        // Emit game:startCooldown event
+                                        io_handle.to(game_id_clone.clone())
+                                            .emit(constants::game::START_COOLDOWN, &serde_json::json!([]))
+                                            .ok();
 
+                                        // Run countdown using tokio interval for consistent 1-second ticks
+                                        let mut interval = tokio::time::interval(Duration::from_secs(1));
+                                        let mut count = cooldown_secs;
+
+                                        while count > 0 {
+                                            interval.tick().await;
+                                            io_handle.to(game_id_clone.clone())
+                                                .emit(constants::game::COOLDOWN, &count)
+                                                .ok();
+                                            count -= 1;
+                                        }
+
+                                        // After cooldown completes, emit SHOW_PREPARED
                                         let game_opt = {
                                             let registry = registry.read().await;
                                             registry.get_game_by_id(&game_id_clone)
