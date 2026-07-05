@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["AckError","BroadcastError","DecodeError","DisconnectError","EncodeError","NsInsertError","ProtocolVersion","SendError","SocketError","TransportType"],"mod":["ack","adapter","extract","handler","layer","operators","packet","service","socket"],"struct":["AdapterError","ParserConfig","SocketIo","SocketIoBuilder","SocketIoConfig"]};

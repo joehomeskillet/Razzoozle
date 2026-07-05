@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ParseError"],"fn":["is_de_tuple","is_ser_tuple"],"struct":["FirstElement","ParserState"],"trait":["Parse"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Value"],"mod":["connect","disconnect","message"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["InsertError","MatchError"],"struct":["Match","MergeError","Params","ParamsIter","Router"]};

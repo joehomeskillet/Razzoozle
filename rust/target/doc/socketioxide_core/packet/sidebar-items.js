@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["PacketData"],"struct":["ConnectPacket","Packet","Sid","Str"]};

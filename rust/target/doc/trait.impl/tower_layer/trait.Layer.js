@@ -1,9 +1,0 @@
-(function() {
-    const implementors = Object.fromEntries([["engineioxide",[["impl&lt;S: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.1/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a>, H: <a class=\"trait\" href=\"engineioxide/handler/trait.EngineIoHandler.html\" title=\"trait engineioxide::handler::EngineIoHandler\">EngineIoHandler</a> + <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.1/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a>&gt; <a class=\"trait\" href=\"tower_layer/trait.Layer.html\" title=\"trait tower_layer::Layer\">Layer</a>&lt;S&gt; for <a class=\"struct\" href=\"engineioxide/layer/struct.EngineIoLayer.html\" title=\"struct engineioxide::layer::EngineIoLayer\">EngineIoLayer</a>&lt;H&gt;",0]]],["socketioxide",[["impl&lt;S: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.1/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a>, A: <a class=\"trait\" href=\"socketioxide/adapter/trait.Adapter.html\" title=\"trait socketioxide::adapter::Adapter\">Adapter</a>&gt; <a class=\"trait\" href=\"tower_layer/trait.Layer.html\" title=\"trait tower_layer::Layer\">Layer</a>&lt;S&gt; for <a class=\"struct\" href=\"socketioxide/layer/struct.SocketIoLayer.html\" title=\"struct socketioxide::layer::SocketIoLayer\">SocketIoLayer</a>&lt;A&gt;",0]]],["tower_layer",[]]]);
-    if (window.register_implementors) {
-        window.register_implementors(implementors);
-    } else {
-        window.pending_implementors = implementors;
-    }
-})()
-//{"start":59,"fragment_lengths":[732,573,19]}
