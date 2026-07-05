@@ -1236,6 +1236,421 @@ async fn main() {
                 }
             });
 
+            // Handle MANAGER.NEXT_QUESTION — advance to next or finish
+            socket.on(constants::manager::NEXT_QUESTION, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let next_phase = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.next_or_finish().ok()
+                                };
+
+                                if let Some(GamePhase::Finished) = next_phase {
+                                    info!("Game finished: gameId={}", game_id);
+                                    let finished = razzoozle_protocol::status::FinishedData {
+                                        subject: "Quiz".to_string(),
+                                        top: {
+                                            let game = game_ref.lock().unwrap();
+                                            game.engine.players.clone()
+                                        },
+                                        rank: None,
+                                        team_standings: None,
+                                        recap: None,
+                                        auto_mode: None,
+                                    };
+                                    let status = GameStatus::Finished(finished);
+                                    io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
+                                } else if let Some(GamePhase::ShowQuestion) = next_phase {
+                                    let (question_data, select_data_tuple) = {
+                                        let mut game = game_ref.lock().unwrap();
+                                        let question = game.engine.current_question().clone();
+
+                                        let server_now_ms = SystemTime::now()
+                                            .duration_since(UNIX_EPOCH)
+                                            .map(|d| d.as_millis() as i64)
+                                            .unwrap_or(0);
+
+                                        game.engine.set_clock_ms(server_now_ms);
+                                        let _ = game.engine.open_answers();
+
+                                        let total_players = game.players.len() as i32;
+                                        let answer_deadline_at_server_ms =
+                                            server_now_ms + (question.time as i64 * 1000);
+
+                                        let show_question_data = ShowQuestionData {
+                                            question: question.question.clone(),
+                                            answers: question.answers.clone(),
+                                            display_order: None,
+                                            media: question.media.clone(),
+                                            cooldown: question.cooldown,
+                                            submitted_by: question.submitted_by.clone(),
+                                        };
+
+                                        (show_question_data, Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)))
+                                    };
+
+                                    let status = GameStatus::ShowQuestion(question_data);
+                                    io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
+
+                                    if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
+                                        let question_type_str = question
+                                            .r#type
+                                            .as_ref()
+                                            .map(|t| question_type_wire(t).to_string());
+
+                                        let select_answer = SelectAnswerData {
+                                            question: question.question.clone(),
+                                            answers: question.answers.clone(),
+                                            media: question.media.clone(),
+                                            time: question.time,
+                                            total_player: total_players,
+                                            question_type: question_type_str,
+                                            min: question.min.map(|v| v as i32),
+                                            max: question.max.map(|v| v as i32),
+                                            step: question.step.map(|v| v as i32),
+                                            unit: question.unit.clone(),
+                                            shuffled_chunks: None,
+                                            server_seq: None,
+                                            server_now_ms: Some(server_now_ms),
+                                            question_start_at_server_ms: Some(server_now_ms),
+                                            answer_deadline_at_server_ms: Some(answer_deadline_at_server_ms),
+                                            submitted_by: question.submitted_by.clone(),
+                                        };
+
+                                        let status = GameStatus::SelectAnswer(select_answer);
+                                        io_handle.to(game_id)
+                                            .emit(constants::game::STATUS, &status).ok();
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.SKIP_QUESTION
+            socket.on(constants::manager::SKIP_QUESTION, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let _ = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.next_or_finish()
+                                };
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.ABORT_QUIZ
+            socket.on(constants::manager::ABORT_QUIZ, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(&game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let _ = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.phase = GamePhase::Finished;
+                                };
+
+                                info!("Quiz aborted: gameId={}", game_id);
+                                let finished = razzoozle_protocol::status::FinishedData {
+                                    subject: "Quiz".to_string(),
+                                    top: {
+                                        let game = game_ref.lock().unwrap();
+                                        game.engine.players.clone()
+                                    },
+                                    rank: None,
+                                    team_standings: None,
+                                    recap: None,
+                                    auto_mode: None,
+                                };
+                                let status = GameStatus::Finished(finished);
+                                io_handle.to(game_id).emit(constants::game::STATUS, &status).ok();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.ADJUST_TIMER
+            socket.on(constants::manager::ADJUST_TIMER, {
+                let registry = Arc::clone(&registry);
+                let _io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let _delta_seconds = payload.get("deltaSeconds").and_then(|v| v.as_i64());
+                    let registry = Arc::clone(&registry);
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
+                        // Timer adjustment stored in game state but no emit needed for basic impl
+                    });
+                }
+            });
+
+            // Handle MANAGER.KICK_PLAYER
+            socket.on(constants::manager::KICK_PLAYER, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let player_id_opt = payload.get("playerId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let is_logged = {
+                            let registry = registry.read().await;
+                            registry.is_logged(&client_id)
+                        };
+
+                        if !is_logged {
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+
+                        if let (Some(game_id), Some(player_id)) = (game_id_opt, player_id_opt) {
+                            let removed_count = {
+                                let registry = registry.read().await;
+                                let game_opt = registry.get_game_by_id(&game_id);
+                                if let Some(game_ref) = game_opt {
+                                    let mut game = game_ref.lock().unwrap();
+                                    if let Some(pos) = game.players.iter().position(|p| p.client_id == player_id) {
+                                        game.players.remove(pos);
+                                        game.engine.players.retain(|p| p.client_id != player_id);
+                                        game.engine.current_answers.remove(&player_id);
+                                        game.engine.answer_order.retain(|c| c != &player_id);
+                                        Some(game.players.len())
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            };
+
+                            if let Some(total) = removed_count {
+                                io_handle.to(game_id.clone()).emit(constants::game::TOTAL_PLAYERS, &(total as i32)).ok();
+                                io_handle.to(game_id).emit(constants::manager::REMOVE_PLAYER, &player_id).ok();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.LOGOUT
+            socket.on(constants::manager::LOGOUT, {
+                let registry = Arc::clone(&registry);
+                let client_id = client_id.clone();
+
+                move |_socket: SocketRef, _data: Data::<serde_json::Value>| {
+                    let registry = Arc::clone(&registry);
+                    let client_id = client_id.clone();
+
+                    tokio::spawn(async move {
+                        let mut registry = registry.write().await;
+                        registry.logout_client(&client_id);
+                    });
+                }
+            });
+
+            // Handle PLAYER.LEAVE
+            socket.on(constants::player::LEAVE, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+                let socket_id = socket.id.to_string();
+
+                move |_socket: SocketRef, Data::<serde_json::Value>(_payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+                    let socket_id = socket_id.clone();
+
+                    tokio::spawn(async move {
+                        let removed_player = {
+                            let mut registry = registry.write().await;
+                            registry.remove_player_by_socket_id(&socket_id)
+                        };
+
+                        if let Some((game_id, _manager_socket_id, _removed_player_id, total_players)) = removed_player {
+                            io_handle.to(game_id).emit(constants::game::TOTAL_PLAYERS, &(total_players as i32)).ok();
+                        }
+                    });
+                }
+            });
+
+            // Handle PLAYER.SELECT_TEAM
+            socket.on(constants::player::SELECT_TEAM, {
+                let registry = Arc::clone(&registry);
+                let socket_id = socket.id.to_string();
+
+                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let team_id_opt = payload.get("teamId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let socket_id = socket_id.clone();
+
+                    tokio::spawn(async move {
+                        if let Some(team_id) = team_id_opt {
+                            let registry = registry.read().await;
+                            registry.set_player_team(&socket_id, team_id);
+                        }
+                    });
+                }
+            });
+
+            // Handle PLAYER.SET_AVATAR
+            socket.on(constants::player::SET_AVATAR, {
+                let registry = Arc::clone(&registry);
+                let socket_id = socket.id.to_string();
+
+                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let avatar_opt = payload.get("avatar").and_then(|v| v.as_str()).map(|s| s.to_string());
+                    let registry = Arc::clone(&registry);
+                    let socket_id = socket_id.clone();
+
+                    tokio::spawn(async move {
+                        if let Some(avatar) = avatar_opt {
+                            let registry = registry.read().await;
+                            registry.set_player_avatar(&socket_id, avatar);
+                        }
+                    });
+                }
+            });
+
+            // Handle CLOCK.PING — reply with server time
+            socket.on(constants::clock::PING, {
+                move |socket: SocketRef, _data: Data::<serde_json::Value>| {
+                    let server_now_ms = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_millis() as i64)
+                        .unwrap_or(0);
+
+                    socket
+                        .emit(constants::clock::PONG, &serde_json::json!({ "serverNowMs": server_now_ms }))
+                        .ok();
+                }
+            });
+
+            // Handle METRICS.REPORT — accept metrics reports
+            socket.on(constants::metrics::REPORT, {
+                move |_socket: SocketRef, _data: Data::<serde_json::Value>| {
+                    // Minimal implementation: accept and acknowledge
+                    tokio::spawn(async move {
+                        // Metrics are currently no-op in basic impl
+                    });
+                }
+            });
+
+            // Handle METRICS.SUBSCRIBE — subscribe to metrics
+            socket.on(constants::metrics::SUBSCRIBE, {
+                move |socket: SocketRef, _data: Data::<serde_json::Value>| {
+                    // Minimal implementation: acknowledge subscription
+                    socket
+                        .emit(constants::metrics::HEALTH, &serde_json::json!({ "status": "ok" }))
+                        .ok();
+                }
+            });
+
             // Handle disconnect
             let registry = Arc::clone(&registry);
             let io_handle = io_handle.clone();

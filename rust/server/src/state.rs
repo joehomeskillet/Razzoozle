@@ -150,6 +150,10 @@ impl GameRegistry {
         self.logged_clients.insert(client_id);
     }
 
+    pub fn logout_client(&mut self, client_id: &str) {
+        self.logged_clients.remove(client_id);
+    }
+
     /// Generate a 6-digit PIN code for the invite (matching Node.js validation).
     fn generate_invite_code() -> String {
         let mut rng = rand::thread_rng();
@@ -241,5 +245,33 @@ impl GameRegistry {
         }
 
         None
+    }
+
+    pub fn set_player_team(&self, socket_id: &str, team_id: String) {
+        for game_ref in self.games_by_id.values() {
+            let mut game = game_ref.lock().unwrap();
+
+            if let Some(pos) = game.players.iter().position(|p| p.id == socket_id) {
+                game.players[pos].team_id = Some(team_id.clone());
+                if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
+                    game.engine.players[pos].team_id = Some(team_id);
+                }
+                return;
+            }
+        }
+    }
+
+    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) {
+        for game_ref in self.games_by_id.values() {
+            let mut game = game_ref.lock().unwrap();
+
+            if let Some(pos) = game.players.iter().position(|p| p.id == socket_id) {
+                game.players[pos].avatar = Some(avatar.clone());
+                if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
+                    game.engine.players[pos].avatar = Some(avatar);
+                }
+                return;
+            }
+        }
     }
 }
