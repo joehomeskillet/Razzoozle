@@ -12,13 +12,46 @@ try {
   // pg not installed — PostgresRepository will throw at construction.
 }
 
+const mergeGameConfigPatch = (
+  current: GameConfig,
+  patch: Partial<GameConfig>,
+): GameConfig => {
+  const { lowLatencyMode, ...flatPatch } = patch
+
+  return {
+    ...current,
+    ...flatPatch,
+    ...(lowLatencyMode === undefined
+      ? {}
+      : {
+          lowLatencyMode: { ...current.lowLatencyMode, ...lowLatencyMode },
+        }),
+  }
+}
+
+const rowToGameConfig = (row: Record<string, unknown>): GameConfig => {
+  const candidate = {
+    managerPassword:
+      (row.manager_password as string | null) || DEFAULT_MANAGER_PASSWORD,
+    teamMode: (row.team_mode as boolean | null) ?? false,
+    joinLocked: (row.join_locked as boolean | null) ?? false,
+    randomizeAnswers: (row.randomize_answers as boolean | null) ?? false,
+    scoringMode: (row.scoring_mode as "speed" | "accuracy" | null) ?? "speed",
+    lowLatencyMode: {
+      enabled: (row.low_latency_enabled as boolean | null) ?? false,
+      ...((row.low_latency_config as object | null) || {}),
+    },
+  }
+  const validated = gameConfigValidator.safeParse(candidate)
+  return validated.success ? validated.data : gameConfigValidator.parse({})
+}
+
 /**
  * PostgresRepository implements StorageRepository against the shared Postgres
  * database (games_config is a single row keyed id=1). Natively async — every
  * read hits the DB, so it always reflects the current row (no stale cache).
  *
- * Used when DATABASE_MODE is 'pg' or 'pg-only'. Phase 1 is read-only for config;
- * updateGameConfig is added in Phase 2 (dual-write).
+ * Used when DATABASE_MODE is 'pg' or 'pg-only', or as the DB leg of dual-write.
  */
 export class PostgresRepository implements StorageRepository {
   private pool: any
@@ -45,20 +78,7 @@ export class PostgresRepository implements StorageRepository {
       if (result.rows.length === 0) {
         return gameConfigValidator.parse({})
       }
-      const row = result.rows[0]
-      const gameConfig: GameConfig = {
-        managerPassword: row.manager_password || DEFAULT_MANAGER_PASSWORD,
-        teamMode: row.team_mode ?? false,
-        joinLocked: row.join_locked ?? false,
-        randomizeAnswers: row.randomize_answers ?? false,
-        scoringMode: row.scoring_mode ?? "speed",
-        lowLatencyMode: {
-          enabled: row.low_latency_enabled ?? false,
-          ...(row.low_latency_config || {}),
-        },
-      }
-      const validated = gameConfigValidator.safeParse(gameConfig)
-      return validated.success ? validated.data : gameConfigValidator.parse({})
+      return rowToGameConfig(result.rows[0])
     } catch (error) {
       console.error("PostgresRepository.getGameConfig failed", error)
       return gameConfigValidator.parse({})
@@ -66,12 +86,68 @@ export class PostgresRepository implements StorageRepository {
   }
 
   async updateGameConfig(
-    _patch: Partial<GameConfig>,
-    _expectedVersion?: number,
+    patch: Partial<GameConfig>,
+    expectedVersion?: number,
   ): Promise<GameConfig> {
-    throw new Error(
-      "PostgresRepository.updateGameConfig not yet implemented (Phase 2 dual-write)",
-    )
+    try {
+      const current = await this.getGameConfig()
+      const merged = mergeGameConfigPatch(current, patch)
+      const validated = gameConfigValidator.safeParse(merged)
+
+      if (!validated.success) {
+        throw new Error(validated.error.issues[0].message)
+      }
+
+      const config = validated.data
+      const params: unknown[] = [
+        config.managerPassword,
+        config.teamMode,
+        config.joinLocked ?? false,
+        config.randomizeAnswers ?? false,
+        config.scoringMode ?? "speed",
+        config.lowLatencyMode.enabled,
+        JSON.stringify(config.lowLatencyMode),
+      ]
+
+      let query = `
+        UPDATE games_config SET
+          manager_password = $1,
+          team_mode = $2,
+          join_locked = $3,
+          randomize_answers = $4,
+          scoring_mode = $5,
+          low_latency_enabled = $6,
+          low_latency_config = $7,
+          version = version + 1,
+          updated_at = NOW()
+        WHERE id = 1`
+
+      if (expectedVersion !== undefined) {
+        params.push(expectedVersion)
+        query += ` AND version = $${params.length}`
+      }
+
+      query += `
+        RETURNING manager_password, team_mode, join_locked, randomize_answers,
+                  scoring_mode, low_latency_enabled, low_latency_config,
+                  version, created_at, updated_at`
+
+      const result = await this.pool.query(query, params)
+
+      if (result.rows.length === 0) {
+        if (expectedVersion !== undefined) {
+          throw new Error(
+            "Version mismatch: config was modified concurrently",
+          )
+        }
+        throw new Error("games_config row not found")
+      }
+
+      return rowToGameConfig(result.rows[0])
+    } catch (error) {
+      console.error("PostgresRepository.updateGameConfig failed", error)
+      throw error
+    }
   }
 
   async getManagerPassword(): Promise<string> {

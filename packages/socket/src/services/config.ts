@@ -683,6 +683,16 @@ export const updateGameConfig = (patch: {
   return result.data
 }
 
+// TODO: Migrate other write sites to use updateGameConfigViaStorage next wave
+export async function updateGameConfigViaStorage(
+  patch: Partial<GameConfig>,
+  expectedVersion?: number,
+): Promise<GameConfig> {
+  const { storageRepository } =
+    require("@razzoozle/socket/services/storage") as typeof import("@razzoozle/socket/services/storage")
+  return storageRepository().updateGameConfig(patch, expectedVersion)
+}
+
 // ---- Achievements config (config/achievements.json) -----------------------
 // Persisted shape: { [id]: { enabled?, name?, description?, threshold? } }.
 // Reads never throw — a missing/corrupt file yields {} (registry defaults). The
