@@ -2267,6 +2267,22 @@ async fn main() {
         }
     });
 
+    // C4 — Game eviction reaper: spawn background task to periodically evict stale games
+    // (closes the memory leak from finished/inactive games)
+    {
+        let registry_clone = Arc::clone(&registry);
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                {
+                    let mut reg = registry_clone.write().await;
+                    reg.evict_stale_games();
+                }
+            }
+        });
+    }
+
     // Axum router with socketioxide middleware and HTTP routes
     let app = Router::new()
         .route("/health", get(handle_health))
