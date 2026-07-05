@@ -614,6 +614,8 @@ name = "razzoozle-engine"
 version = "0.1.0"
 dependencies = [
  "rand",
+ "razzoozle-protocol",
+ "serde_json",
 ]
 
 [[package]]
