@@ -27,7 +27,7 @@ function spawnPlayer(i) {
   const p = io(URL, { auth: { clientId: "p" + i }, transports: ["websocket"], reconnection: false });
   p._i = i; p._answered = false; players.push(p);
   p.on("connect", () => p.emit("player:join", inviteCode));
-  p.on("game:successRoom", () => p.emit("player:login", { gameId, data: { username: "P" + i, avatar: "a" + (i % 8) } }));
+  p.on("game:successRoom", () => p.emit("player:login", { gameId, data: { username: "Play" + i, avatar: "a" + (i % 8) } }));
   p.on("game:successJoin", () => { if (++loggedIn === N) { log("all", N, "players logged in in", ((Date.now() - t0) / 1000).toFixed(1), "s"); maybeStart(); } });
   p.on("game:status", (s) => {
     if (s && s.name === "SELECT_ANSWER" && !p._answered) { p._answered = true; p.emit("player:selectedAnswer", { gameId, data: { answerKey: i % 4 } }); }

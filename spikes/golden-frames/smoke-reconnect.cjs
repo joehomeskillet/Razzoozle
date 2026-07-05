@@ -19,7 +19,7 @@ mgr.on("connect_error", (e) => fail("mgr connect_error " + e.message));
 
 mgr.on("manager:gameCreated", ({ gameId: gid, inviteCode: code }) => {
   gameId = gid; inviteCode = code;
-  bob = mkPlayer("bob-1", "Bob");
+  bob = mkPlayer("bob-1", "Bobby");
   alice = mkAlice();
 });
 
