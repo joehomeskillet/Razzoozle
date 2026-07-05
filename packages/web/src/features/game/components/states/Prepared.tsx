@@ -44,7 +44,7 @@ const Prepared = ({ data: { totalAnswers, questionNumber } }: Props) => {
               answerColor(key),
             )}
           >
-            <span className="text-2xl font-bold text-white md:text-3xl">
+            <span className="text-2xl font-bold text-[var(--answer-text)] md:text-3xl">
               {answerLabel(key)}
             </span>
           </div>
