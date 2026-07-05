@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AckSender","Data","ExtensionNotFound","HttpExtension","MaybeHttpExtension","SocketRef","State","StateNotFound","TryData"]};

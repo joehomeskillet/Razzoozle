@@ -5,12 +5,15 @@ use axum::{
     routing::get,
     Router,
 };
+use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::status::{GameStatus, ShowStartData, ShowQuestionData, SelectAnswerData, ShowLeaderboardData, WaitData};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::info;
 
@@ -115,7 +118,6 @@ async fn main() {
             });
 
             // Handle PLAYER.LOGIN event
-            // Payload format: { gameId: string, data: { username: string, avatar?: string } }
             socket.on(constants::player::LOGIN, {
                 let registry = Arc::clone(&registry);
                 let socket_id = socket.id.to_string();
@@ -129,7 +131,6 @@ async fn main() {
                     let io_handle = io_handle.clone();
 
                     tokio::spawn(async move {
-                        // Extract gameId and player data from the payload wrapper
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
                         let username_opt = payload
                             .get("data")
@@ -171,31 +172,24 @@ async fn main() {
                                             game_id_ret, username
                                         );
 
-                                        // Join the socket to the game room
                                         socket.join(game_id_ret.clone()).ok();
 
-                                        // Emit game:successJoin to the player
                                         socket
                                             .emit(constants::game::SUCCESS_JOIN, &game_id_ret)
                                             .ok();
 
-                                        // Emit manager:newPlayer to the manager socket directly
-                                        // Critical finding: socketioxide does NOT auto-join sockets into
-                                        // their own sid-room, so use io.get_socket(sid) instead of socket.to(sid)
                                         if let Ok(sid) = manager_socket_id.parse() {
                                             if let Some(mgr) = io_handle.get_socket(sid) {
                                                 mgr.emit(constants::manager::NEW_PLAYER, &player).ok();
                                             }
                                         }
 
-                                        // Broadcast game:totalPlayers to all in the room
                                         socket
                                             .to(game_id_ret)
                                             .emit(constants::game::TOTAL_PLAYERS, &(total_players as i32))
                                             .ok();
                                     }
                                     None => {
-                                        info!("Game not found for login: gameId={}", game_id);
                                         socket
                                             .emit(constants::game::ERROR_MESSAGE, "errors:game.notFound")
                                             .ok();
@@ -203,10 +197,406 @@ async fn main() {
                                 }
                             }
                             _ => {
-                                info!("Invalid player:login payload");
                                 socket
                                     .emit(constants::game::ERROR_MESSAGE, "errors:game.invalidPayload")
                                     .ok();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.START_GAME event
+            socket.on(constants::manager::START_GAME, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+
+                    tokio::spawn(async move {
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let start_data = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.start().ok()
+                                };
+
+                                if let Some(start_data) = start_data {
+                                    let game_id = game_id.to_string();
+                                    info!("Game started: gameId={}", game_id);
+
+                                    // Emit SHOW_START to room
+                                    let status = GameStatus::ShowStart(start_data);
+                                    io_handle.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
+
+                                    // Schedule question flow after lead time (3 seconds from golden frames)
+                                    let io_handle = io_handle.clone();
+                                    let game_id_clone = game_id.clone();
+                                    let registry = registry.clone();
+
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs(3)).await;
+
+                                        let game_opt = {
+                                            let registry = registry.read().await;
+                                            registry.get_game_by_id(&game_id_clone)
+                                        };
+
+                                        if let Some(game_ref) = game_opt {
+                                            let question_data = {
+                                                let mut game = game_ref.lock().unwrap();
+                                                game.engine.show_question(0).ok()
+                                            };
+
+                                            if let Some(question_data) = question_data {
+                                                // Emit SHOW_QUESTION
+                                                let status = GameStatus::ShowQuestion(question_data);
+                                                io_handle.to(game_id_clone.clone())
+                                                    .emit(constants::game::STATUS, &status).ok();
+
+                                                // Then emit SELECT_ANSWER for interactive phase
+                                                let game_opt = {
+                                                    let registry = registry.read().await;
+                                                    registry.get_game_by_id(&game_id_clone)
+                                                };
+
+                                                if let Some(game_ref) = game_opt {
+                                                    let select_data = {
+                                                        let mut game = game_ref.lock().unwrap();
+                                                        let _ = game.engine.open_answers();
+                                                        game.engine.current_question().clone()
+                                                    };
+
+                                                    let total_players = {
+                                                        let game = game_ref.lock().unwrap();
+                                                        game.players.len() as i32
+                                                    };
+
+                                                    let select_answer = SelectAnswerData {
+                                                        question: select_data.question.clone(),
+                                                        answers: select_data.answers.clone(),
+                                                        media: select_data.media.clone(),
+                                                        time: select_data.time,
+                                                        total_player: total_players,
+                                                        question_type: select_data.r#type.as_ref().map(|t| format!("{:?}", t)),
+                                                        min: None,
+                                                        max: None,
+                                                        step: None,
+                                                        unit: None,
+                                                        shuffled_chunks: None,
+                                                        server_seq: None,
+                                                        server_now_ms: None,
+                                                        question_start_at_server_ms: None,
+                                                        answer_deadline_at_server_ms: None,
+                                                        submitted_by: select_data.submitted_by.clone(),
+                                                    };
+
+                                                    let status = GameStatus::SelectAnswer(select_answer);
+                                                    io_handle.to(game_id_clone)
+                                                        .emit(constants::game::STATUS, &status).ok();
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle PLAYER.SELECTED_ANSWER event
+            socket.on(constants::player::SELECTED_ANSWER, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+
+                    tokio::spawn(async move {
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                        let answer_key_opt = payload
+                            .get("data")
+                            .and_then(|v| v.get("answerKey"))
+                            .and_then(|v| v.as_i64());
+
+                        if let (Some(game_id), Some(answer_key)) = (game_id_opt, answer_key_opt) {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let record_result = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    let socket_id = socket.id.to_string();
+                                    let client_id = game.players
+                                        .iter()
+                                        .find(|p| p.id == socket_id)
+                                        .map(|p| p.client_id.clone())
+                                        .unwrap_or_else(|| socket_id);
+
+                                    game.engine.record_answer(&client_id, answer_key as i32).ok()
+                                };
+
+                                if record_result.is_some() {
+                                    let answer_count = {
+                                        let game = game_ref.lock().unwrap();
+                                        game.engine.current_answers.len() as i32
+                                    };
+
+                                    let game_id = game_id.to_string();
+                                    // Emit game:playerAnswer (count) to all in room
+                                    io_handle.to(game_id.clone())
+                                        .emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
+
+                                    // Emit WAIT status to all players
+                                    let wait_status = GameStatus::Wait(WaitData {
+                                        text: "game:waitingForAnswers".to_string(),
+                                        team_mode: None,
+                                    });
+                                    io_handle.to(game_id)
+                                        .emit(constants::game::STATUS, &wait_status).ok();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.REVEAL_ANSWER event
+            socket.on(constants::manager::REVEAL_ANSWER, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+
+                    tokio::spawn(async move {
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let reveal_result = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.reveal(razzoozle_protocol::status::ScoringMode::Speed).ok()
+                                };
+
+                                if let Some(_results) = reveal_result {
+                                    let game_id = game_id.to_string();
+                                    info!("Answer revealed: gameId={}", game_id);
+
+                                    // Emit cooldown sequence (matching golden frames)
+                                    let io_handle = io_handle.clone();
+                                    let game_id_clone = game_id.clone();
+
+                                    // Start cooldown
+                                    io_handle.to(game_id_clone.clone())
+                                        .emit(constants::game::START_COOLDOWN, &serde_json::json!([]))
+                                        .ok();
+
+                                    // Countdown cooldown ticks
+                                    let cooldown_secs = {
+                                        let game = game_ref.lock().unwrap();
+                                        game.engine.current_question().cooldown
+                                    };
+
+                                    for i in (1..=cooldown_secs).rev() {
+                                        let io_handle = io_handle.clone();
+                                        let game_id = game_id_clone.clone();
+                                        tokio::spawn(async move {
+                                            tokio::time::sleep(Duration::from_secs((cooldown_secs - i + 1) as u64)).await;
+                                            io_handle.to(game_id)
+                                                .emit(constants::game::COOLDOWN, &i).ok();
+                                        });
+                                    }
+
+                                    // After cooldown, emit SHOW_PREPARED
+                                    let io_handle = io_handle.clone();
+                                    let game_id_clone = game_id_clone.clone();
+                                    let registry = registry.clone();
+
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs(cooldown_secs as u64 + 1)).await;
+
+                                        let game_opt = {
+                                            let registry = registry.read().await;
+                                            registry.get_game_by_id(&game_id_clone)
+                                        };
+
+                                        if let Some(game_ref) = game_opt {
+                                            let (current_q, total_q) = {
+                                                let game = game_ref.lock().unwrap();
+                                                (
+                                                    game.engine.current_question_index as i32 + 1,
+                                                    game.engine.quiz.questions.len() as i32,
+                                                )
+                                            };
+
+                                            let update_q = razzoozle_protocol::player::GameUpdateQuestion {
+                                                current: current_q,
+                                                total: total_q,
+                                            };
+
+                                            io_handle.to(game_id_clone.clone())
+                                                .emit(constants::game::UPDATE_QUESTION, &update_q).ok();
+
+                                            let prepared = razzoozle_protocol::status::ShowPreparedData {
+                                                total_answers: 4,
+                                                question_number: current_q,
+                                            };
+
+                                            let status = GameStatus::ShowPrepared(prepared);
+                                            io_handle.to(game_id_clone)
+                                                .emit(constants::game::STATUS, &status).ok();
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Handle MANAGER.SHOW_LEADERBOARD event
+            socket.on(constants::manager::SHOW_LEADERBOARD, {
+                let registry = Arc::clone(&registry);
+                let io_handle = io_handle.clone();
+
+                move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+                    let registry = Arc::clone(&registry);
+                    let io_handle = io_handle.clone();
+
+                    tokio::spawn(async move {
+                        let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                        if let Some(game_id) = game_id_opt {
+                            let game_opt = {
+                                let registry = registry.read().await;
+                                registry.get_game_by_id(game_id)
+                            };
+
+                            if let Some(game_ref) = game_opt {
+                                let leaderboard_data = {
+                                    let mut game = game_ref.lock().unwrap();
+                                    game.engine.leaderboard_view().ok()
+                                };
+
+                                if let Some(leaderboard_data) = leaderboard_data {
+                                    let game_id = game_id.to_string();
+                                    info!("Leaderboard shown: gameId={}", game_id);
+
+                                    // Emit SHOW_LEADERBOARD
+                                    let status = GameStatus::ShowLeaderboard(leaderboard_data);
+                                    io_handle.to(game_id.clone())
+                                        .emit(constants::game::STATUS, &status).ok();
+
+                                    // Schedule next question after a delay
+                                    let io_handle = io_handle.clone();
+                                    let game_id_clone = game_id.clone();
+                                    let registry = registry.clone();
+
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs(3)).await;
+
+                                        let game_opt = {
+                                            let registry = registry.read().await;
+                                            registry.get_game_by_id(&game_id_clone)
+                                        };
+
+                                        if let Some(game_ref) = game_opt {
+                                            let next_phase = {
+                                                let mut game = game_ref.lock().unwrap();
+                                                game.engine.next_question().ok()
+                                            };
+
+                                            if let Some(GamePhase::Finished) = next_phase {
+                                                info!("Game finished: gameId={}", game_id_clone);
+                                                let finished = razzoozle_protocol::status::FinishedData {
+                                                    subject: "Quiz".to_string(),
+                                                    top: {
+                                                        let game = game_ref.lock().unwrap();
+                                                        game.engine.players.clone()
+                                                    },
+                                                    rank: None,
+                                                    team_standings: None,
+                                                    recap: None,
+                                                    auto_mode: None,
+                                                };
+                                                let status = GameStatus::Finished(finished);
+                                                io_handle.to(game_id_clone)
+                                                    .emit(constants::game::STATUS, &status).ok();
+                                            } else if let Some(GamePhase::ShowQuestion) = next_phase {
+                                                // Move to next question
+                                                let question_data = {
+                                                    let game = game_ref.lock().unwrap();
+                                                    game.engine.current_question().clone()
+                                                };
+
+                                                let status = GameStatus::ShowQuestion(ShowQuestionData {
+                                                    question: question_data.question.clone(),
+                                                    answers: question_data.answers.clone(),
+                                                    display_order: None,
+                                                    media: question_data.media.clone(),
+                                                    cooldown: question_data.cooldown,
+                                                    submitted_by: question_data.submitted_by.clone(),
+                                                });
+                                                io_handle.to(game_id_clone.clone())
+                                                    .emit(constants::game::STATUS, &status).ok();
+
+                                                // Then SelectAnswer
+                                                let select_data = {
+                                                    let game = game_ref.lock().unwrap();
+                                                    game.engine.current_question().clone()
+                                                };
+
+                                                let total_players = {
+                                                    let game = game_ref.lock().unwrap();
+                                                    game.players.len() as i32
+                                                };
+
+                                                let select_answer = SelectAnswerData {
+                                                    question: select_data.question.clone(),
+                                                    answers: select_data.answers.clone(),
+                                                    media: select_data.media.clone(),
+                                                    time: select_data.time,
+                                                    total_player: total_players,
+                                                    question_type: select_data.r#type.as_ref().map(|t| format!("{:?}", t)),
+                                                    min: None,
+                                                    max: None,
+                                                    step: None,
+                                                    unit: None,
+                                                    shuffled_chunks: None,
+                                                    server_seq: None,
+                                                    server_now_ms: None,
+                                                    question_start_at_server_ms: None,
+                                                    answer_deadline_at_server_ms: None,
+                                                    submitted_by: select_data.submitted_by.clone(),
+                                                };
+
+                                                let status = GameStatus::SelectAnswer(select_answer);
+                                                io_handle.to(game_id_clone)
+                                                    .emit(constants::game::STATUS, &status).ok();
+                                            }
+                                        }
+                                    });
+                                }
                             }
                         }
                     });

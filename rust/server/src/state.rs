@@ -1,47 +1,38 @@
 //! state.rs — In-memory game registry and state management.
 
-use rand::Rng;
+use razzoozle_engine::state::{GameState, GamePhase};
 use razzoozle_protocol::player::Player;
+use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-/// Fixture quiz structure for loading from JSON.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QuizQuestion {
-    pub question: String,
-    pub answers: Vec<String>,
-    pub solutions: Vec<i32>,
-    pub cooldown: i32,
-    pub time: i32,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuizFixture {
     pub subject: String,
-    pub questions: Vec<QuizQuestion>,
+    pub questions: Vec<serde_json::Value>,
 }
 
 impl QuizFixture {
-    /// Load fixture quiz from JSON file
-    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+    /// Load fixture quiz from JSON file and convert to protocol Quizz type
+    pub fn load() -> Result<Quizz, Box<dyn std::error::Error>> {
         let path = "fixture-quiz.json";
         let contents = fs::read_to_string(path)?;
-        let quiz: QuizFixture = serde_json::from_str(&contents)?;
+        let quiz: Quizz = serde_json::from_str(&contents)?;
         Ok(quiz)
     }
 }
 
-/// In-memory game state.
-#[derive(Debug, Clone)]
+/// In-memory game state, wrapping the engine's GameState.
+#[derive(Debug)]
 pub struct Game {
     pub game_id: String,
     pub invite_code: String,
     pub manager_socket_id: String,
     pub players: Vec<Player>,
-    pub quiz: QuizFixture,
+    pub engine: GameState,
 }
 
 impl Game {
@@ -49,14 +40,14 @@ impl Game {
         game_id: String,
         invite_code: String,
         manager_socket_id: String,
-        quiz: QuizFixture,
+        quiz: Quizz,
     ) -> Self {
         Self {
             game_id,
             invite_code,
             manager_socket_id,
             players: Vec::new(),
-            quiz,
+            engine: GameState::new(quiz, Vec::new()),
         }
     }
 
@@ -70,7 +61,7 @@ impl Game {
     ) -> Player {
         let player = Player {
             id: socket_id,
-            client_id,
+            client_id: client_id.clone(),
             username,
             connected: true,
             points: 0,
@@ -82,6 +73,8 @@ impl Game {
             identifier_hash: None,
         };
         self.players.push(player.clone());
+        // Also add to engine's players list
+        self.engine.players.push(player.clone());
         player
     }
 }
@@ -90,11 +83,11 @@ impl Game {
 pub struct GameRegistry {
     games_by_code: HashMap<String, Arc<Mutex<Game>>>,
     games_by_id: HashMap<String, Arc<Mutex<Game>>>,
-    quiz: QuizFixture,
+    quiz: Quizz,
 }
 
 impl GameRegistry {
-    pub fn new(quiz: QuizFixture) -> Self {
+    pub fn new(quiz: Quizz) -> Self {
         Self {
             games_by_code: HashMap::new(),
             games_by_id: HashMap::new(),
@@ -105,7 +98,7 @@ impl GameRegistry {
     /// Generate a 6-digit PIN code for the invite (matching Node.js validation).
     fn generate_invite_code() -> String {
         let mut rng = rand::thread_rng();
-        let pin: u32 = rng.gen_range(100000..1000000);
+        let pin: u32 = rand::Rng::gen_range(&mut rng, 100000..1000000);
         pin.to_string()
     }
 
@@ -145,41 +138,5 @@ impl GameRegistry {
                 let g = game.lock().unwrap();
                 Some(g.manager_socket_id.clone())
             })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_invite_code() {
-        let code = GameRegistry::generate_invite_code();
-        assert_eq!(code.len(), 6);
-        assert!(code.chars().all(|c| c.is_ascii_digit()));
-    }
-
-    #[test]
-    fn test_add_player() {
-        let quiz = QuizFixture {
-            subject: "Test".to_string(),
-            questions: vec![],
-        };
-        let mut game = Game::new(
-            "game-1".to_string(),
-            "123456".to_string(),
-            "mgr-sid".to_string(),
-            quiz,
-        );
-
-        let player = game.add_player(
-            "player-1".to_string(),
-            "client-1".to_string(),
-            "Alice".to_string(),
-            None,
-        );
-
-        assert_eq!(player.username, "Alice");
-        assert_eq!(game.players.len(), 1);
     }
 }

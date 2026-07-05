@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["TypeMap"],"struct":["InitCell","TypeMap"]};

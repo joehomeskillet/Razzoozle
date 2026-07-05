@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BroadcastFlags"],"struct":["BroadcastOptions","LocalAdapter"],"trait":["Adapter"],"type":["Room"]};
