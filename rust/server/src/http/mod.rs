@@ -12,10 +12,9 @@ use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
-use crate::{question_type_wire, match_mode_from_str};
+use crate::question_type_wire;
 
 // ── Solo play types ─────────────────────────────────────────────────────────
 

@@ -1,20 +1,13 @@
 //! Player event handlers: JOIN, LOGIN, SELECTED_ANSWER, LEAVE, SELECT_TEAM, SET_AVATAR, RECONNECT
 use super::HandlerCtx;
-use crate::{is_game_host, question_type_wire, match_mode_from_str};
-use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
-use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::{
-    GameStatus, MatchMode, SelectAnswerData, ShowLeaderboardData, ShowQuestionData,
-    ShowResponsesData, ShowResultData, ShowStartData, WaitData,
+    GameStatus, WaitData,
 };
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::info;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_join(socket, ctx.clone());
@@ -181,7 +174,7 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
         let io_handle = ctx.io.clone();
         let client_id = ctx.client_id.clone();
 
-        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+        move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let registry = registry.clone();
             let io_handle = io_handle.clone();
             let client_id = client_id.clone();
@@ -344,7 +337,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let registry = registry.clone();
-            let io_handle = io_handle.clone();
+            let _io_handle = io_handle.clone();
             let socket_id = socket_id.clone();
             let client_id = client_id.clone();
 

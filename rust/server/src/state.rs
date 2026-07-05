@@ -1,6 +1,6 @@
 //! state.rs — In-memory game registry and state management.
 
-use razzoozle_engine::state::{GameState, GamePhase};
+use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};

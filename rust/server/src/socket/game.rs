@@ -1,10 +1,8 @@
 //! Game lifecycle handlers: CREATE and DISCONNECT
 use super::HandlerCtx;
-use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
-use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_create(socket, ctx.clone());

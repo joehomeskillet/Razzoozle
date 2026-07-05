@@ -3,34 +3,17 @@ mod state;
 mod media_ai;
 mod http;
 
-use http::RATE_LIMITER;
 
-use axum::{
-    extract::{ConnectInfo, Path},
-    http::StatusCode,
-    routing::{get, post},
-    Json, Router,
-};
-use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
-use razzoozle_engine::state::GamePhase;
-use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::{Question, QuestionType};
-use razzoozle_protocol::status::{
-    GameStatus, MatchMode, SelectAnswerData, ShowLeaderboardData, ShowQuestionData,
-    ShowResponsesData, ShowResultData, ShowStartData, WaitData,
-};
-use serde::{Deserialize, Serialize};
+use razzoozle_protocol::quizz::QuestionType;
+use razzoozle_protocol::status::MatchMode;
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
-use state::{GameRegistry, QuizFixture, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
-use std::collections::{HashMap, HashSet};
-use std::fs;
+use state::{GameRegistry, QuizFixture};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use lazy_static::lazy_static;
+use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::info;
 
 pub(crate) fn question_type_wire(question_type: &QuestionType) -> &'static str {
     match question_type {
