@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -24,6 +25,40 @@
 **[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App Windows (Bêta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *forké depuis [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
+
+---
+
+## 🦀 Réécriture Rust — aperçu complet (pas le défaut)
+
+Le serveur de jeu Node.js (`packages/socket`) est toujours celui qui exécute la **production**
+à [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) — chaque fonctionnalité de ce
+README, tous les types de questions, thèmes/squelettes, gamification, modes équipe + solo,
+avatars DiceBear, images par IA locale, retour haptique mobile, 6 locales, ~592 tests,
+testé en charge jusqu'à 600 joueurs simultanés.
+
+En parallèle, une **réécriture Rust** depuis zéro du serveur de jeu (`axum` +
+`socketioxide 0.15`) parle le *même* protocole Socket.IO, si bien que le
+frontend ne le remarque jamais. Elle est maintenant **complète** : un jeu multi-questions
+noté complet, les 7 types de questions, cycle de vie des joueurs + reconnexion,
+authentification manager, quiz-depuis-disque, points de terminaison HTTP + solo, contrôle du jeu
+(expulsion/saut/interruption/minuteur), bots, le kiosque `/display` et IA/média. Les types partagés
+sont générés depuis Rust via `ts-rs` — les types wire Rust sont la source de
+vérité. Elle s'exécute comme un **conteneur parallèle sur `:3012`** à côté de Node sur
+`:3011` et est exercée à chaque déploiement par une barrière CI de jeu réel (un jeu avec
+100 joueurs joué jusqu'au bout + un test de reconnexion) — mais elle n'est **pas encore le
+défaut** ; Node reste le chemin production jusqu'à une transition fantôme.
+
+**Pourquoi Rust :** livrer l'hôte bureau sous forme d'une **application Tauri ~10 MB** (Rust sidecar)
+au lieu d'un bundle Electron ~150 MB, une machine d'état du jeu avec vérification à la compilation,
+et un seul binaire statique.
+
+Un effort parallèle de **durcissement v2.0** — une chasse aux bogues adversariale multi-modèle (19
+découvertes confirmées) — atterrit des correctifs sur les deux jumeaux : plafonds de ressources par partie +
+éviction de parties, limitation de débit par IP, liste d'autorisation path-traversal, correspondance
+de texte Unicode-correct et authentification par jeton d'hôte généré par le serveur qui ferme une faille
+contrôle inter-jeu (IDOR). Une refonte modularisation / acteur-par-partie est prévue ensuite.
+
+**→ Détails, tableau de statut, build & run : [`rust/README.md`](rust/README.md)**
 
 ---
 
