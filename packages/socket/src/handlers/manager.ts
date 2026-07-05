@@ -410,6 +410,17 @@ export const managerSocketHandlers = ({ socket }: SocketContext) => {
         return
       }
 
+      // Coarse server-wide ceiling FIRST: prevent global DoS from unbounded
+      // image-gen requests across all clients. No per-user side effect.
+      if (!checkGlobalSubmissionRate()) {
+        socket.emit(
+          EVENTS.MANAGER.IMAGE_ERROR,
+          "errors:submission.rateLimited",
+        )
+
+        return
+      }
+
       // Cooldown + per-client lifetime + durable hourly check, consuming a
       // credit on the dispatch path. Keyed by the DURABLE clientId (not
       // socket.id) so a reconnect does NOT reset the limits. SHARES the same

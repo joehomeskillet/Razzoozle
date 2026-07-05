@@ -926,6 +926,10 @@ class Game {
     // leaves a setTimeout retaining a dead Game (and bot state is dropped).
     this.botManager.removeAll()
 
+    // RoundManager cleanup: clear any pending auto-advance timers and throttle
+    // timers so the game disposal is complete and no timer survives.
+    this.round.dispose()
+
     deleteGameAvatars(this.gameId)
     metrics.clear(this.gameId)
   }

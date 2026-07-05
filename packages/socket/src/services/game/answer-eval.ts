@@ -78,7 +78,11 @@ export function evaluateAnswer(
   }
 
   // Multiple-select: exact set match — all or nothing.
-  if (question.type === "multiple-select" && answerIds !== undefined) {
+  if (question.type === "multiple-select") {
+    // Ensure answerIds is provided and is an array; otherwise invalid submission.
+    if (!Array.isArray(answerIds)) {
+      return { correct: false, base: 0 }
+    }
     const solutions = [...new Set(question.solutions ?? [])]
 
     if (answerIds.length !== solutions.length) {

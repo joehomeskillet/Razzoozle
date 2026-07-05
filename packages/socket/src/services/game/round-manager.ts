@@ -667,6 +667,12 @@ export class RoundManager {
     waiters.forEach((resolve) => resolve())
   }
 
+  // Clean up all pending timers to prevent leaks on game disposal.
+  dispose(): void {
+    this.clearAuto()
+    this.answerCountThrottle.cancel()
+  }
+
   getReconnectInfo() {
     return {
       current: this.currentQuestion + 1,

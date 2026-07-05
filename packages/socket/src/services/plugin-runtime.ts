@@ -26,6 +26,7 @@
 // import() from a CJS module, so this works in BOTH dev and the bundled prod.
 // Never use require() (breaks in the ESM dev context) and never a static import.
 
+import { statSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 import type { Server as RawServer, Socket as RawSocket } from "socket.io"
 import type {
@@ -91,6 +92,14 @@ interface LoadedPlugin {
 // id → LoadedPlugin. A plugin is in this registry iff its server hook has been
 // loaded (regardless of errored state). unloadPlugin removes it.
 const registry = new Map<string, LoadedPlugin>()
+
+// Track loaded plugin module URLs and file metadata to avoid unbounded ESM
+// cache growth. When the same plugin is reloaded without file changes, reuse
+// the cached URL so the ESM loader doesn't create a new module entry.
+const pluginModuleCache = new Map<
+  string,
+  { mtime: number; version: string; url: string }
+>()
 
 // The live socket.io Server. Set ONCE at boot (index.ts) before any plugin is
 // loaded or any socket connects. Kept as the untyped raw socket.io Server so
@@ -286,19 +295,35 @@ export const loadPlugin = async (plugin: InstalledPlugin): Promise<boolean> => {
   registry.set(plugin.id, loaded)
 
   try {
+    // Check file metadata to avoid unbounded ESM cache growth on plugin reloads.
+    // If the plugin file and version haven't changed since last load, reuse the
+    // cached import URL; otherwise create a fresh one with a timestamp.
+    const stats = statSync(serverPath)
+    const cached = pluginModuleCache.get(plugin.id)
+
+    let importUrl: string
+    if (
+      cached &&
+      cached.mtime === stats.mtime.getTime() &&
+      cached.version === plugin.version
+    ) {
+      // File and version unchanged; reuse cached URL to hit ESM module cache.
+      importUrl = cached.url
+    } else {
+      // File changed or version bumped; create fresh cache-buster query string.
+      const cacheBust = `?v=${encodeURIComponent(plugin.version)}&t=${Date.now()}`
+      importUrl = pathToFileURL(serverPath).href + cacheBust
+      pluginModuleCache.set(plugin.id, {
+        mtime: stats.mtime.getTime(),
+        version: plugin.version,
+        url: importUrl,
+      })
+    }
+
     // BUNDLE-SAFE dynamic import of a runtime file URL (see file header). The
     // specifier is a variable, so esbuild preserves the import() instead of
     // trying to bundle the (non-existent-at-build-time) plugin file.
-    //
-    // CACHE-BUST: Node's ESM loader caches modules by resolved URL, so an
-    // uninstall+reinstall at the SAME path would return the STALE module (the
-    // new server.js never runs until a full process restart). Append a query so
-    // each (re)load resolves to a fresh URL. version usually bumps on reinstall;
-    // a timestamp guarantees freshness even when it doesn't.
-    const cacheBust = `?v=${encodeURIComponent(plugin.version)}&t=${Date.now()}`
-    const mod = (await import(
-      pathToFileURL(serverPath).href + cacheBust
-    )) as PluginModule
+    const mod = (await import(importUrl)) as PluginModule
 
     const register = extractRegister(mod)
 
