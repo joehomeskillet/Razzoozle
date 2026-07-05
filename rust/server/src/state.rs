@@ -12,6 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use lazy_static::lazy_static;
 use regex::Regex;
+use sqlx::PgPool;
 
 // Resource caps (parity with Node)
 pub const MAX_ACTIVE_GAMES: usize = 100;
@@ -264,11 +265,18 @@ pub struct GameRegistry {
 }
 
 impl GameRegistry {
-    /// Load all quizzes from the config/quizz directory or fall back to the fixture.
-    fn load_quizzes() -> HashMap<String, Quizz> {
+    /// Load all quizzes from the database (if pool provided) or config/quizz directory or fall back to fixture.
+    /// Prefers DB quizzes when available, then merges with file-based quizzes.
+    async fn load_quizzes(pool: &Option<PgPool>) -> HashMap<String, Quizz> {
         let mut quizzes = HashMap::new();
 
-        // Try to load from config/quizz directory
+        // First, try to load from database if pool available
+        if pool.is_some() {
+            quizzes = crate::db::get_quizzes(pool).await;
+        }
+
+        // Then, try to load from config/quizz directory (file-based)
+        // This allows fallback or supplementing DB quizzes with local overrides
         let config_path = Self::get_config_path();
         if Path::new(&config_path).exists() {
             if let Ok(entries) = fs::read_dir(&config_path) {
@@ -279,7 +287,8 @@ impl GameRegistry {
                             if let Ok(quiz) = serde_json::from_str::<Quizz>(&contents) {
                                 if let Some(filename) = path.file_stem() {
                                     let id = filename.to_string_lossy().to_string();
-                                    quizzes.insert(id, quiz);
+                                    // Insert if not already from DB (file-based acts as fallback/supplement)
+                                    quizzes.entry(id).or_insert(quiz);
                                 }
                             }
                         }
@@ -305,8 +314,8 @@ impl GameRegistry {
         }
     }
 
-    pub fn new(quiz_fixture: Quizz) -> Self {
-        let quizzes = Self::load_quizzes();
+    pub async fn new(pool: &Option<PgPool>, quiz_fixture: Quizz) -> Self {
+        let quizzes = Self::load_quizzes(pool).await;
         Self {
             games_by_code: HashMap::new(),
             games_by_id: HashMap::new(),
@@ -638,7 +647,9 @@ mod tests {
             archived: None,
             theme_id: None,
         };
-        let mut registry = GameRegistry::new(empty_quiz);
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
+        let mut registry = registry;
 
         // Create MAX_ACTIVE_GAMES games
         for i in 0..MAX_ACTIVE_GAMES {
@@ -660,7 +671,8 @@ mod tests {
             archived: None,
             theme_id: None,
         };
-        let mut registry = GameRegistry::new(empty_quiz);
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
 
         // Create a game
         let (game_id, _, _) = registry.create_game("manager-1".to_string(), None).unwrap();

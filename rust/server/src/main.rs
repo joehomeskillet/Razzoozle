@@ -101,12 +101,14 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .init();
 
+    // Create database pool first (if DATABASE_URL is set)
+    let db_pool = crate::db::create_pool().await;
+
     // Load fixture quiz
     let quiz_fixture = QuizFixture::load().expect("Failed to load fixture quiz");
 
-    let registry = Arc::new(RwLock::new(GameRegistry::new(quiz_fixture)));
-
-    let db_pool = crate::db::create_pool().await;
+    // Initialize registry with pool (prefers DB quizzes when available, falls back to files)
+    let registry = Arc::new(RwLock::new(GameRegistry::new(&db_pool, quiz_fixture).await));
 
     // Create Socket.IO instance
     let (layer, io) = SocketIo::builder().build_layer();
