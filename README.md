@@ -35,11 +35,14 @@ speaking the identical socket.io wire protocol so the frontend never notices —
 the endgame is a **~10 MB Tauri desktop host** instead of a ~150 MB Electron
 bundle, plus a compile-time-checked game state machine and a single static binary.
 
-**Status:** Phase 0 gate **passed**, the protocol crate (**~200 wire types, 178
-tests**) and engine logic are done, and the **MVP server already plays a full
-game end-to-end** — verified against the real `socket.io-client`:
-`create → join → login → startGame → SHOW_START → SHOW_QUESTION`. The live game
-still runs on Node; the Rust server targets a shadow cutover in a later phase.
+**Status:** protocol crate (**~200 wire types, 178 tests**) + engine done; the
+server plays a **full, scored, multi-question game end-to-end** (all 7 question
+types) and is **deployed as a container on `:3012`**, parallel to the Node
+server on `:3011` — verified live against the real `socket.io-client`
+(`create → join → login → startGame → question → answer → reveal → leaderboard →
+next → FINISHED`). Remaining toward parity: player reconnect, quiz-from-disk,
+HTTP routes, auth, then peripherals (themes/AI/plugins) and a shadow cutover.
+The live game still runs on Node. **→ [`rust/README.md`](rust/README.md)**
 
 **→ Details, status table, build & run: [`rust/README.md`](rust/README.md)**
 

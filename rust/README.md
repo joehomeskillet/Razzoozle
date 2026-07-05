@@ -25,15 +25,27 @@ the hosted and desktop cases cheaper (RAM, cold start).
 | **0 — Spike & Gate** | socketioxide talks socket.io to the real client; golden-frame baseline recorded; plugin-runtime decision (Node-sidecar) | ✅ **PASS** — no protocol blockers |
 | **1 — Protocol & types** | Every socket event/payload as a Rust type, `ts-rs` generates the TS bindings (Rust leads, one source of truth) | ✅ **9 modules, ~200 types, 178 tests** |
 | **1b — Engine logic** | Sentence-builder chunk generation + shuffle guard, ported 1:1 from TS | ✅ **19 tests** |
-| **2/3 — Server MVP** | Runnable `axum` + `socketioxide` server driving the game loop | ✅ **Lobby + game loop end-to-end** |
-| 3/4 — Full parity | config, auth, themes, AI/media, plugins, reconnect, low-latency, cutover | ⏳ not started |
+| **2 — Server MVP** | Runnable `axum` + `socketioxide` server; lobby + full round loop | ✅ **deployed & verified** |
+| **2·Batch 1** | Core round loop: select-answer, time-weighted scoring + streaks, reveal (SHOW_RESULT), leaderboard, next/finish, cooldowns | ✅ **full multi-question game → FINISHED** |
+| **2·Batch 2** | All 7 question types: choice, multiple-select, boolean, slider, poll, type-answer (fuzzy), sentence-builder | ✅ **37 engine tests + live** |
+| 2·Batch 3+ | player lifecycle/reconnect, quiz loading from disk, HTTP routes, auth | 🚧 in progress |
+| 3/4 — Peripherals & cutover | themes, AI/media, plugins (Node sidecar), low-latency, display, shadow cutover | ⏳ later |
 
-**The MVP plays a real game.** Verified against the actual `socket.io-client`
-4.8.3:
+**It plays a real, scored, multi-question game — deployed.** The Rust server runs
+as a container on `127.0.0.1:3012` (parallel to the Node server on :3011, not a
+replacement yet). Verified end-to-end against the real `socket.io-client` 4.8.3:
 
 ```
-connect → game:create → player:join → player:login → manager:startGame
-  → game:status SHOW_START → SHOW_QUESTION      ✅ GAME FLOW OK
+create → join → login → startGame
+  Q1: SHOW_QUESTION → SELECT_ANSWER → answer → reveal SHOW_RESULT → SHOW_LEADERBOARD (scored)
+  Q2: … → SHOW_LEADERBOARD → FINISHED            ✅ full game
+```
+
+**Run the deployed preview:**
+```bash
+docker build -f rust/Dockerfile -t razzoozle-rust:latest .
+docker run -d --name razzoozle-rust -p 127.0.0.1:3012:3020 -e PORT=3020 razzoozle-rust:latest
+# GET http://127.0.0.1:3012/health ⇒ 200 ; node spikes/golden-frames/smoke-fullgame.cjs
 ```
 
 ---
