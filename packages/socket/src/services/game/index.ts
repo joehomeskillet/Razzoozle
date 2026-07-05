@@ -615,7 +615,7 @@ class Game {
 
   // Reconnect
 
-  reconnect(socket: Socket) {
+  reconnect(socket: Socket, playerToken?: string) {
     const { clientId } = socket.handshake.auth
 
     if (this._manager.clientId === clientId) {
@@ -624,7 +624,7 @@ class Game {
       return
     }
 
-    this.reconnectPlayer(socket)
+    this.reconnectPlayer(socket, playerToken)
   }
 
   private reconnectManager(socket: Socket) {
@@ -656,11 +656,20 @@ class Game {
     console.log(`Manager reconnected to game ${this.inviteCode}`)
   }
 
-  private reconnectPlayer(socket: Socket) {
+  private reconnectPlayer(socket: Socket, playerToken?: string) {
     const clientId = socket.handshake.auth.clientId as string
     const player = this.playerManager.findByClientId(clientId)
 
     if (!player) {
+      return
+    }
+
+    // P2b — Token verification: if a token was minted for this clientId,
+    // verify it matches. If mismatch, reject (anti-spoof). If no token was
+    // ever minted (legacy/post-restart), allow clientId-only fallback.
+    const storedToken = this.playerManager.getToken(clientId)
+    if (storedToken !== undefined && playerToken !== storedToken) {
+      socket.emit(EVENTS.GAME.RESET, "errors:game.playerNotFound")
       return
     }
 

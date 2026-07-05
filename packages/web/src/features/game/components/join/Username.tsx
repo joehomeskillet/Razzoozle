@@ -73,11 +73,14 @@ const Username = () => {
     setRequireIdentifier(require)
   })
 
-  useEvent(EVENTS.GAME.SUCCESS_JOIN, (joinedGameId) => {
+  useEvent(EVENTS.GAME.SUCCESS_JOIN, (payload) => {
+    if (payload.playerToken) {
+      localStorage.setItem(`player_token:${payload.gameId}`, payload.playerToken)
+    }
     setStatus(STATUS.WAIT, { text: "game:waitingForPlayers" })
     login(username)
 
-    navigate({ to: "/party/$gameId", params: { gameId: joinedGameId } })
+    navigate({ to: "/party/$gameId", params: { gameId: payload.gameId } })
   })
 
   return (

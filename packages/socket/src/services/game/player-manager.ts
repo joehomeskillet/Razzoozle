@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { EVENTS } from "@razzoozle/common/constants"
 import type { Player } from "@razzoozle/common/types/game"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
@@ -27,6 +27,9 @@ export class PlayerManager {
   private readonly isGameEnded: () => boolean
   private readonly getJoinLocked: () => boolean
   private players: Player[] = []
+  // P2b — Server-side player tokens: clientId → token. Tokens are minted on
+  // join and used to verify reconnects. NEVER serialized on Player (anti-spoof).
+  private readonly playerTokens = new Map<string, string>()
 
   constructor(
     io: Server,
@@ -131,12 +134,19 @@ export class PlayerManager {
     }
 
     this.players.push(player)
+
+    // P2b — Mint server-side player token for this clientId. CSPRNG 32-byte
+    // base64url token, stored in side-table (never on wire Player).
+    const token = randomBytes(32).toString("base64url")
+    this.playerTokens.set(clientId, token)
+
     // I2: Strip identifierHash before broadcast (never visible to manager/players).
     this.io
       .to(this.getManagerId())
       .emit(EVENTS.MANAGER.NEW_PLAYER, this.stripIdentifierHash(player))
     this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
-    socket.emit(EVENTS.GAME.SUCCESS_JOIN, this.gameId)
+    // P2b — Emit SUCCESS_JOIN with gameId and playerToken payload.
+    socket.emit(EVENTS.GAME.SUCCESS_JOIN, { gameId: this.gameId, playerToken: token })
   }
 
   // Insert a pre-built sim-mode bot directly (bypasses the socket-dependent
@@ -165,6 +175,8 @@ export class PlayerManager {
     }
 
     this.players = this.players.filter((p) => p.id !== playerId)
+    // P2b — Delete player token on removal.
+    this.playerTokens.delete(player.clientId)
 
     this.io.in(playerId).socketsLeave(this.gameId)
     this.io.to(player.id).emit(EVENTS.GAME.RESET, "errors:game.kickedByManager")
@@ -184,6 +196,8 @@ export class PlayerManager {
     }
 
     this.players = this.players.filter((p) => p.id !== socketId)
+    // P2b — Delete player token on removal.
+    this.playerTokens.delete(player.clientId)
 
     return player
   }
@@ -250,6 +264,12 @@ export class PlayerManager {
     this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
   }
 
+  // P2b — Retrieve player token for a clientId (for reconnect verification).
+  // Returns undefined if no token was minted (legacy fallback allowed).
+  getToken(clientId: string): string | undefined {
+    return this.playerTokens.get(clientId)
+  }
+
   // ── Crash-recovery snapshot ──────────────────────────────────────────────
   // Serialize only the STABLE, durable fields. The volatile socket id and the
   // live `connected` flag are intentionally dropped — on restore they are
@@ -257,6 +277,8 @@ export class PlayerManager {
   // the existing clientId-based reconnect flow. Pure read; no behaviour change.
   // I2: Intentionally omit identifierHash from snapshots (back-end tracking only,
   // never persisted; reconstructed on re-join if requireIdentifier is still true).
+  // P2b: Tokens are NOT persisted to snapshots (server-side volatile, minted fresh
+  // on each join).
   toSnapshot(): Array<{
     clientId: string
     username: string
@@ -283,6 +305,7 @@ export class PlayerManager {
   // Rebuild the player list from a snapshot as DETACHED records (no live
   // socket): id:"" and connected:false. The existing reconnect flow swaps in a
   // real socket id + flips connected:true when each browser reconnects.
+  // P2b: Tokens are NOT restored (will be minted fresh on next join).
   restore(
     players: Array<{
       clientId: string

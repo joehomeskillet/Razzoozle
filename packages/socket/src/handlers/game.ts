@@ -79,10 +79,12 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   socket.on(EVENTS.PLAYER.RECONNECT, (payload: unknown) => {
     const gameId = (payload as { gameId?: unknown } | null | undefined)?.gameId
     if (typeof gameId !== "string") return
+    // P2b — Extract playerToken from reconnect payload for anti-spoof verification.
+    const playerToken = (payload as { playerToken?: unknown } | null | undefined)?.playerToken
     const game = registry.getPlayerGame(gameId, clientId)
 
     if (game) {
-      game.reconnect(socket)
+      game.reconnect(socket, typeof playerToken === "string" ? playerToken : undefined)
 
       return
     }

@@ -111,7 +111,7 @@ export interface ServerToClientEvents {
     data: StatusDataMap[Status]
   }) => void
   [EVENTS.GAME.SUCCESS_ROOM]: (_data: { gameId: string; requireIdentifier?: boolean }) => void
-  [EVENTS.GAME.SUCCESS_JOIN]: (_gameId: string) => void
+  [EVENTS.GAME.SUCCESS_JOIN]: (_data: {gameId: string; playerToken?: string}) => void
   [EVENTS.GAME.TOTAL_PLAYERS]: (_count: number) => void
   [EVENTS.GAME.ERROR_MESSAGE]: (_message: string) => void
   [EVENTS.GAME.START_COOLDOWN]: () => void
@@ -431,6 +431,7 @@ export interface ClientToServerEvents {
   [EVENTS.PLAYER.SELECT_TEAM]: (_payload: { teamId: string }) => void
   [EVENTS.PLAYER.RECONNECT]: (_message: {
     gameId: string
+    playerToken?: string
     // Low-latency mode: last server sequence the client saw, so resume can
     // detect a stale view. OPTIONAL — omitted by old/normal-mode clients.
     lastServerSeq?: number

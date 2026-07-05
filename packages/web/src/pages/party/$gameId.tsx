@@ -52,6 +52,7 @@ const PlayerGamePage = () => {
       // the last server sequence so resume can show "answered" if appropriate.
       socket.emit(EVENTS.PLAYER.RECONNECT, {
         gameId: gameIdParam,
+        playerToken: localStorage.getItem(`player_token:${gameIdParam}`) ?? undefined,
         lastServerSeq: lastServerSeqRef.current,
       })
     }
