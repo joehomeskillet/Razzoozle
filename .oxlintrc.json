@@ -363,6 +363,7 @@
     "yoda": "error"
   },
   "ignorePatterns": [
-    "spikes/**"
+    "spikes/**",
+    "rust/**"
   ]
 }
