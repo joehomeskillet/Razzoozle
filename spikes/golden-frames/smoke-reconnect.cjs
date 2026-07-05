@@ -2,7 +2,7 @@
 // with the SAME clientId + SAME username. She must RESUME — score retained, and NO
 // duplicate "Alice" in the leaderboard. Bob stays connected as a control.
 // Run: SMOKE_URL=http://127.0.0.1:PORT node spikes/golden-frames/smoke-reconnect.cjs
-const { io } = require("/nvmetank1/projects/Razzoozle/source/node_modules/.pnpm/socket.io-client@4.8.3/node_modules/socket.io-client/build/cjs/index.js");
+const { io } = require(process.env.SIO_CLIENT || "/nvmetank1/projects/Razzoozle/source/node_modules/.pnpm/socket.io-client@4.8.3/node_modules/socket.io-client/build/cjs/index.js");
 const URL = process.env.SMOKE_URL || "http://127.0.0.1:3479";
 const t0 = Date.now();
 const log = (...a) => console.log(`[+${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...a);

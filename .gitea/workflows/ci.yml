@@ -40,3 +40,19 @@ jobs:
 
       - name: Build (all packages)
         run: corepack pnpm -r run build
+
+  # Rust game-server: unit suite + a REAL multi-question game played to the END
+  # (scoring + concurrent players + 0 drops). Gates the Rust container deploy —
+  # a boot crash (e.g. the libssl.so.3 regression) or a scoring/flow break fails here.
+  rust:
+    runs-on: ubuntu-latest
+    container: rust:1-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install node + npm + curl (for the socket.io real-game smokes)
+        run: apt-get update && apt-get install -y --no-install-recommends nodejs npm curl ca-certificates
+
+      - name: Rust real-game test suite (build, cargo test, full game to FINISHED, load)
+        run: bash scripts/rust-ci-test.sh

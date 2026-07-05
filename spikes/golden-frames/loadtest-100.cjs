@@ -1,7 +1,7 @@
 // 100-player load test: 1 manager + N players (default 100) play a full game to
 // FINISHED. Fails if any player drops mid-game or the server never finishes.
 // Run: SMOKE_URL=http://127.0.0.1:PORT node spikes/golden-frames/loadtest-100.cjs
-const { io } = require("/nvmetank1/projects/Razzoozle/source/node_modules/.pnpm/socket.io-client@4.8.3/node_modules/socket.io-client/build/cjs/index.js");
+const { io } = require(process.env.SIO_CLIENT || "/nvmetank1/projects/Razzoozle/source/node_modules/.pnpm/socket.io-client@4.8.3/node_modules/socket.io-client/build/cjs/index.js");
 const URL = process.env.SMOKE_URL || "http://127.0.0.1:3479";
 const N = parseInt(process.env.N_PLAYERS || "100", 10);
 const t0 = Date.now();
