@@ -20,7 +20,7 @@ regex = "1"
 lazy_static = "1.4"
 razzoozle-protocol = { path = "../protocol" }
 razzoozle-engine = { path = "../engine" }
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chrono"] }
 
 [profile.release]
 opt-level = 3

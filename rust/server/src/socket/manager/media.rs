@@ -3,7 +3,7 @@
 use super::super::HandlerCtx;
 use crate::db;
 use razzoozle_protocol::constants;
-use socketioxide::extract::{Data, SocketRef};
+use socketioxide::extract::SocketRef;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list(socket, ctx);
@@ -13,7 +13,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::media::LIST, {
         let ctx = ctx.clone();
 
-        move |socket: SocketRef, Data::<serde_json::Value>(_payload)| {
+        move |socket: SocketRef| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
@@ -30,10 +30,8 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Query media assets from database
+                // Query media assets from the shared DB and emit the list.
                 let media_list = db::get_media_list(&ctx.db_pool).await;
-
-                // Emit the media data as a JSON array
                 socket.emit(constants::media::DATA, &media_list).ok();
             });
         }

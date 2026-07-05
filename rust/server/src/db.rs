@@ -80,7 +80,7 @@ pub async fn get_media_list(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, String, i32, String, String, String, Option<i32>, Option<i32>, String)> =
+    let rows: Vec<(String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)> =
         match sqlx::query_as(
             "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
              FROM media_assets ORDER BY uploaded_at DESC"
@@ -98,14 +98,8 @@ pub async fn get_media_list(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let mut result = Vec::new();
 
     for (id, filename, url, size, media_type, category, source, width, height, uploaded_at) in rows {
-        // Parse the uploaded_at timestamp as RFC3339
-        let uploaded_at_rfc3339 = match chrono::DateTime::parse_from_rfc3339(&uploaded_at) {
-            Ok(dt) => dt.to_rfc3339(),
-            Err(_) => {
-                // Fallback: if it's already in a different format, use as-is (shouldn't happen)
-                uploaded_at.clone()
-            }
-        };
+        // uploaded_at is a TIMESTAMPTZ decoded into DateTime<Utc>; emit as RFC3339.
+        let uploaded_at_rfc3339 = uploaded_at.to_rfc3339();
 
         let mut media_obj = serde_json::json!({
             "id": id,
