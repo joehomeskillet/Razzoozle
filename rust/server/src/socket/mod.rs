@@ -17,11 +17,13 @@ pub struct HandlerCtx {
 }
 
 pub mod clock_ping;
+pub mod display;
 pub mod metrics;
 
 /// Register every extracted handler on a freshly-connected socket.
 /// Handlers still inline in main.rs are registered there until they migrate here.
 pub fn register_all(socket: &SocketRef, ctx: &HandlerCtx) {
     clock_ping::register(socket, ctx.clone());
+    display::register(socket, ctx.clone());
     metrics::register(socket, ctx.clone());
 }
