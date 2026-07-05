@@ -47,7 +47,8 @@ pub fn safe_asset_id(id: &str) -> Result<(), String> {
 }
 
 // ── Solo results rate limiting and caps ────────────────────────────────────────
-pub const GLOBAL_SOLO_MAX: i32 = 120; // max 120 solo calls/min server-wide
+pub const SOLO_RATE_MAX_PER_CLIENT: i32 = 120; // max 120 solo calls/min per client IP
+pub const AUTH_RATE_MAX_PER_CLIENT: i32 = 10; // max 10 auth failures/min per client IP
 pub const SOLO_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
 pub const SOLO_RESULTS_MAX_ENTRIES: usize = 1000; // cap solo leaderboard growth
 
@@ -81,48 +82,77 @@ pub fn get_now_ms() -> u64 {
         .as_millis() as u64
 }
 
-/// Rate limiter for global solo API and auth attempts
+/// Rate limiter for solo API and auth attempts — per-IP (or per-client-ID for socket handlers)
 pub struct RateLimiter {
-    solo_global: Mutex<RateState>,
-    auth_failures: Mutex<RateState>,
+    solo_by_key: Mutex<HashMap<String, RateState>>,
+    auth_by_key: Mutex<HashMap<String, RateState>>,
 }
 
 impl RateLimiter {
     pub fn new() -> Self {
         Self {
-            solo_global: Mutex::new(RateState::new()),
-            auth_failures: Mutex::new(RateState::new()),
+            solo_by_key: Mutex::new(HashMap::new()),
+            auth_by_key: Mutex::new(HashMap::new()),
         }
     }
 
-    /// Check if a global solo call is allowed. Returns true if allowed.
-    pub fn check_global_solo_rate(&self) -> bool {
+    /// Check if a solo call is allowed for the given key (IP address or client ID).
+    /// Returns true if allowed, false if rate-limited.
+    pub fn check_solo_rate(&self, key: &str) -> bool {
         let now = get_now_ms();
-        if let Ok(mut state) = self.solo_global.lock() {
-            state.maybe_reset(now);
+        if let Ok(mut map) = self.solo_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+            entry.maybe_reset(now);
 
-            if state.count >= GLOBAL_SOLO_MAX {
-                return false;
+            let is_limited = entry.count >= SOLO_RATE_MAX_PER_CLIENT;
+            if !is_limited {
+                entry.count += 1;
             }
 
-            state.count += 1;
-            true
+            // Evict stale keys to prevent unbounded growth
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS);
+            }
+
+            !is_limited
         } else {
             true // lock failed, allow in fail-open mode
         }
     }
 
-    /// Record a failed auth attempt and return true if throttled.
-    pub fn record_auth_failure_and_check_throttle(&self) -> bool {
-        const MAX_AUTH_FAILURES: i32 = 10; // max 10 failed auths per 60s server-wide
+
+    /// Record a failed auth attempt and return true if throttled (for the given key).
+    /// Returns true if throttled, false if allowed.
+    pub fn record_auth_failure_and_check_throttle(&self, key: &str) -> bool {
         let now = get_now_ms();
-        if let Ok(mut state) = self.auth_failures.lock() {
-            state.maybe_reset(now);
-            state.count += 1;
-            state.count > MAX_AUTH_FAILURES
+        if let Ok(mut map) = self.auth_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+            entry.maybe_reset(now);
+            entry.count += 1;
+
+            let is_throttled = entry.count > AUTH_RATE_MAX_PER_CLIENT;
+
+            // Evict stale keys to prevent unbounded growth
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS);
+            }
+
+            is_throttled
         } else {
             false // lock failed, allow in fail-open mode
         }
+    }
+
+    /// Deprecated: for backwards compatibility, delegate to per-key version with empty key
+    pub fn check_global_solo_rate(&self) -> bool {
+        self.check_solo_rate("global")
+    }
+
+    /// Deprecated: for backwards compatibility, delegate to per-key version with empty key
+    pub fn record_auth_failure_and_check_throttle_global(&self) -> bool {
+        self.record_auth_failure_and_check_throttle("global")
     }
 }
 
@@ -608,5 +638,34 @@ mod tests {
         // Verify game is gone
         assert!(registry.get_game_by_id(&game_id).is_none(), "Game should be evicted");
         assert_eq!(registry.game_count(), 0, "No games should remain");
+    }
+
+    #[test]
+    fn test_per_ip_solo_rate_limit() {
+        let rate_limiter = RateLimiter::new();
+
+        // IP 1 should be allowed up to SOLO_RATE_MAX_PER_CLIENT calls
+        for _ in 0..SOLO_RATE_MAX_PER_CLIENT {
+            assert!(rate_limiter.check_solo_rate("192.168.1.1"), "IP1 should be allowed");
+        }
+        assert!(!rate_limiter.check_solo_rate("192.168.1.1"), "IP1 should be throttled");
+
+        // IP 2 should have independent limit
+        assert!(rate_limiter.check_solo_rate("192.168.1.2"), "IP2 should be allowed");
+        assert!(rate_limiter.check_solo_rate("192.168.1.2"), "IP2 should be allowed");
+    }
+
+    #[test]
+    fn test_per_ip_auth_throttle() {
+        let rate_limiter = RateLimiter::new();
+
+        // IP 1: 10 failures should trigger throttle on 11th attempt
+        for _ in 0..AUTH_RATE_MAX_PER_CLIENT {
+            assert!(!rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"), "Should not be throttled yet");
+        }
+        assert!(rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"), "Should be throttled now");
+
+        // IP 2 should have independent limit
+        assert!(!rate_limiter.record_auth_failure_and_check_throttle("192.168.1.2"), "IP2 should not be throttled");
     }
 }

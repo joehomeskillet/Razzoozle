@@ -3,7 +3,7 @@ mod state;
 mod media_ai;
 
 use axum::{
-    extract::Path,
+    extract::{ConnectInfo, Path},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -154,6 +154,7 @@ async fn handle_get_quizzes(
 }
 
 async fn handle_get_quiz_solo(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
 ) -> Result<Json<SoloResponse>, (StatusCode, String)> {
@@ -161,8 +162,9 @@ async fn handle_get_quiz_solo(
     safe_asset_id(&quiz_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-    // Rate limiting
-    if !RATE_LIMITER.check_global_solo_rate() {
+    // Rate limiting (per client IP)
+    let client_ip = addr.ip().to_string();
+    if !RATE_LIMITER.check_solo_rate(&client_ip) {
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
@@ -200,6 +202,7 @@ async fn handle_get_quiz_solo(
 }
 
 async fn handle_check_answer(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<CheckAnswerRequest>,
@@ -208,8 +211,9 @@ async fn handle_check_answer(
     safe_asset_id(&quiz_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-    // Rate limiting
-    if !RATE_LIMITER.check_global_solo_rate() {
+    // Rate limiting (per client IP)
+    let client_ip = addr.ip().to_string();
+    if !RATE_LIMITER.check_solo_rate(&client_ip) {
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
@@ -273,6 +277,7 @@ fn get_solo_results_path(quiz_id: &str) -> String {
 }
 
 async fn handle_solo_score(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
     axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<SoloScoreRequest>,
@@ -281,8 +286,9 @@ async fn handle_solo_score(
     safe_asset_id(&quiz_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-    // Rate limiting
-    if !RATE_LIMITER.check_global_solo_rate() {
+    // Rate limiting (per client IP)
+    let client_ip = addr.ip().to_string();
+    if !RATE_LIMITER.check_solo_rate(&client_ip) {
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
@@ -355,12 +361,10 @@ async fn handle_solo_score(
     leaderboard.push(result_entry);
     leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
 
-    // Cap leaderboard to prevent unbounded growth
-    let leaderboard = if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
-        leaderboard.into_iter().rev().take(SOLO_RESULTS_MAX_ENTRIES).rev().collect()
-    } else {
-        leaderboard
-    };
+    // Cap leaderboard to prevent unbounded growth — keep top N by score
+    if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
+        leaderboard.truncate(SOLO_RESULTS_MAX_ENTRIES);
+    }
 
     let json_str = serde_json::to_string_pretty(&leaderboard)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JSON serialization error: {}", e)))?;
@@ -474,8 +478,8 @@ async fn main() {
                     let client_id = client_id.clone();
 
                     tokio::spawn(async move {
-                        // Auth brute-force throttle
-                        if RATE_LIMITER.record_auth_failure_and_check_throttle() {
+                        // Auth brute-force throttle (per client ID)
+                        if RATE_LIMITER.record_auth_failure_and_check_throttle(&client_id) {
                             socket
                                 .emit(constants::manager::ERROR_MESSAGE, "errors:manager.authThrottled")
                                 .ok();
@@ -2137,7 +2141,7 @@ async fn main() {
 
     info!("Server listening on http://{}", addr);
 
-    axum::serve(listener, app)
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .expect("Failed to start server");
 }
