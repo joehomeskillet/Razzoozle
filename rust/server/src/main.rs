@@ -727,10 +727,12 @@ async fn main() {
             socket.on(constants::player::SELECTED_ANSWER, {
                 let registry = Arc::clone(&registry);
                 let io_handle = io_handle.clone();
+                let client_id = client_id.clone();
 
                 move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
                     let registry = Arc::clone(&registry);
                     let io_handle = io_handle.clone();
+                    let client_id = client_id.clone();
 
                     tokio::spawn(async move {
                         let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
@@ -766,12 +768,11 @@ async fn main() {
                             if let Some(game_ref) = game_opt {
                                 let record_result = {
                                     let mut game = game_ref.lock().unwrap();
-                                    let socket_id = socket.id.to_string();
-                                    let client_id = game.players
-                                        .iter()
-                                        .find(|p| p.id == socket_id)
-                                        .map(|p| p.client_id.clone())
-                                        .unwrap_or_else(|| socket_id);
+                                    // Use the durable clientId from the socket handshake (captured at
+                                    // connect). The old code matched `p.id == socket.id`, but p.id is a
+                                    // generated player id that never equals socket.id — so the answer was
+                                    // stored under the raw socket id and reveal never found it → 0 points
+                                    // for every player. clientId is the same key reveal looks answers up by.
 
                                     // Get current server time (wall-clock) for response_time_ms calculation
                                     let server_now_ms = SystemTime::now()

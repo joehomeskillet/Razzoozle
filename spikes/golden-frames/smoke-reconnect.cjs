@@ -14,7 +14,7 @@ let gameId, inviteCode, alice, bob;
 let aliceScoreBeforeDisconnect = null, reconnected = false, loggedIn = 0;
 
 const mgr = io(URL, { auth: { clientId: "mgr-rc" }, transports: ["websocket"], reconnection: false });
-mgr.on("connect", () => { mgr.emit("manager:auth", "PASSWORD"); mgr.emit("game:create", "quizz-1"); });
+mgr.on("connect", () => { mgr.emit("manager:auth", "PASSWORD"); mgr.emit("game:create", process.env.QUIZ_ID || "example-qu--GZoYZWM"); });
 mgr.on("connect_error", (e) => fail("mgr connect_error " + e.message));
 
 mgr.on("manager:gameCreated", ({ gameId: gid, inviteCode: code }) => {
@@ -28,7 +28,7 @@ function mkPlayer(cid, name) {
   p.on("connect", () => p.emit("player:join", inviteCode));
   p.on("game:successRoom", () => p.emit("player:login", { gameId, data: { username: name, avatar: "a1" } }));
   p.on("game:successJoin", () => { if (++loggedIn === 2) { log("Alice+Bob logged in → startGame"); mgr.emit("manager:startGame", { gameId }); } });
-  p.on("game:status", (s) => { if (s && s.name === "SELECT_ANSWER") p.emit("player:answer", { answer: 0 }); });
+  p.on("game:status", (s) => { if (s && s.name === "SELECT_ANSWER") p.emit("player:selectedAnswer", { gameId, data: { answerKey: 1 } }); });
   p.on("connect_error", (e) => fail(`${name} connect_error ${e.message}`));
   return p;
 }
@@ -39,7 +39,7 @@ function mkAlice() {
   a.on("connect", () => a.emit("player:join", inviteCode));
   a.on("game:successRoom", () => a.emit("player:login", { gameId, data: { username: "Alice", avatar: "a2" } }));
   a.on("game:successJoin", () => { if (reconnected) log("Alice RE-joined after reconnect"); else if (++loggedIn === 2) { log("Alice+Bob logged in → startGame"); mgr.emit("manager:startGame", { gameId }); } });
-  a.on("game:status", (s) => { if (s && s.name === "SELECT_ANSWER") a.emit("player:answer", { answer: 0 }); });
+  a.on("game:status", (s) => { if (s && s.name === "SELECT_ANSWER") a.emit("player:selectedAnswer", { gameId, data: { answerKey: 1 } }); });
   a.on("connect_error", (e) => fail("Alice connect_error " + e.message));
   return a;
 }

@@ -13,7 +13,8 @@ let gameId, inviteCode, loggedIn = 0, currentQ = 0, started = false, FINISHED = 
 const players = [];
 
 const mgr = io(URL, { auth: { clientId: "mgr-load" }, transports: ["websocket"], reconnection: false });
-mgr.on("connect", () => { mgr.emit("manager:auth", "PASSWORD"); mgr.emit("game:create", "quizz-1"); });
+const QUIZ = process.env.QUIZ_ID || "quizz-1";
+mgr.on("connect", () => { mgr.emit("manager:auth", "PASSWORD"); mgr.emit("game:create", QUIZ); });
 mgr.on("connect_error", (e) => fail("mgr connect_error " + e.message));
 
 mgr.on("manager:gameCreated", ({ gameId: gid, inviteCode: code }) => {
@@ -29,7 +30,7 @@ function spawnPlayer(i) {
   p.on("game:successRoom", () => p.emit("player:login", { gameId, data: { username: "P" + i, avatar: "a" + (i % 8) } }));
   p.on("game:successJoin", () => { if (++loggedIn === N) { log("all", N, "players logged in in", ((Date.now() - t0) / 1000).toFixed(1), "s"); maybeStart(); } });
   p.on("game:status", (s) => {
-    if (s && s.name === "SELECT_ANSWER" && !p._answered) { p._answered = true; p.emit("player:answer", { answer: i % 4 }); }
+    if (s && s.name === "SELECT_ANSWER" && !p._answered) { p._answered = true; p.emit("player:selectedAnswer", { gameId, data: { answerKey: i % 4 } }); }
   });
   p.on("connect_error", (e) => fail(`player ${i} connect_error ${e.message}`));
   p.on("disconnect", (r) => { if (r !== "io client disconnect" && !FINISHED) log(`⚠ player ${i} DROPPED mid-game: ${r}`); });
@@ -49,8 +50,13 @@ mgr.on("game:status", (s) => {
     const connected = players.filter(p => p.connected).length;
     const top = s.data && (s.data.leaderboard || s.data.top);
     log(`FINISHED after ${currentQ} questions. connected: ${connected}/${N}. final board: ${Array.isArray(top) ? top.length : "?"}`);
+    if (Array.isArray(top)) {
+      const scored = top.filter(e => (e.points ?? e.score ?? 0) > 0).length;
+      log(`final podium top-3: ${top.slice(0, 3).map(e => `${e.username || e.name}=${e.points ?? e.score}`).join(", ")}`);
+      log(`players with score>0: ${scored}/${top.length}`);
+    }
     if (connected < N) fail(`${N - connected} of ${N} players dropped during the game`);
-    log(`PASS ✅ — ${N}-player game reached FINISHED, 0 drops, ${((Date.now() - t0) / 1000).toFixed(1)}s total`);
+    log(`PASS ✅ — ${N}-player game played to the END (${currentQ} questions → FINISHED), 0 drops, ${((Date.now() - t0) / 1000).toFixed(1)}s total`);
     process.exit(0);
   }
 });

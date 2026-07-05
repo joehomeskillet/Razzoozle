@@ -72,7 +72,7 @@ mgr.on("game:status", (s) => {
     // Player should select an answer
     // Assume first answer (index 0) is correct for simplicity
     setTimeout(() => {
-      player.emit("player:answer", { answer: 0 });
+      player.emit("player:selectedAnswer", { gameId, data: { answerKey: 0 } });
       seen.push("playerAnswered");
     }, 100);
   } else if (name === "SELECT_ANSWER") {
