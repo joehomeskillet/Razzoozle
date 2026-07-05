@@ -90,12 +90,11 @@ export async function migrateMediaAssets(pool: Pool | null): Promise<void> {
     const width = (value as any)?.width || null
     const height = (value as any)?.height || null
     const uploadedAt = (value as any)?.uploaded_at || (value as any)?.uploadedAt || new Date().toISOString()
-    const version = 1
 
     if (!dryRun && pool) {
       const query = `
-        INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, version, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+        INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET
           filename = $2,
           url = $3,
@@ -106,12 +105,11 @@ export async function migrateMediaAssets(pool: Pool | null): Promise<void> {
           width = $8,
           height = $9,
           uploaded_at = $10,
-          version = $11,
           updated_at = NOW()
         WHERE media_assets.id = $1
       `
       try {
-        await pool.query(query, [id, filename, url, size, type, category, source, width, height, uploadedAt, version])
+        await pool.query(query, [id, filename, url, size, type, category, source, width, height, uploadedAt])
         updated++
       } catch (error) {
         console.error(`  Error migrating media asset ${id}:`, error)
@@ -156,7 +154,7 @@ export async function migrateInstalledPlugins(pool: Pool | null): Promise<void> 
 
     if (!dryRun && pool) {
       const query = `
-        INSERT INTO installed_plugins (id, name, version, enabled, capabilities, config, version, created_at, updated_at)
+        INSERT INTO installed_plugins (id, name, version, enabled, capabilities, config, plugin_version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET
           name = $2,
@@ -164,7 +162,7 @@ export async function migrateInstalledPlugins(pool: Pool | null): Promise<void> 
           enabled = $4,
           capabilities = $5,
           config = $6,
-          version = $7,
+          plugin_version = $7,
           updated_at = NOW()
         WHERE installed_plugins.id = $1
       `

@@ -88,7 +88,7 @@ CREATE INDEX idx_submissions_status_submitted_at ON submissions(status, submitte
 -- solo_results: Solo play results (replaces config/solo-results/*.json)
 CREATE TABLE solo_results (
   id safe_id PRIMARY KEY,
-  quiz_id safe_id NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  quiz_id safe_id REFERENCES quizzes(id) ON DELETE SET NULL,
   player_name VARCHAR(100),
   score INT,
   answered_at TIMESTAMP WITH TIME ZONE,

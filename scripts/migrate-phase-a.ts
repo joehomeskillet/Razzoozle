@@ -20,7 +20,7 @@ export async function migrateGameConfig(pool: Pool | null): Promise<void> {
     return
   }
 
-  const id = 'default'
+  const id = 1 // games_config is a single row keyed id=1 (matches schema INT PK + seed)
   const managerPassword = gameData.managerPassword || 'PASSWORD'
   const teamMode = gameData.teamMode || false
   const joinLocked = gameData.joinLocked || false

@@ -142,6 +142,14 @@ export async function migrateSoloResults(pool: Pool | null): Promise<void> {
   let updated = 0
   let errors = 0
 
+  // Orphan handling: a solo-result file whose quiz was deleted keeps its rows with
+  // quiz_id=null (FK is ON DELETE SET NULL) instead of failing the whole migration.
+  const knownQuizIds = new Set<string>()
+  if (pool) {
+    const qr = await pool.query('SELECT id FROM quizzes')
+    for (const row of qr.rows) knownQuizIds.add(row.id)
+  }
+
   for (const filePath of soloFiles) {
     const soloData = await readJsonFile<any>(filePath)
     if (!soloData) {
@@ -149,16 +157,22 @@ export async function migrateSoloResults(pool: Pool | null): Promise<void> {
       continue
     }
 
-    const id = path.basename(filePath, '.json')
-    const quizId = soloData.quiz_id || soloData.quizzId || null
-    const playerName = soloData.player_name || soloData.playerName || 'Anonymous'
-    const score = soloData.score || 0
-    const answeredAt = soloData.answered_at || soloData.answeredAt || new Date().toISOString()
-    const answers = soloData.answers || []
-    const version = 1
+    // solo-result files are ARRAYS of results, keyed by filename = quiz id.
+    const rawQuizId = path.basename(filePath, '.json')
+    const quizId = knownQuizIds.has(rawQuizId) ? rawQuizId : null
+    const entries = Array.isArray(soloData) ? soloData : [soloData]
 
-    if (!dryRun && pool) {
-      const query = `
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i] || {}
+      const id = `${quizId}-${i}`
+      const playerName = entry.player_name || entry.playerName || 'Anonymous'
+      const score = entry.score || 0
+      const answeredAt = entry.answered_at || entry.answeredAt || new Date().toISOString()
+      const answers = entry.answers || []
+      const version = 1
+
+      if (!dryRun && pool) {
+        const query = `
         INSERT INTO solo_results (id, quiz_id, player_name, score, answered_at, answers, version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET
@@ -171,15 +185,16 @@ export async function migrateSoloResults(pool: Pool | null): Promise<void> {
           updated_at = NOW()
         WHERE solo_results.id = $1
       `
-      try {
-        await pool.query(query, [id, quizId, playerName, score, answeredAt, JSON.stringify(answers), version])
+        try {
+          await pool.query(query, [id, quizId, playerName, score, answeredAt, JSON.stringify(answers), version])
+          updated++
+        } catch (error) {
+          console.error(`  Error migrating solo result ${id}:`, error)
+          errors++
+        }
+      } else {
         updated++
-      } catch (error) {
-        console.error(`  Error migrating solo result ${id}:`, error)
-        errors++
       }
-    } else {
-      updated++
     }
   }
 
