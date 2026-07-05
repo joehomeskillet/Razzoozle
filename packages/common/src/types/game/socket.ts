@@ -147,6 +147,7 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.GAME_CREATED]: (_data: {
     gameId: string
     inviteCode: string
+    hostToken?: string
   }) => void
   [EVENTS.MANAGER.STATUS_UPDATE]: (_data: {
     status: Status
