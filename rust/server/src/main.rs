@@ -153,53 +153,6 @@ async fn main() {
             };
             socket::register_all(&socket, &ctx);
 
-            // Handle GAME.CREATE event
-            socket.on(constants::game::CREATE, {
-                let registry = Arc::clone(&registry);
-                let socket_id = socket.id.to_string();
-
-                move |socket: SocketRef, Data::<String>(quizz_id)| {
-                    let registry = Arc::clone(&registry);
-                    let socket_id = socket_id.clone();
-                    let quiz_id = if quizz_id.is_empty() {
-                        None
-                    } else {
-                        Some(quizz_id)
-                    };
-
-                    tokio::spawn(async move {
-                        let mut registry = registry.write().await;
-                        // C3 — active-game cap
-                        match registry.create_game(socket_id.clone(), quiz_id) {
-                            Ok((game_id, invite_code, host_token)) => {
-                                info!(
-                                    "Game created: gameId={}, inviteCode={}",
-                                    game_id, invite_code
-                                );
-
-                                // Join socket to the game room
-                                socket.join(game_id.clone()).ok();
-
-                                // Emit manager:gameCreated with protocol type
-                                let payload = razzoozle_protocol::manager::ManagerGameCreated {
-                                    game_id,
-                                    invite_code,
-                                    host_token: Some(host_token),
-                                };
-
-                                socket
-                                    .emit(constants::manager::GAME_CREATED, &payload)
-                                    .ok();
-                            }
-                            Err(e) => {
-                                socket
-                                    .emit(constants::game::ERROR_MESSAGE, e)
-                                    .ok();
-                            }
-                        }
-                    });
-                }
-            });
 
             // Handle MANAGER.AUTH event
             socket.on(constants::manager::AUTH, {
@@ -1222,43 +1175,7 @@ async fn main() {
             });
 
 
-            // Handle PLAYER.SELECT_TEAM
-            socket.on(constants::player::SELECT_TEAM, {
-                let registry = Arc::clone(&registry);
-                let socket_id = socket.id.to_string();
 
-                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
-                    let team_id_opt = payload.get("teamId").and_then(|v| v.as_str()).map(|s| s.to_string());
-                    let registry = Arc::clone(&registry);
-                    let socket_id = socket_id.clone();
-
-                    tokio::spawn(async move {
-                        if let Some(team_id) = team_id_opt {
-                            let registry = registry.read().await;
-                            registry.set_player_team(&socket_id, team_id);
-                        }
-                    });
-                }
-            });
-
-            // Handle PLAYER.SET_AVATAR
-            socket.on(constants::player::SET_AVATAR, {
-                let registry = Arc::clone(&registry);
-                let socket_id = socket.id.to_string();
-
-                move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
-                    let avatar_opt = payload.get("avatar").and_then(|v| v.as_str()).map(|s| s.to_string());
-                    let registry = Arc::clone(&registry);
-                    let socket_id = socket_id.clone();
-
-                    tokio::spawn(async move {
-                        if let Some(avatar) = avatar_opt {
-                            let registry = registry.read().await;
-                            registry.set_player_avatar(&socket_id, avatar);
-                        }
-                    });
-                }
-            });
 
             // clock:ping + metrics handlers now live in src/socket/{clock_ping,metrics}.rs
             // (registered above via socket::register_all).
@@ -1494,49 +1411,6 @@ async fn main() {
                 }
             });
 
-            // Handle disconnect
-            let registry = Arc::clone(&registry);
-            let io_handle = io_handle.clone();
-            let socket_id = socket.id.to_string();
-
-            socket.on_disconnect(move |_: SocketRef| {
-                let registry = Arc::clone(&registry);
-                let io_handle = io_handle.clone();
-                let socket_id = socket_id.clone();
-
-                tokio::spawn(async move {
-                    let removed_player = {
-                        let mut registry = registry.write().await;
-                        registry.mark_player_disconnected(&socket_id)
-                    };
-
-                    if let Some((game_id, manager_socket_id, removed_player_id, total_players, removed)) =
-                        removed_player
-                    {
-                        info!(
-                            "Player disconnected: gameId={}, clientId={}, totalPlayers={}",
-                            game_id, removed_player_id, total_players
-                        );
-
-                        io_handle
-                            .to(game_id.clone())
-                            .emit(constants::game::TOTAL_PLAYERS, &(total_players as i32))
-                            .ok();
-
-                        if removed {
-                            if let Ok(sid) = manager_socket_id.parse() {
-                                if let Some(manager_socket) = io_handle.get_socket(sid) {
-                                    manager_socket
-                                        .emit(constants::manager::REMOVE_PLAYER, &removed_player_id)
-                                        .ok();
-                                }
-                            }
-                        }
-                    } else {
-                        info!("Client disconnected: socketId={}", socket_id);
-                    }
-                });
-            });
         }
     });
 

@@ -18,6 +18,7 @@ pub struct HandlerCtx {
 
 pub mod clock_ping;
 pub mod display;
+pub mod game;
 pub mod metrics;
 pub mod results;
 pub mod player;
@@ -27,6 +28,7 @@ pub mod player;
 pub fn register_all(socket: &SocketRef, ctx: &HandlerCtx) {
     clock_ping::register(socket, ctx.clone());
     display::register(socket, ctx.clone());
+    game::register(socket, ctx.clone());
     metrics::register(socket, ctx.clone());
     results::register(socket, ctx.clone());
     player::register(socket, ctx.clone());
