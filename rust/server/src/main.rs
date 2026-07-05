@@ -52,12 +52,15 @@ fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
 
 /// Helper: Check if the payload's hostToken matches the game's host_token.
 fn is_game_host(game: &state::Game, payload: &serde_json::Value) -> bool {
-    if let Some(host_token_val) = payload.get("hostToken") {
-        if let Some(token_str) = host_token_val.as_str() {
-            return game.host_token == token_str;
-        }
+    match payload.get("hostToken") {
+        // Absent (or explicit null) → legacy path, still gated by is_logged. Backward-compat
+        // for old clients that don't send a token yet.
+        None | Some(serde_json::Value::Null) => true,
+        // Present → it MUST be a string that matches the game's token. A non-string value
+        // (hostToken: 123 / {} / []) DENIES — fail-CLOSED, so the check can't be bypassed by
+        // sending a malformed token instead of the right one.
+        Some(v) => v.as_str() == Some(game.host_token.as_str()),
     }
-    true // Legacy: no token in payload means legacy path, already gated by is_logged
 }
 
 // ── Solo play types ─────────────────────────────────────────────────────────

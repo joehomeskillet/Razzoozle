@@ -40,6 +40,9 @@ export interface MessageWithoutStatus<T = unknown> {
 
 export interface MessageGameId {
   gameId?: string
+  // v2.0 host-token auth: the manager attaches its server-minted host token on every
+  // control emit so the server can verify game ownership. Optional for backward-compat.
+  hostToken?: string
 }
 
 // ---- Low-latency mode contracts (all OPTIONAL / additive) ----------------
