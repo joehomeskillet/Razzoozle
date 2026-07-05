@@ -13,6 +13,7 @@ use crate::quizz::QuestionMedia;
 // RoundRecapKey enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum RoundRecapKey {
     FastestFinger,
     FirstCorrect,
@@ -27,6 +28,7 @@ pub enum RoundRecapKey {
 /// RoundRecapAward for per-round highlights
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct RoundRecapAward {
     pub key: RoundRecapKey,
     pub winner_name: String,
@@ -38,6 +40,7 @@ pub struct RoundRecapAward {
 
 // Status enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub enum Status {
     #[serde(rename = "SHOW_ROOM")]
     ShowRoom,
@@ -69,6 +72,7 @@ pub enum Status {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowRoomData {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,6 +83,7 @@ pub struct ShowRoomData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowStartData {
     pub time: i32,
     pub subject: String,
@@ -86,6 +91,7 @@ pub struct ShowStartData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowPreparedData {
     pub total_answers: i32,
     pub question_number: i32,
@@ -94,6 +100,7 @@ pub struct ShowPreparedData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowQuestionData {
     pub question: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -109,6 +116,7 @@ pub struct ShowQuestionData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct SelectAnswerData {
     pub question: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -144,6 +152,7 @@ pub struct SelectAnswerData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowResultData {
     pub correct: bool,
     pub message: String,
@@ -181,6 +190,7 @@ pub struct ShowResultData {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
+#[ts(export)]
 pub enum ScoringMode {
     Speed,
     Accuracy,
@@ -188,6 +198,7 @@ pub enum ScoringMode {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowResponsesData {
     pub question: String,
     pub responses: HashMap<String, i32>,
@@ -218,6 +229,7 @@ pub struct ShowResponsesData {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
+#[ts(export)]
 pub enum MatchMode {
     Exact,
     Normalized,
@@ -226,12 +238,14 @@ pub enum MatchMode {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowRoundRecapData {
     pub round_recap: Vec<RoundRecapAward>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ShowLeaderboardData {
     pub old_leaderboard: Vec<Player>,
     pub leaderboard: Vec<Player>,
@@ -245,6 +259,7 @@ pub struct ShowLeaderboardData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct TeamStanding {
     pub team_id: String,
     pub points: i32,
@@ -268,6 +283,7 @@ pub struct FinishedData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct WaitData {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -276,6 +292,7 @@ pub struct WaitData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct PausedData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,

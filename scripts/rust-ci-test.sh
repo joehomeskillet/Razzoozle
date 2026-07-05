@@ -19,6 +19,13 @@ cargo build --release -p razzoozle-server
 echo "== 2. cargo test (protocol wire types + engine scoring/eval + server unit tests) =="
 cargo test
 
+echo "== 2.5. check ts-rs bindings freshness =="
+cd "$REPO_ROOT/rust"
+if ! git diff --exit-code protocol/bindings/; then
+  echo "FAIL: ts-rs bindings are stale — run 'cargo test' in rust/ and commit rust/protocol/bindings/"
+  exit 1
+fi
+
 PORT="${RUST_CI_PORT:-3399}"
 echo "== 3. boot server on :$PORT =="
 CONFIG_PATH="$REPO_ROOT/config" PORT="$PORT" ./target/release/razzoozle-server &
