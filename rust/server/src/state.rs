@@ -5,7 +5,6 @@ use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
@@ -16,11 +15,11 @@ pub struct QuizFixture {
 }
 
 impl QuizFixture {
-    /// Load fixture quiz from JSON file and convert to protocol Quizz type
+    /// Load fixture quiz (embedded at compile time so the server runs from any
+    /// cwd — a runtime relative path panicked unless launched from rust/server/).
     pub fn load() -> Result<Quizz, Box<dyn std::error::Error>> {
-        let path = "fixture-quiz.json";
-        let contents = fs::read_to_string(path)?;
-        let quiz: Quizz = serde_json::from_str(&contents)?;
+        let contents = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/fixture-quiz.json"));
+        let quiz: Quizz = serde_json::from_str(contents)?;
         Ok(quiz)
     }
 }
