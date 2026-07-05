@@ -21,7 +21,39 @@ cargo test
 
 echo "== 2.5. check ts-rs bindings freshness (HARD FAIL if stale) =="
 cd "$REPO_ROOT/rust"
-git diff --exit-code protocol/bindings/ >/dev/null 2>&1 || { echo "FAIL: ts-rs bindings stale — run cargo test to regenerate"; exit 1; }
+
+# Wait for any lingering cargo/rustc processes spawned by cargo test to finish writing.
+# Allows up to 10 attempts * 0.5s = 5 seconds for processes to exit cleanly.
+for attempt in $(seq 1 10); do
+  if ! pgrep -f "cargo|rustc" >/dev/null 2>&1; then
+    break
+  fi
+  if [[ $attempt -lt 10 ]]; then
+    sleep 0.5
+  else
+    # Force-kill any remaining cargo/rustc processes to unblock.
+    pkill -9 -f "cargo|rustc" 2>/dev/null || true
+    sleep 0.5
+  fi
+done
+
+# Checkpoint the current bindings directory.
+BIND_CHECKPOINT="$(mktemp -d)"
+trap "rm -rf '$BIND_CHECKPOINT'" RETURN
+cp -r "protocol/bindings/" "$BIND_CHECKPOINT/bindings"
+
+# Force a clean regeneration of ts-rs bindings by touching the lib.rs and rebuilding.
+# This triggers cargo to recompile the protocol crate, which regenerates all ts-rs exports.
+touch protocol/src/lib.rs
+cargo build -p razzoozle-protocol 2>&1 | grep -E "Compiling razzoozle-protocol|Finished" || true
+
+# Compare the regenerated bindings with the checkpointed copy.
+# If they differ, it means the committed bindings were stale.
+if ! diff -r "$BIND_CHECKPOINT/bindings" "protocol/bindings/" >/dev/null 2>&1; then
+  echo "FAIL: ts-rs bindings are stale or have diverged from code"
+  echo "  Run 'cargo build -p razzoozle-protocol' locally, review the changes, and commit."
+  exit 1
+fi
 
 PORT="${RUST_CI_PORT:-3399}"
 echo "== 3. boot server on :$PORT =="
