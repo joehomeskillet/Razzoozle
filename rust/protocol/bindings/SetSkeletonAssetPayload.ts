@@ -15,4 +15,4 @@ kind: string,
 /**
  * File content (only on set request, omitted in success response)
  */
-content: string | null, };
+content?: string, };

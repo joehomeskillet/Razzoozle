@@ -3,4 +3,4 @@
 /**
  * Payload for DISPLAY.PING (C2S): display heartbeat to keep status live.
  */
-export type DisplayPingPayload = { gameId: string, name: string | null, };
+export type DisplayPingPayload = { gameId: string, name?: string, };

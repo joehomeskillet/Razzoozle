@@ -10,6 +10,7 @@ use ts_rs::TS;
 #[serde(rename_all = "camelCase")]
 pub struct QuestionMedia {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub r#type: Option<String>,
     pub url: String,
 }
@@ -41,36 +42,51 @@ pub enum QuestionType {
 pub struct Question {
     pub question: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub r#type: Option<QuestionType>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub media: Option<QuestionMedia>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub solutions: Option<Vec<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub min: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub step: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub chunks: Option<Vec<String>>,
     pub cooldown: i32,
     pub time: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub practice: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub bonus: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub submitted_by: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub accepted_answers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub match_mode: Option<String>,
 }
 
@@ -82,8 +98,10 @@ pub struct Quizz {
     pub subject: String,
     pub questions: Vec<Question>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub archived: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub theme_id: Option<String>,
 }
 
@@ -96,8 +114,10 @@ pub struct QuizzWithId {
     pub subject: String,
     pub questions: Vec<Question>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub archived: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub theme_id: Option<String>,
 }
 
@@ -123,8 +143,10 @@ pub struct CatalogEntry {
     pub id: String,
     pub question: Question,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub tags: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub source: Option<CatalogSource>,
     pub added_at: String,
 }

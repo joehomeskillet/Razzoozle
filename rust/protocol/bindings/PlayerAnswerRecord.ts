@@ -12,12 +12,12 @@ answerId: number | null,
 /**
  * Multiple-select indices (absent for single-choice).
  */
-answerIds: Array<number> | null, 
+answerIds?: Array<number>, 
 /**
  * Free-text answer (absent for single/multiple-choice).
  */
-answerText: string | null, 
+answerText?: string, 
 /**
  * Milliseconds from question start to answer, or null for legacy results.
  */
-responseMs: number | null, };
+responseMs?: number, };

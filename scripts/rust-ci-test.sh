@@ -19,13 +19,9 @@ cargo build --release -p razzoozle-server
 echo "== 2. cargo test (protocol wire types + engine scoring/eval + server unit tests) =="
 cargo test
 
-echo "== 2.5. check ts-rs bindings freshness (WARN-only until P5 makes bindings load-bearing) =="
-# ponytail: warn, don't fail. The bindings are dead code (no importer) until P5, and
-# concurrent/leaked `cargo test` runs from timed-out CI can transiently rewrite them from
-# a stale binary, causing false failures. Re-arm as a hard gate in P5 (with process hygiene).
+echo "== 2.5. check ts-rs bindings freshness (HARD FAIL if stale) =="
 cd "$REPO_ROOT/rust"
-git diff --exit-code protocol/bindings/ >/dev/null 2>&1 \
-  || echo "WARN: ts-rs bindings differ from a fresh cargo test — regenerate + commit (hard-gated in P5)"
+git diff --exit-code protocol/bindings/ >/dev/null 2>&1 || { echo "FAIL: ts-rs bindings stale — run cargo test to regenerate"; exit 1; }
 
 PORT="${RUST_CI_PORT:-3399}"
 echo "== 3. boot server on :$PORT =="

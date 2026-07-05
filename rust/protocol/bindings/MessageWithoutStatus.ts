@@ -3,4 +3,4 @@
 /**
  * Generic wrapper for gameId + data payload
  */
-export type MessageWithoutStatus<T> = { gameId: string | null, data: T, };
+export type MessageWithoutStatus<T> = { gameId?: string, data: T, };

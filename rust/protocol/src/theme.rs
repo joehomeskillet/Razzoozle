@@ -263,9 +263,11 @@ pub struct Theme {
     pub scrim: u32,
     /// App title text (max 40 chars, can be null)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub app_title: Option<String>,
     /// Logo asset reference (path under /theme/ or /media/, can be null)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub logo: Option<String>,
     /// Whether to show branding in the UI (default true)
     pub show_branding: bool,
@@ -358,6 +360,7 @@ pub struct SetSkeletonAssetPayload {
     pub kind: String,
     /// File content (only on set request, omitted in success response)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub content: Option<String>,
 }
 
@@ -375,9 +378,11 @@ pub struct BackgroundUploadPayload {
     pub slot: String,
     /// Base64-encoded image data (on upload request only)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub data_url: Option<String>,
     /// Server asset path (in success response only)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub path: Option<String>,
 }
 
@@ -395,9 +400,11 @@ pub struct SoundUploadPayload {
     pub slot: String,
     /// Base64-encoded audio data (on upload request only)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub data_url: Option<String>,
     /// Server asset reference path (in success response only)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub asset_ref: Option<String>,
 }
 

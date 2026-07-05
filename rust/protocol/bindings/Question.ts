@@ -5,4 +5,4 @@ import type { QuestionType } from "./QuestionType";
 /**
  * A single question in a quiz
  */
-export type Question = { question: string, type: QuestionType | null, media: QuestionMedia | null, answers: Array<string> | null, solutions: Array<number> | null, min: number | null, max: number | null, correct: number | null, step: number | null, unit: string | null, chunks: Array<string> | null, cooldown: number, time: number, practice: boolean | null, bonus: boolean | null, submittedBy: string | null, acceptedAnswers: Array<string> | null, matchMode: string | null, };
+export type Question = { question: string, type?: QuestionType, media?: QuestionMedia, answers?: Array<string>, solutions?: Array<number>, min?: number, max?: number, correct?: number, step?: number, unit?: string, chunks?: Array<string>, cooldown: number, time: number, practice?: boolean, bonus?: boolean, submittedBy?: string, acceptedAnswers?: Array<string>, matchMode?: string, };

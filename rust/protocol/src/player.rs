@@ -27,14 +27,19 @@ pub struct Player {
     #[ts(skip)]
     pub player_token: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub is_bot: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub avatar: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub achievements: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub identifier_hash: Option<String>,
 }
 
@@ -73,6 +78,7 @@ pub struct AnswerAck {
     pub reason: AnswerAckReason,
     pub server_received_at_ms: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub client_message_id: Option<String>,
 }
 
@@ -92,6 +98,7 @@ pub struct PlayerSuccessReconnect {
     pub player: PlayerReconnectInfo,
     pub current_question: GameUpdateQuestion,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub already_answered: Option<bool>,
 }
 
@@ -170,6 +177,7 @@ pub struct MetricsReport {
 #[serde(rename_all = "camelCase")]
 pub struct MetricsSubscribe {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
 }
 
@@ -179,8 +187,10 @@ pub struct MetricsSubscribe {
 #[serde(rename_all = "camelCase")]
 pub struct MetricPercentiles {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub p50: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub p95: Option<i32>,
     pub count: i32,
 }

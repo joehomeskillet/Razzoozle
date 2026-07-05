@@ -5,4 +5,4 @@ import type { AnswerAckReason } from "./AnswerAckReason";
  * Answer ack payload (low-latency mode).
  * Emitted on `player:answerAck`.
  */
-export type AnswerAck = { accepted: boolean, reason: AnswerAckReason, serverReceivedAtMs: bigint, clientMessageId: string | null, };
+export type AnswerAck = { accepted: boolean, reason: AnswerAckReason, serverReceivedAtMs: bigint, clientMessageId?: string, };

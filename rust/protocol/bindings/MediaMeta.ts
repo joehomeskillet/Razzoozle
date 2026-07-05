@@ -5,4 +5,4 @@
  * in the manager Media tab. `url` is same-origin relative (/media/<cat>/<file>).
  * Corresponds to wire events: media:data (array).
  */
-export type MediaMeta = { id: string, filename: string, url: string, size: number, type: string, category: string, source: string, uploadedAt: string, width: number | null, height: number | null, };
+export type MediaMeta = { id: string, filename: string, url: string, size: number, type: string, category: string, source: string, uploadedAt: string, width?: number, height?: number, };

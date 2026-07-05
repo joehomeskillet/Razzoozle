@@ -5,4 +5,4 @@ import type { SuperlativeKey } from "./SuperlativeKey";
  * One awarded superlative from post-game recap.
  * Carries the winner's name, avatar (optional), and the numeric stat that won it.
  */
-export type Superlative = { key: SuperlativeKey, winnerName: string, winnerAvatar: string | null, value: number, };
+export type Superlative = { key: SuperlativeKey, winnerName: string, winnerAvatar?: string, value: number, };

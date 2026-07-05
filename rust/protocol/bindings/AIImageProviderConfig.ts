@@ -3,4 +3,4 @@
 /**
  * Image generation provider configuration.
  */
-export type AIImageProviderConfig = { id: string, label: string, baseUrl: string | null, workflow: string | null, resolution: number | null, };
+export type AIImageProviderConfig = { id: string, label: string, baseUrl?: string, workflow?: string, resolution?: number, };

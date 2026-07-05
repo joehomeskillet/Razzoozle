@@ -4,4 +4,4 @@ import type { Question } from "./Question";
 /**
  * A quiz with its server-assigned ID
  */
-export type QuizzWithId = { id: string, subject: string, questions: Array<Question>, archived: boolean | null, themeId: string | null, };
+export type QuizzWithId = { id: string, subject: string, questions: Array<Question>, archived?: boolean, themeId?: string, };

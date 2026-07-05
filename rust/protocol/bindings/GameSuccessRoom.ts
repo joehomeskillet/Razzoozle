@@ -3,4 +3,4 @@
 /**
  * game:successRoom payload (S2C)
  */
-export type GameSuccessRoom = { gameId: string, requireIdentifier: boolean | null, };
+export type GameSuccessRoom = { gameId: string, requireIdentifier?: boolean, };

@@ -3,4 +3,4 @@ import type { MatchMode } from "./MatchMode";
 import type { QuestionMedia } from "./QuestionMedia";
 import type { RoundRecapAward } from "./RoundRecapAward";
 
-export type ShowResponsesData = { question: string, responses: { [key in string]?: number }, solutions: Array<number>, answers: Array<string>, media: QuestionMedia | null, type: string | null, correct: number | null, unit: string | null, averageGuess: number | null, textResponses: { [key in string]?: number } | null, acceptedAnswers: Array<string> | null, matchMode: MatchMode | null, correctChunks: Array<string> | null, roundRecap: Array<RoundRecapAward> | null, };
+export type ShowResponsesData = { question: string, responses: { [key in string]?: number }, solutions: Array<number>, answers: Array<string>, media?: QuestionMedia, type?: string, correct?: number, unit?: string, averageGuess?: number, textResponses?: { [key in string]?: number }, acceptedAnswers?: Array<string>, matchMode?: MatchMode, correctChunks?: Array<string>, roundRecap?: Array<RoundRecapAward>, };

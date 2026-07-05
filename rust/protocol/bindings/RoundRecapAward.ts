@@ -4,4 +4,4 @@ import type { RoundRecapKey } from "./RoundRecapKey";
 /**
  * RoundRecapAward for per-round highlights
  */
-export type RoundRecapAward = { key: RoundRecapKey, winnerName: string, winnerAvatar: string | null, value: number | null, };
+export type RoundRecapAward = { key: RoundRecapKey, winnerName: string, winnerAvatar?: string, value?: number, };

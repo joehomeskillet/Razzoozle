@@ -21,6 +21,7 @@ use crate::status::ScoringMode;
 #[serde(rename_all = "camelCase")]
 pub struct MessageGameId {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -94,6 +95,7 @@ pub struct ManagerKickPlayer {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerSetAuto {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
     pub auto: bool,
 }
@@ -103,6 +105,7 @@ pub struct ManagerSetAuto {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerAddBots {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
     pub count: i32,
 }
@@ -112,6 +115,7 @@ pub struct ManagerAddBots {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerAdjustTimer {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
     pub delta_seconds: i32,
 }
@@ -121,6 +125,7 @@ pub struct ManagerAdjustTimer {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerPauseGame {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
 }
 
@@ -129,6 +134,7 @@ pub struct ManagerPauseGame {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerResumeGame {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
 }
 
@@ -137,14 +143,19 @@ pub struct ManagerResumeGame {
 #[serde(rename_all = "camelCase")]
 pub struct ManagerSetGameConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_mode: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub low_latency_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub join_locked: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub randomize_answers: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub scoring_mode: Option<ScoringMode>,
 }
 
@@ -159,12 +170,16 @@ pub struct ManagerSetAchievementsConfig {
 #[serde(rename_all = "camelCase")]
 pub struct AchievementConfigEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub threshold: Option<i32>,
 }
 
@@ -219,8 +234,10 @@ pub struct ManagerPluginSetConfig {
 pub struct ManagerApproveSubmission {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub quizz_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub to_catalog: Option<bool>,
 }
 
@@ -230,8 +247,10 @@ pub struct ManagerApproveSubmission {
 pub struct ManagerRejectSubmission {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub reason: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub category: Option<SubmissionCategory>,
 }
 
@@ -327,10 +346,13 @@ pub struct ManagerConfig {
 #[serde(rename_all = "camelCase")]
 pub struct Observability {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub grafana_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub loki_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub prometheus_url: Option<String>,
 }
 

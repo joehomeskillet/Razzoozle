@@ -3,4 +3,4 @@
 /**
  * player:reconnect payload (C2S)
  */
-export type PlayerReconnect = { gameId: string, lastServerSeq: number | null, };
+export type PlayerReconnect = { gameId: string, lastServerSeq?: number, };

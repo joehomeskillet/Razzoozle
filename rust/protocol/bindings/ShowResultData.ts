@@ -2,4 +2,4 @@
 import type { RoundRecapAward } from "./RoundRecapAward";
 import type { ScoringMode } from "./ScoringMode";
 
-export type ShowResultData = { correct: boolean, message: string, points: number, myPoints: number, rank: number, aheadOfMe: string | null, streak: number | null, streakBonus: boolean | null, bonus: boolean | null, firstCorrect: boolean | null, poll: boolean | null, achievements: Array<string> | null, bonusPoints: number | null, playerCount: number | null, correctAnswer: string | null, correctChunks: Array<string> | null, autoAdvanceMs: number | null, roundRecap: Array<RoundRecapAward> | null, scoringMode: ScoringMode | null, };
+export type ShowResultData = { correct: boolean, message: string, points: number, myPoints: number, rank: number, aheadOfMe: string | null, streak?: number, streakBonus?: boolean, bonus?: boolean, firstCorrect?: boolean, poll?: boolean, achievements?: Array<string>, bonusPoints?: number, playerCount?: number, correctAnswer?: string, correctChunks?: Array<string>, autoAdvanceMs?: number, roundRecap?: Array<RoundRecapAward>, scoringMode?: ScoringMode, };

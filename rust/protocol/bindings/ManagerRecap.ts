@@ -6,4 +6,4 @@ import type { Superlative } from "./Superlative";
  * Post-game recap with superlatives and hardest question detail.
  * Optional field on GameResult and SharedResult (RESULTS.DATA, RESULTS.SHARED_DATA).
  */
-export type ManagerRecap = { superlatives: Array<Superlative>, hardestQuestion: HardestQuestion | null, };
+export type ManagerRecap = { superlatives: Array<Superlative>, hardestQuestion?: HardestQuestion, };

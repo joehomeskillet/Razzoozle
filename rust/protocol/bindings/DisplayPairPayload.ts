@@ -8,4 +8,4 @@ export type DisplayPairPayload = { code: string,
 /**
  * Legacy fallback (socket auth is primary).
  */
-managerPassword: string | null, gameId: string, };
+managerPassword?: string, gameId: string, };

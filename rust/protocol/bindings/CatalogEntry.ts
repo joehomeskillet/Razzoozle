@@ -5,4 +5,4 @@ import type { Question } from "./Question";
 /**
  * A reusable question in the catalog
  */
-export type CatalogEntry = { id: string, question: Question, tags: Array<string> | null, source: CatalogSource | null, addedAt: string, };
+export type CatalogEntry = { id: string, question: Question, tags?: Array<string>, source?: CatalogSource, addedAt: string, };

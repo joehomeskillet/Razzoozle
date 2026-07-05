@@ -3,4 +3,4 @@
 /**
  * player:login payload (C2S)
  */
-export type PlayerLogin = { username: string, avatar: string | null, identifier: string | null, };
+export type PlayerLogin = { username: string, avatar?: string, identifier?: string, };

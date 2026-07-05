@@ -3,4 +3,4 @@
 /**
  * Question media — image/video/audio attached to a question.
  */
-export type QuestionMedia = { type: string | null, url: string, };
+export type QuestionMedia = { type?: string, url: string, };

@@ -16,8 +16,8 @@ slot: string,
 /**
  * Base64-encoded audio data (on upload request only)
  */
-dataUrl: string | null, 
+dataUrl?: string, 
 /**
  * Server asset reference path (in success response only)
  */
-assetRef: string | null, };
+assetRef?: string, };

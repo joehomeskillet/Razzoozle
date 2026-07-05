@@ -33,8 +33,10 @@ pub struct RoundRecapAward {
     pub key: RoundRecapKey,
     pub winner_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub winner_avatar: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub value: Option<i32>,
 }
 
@@ -76,8 +78,10 @@ pub enum Status {
 pub struct ShowRoomData {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub invite_code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_mode: Option<bool>,
 }
 
@@ -104,13 +108,17 @@ pub struct ShowPreparedData {
 pub struct ShowQuestionData {
     pub question: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub display_order: Option<Vec<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub media: Option<QuestionMedia>,
     pub cooldown: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub submitted_by: Option<String>,
 }
 
@@ -120,33 +128,46 @@ pub struct ShowQuestionData {
 pub struct SelectAnswerData {
     pub question: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub media: Option<QuestionMedia>,
     pub time: i32,
     pub total_player: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "type")]
+    #[ts(optional)]
     pub question_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub min: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub step: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub shuffled_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub server_seq: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub server_now_ms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub question_start_at_server_ms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answer_deadline_at_server_ms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub submitted_by: Option<String>,
 }
 
@@ -161,30 +182,43 @@ pub struct ShowResultData {
     pub rank: i32,
     pub ahead_of_me: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub streak: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub streak_bonus: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub bonus: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub first_correct: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub poll: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub achievements: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub bonus_points: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub player_count: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct_answer: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_advance_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub round_recap: Option<Vec<RoundRecapAward>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub scoring_mode: Option<ScoringMode>,
 }
 
@@ -205,25 +239,35 @@ pub struct ShowResponsesData {
     pub solutions: Vec<i32>,
     pub answers: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub media: Option<QuestionMedia>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "type")]
+    #[ts(optional)]
     pub question_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub average_guess: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub text_responses: Option<HashMap<String, i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub accepted_answers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub match_mode: Option<MatchMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub round_recap: Option<Vec<RoundRecapAward>>,
 }
 
@@ -250,10 +294,13 @@ pub struct ShowLeaderboardData {
     pub old_leaderboard: Vec<Player>,
     pub leaderboard: Vec<Player>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_standings: Option<Vec<TeamStanding>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_advance_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub round_recap: Option<Vec<RoundRecapAward>>,
 }
 
@@ -266,18 +313,24 @@ pub struct TeamStanding {
     pub player_count: i32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct FinishedData {
     pub subject: String,
     pub top: Vec<Player>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub rank: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_standings: Option<Vec<TeamStanding>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    #[ts(type = "any")]
     pub recap: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_mode: Option<bool>,
 }
 
@@ -287,6 +340,7 @@ pub struct FinishedData {
 pub struct WaitData {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub team_mode: Option<bool>,
 }
 
@@ -295,12 +349,14 @@ pub struct WaitData {
 #[ts(export)]
 pub struct PausedData {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub reason: Option<String>,
 }
 
 /// GameStatus discriminated union: status name + data
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "name", content = "data")]
+#[ts(export)]
 pub enum GameStatus {
     #[serde(rename = "SHOW_ROOM")]
     ShowRoom(ShowRoomData),

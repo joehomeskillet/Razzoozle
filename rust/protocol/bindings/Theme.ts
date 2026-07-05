@@ -57,11 +57,11 @@ scrim: number,
 /**
  * App title text (max 40 chars, can be null)
  */
-appTitle: string | null, 
+appTitle?: string, 
 /**
  * Logo asset reference (path under /theme/ or /media/, can be null)
  */
-logo: string | null, 
+logo?: string, 
 /**
  * Whether to show branding in the UI (default true)
  */

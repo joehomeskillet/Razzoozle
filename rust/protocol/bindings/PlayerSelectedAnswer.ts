@@ -3,4 +3,4 @@
 /**
  * player:selectedAnswer payload (C2S)
  */
-export type PlayerSelectedAnswer = { answerKey: number, answerKeys: Array<number> | null, answerText: string | null, clientMessageId: string | null, };
+export type PlayerSelectedAnswer = { answerKey: number, answerKeys?: Array<number>, answerText?: string, clientMessageId?: string, };

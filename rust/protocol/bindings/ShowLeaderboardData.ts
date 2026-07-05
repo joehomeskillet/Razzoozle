@@ -3,4 +3,4 @@ import type { Player } from "./Player";
 import type { RoundRecapAward } from "./RoundRecapAward";
 import type { TeamStanding } from "./TeamStanding";
 
-export type ShowLeaderboardData = { oldLeaderboard: Array<Player>, leaderboard: Array<Player>, teamStandings: Array<TeamStanding> | null, autoAdvanceMs: number | null, roundRecap: Array<RoundRecapAward> | null, };
+export type ShowLeaderboardData = { oldLeaderboard: Array<Player>, leaderboard: Array<Player>, teamStandings?: Array<TeamStanding>, autoAdvanceMs?: number, roundRecap?: Array<RoundRecapAward>, };

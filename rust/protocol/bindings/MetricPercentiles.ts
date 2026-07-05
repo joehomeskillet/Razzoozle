@@ -3,4 +3,4 @@
 /**
  * Metric percentiles (one bucket of rolling samples).
  */
-export type MetricPercentiles = { p50: number | null, p95: number | null, count: number, };
+export type MetricPercentiles = { p50?: number, p95?: number, count: number, };

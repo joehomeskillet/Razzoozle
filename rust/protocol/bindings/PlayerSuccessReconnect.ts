@@ -6,4 +6,4 @@ import type { PlayerReconnectInfo } from "./PlayerReconnectInfo";
  * Player reconnect payload.
  * Emitted on `player:successReconnect`.
  */
-export type PlayerSuccessReconnect = { gameId: string, status: any, player: PlayerReconnectInfo, currentQuestion: GameUpdateQuestion, alreadyAnswered: boolean | null, };
+export type PlayerSuccessReconnect = { gameId: string, status: any, player: PlayerReconnectInfo, currentQuestion: GameUpdateQuestion, alreadyAnswered?: boolean, };

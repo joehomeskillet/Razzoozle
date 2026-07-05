@@ -3,4 +3,4 @@
 /**
  * Text provider extended with keyConfigured flag (sent to client).
  */
-export type AIProviderPublic = { id: string, label: string, kind: string, baseUrl: string | null, model: string, temperature: number | null, keyConfigured: boolean, };
+export type AIProviderPublic = { id: string, label: string, kind: string, baseUrl?: string, model: string, temperature?: number, keyConfigured: boolean, };

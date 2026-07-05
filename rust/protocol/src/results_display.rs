@@ -46,6 +46,7 @@ pub struct Superlative {
     pub key: SuperlativeKey,
     pub winner_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub winner_avatar: Option<String>,
     pub value: f64,
 }
@@ -58,6 +59,7 @@ pub struct Superlative {
 pub struct ManagerRecap {
     pub superlatives: Vec<Superlative>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub hardest_question: Option<HardestQuestion>,
 }
 
@@ -81,12 +83,15 @@ pub struct PlayerAnswerRecord {
     pub answer_id: Option<i32>,
     /// Multiple-select indices (absent for single-choice).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answer_ids: Option<Vec<i32>>,
     /// Free-text answer (absent for single/multiple-choice).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answer_text: Option<String>,
     /// Milliseconds from question start to answer, or null for legacy results.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub response_ms: Option<i32>,
 }
 
@@ -148,6 +153,7 @@ pub struct SharedResult {
 #[ts(export)]
 pub struct DisplayRegisterPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub name: Option<String>,
 }
 
@@ -160,6 +166,7 @@ pub struct DisplayPairPayload {
     pub code: String,
     /// Legacy fallback (socket auth is primary).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub manager_password: Option<String>,
     pub game_id: String,
 }
@@ -179,6 +186,7 @@ pub struct DisplayDisconnectPayload {
 pub struct DisplayPingPayload {
     pub game_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub name: Option<String>,
 }
 

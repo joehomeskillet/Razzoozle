@@ -3,4 +3,4 @@
 /**
  * A configured text provider (no secret — see ai-secrets server-side).
  */
-export type AIProviderConfig = { id: string, label: string, kind: string, baseUrl: string | null, model: string, temperature: number | null, };
+export type AIProviderConfig = { id: string, label: string, kind: string, baseUrl?: string, model: string, temperature?: number, };

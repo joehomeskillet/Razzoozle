@@ -3,4 +3,4 @@
 /**
  * GameId-only message wrapper
  */
-export type MessageGameId = { gameId: string | null, };
+export type MessageGameId = { gameId?: string, };

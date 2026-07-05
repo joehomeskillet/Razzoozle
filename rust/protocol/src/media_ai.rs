@@ -30,8 +30,10 @@ pub struct MediaMeta {
     pub source: String,     // "upload" | "ai" | "theme"
     pub uploaded_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub width: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub height: Option<u32>,
 }
 
@@ -76,9 +78,11 @@ pub struct AIProviderConfig {
     pub label: String,
     pub kind: String, // AIProviderKind constant
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub base_url: Option<String>,
     pub model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub temperature: Option<f64>,
 }
 
@@ -90,10 +94,13 @@ pub struct AIImageProviderConfig {
     pub id: String,
     pub label: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub workflow: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub resolution: Option<u32>,
 }
 
@@ -106,9 +113,11 @@ pub struct AIProviderPublic {
     pub label: String,
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub base_url: Option<String>,
     pub model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub temperature: Option<f64>,
     pub key_configured: bool,
 }

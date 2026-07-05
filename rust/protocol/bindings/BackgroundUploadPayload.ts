@@ -16,8 +16,8 @@ slot: string,
 /**
  * Base64-encoded image data (on upload request only)
  */
-dataUrl: string | null, 
+dataUrl?: string, 
 /**
  * Server asset path (in success response only)
  */
-path: string | null, };
+path?: string, };

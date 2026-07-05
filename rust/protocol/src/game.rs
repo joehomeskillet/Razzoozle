@@ -20,6 +20,7 @@ use ts_rs::TS;
 #[serde(rename_all = "camelCase")]
 pub struct MessageWithoutStatus<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
     pub data: T,
 }
@@ -30,6 +31,7 @@ pub struct MessageWithoutStatus<T> {
 #[serde(rename_all = "camelCase")]
 pub struct MessageGameId {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub game_id: Option<String>,
 }
 
@@ -50,8 +52,10 @@ pub type PlayerJoin = String;
 pub struct PlayerLogin {
     pub username: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub avatar: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub identifier: Option<String>,
 }
 
@@ -62,6 +66,7 @@ pub struct PlayerLogin {
 pub struct PlayerReconnect {
     pub game_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub last_server_seq: Option<i32>,
 }
 
@@ -80,10 +85,13 @@ pub struct PlayerLeave {
 pub struct PlayerSelectedAnswer {
     pub answer_key: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answer_keys: Option<Vec<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answer_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub client_message_id: Option<String>,
 }
 
@@ -117,6 +125,7 @@ pub struct ClockPing {
 pub struct GameSuccessRoom {
     pub game_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub require_identifier: Option<bool>,
 }
 

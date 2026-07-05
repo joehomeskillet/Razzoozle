@@ -3,4 +3,4 @@
 /**
  * Player type: core game participant data.
  */
-export type Player = { id: string, clientId: string, connected: boolean, username: string, points: number, streak: number, isBot: boolean | null, avatar: string | null, achievements: Array<string> | null, teamId: string | null, identifierHash: string | null, };
+export type Player = { id: string, clientId: string, connected: boolean, username: string, points: number, streak: number, isBot?: boolean, avatar?: string, achievements?: Array<string>, teamId?: string, identifierHash?: string, };

@@ -4,4 +4,4 @@
  * Metrics subscription (client->server).
  * Sent on `metrics:subscribe`.
  */
-export type MetricsSubscribe = { gameId: string | null, };
+export type MetricsSubscribe = { gameId?: string, };

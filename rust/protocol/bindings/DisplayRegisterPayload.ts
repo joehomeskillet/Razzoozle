@@ -5,4 +5,4 @@
  * Optional: the client may send `{name: "..."}`or `null`/undefined.
  * Serde defaults missing fields to None.
  */
-export type DisplayRegisterPayload = { name: string | null, };
+export type DisplayRegisterPayload = { name?: string, };
