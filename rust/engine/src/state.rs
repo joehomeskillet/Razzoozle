@@ -290,11 +290,11 @@ impl GameState {
         })
     }
 
-    pub fn next_question(&mut self) -> Result<GamePhase, GameError> {
+    pub fn next_or_finish(&mut self) -> Result<GamePhase, GameError> {
         if self.phase != GamePhase::ShowLeaderboard {
             return Err(GameError::InvalidTransition {
                 from: self.phase,
-                action: "next_question",
+                action: "next_or_finish",
             });
         }
 
@@ -447,7 +447,7 @@ mod tests {
         assert!(p1_result.first_correct);
         assert!(!p2_result.first_correct);
 
-        let phase = state.next_question().unwrap();
+        let phase = state.next_or_finish().unwrap();
         assert_eq!(phase, GamePhase::ShowQuestion);
         assert_eq!(state.current_question_index, 1);
         assert_eq!(state.current_question().question, "What is the capital of France?");
@@ -457,7 +457,7 @@ mod tests {
         assert_eq!(state.result_for("player1").unwrap().streak, 2);
         assert_eq!(state.sorted_leaderboard()[0].client_id, "player1");
 
-        let final_phase = state.next_question().unwrap();
+        let final_phase = state.next_or_finish().unwrap();
         assert_eq!(final_phase, GamePhase::Finished);
         assert_eq!(state.phase, GamePhase::Finished);
     }

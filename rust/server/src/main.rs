@@ -600,7 +600,7 @@ async fn main() {
                                         if let Some(game_ref) = game_opt {
                                             let next_phase = {
                                                 let mut game = game_ref.lock().unwrap();
-                                                game.engine.next_question().ok()
+                                                game.engine.next_or_finish().ok()
                                             };
 
                                             if let Some(GamePhase::Finished) = next_phase {
