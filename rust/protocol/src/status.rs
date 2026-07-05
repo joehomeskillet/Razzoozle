@@ -233,10 +233,8 @@ pub struct ShowRoundRecapData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct ShowLeaderboardData {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub old_leaderboard: Option<Vec<Player>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub leaderboard: Option<Vec<Player>>,
+    pub old_leaderboard: Vec<Player>,
+    pub leaderboard: Vec<Player>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team_standings: Option<Vec<TeamStanding>>,
     #[serde(skip_serializing_if = "Option::is_none")]

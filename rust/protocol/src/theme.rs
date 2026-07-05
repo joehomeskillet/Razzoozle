@@ -55,13 +55,13 @@ pub struct AnimatedBackgroundConfig {
 #[serde(rename_all = "camelCase")]
 pub struct ThemeBackgrounds {
     /// Background image path for auth screens (null = none)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    
     pub auth: Option<String>,
     /// Background image path for manager game screen (null = none)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    
     pub manager_game: Option<String>,
     /// Background image path for player game screen (null = none)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    
     pub player_game: Option<String>,
     /// Animated background configs per slot
     pub animated: AnimatedBackgroundsConfig,
@@ -192,43 +192,43 @@ pub struct AnimationConfig {
 #[serde(rename_all = "camelCase")]
 pub struct SoundsConfig {
     /// Background music for answer selection phase
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub answers_music: Option<String>,
     /// Sound effect when an answer is selected
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub answers_sound: Option<String>,
     /// Sound for 3rd place podium finish
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub podium_three: Option<String>,
     /// Sound for 2nd place podium finish
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub podium_second: Option<String>,
     /// Sound for 1st place podium finish
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub podium_first: Option<String>,
     /// Sound for podium snare roll (roll-up effect)
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub podium_snear_roll: Option<String>,
     /// Sound effect at results screen entry
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub results: Option<String>,
     /// Sound effect for question reveal
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub show: Option<String>,
     /// Notification "boump" sound (e.g., player join)
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub boump: Option<String>,
     /// Sound for unlocking a Bronze-tier achievement
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub tier_bronze: Option<String>,
     /// Sound for unlocking a Silver-tier achievement
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub tier_silver: Option<String>,
     /// Sound for unlocking a Gold-tier achievement
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub tier_gold: Option<String>,
     /// Sound for unlocking a Diamant-tier achievement
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub tier_diamant: Option<String>,
 }
 
