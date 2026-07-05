@@ -4,6 +4,7 @@ RUN npm install -g pnpm@11.5.1
 
 # ---- BUILDER ----
 FROM base AS builder
+ARG VITE_DEFAULT_BACKEND=rust
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -14,6 +15,8 @@ COPY packages/socket/package.json ./packages/socket/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY . .
+
+ENV VITE_DEFAULT_BACKEND=$VITE_DEFAULT_BACKEND
 
 RUN pnpm build
 

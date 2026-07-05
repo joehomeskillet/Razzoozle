@@ -59,7 +59,7 @@ fi
 # STEP 2 — build
 # ---------------------------------------------------------------------------
 log "STEP 2: building $IMAGE from $DEPLOY_DIR/source/"
-docker build -t "$IMAGE" "$DEPLOY_DIR/source/"
+docker build --build-arg VITE_DEFAULT_BACKEND=rust -t "$IMAGE" "$DEPLOY_DIR/source/"
 
 # ---------------------------------------------------------------------------
 # STEP 3 — smoke-test the socket bundle in an isolated container

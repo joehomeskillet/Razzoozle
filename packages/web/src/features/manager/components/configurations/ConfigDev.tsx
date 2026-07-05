@@ -14,6 +14,7 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import AnimatedCssEditor from "@razzoozle/web/features/manager/components/configurations/AnimatedCssEditor"
 import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
+import BackendPanel from "@razzoozle/web/features/manager/components/configurations/BackendPanel"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   Activity,
@@ -193,6 +194,8 @@ const ConfigDev = () => {
 
   return (
     <div className="space-y-4">
+      <BackendPanel />
+
       {/* ── Theme overrides (relocated from the Design tab) ─────────────
         ConfigSkeleton is prop-less and self-contained: it brings its own
         SectionCards for the CSS-Override + JavaScript-Override editors. */}

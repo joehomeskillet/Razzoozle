@@ -126,8 +126,33 @@ export const getClientId = (): string => {
 
 const clientId = getClientId()
 
+// Read the game backend preference from localStorage, env, or default to Rust.
+// Exported so the dev panel can query the current backend choice.
+export function getGameBackend(): "rust" | "node" {
+  try {
+    if (typeof window === "undefined") {
+      return "rust"
+    }
+    const stored = localStorage.getItem("gameBackend")
+    if (stored === "node" || stored === "rust") {
+      return stored
+    }
+  } catch {
+    // Fail silently
+  }
+  const envDefault = (import.meta.env.VITE_DEFAULT_BACKEND as string | undefined) ?? "rust"
+  return envDefault === "node" ? "node" : "rust"
+}
+
+// Compute the socket.io path based on the chosen backend. Caddy routes:
+// - Node backend: "/" → :3011, socket.io served at "/ws" (Node's configured path)
+// - Rust backend: "/_rust/*" → :3012 (prefix stripped), socket.io at "/socket.io/",
+//   so the browser hits "/_rust/socket.io/". (Verified: Node=/ws, Rust=/_rust/socket.io/.)
+const chosenBackend = getGameBackend()
+const socketPath = chosenBackend === "rust" ? "/_rust/socket.io/" : "/ws"
+
 export const socketClient: TypedSocket = io("/", {
-  path: "/ws",
+  path: socketPath,
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: Infinity,
