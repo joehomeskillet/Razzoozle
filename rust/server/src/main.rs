@@ -8,7 +8,7 @@ use axum::{
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::QuestionType;
-use razzoozle_protocol::status::{GameStatus, ShowStartData, ShowQuestionData, SelectAnswerData, ShowLeaderboardData, WaitData};
+use razzoozle_protocol::status::{GameStatus, ShowStartData, ShowQuestionData, SelectAnswerData, ShowLeaderboardData, WaitData, ShowResultData};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::SocketIo;
 use state::{GameRegistry, QuizFixture};
@@ -441,6 +441,43 @@ async fn main() {
                                 if let Some(_results) = reveal_result {
                                     let game_id = game_id.to_string();
                                     info!("Answer revealed: gameId={}", game_id);
+
+                                    // Send SHOW_RESULT to each player with their personalized data
+                                    {
+                                        let game = game_ref.lock().unwrap();
+                                        let total_players = game.engine.players.len() as i32;
+                                        
+                                        // Get sorted leaderboard for ranking
+                                        let sorted_players: Vec<(String, i32)> = game.engine.players.iter()
+                                            .map(|p| (p.client_id.clone(), p.points))
+                                            .collect();
+                                        let mut sorted_by_points = sorted_players.clone();
+                                        sorted_by_points.sort_by(|a, b| b.1.cmp(&a.1));
+                                        
+                                        // Create rank map: client_id -> rank (1-based)
+                                        let mut rank_map = std::collections::HashMap::new();
+                                        for (idx, (client_id, _)) in sorted_by_points.iter().enumerate() {
+                                            rank_map.insert(client_id.clone(), (idx + 1) as i32);
+                                        }
+                                        
+                                        // Send SHOW_RESULT to each player
+                                        for player in &game.engine.players {
+                                            if let Some(result) = game.engine.result_for(&player.client_id) {
+                                                let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
+                                                let mut show_result_data = result.to_show_result_data(&player, total_players);
+                                                show_result_data.rank = rank;
+                                                
+                                                let status = GameStatus::ShowResult(show_result_data);
+                                                
+                                                // Send to this player's socket
+                                                if let Ok(sid) = player.id.parse() {
+                                                    if let Some(player_socket) = io_handle.get_socket(sid) {
+                                                        player_socket.emit(constants::game::STATUS, &status).ok();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
 
                                     // Emit cooldown sequence (matching golden frames)
                                     let io_handle = io_handle.clone();
