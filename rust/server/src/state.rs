@@ -275,10 +275,11 @@ impl GameRegistry {
             quizzes = crate::db::get_quizzes(pool).await;
         }
 
-        // Then, try to load from config/quizz directory (file-based)
-        // This allows fallback or supplementing DB quizzes with local overrides
+        // Fall back to config/quizz files ONLY if the DB gave us nothing (no pool,
+        // or an empty/failed read). When the shared DB is present it is authoritative
+        // — do NOT supplement it with local disk quizzes (that would break parity).
         let config_path = Self::get_config_path();
-        if Path::new(&config_path).exists() {
+        if quizzes.is_empty() && Path::new(&config_path).exists() {
             if let Ok(entries) = fs::read_dir(&config_path) {
                 for entry in entries.flatten() {
                     let path = entry.path();

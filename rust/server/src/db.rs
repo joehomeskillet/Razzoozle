@@ -33,10 +33,10 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
         None => return result,
     };
 
-    // Query: SELECT id, subject, questions, archived, theme_id FROM quizzes WHERE archived = false
-    let rows: Vec<(String, String, serde_json::Value, Option<bool>, Option<String>)> =
+    // The quizzes table has no theme_id column (themes are separate); theme_id stays None.
+    let rows: Vec<(String, String, serde_json::Value, Option<bool>)> =
         match sqlx::query_as(
-            "SELECT id, subject, questions, archived, theme_id FROM quizzes WHERE archived = false ORDER BY id"
+            "SELECT id, subject, questions, archived FROM quizzes WHERE archived = false ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -48,7 +48,7 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
             }
         };
 
-    for (id, subject, questions_json, archived, theme_id) in rows {
+    for (id, subject, questions_json, archived) in rows {
         // Deserialize questions from JSONB
         let questions: Vec<Question> = match serde_json::from_value(questions_json) {
             Ok(q) => q,
@@ -62,7 +62,7 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
             subject,
             questions,
             archived,
-            theme_id,
+            theme_id: None,
         };
 
         result.insert(id, quiz);
