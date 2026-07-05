@@ -341,6 +341,34 @@
       "previewLabel": "Anteprima",
       "replay": "Riproduci"
     },
+    "animatedBg": {
+      "title": "Sfondo animato",
+      "slot": {
+        "auth": "Avvio e accesso",
+        "managerGame": "Schermo host",
+        "playerGame": "Telefono del giocatore"
+      },
+      "type": {
+        "none": "Nessuno",
+        "creamBackdrop": "Sfondo crema"
+      },
+      "speed": "Velocità",
+      "intensity": "Intensità",
+      "iconCount": "Icone",
+      "color": "Colore",
+      "wallpaper": "Immagine di sfondo",
+      "toggle": "Sfondo animato",
+      "mode": {
+        "animated": "Animato",
+        "wallpaper": "Sfondo"
+      },
+      "css": {
+        "title": "Editor CSS",
+        "description": "CSS personalizzato per lo sfondo animato (es. sovrascrivere .cb-blob, keyframes).",
+        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
+      },
+      "uploadDisabled": "Sfondo animato attivo"
+    },
     "sounds": {
       "title": "Suoni",
       "description": "Carica un suono personalizzato per slot. Vuoto = suono predefinito.",

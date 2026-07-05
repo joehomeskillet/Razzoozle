@@ -341,6 +341,34 @@
       "previewLabel": "Aperçu",
       "replay": "Rejouer"
     },
+    "animatedBg": {
+      "title": "Arrière-plan animé",
+      "slot": {
+        "auth": "Démarrer et rejoindre",
+        "managerGame": "Écran hôte",
+        "playerGame": "Téléphone du joueur"
+      },
+      "type": {
+        "none": "Aucun",
+        "creamBackdrop": "Fond crème"
+      },
+      "speed": "Vitesse",
+      "intensity": "Intensité",
+      "iconCount": "Icônes",
+      "color": "Couleur",
+      "wallpaper": "Image d'arrière-plan",
+      "toggle": "Arrière-plan animé",
+      "mode": {
+        "animated": "Animé",
+        "wallpaper": "Fond d'écran"
+      },
+      "css": {
+        "title": "Éditeur CSS",
+        "description": "CSS personnalisé pour l'arrière-plan animé (p. ex. remplacer .cb-blob, keyframes).",
+        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
+      },
+      "uploadDisabled": "Arrière-plan animé actif"
+    },
     "sounds": {
       "title": "Sons",
       "description": "Téléverse un son personnalisé par emplacement. Vide = son par défaut.",

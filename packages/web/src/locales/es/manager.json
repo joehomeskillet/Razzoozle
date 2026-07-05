@@ -341,6 +341,34 @@
       "previewLabel": "Vista previa",
       "replay": "Reproducir"
     },
+    "animatedBg": {
+      "title": "Fondo animado",
+      "slot": {
+        "auth": "Inicio y unirse",
+        "managerGame": "Pantalla del anfitrión",
+        "playerGame": "Móvil del jugador"
+      },
+      "type": {
+        "none": "Ninguno",
+        "creamBackdrop": "Fondo crema"
+      },
+      "speed": "Velocidad",
+      "intensity": "Intensidad",
+      "iconCount": "Iconos",
+      "color": "Color",
+      "wallpaper": "Imagen de fondo",
+      "toggle": "Fondo animado",
+      "mode": {
+        "animated": "Animado",
+        "wallpaper": "Fondo de pantalla"
+      },
+      "css": {
+        "title": "Editor CSS",
+        "description": "CSS personalizado para el fondo animado (p. ej. sobrescribir .cb-blob, keyframes).",
+        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
+      },
+      "uploadDisabled": "Fondo animado activo"
+    },
     "sounds": {
       "title": "Sonidos",
       "description": "Sube un sonido propio por ranura. Vacío = sonido predeterminado.",

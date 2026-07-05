@@ -19,7 +19,8 @@
     "noPlayersConnected": "No hay jugadores conectados",
     "notFound": "Partida no encontrada",
     "playerAlreadyConnected": "El jugador ya está conectado",
-    "serverBusy": "Servidor ocupado, inténtalo más tarde"
+    "serverBusy": "Servidor ocupado, inténtalo más tarde",
+    "locked": "Esta partida está bloqueada — no pueden unirse nuevos jugadores."
   },
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",
