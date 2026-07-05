@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -24,6 +25,40 @@
 **[▶ Demo en vivo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — App de Windows (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Informar de un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *bifurcado de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
+
+---
+
+## 🦀 Reescritura en Rust — vista previa con todas las características (no la predeterminada)
+
+El servidor de juego de Node.js (`packages/socket`) sigue siendo lo que ejecuta **producción**
+en [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) — cada característica de
+este README, todos los tipos de preguntas, temas/esqueletos, gamificación, juego en equipo + solitario,
+avatares de DiceBear, imágenes de IA locales, háptica móvil, 6 idiomas, ~592 pruebas,
+probado bajo carga con 600 jugadores simultáneos.
+
+En paralelo, una **reescritura desde cero en Rust** del servidor de juego (`axum` +
+`socketioxide 0.15`) que habla el *idéntico* protocolo de cable de socket.io, por lo que el
+frontend nunca se da cuenta. Ahora es **completo en características**: un juego de múltiples preguntas
+puntuado completo, los 7 tipos de preguntas, ciclo de vida del jugador + reconexión,
+autenticación del manager, cuestionario desde disco, endpoints HTTP + solitario, control del juego
+(expulsar/saltar/abortar/temporizador), bots, el kiosco `/display`, e IA/medios. Los tipos compartidos
+se generan desde Rust vía `ts-rs` — los tipos de cable de Rust son la fuente
+de verdad. Se ejecuta como un **contenedor paralelo en `:3012`** junto a Node en
+`:3011` y se prueba en cada despliegue mediante una compuerta CI de juego real (un juego de 100 jugadores
+jugado hasta el final + una prueba de reconexión) — pero **aún no es la predeterminada**; Node permanece
+como la ruta de producción hasta un cambio de sombra.
+
+**Por qué Rust:** envía el host de escritorio como una **aplicación Tauri de ~10 MB** (ejecutable de Rust)
+en lugar de un paquete Electron de ~150 MB, una máquina de estado de juego compilada,
+y un único binario estático.
+
+Un esfuerzo paralelo de **endurecimiento de la v2.0** — una búsqueda de bugs adversarial multi-modelo (19
+hallazgos confirmados) — está aterrizando correcciones en ambos gemelos: límites de recursos por juego +
+desalojo del juego, límites de tasa por IP, una lista de permitidos de path-traversal, coincidencia
+de texto Unicode-correcta, y una autenticación de token de host acuñado por el servidor que cierra un agujero
+de control entre juegos (IDOR). A continuación se planea una refactorización de modularización / actor-por-juego.
+
+**→ Detalles, tabla de estado, construcción y ejecución: [`rust/README.md`](rust/README.md)**
 
 ---
 
@@ -201,5 +236,3 @@ Los issues y pull requests son bienvenidos. Ejecuta `pnpm verify` (typecheck + l
 ## 📝 Créditos y licencia
 
 Razzoozle es un fork de [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) — un enorme agradecimiento a los autores originales. Publicado bajo la **[Licencia MIT](LICENSE)** (© 2024 Ralex, © 2026 colaboradores de Razzoozle); se conserva el aviso MIT original.
-</content>
-</invoke>
