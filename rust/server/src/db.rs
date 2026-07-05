@@ -137,9 +137,9 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, chrono::DateTime<chrono::Utc>, i32)> =
+    let rows: Vec<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value)> =
         match sqlx::query_as(
-            "SELECT id, subject, created_at, player_count FROM game_results ORDER BY created_at DESC"
+            "SELECT id, subject, date, players FROM game_results ORDER BY date DESC"
         )
         .fetch_all(pool)
         .await
@@ -152,11 +152,12 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         };
 
     let mut result = Vec::new();
-    for (id, subject, created_at, player_count) in rows {
+    for (id, subject, date, players) in rows {
+        let player_count = players.as_array().map(|a| a.len()).unwrap_or(0);
         let result_obj = serde_json::json!({
             "id": id,
             "subject": subject,
-            "date": created_at.to_rfc3339(),
+            "date": date.to_rfc3339(),
             "playerCount": player_count,
         });
         result.push(result_obj);
@@ -174,9 +175,9 @@ pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, String, String, String, chrono::DateTime<chrono::Utc>)> =
+    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
         match sqlx::query_as(
-            "SELECT id, submitted_by, status, question_text, submitted_by, submitted_at \
+            "SELECT id, submitted_by, status, question, submitted_at \
              FROM submissions ORDER BY submitted_at DESC"
         )
         .fetch_all(pool)
@@ -190,13 +191,13 @@ pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         };
 
     let mut result = Vec::new();
-    for (id, submitted_by, status, question_text, _, submitted_at) in rows {
+    for (id, submitted_by, status, question, submitted_at) in rows {
         let submission_obj = serde_json::json!({
             "id": id,
             "submittedBy": submitted_by,
             "submittedAt": submitted_at.to_rfc3339(),
             "status": status,
-            "question": question_text,
+            "question": question,
         });
         result.push(submission_obj);
     }
@@ -215,7 +216,7 @@ pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
     let rows: Vec<(String, String)> =
         match sqlx::query_as(
-            "SELECT id, name FROM theme_templates ORDER BY id"
+            "SELECT id, name FROM themes ORDER BY id"
         )
         .fetch_all(pool)
         .await
