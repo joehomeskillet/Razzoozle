@@ -190,3 +190,21 @@ transport.** Concrete shape to port to axum/socketioxide for the reconnect + aut
   authoritative state.
 Port the *pattern* (actor-kit is XState/Cloudflare-specific — no dependency). trivia-jam is
 AGPL-3.0 → read-only inspiration, and its own JOIN_GAME has a no-dedup double-join bug (don't copy).
+
+---
+
+## External research — fusion-vetted findings (codex+agy+grok), 2 workflows
+
+### ts-rs (eval-ts-rs-leverage) — the bindings are DEAD CODE
+Nobody imports `rust/protocol/bindings/`; the frontend/socket use hand-written DUPLICATE types in `packages/common/src/types/**`. ts-rs currently delivers ~none of its value. Ranked fix (all 3 panels agree):
+1. **CI freshness gate** (S): `cargo test && git diff --exit-code rust/protocol/bindings/` in `scripts/rust-ci-test.sh` — else Rust type changes merge with stale bindings.
+2. **Export the `GameStatus` union + 17 non-exported status-domain types** (S): add `#[derive(TS)] #[ts(export)]` to `GameStatus`, `FinishedData`, all `*Data`, `Status`/`ScoringMode`/`MatchMode`/`RoundRecapKey`; then delete hand-written `common/types/game/status.ts`. The central client state-machine union is currently hand-typed = drift magnet.
+3. **`#[ts(optional)]`** (M) on the ~157 `Option<T>` + `skip_serializing_if` fields: today they render `T | null` but serde OMITS the key → should be `T?`. Fixes `null` vs `undefined` mismatches; prerequisite to adopting the bindings.
+4. **Make bindings load-bearing** (L): barrel `index.ts`, tsconfig path `@razzoozle/protocol`, delete the hand-written duplicates, repoint imports. Turns ts-rs into the actual single source of truth.
+
+### Quiz-repo recon (5 repos) — top steals
+- ⭐ **Actor-pattern game loop** (gahoot, AGPL → clean-room reimplement): one tokio task per game owns GameState; socket handlers `mpsc::send(GameCommand)` instead of `Arc<Mutex>` direct mutation → race-free hot path, deterministic FSM, testable, scales to 200 + reconnect. ~200 LOC. **Addresses our concurrency-dimension findings.** Highest architectural payoff.
+- **Auto-advance-when-all-answered** (ClassQuiz, MPL): emit `everyone_answered` + advance once all live players submit → removes host micromanagement, shortens per-round latency. Medium effort, real UX win. We don't have it.
+- **Server-anchored answer window + latency scoring** — we already do server-side scoring; `time_sync` clock-calibration deferred to a later wave (server window suffices vs most cheating).
+- **Validations (already correct):** server-side scoring (supabase-alt's client-side scoring is the anti-pattern), typed per-event structs → serde-tagged enum via ts-rs, identity-decoupled-from-socket (grihoot/ClassQuiz both have the socket-coupled anti-pattern we just fixed).
+- **Skip:** Redis-as-state (we're in-memory; conceptual only for future multi-instance), hand-rolled WS framing, client-side scoring.
