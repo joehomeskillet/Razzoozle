@@ -212,17 +212,23 @@ impl GameState {
         self.scoring_mode = scoring_mode;
         let question = self.current_question().clone();
 
-        let first_correct_id = self
-            .answer_order
-            .iter()
-            .find(|client_id| {
-                self.current_answers
-                    .get(*client_id)
-                    .is_some_and(|answer| {
-                        eval::evaluate_answer(&question, &answer.answer_input).correct
-                    })
-            })
-            .cloned();
+        // Gate first_correct calculation on practice: if this is a practice question,
+        // don't award first_correct bonus (matches Node.js behavior at round-manager.ts ~1248)
+        let first_correct_id = if question.practice != Some(true) {
+            self
+                .answer_order
+                .iter()
+                .find(|client_id| {
+                    self.current_answers
+                        .get(*client_id)
+                        .is_some_and(|answer| {
+                            eval::evaluate_answer(&question, &answer.answer_input).correct
+                        })
+                })
+                .cloned()
+        } else {
+            None
+        };
 
         let mut results = Vec::new();
 
@@ -508,5 +514,39 @@ mod tests {
             state.record_answer("player1", Some(0), None, None),
             Err(GameError::DuplicateAnswer { .. })
         ));
+    }
+
+    #[test]
+    fn practice_question_skips_first_correct_bonus() {
+        let mut quiz = fixture_quizz();
+        // Mark the first question as practice
+        quiz.questions[0].practice = Some(true);
+
+        let mut state = GameState::new(
+            quiz,
+            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+        );
+
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        state.open_answers().unwrap();
+
+        // Player 1 answers correctly first, Player 2 answers incorrectly
+        state.set_clock_ms(100);
+        state.record_answer("player1", Some(1), None, None).unwrap();
+        state.set_clock_ms(200);
+        state.record_answer("player2", Some(0), None, None).unwrap();
+
+        let results = state.reveal(ScoringMode::Speed).unwrap();
+
+        // Both should have first_correct=false because it's a practice question
+        let p1_result = results.iter().find(|r| r.client_id == "player1").unwrap();
+        let p2_result = results.iter().find(|r| r.client_id == "player2").unwrap();
+
+        assert!(p1_result.correct);
+        assert!(!p2_result.correct);
+        // Key assertion: first_correct is false even though player1 got it first
+        assert!(!p1_result.first_correct, "practice question should not award first_correct");
+        assert!(!p2_result.first_correct);
     }
 }

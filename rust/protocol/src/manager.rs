@@ -44,7 +44,7 @@ pub enum SubmissionCategory {
     Science,
     History,
     Geography,
-    Literature,
+    General,
     Sports,
     Entertainment,
     Technology,

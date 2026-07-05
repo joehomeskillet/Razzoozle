@@ -2,6 +2,7 @@
 //! Ported from packages/socket/src/services/game/answer-eval.ts + text-match.ts
 
 use razzoozle_protocol::quizz::{Question, QuestionType};
+use unicode_normalization::UnicodeNormalization;
 
 pub const SLIDER_TOLERANCE_FRACTION: f64 = 0.05;
 
@@ -20,10 +21,13 @@ pub struct EvalResult {
     pub base: f64, // 0..1, where 1 = fully correct
 }
 
-/// Normalize text: trim, lowercase, remove combining marks
+/// Normalize text: trim, lowercase, NFD decompose, then remove combining marks
+/// Matches Node.js normalizeText() behavior: "Café" → "cafe"
 fn normalize_text(s: &str) -> String {
     s.trim()
         .to_lowercase()
+        .nfd()
+        .collect::<String>()
         .chars()
         .filter(|c| {
             let code = *c as u32;
@@ -344,5 +348,29 @@ mod tests {
         };
         let result = evaluate_answer(&q, &ans);
         assert!(result.correct);
+    }
+
+    #[test]
+    fn normalize_text_with_composed_accent() {
+        // Test that NFD decomposition is applied before filtering combining marks
+        // "Café" (é = U+00E9, composed) should become "cafe" after normalization
+        assert_eq!(normalize_text("Café"), "cafe");
+        assert_eq!(normalize_text("CAFÉ"), "cafe");
+        assert_eq!(normalize_text("  Café  "), "cafe");
+    }
+
+    #[test]
+    fn type_answer_unicode_parity() {
+        // Test that "cafe" matches "Café" in normalized mode (matching Node.js behavior)
+        let mut q = test_question(QuestionType::TypeAnswer);
+        q.accepted_answers = Some(vec!["Café".to_string()]);
+        q.match_mode = Some("normalized".to_string());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("cafe".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct, "cafe should match Café in normalized mode");
     }
 }

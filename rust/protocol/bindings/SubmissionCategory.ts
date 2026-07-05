@@ -3,4 +3,4 @@
 /**
  * Submission category (public topic category).
  */
-export type SubmissionCategory = "science" | "history" | "geography" | "literature" | "sports" | "entertainment" | "technology" | "other";
+export type SubmissionCategory = "science" | "history" | "geography" | "general" | "sports" | "entertainment" | "technology" | "other";
