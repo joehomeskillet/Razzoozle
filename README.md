@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -24,6 +25,23 @@
 **[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows app (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
+
+---
+
+## 🦀 Rewritten in Rust (in progress)
+
+The Node.js game server is being **rewritten in Rust** (`axum` + `socketioxide`),
+speaking the identical socket.io wire protocol so the frontend never notices —
+the endgame is a **~10 MB Tauri desktop host** instead of a ~150 MB Electron
+bundle, plus a compile-time-checked game state machine and a single static binary.
+
+**Status:** Phase 0 gate **passed**, the protocol crate (**~200 wire types, 178
+tests**) and engine logic are done, and the **MVP server already plays a full
+game end-to-end** — verified against the real `socket.io-client`:
+`create → join → login → startGame → SHOW_START → SHOW_QUESTION`. The live game
+still runs on Node; the Rust server targets a shadow cutover in a later phase.
+
+**→ Details, status table, build & run: [`rust/README.md`](rust/README.md)**
 
 ---
 
