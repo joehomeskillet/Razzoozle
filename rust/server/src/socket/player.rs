@@ -1,5 +1,7 @@
 //! Player event handlers: JOIN, LOGIN, SELECTED_ANSWER, LEAVE, SELECT_TEAM, SET_AVATAR, RECONNECT
 use super::HandlerCtx;
+use super::reveal_helpers;
+use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::{
     GameStatus, WaitData,
@@ -253,8 +255,42 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                                 text: "game:waitingForAnswers".to_string(),
                                 team_mode: None,
                             });
-                            io_handle.to(game_id)
+                            io_handle.to(game_id.clone())
                                 .emit(constants::game::STATUS, &wait_status).ok();
+
+                            // Auto-advance if all connected players have answered
+                            let should_auto_advance = {
+                                let game = game_ref.lock().unwrap();
+                                if game.engine.phase != GamePhase::SelectAnswer {
+                                    false
+                                } else {
+                                    let connected_count = game.players
+                                        .iter()
+                                        .filter(|p| p.connected)
+                                        .count();
+                                    let answered_count = game.engine.current_answers.len();
+                                    
+                                    // Fire only if all connected players have answered and we have at least 1 connected player
+                                    connected_count > 0 && answered_count >= connected_count
+                                }
+                            };
+
+                            if should_auto_advance {
+                                let game_id_clone = game_id.clone();
+                                let io_handle_clone = io_handle.clone();
+                                let game_ref_clone = game_ref.clone();
+                                let registry_clone = registry.clone();
+                                
+                                tokio::spawn(async move {
+                                    reveal_helpers::perform_reveal_and_broadcast(
+                                        game_ref_clone,
+                                        game_id_clone,
+                                        io_handle_clone,
+                                        registry_clone,
+                                        true, // is_auto_advance
+                                    ).await;
+                                });
+                            }
                         }
                     }
                 }

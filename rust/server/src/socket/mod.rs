@@ -23,6 +23,7 @@ pub mod manager;
 pub mod metrics;
 pub mod results;
 pub mod player;
+pub mod reveal_helpers;
 
 /// Register every extracted handler on a freshly-connected socket.
 /// Handlers still inline in main.rs are registered there until they migrate here.
