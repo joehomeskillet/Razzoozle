@@ -17,6 +17,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
 ![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
@@ -27,9 +28,44 @@
 
 ---
 
+## 🦀 Rust-Rewrite — funktionsvollständig (noch nicht Standard)
+
+Der Node.js-Spiele-Server (`packages/socket`) ist noch immer das, was in **Produktion**
+unter [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) läuft — alle Features
+aus dieser README, alle Fragetypen, Themes/Skeletons, Gamification, Team- und Solo-Modus,
+DiceBear-Avatare, lokale KI-Bilder, Mobile-Haptik, 6 Sprachen, ~592 Tests,
+Lasttests bis zu 600 gleichzeitige Spielende.
+
+Parallel läuft ein Neuaufbau des Spiele-Servers in **Rust** (`axum` +
+`socketioxide 0.15`), der das *gleiche* Socket.io-Drahtprotokoll spricht, sodass
+das Frontend nichts merkt. Er ist jetzt **funktionsvollständig**: ein vollständiges
+Spiel mit Punkte-Berechnung und mehreren Fragen, alle 7 Fragetypen, Spieler-Lifecycle + Reconnect,
+Manager-Auth, Quiz-von-Festplatte, HTTP + Solo-Endpoints, Spielkontrolle
+(rauswerfen/überspringen/abbrechen/Timer), Bots, die `/display`-Kiosk-Ansicht und KI/Medien.
+Gemeinsame Typen werden aus Rust via `ts-rs` generiert — die Rust-Drahttypen sind die
+Quelle der Wahrheit. Er läuft als **paralleler Container auf `:3012`** neben Node auf
+`:3011` und wird bei jedem Deployment durch ein echtes Spiel-Gate exercisiert (ein 100-Spieler-Spiel
+bis zum Schluss + ein Reconnect-Test) — aber ist noch **nicht Standard**; Node bleibt
+der Produktions-Weg bis zu einem Shadow-Cutover.
+
+**Warum Rust:** den Desktop-Host als **~10 MB Tauri-App** (Rust-Sidecar)
+ausliefern statt eines ~150 MB Electron-Pakets, eine compile-geprüfte Spielzustand-Maschine,
+und eine einzige statische Binärdatei.
+
+Parallel läuft auch ein **v2.0 Hardening** — ein adversarischer Multi-Modell-Bughunt
+(19 bestätigte Findings) — mit Fixes auf beiden Twins: Ressourcen-Limits pro Spiel +
+Game-Eviction, Pro-IP-Rate-Limits, eine Path-Traversal-Allowlist, Unicode-korrekte
+Textübereinstimmung, und ein vom Server generierter Host-Token für Auth, der ein
+Cross-Game-Kontroll-Loch (IDOR) schließt. Eine Modularisierung / Actor-per-Game-Refactoring
+ist als nächstes geplant.
+
+**→ Details, Status-Tabelle, Build & Run: [`rust/README.md`](rust/README.md)**
+
+---
+
 ## 🧩 Was ist das?
 
-Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer, Events und Spieleabende. Eine Gastgeberin oder ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, die Spielenden treten per PIN von ihren Handys aus bei, und alle wetteifern um die schnellste Antwort — schnellere richtige Antworten geben mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu aufgebaut rund um ein klares, flaches **Cream**-Design (Liquid-Glass ist jetzt ein optionales Theme), mit einem vom Manager gesteuerten Theming-System, Gamification, Team- und Solo-Modus sowie lokaler KI-Bildgenerierung — und dabei behält es das klassische Kahoot-artige Erlebnis aus Presenter und Handy (farbige Antwortkacheln mit Formen, ein Countdown, ein Siegertreppchen).
+Razzoozle ist ein selbstgehostetes, Echtzeit-**Quizspiel** für Klassenzimmer, Events und Spieleabende. Eine Gastgeberin oder ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, die Spielenden treten per PIN von ihren Handys aus bei, und alle wetteifern um die schnellste Antwort — schnellere richtige Antworten geben mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu aufgebaut rund um ein klares, flaches **Cream**-Design (Liquid-Glass ist jetzt ein optionales Theme), mit einem vom Manager gesteuerten Theming-System, Gamification, Team- und Solo-Modus sowie lokaler KI-Bildgenerierung — und dabei behält es das klassische Kahoot-artige Erlebnis aus Presenter und Handy (farbige Antwortkacheln mit Formen, ein Countdown, ein Siegertreppchen).
 
 > Razzoozle ist ein unabhängiges Open-Source-Projekt. Es steht in keiner Verbindung zu Kahoot!® oder einer anderen kommerziellen Quizplattform, wird von diesen nicht unterstützt und ist nicht mit ihnen verbunden.
 
@@ -39,13 +75,15 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 
 <div align="center">
 
-| Presenter / Host | Spieler-Handy |
+| Presenter / Host | Desktop-Spielclient |
 | :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/phone.webp" width="200" alt="Player phone" /> |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
 
-| Desktop-Spielclient | Manager · Theme-Cockpit |
+| Spieler-Handy | Avatar-Auswahl |
 | :---: | :---: |
-| <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> | <img src="docs/screenshots/admin.webp" width="420" alt="Manager theme cockpit" /> |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
 
 <img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
 
@@ -57,21 +95,21 @@ Razzoozle ist ein selbstgehostetes **Quizspiel** in Echtzeit für Klassenzimmer,
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme-Cockpit** — ein Live-„Design“-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (flacher **Cream**-Standard + optionales violettes **Liquid-Glass**-Preset) sowie kontrastbewusste Farbwähler. |
-| 🍦 | **Flaches Cream-Design** — warme flache Cream-Oberfläche mit lebendigem animiertem Hintergrund (treibende Blobs + schwebende Schul-/Wissens-Icons), flaches „Zig“-Wortmarke/Logo, Ink-auf-Cream-Antwortkacheln. |
-| 🧊 | **Liquid-Glass-UI** — eine optional aktivierbare Glassmorphism-Theme-Variante (mattierte, weichgezeichnete Flächen, Legacy-Look), die die flache Basis nie antastet. |
-| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler bekommt einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenes Bild hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, Podest und Auszeichnungen. |
-| 🏅 | **End-Auszeichnungen (Recap)** — animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-King…) mit Avatar + Name des Gewinners, im Autoplay automatisch getaktet. |
-| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins“-Tab. |
-| 🧩 | **Manager-Addons** — lade JavaScript-Addons hoch, aktiviere und konfiguriere sie direkt in der Manager-Konsole (eigener Tab, Capability-Badges, persistierte Konfiguration); bringt ein Copy-paste-Starter-Skeleton (`examples/plugins/starter/`) samt Authoring-Contract mit. |
-| 📦 | **Skeleton-Theme-ZIPs** — ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton“: Design-Tokens + CSS + JS + SKELETON.md-Contract). |
-| 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
-| 🔗 | **Teilbare Ergebnisse** — schöne Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „Selbst spielen / Selbst hosten“-CTAs und herunterladbare Gewinner-Sticker. |
+| 🎨 | **Theme-Cockpit** — ein Live-„Design"-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (flacher **Cream**-Standard + optionales violettes **Liquid-Glass**-Preset) sowie kontrastbewusste Farbwähler. |
+| ☕ | **Flaches Cream-Design** — warme flache Cream-Oberfläche mit lebendigem animiertem Hintergrund (treibende Blobs + schwebende Schul-/Wissens-Icons), flaches „Zig"-Wortmarke/Logo, Ink-auf-Cream-Antwortkacheln. |
+| 🧊 | **Liquid-Glass-UI** — ein optionales, älteres Glassmorphism-Theme (mattiert, weichgezeichnete Flächen), das die flache Basis nie antastet. |
 | 🎯 | **Kahoot-treue Spielbildschirme** — Antwortkacheln mit den klassischen Form-Icons (Dreieck / Raute / Kreis / Quadrat), ein kreisförmiger Countdown-Timer, ein Zähler für eingegangene Antworten und ein animiertes Siegertreppchen. |
+| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler bekommt einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenes Bild hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, Podest und Auszeichnungen. |
 | 🏆 | **Gamification** — 15 Erfolge, Medaillen, Serien, Konfetti und Klangsignale, dazu eine persönliche Trophäengalerie. |
+| 🥇 | **End-Game-Recap mit Auszeichnungen** — eine animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-King…) mit Avatar + Name des Gewinners, im Autoplay automatisch getaktet. |
 | 👥 | **Team-Modus** — rote, blaue, grüne und gelbe Teams mit einer Live-Team-Rangliste. |
 | 📱 | **Solo-Modus** — übe jedes Quiz allein über einen Teilen-Link, mit eigener Punkte-Historie. |
 | ✍️ | **Mehr Fragetypen** — Mehrfachauswahl, Antwort-eintippen und Slider, zusätzlich zur klassischen Einfachauswahl. |
+| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins"-Tab. |
+| 🧩 | **Manager-Addons** — lade JavaScript-Addons hoch, aktiviere und konfiguriere sie direkt in der Manager-Konsole (eigener Tab, Capability-Badges, persistierte Konfiguration); bringt ein Copy-paste-Starter-Skeleton (`examples/plugins/starter/`) samt Authoring-Contract mit. |
+| 📦 | **Skeleton-Theme-ZIPs** — ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton": Design-Tokens + CSS + JS + SKELETON.md-Contract). |
+| 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
+| 🔗 | **Teilbare Ergebnisse** — schöne Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „Selbst spielen / Selbst hosten"-CTAs und herunterladbare Gewinner-Sticker. |
 | 🤝 | **Community-Fragen** — eine öffentliche Einreichungsseite mit einer Moderations-Warteschlange im Manager, dazu ein wiederverwendbarer Fragenkatalog und ein Quiz-Archiv. |
 | 🖼️ | **Lokale KI-Bilder** — erzeuge Bilder für Fragen und Themes direkt auf dem Gerät über ComfyUI (Z-Image), oder binde Cloud-Anbieter ein — die Schlüssel bleiben serverseitig. |
 | 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
