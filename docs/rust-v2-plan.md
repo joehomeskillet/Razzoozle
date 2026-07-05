@@ -177,3 +177,16 @@ Vetted by frontier fusion (agy + codex, judge-synthesized, grounded in the repo)
 
 ### v2.0 tag criteria (was missing)
 Tag v2.0 only when: all 20 findings fixed on both twins (or explicitly waived with rationale) · `rust/gate.sh` GO · the full CI real-game suite green (unit + full-game-to-FINISHED + N-player load + reconnect-keeps-score) · domain-modularized · Rust↔Node protocol parity reviewed.
+
+### External validation — actor-kit identity pattern (open-game-collective/actor-kit, MIT)
+Independent recon (Sonnet 5) converges with the fusion verdict: **decouple identity from
+transport.** Concrete shape to port to axum/socketioxide for the reconnect + auth fix:
+- Assign a stable server-minted **PlayerId** (and host token) at join/create — survives the socket.
+- Keep a `Sid → PlayerId` side table, rebuilt on every connect; keep score/streak/session state
+  keyed by **PlayerId only** (never by socketioxide `Sid` or client-asserted clientId).
+- A reconnect = a new socket presenting the same PlayerId/token → the server already holds that
+  id's state (resume = full-resend, or checksum + delta later).
+- Public/private per-caller context split maps to host/player/spectator projections of one
+  authoritative state.
+Port the *pattern* (actor-kit is XState/Cloudflare-specific — no dependency). trivia-jam is
+AGPL-3.0 → read-only inspiration, and its own JOIN_GAME has a no-dedup double-join bug (don't copy).
