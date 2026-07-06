@@ -2,6 +2,7 @@
 
 use super::super::HandlerCtx;
 use crate::db;
+use crate::http::RATE_LIMITER;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use std::fs;
@@ -36,8 +37,24 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                // Minimal validation (the submit UI already validates the full shape):
-                // require a non-empty submittedBy and a question object with text.
+                // Per-client rate limit on this public, unauthenticated endpoint
+                // (reuses the shared sliding-window limiter, keyed by the DURABLE
+                // clientId so a reconnect cannot reset the quota — same guard the
+                // solo endpoints use).
+                if !RATE_LIMITER.check_solo_rate(&ctx.client_id) {
+                    socket
+                        .emit(
+                            constants::manager::SUBMISSION_ERROR,
+                            "errors:submission.rateLimited",
+                        )
+                        .ok();
+                    return;
+                }
+
+                // Trust-boundary validation: the submit UI validates the full shape,
+                // but this endpoint is public, so cap sizes so an oversized/garbage
+                // payload cannot abuse the DB — submittedBy fits VARCHAR(100), the
+                // question text and the whole serialized object are bounded.
                 let submitted_by = payload
                     .get("submittedBy")
                     .and_then(|v| v.as_str())
@@ -54,8 +71,17 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                     .unwrap_or("")
                     .trim()
                     .to_string();
+                let question_bytes = serde_json::to_string(&question)
+                    .map(|s| s.len())
+                    .unwrap_or(usize::MAX);
 
-                if submitted_by.is_empty() || q_text.is_empty() || !question.is_object() {
+                if submitted_by.is_empty()
+                    || submitted_by.chars().count() > 100
+                    || q_text.is_empty()
+                    || q_text.chars().count() > 1000
+                    || !question.is_object()
+                    || question_bytes > 16_384
+                {
                     socket
                         .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalid")
                         .ok();
