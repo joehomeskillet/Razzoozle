@@ -449,6 +449,10 @@ impl GameRegistry {
     pub fn game_count(&self) -> usize {
         self.games_by_id.len()
     }
+    /// Get references to all active games (for iteration over Arc<Mutex<Game>>).
+    pub fn get_all_games(&self) -> Vec<Arc<Mutex<Game>>> {
+        self.games_by_id.values().cloned().collect()
+    }
 
     /// C4 — Game eviction: remove stale/finished games and clear their player sessions.
     /// Call periodically to prevent memory leaks. Clears player entries to prevent
