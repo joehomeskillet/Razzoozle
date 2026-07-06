@@ -716,6 +716,17 @@ pub async fn insert_catalog_entry(
     question: &serde_json::Value,
     source: &str,
 ) -> Result<String, String> {
+    insert_catalog_entry_with_tags(pool, question, source, &serde_json::json!([])).await
+}
+
+/// Same as `insert_catalog_entry` but also persists `tags` (defaults to `[]`
+/// when the caller has none, e.g. the submission-approve path).
+pub async fn insert_catalog_entry_with_tags(
+    pool: &Option<PgPool>,
+    question: &serde_json::Value,
+    source: &str,
+    tags: &serde_json::Value,
+) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
@@ -760,10 +771,11 @@ pub async fn insert_catalog_entry(
 
     // Insert the catalog entry
     sqlx::query(
-        "INSERT INTO catalog_entries (id, question, source, added_at) VALUES ($1, $2, $3, now())"
+        "INSERT INTO catalog_entries (id, question, tags, source, added_at) VALUES ($1, $2, $3, $4, now())"
     )
     .bind(&id)
     .bind(question)
+    .bind(tags)
     .bind(source)
     .execute(pool)
     .await
@@ -901,6 +913,113 @@ pub async fn append_question_to_quiz(
     )
     .bind(serde_json::json!(questions))
     .bind(quiz_id)
+    .execute(pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}
+
+/// Fetch all catalog entries as an array of JSON objects (matches the
+/// Node `CatalogEntry` shape: id, question, tags, source, addedAt).
+pub async fn get_catalog(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return vec![],
+    };
+
+    let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>)> = sqlx::query_as(
+        "SELECT id, question, tags, source, added_at FROM catalog_entries ORDER BY added_at DESC"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    rows.iter()
+        .map(|(id, question, tags, source, added_at)| {
+            serde_json::json!({
+                "id": id,
+                "question": question,
+                "tags": tags,
+                "source": source,
+                "addedAt": added_at.map(|t| t.to_rfc3339()),
+            })
+        })
+        .collect()
+}
+
+/// Update a catalog entry's question + tags fields.
+pub async fn update_catalog_entry(
+    pool: &Option<PgPool>,
+    id: &str,
+    question: &serde_json::Value,
+    tags: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query("UPDATE catalog_entries SET question = $1, tags = $2 WHERE id = $3")
+        .bind(question)
+        .bind(tags)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Delete a catalog entry by id.
+pub async fn delete_catalog_entry(
+    pool: &Option<PgPool>,
+    id: &str,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query("DELETE FROM catalog_entries WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Fetch the active theme (currently stored in a dedicated table or config).
+pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return None,
+    };
+
+    let row: Option<(serde_json::Value,)> = sqlx::query_as(
+        "SELECT theme_data FROM themes WHERE id = 'active' LIMIT 1"
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    row.map(|(theme_data,)| theme_data)
+}
+
+/// Save the active theme to the database (upsert).
+pub async fn upsert_theme(
+    pool: &Option<PgPool>,
+    theme_data: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query(
+        "INSERT INTO themes (id, theme_data, updated_at) VALUES ('active', $1, now()) \
+         ON CONFLICT (id) DO UPDATE SET theme_data = $1, updated_at = now()"
+    )
+    .bind(theme_data)
     .execute(pool)
     .await
     .map(|_| ())
