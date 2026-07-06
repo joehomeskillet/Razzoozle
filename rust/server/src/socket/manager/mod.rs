@@ -4,6 +4,7 @@ use super::HandlerCtx;
 use socketioxide::extract::SocketRef;
 
 pub mod auth;
+pub mod config;
 pub mod config_helper;
 pub mod game_flow;
 pub mod game_state;
@@ -15,6 +16,7 @@ pub mod submissions;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     auth::register(socket, ctx.clone());
+    config::register(socket, ctx.clone());
     game_flow::register(socket, ctx.clone());
     game_state::register(socket, ctx.clone());
     players::register(socket, ctx.clone());

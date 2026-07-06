@@ -582,3 +582,327 @@ pub async fn update_quiz_archived(
 
     Ok(())
 }
+
+/// Update game config with a partial patch. Deep-merges into existing row.
+/// Fields: team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode.
+/// Only updates fields that are Some; omitted fields (None) are left unchanged.
+pub async fn update_game_config(
+    pool: &Option<PgPool>,
+    patch: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // Extract optional fields from the patch
+    let team_mode = patch.get("teamMode").and_then(|v| v.as_bool());
+    let low_latency_enabled = patch.get("lowLatencyEnabled").and_then(|v| v.as_bool());
+    let join_locked = patch.get("joinLocked").and_then(|v| v.as_bool());
+    let randomize_answers = patch.get("randomizeAnswers").and_then(|v| v.as_bool());
+    let scoring_mode = patch.get("scoringMode").and_then(|v| v.as_str());
+
+    // Build the UPDATE statement dynamically — only touch fields that are present
+    let mut query_str = "UPDATE games_config SET ".to_string();
+    let mut updates = Vec::new();
+    let mut idx = 1;
+
+    if team_mode.is_some() {
+        updates.push(format!("team_mode = ${}", idx));
+        idx += 1;
+    }
+    if low_latency_enabled.is_some() {
+        updates.push(format!("low_latency_enabled = ${}", idx));
+        idx += 1;
+    }
+    if join_locked.is_some() {
+        updates.push(format!("join_locked = ${}", idx));
+        idx += 1;
+    }
+    if randomize_answers.is_some() {
+        updates.push(format!("randomize_answers = ${}", idx));
+        idx += 1;
+    }
+    if scoring_mode.is_some() {
+        updates.push(format!("scoring_mode = ${}", idx));
+        idx += 1;
+    }
+
+    if updates.is_empty() {
+        // No fields to update — silent no-op (consistent with Node)
+        return Ok(());
+    }
+
+    updates.push(format!("updated_at = now()"));
+    query_str.push_str(&updates.join(", "));
+    query_str.push_str(" WHERE id = 1");
+
+    let mut query = sqlx::query(&query_str);
+
+    if let Some(tm) = team_mode {
+        query = query.bind(tm);
+    }
+    if let Some(lle) = low_latency_enabled {
+        query = query.bind(lle);
+    }
+    if let Some(jl) = join_locked {
+        query = query.bind(jl);
+    }
+    if let Some(ra) = randomize_answers {
+        query = query.bind(ra);
+    }
+    if let Some(sm) = scoring_mode {
+        query = query.bind(sm);
+    }
+
+    query
+        .execute(pool)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Update achievements config with a partial patch. Deep-merges by id.
+/// Each key in the patch is an achievement id; the value is a partial override
+/// that is merged with the existing record (if any).
+pub async fn update_achievements_config(
+    pool: &Option<PgPool>,
+    patch: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let patch_obj = match patch.as_object() {
+        Some(obj) => obj,
+        None => return Ok(()), // Non-object patch is a silent no-op
+    };
+
+    // Iterate over each achievement id in the patch
+    for (id, override_val) in patch_obj {
+        let enabled = override_val.get("enabled").and_then(|v| v.as_bool());
+        let name = override_val.get("name").and_then(|v| v.as_str());
+        let description = override_val.get("description").and_then(|v| v.as_str());
+        let threshold = override_val.get("threshold").and_then(|v| v.as_i64()).map(|v| v as i32);
+
+        // UPSERT: if the row exists, update only the non-None fields; if it doesn't, insert
+        sqlx::query(
+            "INSERT INTO achievements_config (id, enabled, name, description, threshold) \
+             VALUES ($1, $2, $3, $4, $5) \
+             ON CONFLICT (id) DO UPDATE SET \
+                enabled = COALESCE(EXCLUDED.enabled, achievements_config.enabled), \
+                name = COALESCE(EXCLUDED.name, achievements_config.name), \
+                description = COALESCE(EXCLUDED.description, achievements_config.description), \
+                threshold = COALESCE(EXCLUDED.threshold, achievements_config.threshold)"
+        )
+        .bind(id)
+        .bind(enabled)
+        .bind(name)
+        .bind(description)
+        .bind(threshold)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+/// Update a submission with a partial patch.
+/// Only updates fields that are present in the patch (status, rejectionReason, category, question).
+pub async fn insert_catalog_entry(
+    pool: &Option<PgPool>,
+    question: &serde_json::Value,
+    source: &str,
+) -> Result<String, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // Extract the question text to derive the id
+    let question_text = question
+        .get("question")
+        .and_then(|v| v.as_str())
+        .unwrap_or("untitled");
+
+    // Normalize the question text to an id (lowercase, hyphens, no special chars)
+    let base_id = question_text
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|seg| !seg.is_empty())
+        .collect::<Vec<&str>>()
+        .join("-");
+
+    // Check for existing entries and deduplicate with -2, -3 suffix
+    let mut id = base_id.clone();
+    let mut suffix = 2;
+
+    loop {
+        let existing: Option<(String,)> = sqlx::query_as("SELECT id FROM catalog_entries WHERE id = $1")
+            .bind(&id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
+
+        if existing.is_none() {
+            break;
+        }
+
+        id = format!("{}-{}", base_id, suffix);
+        suffix += 1;
+    }
+
+    // Insert the catalog entry
+    sqlx::query(
+        "INSERT INTO catalog_entries (id, question, source, added_at) VALUES ($1, $2, $3, now())"
+    )
+    .bind(&id)
+    .bind(question)
+    .bind(source)
+    .execute(pool)
+    .await
+    .map(|_| id)
+    .map_err(|e| e.to_string())
+}
+
+/// Update submission with a partial patch. Only updates fields present in the patch.
+/// Supports: status, rejectionReason, category, question.
+pub async fn update_submission(
+    pool: &Option<PgPool>,
+    id: &str,
+    patch: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let patch_obj = patch.as_object().ok_or("patch must be an object")?;
+
+    if patch_obj.is_empty() {
+        return Ok(()); // Nothing to update
+    }
+
+    // Build a simple SQL query for each field; chain multiple updates if needed
+    let mut updates = Vec::new();
+
+    if let Some(status) = patch_obj.get("status").and_then(|v| v.as_str()) {
+        updates.push((
+            "UPDATE submissions SET status = $1, updated_at = now() WHERE id = $2",
+            status.to_string(),
+        ));
+    }
+
+    if let Some(reason) = patch_obj.get("rejectionReason").and_then(|v| v.as_str()) {
+        updates.push((
+            "UPDATE submissions SET rejection_reason = $1, updated_at = now() WHERE id = $2",
+            reason.to_string(),
+        ));
+    }
+
+    if let Some(question) = patch_obj.get("question") {
+        // For question, we need to handle JSON differently
+        sqlx::query(
+            "UPDATE submissions SET question = $1, updated_at = now() WHERE id = $2"
+        )
+        .bind(question)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    // Execute non-JSON updates
+    for (query_str, value) in updates {
+        sqlx::query(query_str)
+            .bind(&value)
+            .bind(id)
+            .execute(pool)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+/// Fetch a submission by id. Returns the full submission including question object.
+pub async fn get_submission_by_id(
+    pool: &Option<PgPool>,
+    id: &str,
+) -> Option<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return None,
+    };
+
+    let row: Option<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
+        sqlx::query_as(
+            "SELECT id, submitted_by, status, question, submitted_at FROM submissions WHERE id = $1"
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten();
+
+    row.map(|(id, submitted_by, status, question, submitted_at)| {
+        serde_json::json!({
+            "id": id,
+            "submittedBy": submitted_by,
+            "submittedAt": submitted_at.to_rfc3339(),
+            "status": status,
+            "question": question,
+        })
+    })
+}
+
+/// Append a question to a quiz. Reads the quiz, appends the question, and writes back.
+pub async fn append_question_to_quiz(
+    pool: &Option<PgPool>,
+    quiz_id: &str,
+    question: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // Fetch current quiz
+    let row: Option<(serde_json::Value,)> = sqlx::query_as(
+        "SELECT questions FROM quizzes WHERE id = $1"
+    )
+    .bind(quiz_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut questions = match row {
+        Some((qs,)) => {
+            match qs.as_array() {
+                Some(arr) => arr.clone(),
+                None => return Err("Invalid questions format".to_string()),
+            }
+        }
+        None => return Err(format!("Quiz \"{}\" not found", quiz_id)),
+    };
+
+    // Append the new question
+    questions.push(question.clone());
+
+    // Update the quiz
+    sqlx::query(
+        "UPDATE quizzes SET questions = $1, updated_at = now() WHERE id = $2"
+    )
+    .bind(serde_json::json!(questions))
+    .bind(quiz_id)
+    .execute(pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}

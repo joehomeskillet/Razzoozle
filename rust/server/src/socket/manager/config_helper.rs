@@ -52,8 +52,8 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     socket.emit(constants::manager::CONFIG, &payload).ok();
 }
 
-/// Build QuizzWithId array from registry and database
-/// Each quiz includes its id plus the quiz fields (subject, questions, archived, theme_id)
+/// Build QuizzMeta array from registry: {id, subject, archived, questionCount}
+/// (NOT the full questions array — matches Node's getQuizzMeta behavior)
 async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
     let registry = ctx.registry.read().await;
     let quiz_ids = registry.list_quiz_ids();
@@ -63,12 +63,12 @@ async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
     for id in quiz_ids {
         let registry = ctx.registry.read().await;
         if let Some(quiz) = registry.get_quiz_by_id(&id) {
+            let question_count = quiz.questions.len();
             let quizz_obj = serde_json::json!({
                 "id": id,
                 "subject": quiz.subject,
-                "questions": quiz.questions,
                 "archived": quiz.archived,
-                "themeId": quiz.theme_id,
+                "questionCount": question_count,
             });
             quizz.push(quizz_obj);
         }
