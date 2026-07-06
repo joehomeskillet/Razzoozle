@@ -87,7 +87,6 @@
     position: sticky; top: 0; z-index: 40;
     background: color-mix(in srgb, var(--cream-page) 86%, white);
     border-bottom: 1px solid var(--hairline);
-    backdrop-filter: saturate(1.1);
   }
   .header-row { display: flex; align-items: center; gap: 1rem; min-height: 64px; }
   .brandmark { display: flex; align-items: center; gap: .55rem; text-decoration: none; }
@@ -139,7 +138,7 @@
   .stat .n { font-size: 1.6rem; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
   .stat .l { font-size: .82rem; color: var(--ink-soft); }
 
-  /* Hero visual — phone-join mock card (intentional layout, not a stock card) */
+  /* Hero visual — phone-join mock card */
   .hero-visual { position: relative; }
   .mock {
     background: var(--surface); border: 1px solid var(--hairline); border-radius: 22px;
@@ -170,6 +169,22 @@
   h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); line-height: 1.12; letter-spacing: -.025em; font-weight: 800; margin: 0 0 .7rem; color: var(--ink); }
   .section-head p { font-size: 1.05rem; color: var(--ink-soft); margin: 0; }
 
+  /* ===== Rust backend section ===== */
+  .rust-band { background: color-mix(in srgb, var(--primary) 4%, white); border-block: 1px solid var(--hairline); }
+  .rust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
+  @media (max-width: 880px) { .rust-grid { grid-template-columns: 1fr; } }
+  .rust-list { display: flex; flex-direction: column; gap: 1.2rem; }
+  .rust-item { display: flex; gap: 1rem; }
+  .rust-item .ico { flex: 0 0 28px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--primary) 16%, white); color: var(--primary-deep); border-radius: 8px; font-weight: 700; font-size: .92rem; }
+  .rust-item-text h3 { font-size: 1.02rem; font-weight: 700; margin: 0 0 .3rem; color: var(--ink); }
+  .rust-item-text p { font-size: .94rem; color: var(--ink-soft); margin: 0; }
+  .rust-visual { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 1.5rem; box-shadow: var(--shadow-flat); }
+  .rust-visual h3 { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 1rem; display: flex; align-items: center; gap: .6rem; }
+  .rust-visual h3::before { content: ""; display: block; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; }
+  .code-block { background: color-mix(in srgb, var(--ink) 4%, white); border: 1px solid var(--hairline); border-radius: 10px; padding: 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; color: var(--ink); line-height: 1.5; overflow-x: auto; }
+  .code-block span { display: block; }
+  .code-block .comment { color: var(--ink-soft); }
+
   /* ===== Tech stack grid ===== */
   .stack-band { background: color-mix(in srgb, var(--cream) 60%, white); border-block: 1px solid var(--hairline); }
   .stack-group { margin-bottom: 2rem; }
@@ -181,7 +196,6 @@
   @media (prefers-reduced-motion: reduce) { .logo-card:hover, .feature:hover { transform: none; } }
   .logo-card img { width: 30px; height: 30px; object-fit: contain; }
   .logo-card .lname { font-size: .8rem; font-weight: 600; color: var(--ink); }
-  /* text pills for stack items without a Simple Icons slug */
   .logo-card .pill { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--primary) 12%, white); color: var(--primary-deep); font-weight: 800; font-size: .95rem; border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--hairline)); }
 
   /* ===== Feature cards ===== */
@@ -220,7 +234,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
 .logo-card:hover .lsvg,.logo-card:focus-within .lsvg{opacity:1}
 .logo-card:hover img,.logo-card:focus-within img{filter:none;opacity:1}
 .site{transition:box-shadow .25s ease,background-color .25s ease}
-.site.scrolled{box-shadow:0 1px 0 var(--border-hairline),0 10px 28px -18px rgba(14,17,32,.22)}
+.site.scrolled{box-shadow:0 1px 0 var(--hairline),0 10px 28px -18px rgba(14,17,32,.22)}
 .hero{position:relative;isolation:isolate}
 .hero::before{content:"";position:absolute;inset:-12% -10% auto -10%;height:55%;background:radial-gradient(55% 60% at 50% 0,rgba(124,58,237,.10),rgba(255,153,0,.05) 45%,transparent 72%);pointer-events:none;z-index:-1}
 @media (prefers-reduced-motion: reduce){html.js [data-reveal]{opacity:1!important;transform:none!important;transition:none}.logo-card img{transition:none}}
@@ -228,7 +242,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
 .showcase-row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);align-items:center;margin-top:clamp(40px,7vw,88px)}
 .showcase-row:first-of-type{margin-top:clamp(32px,5vw,56px)}
 .showcase-row:nth-child(even) .shot-wrap{order:2}
-.shot{width:100%;height:auto;border-radius:16px;border:1px solid var(--border-hairline);box-shadow:0 28px 64px -34px rgba(14,17,32,.32);display:block}
+.shot{width:100%;height:auto;border-radius:16px;border:1px solid var(--hairline);box-shadow:0 28px 64px -34px rgba(14,17,32,.32);display:block}
 .shot.portrait{max-width:300px;margin-inline:auto}
 .shot-copy h3{font-size:clamp(1.35rem,2.4vw,1.85rem);line-height:1.15;margin:0 0 .5rem}
 .shot-copy p{color:#3a3a42;max-width:46ch}
@@ -286,7 +300,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
         <p class="eyebrow" data-i18n="hero.eyebrow">Open-source · self-hosted</p>
         <img class="hero-logo" src="razzoozle-logo.svg" alt="Razzoozle" />
         <h1 id="hero-title" data-i18n="hero.title" data-i18n-html>Live quizzes, <span class="hl">your way</span>.</h1>
-        <p class="lede" data-i18n="hero.lede">A self-hosted, real-time Kahoot-style quiz platform. Host on the big screen, players join by PIN on their phones, and everyone races to answer.</p>
+        <p class="lede" data-i18n="hero.lede">A self-hosted, real-time quiz game for classrooms, events and game nights. A host opens a game on the big screen, players join by PIN on their phones, and everyone races to answer.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="https://github.com/joehomeskillet/Razzoozle" rel="noopener">
             <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
@@ -403,6 +417,66 @@ html.js [data-reveal].in{opacity:1;transform:none}
     </div>
   </section>
 
+  <!-- ===== Rust backend section ===== -->
+  <div class="rust-band">
+    <section aria-labelledby="rust-title">
+      <div class="wrap">
+        <div class="section-head center">
+          <p class="kicker" data-i18n="rust.kicker">Powered by Rust</p>
+          <h2 id="rust-title" data-i18n="rust.title">A memory-safe game engine</h2>
+          <p data-i18n="rust.sub">The Rust server is now the default backend. It shares a single Postgres database with the Node server and speaks the exact same socket.io protocol — no client changes needed.</p>
+        </div>
+
+        <div class="rust-grid">
+          <div class="rust-list">
+            <div class="rust-item">
+              <div class="ico">🦀</div>
+              <div class="rust-item-text">
+                <h3 data-i18n="rust.f1.t">Feature-complete preview</h3>
+                <p data-i18n="rust.f1.d">Full scored multi-question games, all 7 question types, player reconnect, manager auth, quiz disk loading, AI media and a real-game CI gate that plays 100-player games on every deploy.</p>
+              </div>
+            </div>
+            <div class="rust-item">
+              <div class="ico">🔐</div>
+              <div class="rust-item-text">
+                <h3 data-i18n="rust.f2.t">Twin architecture</h3>
+                <p data-i18n="rust.f2.d">Node and Rust backends run side-by-side, share one Postgres database as the source of truth, and are client-selectable. Rust is now the global default.</p>
+              </div>
+            </div>
+            <div class="rust-item">
+              <div class="ico">⚡</div>
+              <div class="rust-item-text">
+                <h3 data-i18n="rust.f3.t">Compile-checked game state</h3>
+                <p data-i18n="rust.f3.d">The game's state machine (Lobby → Round → Reveal → Scoreboard) is compile-time-checked. Single static binary, no runtime overhead, easier to ship as a Tauri desktop app.</p>
+              </div>
+            </div>
+            <div class="rust-item">
+              <div class="ico">📦</div>
+              <div class="rust-item-text">
+                <h3 data-i18n="rust.f4.t">Typed wire protocol</h3>
+                <p data-i18n="rust.f4.d">~200 socket.io events as Rust types, ts-rs auto-generates TypeScript bindings. Rust is the source of truth — zero drift between server and client types.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rust-visual">
+            <h3 data-i18n="rust.archTitle">Three crates, one binary</h3>
+            <div class="code-block">
+              <span><strong>protocol/</strong> — ~200 types, ts-rs</span>
+              <span class="comment">  socket events, payloads (Rust is source)</span>
+              <span></span>
+              <span><strong>engine/</strong> — pure game logic</span>
+              <span class="comment">  scoring, sentence-builder, shuffling</span>
+              <span></span>
+              <span><strong>server/</strong> — axum + socketioxide</span>
+              <span class="comment">  lobby, rounds, real-time sync, DB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <!-- ===== Tech stack ===== -->
   <div class="stack-band">
     <section aria-labelledby="stack-title">
@@ -410,7 +484,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
         <div class="section-head">
           <p class="kicker" data-i18n="stack.kicker">Under the hood</p>
           <h2 id="stack-title" data-i18n="stack.title">A modern, typed stack</h2>
-          <p data-i18n="stack.sub">A pnpm monorepo — React + Vite on the front, Node + Socket.IO on the back, shared Zod-validated types, shipped as a single Docker image.</p>
+          <p data-i18n="stack.sub">A pnpm monorepo — React + Vite + Tailwind on the front, dual backend (Node.js or Rust), shared Zod-validated types, shipped as a single Docker image.</p>
         </div>
 
         <div class="stack-group">
@@ -428,11 +502,12 @@ html.js [data-reveal].in{opacity:1;transform:none}
         </div>
 
         <div class="stack-group">
-          <h3 data-i18n="stack.backend">Backend</h3>
+          <h3 data-i18n="stack.backend">Backend (dual)</h3>
           <div class="logo-grid">
             <div class="logo-card"><img src="https://cdn.simpleicons.org/nodedotjs" alt="" loading="lazy" /><span class="lname">Node.js</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/socketdotio" alt="" loading="lazy" /><span class="lname">Socket.IO</span></div>
-            <div class="logo-card" title="Rust rewrite: feature-complete preview server on its own port, running alongside the Node server that powers every live game today"><img src="https://cdn.simpleicons.org/rust" alt="" loading="lazy" /><span class="lname">Rust (rewrite preview)</span></div>
+            <div class="logo-card"><img src="https://cdn.simpleicons.org/rust" alt="" loading="lazy" /><span class="lname">Rust (default)</span></div>
+            <div class="logo-card"><img src="https://cdn.simpleicons.org/postgresql" alt="" loading="lazy" /><span class="lname">Postgres</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/zod" alt="" loading="lazy" /><span class="lname">Zod</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/i18next" alt="" loading="lazy" /><span class="lname">i18next</span></div>
             <div class="logo-card"><img src="https://cdn.simpleicons.org/prometheus" alt="" loading="lazy" /><span class="lname">Prometheus</span></div>
@@ -630,7 +705,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
 (function () {
   "use strict";
 
-  // ===== i18n dictionary (copy mined from README.md / README.de.md / README.zh.md) =====
+  // ===== i18n dictionary (6 languages: en, de, zh, es, fr, it) =====
   var I18N = {
     en: {
       "metaDesc": "Razzoozle is a self-hosted, open-source, real-time Kahoot-style quiz platform. Host on the big screen, players join by PIN on their phones — live leaderboards, achievements, teams, solo share-links, themable skeletons, PWA.",
@@ -647,11 +722,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "Game PIN",
       "hero.mockLive": "12 joined",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "Powered by Rust",
+      "rust.title": "A memory-safe game engine",
+      "rust.sub": "The Rust server is now the default backend. It shares a single Postgres database with the Node server and speaks the exact same socket.io protocol — no client changes needed.",
+      "rust.f1.t": "Feature-complete preview",
+      "rust.f1.d": "Full scored multi-question games, all 7 question types, player reconnect, manager auth, quiz disk loading, AI media and a real-game CI gate that plays 100-player games on every deploy.",
+      "rust.f2.t": "Twin architecture",
+      "rust.f2.d": "Node and Rust backends run side-by-side, share one Postgres database as the source of truth, and are client-selectable. Rust is now the global default.",
+      "rust.f3.t": "Compile-checked game state",
+      "rust.f3.d": "The game's state machine (Lobby → Round → Reveal → Scoreboard) is compile-time-checked. Single static binary, no runtime overhead, easier to ship as a Tauri desktop app.",
+      "rust.f4.t": "Typed wire protocol",
+      "rust.f4.d": "~200 socket.io events as Rust types, ts-rs auto-generates TypeScript bindings. Rust is the source of truth — zero drift between server and client types.",
+      "rust.archTitle": "Three crates, one binary",
       "stack.kicker": "Under the hood",
       "stack.title": "A modern, typed stack",
-      "stack.sub": "A pnpm monorepo — React + Vite + Tailwind on the front, Node + Socket.IO + Express on the back, shared Zod-validated types, shipped as a single Docker image.",
+      "stack.sub": "A pnpm monorepo — React + Vite + Tailwind on the front, dual backend (Node.js or Rust), shared Zod-validated types, shipped as a single Docker image.",
       "stack.frontend": "Frontend",
-      "stack.backend": "Backend",
+      "stack.backend": "Backend (dual)",
       "stack.tooling": "Tooling & delivery",
       "feat.kicker": "Built for game nights",
       "feat.title": "Everything a live quiz needs",
@@ -742,11 +829,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "Spiel-PIN",
       "hero.mockLive": "12 beigetreten",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "Angetrieben von Rust",
+      "rust.title": "Ein speichersicheres Spiel-Backend",
+      "rust.sub": "Der Rust-Server ist jetzt das Standard-Backend. Er teilt sich eine Postgres-Datenbank mit dem Node-Server und spricht das gleiche socket.io-Protokoll — keine Client-Änderungen nötig.",
+      "rust.f1.t": "Feature-vollständige Vorschau",
+      "rust.f1.d": "Vollwertige Multi-Fragen-Spiele, alle 7 Fragetypen, Player-Reconnect, Manager-Auth, Quiz-Laden von der Festplatte, KI-Medien und ein Real-Game-CI-Gate, das bei jedem Deploy 100-Player-Spiele spielt.",
+      "rust.f2.t": "Zwillingsarchitektur",
+      "rust.f2.d": "Node- und Rust-Backends laufen nebeneinander, teilen sich eine Postgres-Datenbank als Single Source of Truth und sind per Client wählbar. Rust ist jetzt der globale Standard.",
+      "rust.f3.t": "Compile-Zeit-geprüfter Spielzustand",
+      "rust.f3.d": "Die State Machine des Spiels (Lobby → Round → Reveal → Scoreboard) wird zur Compile-Zeit überprüft. Ein einziger statischer Binary, kein Runtime-Overhead, leichter als Tauri-Desktop-App zu versenden.",
+      "rust.f4.t": "Typsicheres Wire-Protokoll",
+      "rust.f4.d": "~200 Socket.IO-Events als Rust-Typen, ts-rs generiert automatisch TypeScript-Bindings. Rust ist die Single Source of Truth — kein Drift zwischen Server- und Client-Typen.",
+      "rust.archTitle": "Drei Crates, ein Binary",
       "stack.kicker": "Unter der Haube",
       "stack.title": "Ein moderner, typsicherer Stack",
-      "stack.sub": "Ein pnpm-Monorepo — React + Vite + Tailwind im Frontend, Node + Socket.IO + Express im Backend, geteilte Zod-validierte Typen, ausgeliefert als ein einziges Docker-Image.",
+      "stack.sub": "Ein pnpm-Monorepo — React + Vite + Tailwind im Frontend, duales Backend (Node.js oder Rust), geteilte Zod-validierte Typen, ausgeliefert als ein einziges Docker-Image.",
       "stack.frontend": "Frontend",
-      "stack.backend": "Backend",
+      "stack.backend": "Backend (dual)",
       "stack.tooling": "Tooling & Auslieferung",
       "feat.kicker": "Gemacht für Spieleabende",
       "feat.title": "Alles, was ein Live-Quiz braucht",
@@ -758,13 +857,13 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f3.t": "Team-Modus & Solo-Spiel",
       "feat.f3.d": "Rote, blaue, grüne und gelbe Teams mit einer Live-Team-Rangliste — oder übe jedes Quiz allein über einen Solo-Teilen-Link mit eigener Punkte-Historie.",
       "feat.f4.t": "Theme-Cockpit & Skeletons",
-      "feat.f4.d": "Ein Live-„Design“-Tab im Manager — Farben, Hintergründe pro Ansicht, Logo, Radius und ein Flat-⇄-Glass-Umschalter. Lade ein ganzes Spiel-Theme als LLM-lesbares Skeleton-ZIP herunter oder hoch.",
+      "feat.f4.d": "Ein Live-„Design"-Tab im Manager — Farben, Hintergründe pro Ansicht, Logo, Radius und ein Flat-⇄-Glass-Umschalter. Lade ein ganzes Spiel-Theme als LLM-lesbares Skeleton-ZIP herunter oder hoch.",
       "feat.f5.t": "PWA, Haptik & Offline",
       "feat.f5.d": "Installierbar und offline-fähig, mit optionalem Vibrations-Feedback auf Spieler-Handys für Countdown und Antworten — durchgehend reduced-motion-bewusst.",
       "feat.f6.t": "Lokale KI-Bilder",
       "feat.f6.d": "Erzeuge Bilder für Fragen und Themes direkt auf dem Gerät über ComfyUI (Z-Image), oder binde einen Cloud-Anbieter ein — die Schlüssel bleiben serverseitig.",
       "feat.f7.t": "Teilbare Ergebnisse & Plugins",
-      "feat.f7.d": "Schöne Open-Graph-Link-Vorschauen, eine Ergebnisseite mit „Selbst spielen“-CTAs, herunterladbare Gewinner-Sticker, dazu ein vom Manager installierbares Plugin- und Addon-System.",
+      "feat.f7.d": "Schöne Open-Graph-Link-Vorschauen, eine Ergebnisseite mit „Selbst spielen"-CTAs, herunterladbare Gewinner-Sticker, dazu ein vom Manager installierbares Plugin- und Addon-System.",
       "feat.f8.t": "Beamer-Kiosk & Zuverlässigkeit",
       "feat.f8.d": "Eine /display-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung und Reconnect sowie ein MCP-Server zur Steuerung durch KI-Tools — gehärtet und lastgetestet bis 600 Spielende.",
       "feat.f9.t": "Spieler-Avatare",
@@ -775,7 +874,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Erstelle Quizze direkt im Manager: mehrere Fragetypen, ein Medien-Picker für Bilder und ein importierbarer Fragenkatalog — kein JSON-Gebastel nötig.",
       "feat.f12.t": "Spricht deine Sprache",
       "feat.f12.d": "Vollständige Oberfläche auf Englisch, Deutsch, Chinesisch, Spanisch, Französisch und Italienisch mit sofortigem Umschalten — Spielende und Gastgeber bekommen jeweils ihre eigene Sprache.",
-
       "feat.f13.t": "Satz-Builder-Fragen",
       "feat.f13.d": "Ein neuer Fragetyp — Spielende tippen auf durchmischte Wort-Chunks, um einen Satz in der richtigen Reihenfolge zu rekonstruieren, toll für Sprachen, Definitionen und Reihenfolgen.",
       "modes.kicker": "Wie auch immer du spielst",
@@ -819,8 +917,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r6.p": "Teile einen Solo-Link und spiele jedes Quiz allein in deinem Tempo, mit eigener Punktehistorie — ideal zum Üben oder für asynchrones Spielen.",
       "show.r6.alt": "Der Solo-Spielbildschirm mit vier Antwortfeldern",
       "show.r7.h": "Ein Live-Theme-Cockpit",
-      "show.r7.p": "Färbe das ganze Spiel im „Design“-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
-      "show.r7.alt": "Der „Design“-Tab im Manager — ein Live-Theme-Cockpit",
+      "show.r7.p": "Färbe das ganze Spiel im „Design"-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
+      "show.r7.alt": "Der „Design"-Tab im Manager — ein Live-Theme-Cockpit",
       "footer.note": "Frei und quelloffen unter der MIT-Lizenz. Selbst hosten — die Live-Instanz ist nur lokal erreichbar. Ein freundlicher Fork von <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Steht in keiner Verbindung zu Kahoot!®"
     },
     zh: {
@@ -838,11 +936,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "游戏 PIN 码",
       "hero.mockLive": "已加入 12 人",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "由 Rust 驱动",
+      "rust.title": "内存安全的游戏引擎",
+      "rust.sub": "Rust 服务器现在是默认后端。它与 Node 服务器共享单个 Postgres 数据库，并使用完全相同的 socket.io 协议 —— 无需修改客户端。",
+      "rust.f1.t": "功能完整的预览版",
+      "rust.f1.d": "完整的多题游戏、全部 7 种题型、玩家断线重连、管理员认证、从磁盘加载测验、AI 媒体，以及在每次部署时都运行 100 名玩家游戏的实际游戏 CI 门。",
+      "rust.f2.t": "双服务器架构",
+      "rust.f2.d": "Node 和 Rust 后端并行运行，共享一个 Postgres 数据库作为唯一数据源，并且可由客户端选择。Rust 现在是全局默认值。",
+      "rust.f3.t": "编译时检查的游戏状态",
+      "rust.f3.d": "游戏的状态机（Lobby → Round → Reveal → Scoreboard）在编译时被检查。单一静态二进制文件，无运行时开销，更易于作为 Tauri 桌面应用程序交付。",
+      "rust.f4.t": "类型安全的 Wire 协议",
+      "rust.f4.d": "约 200 个 Socket.IO 事件作为 Rust 类型，ts-rs 自动生成 TypeScript 绑定。Rust 是唯一的真实来源 —— 服务器和客户端类型之间零漂移。",
+      "rust.archTitle": "三个 Crate，一个二进制",
       "stack.kicker": "技术内核",
       "stack.title": "现代、类型安全的技术栈",
-      "stack.sub": "一个 pnpm monorepo —— 前端是 React + Vite + Tailwind，后端是 Node + Socket.IO + Express，共享 Zod 校验的类型，以单个 Docker 镜像交付。",
+      "stack.sub": "一个 pnpm monorepo —— 前端是 React + Vite + Tailwind，双后端（Node.js 或 Rust），共享 Zod 校验的类型，以单个 Docker 镜像交付。",
       "stack.frontend": "前端",
-      "stack.backend": "后端",
+      "stack.backend": "后端（双）",
       "stack.tooling": "工具与交付",
       "feat.kicker": "为游戏之夜打造",
       "feat.title": "实时答题所需的一切",
@@ -854,13 +964,13 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f3.t": "团队模式与单人玩法",
       "feat.f3.d": "红、蓝、绿、黄队配实时团队排行榜 —— 或通过单人分享链接独自练习任意测验，拥有自己的得分历史。",
       "feat.f4.t": "主题驾驶舱与 Skeleton",
-      "feat.f4.d": "一个实时的管理员“设计”标签页 —— 颜色、各视图背景、Logo、圆角，以及一个扁平 ⇄ 玻璃切换开关。把整个游戏主题作为 LLM 可读的 skeleton ZIP 下载或上传。",
+      "feat.f4.d": "一个实时的管理员"设计"标签页 —— 颜色、各视图背景、Logo、圆角，以及一个扁平 ⇄ 玻璃切换开关。把整个游戏主题作为 LLM 可读的 skeleton ZIP 下载或上传。",
       "feat.f5.t": "PWA、触感与离线",
       "feat.f5.d": "可安装、支持离线感知，玩家手机上提供可选的倒计时和答题振动反馈 —— 全程尊重 reduced-motion。",
       "feat.f6.t": "本地 AI 图像",
       "feat.f6.d": "通过 ComfyUI（Z-Image）在本地设备上生成题目和主题图像，或接入云端服务商 —— 密钥始终留在服务端。",
       "feat.f7.t": "可分享的结果与插件",
-      "feat.f7.d": "精美的 Open Graph 链接预览、带“自己来玩”行动号召的结果页、可下载的获胜者贴纸，外加可由管理员安装的插件与附加组件系统。",
+      "feat.f7.d": "精美的 Open Graph 链接预览、带"自己来玩"行动号召的结果页、可下载的获胜者贴纸，外加可由管理员安装的插件与附加组件系统。",
       "feat.f8.t": "投影仪 kiosk 与可靠性",
       "feat.f8.d": "一个 /display 投影仪视图、低延迟模式、崩溃恢复与断线重连，以及一个用于 AI 工具控制的 MCP 服务器 —— 经过加固并完成 600 名玩家的负载测试。",
       "feat.f9.t": "玩家头像",
@@ -914,8 +1024,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r6.p": "分享一个单人链接，按自己的节奏独自游玩任意测验，并有独立的分数记录——非常适合练习或异步游玩。",
       "show.r6.alt": "带四个选项的单人游玩画面",
       "show.r7.h": "实时主题驾驶舱",
-      "show.r7.p": "在管理员“设计”标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
-      "show.r7.alt": "管理员“设计”标签——实时主题驾驶舱",
+      "show.r7.p": "在管理员"设计"标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
+      "show.r7.alt": "管理员"设计"标签——实时主题驾驶舱",
       "footer.note": "基于 MIT 许可证免费开源。请自行托管 —— 在线实例仅限本地访问。它是 <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a> 的一个友好分支。与 Kahoot!® 无任何关联。"
     },
     es: {
@@ -933,11 +1043,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "PIN de la partida",
       "hero.mockLive": "12 conectados",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "Impulsado por Rust",
+      "rust.title": "Un motor de juego seguro en memoria",
+      "rust.sub": "El servidor Rust ahora es el backend predeterminado. Comparte una sola base de datos Postgres con el servidor Node y utiliza el protocolo socket.io exacto — sin cambios de cliente necesarios.",
+      "rust.f1.t": "Vista previa completa",
+      "rust.f1.d": "Juegos completos de múltiples preguntas, todos los 7 tipos de preguntas, reconexión de jugadores, autenticación del administrador, carga de cuestionarios desde disco, medios de IA y una puerta de CI de juego real que juega partidas de 100 jugadores en cada implementación.",
+      "rust.f2.t": "Arquitectura gemela",
+      "rust.f2.d": "Los backends de Node y Rust se ejecutan lado a lado, comparten una base de datos Postgres como fuente única de verdad y son seleccionables por cliente. Rust es ahora el valor predeterminado global.",
+      "rust.f3.t": "Estado del juego verificado en tiempo de compilación",
+      "rust.f3.d": "La máquina de estado del juego (Lobby → Round → Reveal → Scoreboard) se verifica en tiempo de compilación. Un único binario estático, sin sobrecarga en tiempo de ejecución, más fácil de enviar como aplicación Tauri de escritorio.",
+      "rust.f4.t": "Protocolo de cable tipado",
+      "rust.f4.d": "~200 eventos Socket.IO como tipos Rust, ts-rs genera automáticamente vinculaciones TypeScript. Rust es la fuente única de verdad — cero desviación entre tipos de servidor y cliente.",
+      "rust.archTitle": "Tres crates, un binario",
       "stack.kicker": "Bajo el capó",
       "stack.title": "Un stack moderno y tipado",
-      "stack.sub": "Un monorepo de pnpm — React + Vite + Tailwind en el front, Node + Socket.IO + Express en el back, tipos compartidos validados con Zod y todo entregado como una única imagen de Docker.",
+      "stack.sub": "Un monorepo de pnpm — React + Vite + Tailwind en el front, backend dual (Node.js o Rust), tipos compartidos validados con Zod y todo entregado como una única imagen de Docker.",
       "stack.frontend": "Frontend",
-      "stack.backend": "Backend",
+      "stack.backend": "Backend (dual)",
       "stack.tooling": "Herramientas y despliegue",
       "feat.kicker": "Hecho para noches de juegos",
       "feat.title": "Todo lo que necesita un cuestionario en vivo",
@@ -966,7 +1088,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Crea cuestionarios desde el panel: varios tipos de pregunta, un selector de medios para imágenes y un catálogo de cuestionarios importable — sin tener que pelearte con JSON.",
       "feat.f12.t": "Habla tu idioma",
       "feat.f12.d": "Interfaz completa en inglés, alemán, chino, español, francés e italiano con cambio instantáneo — cada jugador y anfitrión usa su propio idioma.",
-
       "feat.f13.t": "Preguntas de constructor de frases",
       "feat.f13.d": "Un nuevo tipo de pregunta — los jugadores tocan fragmentos de palabras barajados para reconstruir una frase en el orden correcto, excelente para idiomas, definiciones y secuencias.",
       "modes.kicker": "Como prefieras jugar",
@@ -1029,11 +1150,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "PIN de la partie",
       "hero.mockLive": "12 connectés",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "Propulsé par Rust",
+      "rust.title": "Un moteur de jeu sûr en mémoire",
+      "rust.sub": "Le serveur Rust est maintenant le backend par défaut. Il partage une seule base de données Postgres avec le serveur Node et utilise le protocole socket.io exact — aucun changement de client requis.",
+      "rust.f1.t": "Aperçu complet",
+      "rust.f1.d": "Jeux multi-questions complets, tous les 7 types de questions, reconnexion des joueurs, authentification du gestionnaire, chargement de quiz depuis le disque, médias IA et une porte CI de jeu réel qui joue des parties de 100 joueurs à chaque déploiement.",
+      "rust.f2.t": "Architecture jumelle",
+      "rust.f2.d": "Les backends Node et Rust s'exécutent côte à côte, partagent une seule base de données Postgres comme source unique de vérité et sont sélectionnables par le client. Rust est maintenant le paramètre par défaut global.",
+      "rust.f3.t": "État du jeu vérifié au moment de la compilation",
+      "rust.f3.d": "La machine d'état du jeu (Lobby → Round → Reveal → Scoreboard) est vérifiée au moment de la compilation. Un seul binaire statique, aucune surcharge d'exécution, plus facile à déployer sous forme d'application Tauri de bureau.",
+      "rust.f4.t": "Protocole filaire typé",
+      "rust.f4.d": "~200 événements Socket.IO sous forme de types Rust, ts-rs génère automatiquement les liaisons TypeScript. Rust est la source unique de vérité — zéro dérive entre les types serveur et client.",
+      "rust.archTitle": "Trois crates, un binaire",
       "stack.kicker": "Sous le capot",
       "stack.title": "Une stack moderne et typée",
-      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind côté front, Node + Socket.IO + Express côté back, des types partagés validés par Zod, le tout livré sous forme d'une seule image Docker.",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind côté front, backend dual (Node.js ou Rust), des types partagés validés par Zod, le tout livré sous forme d'une seule image Docker.",
       "stack.frontend": "Frontend",
-      "stack.backend": "Backend",
+      "stack.backend": "Backend (dual)",
       "stack.tooling": "Outils et déploiement",
       "feat.kicker": "Conçu pour les soirées jeux",
       "feat.title": "Tout ce qu'il faut pour un quiz en direct",
@@ -1062,7 +1195,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Créez des quiz dans le manager : plusieurs types de questions, un sélecteur de médias pour les images et un catalogue de quiz importable — sans avoir à bricoler du JSON.",
       "feat.f12.t": "Parle votre langue",
       "feat.f12.d": "Interface complète en anglais, allemand, chinois, espagnol, français et italien avec un changement instantané — chaque joueur et animateur a sa propre langue.",
-
       "feat.f13.t": "Questions de constructeur de phrases",
       "feat.f13.d": "Un nouveau type de question — les joueurs appuient sur des fragments de mots mélangés pour reconstruire une phrase dans le bon ordre, parfait pour les langues, les définitions et les séquences.",
       "modes.kicker": "Quelle que soit votre façon de jouer",
@@ -1125,11 +1257,23 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockPin": "PIN della partita",
       "hero.mockLive": "12 connessi",
       "hero.mockTimer": "00:18",
+      "rust.kicker": "Alimentato da Rust",
+      "rust.title": "Un motore di gioco sicuro in memoria",
+      "rust.sub": "Il server Rust è ora il backend predefinito. Condivide un singolo database Postgres con il server Node e utilizza il protocollo socket.io esatto — nessun cambio al client necessario.",
+      "rust.f1.t": "Anteprima completa",
+      "rust.f1.d": "Giochi completi multi-domande, tutti i 7 tipi di domanda, riconnessione del giocatore, autenticazione del gestore, caricamento del quiz da disco, media IA e un gate CI di gioco reale che gioca partite con 100 giocatori ad ogni implementazione.",
+      "rust.f2.t": "Architettura gemella",
+      "rust.f2.d": "I backend Node e Rust vengono eseguiti affiancati, condividono un singolo database Postgres come fonte unica della verità e sono selezionabili per client. Rust è ora l'impostazione predefinita globale.",
+      "rust.f3.t": "Stato del gioco controllato in fase di compilazione",
+      "rust.f3.d": "La macchina di stato del gioco (Lobby → Round → Reveal → Scoreboard) viene controllata in fase di compilazione. Un singolo binario statico, nessun sovraccarico in fase di esecuzione, più facile da distribuire come app Tauri desktop.",
+      "rust.f4.t": "Protocollo cablato tipizzato",
+      "rust.f4.d": "~200 eventi Socket.IO come tipi Rust, ts-rs genera automaticamente le associazioni TypeScript. Rust è la fonte unica della verità — zero divergenza tra i tipi di server e client.",
+      "rust.archTitle": "Tre crate, un binario",
       "stack.kicker": "Sotto il cofano",
       "stack.title": "Uno stack moderno e tipizzato",
-      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind sul front, Node + Socket.IO + Express sul back, tipi condivisi validati con Zod, il tutto distribuito come una singola immagine Docker.",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind sul front, backend dual (Node.js o Rust), tipi condivisi validati con Zod, il tutto distribuito come una singola immagine Docker.",
       "stack.frontend": "Frontend",
-      "stack.backend": "Backend",
+      "stack.backend": "Backend (dual)",
       "stack.tooling": "Strumenti e distribuzione",
       "feat.kicker": "Pensato per le serate di giochi",
       "feat.title": "Tutto ciò che serve a un quiz dal vivo",
@@ -1158,7 +1302,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Crea quiz nel manager: diversi tipi di domanda, un selettore di media per le immagini e un catalogo di quiz importabile — senza dover smanettare con il JSON.",
       "feat.f12.t": "Parla la tua lingua",
       "feat.f12.d": "Interfaccia completa in inglese, tedesco, cinese, spagnolo, francese e italiano con cambio istantaneo — ogni giocatore e conduttore usa la propria lingua.",
-
       "feat.f13.t": "Domande di costruzione di frasi",
       "feat.f13.d": "Un nuovo tipo di domanda — i giocatori toccano frammenti di parole mescolati per ricostruire una frase nell'ordine corretto, perfetto per lingue, definizioni e sequenze.",
       "modes.kicker": "Comunque tu voglia giocare",
@@ -1212,12 +1355,10 @@ html.js [data-reveal].in{opacity:1;transform:none}
   var current = "en";
 
   function pickInitial() {
-    // 1) ?lang= override
     try {
       var q = new URLSearchParams(window.location.search).get("lang");
       if (q && SUPPORTED.indexOf(q) !== -1) return q;
     } catch (e) {}
-    // 2) browser language
     var nav = (navigator.language || navigator.userLanguage || "en").toLowerCase();
     if (nav.indexOf("de") === 0) return "de";
     if (nav.indexOf("zh") === 0) return "zh";
@@ -1231,9 +1372,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
     if (SUPPORTED.indexOf(lang) === -1) lang = "en";
     current = lang;
     var dict = I18N[lang];
-
     document.documentElement.setAttribute("lang", lang === "zh" ? "zh-Hans" : lang);
-
     var nodes = document.querySelectorAll("[data-i18n]");
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -1244,20 +1383,17 @@ html.js [data-reveal].in{opacity:1;transform:none}
       if (attr) {
         el.setAttribute(attr, val);
       } else if (el.hasAttribute("data-i18n-html")) {
-        el.innerHTML = val; // controlled strings from our own dictionary only
+        el.innerHTML = val;
       } else {
         el.textContent = val;
       }
     }
-
-    // language switch button state
     var btns = document.querySelectorAll(".lang-switch button");
     for (var j = 0; j < btns.length; j++) {
       btns[j].setAttribute("aria-pressed", btns[j].getAttribute("data-lang") === lang ? "true" : "false");
     }
   }
 
-  // wire switcher (in-memory + URL, no localStorage)
   document.querySelector(".lang-switch").addEventListener("click", function (ev) {
     var b = ev.target.closest("button[data-lang]");
     if (!b) return;
@@ -1279,7 +1415,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
   var d=document, root=d.documentElement;
   root.classList.add('js');
   var rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var targets = d.querySelectorAll('.hero .stat, .section-head, .feature, .logo-card, .showcase-row, .mode-card');
+  var targets = d.querySelectorAll('.hero .stat, .section-head, .feature, .logo-card, .showcase-row, .mode-card, .rust-item, .rust-visual');
   targets.forEach(function(el,i){ el.setAttribute('data-reveal',''); el.style.transitionDelay = Math.min((i%8)*45,320)+'ms'; });
   if (rm || !('IntersectionObserver' in window)) { targets.forEach(function(el){ el.classList.add('in'); }); }
   else {
