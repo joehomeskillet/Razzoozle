@@ -37,6 +37,7 @@ fn normalize_filename(s: &str) -> String {
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_get(socket, ctx.clone());
     register_save(socket, ctx.clone());
+    register_update(socket, ctx.clone());
     register_delete(socket, ctx.clone());
     register_duplicate(socket, ctx.clone());
     register_set_archived(socket, ctx.clone());
@@ -133,6 +134,70 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
 
                                 let response = serde_json::json!({ "id": id });
                                 socket.emit(constants::quizz::SAVE_SUCCESS, &response).ok();
+                                config_helper::build_and_emit_config(&socket, &ctx).await;
+                            }
+                            Err(e) => {
+                                socket.emit(constants::quizz::ERROR, &e).ok();
+                            }
+                        }
+                    }
+                    _ => {
+                        socket.emit(constants::quizz::ERROR, "errors:quizz.invalidPayload").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::quizz::UPDATE, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .ok();
+                    return;
+                }
+
+                // Update an existing quiz in place: {id, subject, questions[]}.
+                // Keeps the SAME id (matches Node updateQuizz, which returns the input id).
+                let id = payload.get("id").and_then(|v| v.as_str());
+                let subject = payload.get("subject").and_then(|v| v.as_str());
+                let questions = payload.get("questions").and_then(|v| v.as_array());
+
+                match (id, subject, questions) {
+                    (Some(quiz_id), Some(subj), Some(qs))
+                        if !quiz_id.is_empty() && !subj.is_empty() && subj.len() <= 100 && !qs.is_empty() =>
+                    {
+                        if let Err(e) = safe_asset_id(quiz_id) {
+                            socket.emit(constants::quizz::ERROR, &e).ok();
+                            return;
+                        }
+
+                        let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
+
+                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json).await {
+                            Ok(_quiz_id) => {
+                                // Reload registry from DB so a live game uses the edited quiz
+                                {
+                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let mut registry = ctx.registry.write().await;
+                                    registry.reload_quizzes(quizzes);
+                                }
+
+                                let response = serde_json::json!({ "id": quiz_id });
+                                socket.emit(constants::quizz::UPDATE_SUCCESS, &response).ok();
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
                             }
                             Err(e) => {
