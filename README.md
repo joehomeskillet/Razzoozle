@@ -15,50 +15,16 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-default_backend-CE422B?logo=rust&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_backend-available-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust_server-feature--complete_preview-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
-![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
 **[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows app (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
-
----
-
-## 🦀 Rust rewrite — feature-complete preview (not the default)
-
-The Node.js game server (`packages/socket`) is still what runs **production**
-at [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) — every feature in
-this README, all question types, themes/skeletons, gamification, team + solo
-play, DiceBear avatars, local AI images, mobile haptics, 6 locales, ~592 tests,
-load-tested to 600 concurrent players.
-
-In parallel, a ground-up **Rust rewrite** of the game server (`axum` +
-`socketioxide 0.15`) speaks the *identical* socket.io wire protocol, so the
-frontend never notices. It's now **feature-complete**: a full scored
-multi-question game, all 7 question types, player lifecycle + reconnect,
-manager auth, quiz-from-disk, HTTP + solo endpoints, game-control
-(kick/skip/abort/timer), bots, the `/display` kiosk, and AI/media. Shared types
-are generated from Rust via `ts-rs` — the Rust wire types are the source of
-truth. It runs as a **parallel container on `:3012`** alongside Node on
-`:3011` and is exercised on every deploy by a real-game CI gate (a 100-player
-game played to completion + a reconnect test) — but it is **not yet the
-default**; Node stays the production path until a shadow cutover.
-
-**Why Rust:** ship the desktop host as a **~10 MB Tauri app** (Rust sidecar)
-instead of a ~150 MB Electron bundle, a compile-checked game state machine,
-and a single static binary.
-
-A parallel **v2.0 hardening** effort — an adversarial multi-model bughunt (19
-confirmed findings) — is landing fixes on both twins: per-game resource caps +
-game eviction, per-IP rate-limits, a path-traversal allowlist, Unicode-correct
-text matching, and a server-minted host-token auth that closes a cross-game-control
-(IDOR) hole. A modularization / actor-per-game refactor is planned next.
-
-**→ Details, status table, build & run: [`rust/README.md`](rust/README.md)**
 
 ---
 
@@ -67,6 +33,35 @@ text matching, and a server-minted host-token auth that closes a cross-game-cont
 Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and everyone races to answer — faster correct answers score more. It is a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), rebuilt around a clean, flat **cream** design (liquid-glass is now an optional theme) with a manager-driven theming system, gamification, team & solo play and local AI image generation — while keeping the classic Kahoot-style presenter + phone experience (colored answer tiles with shapes, a countdown, a podium).
 
 > Razzoozle is an independent open-source project. It is not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
+
+---
+
+## 🚀 Architecture: Dual Backend (Rust is now default)
+
+Razzoozle ships with a **performant Rust backend as the default**, while keeping the original Node.js server available for compatibility and gradual migration.
+
+### Why Rust?
+
+- **Memory-safe, compile-checked game state machine** — no runtime panics or undefined behavior.
+- **Fast, low-footprint real-time server** — socketioxide + axum handle 600+ concurrent players with minimal overhead.
+- **Single static binary** — ships as a ~10 MB Tauri app (Rust sidecar) instead of ~150 MB Electron + Node runtime.
+- **Behavioral parity** — speaks the identical socket.io wire protocol; frontend and players see zero difference.
+- **Shared source of truth** — both backends read/write the same Postgres database, enabling seamless switching per-client.
+
+### How it works
+
+The **Rust backend** (`rust/` workspace):
+- **`protocol/`** — ~200 wire-protocol types, auto-generates TypeScript bindings via `ts-rs` (Rust is the source of truth).
+- **`engine/`** — pure game logic (sentence-builder chunking, Fisher-Yates shuffle with anti-identity guard).
+- **`server/`** — `axum` HTTP + `socketioxide` real-time server; in-memory game registry; manager auth (host-token); rate-limits + resource caps; quiz loading from disk or database.
+
+**Manager operations** fully implemented in Rust: quiz save/update/delete/duplicate/archive, config management, submissions moderation, catalog, running-games, theme switching — gated by `rust/gate.sh` (cargo build + regression tests).
+
+**Feature parity** with Node server: all 7 question types, player lifecycle + reconnect, game control (kick/skip/abort/timer), bots, `/display` kiosk, AI/media, solo endpoints, team mode.
+
+The **Node backend** (`packages/socket`) remains available for backward compatibility; switch in the manager UI or via `VITE_DEFAULT_BACKEND`.
+
+**→ Details, build & test: [`rust/README.md`](rust/README.md)**
 
 ---
 
@@ -114,7 +109,7 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 | 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
 | 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
 
-Backed by **592 automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game player and active-game caps, rate-limited public endpoints, manager-auth brute-force throttling), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
+Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game resource caps + game eviction, per-IP rate-limits, manager-auth brute-force throttling, server-minted host-token auth closing IDOR), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
 ---
 
@@ -142,7 +137,9 @@ cd Razzoozle
 docker compose up -d
 ```
 
-The app starts on `http://127.0.0.1:3011` (nginx + the socket server in one container). Configuration and user data live in the `./config` volume, created and seeded on first boot. Put it behind your own reverse proxy (Caddy, nginx, Traefik…) for TLS and a public hostname.
+The app starts on `http://127.0.0.1:3011` (nginx + the Rust backend in one container by default). Configuration and user data live in the `./config` volume, created and seeded on first boot. Put it behind your own reverse proxy (Caddy, nginx, Traefik…) for TLS and a public hostname.
+
+To use the Node backend instead, set `VITE_DEFAULT_BACKEND=node` before building, or toggle in the manager UI.
 
 ### 🛠️ Without Docker
 
@@ -151,7 +148,7 @@ git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 pnpm install
 pnpm build        # production build
-pnpm start        # or: pnpm dev  (web + socket, hot reload)
+pnpm start        # or: pnpm dev  (web + Rust backend, hot reload)
 ```
 
 ---
@@ -215,13 +212,15 @@ The AI provider (off / local ComfyUI / cloud) is configured in the manager's **A
 
 ## 🧱 Tech stack
 
-A pnpm monorepo — **`@razzoozle/web`** (React + Vite + Tailwind v4, TanStack Router, PWA), **`@razzoozle/socket`** (Node + Socket.IO + Express, crash-recovery snapshots), **`@razzoozle/common`** (shared Zod-validated types), and **`@razzoozle/mcp`** (an MCP server for AI-tool control). Ships as a single Docker image (nginx + node via supervisord) with a `/healthz` endpoint + Docker `HEALTHCHECK`.
+A pnpm monorepo — **`@razzoozle/web`** (React + Vite + Tailwind v4, TanStack Router, PWA), a **dual backend** (Rust `axum` + `socketioxide` by default, or Node + Socket.IO for compatibility), **`@razzoozle/common`** (shared Zod-validated types, auto-generated from Rust via `ts-rs`), and **`@razzoozle/mcp`** (an MCP server for AI-tool control). Ships as a single Docker image with a `/healthz` endpoint + Docker `HEALTHCHECK`.
+
+**Rust backend** (`rust/` workspace): `razzoozle-protocol` (wire types), `razzoozle-engine` (game logic), `razzoozle-server` (`axum` + `socketioxide`).
 
 ---
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome. Run `pnpm verify` (typecheck + lint + tests) before opening a PR.
+Issues and pull requests are welcome. Run `pnpm verify` (typecheck + lint + tests) before opening a PR. For Rust backend changes, run `cargo test` in `rust/` and verify the CI gate (real-game smoke test) passes.
 
 ---
 

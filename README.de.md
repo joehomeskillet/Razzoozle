@@ -4,7 +4,7 @@
 
 # Razzoozle
 
-### Eine selbst-gehostete, quelloffene Live-Quiz-Plattform — mit klarem, flachem **Cream**-Design (und einem optionalen Liquid-Glass-Theme).
+### Eine selbstgehostete, quelloffene Live-Quiz-Plattform — mit einem sauberen, flachen **Creme**-Design (und einem optionalen Liquid-Glass-Theme).
 
 🌐 [English](README.md) · **Deutsch** · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh.md)
 
@@ -15,12 +15,12 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust_server-default_backend-CE422B?logo=rust&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_backend-available-5FA04E?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socketdotio&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust_server-rewrite_in_progress-CE422B?logo=rust&logoColor=white)
 ![Motion](https://img.shields.io/badge/Motion-0055FF?logo=framer&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-433E38)
-![Tests](https://img.shields.io/badge/tests-592-3DBFA0)
+![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
 **[▶ Live-Demo](https://razzoozle.joelduss.xyz)** · **[🖥️ Razzoozle Desktop — Windows-App (Beta)](https://github.com/joehomeskillet/razzoozle-desktop)** · **[🛰️ Gateway](https://github.com/joehomeskillet/razzloo-gateway)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Problem melden](https://github.com/joehomeskillet/Razzoozle/issues)** · *geforkt von [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
@@ -28,101 +28,95 @@
 
 ---
 
-## 🦀 Rust-Rewrite — funktionsvollständig (noch nicht Standard)
-
-Der Node.js-Spiele-Server (`packages/socket`) ist noch immer das, was in **Produktion**
-unter [razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) läuft — alle Features
-aus dieser README, alle Fragetypen, Themes/Skeletons, Gamification, Team- und Solo-Modus,
-DiceBear-Avatare, lokale KI-Bilder, Mobile-Haptik, 6 Sprachen, ~592 Tests,
-Lasttests bis zu 600 gleichzeitige Spielende.
-
-Parallel läuft ein Neuaufbau des Spiele-Servers in **Rust** (`axum` +
-`socketioxide 0.15`), der das *gleiche* Socket.io-Drahtprotokoll spricht, sodass
-das Frontend nichts merkt. Er ist jetzt **funktionsvollständig**: ein vollständiges
-Spiel mit Punkte-Berechnung und mehreren Fragen, alle 7 Fragetypen, Spieler-Lifecycle + Reconnect,
-Manager-Auth, Quiz-von-Festplatte, HTTP + Solo-Endpoints, Spielkontrolle
-(rauswerfen/überspringen/abbrechen/Timer), Bots, die `/display`-Kiosk-Ansicht und KI/Medien.
-Gemeinsame Typen werden aus Rust via `ts-rs` generiert — die Rust-Drahttypen sind die
-Quelle der Wahrheit. Er läuft als **paralleler Container auf `:3012`** neben Node auf
-`:3011` und wird bei jedem Deployment durch ein echtes Spiel-Gate exercisiert (ein 100-Spieler-Spiel
-bis zum Schluss + ein Reconnect-Test) — aber ist noch **nicht Standard**; Node bleibt
-der Produktions-Weg bis zu einem Shadow-Cutover.
-
-**Warum Rust:** den Desktop-Host als **~10 MB Tauri-App** (Rust-Sidecar)
-ausliefern statt eines ~150 MB Electron-Pakets, eine compile-geprüfte Spielzustand-Maschine,
-und eine einzige statische Binärdatei.
-
-Parallel läuft auch ein **v2.0 Hardening** — ein adversarischer Multi-Modell-Bughunt
-(19 bestätigte Findings) — mit Fixes auf beiden Twins: Ressourcen-Limits pro Spiel +
-Game-Eviction, Pro-IP-Rate-Limits, eine Path-Traversal-Allowlist, Unicode-korrekte
-Textübereinstimmung, und ein vom Server generierter Host-Token für Auth, der ein
-Cross-Game-Kontroll-Loch (IDOR) schließt. Eine Modularisierung / Actor-per-Game-Refactoring
-ist als nächstes geplant.
-
-**→ Details, Status-Tabelle, Build & Run: [`rust/README.md`](rust/README.md)**
-
----
-
 ## 🧩 Was ist das?
 
-Razzoozle ist ein selbstgehostetes, Echtzeit-**Quizspiel** für Klassenzimmer, Events und Spieleabende. Eine Gastgeberin oder ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, die Spielenden treten per PIN von ihren Handys aus bei, und alle wetteifern um die schnellste Antwort — schnellere richtige Antworten geben mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu aufgebaut rund um ein klares, flaches **Cream**-Design (Liquid-Glass ist jetzt ein optionales Theme), mit einem vom Manager gesteuerten Theming-System, Gamification, Team- und Solo-Modus sowie lokaler KI-Bildgenerierung — und dabei behält es das klassische Kahoot-artige Erlebnis aus Presenter und Handy (farbige Antwortkacheln mit Formen, ein Countdown, ein Siegertreppchen).
+Razzoozle ist ein selbstgehostetes, echtzeitliches **Quiz-Spiel** für Klassenzimmer, Events und Game-Abende. Eine Person öffnet ein Spiel auf dem großen Bildschirm, Spieler treten von ihren Telefonen mit einer PIN bei, und jeder versucht, schneller richtig zu antworten — schnellere korrekte Antworten bringen mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia), neu entwickelt um ein sauberes, flaches **Creme**-Design (Liquid-Glass ist nun ein optionales Theme) mit einem Manager-gesteuerten Theming-System, Gamifizierung, Team- und Einzelspielmodus sowie lokale KI-Bildgenerierung — während die klassische Kahoot-ähnliche Moderator- + Telefon-Erfahrung erhalten bleibt (farbige Antwortkacheln mit Formen, ein Countdown, ein Podium).
 
-> Razzoozle ist ein unabhängiges Open-Source-Projekt. Es steht in keiner Verbindung zu Kahoot!® oder einer anderen kommerziellen Quizplattform, wird von diesen nicht unterstützt und ist nicht mit ihnen verbunden.
+> Razzoozle ist ein unabhängiges Open-Source-Projekt. Es ist nicht verbunden mit, nicht bestätigt von, oder nicht verbunden mit Kahoot!® oder einer anderen kommerziellen Quiz-Plattform.
 
 ---
 
-## 📸 Screenshots
+## 🚀 Architektur: Duales Backend (Rust ist jetzt Standard)
+
+Razzoozle wird mit einem **leistungsstarken Rust-Backend als Standard** ausgeliefert, während der ursprüngliche Node.js-Server zur Verfügung gestellt bleibt für Kompatibilität und schrittweise Migration.
+
+### Warum Rust?
+
+- **Memory-safe, kompiliergeprüfte Game-State-Machine** — keine Runtime-Paniken oder undefiniertes Verhalten.
+- **Schneller, speichereffizienter Echtzeit-Server** — socketioxide + axum verarbeiten 600+ gleichzeitige Spieler mit minimalem Overhead.
+- **Einzelnes statisches Binary** — wird als ~10 MB Tauri-App (Rust-Sidecar) statt ~150 MB Electron + Node-Laufzeitumgebung ausgeliefert.
+- **Verhaltensparität** — spricht das identische socket.io-Drahtprotokoll; Frontend und Spieler sehen keinen Unterschied.
+- **Gemeinsame Wahrheitsquelle** — beide Backends lesen/schreiben die gleiche Postgres-Datenbank, was nahtloses Umschalten pro Client ermöglicht.
+
+### Wie es funktioniert
+
+Das **Rust-Backend** (`rust/`-Workspace):
+- **`protocol/`** — ~200 Drahtprotokoltypen, generiert automatisch TypeScript-Bindings über `ts-rs` (Rust ist die Wahrheitsquelle).
+- **`engine/`** — reine Spiellogik (Sentence-Builder-Chunking, Fisher-Yates-Shuffle mit Anti-Identity-Guard).
+- **`server/`** — `axum` HTTP + `socketioxide` Echtzeit-Server; In-Memory-Spiel-Registry; Manager-Auth (Host-Token); Rate-Limits + Ressourcen-Caps; Quiz-Laden von Festplatte oder Datenbank.
+
+**Manager-Operationen** vollständig in Rust implementiert: Quiz speichern/aktualisieren/löschen/duplizieren/archivieren, Konfigurationsmanagement, Submissions-Moderation, Katalog, laufende Spiele, Theme-Wechsel — gated durch `rust/gate.sh` (cargo build + Regressionstests).
+
+**Feature-Parität** mit Node-Server: alle 7 Fragetypen, Spieler-Lebenszyklus + Neuverbindung, Spielkontrolle (kick/skip/abort/timer), Bots, `/display` Kiosk, KI/Medien, Solo-Endpoints, Team-Modus.
+
+Das **Node-Backend** (`packages/socket`) bleibt für Rückwärtskompatibilität verfügbar; Wechsel in der Manager-UI oder über `VITE_DEFAULT_BACKEND`.
+
+**→ Details, Build & Test: [`rust/README.md`](rust/README.md)**
+
+---
+
+## 📸 Bildschirmfotos
 
 <div align="center">
 
-| Presenter / Host | Desktop-Spielclient |
+| Moderator / Host | Desktop-Spielclient |
 | :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Moderator-Bildschirm" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop-Spielclient" /> |
 
-| Spieler-Handy | Avatar-Auswahl |
+| Spieler-Telefon | Avatar-Auswahl |
 | :---: | :---: |
-| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Spieler-Telefon" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar-Auswahl" /> |
 
-<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager-Theme-Cockpit" />
 
-<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
+<img src="docs/screenshots/start.webp" width="680" alt="Host-Startbildschirm mit der Spiel-PIN" />
 
 </div>
 
 ---
 
-## ✦ Was Razzoozle gegenüber Razzia hinzufügt
+## ✦ Was Razzoozle über Razzia hinzufügt
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme-Cockpit** — ein Live-„Design"-Tab im Manager: Farben, Hintergründe pro Ansicht, Logo, Radius und ein **Flat ⇄ Glass**-Stilumschalter, mit Presets (flacher **Cream**-Standard + optionales violettes **Liquid-Glass**-Preset) sowie kontrastbewusste Farbwähler. |
-| ☕ | **Flaches Cream-Design** — warme flache Cream-Oberfläche mit lebendigem animiertem Hintergrund (treibende Blobs + schwebende Schul-/Wissens-Icons), flaches „Zig"-Wortmarke/Logo, Ink-auf-Cream-Antwortkacheln. |
-| 🧊 | **Liquid-Glass-UI** — ein optionales, älteres Glassmorphism-Theme (mattiert, weichgezeichnete Flächen), das die flache Basis nie antastet. |
-| 🎯 | **Kahoot-treue Spielbildschirme** — Antwortkacheln mit den klassischen Form-Icons (Dreieck / Raute / Kreis / Quadrat), ein kreisförmiger Countdown-Timer, ein Zähler für eingegangene Antworten und ein animiertes Siegertreppchen. |
-| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler bekommt einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenes Bild hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, Podest und Auszeichnungen. |
-| 🏆 | **Gamification** — 15 Erfolge, Medaillen, Serien, Konfetti und Klangsignale, dazu eine persönliche Trophäengalerie. |
-| 🥇 | **End-Game-Recap mit Auszeichnungen** — eine animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-King…) mit Avatar + Name des Gewinners, im Autoplay automatisch getaktet. |
-| 👥 | **Team-Modus** — rote, blaue, grüne und gelbe Teams mit einer Live-Team-Rangliste. |
-| 📱 | **Solo-Modus** — übe jedes Quiz allein über einen Teilen-Link, mit eigener Punkte-Historie. |
-| ✍️ | **Mehr Fragetypen** — Mehrfachauswahl, Antwort-eintippen und Slider, zusätzlich zur klassischen Einfachauswahl. |
-| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins"-Tab. |
-| 🧩 | **Manager-Addons** — lade JavaScript-Addons hoch, aktiviere und konfiguriere sie direkt in der Manager-Konsole (eigener Tab, Capability-Badges, persistierte Konfiguration); bringt ein Copy-paste-Starter-Skeleton (`examples/plugins/starter/`) samt Authoring-Contract mit. |
-| 📦 | **Skeleton-Theme-ZIPs** — ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton": Design-Tokens + CSS + JS + SKELETON.md-Contract). |
-| 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
-| 🔗 | **Teilbare Ergebnisse** — schöne Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „Selbst spielen / Selbst hosten"-CTAs und herunterladbare Gewinner-Sticker. |
-| 🤝 | **Community-Fragen** — eine öffentliche Einreichungsseite mit einer Moderations-Warteschlange im Manager, dazu ein wiederverwendbarer Fragenkatalog und ein Quiz-Archiv. |
-| 🖼️ | **Lokale KI-Bilder** — erzeuge Bilder für Fragen und Themes direkt auf dem Gerät über ComfyUI (Z-Image), oder binde Cloud-Anbieter ein — die Schlüssel bleiben serverseitig. |
-| 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
-| 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung, Reconnect und ein MCP-Server zur Steuerung durch KI-Tools. |
+| 🎨 | **Theme-Cockpit** — ein Live-Manager-Tab „Design": Farben, Pro-View-Hintergründe, Logo, Radius und ein **Flat ⇄ Glass**-Style-Toggle, mit Voreinstellungen (ein flaches **Creme**-Standard + ein optionales violettes **Liquid-Glass**-Preset) und kontrastbewussten Farbwählern. |
+| ☕ | **Flaches Creme-Design** — eine warme flache Creme-Oberfläche mit einer lebenden animierten Kulisse (treibende Blobs + schwebende Schul-/Wissens-Icons), eine flache „Zig"-Wortmarke/Logo und Tinte-auf-Creme-Antwortkacheln. |
+| 🧊 | **Liquid-Glass-UI** — eine optionale, ältere Glassmorphismus-Theme-Variante (matt, verschwommene Oberflächen), die die flache Baseline niemals berührt. |
+| 🎯 | **Kahoot-treue Spiel-Bildschirme** — Antwortkacheln mit klassischen Form-Icons (Dreieck / Diamant / Kreis / Quadrat), ein kreisförmiger Countdown-Timer, ein Antwort-erhaltener-Zähler und ein animiertes Podium. |
+| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler erhält einen generierten DiceBear-Avatar (wähle einen Stil + neu würfeln, oder lade den deinen hoch); Avatare schweben in der Lobby und erscheinen auf Leaderboards, dem Podium und den Auszeichnungen. |
+| 🏆 | **Gamifizierung** — 15 Achievements, Medaillen, Streaks, Konfetti und Sound-Gongs, plus eine persönliche Trophy-Galerie. |
+| 🥇 | **End-Game-Auszeichnungs-Rückblick** — eine animierte Superlativ-Sequenz (schnellster Finger, größter Kletterer, längster Streak, Comeback-Kind…) zeigt Avatare und Namen der Gewinner, automatisch paced in Autoplay. |
+| 👥 | **Team-Modus** — rote / blaue / grüne / gelbe Teams mit einem Live-Team-Leaderboard. |
+| 📱 | **Einzelspielmodus** — trainiere jedes Quiz allein über einen Share-Link, mit der eigenen Score-Verlauf. |
+| ✍️ | **Mehr Fragetypen** — Multiple-Select, Typ-die-Antwort und Schieber, zusätzlich zur klassischen Einfachauswahl. |
+| 🔌 | **Plugin-System** — Manager-installierbare ZIP-Add-ons mit ihrem eigenen „Plugins"-Tab. |
+| 🧩 | **Manager-Add-ons** — lade hoch, aktiviere und konfiguriere JavaScript-Add-ons aus der Manager-Konsole (eigener Tab, Fähigkeits-Badges, persistente Konfiguration); wird mit einem Copy-Paste-Starter-Skeleton (`examples/plugins/starter/`) mit einem Authoring-Vertrag ausgeliefert. |
+| 📦 | **Skeleton-Theme-ZIPs** — lade ein komplettes Spiel-Theme als LLM-lesbares ZIP herunter/hoch („Skeleton": Design-Tokens + CSS + JS + ein SKELETON.md-Vertrag). |
+| 📳 | **Mobile-Haptik** — optionales Vibrations-Feedback auf Spieler-Telefonen (Countdown, Antworten), Motion-Reduktion-bewusst. |
+| 🔗 | **Teilbare Ergebnisse** — reichhaltige Pro-Ergebnis-Link-Vorschau (Open Graph-Entfaltung), eine Ergebnis-Seite mit „spiele es selbst / hoste deinen eigenen" Calls-to-Action und herunterladbare Gewinner-Aufkleber. |
+| 🤝 | **Community-Fragen** — eine öffentliche Submissions-Seite mit einer Manager-Moderations-Warteschlange, plus ein wiederverwendbarer Frage-Katalog und ein Quiz-Archiv. |
+| 🖼️ | **Lokale KI-Bilder** — Frage-/Theme-Bilder auf dem Gerät über ComfyUI (Z-Image) generieren oder Cloud-Provider anschließen — Schlüssel bleiben auf der Serverseite. |
+| 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-bewusst. |
+| 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektor-Ansicht, Low-Latency-Modus, Crash-Wiederherstellung, Neuverbindung und ein MCP-Server für KI-Tool-Kontrolle. |
 
-Untermauert von **592 automatisierten Tests**, einem Sicherheits-Durchlauf gegen Path-Traversal und die `ws`-CVE, einer gehärteten unauthentifizierten Angriffsfläche (Limits für Spieler pro Spiel und für aktive Spiele, rate-limitierte öffentliche Endpunkte, Brute-Force-Drosselung der Manager-Auth) sowie einem health-geprüften Docker-Deploy. Lasttests bis zu **600 gleichzeitigen Spielenden**.
+Unterstützt durch **592+ automatisierte Tests**, einen Path-Traversal + `ws`-CVE-Sicherheits-Pass, eine gehärtete nicht-authentifizierte Oberfläche (Pro-Spiel-Ressourcen-Caps + Spiel-Ausweisung, Pro-IP-Rate-Limits, Manager-Auth-Brute-Force-Drosselung, Server-geprägte Host-Token-Auth-Schließung von IDOR) und ein Health-gated Docker Deploy. Lasttests für **600 gleichzeitige Spieler**.
 
 ---
 
-## 📲 Apps & Begleiter
+## 📲 Apps & Begleitanwendungen
 
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — die erste native **Windows**-Desktop-App für Razzoozle. Hoste und verwalte Spiele direkt von deinem Rechner, ganz ohne Browser.
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — ein schlanker Rendezvous- / Discovery-Dienst, über den sich Clients gegenseitig finden. Nur zur Discovery — das Gameplay wird niemals weitergeleitet.
+- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — die erste native **Windows**-Desktop-App für Razzoozle. Hoste und verwalte Spiele von deinem Computer, kein Browser erforderlich.
+- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — ein leichter Rendezvous-/Discovery-Service, der Clients bei der Findung hilft. Nur Discovery — es leitet nie Gameplay weiter.
 
 ---
 
@@ -143,7 +137,9 @@ cd Razzoozle
 docker compose up -d
 ```
 
-Die App startet unter `http://127.0.0.1:3011` (nginx + der Socket-Server in einem Container). Konfiguration und Nutzerdaten liegen im Volume `./config`, das beim ersten Start angelegt und befüllt wird. Stelle für TLS und einen öffentlichen Hostnamen deinen eigenen Reverse Proxy davor (Caddy, nginx, Traefik …).
+Die App startet auf `http://127.0.0.1:3011` (nginx + das Rust-Backend in einem Container standardmäßig). Konfiguration und Benutzerdaten leben im `./config`-Volume, erstellt und gesät beim ersten Start. Stelle es hinter deinem eigenen Reverse-Proxy (Caddy, nginx, Traefik…) für TLS und einen öffentlichen Hostname.
+
+Um stattdessen das Node-Backend zu verwenden, setze `VITE_DEFAULT_BACKEND=node` vor dem Build oder wechsle in der Manager-UI.
 
 ### 🛠️ Ohne Docker
 
@@ -151,41 +147,41 @@ Die App startet unter `http://127.0.0.1:3011` (nginx + der Socket-Server in eine
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 pnpm install
-pnpm build        # Produktions-Build
-pnpm start        # oder: pnpm dev  (Web + Socket, Hot Reload)
+pnpm build        # production build
+pnpm start        # oder: pnpm dev  (web + Rust backend, hot reload)
 ```
 
 ---
 
-## 🎮 So wird gespielt
+## 🎮 Wie man spielt
 
-1. Öffne `/manager` auf der Host-Maschine und melde dich mit dem Manager-Passwort an.
-2. Wähle ein Quiz und starte ein Spiel — eine PIN erscheint (zeige sie über `/display` auf dem Beamer).
-3. Die Spielenden öffnen die Seite auf ihren Handys und geben die PIN und einen Namen ein.
-4. Antworte so schnell du kannst — schnellere richtige Antworten geben mehr Punkte.
-5. Verfolge die Rangliste, die Medaillen und das Konfetti zwischen den Runden.
+1. Öffne `/manager` auf dem Host-Computer und melde dich mit dem Manager-Passwort an.
+2. Wähle ein Quiz und starte ein Spiel — eine PIN erscheint (zeige sie auf dem Beamer über `/display`).
+3. Spieler öffnen die Website auf ihren Telefonen, geben die PIN und einen Namen ein.
+4. Antworte so schnell wie du kannst — schnellere korrekte Antworten bringen mehr Punkte.
+5. Beobachte das Leaderboard, Medaillen und Konfetti zwischen den Runden.
 
-Lieber allein spielen? Öffne den **Solo**-Teilen-Link eines beliebigen Quiz und übe in deinem eigenen Tempo.
+Lieber allein spielen. Öffne den **Solo**-Share-Link eines beliebigen Quiz und trainiere in deinem eigenen Tempo.
 
 ---
 
 ## ⚙️ Konfiguration
 
-Laufzeitdaten liegen in `config/` (von git ignoriert, beim ersten Start befüllt).
+Laufzeitdaten leben in `config/` (git-ignoriert, beim ersten Start gesät).
 
 ### Spieleinstellungen — `config/game.json`
 
 ```jsonc
 {
-  "managerPassword": "PASSWORD", // ÄNDERE DAS — der Standardwert blockiert den Manager-Zugang
-  "teamMode": false,             // rote/blaue/grüne/gelbe Teams aktivieren
-  "lowLatencyMode": { "enabled": false } // optionale Timing-/UX-Straffung (siehe docs/LOW-LATENCY-MODE.md)
+  "managerPassword": "PASSWORD", // ÄNDERE DIES — der Standard blockiert den Manager-Zugriff
+  "teamMode": false,             // aktiviere rote/blaue/grüne/gelbe Teams
+  "lowLatencyMode": { "enabled": false } // Opt-in Timing/UX-Verschärfung (siehe docs/LOW-LATENCY-MODE.md)
 }
 ```
 
-### Quizze — `config/quizz/*.json`
+### Quiz — `config/quizz/*.json`
 
-Erstelle Quizze im Editor des Managers (empfohlen) oder als JSON. Eine Frage unterstützt mehrere `type`s (`choice`, `boolean`, `slider`, dazu Mehrfachauswahl über mehrere `solutions` und Antwort-eintippen):
+Erstelle Quiz im Editor des Managers (empfohlen) oder als JSON. Eine Frage unterstützt mehrere `type`s (`choice`, `boolean`, `slider`, plus Multiple-Select über mehrere `solutions` und Typ-die-Antwort):
 
 ```jsonc
 {
@@ -195,34 +191,36 @@ Erstelle Quizze im Editor des Managers (empfohlen) oder als JSON. Eine Frage unt
       "question": "Which keyword defines a function in Python?",
       "type": "choice",
       "answers": ["func", "def", "function", "fun"],
-      "solutions": [1],          // 0-basierte Indizes; mehrere = Mehrfachauswahl
+      "solutions": [1],          // 0-basierte Indizes; mehrfach = Multi-Select
       "time": 20,                 // Sekunden zum Antworten (5–120)
-      "cooldown": 5,              // Sekunden, bevor die Antwort enthüllt wird (3–15)
+      "cooldown": 5,              // Sekunden bevor die Antwort offenbart wird (3–15)
       "media": { "type": "image", "url": "https://placehold.co/600x400.png" } // optional
     }
   ]
 }
 ```
 
-Der KI-Anbieter (aus / lokales ComfyUI / Cloud) wird im **KI**-Tab des Managers konfiguriert; API-Schlüssel werden serverseitig in `config/` gespeichert und nie an Clients gesendet.
+Der KI-Anbieter (aus / lokal ComfyUI / Cloud) wird im **KI**-Tab des Managers konfiguriert; API-Schlüssel werden serverseitig in `config/` gespeichert und nie an Clients gesendet.
 
 ---
 
-## 📺 Beamer- / Kiosk-Anzeige
+## 📺 Beamer-/Kiosk-Display
 
-`/display` rendert die Host-Präsentation im Vollbild für einen Projektor oder Fernseher (vh-skalierte Schrift, die quer durch den Raum lesbar ist) und lässt sich von einem Handy aus koppeln. Die Route `/satellite/<gameId>` ist eine bedienelementfreie Kiosk-Ansicht, die sich per Token authentifiziert (kein Manager-Passwort). Ein optionales Raspberry-Pi-Satellite-Image liegt bei.
+`/display` rendert die Host-Präsentation im Vollbildmodus für einen Projektor oder Fernseher (vh-skalierter Typ, der über den Raum lesbar ist), vom Telefon aus koppelbar. Eine `/satellite/<gameId>`-Route ist eine kontrollfreie Kiosk-Ansicht, die sich mit einem Token authentifiziert (kein Manager-Passwort). Ein optionales Raspberry-Pi-Satelliten-Image ist enthalten.
 
 ---
 
 ## 🧱 Tech-Stack
 
-Ein pnpm-Monorepo — **`@razzoozle/web`** (React + Vite + Tailwind v4, TanStack Router, PWA), **`@razzoozle/socket`** (Node + Socket.IO + Express, Snapshots für die Absturz-Wiederherstellung), **`@razzoozle/common`** (geteilte, Zod-validierte Typen) und **`@razzoozle/mcp`** (ein MCP-Server zur Steuerung durch KI-Tools). Wird als einzelnes Docker-Image ausgeliefert (nginx + node via supervisord) mit einem `/healthz`-Endpunkt + Docker-`HEALTHCHECK`.
+Ein pnpm-Monorepo — **`@razzoozle/web`** (React + Vite + Tailwind v4, TanStack Router, PWA), ein **duales Backend** (Rust `axum` + `socketioxide` standardmäßig oder Node + Socket.IO für Kompatibilität), **`@razzoozle/common`** (gemeinsam Zod-validierte Typen, automatisch generiert von Rust über `ts-rs`), und **`@razzoozle/mcp`** (ein MCP-Server für KI-Tool-Kontrolle). Wird als einzelnes Docker-Image mit einem `/healthz`-Endpoint + Docker `HEALTHCHECK` ausgeliefert.
+
+**Rust-Backend** (`rust/`-Workspace): `razzoozle-protocol` (Drahttypen), `razzoozle-engine` (Spiellogik), `razzoozle-server` (`axum` + `socketioxide`).
 
 ---
 
-## 🤝 Mitwirken
+## 🤝 Beitragen
 
-Issues und Pull Requests sind willkommen. Führe `pnpm verify` (Typecheck + Lint + Tests) aus, bevor du einen PR eröffnest.
+Issues und Pull-Requests sind willkommen. Führe `pnpm verify` (typecheck + lint + Tests) aus, bevor du einen PR öffnest. Für Rust-Backend-Änderungen, führe `cargo test` in `rust/` aus und überprüfe, dass das CI-Gate (echtes Spiel-Smoke-Test) bestanden hat.
 
 ---
 
@@ -236,4 +234,4 @@ Issues und Pull Requests sind willkommen. Führe `pnpm verify` (Typecheck + Lint
 
 ## 📝 Credits & Lizenz
 
-Razzoozle ist ein Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) — herzlichen Dank an die Upstream-Autoren. Veröffentlicht unter der **[MIT License](LICENSE)** (© 2024 Ralex, © 2026 Razzoozle contributors); der Upstream-MIT-Hinweis bleibt erhalten.
+Razzoozle ist ein Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) — vielen Dank an die upstream-Autoren. Veröffentlicht unter der **[MIT License](LICENSE)** (© 2024 Ralex, © 2026 Razzoozle-Beiträger); die Upstream-MIT-Mitteilung wird beibehalten.
