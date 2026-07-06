@@ -415,3 +415,54 @@ pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<boo
 
     row.unwrap_or((None, None, None, None, None))
 }
+
+/// Count pending submissions — flood cap for the public unauthenticated submit
+/// path. Returns 0 if the pool is None or the query fails (fail-open).
+pub async fn count_pending_submissions(pool: &Option<PgPool>) -> i64 {
+    let pool = match pool {
+        Some(p) => p,
+        None => return 0,
+    };
+
+    let row: Option<(i64,)> =
+        sqlx::query_as("SELECT count(*) FROM submissions WHERE status = 'pending'")
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
+
+    row.map(|(c,)| c).unwrap_or(0)
+}
+
+/// Persist a public question submission (status 'pending') into the shared DB.
+/// Upserts by id so a re-submitted identical question overwrites rather than
+/// duplicating (mirrors Node's slug-id save). Returns Err on DB failure.
+pub async fn insert_submission(
+    pool: &Option<PgPool>,
+    id: &str,
+    submitted_by: &str,
+    question: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query(
+        "INSERT INTO submissions (id, status, submitted_by, submitted_at, question, source) \
+         VALUES ($1, 'pending', $2, now(), $3, 'submission') \
+         ON CONFLICT (id) DO UPDATE SET \
+             status = 'pending', \
+             submitted_by = EXCLUDED.submitted_by, \
+             submitted_at = now(), \
+             question = EXCLUDED.question, \
+             updated_at = now()",
+    )
+    .bind(id)
+    .bind(submitted_by)
+    .bind(question)
+    .execute(pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}
