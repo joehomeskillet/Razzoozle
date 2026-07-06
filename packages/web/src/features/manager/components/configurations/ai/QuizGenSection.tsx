@@ -1,0 +1,120 @@
+import { AI } from "@razzoozle/common/constants"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
+import { SectionCard } from "@razzoozle/web/features/manager/components/console"
+import { LabelRow } from "@razzoozle/web/components/ui"
+import { CheckCircle2, Sparkles } from "lucide-react"
+import type { TFunction } from "i18next"
+import type { Dispatch, SetStateAction } from "react"
+import { clampQuizCount } from "./helpers"
+
+interface QuizGenSectionProps {
+  t: TFunction
+  topic: string
+  count: number
+  generating: boolean
+  generated: boolean
+  textConfigured: boolean
+  setTopic: Dispatch<SetStateAction<string>>
+  setCount: Dispatch<SetStateAction<number>>
+  generateQuiz: () => void
+}
+
+const QuizGenSection = ({
+  t,
+  topic,
+  count,
+  generating,
+  generated,
+  textConfigured,
+  setTopic,
+  setCount,
+  generateQuiz,
+}: QuizGenSectionProps) => {
+  return (
+    <SectionCard
+      icon={<Sparkles className="size-5" aria-hidden />}
+      title={t("manager:ai.generate.quizTitle")}
+    >
+      <div className="space-y-4">
+        <LabelRow
+          label={t("manager:ai.generate.topic")}
+          htmlFor="ai-quiz-topic"
+        >
+          <Input
+            id="ai-quiz-topic"
+            value={topic}
+            maxLength={AI.TOPIC_MAX_LEN}
+            placeholder={t("manager:ai.generate.topicPlaceholder")}
+            onChange={(event) => setTopic(event.target.value)}
+            className="w-full"
+          />
+        </LabelRow>
+
+        <LabelRow
+          label={t("manager:ai.generate.countValue", {
+            defaultValue: "Fragen: {{count}}",
+            count,
+          })}
+          htmlFor="ai-quiz-count"
+        >
+          <div className="flex items-center gap-3">
+            <input
+              id="ai-quiz-count"
+              type="range"
+              min={AI.QUIZ_MIN_QUESTIONS}
+              max={AI.QUIZ_MAX_QUESTIONS}
+              step={1}
+              value={count}
+              aria-valuetext={t("manager:ai.generate.countValue", {
+                defaultValue: "Fragen: {{count}}",
+                count,
+              })}
+              onChange={(event) =>
+                setCount(clampQuizCount(Number(event.target.value)))
+              }
+              className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            />
+            <span className="w-8 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+              {count}
+            </span>
+          </div>
+        </LabelRow>
+      </div>
+
+      <Button
+        type="button"
+        onClick={generateQuiz}
+        disabled={!topic.trim() || generating}
+      >
+        {generating
+          ? t("manager:ai.generate.generating")
+          : t("manager:ai.generate.quiz")}
+      </Button>
+
+      <div aria-live="polite" className="min-h-5">
+        {generating && (
+          <p className="text-sm text-gray-500">
+            {t("manager:ai.generate.generating")}
+          </p>
+        )}
+        {!generating && !textConfigured && (
+          <p className="text-sm text-gray-500">
+            {t("manager:ai.generate.notConfigured")}
+          </p>
+        )}
+        {!generating && generated && (
+          <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+            <CheckCircle2 className="size-3.5" aria-hidden />
+            {t("manager:ai.generate.generated")}
+            <span className="font-medium text-green-800/80">
+              {t("manager:ai.generate.openInEditor")}
+            </span>
+          </span>
+        )}
+      </div>
+    </SectionCard>
+  )
+}
+
+export default QuizGenSection

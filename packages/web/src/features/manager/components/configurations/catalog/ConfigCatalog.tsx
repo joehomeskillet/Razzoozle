@@ -1,0 +1,288 @@
+import { EVENTS } from "@razzoozle/common/constants"
+import type { CatalogEntry } from "@razzoozle/common/types/catalog"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
+import {
+  useEvent,
+  useSocket,
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import {
+  EmptyState,
+  ListRow,
+} from "@razzoozle/web/features/manager/components/console"
+import { BookOpen, Library, Pencil, SearchX, Trash2 } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import toast from "react-hot-toast"
+import { useTranslation } from "react-i18next"
+import { CatalogQuestionModal } from "./CatalogQuestionModal"
+import { TYPE_LABEL_KEY } from "./constants"
+import type { CatalogModalMode } from "./types"
+import { formatDate } from "./utils"
+
+const ConfigCatalog = () => {
+  const { socket } = useSocket()
+  const { t } = useTranslation()
+  const reducedMotion = useReducedMotion()
+  const [entries, setEntries] = useState<CatalogEntry[]>([])
+  const [search, setSearch] = useState("")
+  const [modalMode, setModalMode] = useState<CatalogModalMode>("add")
+  const [editingEntry, setEditingEntry] = useState<CatalogEntry | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [pendingOp, setPendingOp] = useState<CatalogModalMode | null>(null)
+  // The catalog entry pending a delete confirmation; drives the AlertDialog.
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string
+    question: string
+  } | null>(null)
+
+  const requestCatalog = useCallback(() => {
+    socket.emit(EVENTS.CATALOG.LIST)
+  }, [socket])
+
+  useEffect(() => {
+    requestCatalog()
+  }, [requestCatalog])
+
+  useEvent(
+    EVENTS.CATALOG.DATA,
+    useCallback((nextEntries: CatalogEntry[]) => {
+      setEntries(nextEntries)
+    }, []),
+  )
+
+  useEvent(
+    EVENTS.CATALOG.ERROR,
+    useCallback(
+      (message: string) => {
+        // Reset pendingOp so a failed add/edit doesn't mislabel the next op.
+        setPendingOp(null)
+        toast.error(t(message))
+      },
+      [t],
+    ),
+  )
+
+  useEvent(
+    EVENTS.CATALOG.ADD_SUCCESS,
+    useCallback(() => {
+      setModalOpen(false)
+      setEditingEntry(null)
+      toast.success(
+        t(
+          pendingOp === "edit"
+            ? "manager:catalog.updated"
+            : "manager:catalog.saved",
+        ),
+      )
+      setPendingOp(null)
+      requestCatalog()
+    }, [pendingOp, requestCatalog, t]),
+  )
+
+  const filteredEntries = useMemo(() => {
+    const q = search.trim().toLowerCase()
+
+    if (!q) {
+      return entries
+    }
+
+    return entries.filter((entry) => {
+      const question = entry.question.question.toLowerCase()
+      const tags = entry.tags ?? []
+
+      return (
+        question.includes(q) ||
+        tags.some((tag) => tag.toLowerCase().includes(q))
+      )
+    })
+  }, [entries, search])
+
+  const openAddModal = () => {
+    setModalMode("add")
+    setEditingEntry(null)
+    setModalOpen(true)
+  }
+
+  const openEditModal = (entry: CatalogEntry) => {
+    setModalMode("edit")
+    setEditingEntry(entry)
+    setModalOpen(true)
+  }
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false)
+    setEditingEntry(null)
+    setPendingOp(null)
+  }, [])
+
+  const handleDelete = () => {
+    if (!pendingDelete) {
+      return
+    }
+
+    // Optimistic: no per-op ack for DELETE; CATALOG.ERROR covers failures.
+    socket.emit(EVENTS.CATALOG.DELETE, { id: pendingDelete.id })
+    toast.success(t("manager:catalog.deleted"))
+    setPendingDelete(null)
+    requestCatalog()
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {t("manager:catalog.title")}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-gray-500">
+              {t("manager:catalog.intro")}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="shrink-0 rounded-xl"
+            onClick={openAddModal}
+          >
+            <BookOpen className="size-5" aria-hidden />
+            {t("manager:catalog.addManual")}
+          </Button>
+        </div>
+
+        <label htmlFor="catalog-search" className="sr-only">
+          {t("manager:catalog.search")}
+        </label>
+        <Input
+          id="catalog-search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={t("manager:catalog.searchPlaceholder")}
+          className="min-h-11 w-full rounded-xl"
+        />
+      </div>
+
+      {entries.length === 0 ? (
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <EmptyState
+            icon={Library}
+            headline={t("manager:catalog.emptyHeadline")}
+            hint={t("manager:catalog.empty")}
+            action={{
+              label: t("manager:catalog.addManual"),
+              onClick: openAddModal,
+            }}
+          />
+        </div>
+      ) : filteredEntries.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          headline={t("manager:catalog.noResults")}
+          hint={t("manager:catalog.search")}
+        />
+      ) : (
+        <motion.div
+          className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={
+            reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+          }
+        >
+          {filteredEntries.map((entry, index) => {
+            const type = entry.question.type ?? "choice"
+            const source = entry.source ?? "manual"
+
+            return (
+              <motion.div
+                key={entry.id}
+                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={
+                  reducedMotion
+                    ? undefined
+                    : {
+                        duration: 0.28,
+                        ease: "easeOut",
+                        delay: Math.min(index, 8) * 0.04,
+                      }
+                }
+              >
+                <ListRow
+                  title={entry.question.question}
+                  meta={
+                    <span className="flex flex-col gap-2 whitespace-normal">
+                      <span className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                          {t(`manager:catalog.source.${source}`)}
+                        </span>
+                        {(entry.tags ?? []).map((tag, tagIndex) => (
+                          <span
+                            key={`${tag}-${tagIndex}`}
+                            className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(entry.addedAt)}
+                      </span>
+                    </span>
+                  }
+                  actions={[
+                    {
+                      key: "edit",
+                      icon: Pencil,
+                      label: t("manager:catalog.edit"),
+                      onClick: () => openEditModal(entry),
+                    },
+                    {
+                      key: "delete",
+                      icon: Trash2,
+                      label: t("manager:catalog.delete"),
+                      destructive: true,
+                      onClick: () =>
+                        setPendingDelete({
+                          id: entry.id,
+                          question: entry.question.question,
+                        }),
+                    },
+                  ]}
+                />
+              </motion.div>
+            )
+          })}
+        </motion.div>
+      )}
+
+      <CatalogQuestionModal
+        open={modalOpen}
+        mode={modalMode}
+        editingEntry={editingEntry}
+        onClose={closeModal}
+        onSaveStart={setPendingOp}
+      />
+
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null)
+          }
+        }}
+        title={t("manager:catalog.delete")}
+        description={t("manager:catalog.deleteConfirm")}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleDelete}
+      />
+    </div>
+  )
+}
+
+export default ConfigCatalog
