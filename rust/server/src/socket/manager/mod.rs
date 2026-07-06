@@ -9,6 +9,8 @@ pub mod game_state;
 pub mod players;
 pub mod public;
 pub mod media;
+pub mod quizz;
+pub mod submissions;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     auth::register(socket, ctx.clone());
@@ -17,4 +19,6 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     players::register(socket, ctx.clone());
     public::register(socket, ctx.clone());
     media::register(socket, ctx.clone());
+    quizz::register(socket, ctx.clone());
+    submissions::register(socket, ctx.clone());
 }

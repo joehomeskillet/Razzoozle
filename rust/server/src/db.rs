@@ -166,6 +166,70 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     result
 }
 
+/// Load a single game result by id (for results:get / results:getShared).
+/// Returns {id, subject, date, players} matching the SharedResult / result-detail
+/// shape, or None if the id is absent or pool is None.
+pub async fn get_result_by_id(pool: &Option<PgPool>, id: &str) -> Option<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return None,
+    };
+
+    let row: Option<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value)> =
+        sqlx::query_as("SELECT id, subject, date, players FROM game_results WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
+
+    row.map(|(id, subject, date, players)| {
+        serde_json::json!({
+            "id": id,
+            "subject": subject,
+            "date": date.to_rfc3339(),
+            "players": players,
+        })
+    })
+}
+
+/// Load submissions with the FULL question OBJECT (not the preview string) for the
+/// Suggestions moderation panel (manager:submissionsData). Shape mirrors Node's
+/// Submission: {id, submittedBy, submittedAt, status, question}.
+pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
+        match sqlx::query_as(
+            "SELECT id, submitted_by, status, question, submitted_at \
+             FROM submissions ORDER BY submitted_at DESC",
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch submissions (full): {}", e);
+                return Vec::new();
+            }
+        };
+
+    rows.into_iter()
+        .map(|(id, submitted_by, status, question, submitted_at)| {
+            serde_json::json!({
+                "id": id,
+                "submittedBy": submitted_by,
+                "submittedAt": submitted_at.to_rfc3339(),
+                "status": status,
+                "question": question,
+            })
+        })
+        .collect()
+}
+
 /// Load submissions from the database.
 /// Returns a vector of serde_json objects with SubmissionMeta shape (or array of submission objects).
 /// Returns empty vec if pool is None or DB query fails.

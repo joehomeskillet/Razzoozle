@@ -55,6 +55,8 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
                     let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode) =
                         db::get_game_config(&ctx.db_pool).await;
 
+                    let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
+
                     let payload = razzoozle_protocol::manager::ManagerConfig {
                         quizz: serde_json::Value::Array(quizz),
                         results: serde_json::Value::Array(results),
@@ -73,10 +75,15 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }),
                         achievements: Some(serde_json::Value::Array(achievements)),
-                        dev_mode: Some(
-                            std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1"),
-                        ),
-                        dev_api_key: std::env::var("DEV_API_KEY").ok(),
+                        dev_mode: Some(dev_mode_on),
+                        // Only ship the dev API key when dev mode is on (it is only
+                        // used by dev-gated endpoints) — and it reaches authenticated
+                        // managers only, after the password check above.
+                        dev_api_key: if dev_mode_on {
+                            std::env::var("DEV_API_KEY").ok()
+                        } else {
+                            None
+                        },
                         plugins: Some(parse_plugins_from_json(plugins)),
                         observability: None,
                     };

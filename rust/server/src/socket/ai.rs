@@ -1,0 +1,90 @@
+//! AI.GET_SETTINGS — public AI settings for the KI manager tab.
+//!
+//! Rust has no ai-settings persistence yet (no `ai_settings` table), so this
+//! mirrors Node's `seedAISettings()` → `toPublicAISettings()` default: the KI tab
+//! renders with the provider presets and "off" selected. Keys are never on the
+//! wire (`keyConfigured: false` for all providers). Write/generation events
+//! (`ai:setSettings`, `ai:generateQuiz`, …) are a later parity wave.
+
+use super::HandlerCtx;
+use razzoozle_protocol::constants;
+use socketioxide::extract::SocketRef;
+
+pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
+    // No-payload event → bare `SocketRef` signature (see submissions.rs note).
+    socket.on(constants::ai::GET_SETTINGS, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .ok();
+                    return;
+                }
+
+                socket
+                    .emit(constants::ai::SETTINGS, &seed_public_ai_settings())
+                    .ok();
+            });
+        }
+    });
+}
+
+/// Mirror of Node `toPublicAISettings(seedAISettings())` — provider presets from
+/// `AI_TEXT_PROVIDER_PRESETS`, `activeProvider: "off"` (AI_PROVIDER_OFF), each
+/// text provider carrying `keyConfigured: false` (no secret on the wire).
+fn seed_public_ai_settings() -> serde_json::Value {
+    serde_json::json!({
+        "text": {
+            "activeProvider": "off",
+            "providers": [
+                {
+                    "id": "local",
+                    "label": "Lokal (Ollama)",
+                    "kind": "openai-compatible",
+                    "baseUrl": "http://host.docker.internal:11434/v1",
+                    "model": "llama3.2:3b",
+                    "keyConfigured": false
+                },
+                {
+                    "id": "claude",
+                    "label": "Claude (Anthropic)",
+                    "kind": "anthropic",
+                    "model": "claude-haiku-4-5-20251001",
+                    "keyConfigured": false
+                },
+                {
+                    "id": "openai",
+                    "label": "OpenAI",
+                    "kind": "openai-compatible",
+                    "baseUrl": "https://api.openai.com/v1",
+                    "model": "gpt-4o-mini",
+                    "keyConfigured": false
+                },
+                {
+                    "id": "openrouter",
+                    "label": "OpenRouter",
+                    "kind": "openai-compatible",
+                    "baseUrl": "https://openrouter.ai/api/v1",
+                    "model": "meta-llama/llama-3.3-70b-instruct",
+                    "keyConfigured": false
+                }
+            ]
+        },
+        "image": {
+            "activeProvider": "comfyui",
+            "providers": [
+                { "id": "comfyui", "label": "ComfyUI / Z-Image" }
+            ]
+        }
+    })
+}

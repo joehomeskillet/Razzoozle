@@ -17,6 +17,7 @@ pub struct HandlerCtx {
     pub db_pool: Option<sqlx::PgPool>,
 }
 
+pub mod ai;
 pub mod clock_ping;
 pub mod display;
 pub mod game;
@@ -29,6 +30,7 @@ pub mod reveal_helpers;
 /// Register every extracted handler on a freshly-connected socket.
 /// Handlers still inline in main.rs are registered there until they migrate here.
 pub fn register_all(socket: &SocketRef, ctx: &HandlerCtx) {
+    ai::register(socket, ctx.clone());
     clock_ping::register(socket, ctx.clone());
     display::register(socket, ctx.clone());
     game::register(socket, ctx.clone());
