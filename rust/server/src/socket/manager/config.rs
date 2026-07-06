@@ -10,8 +10,39 @@ use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
+    register_get_config(socket, ctx.clone());
     register_set_game_config(socket, ctx.clone());
     register_set_achievements_config(socket, ctx.clone());
+}
+
+// manager:getConfig — the client emits this (no payload) on the manager pages
+// to (re)load the full manager config. Rust silently dropped it before, so the
+// editor/manager tabs saw stale/empty config on navigation. No-payload handler
+// signature must be |socket| (Data::<Value> silently blocks the callback).
+fn register_get_config(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::GET_CONFIG, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .ok();
+                    return;
+                }
+
+                config_helper::build_and_emit_config(&socket, &ctx).await;
+            });
+        }
+    });
 }
 
 fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
