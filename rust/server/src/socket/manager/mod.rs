@@ -4,6 +4,7 @@ use super::HandlerCtx;
 use socketioxide::extract::SocketRef;
 
 pub mod auth;
+pub mod config_helper;
 pub mod game_flow;
 pub mod game_state;
 pub mod players;

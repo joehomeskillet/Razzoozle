@@ -430,6 +430,11 @@ impl GameRegistry {
         self.quizzes.keys().cloned().collect()
     }
 
+    /// Reload quizzes from a HashMap. Used after DB operations to keep the registry in sync.
+    pub fn reload_quizzes(&mut self, quizzes: std::collections::HashMap<String, razzoozle_protocol::quizz::Quizz>) {
+        self.quizzes = quizzes;
+    }
+
     /// Find the manager socket ID for a game.
     pub fn get_manager_socket_id(&self, game_id: &str) -> Option<String> {
         self.games_by_id

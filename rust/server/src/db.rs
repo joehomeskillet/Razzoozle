@@ -466,3 +466,119 @@ pub async fn insert_submission(
     .map(|_| ())
     .map_err(|e| e.to_string())
 }
+
+/// Upsert a quiz (create or update by id). Takes subject and questions as JSON.
+/// Returns Ok(id) on success, or Err with a descriptive message.
+pub async fn upsert_quiz(
+    pool: &Option<PgPool>,
+    id: &str,
+    subject: &str,
+    questions: serde_json::Value,
+) -> Result<String, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query(
+        "INSERT INTO quizzes (id, subject, questions, archived) \
+         VALUES ($1, $2, $3, false) \
+         ON CONFLICT (id) DO UPDATE SET \
+             subject = EXCLUDED.subject, \
+             questions = EXCLUDED.questions, \
+             updated_at = now()",
+    )
+    .bind(id)
+    .bind(subject)
+    .bind(questions)
+    .execute(pool)
+    .await
+    .map(|_| id.to_string())
+    .map_err(|e| e.to_string())
+}
+
+/// Delete a quiz by id. Returns Ok(()) on success, or Err if not found.
+pub async fn delete_quiz(pool: &Option<PgPool>, id: &str) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let result = sqlx::query("DELETE FROM quizzes WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if result.rows_affected() == 0 {
+        return Err(format!("Quizz \"{}\" not found", id));
+    }
+
+    Ok(())
+}
+
+/// Duplicate a quiz: read source by id, copy to new_id with modified subject.
+/// new_subject should be the original subject with " (Kopie)" appended (handled by caller).
+/// Returns Ok(new_id) on success, or Err if source not found.
+pub async fn duplicate_quiz(
+    pool: &Option<PgPool>,
+    source_id: &str,
+    new_id: &str,
+    new_subject: &str,
+) -> Result<String, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // Fetch source quiz
+    let source_row: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT questions FROM quizzes WHERE id = $1")
+            .bind(source_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?;
+
+    let questions = match source_row {
+        Some((q,)) => q,
+        None => return Err(format!("Quizz \"{}\" not found", source_id)),
+    };
+
+    // Insert as new quiz
+    sqlx::query(
+        "INSERT INTO quizzes (id, subject, questions, archived) \
+         VALUES ($1, $2, $3, false)",
+    )
+    .bind(new_id)
+    .bind(new_subject)
+    .bind(questions)
+    .execute(pool)
+    .await
+    .map(|_| new_id.to_string())
+    .map_err(|e| e.to_string())
+}
+
+/// Update the archived flag on a quiz by id. Returns Ok(()) on success, or Err if not found.
+pub async fn update_quiz_archived(
+    pool: &Option<PgPool>,
+    id: &str,
+    archived: bool,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let result = sqlx::query("UPDATE quizzes SET archived = $1, updated_at = now() WHERE id = $2")
+        .bind(archived)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if result.rows_affected() == 0 {
+        return Err(format!("Quizz \"{}\" not found", id));
+    }
+
+    Ok(())
+}
