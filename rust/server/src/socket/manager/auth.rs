@@ -73,8 +73,10 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }),
                         achievements: Some(serde_json::Value::Array(achievements)),
-                        dev_mode: Some(false),
-                        dev_api_key: None,
+                        dev_mode: Some(
+                            std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1"),
+                        ),
+                        dev_api_key: std::env::var("DEV_API_KEY").ok(),
                         plugins: Some(parse_plugins_from_json(plugins)),
                         observability: None,
                     };

@@ -192,12 +192,20 @@ pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
     let mut result = Vec::new();
     for (id, submitted_by, status, question, submitted_at) in rows {
+        // SubmissionMeta.question is a STRING (the question text preview), not the full
+        // Question object — the manager Suggestions list renders it directly, so sending
+        // the object triggers React #31 ("objects are not valid as a child").
+        let question_text = question
+            .get("question")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         let submission_obj = serde_json::json!({
             "id": id,
             "submittedBy": submitted_by,
             "submittedAt": submitted_at.to_rfc3339(),
             "status": status,
-            "question": question,
+            "question": question_text,
         });
         result.push(submission_obj);
     }
