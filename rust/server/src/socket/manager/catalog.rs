@@ -81,10 +81,18 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let source = "manual";
+                let tags = payload
+                    .get("tags")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!([]));
+                let source = payload
+                    .get("source")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("manual")
+                    .to_string();
 
                 // Persist to DB
-                match db::insert_catalog_entry(&ctx.db_pool, &question, source).await {
+                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags).await {
                     Ok(_id) => {
                         socket.emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({})).ok();
                         // Re-emit full catalog so connected admins stay in sync
@@ -145,8 +153,13 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
+                let tags = payload
+                    .get("tags")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!([]));
+
                 // Persist to DB
-                match db::update_catalog_entry(&ctx.db_pool, &id, &question).await {
+                match db::update_catalog_entry(&ctx.db_pool, &id, &question, &tags).await {
                     Ok(_) => {
                         socket.emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({})).ok();
                         // Re-emit full catalog so connected admins stay in sync
