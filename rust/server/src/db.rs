@@ -1114,6 +1114,82 @@ pub async fn delete_result(pool: &Option<PgPool>, id: &str) -> bool {
     }
 }
 
+/// Insert a media asset into the database.
+/// Returns Ok(id) on success, or Err(message) on failure.
+pub async fn insert_media_asset(
+    pool: &Option<PgPool>,
+    id: &str,
+    filename: &str,
+    url: &str,
+    size: i32,
+    media_type: &str,
+    category: &str,
+    source: &str,
+    width: Option<i32>,
+    height: Option<i32>,
+    uploaded_at: chrono::DateTime<chrono::Utc>,
+) -> Result<String, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("Database not available".to_string()),
+    };
+
+    sqlx::query(
+        "INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+    )
+    .bind(id)
+    .bind(filename)
+    .bind(url)
+    .bind(size)
+    .bind(media_type)
+    .bind(category)
+    .bind(source)
+    .bind(width)
+    .bind(height)
+    .bind(uploaded_at)
+    .execute(pool)
+    .await
+    .map(|_| id.to_string())
+    .map_err(|e| e.to_string())
+}
+
+/// Delete a media asset from the database.
+/// Returns true if a row was deleted, false if not found or on error.
+pub async fn delete_media_asset(pool: &Option<PgPool>, id: &str) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query("DELETE FROM media_assets WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+    {
+        Ok(result) => result.rows_affected() > 0,
+        Err(_) => false,
+    }
+}
+
+/// Delete media assets by slot prefix (theme uploads cleanup).
+/// Deletes all media_assets rows where filename LIKE '<slot>-%' AND source = 'theme'.
+pub async fn delete_media_assets_by_slot(pool: &Option<PgPool>, slot: &str, source: &str) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Ok(()),
+    };
+
+    let pattern = format!("{}-%", slot);
+    sqlx::query("DELETE FROM media_assets WHERE filename LIKE $1 AND source = $2")
+        .bind(&pattern)
+        .bind(source)
+        .execute(pool)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
 /// Load full theme templates from the database with theme payload.
 /// Returns a vector of serde_json objects with ThemeTemplate shape (id, name, theme).
 /// Returns empty vec if pool is None or DB query fails.
