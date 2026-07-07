@@ -1,11 +1,7 @@
 import {
   EVENTS,
-  FIRST_CORRECT_BONUS,
   MAX_LATENCY_COMPENSATION_MS,
   MEDIA_TYPES,
-  SLIDER_TOLERANCE_FRACTION,
-  STREAK_CAP,
-  STREAK_STEP,
   TEAMS,
 } from "@razzoozle/common/constants"
 import {
@@ -42,10 +38,7 @@ import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
 import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
 import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
-import {
-  matchAnswer,
-  normalizeText,
-} from "@razzoozle/socket/services/game/text-match"
+import { normalizeText } from "@razzoozle/socket/services/game/text-match"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
@@ -76,6 +69,10 @@ import {
   emitResultCountdown as emitResultCountdownFn,
   scheduleAuto as scheduleAutoFn,
 } from "@razzoozle/socket/services/game/round-manager/auto-mode"
+import {
+  evalAnswer,
+  scorePlayerAnswer,
+} from "@razzoozle/socket/services/game/round-manager/scoring"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -756,84 +753,16 @@ export class RoundManager {
 
     const isPoll = question.type === "poll"
 
-    // Correctness + base factor (0..1) for a single answer, before multipliers.
-    // answerIds carries a multiple-select player's selected set; answerText the
-    // type-answer free text. Both are undefined for choice/boolean/slider/poll.
-    const evalAnswer = (
-      answerId: number,
-      answerIds?: number[],
-      answerText?: string,
-    ): { correct: boolean; base: number } => {
-      // Type-answer: server-authoritative text match (anti-cheat — acceptedAnswers
-      // never leave the server). All-or-nothing (base 1 on a match, else 0).
-      if (question.type === "type-answer") {
-        if (!answerText || !question.acceptedAnswers?.length) {
-          return { correct: false, base: 0 }
-        }
-
-        const correct = matchAnswer(
-          answerText,
-          question.acceptedAnswers,
-          question.matchMode ?? "normalized",
-        )
-
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      if (question.type === "sentence-builder") {
-        if (!answerText || !question.chunks?.length) {
-          return { correct: false, base: 0 }
-        }
-        const correct = normalizeText(answerText) === normalizeText(question.chunks.join(" "))
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      if (
-        question.type === "slider" &&
-        question.min != null &&
-        question.max != null &&
-        question.correct != null
-      ) {
-        const range = question.max - question.min || 1
-        const dist = Math.abs(answerId - question.correct)
-        const accuracy = Math.max(0, 1 - dist / range)
-        const within =
-          dist <=
-          Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION)
-
-        return { correct: within, base: within ? accuracy : 0 }
-      }
-
-      // Multiple-select: all-or-nothing. The selected set must equal solutions
-      // EXACTLY by size and content (order irrelevant — Set comparison). No
-      // partial credit.
-      if (question.type === "multiple-select" && answerIds !== undefined) {
-        // Dedupe solutions too: a hand-crafted/imported quiz could carry
-        // duplicate indices (the validator only enforces length>=2), which would
-        // otherwise let a wrong same-size selection score as correct.
-        const solutions = [...new Set(question.solutions ?? [])]
-
-        if (answerIds.length !== solutions.length) {
-          return { correct: false, base: 0 }
-        }
-
-        const selectedSet = new Set(answerIds)
-        const correct = solutions.every((s) => selectedSet.has(s))
-
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      const correct = question.solutions?.includes(answerId) ?? false
-
-      return { correct, base: correct ? 1 : 0 }
-    }
+    // Correctness/scoring math extracted to round-manager/scoring.ts (Modul 5
+    // of the SRP split): evalAnswer (pure, `question` now an explicit param)
+    // + scorePlayerAnswer (the per-player streak/bonus/points block).
 
     // The first player (by answer arrival order) to get it right earns a flat bonus.
     let firstCorrectId: string | null = null
 
     if (!isPoll && !question.practice) {
       for (const a of this.playersAnswers) {
-        if (evalAnswer(a.answerId, a.answerIds, a.answerText).correct) {
+        if (evalAnswer(question, a.answerId, a.answerIds, a.answerText).correct) {
           firstCorrectId = a.clientId
 
           break
@@ -846,45 +775,6 @@ export class RoundManager {
         const playerAnswer = this.playersAnswers.find(
           (a) => a.clientId === player.clientId,
         )
-
-        // Poll: opinion vote — neutral, no points, streak untouched. No
-        // achievement is ever awarded on a poll (gated below via aScored=false).
-        if (isPoll) {
-          return {
-            ...player,
-            lastCorrect: false,
-            lastPoints: 0,
-            lastPoll: true,
-            lastStreak: player.streak,
-            lastStreakBonus: false,
-            lastBonus: false,
-            lastFirstCorrect: false,
-            // Achievement intermediates (internal, stripped before the wire).
-            aScored: false,
-            aIsCorrect: false,
-            aBaseFactor: 0,
-            aStreakAfter: player.streak,
-            aGotFirst: false,
-            aResponseTimeMs: null as number | null,
-            aPointsBefore: player.points,
-            aPointsAfter: player.points,
-          }
-        }
-
-        let isCorrect = false
-        let rawPoints = 0
-        let baseFactor = 0
-
-        if (playerAnswer) {
-          const ev = evalAnswer(
-            playerAnswer.answerId,
-            playerAnswer.answerIds,
-            playerAnswer.answerText,
-          )
-          isCorrect = ev.correct
-          baseFactor = ev.base
-          rawPoints = ev.base * playerAnswer.points
-        }
 
         // Achievements: server-receive response time for this player this round
         // (ALL modes). null when the player did not answer. Clamped to >= 0 so a
@@ -900,59 +790,15 @@ export class RoundManager {
         const myPointsBefore =
           pointsBefore.get(player.clientId) ?? player.points
 
-        const streakBefore = player.streak
-        // Streak multiplier: +10% per consecutive correct, capped at +50%.
-        const streakMult = isCorrect
-          ? 1 + STREAK_STEP * Math.min(streakBefore, STREAK_CAP)
-          : 1
-        const bonusMult = question.bonus ? 2 : 1
-
-        let points = question.practice
-          ? 0
-          : Math.round(rawPoints * streakMult * bonusMult)
-
-        let gotFirst = false
-
-        if (
-          !question.practice &&
-          isCorrect &&
-          player.clientId === firstCorrectId
-        ) {
-          // Scale the first-correct bonus by accuracy (full for choice/boolean,
-          // proportional for slider) so a fast near-miss can't beat an accurate one.
-          points += Math.round(FIRST_CORRECT_BONUS * baseFactor)
-          gotFirst = true
-        }
-
-        player.points += points
-        // Practice questions don't touch the streak (they award no points).
-        player.streak = question.practice
-          ? streakBefore
-          : isCorrect
-            ? streakBefore + 1
-            : 0
-
-        return {
-          ...player,
-          lastCorrect: isCorrect,
-          lastPoints: points,
-          lastPoll: false,
-          lastStreak: player.streak,
-          lastStreakBonus: isCorrect && streakBefore > 0 && !question.practice,
-          lastBonus: Boolean(question.bonus) && isCorrect && !question.practice,
-          lastFirstCorrect: gotFirst,
-          // Achievement intermediates (internal, stripped before the wire). A
-          // scored question is one that counts toward streaks/points: non-poll,
-          // non-practice. Practice answers never unlock anything.
-          aScored: !question.practice,
-          aIsCorrect: isCorrect,
-          aBaseFactor: baseFactor,
-          aStreakAfter: player.streak,
-          aGotFirst: gotFirst,
-          aResponseTimeMs: responseTimeMs,
-          aPointsBefore: myPointsBefore,
-          aPointsAfter: player.points,
-        }
+        return scorePlayerAnswer({
+          player,
+          playerAnswer,
+          question,
+          isPoll,
+          firstCorrectId,
+          myPointsBefore,
+          responseTimeMs,
+        })
       })
       .sort((a, b) => b.points - a.points)
 
