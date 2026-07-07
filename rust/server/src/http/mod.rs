@@ -1,4 +1,3 @@
-mod achievements;
 mod assignments;
 mod observability;
 
@@ -612,7 +611,6 @@ pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
         .route("/api/quizz/:id/solo", get(handle_get_quiz_solo))
         .route("/api/quizz/:id/check-answer", post(handle_check_answer))
         .route("/api/quizz/:id/solo-score", post(handle_solo_score))
-        .route("/api/achievements", get(achievements::handle_get_achievements))
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))

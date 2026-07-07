@@ -87,7 +87,7 @@ async fn authorize_manager_request(
             if a.len() == b.len() {
                 let mut equal = true;
                 for (x, y) in a.iter().zip(b.iter()) {
-                    equal = equal && (x == y);
+                    equal &= x == y;
                 }
 
                 if equal {
@@ -175,9 +175,9 @@ pub async fn handle_create_assignment(
 
 pub async fn handle_get_assignment(
     Path(id): Path<String>,
-) -> Result<Json<Assignment>, (StatusCode, String)> {
+) -> Result<Json<Assignment>, (StatusCode, Json<serde_json::Value>)> {
     safe_asset_id(&id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
     let file_path = get_assignment_path(&id);
 
@@ -190,8 +190,8 @@ pub async fn handle_get_assignment(
         }
     })
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
-    .ok_or_else(|| (StatusCode::NOT_FOUND, "Assignment not found".to_string()))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
+    .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
     Ok(Json(assignment))
 }

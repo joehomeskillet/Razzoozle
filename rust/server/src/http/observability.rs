@@ -20,13 +20,8 @@ pub async fn handle_observability_events() -> Result<Json<EventsResponse>, (Stat
         return Err(json_error_response(StatusCode::NOT_FOUND, "not found"));
     }
 
-    let events = json!([
-        {
-            "name": "QUIZ_LOAD",
-            "direction": "server->client",
-            "role": "player"
-        }
-    ]);
+    // parity: Node serves buildEventCatalog(); port pending — dev-gated route returns honest empty list until then.
+    let events = json!([]);
     Ok(Json(EventsResponse { events }))
 }
 
