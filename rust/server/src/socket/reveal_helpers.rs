@@ -1,26 +1,29 @@
 //! Helper functions for the reveal/auto-advance flow — factored to eliminate duplication
 //! between manager:REVEAL_ANSWER handler and player auto-advance on all-answered
 
-use crate::state::{Game, GameRegistry};
-use crate::{is_game_host, match_mode_from_str, question_type_wire};
+use crate::state::Game;
+use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::{GameStatus, ShowResponsesData};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use tokio::sync::RwLock;
 use tracing::info;
 
-/// Perform the reveal flow: call engine.reveal, broadcast SHOW_RESULT to players,
-/// broadcast ShowResponses to manager, and spawn cooldown timer.
-/// This is factored from the REVEAL_ANSWER handler to be reusable for auto-advance.
+/// Perform the reveal-only flow: call engine.reveal, broadcast SHOW_RESULT to
+/// each player, and SHOW_RESPONSES to the manager. Phase-guarded via
+/// `engine.reveal()` — safe to call from multiple racing triggers (cooldown
+/// timeout, manager:skipQuestion/revealAnswer, all-answered): only the first
+/// caller whose reveal succeeds actually broadcasts anything.
+///
+/// What happens AFTER the reveal (result dwell -> leaderboard -> next
+/// question or FINISHED) is owned by `socket::lifecycle::run_game_lifecycle`
+/// — this function does not schedule anything further.
 pub async fn perform_reveal_and_broadcast(
     game_ref: Arc<Mutex<Game>>,
     game_id: String,
     io_handle: SocketIo,
-    registry: Arc<RwLock<GameRegistry>>,
     is_auto_advance: bool,
 ) {
     // Call reveal on engine
@@ -178,75 +181,5 @@ pub async fn perform_reveal_and_broadcast(
                     .ok();
             }
         }
-
-        // Emit cooldown sequence (matching golden frames)
-        let io_handle_clone = io_handle.clone();
-        let game_id_clone = game_id.clone();
-        let registry_clone = registry.clone();
-
-        // Get cooldown duration before spawning task
-        let cooldown_secs = {
-            let game = game_ref.lock().unwrap();
-            game.engine.current_question().cooldown
-        };
-
-        // Spawn cooldown timer task using tokio interval
-        tokio::spawn(async move {
-            // Emit game:startCooldown event
-            io_handle_clone
-                .to(game_id_clone.clone())
-                .emit(constants::game::START_COOLDOWN, &serde_json::json!([]))
-                .ok();
-
-            // Run countdown using tokio interval for consistent 1-second ticks
-            let mut interval = tokio::time::interval(Duration::from_secs(1));
-            let mut count = cooldown_secs;
-
-            while count > 0 {
-                interval.tick().await;
-                io_handle_clone
-                    .to(game_id_clone.clone())
-                    .emit(constants::game::COOLDOWN, &count)
-                    .ok();
-                count -= 1;
-            }
-
-            // After cooldown completes, emit SHOW_PREPARED (matching golden frames)
-            let game_opt = {
-                let registry = registry_clone.read().await;
-                registry.get_game_by_id(&game_id_clone)
-            };
-
-            if let Some(game_ref) = game_opt {
-                let (current_q, total_q) = {
-                    let game = game_ref.lock().unwrap();
-                    (
-                        game.engine.current_question_index as i32 + 1,
-                        game.engine.quiz.questions.len() as i32,
-                    )
-                };
-
-                let update_q = razzoozle_protocol::player::GameUpdateQuestion {
-                    current: current_q,
-                    total: total_q,
-                };
-
-                io_handle_clone
-                    .to(game_id_clone.clone())
-                    .emit(constants::game::UPDATE_QUESTION, &update_q)
-                    .ok();
-
-                let prepared = razzoozle_protocol::status::ShowPreparedData {
-                    total_answers: 4,
-                    question_number: current_q,
-                };
-
-                let status = GameStatus::ShowPrepared(prepared);
-                io_handle_clone
-                    .to(game_id_clone)
-                    .emit(constants::game::STATUS, &status)
-                    .ok();
-            }
-        });
     }
 }

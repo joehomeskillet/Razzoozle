@@ -245,14 +245,7 @@ pub async fn run_game_lifecycle(
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
         // so a reveal already performed by a racing path is a silent no-op.
         info!("Question cooldown resolved: gameId={}, revealing", game_id);
-        perform_reveal_and_broadcast(
-            game_ref.clone(),
-            game_id.clone(),
-            io.clone(),
-            registry.clone(),
-            true,
-        )
-        .await;
+        perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
         // Result dwell — host may cut it short via manager:showLeaderboard.
         let abort = { game_ref.lock().unwrap().arm_abort() };
@@ -295,7 +288,7 @@ pub async fn run_game_lifecycle(
                 return;
             }
             Ok(GamePhase::ShowQuestion) => {
-                index = { game_ref.lock().unwrap().engine.current_question_index };
+                index = game_ref.lock().unwrap().engine.current_question_index;
             }
             _ => return,
         }

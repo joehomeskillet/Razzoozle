@@ -1,12 +1,22 @@
 //! MANAGER.START_GAME, NEXT_QUESTION, SKIP_QUESTION, ABORT_QUIZ, ADJUST_TIMER — game flow handlers
+//!
+//! START_GAME is the only handler that DRIVES the game forward — it spawns the
+//! single long-lived `socket::lifecycle::run_game_lifecycle` task that owns
+//! every subsequent phase transition (question cooldown, reveal, leaderboard,
+//! advance, finish). NEXT_QUESTION / SKIP_QUESTION never build or emit a
+//! status themselves anymore — they just interrupt whatever abortable wait the
+//! lifecycle task is currently in (see `socket::lifecycle::request_abort`),
+//! exactly like node's `skipQuestion()`/`nextQuestion()` only ever nudge the
+//! round-manager's state machine, never duplicate its transitions.
 
 use super::super::HandlerCtx;
-use crate::{is_game_host, question_type_wire};
+use crate::is_game_host;
+use crate::socket::lifecycle;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::status::{GameStatus, SelectAnswerData, ShowQuestionData};
+use razzoozle_protocol::status::GameStatus;
 use socketioxide::extract::{Data, SocketRef};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use tracing::{info, warn};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
@@ -69,86 +79,14 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 let status = GameStatus::ShowStart(start_data);
                                 ctx.io.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
 
-                                // Schedule question flow after lead time (3 seconds from golden frames)
+                                // After the SHOW_START lead-time, hand off to the single
+                                // game-lifecycle task (3-2-1 intro -> Q1 -> ... -> FINISHED).
                                 let io_handle = ctx.io.clone();
-                                let game_id_clone = game_id.clone();
                                 let registry = ctx.registry.clone();
 
                                 tokio::spawn(async move {
                                     tokio::time::sleep(Duration::from_secs(3)).await;
-
-                                    let game_opt = {
-                                        let registry = registry.read().await;
-                                        registry.get_game_by_id(&game_id_clone)
-                                    };
-
-                                    if let Some(game_ref) = game_opt {
-                                        // Show question and open answers in a single lock scope
-                                        let (question_data, select_data_tuple) = {
-                                            let mut game = game_ref.lock().unwrap();
-                                            let question_data = game.engine.show_question(0).ok();
-
-                                            if question_data.is_some() {
-                                                // Get current server time for response tracking
-                                                let server_now_ms = SystemTime::now()
-                                                    .duration_since(UNIX_EPOCH)
-                                                    .map(|d| d.as_millis() as i64)
-                                                    .unwrap_or(0);
-
-                                                // Set engine clock to wall-clock time for response_time_ms tracking
-                                                game.engine.set_clock_ms(server_now_ms);
-
-                                                // Transition to SelectAnswer phase
-                                                let _ = game.engine.open_answers();
-                                                let question = game.engine.current_question().clone();
-                                                let total_players = game.players.len() as i32;
-                                                let answer_deadline_at_server_ms =
-                                                    server_now_ms + (question.time as i64 * 1000);
-
-                                                (question_data, Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)))
-                                            } else {
-                                                (question_data, None)
-                                            }
-                                        };
-
-                                        if let Some(question_data) = question_data {
-                                            // Emit SHOW_QUESTION
-                                            let status = GameStatus::ShowQuestion(question_data);
-                                            io_handle.to(game_id_clone.clone())
-                                                .emit(constants::game::STATUS, &status).ok();
-
-                                            // Emit SELECT_ANSWER for interactive phase
-                                            if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
-                                                let question_type_str = question
-                                                    .r#type
-                                                    .as_ref()
-                                                    .map(|t| question_type_wire(t).to_string());
-
-                                                let select_answer = SelectAnswerData {
-                                                    question: question.question.clone(),
-                                                    answers: question.answers.clone(),
-                                                    media: question.media.clone(),
-                                                    time: question.time,
-                                                    total_player: total_players,
-                                                    question_type: question_type_str,
-                                                    min: question.min.map(|v| v as i32),
-                                                    max: question.max.map(|v| v as i32),
-                                                    step: question.step.map(|v| v as i32),
-                                                    unit: question.unit.clone(),
-                                                    shuffled_chunks: None,
-                                                    server_seq: None,
-                                                    server_now_ms: Some(server_now_ms),
-                                                    question_start_at_server_ms: Some(server_now_ms),
-                                                    answer_deadline_at_server_ms: Some(answer_deadline_at_server_ms),
-                                                    submitted_by: question.submitted_by.clone(),
-                                                };
-
-                                                let status = GameStatus::SelectAnswer(select_answer);
-                                                io_handle.to(game_id_clone)
-                                                    .emit(constants::game::STATUS, &status).ok();
-                                            }
-                                        }
-                                    }
+                                    lifecycle::run_game_lifecycle(io_handle, registry, game_id).await;
                                 });
                             }
                             Err(e) => {
@@ -166,6 +104,10 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
+/// Host live-control: while the game-lifecycle task is dwelling on
+/// SHOW_LEADERBOARD, cut that wait short so the next question opens now
+/// instead of after the full dwell. No-op while any other phase is showing
+/// (mirrors node's nextQuestion() only being meaningful from the leaderboard).
 fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::NEXT_QUESTION, {
         let ctx = ctx.clone();
@@ -202,88 +144,7 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
-                        let next_phase = {
-                            let mut game = game_ref.lock().unwrap();
-                            game.engine.next_or_finish()
-                        };
-
-                        if let Ok(GamePhase::Finished) = next_phase {
-                            info!("Game finished: gameId={}", game_id);
-                            let finished = razzoozle_protocol::status::FinishedData {
-                                subject: "Quiz".to_string(),
-                                top: {
-                                    let game = game_ref.lock().unwrap();
-                                    game.engine.players.clone()
-                                },
-                                rank: None,
-                                team_standings: None,
-                                recap: None,
-                                auto_mode: None,
-                            };
-                            let status = GameStatus::Finished(finished);
-                            ctx.io.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
-                        } else if let Ok(GamePhase::ShowQuestion) = next_phase {
-                            let (question_data, select_data_tuple) = {
-                                let mut game = game_ref.lock().unwrap();
-                                let question = game.engine.current_question().clone();
-
-                                let server_now_ms = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .map(|d| d.as_millis() as i64)
-                                    .unwrap_or(0);
-
-                                game.engine.set_clock_ms(server_now_ms);
-                                let _ = game.engine.open_answers();
-
-                                let total_players = game.players.len() as i32;
-                                let answer_deadline_at_server_ms =
-                                    server_now_ms + (question.time as i64 * 1000);
-
-                                let show_question_data = ShowQuestionData {
-                                    question: question.question.clone(),
-                                    answers: question.answers.clone(),
-                                    display_order: None,
-                                    media: question.media.clone(),
-                                    cooldown: question.cooldown,
-                                    submitted_by: question.submitted_by.clone(),
-                                };
-
-                                (show_question_data, Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)))
-                            };
-
-                            let status = GameStatus::ShowQuestion(question_data);
-                            ctx.io.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
-
-                            if let Some((question, total_players, server_now_ms, answer_deadline_at_server_ms)) = select_data_tuple {
-                                let question_type_str = question
-                                    .r#type
-                                    .as_ref()
-                                    .map(|t| question_type_wire(t).to_string());
-
-                                let select_answer = SelectAnswerData {
-                                    question: question.question.clone(),
-                                    answers: question.answers.clone(),
-                                    media: question.media.clone(),
-                                    time: question.time,
-                                    total_player: total_players,
-                                    question_type: question_type_str,
-                                    min: question.min.map(|v| v as i32),
-                                    max: question.max.map(|v| v as i32),
-                                    step: question.step.map(|v| v as i32),
-                                    unit: question.unit.clone(),
-                                    shuffled_chunks: None,
-                                    server_seq: None,
-                                    server_now_ms: Some(server_now_ms),
-                                    question_start_at_server_ms: Some(server_now_ms),
-                                    answer_deadline_at_server_ms: Some(answer_deadline_at_server_ms),
-                                    submitted_by: question.submitted_by.clone(),
-                                };
-
-                                let status = GameStatus::SelectAnswer(select_answer);
-                                ctx.io.to(game_id)
-                                    .emit(constants::game::STATUS, &status).ok();
-                            }
-                        }
+                        lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
                     }
                 }
             });
@@ -291,6 +152,15 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
+/// Host live-control: end the live SELECT_ANSWER window NOW — the
+/// game-lifecycle task's per-question cooldown wakes immediately and reveals,
+/// exactly as if the timer had elapsed (node: skipQuestion() ends the answer
+/// window early, letting the awaited cooldown fall through to showResults()).
+/// No-op when no question is currently live (matches node's
+/// `if (!answerWindowOpen) return`) — this is the fix for the reported
+/// "Skip = No-Op" bug (skip used to call next_or_finish() directly, which
+/// always failed because the engine was still in SelectAnswer, never
+/// ShowLeaderboard).
 fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SKIP_QUESTION, {
         let ctx = ctx.clone();
@@ -327,14 +197,7 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
-                        let next_phase_result = {
-                            let mut game = game_ref.lock().unwrap();
-                            game.engine.next_or_finish()
-                        };
-                        if let Err(e) = next_phase_result {
-                            warn!("SKIP_QUESTION: next_or_finish failed: {}", e);
-                            socket.emit(constants::game::ERROR_MESSAGE, "skip failed").ok();
-                        }
+                        lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                     }
                 }
             });
@@ -378,10 +241,14 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
-                        let _ = {
+                        {
                             let mut game = game_ref.lock().unwrap();
                             game.engine.phase = GamePhase::Finished;
-                        };
+                            // Wake the lifecycle task's current abortable wait (if any) so
+                            // it stops promptly instead of running out its full dwell —
+                            // it will find the phase already Finished and exit quietly.
+                            game.signal_abort();
+                        }
 
                         info!("Quiz aborted: gameId={}", game_id);
                         let finished = razzoozle_protocol::status::FinishedData {
