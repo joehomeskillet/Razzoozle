@@ -6,7 +6,6 @@ name: CI
 # on the host razzoozle-cd.timer poller (see deploy.yml); this Actions runner
 # has no host docker/systemctl access.
 #
-# Syntax reference (Hausmuster): /nvmetank1/projects/rag-stack/.gitea/workflows/*.yml
 # (SHA-pinned checkout, concurrency cancel-in-progress, docker-availability guard).
 
 on:

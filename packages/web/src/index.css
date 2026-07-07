@@ -407,12 +407,11 @@ button:not(:disabled),
 }
 
 /* ==========================================================================
-   Razzoozle Violet Liquid-Glass — scoped surface system.
+   Optional violet liquid-glass — scoped surface system.
    Everything below this banner is gated on [data-theme-style="glass"]; flat
    themes (no `style` field, or style: "flat") never match these rules, so the
-   Südhang baseline above is byte-for-byte unchanged. These blocks only ever
-   *add* — they never touch any :root or flat rule. See
-   docs/design/razzoozle-violet-glass.md §1.2, §2.3–2.5, §3.3.
+   flat cream baseline above is byte-for-byte unchanged. These blocks only ever
+   *add* — they never touch any :root or flat rule.
    ========================================================================== */
 
 /* §2.3 Glass tokens — frost system as custom properties, scoped to glass mode. */
