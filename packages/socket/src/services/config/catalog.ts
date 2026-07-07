@@ -9,10 +9,24 @@ import {
   catalogAddValidator,
   catalogEntryValidator,
 } from "@razzoozle/common/validators/catalog"
+import {
+  deleteCatalogEntryPg,
+  upsertCatalogEntryPg,
+} from "@razzoozle/socket/services/storage/catalog-pg"
 import { normalizeFilename } from "@razzoozle/socket/utils/game"
 import { z } from "zod"
 import fs from "fs"
 import { assertSafeId, getPath } from "@razzoozle/socket/services/config/shared"
+
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth for
+// the 3 catalog write functions below (they can't become async without breaking
+// their call sites), but writes are additionally mirrored to Postgres via
+// services/storage/catalog-pg.ts (fire-and-forget, errors logged not thrown —
+// file write remains authoritative and never blocks on the DB).
+const isDbBackedCatalogMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const getCatalog = (): CatalogEntry[] => {
   const dir = getPath("catalog")
@@ -113,6 +127,18 @@ export const saveCatalogEntry = (
     JSON.stringify(entry, null, 2),
   )
 
+  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  if (isDbBackedCatalogMode()) {
+    void upsertCatalogEntryPg(id, {
+      question: entry.question,
+      tags: entry.tags,
+      source: entry.source,
+      addedAt: entry.addedAt,
+    }).catch((error) =>
+      console.error("catalog.saveCatalogEntry: pg mirror failed", error),
+    )
+  }
+
   return entry
 }
 
@@ -146,6 +172,18 @@ export const updateCatalogEntry = (
     JSON.stringify(entry, null, 2),
   )
 
+  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  if (isDbBackedCatalogMode()) {
+    void upsertCatalogEntryPg(id, {
+      question: entry.question,
+      tags: entry.tags,
+      source: entry.source,
+      addedAt: entry.addedAt,
+    }).catch((error) =>
+      console.error("catalog.updateCatalogEntry: pg mirror failed", error),
+    )
+  }
+
   return entry
 }
 
@@ -159,4 +197,11 @@ export const deleteCatalogEntry = (id: string): void => {
   }
 
   fs.unlinkSync(filePath)
+
+  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  if (isDbBackedCatalogMode()) {
+    void deleteCatalogEntryPg(id).catch((error) =>
+      console.error("catalog.deleteCatalogEntry: pg mirror failed", error),
+    )
+  }
 }

@@ -2,8 +2,19 @@
 // services/config.ts (SRP split).
 import type { GameResult, GameResultMeta } from "@razzoozle/common/types/game"
 import { gameResultValidator } from "@razzoozle/socket/services/validators"
+import { deleteResultPg, updateResultPg } from "@razzoozle/socket/services/storage/results-pg"
 import fs from "fs"
 import { assertSafeId, getPath } from "@razzoozle/socket/services/config/shared"
+
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth for
+// the result functions below (they can't become async without breaking their
+// call sites), but writes are additionally mirrored to Postgres via
+// services/storage/results-pg.ts (fire-and-forget, errors logged not thrown —
+// file write remains authoritative and never blocks on the DB).
+const isDbBackedResultsMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const saveResult = (data: GameResult): void => {
   try {
@@ -19,6 +30,12 @@ export const saveResult = (data: GameResult): void => {
     )
 
     console.log(`Saved result for "${data.subject}"`)
+
+    if (isDbBackedResultsMode()) {
+      updateResultPg(data).catch((error) =>
+        console.error(`results-pg mirror write failed for "${data.id}":`, error),
+      )
+    }
   } catch (error) {
     console.error("Failed to save result:", error)
   }
@@ -95,4 +112,10 @@ export const deleteResult = (id: string): void => {
   }
 
   fs.unlinkSync(filePath)
+
+  if (isDbBackedResultsMode()) {
+    deleteResultPg(id).catch((error) =>
+      console.error(`results-pg mirror delete failed for "${id}":`, error),
+    )
+  }
 }
