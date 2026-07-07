@@ -2,7 +2,6 @@ import {
   EVENTS,
   MAX_LATENCY_COMPENSATION_MS,
   MEDIA_TYPES,
-  TEAMS,
 } from "@razzoozle/common/constants"
 import {
   type AchievementId,
@@ -19,8 +18,6 @@ import type {
   QuestionResult,
   Quizz,
   RoundRecapAward,
-  Superlative,
-  SuperlativeKey,
   TeamStanding,
 } from "@razzoozle/common/types/game"
 import type {
@@ -38,16 +35,11 @@ import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
 import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
 import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
-import { normalizeText } from "@razzoozle/socket/services/game/text-match"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
-import Registry from "@razzoozle/socket/services/registry"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
-import { nanoid } from "nanoid"
 import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
-import { computeAchievementAwards } from "@razzoozle/socket/services/game/round-manager/achievement-awards"
-import { computeRoundRecap } from "@razzoozle/socket/services/game/round-manager/round-recap"
 import {
   buildRestoreState,
   computeReconnectInfo,
@@ -64,16 +56,21 @@ import {
 } from "@razzoozle/socket/services/game/round-manager/pause-resume"
 import {
   applyAutoMode,
-  AUTO_LEADERBOARD_MS,
-  AUTO_RESULT_MS,
   clearAuto as clearAutoFn,
   emitResultCountdown as emitResultCountdownFn,
   scheduleAuto as scheduleAutoFn,
 } from "@razzoozle/socket/services/game/round-manager/auto-mode"
 import {
-  evalAnswer,
-  scorePlayerAnswer,
-} from "@razzoozle/socket/services/game/round-manager/scoring"
+  computeTeamStandings as computeTeamStandingsFn,
+  selectTeam as selectTeamFn,
+} from "@razzoozle/socket/services/game/round-manager/team-standings"
+import { buildRecap as buildRecapFn } from "@razzoozle/socket/services/game/round-manager/game-recap"
+import {
+  showLeaderboard as showLeaderboardFn,
+  showRoundRecap as showRoundRecapFn,
+} from "@razzoozle/socket/services/game/round-manager/leaderboard-flow"
+import { computeResultsStats } from "@razzoozle/socket/services/game/round-manager/results-stats"
+import { broadcastResults } from "@razzoozle/socket/services/game/round-manager/results-broadcast"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -703,157 +700,25 @@ export class RoundManager {
     this.showResults(question)
   }
 
+  // ── Results — logic extracted to round-manager/results-stats.ts +
+  // results-broadcast.ts (Modul 9 of the SRP split), cut at the natural
+  // compute/emit seam: everything up to and including `cleanedSorted` is
+  // computation (results-stats), everything from players.replace() on is
+  // emission + round-state mutation (results-broadcast). The answer-window
+  // close stays here (hot sim-mode state, mirrors selectAnswer/skipQuestion).
   private showResults(question: Question): void {
     // Sim mode: the window is closing — cancel pending bot timers first so no
     // late bot answer can land after results are computed.
     this.answerWindowOpen = false
     this.opts.onAnswerWindowClose?.()
 
-    const currentPlayers = this.opts.players.getAll()
-
-    const oldLeaderboard = (() => {
-      if (this.leaderboard.length === 0) {
-        return currentPlayers.map((p) => ({ ...p }))
-      }
-
-      return this.leaderboard.map((p) => ({ ...p }))
-    })()
-
-    // ── Achievements pre-round snapshot ───────────────────────────────────────
-    // A prior round exists iff this.leaderboard was populated (round >= 1). The
-    // `climber` badge needs the FULL pre-round ranking (not the top-5 slice), so
-    // we rank EVERY current player by their points BEFORE this round's scoring.
-    const hasPriorRound = this.leaderboard.length > 0
-    const pointsBefore = new Map<string, number>()
-
-    for (const p of currentPlayers) {
-      pointsBefore.set(p.clientId, p.points)
-    }
-
-    // rankBefore: 1-based index over all players sorted by pre-round points desc.
-    // Only meaningful when a prior round exists (else every climb is spurious).
-    const rankBefore = new Map<string, number>()
-
-    if (hasPriorRound) {
-      const preRanked = [...currentPlayers].sort((a, b) => b.points - a.points)
-      preRanked.forEach((p, index) => {
-        rankBefore.set(p.clientId, index + 1)
-      })
-    }
-
-    // Scored = the questions that actually count toward participation / 100%:
-    // non-poll AND non-practice. Counted once for the whole quiz.
-    const totalScoredQuestions = this.opts.quizz.questions.filter(
-      (q) => q.type !== "poll" && !q.practice,
-    ).length
-    // participation / perfect_game must fire on the last SCORED question — not
-    // the literal last question. If the quiz ends on a poll/practice round, the
-    // counters never reach their total inside the `aScored` branch (poll/practice
-    // rows are skipped), so we anchor on the index of the final scored question.
-    const lastScoredIndex = this.opts.quizz.questions.reduce(
-      (last, q, i) => (q.type !== "poll" && !q.practice ? i : last),
-      -1,
-    )
-    const isLastScoredRound = this.currentQuestion === lastScoredIndex
-
-    const totalType = this.playersAnswers.reduce(
-      (acc: Record<number, number>, answer) => {
-        // Multiple-select: increment EACH selected option's bucket so the
-        // manager histogram shows how many players picked each option. All other
-        // types keep the single-bucket behaviour (answerId === -1 for type-answer
-        // lands in a bucket the text histogram ignores).
-        if (answer.answerIds !== undefined) {
-          for (const id of answer.answerIds) {
-            acc[id] = (acc[id] || 0) + 1
-          }
-        } else {
-          acc[answer.answerId] = (acc[answer.answerId] || 0) + 1
-        }
-
-        return acc
-      },
-      {},
-    )
-
-    // Type-answer: a parallel text-keyed histogram (normalized text -> count) so
-    // the manager can see how the free-text answers clustered. undefined for all
-    // other types. Keyed by the SAME normalization used for scoring so case/accent
-    // variants collapse into one bar.
-    const textResponses =
-      question.type === "type-answer" || question.type === "sentence-builder"
-        ? this.playersAnswers.reduce(
-            (acc: Record<string, number>, { answerText }) => {
-              const key = normalizeText(answerText ?? "")
-
-              if (key) {
-                acc[key] = (acc[key] || 0) + 1
-              }
-
-              return acc
-            },
-            {},
-          )
-        : undefined
-
-    const isPoll = question.type === "poll"
-
-    // Correctness/scoring math extracted to round-manager/scoring.ts (Modul 5
-    // of the SRP split): evalAnswer (pure, `question` now an explicit param)
-    // + scorePlayerAnswer (the per-player streak/bonus/points block).
-
-    // The first player (by answer arrival order) to get it right earns a flat bonus.
-    let firstCorrectId: string | null = null
-
-    if (!isPoll && !question.practice) {
-      for (const a of this.playersAnswers) {
-        if (evalAnswer(question, a.answerId, a.answerIds, a.answerText).correct) {
-          firstCorrectId = a.clientId
-
-          break
-        }
-      }
-    }
-
-    const sortedPlayers = currentPlayers
-      .map((player) => {
-        const playerAnswer = this.playersAnswers.find(
-          (a) => a.clientId === player.clientId,
-        )
-
-        // Achievements: server-receive response time for this player this round
-        // (ALL modes). null when the player did not answer. Clamped to >= 0 so a
-        // clock skew can't produce a negative "faster than instant" badge.
-        const receivedAt = this.answerReceivedAt.get(player.clientId)
-        const responseTimeMs =
-          receivedAt !== undefined
-            ? Math.max(0, receivedAt - this.startTime)
-            : null
-
-        // pointsBefore is captured BEFORE the mutation below (from the snapshot
-        // taken before this map ran), so it is the player's pre-round total.
-        const myPointsBefore =
-          pointsBefore.get(player.clientId) ?? player.points
-
-        return scorePlayerAnswer({
-          player,
-          playerAnswer,
-          question,
-          isPoll,
-          firstCorrectId,
-          myPointsBefore,
-          responseTimeMs,
-        })
-      })
-      .sort((a, b) => b.points - a.points)
-
-    // ── Achievements: badge unlocks + configurable bonus points ───────────────
-    // Extracted to round-manager/achievement-awards.ts (Modul 1 of the SRP
-    // split). Mutates `sortedPlayers` (bonus folded into points/lastPoints,
-    // re-sorted) and `currentPlayers` (live player points) in place, and the
-    // persistent gameCounters/recapStats/questionStats maps — exactly as the
-    // inline code did via `this.X` before the extraction.
-    const { achievementsByClient, bonusByClient } = computeAchievementAwards(
+    const stats = computeResultsStats(
       {
+        players: this.opts.players,
+        leaderboard: this.leaderboard,
+        quizz: this.opts.quizz,
+        playersAnswers: this.playersAnswers,
+        startTime: this.startTime,
         gameCounters: this.gameCounters,
         recapStats: this.recapStats,
         questionStats: this.questionStats,
@@ -861,244 +726,48 @@ export class RoundManager {
         answerReceivedAt: this.answerReceivedAt,
         currentQuestion: this.currentQuestion,
       },
+      question,
+    )
+
+    broadcastResults(
       {
-        sortedPlayers,
-        currentPlayers,
-        rankBefore,
-        hasPriorRound,
-        firstCorrectId,
-        isLastScoredRound,
-        totalScoredQuestions,
-        question,
+        players: this.opts.players,
+        answerReceivedAt: this.answerReceivedAt,
+        startTime: this.startTime,
+        autoMode: this.autoMode,
+        lastResultPayloads: this.lastResultPayloads,
+        send: (target, status, data) => this.send(target, status, data),
+        getManagerId: () => this.opts.getManagerId(),
+        gameId: this.opts.gameId,
+        playersAnswers: this.playersAnswers,
+        setPlayersAnswers: (v) => {
+          this.playersAnswers = v
+        },
+        questionsHistory: this.questionsHistory,
+        setLeaderboard: (v) => {
+          this.leaderboard = v
+        },
+        setTempOldLeaderboard: (v) => {
+          this.tempOldLeaderboard = v
+        },
+        setTempRoundRecap: (v) => {
+          this.tempRoundRecap = v
+        },
+        setRoundRecapShown: (v) => {
+          this.roundRecapShown = v
+        },
+        setResultScreenActive: (v) => {
+          this.resultScreenActive = v
+        },
+        answerCountThrottle: this.answerCountThrottle,
+        setAnswerDeadlineAtServerMs: (v) => {
+          this.answerDeadlineAtServerMs = v
+        },
+        scheduleAuto: () => this.scheduleAuto(),
       },
+      question,
+      stats,
     )
-
-    // Persist the freshly-unlocked badges onto the live player objects so they
-    // are visible in the roster / leaderboard payloads too. We DROP the internal
-    // achievement-intermediate (aXxx) fields here so they never reach the wire.
-    const cleanedSorted = sortedPlayers.map((row) => {
-      const {
-        aScored: _aScored,
-        aIsCorrect: _aIsCorrect,
-        aBaseFactor: _aBaseFactor,
-        aStreakAfter: _aStreakAfter,
-        aGotFirst: _aGotFirst,
-        aResponseTimeMs: _aResponseTimeMs,
-        aPointsBefore: _aPointsBefore,
-        aPointsAfter: _aPointsAfter,
-        ...rest
-      } = row
-      const unlocked = achievementsByClient.get(row.clientId)
-
-      if (unlocked) {
-        return { ...rest, achievements: unlocked }
-      }
-
-      // No fresh unlock this round: STRIP any prior-round `achievements` so a
-      // stale badge can't ride into SHOW_LEADERBOARD / FINISHED / the roster
-      // (rest is spread from persisted player objects that may still carry an
-      // earlier round's achievements). Per-player SHOW_RESULT reads fresh from
-      // achievementsByClient, so it is unaffected.
-      const { achievements: _dropStale, ...cleanRest } = rest
-
-      return cleanRest
-    })
-
-    this.opts.players.replace(cleanedSorted)
-
-    // The question is OVER, so the correct answer is now safe to reveal in the
-    // per-player RESULT payload (anti-cheat: it is NEVER added to the live
-    // SHOW_QUESTION / SELECT_ANSWER payloads above). Built as a display string
-    // per question type so the wrong-answer "Too bad" screen can show what the
-    // right answer was. undefined for poll (no correct answer) and when the
-    // question carries no solution data.
-    const correctAnswer = ((): string | undefined => {
-      if (isPoll) {
-        return undefined
-      }
-
-      if (question.type === "slider") {
-        return question.correct != null
-          ? `${question.correct}${question.unit ? ` ${question.unit}` : ""}`
-          : undefined
-      }
-
-      if (question.type === "type-answer") {
-        return question.acceptedAnswers?.[0]
-      }
-
-      // choice / boolean / multiple-select: map solution indices to answer texts.
-      const texts = (question.solutions ?? [])
-        .map((i) => question.answers?.[i])
-        .filter((t): t is string => typeof t === "string")
-
-      return texts.length > 0 ? texts.join(", ") : undefined
-    })()
-
-    // FIX 9: when auto-mode is already on at results time, the SHOW_RESULT screen
-    // will auto-advance after AUTO_RESULT_MS — carry that as autoAdvanceMs so the
-    // client can render a local countdown. Absent in manual mode (old clients
-    // ignore it). The cache below also feeds the FIX 8 mid-screen re-send.
-    // ── Per-round recap (additive, optional) ──────────────────────────────────
-    // Game-wide highlights for THIS round, same array on every player's payload.
-    // Built from the intermediate `sortedPlayers` rows (which still carry the
-    // aXxx fields) — cleanedSorted has them stripped. Best-effort: an empty array
-    // means we omit the field so old clients are unaffected.
-    const rankAfterByClient = new Map<string, number>()
-    sortedPlayers.forEach((row, index) => {
-      rankAfterByClient.set(row.clientId, index + 1)
-    })
-    const roundRecap = computeRoundRecap(
-      sortedPlayers.map((row) => ({
-        clientId: row.clientId,
-        username: row.username,
-        avatar: row.avatar,
-        isBot: row.isBot,
-        aIsCorrect: row.aIsCorrect,
-        aResponseTimeMs: row.aResponseTimeMs,
-        aStreakAfter: row.aStreakAfter,
-        lastPoints: row.lastPoints,
-        answeredThisRound: this.answerReceivedAt.has(row.clientId),
-      })),
-      rankAfterByClient,
-      rankBefore,
-      achievementsByClient,
-      firstCorrectId,
-      hasPriorRound,
-    )
-
-    this.lastResultPayloads.clear()
-
-    cleanedSorted.forEach((player, index) => {
-      const rank = index + 1
-      const aheadPlayer = cleanedSorted[index - 1]
-      const unlocked = achievementsByClient.get(player.clientId)
-      const bonusPoints = bonusByClient.get(player.clientId) ?? 0
-
-      const resultPayload: StatusDataMap["SHOW_RESULT"] = {
-        correct: player.lastCorrect,
-        message: player.lastPoll
-          ? "game:pollThanks"
-          : player.lastCorrect
-            ? "game:correct"
-            : "game:wrong",
-        points: player.lastPoints,
-        myPoints: player.points,
-        rank,
-        aheadOfMe: aheadPlayer ? aheadPlayer.username : null,
-        streak: player.lastStreak,
-        streakBonus: player.lastStreakBonus,
-        bonus: player.lastBonus,
-        firstCorrect: player.lastFirstCorrect,
-        poll: player.lastPoll,
-        // Total players in this game, so the client can suppress a hollow "1st
-        // place" label in a solo (single-player) game (W1-D FIX 2).
-        playerCount: cleanedSorted.length,
-        ...(correctAnswer !== undefined ? { correctAnswer } : {}),
-        ...(question.type === "sentence-builder" && question.chunks
-          ? { correctChunks: question.chunks }
-          : {}),
-        ...(unlocked ? { achievements: unlocked } : {}),
-        ...(bonusPoints > 0 ? { bonusPoints } : {}),
-        ...(roundRecap.length > 0 ? { roundRecap } : {}),
-      }
-
-      // Cache WITHOUT autoAdvanceMs; emitResultCountdown adds the live remaining
-      // time on a mid-screen re-send so a late toggle gets an accurate value.
-      this.lastResultPayloads.set(player.id, resultPayload)
-
-      this.send(player.id, STATUS.SHOW_RESULT, {
-        ...resultPayload,
-        ...(this.autoMode ? { autoAdvanceMs: AUTO_RESULT_MS } : {}),
-      })
-    emitLifecycle("onResult", { gameId: this.opts.gameId, status: "SHOW_RESULT", data: {} })
-    })
-
-    // The post-results screen is now on display: a subsequent setAutoMode(true)
-    // (FIX 8) arms the advance for THIS screen. Cleared once we leave it.
-    this.resultScreenActive = true
-
-    const guesses = this.playersAnswers.map((a) => a.answerId)
-    const averageGuess =
-      question.type === "slider" && guesses.length
-        ? Math.round(guesses.reduce((s, v) => s + v, 0) / guesses.length)
-        : undefined
-
-    this.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
-      ...question,
-      // Question is validator-inferred, so these are optional; the status
-      // payload requires concrete arrays. Default to empty for slider/poll.
-      solutions: question.solutions ?? [],
-      answers: question.answers ?? [],
-      responses: totalType,
-      averageGuess,
-      // Type-answer (MANAGER-ONLY send — players never receive SHOW_RESPONSES):
-      // the normalized text histogram plus the authored accepted answers and the
-      // match mode so the host result view can render them. Gated to type-answer
-      // so other types carry none of these (acceptedAnswers/matchMode are
-      // anti-cheat-sensitive and must never leak to a player-facing payload).
-      textResponses,
-      acceptedAnswers:
-        question.type === "type-answer" ? question.acceptedAnswers : undefined,
-      matchMode:
-        question.type === "type-answer" ? question.matchMode : undefined,
-      correctChunks:
-        question.type === "sentence-builder" ? question.chunks : undefined,
-      // Per-round recap awards — same highlights the phone shows on SHOW_RESULT
-      // — so the presenter/projector displays them at result-reveal time too.
-      // Read from the local `roundRecap` const (computed above); safe to read
-      // here, well before tempRoundRecap is cleared after SHOW_LEADERBOARD.
-      ...(roundRecap.length > 0 ? { roundRecap } : {}),
-    })
-
-    this.questionsHistory.push({
-      ...question,
-      playerAnswers: currentPlayers.map((player) => {
-        const playerAnswer = this.playersAnswers.find(
-          (a) => a.clientId === player.clientId,
-        )
-
-        return {
-          playerName: player.username,
-          answerId: playerAnswer?.answerId ?? null,
-          // Multiple-select selected set / type-answer free text, persisted so
-          // the saved-result view can render the player's actual answer. null
-          // when not applicable (matches PlayerAnswerRecord).
-          answerIds: playerAnswer?.answerIds ?? null,
-          answerText: playerAnswer?.answerText ?? null,
-          // ms from question start to answer; null when no answer or legacy results.
-          responseMs: (() => {
-            const receivedAt = this.answerReceivedAt.get(player.clientId)
-            return receivedAt !== undefined
-              ? Math.max(0, receivedAt - this.startTime)
-              : null
-          })(),
-        }
-      }),
-    })
-
-    // Use the cleaned rows (avatar/achievements preserved, internal aXxx fields
-    // dropped) as the round leaderboard so the between-questions SHOW_LEADERBOARD
-    // rows carry `avatar` (bug #4 fix) without leaking achievement intermediates.
-    this.leaderboard = cleanedSorted
-    this.tempOldLeaderboard = oldLeaderboard
-    this.tempRoundRecap = roundRecap
-    this.roundRecapShown = false
-    this.playersAnswers = []
-
-    // Low-latency mode: the question is over — drop any pending throttled count
-    // and close the answer window so a late tap is rejected as `too_late`.
-    this.answerCountThrottle.cancel()
-    this.answerDeadlineAtServerMs = 0
-
-    // The round's STABLE, snapshotted state (leaderboard/questionsHistory/
-    // scores) just changed — mark the crash-recovery snapshot stale so the
-    // next periodic saveSnapshot() actually persists this round's outcome.
-    Registry.getInstance().markDirty()
-
-    if (this.autoMode) {
-      this.scheduleAuto()
-    }
   }
 
   selectAnswer(
@@ -1451,456 +1120,99 @@ export class RoundManager {
     return this.answerWindowOpen
   }
 
-  // ── Teams ──────────────────────────────────────────────────────────────────
-  // Assign a player to one of the fixed teams. No-op when team mode is off or the
-  // teamId is not a valid TEAMS member (anti-tamper). Re-broadcasts the player so
-  // the host roster + lobby reflect the choice. Returns the updated player (or
-  // undefined when nothing changed) so the caller can decide whether to emit.
+  // ── Teams — logic extracted to round-manager/team-standings.ts (Modul 6 of
+  // the SRP split). Both functions only read the game-creation teamMode
+  // snapshot + the live PlayerManager (by reference), so the wrappers pass
+  // exactly those two.
   selectTeam(clientId: string, teamId: string): Player | undefined {
-    if (!this.opts.teamMode) {
-      return undefined
-    }
-
-    if (!(TEAMS as readonly string[]).includes(teamId)) {
-      return undefined
-    }
-
-    const player = this.opts.players.findByClientId(clientId)
-
-    if (!player) {
-      return undefined
-    }
-
-    player.teamId = teamId
-
-    return player
+    return selectTeamFn(
+      { teamMode: this.opts.teamMode, players: this.opts.players },
+      clientId,
+      teamId,
+    )
   }
 
-  // Aggregate team points = SUM of member `points`, with member counts, sorted by
-  // points desc. Returns undefined when team mode is off (so the optional payload
-  // field stays absent in normal mode). Only players WITH a teamId contribute —
-  // bots never have one, so they are naturally excluded.
   private computeTeamStandings(): TeamStanding[] | undefined {
-    if (!this.opts.teamMode) {
-      return undefined
-    }
-
-    const byTeam = new Map<string, { points: number; playerCount: number }>()
-
-    for (const player of this.opts.players.getAll()) {
-      const teamId = player.teamId
-
-      if (!teamId || !(TEAMS as readonly string[]).includes(teamId)) {
-        continue
-      }
-
-      const entry = byTeam.get(teamId) ?? { points: 0, playerCount: 0 }
-      entry.points += player.points
-      entry.playerCount += 1
-      byTeam.set(teamId, entry)
-    }
-
-    return [...byTeam.entries()]
-      .map(([teamId, { points, playerCount }]) => ({
-        teamId,
-        points,
-        playerCount,
-      }))
-      .sort((a, b) => b.points - a.points)
+    return computeTeamStandingsFn({
+      teamMode: this.opts.teamMode,
+      players: this.opts.players,
+    })
   }
 
-  // ── Post-game recap / awards derivation (WP-A) ────────────────────────────
-  // Reduce the per-player recap accumulator into the manager-side superlatives
-  // list + per-player recap cards. Pure read of recapStats/questionStats — call
-  // ONCE at game end. Returns the manager payload, a per-clientId player payload
-  // map, and a per-clientId map of the single superlative that player won (for
-  // the phone highlight). Bots are already absent from recapStats.
+  // ── Post-game recap / awards derivation (WP-A) — logic extracted to
+  // round-manager/game-recap.ts (Modul 7 of the SRP split). Pure read of the
+  // persistent recapStats/questionStats accumulators + the cleaned round
+  // leaderboard, all passed by reference.
   private buildRecap(finalRanks: Map<string, number>): {
     manager: ManagerRecap
     perPlayer: Map<string, PlayerRecap>
   } {
-    const entries = [...this.recapStats.entries()]
-    // clientId -> avatar lookup for superlative winner cards. The cleaned round
-    // leaderboard rows carry avatar (bug #4 fix); recapStats does not, so we map
-    // it here once and attach it to each award below.
-    const avatarByClient = new Map<string, string | undefined>()
-    for (const p of this.leaderboard) {
-      avatarByClient.set(p.clientId, p.avatar)
-    }
-
-    // argmax/argmin helpers over the non-bot entries. A superlative is only
-    // produced when at least one entry qualifies (predicate true) AND the best
-    // value clears the floor (e.g. nobody climbed → no biggest_climber).
-    const award = (
-      key: SuperlativeKey,
-      pick: (stat: (typeof entries)[number][1]) => number | null,
-      better: (a: number, b: number) => boolean,
-      floor?: (value: number) => boolean,
-    ): { clientId: string; superlative: Superlative } | null => {
-      let bestId: string | null = null
-      let bestVal = 0
-      let bestName = ""
-      for (const [clientId, stat] of entries) {
-        const v = pick(stat)
-        if (v === null) {
-          continue
-        }
-        if (bestId === null || better(v, bestVal)) {
-          bestId = clientId
-          bestVal = v
-          bestName = stat.username
-        }
-      }
-      if (bestId === null) {
-        return null
-      }
-      if (floor && !floor(bestVal)) {
-        return null
-      }
-      return {
-        clientId: bestId,
-        superlative: {
-          key,
-          winnerName: bestName,
-          winnerAvatar: avatarByClient.get(bestId),
-          value: bestVal,
-        },
-      }
-    }
-
-    const max = (a: number, b: number): boolean => a > b
-    const min = (a: number, b: number): boolean => a < b
-
-    const winners: Array<{
-      clientId: string
-      superlative: Superlative
-    } | null> = [
-      // fastest_finger: lowest single-answer time (only players who answered).
-      award("fastest_finger", (s) => s.fastestMs, min),
-      // most_correct: highest correct count (skip if nobody got any right).
-      award(
-        "most_correct",
-        (s) => s.correct,
-        max,
-        (v) => v > 0,
-      ),
-      // most_wrong (playful): highest wrong count (skip if nobody was wrong).
-      award(
-        "most_wrong",
-        (s) => s.wrong,
-        max,
-        (v) => v > 0,
-      ),
-      // longest_streak: highest peak streak (skip if nobody built one).
-      award(
-        "longest_streak",
-        (s) => s.peakStreak,
-        max,
-        (v) => v > 0,
-      ),
-      // biggest_climber: largest single-round upward rank move.
-      award(
-        "biggest_climber",
-        (s) => s.bestClimb,
-        max,
-        (v) => v > 0,
-      ),
-      // lucky_guesser: a player who landed a correct answer in the last ~10%.
-      award(
-        "lucky_guesser",
-        (s) => (s.luckyGuess ? s.correct : null),
-        max,
-        (v) => v > 0,
-      ),
-      // most_achievements: highest full-game badge count (skip if zero).
-      award(
-        "most_achievements",
-        (s) => s.achievementIds.length,
-        max,
-        (v) => v > 0,
-      ),
-    ]
-
-    const superlatives: Superlative[] = []
-    const highlightByClient = new Map<
-      string,
-      { key: SuperlativeKey; value: number }
-    >()
-
-    for (const w of winners) {
-      if (!w) {
-        continue
-      }
-      superlatives.push(w.superlative)
-      // First award a player wins becomes their phone highlight (one card).
-      if (!highlightByClient.has(w.clientId)) {
-        highlightByClient.set(w.clientId, {
-          key: w.superlative.key,
-          value: w.superlative.value,
-        })
-      }
-    }
-
-    // comeback_kid: argmax of (worstRankEver - finalRank) — how far a player
-    // climbed from their lowest-ever rank to their final standing. Distinct from
-    // biggest_climber (largest single-ROUND jump). Needs finalRanks, so it can't
-    // use the generic award() helper. Skip if nobody net-improved.
-    let comeback: { clientId: string; superlative: Superlative } | null = null
-    let bestComeback = 0
-    for (const [clientId, stat] of entries) {
-      const finalRank = finalRanks.get(clientId)
-      if (finalRank === undefined) {
-        continue
-      }
-      const climb = stat.worstRankEver - finalRank
-      if (comeback === null || climb > bestComeback) {
-        comeback = {
-          clientId,
-          superlative: {
-            key: "comeback_kid",
-            winnerName: stat.username,
-            winnerAvatar: avatarByClient.get(clientId),
-            value: climb,
-          },
-        }
-        bestComeback = climb
-      }
-    }
-    if (comeback !== null && bestComeback > 0) {
-      superlatives.push(comeback.superlative)
-      if (!highlightByClient.has(comeback.clientId)) {
-        highlightByClient.set(comeback.clientId, {
-          key: comeback.superlative.key,
-          value: comeback.superlative.value,
-        })
-      }
-    }
-
-    // hardest_question: the SCORED question with the lowest correct% (>=1 answer).
-    // Quiz-level award — winnerName is the human 1-based question label.
-    let hardest: { questionIndex: number; correctPct: number } | undefined
-    for (const [index, q] of this.questionStats) {
-      if (q.total <= 0) {
-        continue
-      }
-      const pct = Math.round((q.correct / q.total) * 100)
-      if (hardest === undefined || pct < hardest.correctPct) {
-        hardest = { questionIndex: index, correctPct: pct }
-      }
-    }
-    if (hardest !== undefined) {
-      superlatives.push({
-        key: "hardest_question",
-        winnerName: `#${hardest.questionIndex + 1}`,
-        value: hardest.correctPct,
-      })
-    }
-
-    const manager: ManagerRecap = {
-      superlatives,
-      ...(hardest !== undefined ? { hardestQuestion: hardest } : {}),
-    }
-
-    // Per-player recap cards.
-    const perPlayer = new Map<string, PlayerRecap>()
-    for (const [clientId, stat] of entries) {
-      const answered = stat.answered
-      const accuracyPct =
-        answered > 0 ? Math.round((stat.correct / answered) * 100) : 0
-      const myRecap: PlayerRecap["myRecap"] = {
-        rank: finalRanks.get(clientId) ?? 0,
-        accuracyPct,
-        correct: stat.correct,
-        wrong: stat.wrong,
-        fastestMs: stat.fastestMs,
-        peakStreak: stat.peakStreak,
-        achievements: [...stat.achievementIds],
-      }
-      const highlight = highlightByClient.get(clientId)
-      perPlayer.set(clientId, {
-        myRecap,
-        ...(highlight ? { highlight } : {}),
-      })
-    }
-
-    return { manager, perPlayer }
+    return buildRecapFn(
+      {
+        recapStats: this.recapStats,
+        questionStats: this.questionStats,
+        leaderboard: this.leaderboard,
+      },
+      finalRanks,
+    )
   }
 
-  // Manager-only interstitial: the per-round recap highlights get their OWN
-  // full-screen page (reusing RecapSequence) BEFORE the leaderboard, instead of
-  // cramping the answer-reveal screen. Players are unaffected (they keep their
-  // inline recap on SHOW_RESULT). Only reached when tempRoundRecap is non-empty.
-  // Does NOT clear tempRoundRecap — showLeaderboard() still reads it for the
-  // SHOW_LEADERBOARD payload and clears it there.
+  // ── Leaderboard flow — logic extracted to round-manager/leaderboard-flow.ts
+  // (Modul 8 of the SRP split). Reads pass call-time values, writes go through
+  // setter callbacks, Maps/arrays by reference; buildRecap /
+  // computeTeamStandings / send stay callbacks into the class (see that
+  // module's header comment).
   showRoundRecap(): void {
-    // Leaving the post-results screen — drop its FIX 8/9 bookkeeping so a late
-    // setAutoMode(true) can't re-arm / re-send a screen that is gone.
-    this.resultScreenActive = false
-    this.lastResultPayloads.clear()
-    this.roundRecapShown = true
-    this.send(this.opts.getManagerId(), STATUS.SHOW_ROUND_RECAP, {
-      roundRecap: this.tempRoundRecap ?? [],
+    showRoundRecapFn({
+      setResultScreenActive: (v) => {
+        this.resultScreenActive = v
+      },
+      lastResultPayloads: this.lastResultPayloads,
+      setRoundRecapShown: (v) => {
+        this.roundRecapShown = v
+      },
+      send: (target, status, data) => this.send(target, status, data),
+      getManagerId: () => this.opts.getManagerId(),
+      tempRoundRecap: this.tempRoundRecap,
     })
   }
 
   showLeaderboard(): void {
-    // Entry guard: the final round's branch below sets gameFinished right
-    // before saving the result + emitting FINISHED. A second call that races
-    // in afterwards (double SHOW_LEADERBOARD) must be a no-op instead of
-    // re-running onGameFinished (duplicate result file + a second FINISHED
-    // emit). Non-final rounds never set gameFinished, so this guard never
-    // affects the round-recap-diversion behavior below.
-    if (this.gameFinished) {
-      return
-    }
-
-    // First hop off the answer-reveal screen: divert to the per-round recap
-    // screen (its OWN full-screen page) when there is a non-empty recap that
-    // has not been shown yet. NOT on the last round — that goes straight to
-    // FINISHED / Podium, which owns the end-of-game recap.
-    const isLastRoundForRecap =
-      this.currentQuestion + 1 === this.opts.quizz.questions.length
-    if (
-      !isLastRoundForRecap &&
-      !this.roundRecapShown &&
-      this.tempRoundRecap &&
-      this.tempRoundRecap.length > 0
-    ) {
-      this.showRoundRecap()
-      return
-    }
-
-    // We are leaving the post-results screen: drop its FIX 8/9 bookkeeping so a
-    // late setAutoMode(true) can't re-arm / re-send a screen that is gone.
-    this.resultScreenActive = false
-    this.lastResultPayloads.clear()
-
-    const isLastRound =
-      this.currentQuestion + 1 === this.opts.quizz.questions.length
-
-    if (isLastRound) {
-      this.started = false
-      this.gameFinished = true
-
-      // Attach FULL-GAME achievements onto the podium slice so the FINISHED
-      // top[] can render medals. We STOP stripping achievements here: read each
-      // top player's accumulated full-game badge set from recapStats (bots carry
-      // none). Back-compat: players without an entry simply get no achievements.
-      const top = this.leaderboard.slice(0, 3).map((p) => {
-        const stat = this.recapStats.get(p.clientId)
-        return stat && stat.achievementIds.length > 0
-          ? { ...p, achievements: [...stat.achievementIds] }
-          : { ...p }
-      })
-
-      // Final human ranks (1..N) keyed by clientId — matches the per-player emit
-      // index+1 below and feeds each myRecap.rank.
-      const finalRanks = new Map<string, number>()
-      this.leaderboard
-        .filter((p) => !p.isBot)
-        .forEach((p, index) => {
-          finalRanks.set(p.clientId, index + 1)
-        })
-
-      // Derive the recap ONCE (manager superlatives + per-player cards).
-      const { manager: managerRecap, perPlayer: playerRecaps } =
-        this.buildRecap(finalRanks)
-
-      // Sim mode: the PERSISTED result must never carry bots (they would pollute
-      // the real results archive / history UI). Mirror toSnapshot's filter here —
-      // this saved-result path is independent of toSnapshot and reads the live
-      // unfiltered arrays. Rank is computed over humans only (1..N). The live
-      // FINISHED `top` display is intentionally left unfiltered (bots stay
-      // visible during play, per the feature contract).
-      const botUsernames = new Set(
-        this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
-      )
-
-      this.opts.onGameFinished({
-        id: `${Date.now()}-${nanoid(8)}`,
-        subject: this.opts.quizz.subject,
-        date: new Date().toISOString(),
-        players: this.leaderboard
-          .filter((p) => !p.isBot)
-          .map((player, index) => ({
-            username: player.username,
-            points: player.points,
-            rank: index + 1,
-          })),
-        questions: this.questionsHistory.map((q) => ({
-          ...q,
-          playerAnswers: q.playerAnswers.filter(
-            (a) => !botUsernames.has(a.playerName),
-          ),
-        })),
-        // Persist the manager recap so the public share page can replay the
-        // superlative reveal before the podium. Only when there are awards.
-        ...(managerRecap && managerRecap.superlatives.length > 0
-          ? { recap: managerRecap }
-          : {}),
-      })
-
-      // Team mode: final team standings (undefined when team mode is off, so the
-      // optional payload field is simply absent in normal mode).
-      const finalTeamStandings = this.computeTeamStandings()
-
-      this.send(this.opts.getManagerId(), STATUS.FINISHED, {
-        subject: this.opts.quizz.subject,
-        top,
-        ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
-        // MANAGER recap: the full awards list + hardest-question callout.
-        recap: managerRecap,
-        // Echo the auto-mode flag so the end-game screen knows the host advanced
-        // automatically (client display-only; old clients ignore it).
-        autoMode: this.autoMode,
-      })
-    emitLifecycle("onGameEnd", { gameId: this.opts.gameId, status: "FINISHED", data: {} })
-
-      this.leaderboard.forEach((player, index) => {
-        // Bots have no real socket — emitting to a `bot:<id>` target would
-        // pollute playerStatus + push to a nonexistent room. Skip the emit; the
-        // index still advances so each human keeps its live (unfiltered)
-        // `index + 1` rank, unchanged from before.
-        if (player.isBot) {
-          return
-        }
-        // PER-PLAYER recap: this player's own card + the single award they won
-        // (if any). Bots carry no recap entry, so this is simply absent for them.
-        const myPlayerRecap = this.recapStats.has(player.clientId)
-          ? playerRecaps.get(player.clientId)
-          : undefined
-        this.send(player.id, STATUS.FINISHED, {
-          subject: this.opts.quizz.subject,
-          top,
-          rank: index + 1,
-          ...(finalTeamStandings ? { teamStandings: finalTeamStandings } : {}),
-          ...(myPlayerRecap ? { recap: myPlayerRecap } : {}),
-        })
-      })
-
-      return
-    }
-
-    const oldLeaderboard = this.tempOldLeaderboard ?? this.leaderboard
-    // Team mode: between-questions team standings (undefined when off → absent).
-    const teamStandings = this.computeTeamStandings()
-
-    this.send(this.opts.getManagerId(), STATUS.SHOW_LEADERBOARD, {
-      oldLeaderboard: oldLeaderboard.slice(0, 5),
-      leaderboard: this.leaderboard.slice(0, 5),
-      ...(teamStandings ? { teamStandings } : {}),
-      // FIX 9: in auto-mode the leaderboard auto-advances to the next question
-      // after AUTO_LEADERBOARD_MS — carry it so the client can render a local
-      // countdown. Absent in manual mode (old clients ignore it).
-      ...(this.autoMode ? { autoAdvanceMs: AUTO_LEADERBOARD_MS } : {}),
-      ...(this.tempRoundRecap && this.tempRoundRecap.length > 0
-        ? { roundRecap: this.tempRoundRecap }
-        : {}),
+    showLeaderboardFn({
+      gameFinished: this.gameFinished,
+      setGameFinished: (v) => {
+        this.gameFinished = v
+      },
+      currentQuestion: this.currentQuestion,
+      quizz: this.opts.quizz,
+      roundRecapShown: this.roundRecapShown,
+      tempRoundRecap: this.tempRoundRecap,
+      setTempRoundRecap: (v) => {
+        this.tempRoundRecap = v
+      },
+      showRoundRecap: () => this.showRoundRecap(),
+      setResultScreenActive: (v) => {
+        this.resultScreenActive = v
+      },
+      lastResultPayloads: this.lastResultPayloads,
+      setStarted: (v) => {
+        this.started = v
+      },
+      leaderboard: this.leaderboard,
+      recapStats: this.recapStats,
+      buildRecap: (finalRanks) => this.buildRecap(finalRanks),
+      questionsHistory: this.questionsHistory,
+      onGameFinished: (result) => this.opts.onGameFinished(result),
+      computeTeamStandings: () => this.computeTeamStandings(),
+      send: (target, status, data) => this.send(target, status, data),
+      getManagerId: () => this.opts.getManagerId(),
+      autoMode: this.autoMode,
+      gameId: this.opts.gameId,
+      tempOldLeaderboard: this.tempOldLeaderboard,
+      setTempOldLeaderboard: (v) => {
+        this.tempOldLeaderboard = v
+      },
     })
-    emitLifecycle("onLeaderboard", { gameId: this.opts.gameId, status: "SHOW_LEADERBOARD", data: {} })
-
-    this.tempOldLeaderboard = null
-    this.tempRoundRecap = null
   }
   // Fisher-Yates shuffle: generate a random permutation of [0..n-1].
   // Returns the same permutation on re-calls so reconnects use the same order.
