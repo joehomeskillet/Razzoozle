@@ -1,7 +1,7 @@
 # Low-Latency Mode
 
-Status: design / opt-in feature. Default **OFF**. When disabled, behaviour is
-byte-identical to the current Razzia build.
+Status: implemented, opt-in feature. Default **OFF**. When disabled, behaviour is
+byte-identical to the current Razzoozle build.
 
 This document describes an **optional** mode that tightens timing fairness, gives
 players instant local feedback, smooths reconnects, and adds observability — all
@@ -330,5 +330,3 @@ four optional anchors from §5.
   flag-off byte-identical path, clock-offset median-of-5 + outlier rejection,
   and a real socket.io integration test (idempotency + ack reasons over the
   wire). See `packages/socket/src/services/game/__tests__/`.
-</content>
-</invoke>
