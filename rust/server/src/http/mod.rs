@@ -1,3 +1,7 @@
+mod achievements;
+mod assignments;
+mod observability;
+
 use axum::{
     extract::{ConnectInfo, Path},
     http::StatusCode,
@@ -102,14 +106,23 @@ pub struct SoloScoreResponse {
     pub leaderboard: Vec<SoloResultEntry>,
 }
 
+#[derive(Debug, Serialize)]
+struct HealthResponse {
+    status: String,
+    ts: String,
+}
+
 // ── HTTP handlers ────────────────────────────────────────────────────────────
 
 lazy_static! {
     pub static ref RATE_LIMITER: RateLimiter = RateLimiter::new();
 }
 
-pub async fn handle_health() -> &'static str {
-    "OK"
+pub async fn handle_health() -> Json<HealthResponse> {
+    Json(HealthResponse {
+        status: "ok".to_string(),
+        ts: chrono::Utc::now().to_rfc3339(),
+    })
 }
 
 pub async fn handle_get_quizzes(
@@ -389,7 +402,7 @@ pub async fn handle_solo_score(
 
 // ── Static file helpers ─────────────────────────────────────────────────────
 
-fn get_config_path() -> String {
+pub fn get_config_path() -> String {
     if let Ok(config_path) = std::env::var("CONFIG_PATH") {
         config_path
     } else {
@@ -571,10 +584,17 @@ pub async fn handle_sounds_asset(
 pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
     Router::new()
         .route("/health", get(handle_health))
+        .route("/api/v1/health", get(handle_health))
         .route("/api/quizzes", get(handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(handle_get_quiz_solo))
         .route("/api/quizz/:id/check-answer", post(handle_check_answer))
         .route("/api/quizz/:id/solo-score", post(handle_solo_score))
+        .route("/api/achievements", get(achievements::handle_get_achievements))
+        .route("/api/assignment", post(assignments::handle_create_assignment))
+        .route("/api/assignment/:id", get(assignments::handle_get_assignment))
+        .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))
+        .route("/api/v1/observability/events", get(observability::handle_observability_events))
+        .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
         .route("/theme/*path", get(handle_theme_asset))
         .route("/plugins/:id/*path", get(handle_plugin_asset))
         .route("/sounds/*path", get(handle_sounds_asset))
