@@ -1,14 +1,14 @@
 //! AI.GET_SETTINGS — public AI settings for the KI manager tab.
 //!
-//! Rust has no ai-settings persistence yet (no `ai_settings` table), so this
-//! mirrors Node's `seedAISettings()` → `toPublicAISettings()` default: the KI tab
-//! renders with the provider presets and "off" selected. Keys are never on the
-//! wire (`keyConfigured: false` for all providers). Write/generation events
-//! (`ai:setSettings`, `ai:generateQuiz`, …) are a later parity wave.
+//! Reads persisted AI settings from config/ai-settings.json (same as Node's
+//! getAISettings). If missing or corrupted, falls back to seed defaults. Each
+//! text provider's `keyConfigured` is always false (Rust has no secret storage
+//! yet — TODO(parity): integrate ai-secrets on disk or DB).
 
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
 use socketioxide::extract::SocketRef;
+use std::fs;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     // No-payload event → bare `SocketRef` signature (see submissions.rs note).
@@ -32,11 +32,58 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 socket
-                    .emit(constants::ai::SETTINGS, &seed_public_ai_settings())
+                    .emit(constants::ai::SETTINGS, &get_public_ai_settings())
                     .ok();
             });
         }
     });
+}
+
+/// Read persisted AI settings from config/ai-settings.json and return as
+/// AISettingsPublic. Falls back to seed defaults if file missing or corrupted.
+/// Always returns `keyConfigured: false` for all providers (Rust has no secrets
+/// storage yet).
+fn get_public_ai_settings() -> serde_json::Value {
+    // Try to read persisted settings from config/ai-settings.json (same path
+    // Node's config/ai.ts uses). If missing or corrupted, fall back to seed
+    // defaults.
+    match fs::read_to_string("config/ai-settings.json") {
+        Ok(content) => {
+            // Attempt to parse the persisted settings.
+            match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(mut settings) => {
+                    // TODO(parity): integrate ai-secrets on disk or DB so
+                    // keyConfigured can reflect actual stored keys instead of
+                    // always being false.
+
+                    // Ensure all text providers have keyConfigured: false.
+                    if let Some(text) = settings.get_mut("text") {
+                        if let Some(providers) = text.get_mut("providers") {
+                            if let Some(arr) = providers.as_array_mut() {
+                                for provider in arr {
+                                    provider["keyConfigured"] = serde_json::json!(false);
+                                }
+                            }
+                        }
+                    }
+
+                    return settings;
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Failed to parse config/ai-settings.json: {}, using seed defaults",
+                        e
+                    );
+                }
+            }
+        }
+        Err(_) => {
+            // File doesn't exist or can't be read — use seed defaults.
+        }
+    }
+
+    // Fall back to seed defaults (mirrors Node's seedAISettings()).
+    seed_public_ai_settings()
 }
 
 /// Mirror of Node `toPublicAISettings(seedAISettings())` — provider presets from
