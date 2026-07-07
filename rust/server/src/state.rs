@@ -313,6 +313,10 @@ pub struct Game {
     // future per-ping gate check this synchronously instead of an async DB
     // round-trip on every clock:ping.
     pub low_latency: bool,
+    // Auto-advance gate: when false (Node default), the game waits for explicit host
+    // signals (manager:nextQuestion / manager:showLeaderboard) instead of auto-advancing
+    // on RESULT_DWELL_SECS / LEADERBOARD_DWELL_SECS timeout. Toggleable via MANAGER.SET_AUTO.
+    pub auto_mode: bool,
     // Question-lifecycle abort signal (R3/R5): whichever abortable wait the
     // game-lifecycle task (socket::lifecycle::run_game_lifecycle) is currently
     // in — the per-question SELECT_ANSWER cooldown, the post-reveal dwell, or
@@ -348,6 +352,7 @@ impl Game {
             created_at_ms: now,
             last_activity_ms: now,
             low_latency: false,
+            auto_mode: false,
             cooldown_abort: None,
         }
     }

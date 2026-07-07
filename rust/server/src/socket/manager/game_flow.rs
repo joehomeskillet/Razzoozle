@@ -80,11 +80,12 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 // After the SHOW_START lead-time, hand off to the single
                                 // game-lifecycle task (3-2-1 intro -> Q1 -> ... -> FINISHED).
                                 let io_handle = ctx.io.clone();
+                                let db_pool = ctx.db_pool.clone();
                                 let registry = ctx.registry.clone();
 
                                 tokio::spawn(async move {
                                     tokio::time::sleep(Duration::from_secs(3)).await;
-                                    lifecycle::run_game_lifecycle(io_handle, registry, game_id).await;
+                                    lifecycle::run_game_lifecycle(io_handle, registry, game_id, db_pool).await;
                                 });
                             }
                             Err(e) => {

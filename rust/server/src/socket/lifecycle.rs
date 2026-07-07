@@ -17,6 +17,7 @@
 //! engine's phase guards (see `razzoozle_engine::state::GameState`) as the
 //! race-safety net for "timer elapsed vs. skip vs. all-answered".
 
+use crate::db;
 use crate::state::{Game, GameRegistry};
 use crate::question_type_wire;
 use razzoozle_engine::state::GamePhase;
@@ -104,7 +105,11 @@ fn build_select_answer_data(
 fn build_finished_data(game: &Game) -> FinishedData {
     FinishedData {
         subject: game.engine.quiz.subject.clone(),
-        top: game.engine.players.clone(),
+        top: {
+            let mut sorted = game.engine.players.clone();
+            sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+            sorted
+        },
         rank: None,
         team_standings: None,
         recap: None,
@@ -217,6 +222,7 @@ pub async fn run_game_lifecycle(
     io: SocketIo,
     registry: Arc<RwLock<GameRegistry>>,
     game_id: String,
+    db_pool: Option<sqlx::PgPool>,
 ) {
     let game_ref = {
         let reg = registry.read().await;
@@ -251,8 +257,10 @@ pub async fn run_game_lifecycle(
         // Per-question SELECT_ANSWER cooldown — the server clock driving the
         // countdown UI. Resolves at 0 (timeout) OR early via signal_abort
         // (manager:skipQuestion / manager:revealAnswer / all-answered).
-        let seconds = { game_ref.lock().unwrap().engine.current_question().time };
+        // FIX L105 (abort race): arm BEFORE cooldown to ensure signals after
+        // open_answers() land on the correct Notify.
         let abort = { game_ref.lock().unwrap().arm_abort() };
+        let seconds = { game_ref.lock().unwrap().engine.current_question().time };
         let io_tick = io.clone();
         let gid_tick = game_id.clone();
         run_cooldown(seconds, abort, move |count| {
@@ -269,9 +277,19 @@ pub async fn run_game_lifecycle(
         info!("Question cooldown resolved: gameId={}, revealing", game_id);
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
-        // Result dwell — host may cut it short via manager:showLeaderboard.
-        let abort = { game_ref.lock().unwrap().arm_abort() };
-        wait_abortable(RESULT_DWELL_SECS, abort).await;
+        // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
+        // before the leaderboard. Notify armed right after reveal (Restfenster
+        // reveal->arm ist mikroskopisch + selbstheilend).
+        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+        if !game_ref.lock().unwrap().auto_mode {
+            wait_abortable(3600, abort_result).await; // manual: Host-Signal, 1h Sicherheitsnetz
+        } else {
+            wait_abortable(RESULT_DWELL_SECS, abort_result).await;
+        }
+
+        // Leaderboard-Notify VOR dem phase-flip armen (L105-Race:
+        // ein request_abort der phase==ShowLeaderboard sieht, landet garantiert auf DIESEM Notify).
+        let abort_leaderboard = { game_ref.lock().unwrap().arm_abort() };
 
         let (leaderboard_result, phase_after_leaderboard) = {
             let mut game = game_ref.lock().unwrap();
@@ -296,31 +314,95 @@ pub async fn run_game_lifecycle(
         // Last round: leaderboard_view() (engine/state.rs) already transitioned
         // straight to FINISHED (mirrors round-manager.ts showLeaderboard()
         // skipping the intermediate SHOW_LEADERBOARD screen on the last
-        // question). Broadcast FINISHED now and stop — no leaderboard dwell,
+        // question). Persist result and stop — no leaderboard dwell,
         // no next_or_finish() call (which would reject: phase is no longer
         // ShowLeaderboard).
         if phase_after_leaderboard == GamePhase::Finished {
             info!("Game finished: gameId={}", game_id);
+            let (game_id_copy, subject, players_json, quiz_id) = {
+                let game = game_ref.lock().unwrap();
+                let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
+                    let mut sorted = game.engine.players.clone();
+                    sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+                    sorted.iter().enumerate()
+                        .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                            username: p.username.clone(),
+                            points: p.points,
+                            rank: (idx + 1) as i32,
+                        })
+                        .collect()
+                };
+                (
+                    game.game_id.clone(),
+                    game.engine.quiz.subject.clone(),
+                    serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
+                    None as Option<&str>, // quiz_id: TODO — extract from engine/quiz
+                )
+            };
+            // L104: Fire-and-forget result persistence (mirror Node's behavior)
+            let db = db_pool.clone();
+            let gid = game_id_copy.clone();
+            tokio::spawn(async move {
+                let now = chrono::Utc::now();
+                if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                    warn!("Result persistence failed for gameId={}: {}", gid, e);
+                }
+            });
+
             let finished = {
                 let game = game_ref.lock().unwrap();
                 build_finished_data(&game)
             };
-            io.to(game_id.clone())
-                .emit(constants::game::STATUS, &GameStatus::Finished(finished))
+
+            // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
+            let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
+            io.to(manager_socket_id)
+                .emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
                 .ok();
+
+            // Send personalized FINISHED data to each player
+            let game = game_ref.lock().unwrap();
+            let sorted_players: Vec<_> = {
+                let mut sorted = game.engine.players.clone();
+                sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+                sorted
+            };
+            for (rank_idx, player) in sorted_players.iter().enumerate() {
+                if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
+                    let personalized_finished = FinishedData {
+                        subject: finished.subject.clone(),
+                        top: finished.top.clone(),
+                        rank: Some((rank_idx + 1) as i32),
+                        team_standings: finished.team_standings.clone(),
+                        recap: finished.recap.clone(),
+                        auto_mode: finished.auto_mode,
+                    };
+                    io.to(player_info.id.clone())
+                        .emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
+                        .ok();
+                }
+            }
             return;
         }
 
-        io.to(game_id.clone())
+        // Emit SHOW_LEADERBOARD to manager socket only
+        let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
+        io.to(manager_socket_id)
             .emit(
                 constants::game::STATUS,
                 &GameStatus::ShowLeaderboard(leaderboard_data),
             )
             .ok();
 
-        // Leaderboard dwell — host may cut it short via manager:nextQuestion.
-        let abort = { game_ref.lock().unwrap().arm_abort() };
-        wait_abortable(LEADERBOARD_DWELL_SECS, abort).await;
+        // Leaderboard dwell: host may cut it short via manager:nextQuestion.
+        // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
+        if !game_ref.lock().unwrap().auto_mode {
+            // Manual mode — wait for host signal OR fall back to long safety timeout
+            wait_abortable(3600, abort_leaderboard).await; // 1-hour safety net for manual mode
+        } else {
+            // Auto mode — use fixed LEADERBOARD_DWELL timeout
+            wait_abortable(LEADERBOARD_DWELL_SECS, abort_leaderboard).await;
+        }
 
         let next_phase = {
             let mut game = game_ref.lock().unwrap();
@@ -330,13 +412,69 @@ pub async fn run_game_lifecycle(
         match next_phase {
             Ok(GamePhase::Finished) => {
                 info!("Game finished: gameId={}", game_id);
+                let (game_id_copy, subject, players_json, quiz_id) = {
+                    let game = game_ref.lock().unwrap();
+                    let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
+                        let mut sorted = game.engine.players.clone();
+                        sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+                        sorted.iter().enumerate()
+                            .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                                username: p.username.clone(),
+                                points: p.points,
+                                rank: (idx + 1) as i32,
+                            })
+                            .collect()
+                    };
+                    (
+                        game.game_id.clone(),
+                        game.engine.quiz.subject.clone(),
+                        serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
+                        None as Option<&str>, // quiz_id: TODO
+                    )
+                };
+                // L104: Fire-and-forget result persistence
+                let db = db_pool.clone();
+                let gid = game_id_copy.clone();
+                tokio::spawn(async move {
+                    let now = chrono::Utc::now();
+                    if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                        warn!("Result persistence failed for gameId={}: {}", gid, e);
+                    }
+                });
+
                 let finished = {
                     let game = game_ref.lock().unwrap();
                     build_finished_data(&game)
                 };
-                io.to(game_id.clone())
-                    .emit(constants::game::STATUS, &GameStatus::Finished(finished))
+
+                // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
+                let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
+                io.to(manager_socket_id)
+                    .emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
                     .ok();
+
+                // Send personalized FINISHED data to each player
+                let game = game_ref.lock().unwrap();
+                let sorted_players: Vec<_> = {
+                    let mut sorted = game.engine.players.clone();
+                    sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+                    sorted
+                };
+                for (rank_idx, player) in sorted_players.iter().enumerate() {
+                    if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
+                        let personalized_finished = FinishedData {
+                            subject: finished.subject.clone(),
+                            top: finished.top.clone(),
+                            rank: Some((rank_idx + 1) as i32),
+                            team_standings: finished.team_standings.clone(),
+                            recap: finished.recap.clone(),
+                            auto_mode: finished.auto_mode,
+                        };
+                        io.to(player_info.id.clone())
+                            .emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
+                            .ok();
+                    }
+                }
                 return;
             }
             Ok(GamePhase::ShowQuestion) => {
@@ -397,6 +535,7 @@ mod tests {
             )
             .unwrap();
             game.engine.start().unwrap();
+            game.auto_mode = true; // Test uses auto-advance
         }
 
         let registry = Arc::new(RwLock::new(registry));
@@ -415,7 +554,7 @@ mod tests {
         // fast-forwards while every task is parked on a timer.
         let outcome = tokio::time::timeout(
             Duration::from_secs(120),
-            run_game_lifecycle(io, registry, game_id.clone()),
+            run_game_lifecycle(io, registry, game_id.clone(), None),
         )
         .await;
 
