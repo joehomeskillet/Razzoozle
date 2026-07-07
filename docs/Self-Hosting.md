@@ -4,16 +4,17 @@
 ```bash
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
+docker build -t razzoozle:custom .
 docker compose up -d
 ```
-The app serves on `http://127.0.0.1:3011` (nginx + the socket server in one container, via supervisord). Runtime data lives in the `./config` volume, created + seeded on first boot. A `/healthz` endpoint + Docker `HEALTHCHECK` allow auto-heal.
+The app serves on `http://127.0.0.1:3010` (nginx + the socket server in one container, via supervisord). Runtime data lives in the `./config` volume, created + seeded on first boot. A `/healthz` endpoint + Docker `HEALTHCHECK` allow auto-heal.
 
 ## Reverse proxy (TLS + public hostname)
 Put it behind your own proxy. Example with **Caddy**:
 ```caddy
 quiz.example.com {
     encode gzip zstd
-    reverse_proxy 127.0.0.1:3011 {
+    reverse_proxy 127.0.0.1:3010 {
         header_up X-Real-IP {remote}
         header_up X-Forwarded-Proto {scheme}
     }
