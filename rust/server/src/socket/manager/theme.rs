@@ -14,6 +14,7 @@ use std::path::Path;
 use regex::Regex;
 use lazy_static::lazy_static;
 use chrono::Utc;
+use sqlx::PgPool;
 
 lazy_static! {
     // Hex color pattern: #xxx or #xxxxxx (3 or 6 hex digits)
@@ -424,8 +425,8 @@ fn extension_for_image_mime(mime: &str) -> &'static str {
     }
 }
 
-/// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking)
-async fn save_background_image(slot: &str, data_url: &str) -> Result<String, String> {
+/// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
+async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -> Result<String, String> {
     let valid_slots = ["auth", "managerGame", "playerGame", "logo"];
     if !valid_slots.contains(&slot) {
         return Err("errors:theme.invalidSlot".to_string());
@@ -437,8 +438,13 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
         return Err("errors:theme.imageTooLarge".to_string());
     }
 
+    // Delete old slot-* entries from media_assets table
+    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme").await;
+
     let slot_owned = slot.to_string();
-    tokio::task::spawn_blocking(move || {
+    let buffer_clone = buffer.clone();
+    let mime_clone = mime.clone();
+    let (filename, size) = tokio::task::spawn_blocking(move || {
         let backgrounds_dir = Path::new("config/media/backgrounds");
         if !backgrounds_dir.exists() {
             fs::create_dir_all(backgrounds_dir)
@@ -457,21 +463,41 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
 
         let timestamp = Utc::now().timestamp_millis();
         // parity: no WebP transcode in Rust (no image lib) — original bytes + honest extension; transcode = Wave 4b (media-wr ADR)
-        let ext = extension_for_image_mime(&mime);
+        let ext = extension_for_image_mime(&mime_clone);
         let filename = format!("{}-{}.{}", slot_owned, timestamp, ext);
         let filepath = backgrounds_dir.join(&filename);
 
-        fs::write(&filepath, &buffer)
+        fs::write(&filepath, &buffer_clone)
             .map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
-        Ok(format!("/media/backgrounds/{}", filename))
+        Ok::<(String, i32), String>((filename, buffer_clone.len() as i32))
     })
     .await
-    .map_err(|_| "errors:theme.uploadFailed".to_string())?
+    .map_err(|_| "errors:theme.uploadFailed".to_string())??;
+
+    // Insert into DB with source="theme" and category="backgrounds"
+    let url = format!("/media/backgrounds/{}", filename);
+    let asset_id = format!("backgrounds-{}", filename.replace(".", "-"));
+    let uploaded_at = Utc::now();
+    let _ = db::insert_media_asset(
+        db_pool,
+        &asset_id,
+        &filename,
+        &url,
+        size,
+        "image",
+        "backgrounds",
+        "theme",
+        None,
+        None,
+        uploaded_at,
+    ).await;
+
+    Ok(format!("/media/backgrounds/{}", filename))
 }
 
-/// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking)
-async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
+/// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
+async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -> Result<String, String> {
     let valid_slots = [
         "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
         "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
@@ -490,8 +516,13 @@ async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
         return Err("errors:theme.audioTooLarge".to_string());
     }
 
+    // Delete old slot-* entries from media_assets table
+    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme").await;
+
     let slot_owned = slot.to_string();
-    tokio::task::spawn_blocking(move || {
+    let buffer_clone = buffer.clone();
+    let mime_clone = mime.clone();
+    let (filename, size) = tokio::task::spawn_blocking(move || {
         let sounds_dir = Path::new("config/media/sounds");
         if !sounds_dir.exists() {
             fs::create_dir_all(sounds_dir)
@@ -508,7 +539,7 @@ async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
             }
         }
 
-        let ext = match mime.as_str() {
+        let ext = match mime_clone.as_str() {
             "audio/mpeg" | "audio/mp3" => ".mp3",
             "audio/wav" => ".wav",
             "audio/ogg" => ".ogg",
@@ -519,13 +550,33 @@ async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
         let filename = format!("{}-{}{}", slot_owned, timestamp, ext);
         let filepath = sounds_dir.join(&filename);
 
-        fs::write(&filepath, &buffer)
+        fs::write(&filepath, &buffer_clone)
             .map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
-        Ok(format!("/media/sounds/{}", filename))
+        Ok::<(String, i32), String>((filename, buffer_clone.len() as i32))
     })
     .await
-    .map_err(|_| "errors:theme.uploadFailed".to_string())?
+    .map_err(|_| "errors:theme.uploadFailed".to_string())??;
+
+    // Insert into DB with source="theme" and category="audio"
+    let url = format!("/media/audio/{}", filename);
+    let asset_id = format!("audio-{}", filename.replace(".", "-"));
+    let uploaded_at = Utc::now();
+    let _ = db::insert_media_asset(
+        db_pool,
+        &asset_id,
+        &filename,
+        &url,
+        size,
+        "audio",
+        "audio",
+        "theme",
+        None,
+        None,
+        uploaded_at,
+    ).await;
+
+    Ok(format!("/media/sounds/{}", filename))
 }
 
 /// Set skeleton asset and update theme (no empty check, 512 KB size cap check)
@@ -873,7 +924,7 @@ fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match save_background_image(&slot, &data_url).await {
+                match save_background_image(&slot, &data_url, &ctx.db_pool).await {
                     Ok(path) => {
                         socket
                             .emit(
@@ -933,7 +984,7 @@ fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let asset_ref = match save_sound_file(&slot, &data_url).await {
+                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool).await {
                     Ok(ref_path) => ref_path,
                     Err(error) => {
                         socket

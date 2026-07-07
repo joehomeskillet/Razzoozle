@@ -67,7 +67,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -182,7 +182,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                 .await
                 {
                     Ok(_) => {
-                        socket.emit(constants::media::UPLOAD_SUCCESS, "").ok();
+                        socket.emit(constants::media::UPLOAD_SUCCESS, &()).ok();
                         let media_list = db::get_media_list(&ctx.db_pool).await;
                         socket.emit(constants::media::DATA, &media_list).ok();
                     }
@@ -211,7 +211,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -435,12 +435,11 @@ fn normalize_media_stem(filename: &str) -> String {
     }
 }
 
-/// Map MIME type to file extension.
+/// Map MIME type to file extension (per Node media.ts:140-170).
+/// Images (png/jpeg/webp) all return .webp; audio/video return appropriate extensions.
 fn extension_for_mime(mime: &str) -> &'static str {
     match mime {
-        "image/png" => ".png",
-        "image/jpeg" => ".jpeg",
-        "image/webp" => ".webp",
+        "image/png" | "image/jpeg" | "image/webp" => ".webp",
         "audio/mpeg" | "audio/mp3" => ".mp3",
         "audio/wav" => ".wav",
         "audio/ogg" => ".ogg",
