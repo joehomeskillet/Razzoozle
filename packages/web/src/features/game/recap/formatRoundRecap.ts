@@ -1,5 +1,5 @@
 /**
- * Pure formatting helpers for the per-round recap strip (SPEC-recap.md §A).
+ * Pure formatting helpers for the per-round recap strip.
  * Emoji map is local; labels come from i18n via `roundRecapLabelKey`.
  * No React/JSX — display-only string formatting.
  */

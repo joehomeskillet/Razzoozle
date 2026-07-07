@@ -34,8 +34,8 @@ const Background = ({
       style={isCream ? { color: "var(--color-field-ink)" } : undefined}
     >
       {/* Brand above the login: a custom uploaded logo wins; otherwise show the
-          themed appTitle as text (e.g. "Südhang Kahoot"); fall back to the
-          bundled logo only when neither is set. */}
+          themed appTitle as text; fall back to the bundled logo only when
+          neither is set. */}
       {theme.logo ? (
         <>
           <img

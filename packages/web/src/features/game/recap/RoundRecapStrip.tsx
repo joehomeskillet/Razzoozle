@@ -1,5 +1,5 @@
 /**
- * RoundRecapStrip — the per-round recap strip (SPEC-recap.md §C).
+ * RoundRecapStrip — the per-round recap strip.
  *
  * Renders up to three compact `RoundRecapCard`s in a horizontal, mobile-safe
  * wrapping row on the per-round Result screen. The STRIP owns the

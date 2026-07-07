@@ -30,7 +30,7 @@ const copyIfMissing = (src: string, dest: string): boolean => {
 // no-op and a manager's edits to a template/background/og/logo are never
 // clobbered. Does NOT touch the ACTIVE theme (config/theme/theme.json): presets
 // are merely offered in the picker; the live theme stays whatever exists
-// (Südhang default).
+// (flat cream default).
 const seedBrandingAssets = (): void => {
   const brandingDir = getBrandingPath()
 

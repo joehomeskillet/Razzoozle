@@ -50,12 +50,12 @@ Normalization is applied recursively through the entire frame payload (depth lim
 The fastest way to record all 6 frame logs is to run the orchestrator:
 
 ```bash
-cd /nvmetank1/projects/Razzoozle/source
+cd <repo-root>
 pnpm tsx spikes/golden-frames/run-golden-tests.ts --output-dir ./spikes/golden-frames/output --server-url http://localhost:3310
 ```
 
 This script:
-1. Uses the clean worktree at `/tmp/claude-0/.../golden-wt` (pinned to commit 136ebc5)
+1. Uses a clean, isolated worktree (`<worktree-dir>`, pinned to commit 136ebc5)
 2. Starts the socket server on port 3310 (avoiding docker-occupied 3001/3101)
 3. Copies `fixture-quiz.json` to the worktree's config directory
 4. Orchestrates running all three flows sequentially
@@ -66,7 +66,7 @@ This script:
 
 **Terminal 1: Start the server from the clean worktree**
 ```bash
-cd /tmp/claude-0/-nvmetank1-projects-Razzoozle/981f5eb0-4942-45ed-b56d-dbc5f396745a/scratchpad/golden-wt
+cd <worktree-dir>
 pnpm install  # if node_modules missing
 WS_PORT=3310 PORT=3310 pnpm dev:socket
 # Wait for "listening on..." message
@@ -75,11 +75,11 @@ WS_PORT=3310 PORT=3310 pnpm dev:socket
 **Terminal 2: Copy fixture and run individual flows**
 ```bash
 # Copy fixture quiz into server's config
-cp /nvmetank1/projects/Razzoozle/source/spikes/golden-frames/fixture-quiz.json \
-   /tmp/claude-0/-nvmetank1-projects-Razzoozle/981f5eb0-4942-45ed-b56d-dbc5f396745a/scratchpad/golden-wt/config/quizzes/golden-test-quiz.json
+cp <repo-root>/spikes/golden-frames/fixture-quiz.json \
+   <worktree-dir>/config/quizzes/golden-test-quiz.json
 
 # From the main repo
-cd /nvmetank1/projects/Razzoozle/source
+cd <repo-root>
 
 # Run each flow (they must run in this order to capture gameId from Flow 1)
 pnpm tsx spikes/golden-frames/flow1-manager-create-player-join.ts http://localhost:3310 ./spikes/golden-frames/output golden-test-quiz
@@ -161,7 +161,7 @@ Start the Rust server and run the same flows, capturing frames to `output-rust/`
 cargo run --release -- --port 3311
 
 # Terminal 2: Record frames
-cd /nvmetank1/projects/Razzoozle/source
+cd <repo-root>
 pnpm tsx spikes/golden-frames/run-golden-tests.ts \
   --output-dir ./spikes/golden-frames/output-rust \
   --server-url http://localhost:3311
@@ -234,7 +234,7 @@ This is just enough to exercise the question/answer/reveal cycle without being b
 
 ### Server won't start from worktree
 
-- Verify the worktree path exists: `/tmp/claude-0/-nvmetank1-projects-Razzoozle/981f5eb0-4942-45ed-b56d-dbc5f396745a/scratchpad/golden-wt`
+- Verify the worktree path exists: `<worktree-dir>`
 - Check that the worktree is at commit 136ebc5: `git -C <wt-path> log --oneline -1`
 - Ensure `pnpm install` completes without errors in the worktree
 

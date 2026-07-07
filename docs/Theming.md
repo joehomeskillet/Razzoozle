@@ -13,7 +13,7 @@ Changes preview live and apply via CSS custom properties — the whole UI recolo
 ## Presets
 Two presets ship built-in:
 - **Razzoozle Violet** — the violet liquid-glass signature look.
-- **Südhang (default)** — the flat baseline.
+- **Flat Cream (default)** — the flat baseline.
 
 Save your own presets and restore previous versions from the revision history.
 
