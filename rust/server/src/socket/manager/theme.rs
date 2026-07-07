@@ -27,6 +27,7 @@ lazy_static! {
 const THEME_REVISIONS_MAX: usize = 10;
 const BACKGROUND_SIZE_CAP: usize = 8 * 1024 * 1024; // 8 MB
 const SOUND_SIZE_CAP: usize = 4 * 1024 * 1024; // 4 MB
+const SKELETON_ASSET_MAX_BYTES: usize = 512 * 1024; // 512 KB
 
 /// Simple base64 decoder (no external dependency)
 fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
@@ -415,7 +416,7 @@ fn decode_data_url(data_url: &str, expected_mimes: &[&str]) -> Result<(String, V
     Ok((mime_type.to_string(), buffer))
 }
 
-/// Save background image with 8 MB cap
+/// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking)
 async fn save_background_image(slot: &str, data_url: &str) -> Result<String, String> {
     let valid_slots = ["auth", "managerGame", "playerGame", "logo"];
     if !valid_slots.contains(&slot) {
@@ -428,33 +429,38 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
         return Err("errors:theme.imageTooLarge".to_string());
     }
 
-    let backgrounds_dir = Path::new("config/media/backgrounds");
-    if !backgrounds_dir.exists() {
-        fs::create_dir_all(backgrounds_dir)
-            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
-    }
+    let slot_owned = slot.to_string();
+    tokio::task::spawn_blocking(move || {
+        let backgrounds_dir = Path::new("config/media/backgrounds");
+        if !backgrounds_dir.exists() {
+            fs::create_dir_all(backgrounds_dir)
+                .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        }
 
-    if let Ok(entries) = fs::read_dir(backgrounds_dir) {
-        for entry in entries.flatten() {
-            if let Ok(name) = entry.file_name().into_string() {
-                if name.starts_with(&format!("{}-", slot)) {
-                    let _ = fs::remove_file(entry.path());
+        if let Ok(entries) = fs::read_dir(backgrounds_dir) {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if name.starts_with(&format!("{}-", slot_owned)) {
+                        let _ = fs::remove_file(entry.path());
+                    }
                 }
             }
         }
-    }
 
-    let timestamp = Utc::now().timestamp_millis();
-    let filename = format!("{}-{}.webp", slot, timestamp);
-    let filepath = backgrounds_dir.join(&filename);
+        let timestamp = Utc::now().timestamp_millis();
+        let filename = format!("{}-{}.webp", slot_owned, timestamp);
+        let filepath = backgrounds_dir.join(&filename);
 
-    fs::write(&filepath, &buffer)
-        .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        fs::write(&filepath, &buffer)
+            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
-    Ok(format!("/media/backgrounds/{}", filename))
+        Ok(format!("/media/backgrounds/{}", filename))
+    })
+    .await
+    .map_err(|_| "errors:theme.uploadFailed".to_string())?
 }
 
-/// Save sound file with 4 MB cap
+/// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking)
 async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
     let valid_slots = [
         "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
@@ -474,47 +480,53 @@ async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
         return Err("errors:theme.audioTooLarge".to_string());
     }
 
-    let sounds_dir = Path::new("config/media/sounds");
-    if !sounds_dir.exists() {
-        fs::create_dir_all(sounds_dir)
-            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
-    }
+    let slot_owned = slot.to_string();
+    tokio::task::spawn_blocking(move || {
+        let sounds_dir = Path::new("config/media/sounds");
+        if !sounds_dir.exists() {
+            fs::create_dir_all(sounds_dir)
+                .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        }
 
-    if let Ok(entries) = fs::read_dir(sounds_dir) {
-        for entry in entries.flatten() {
-            if let Ok(name) = entry.file_name().into_string() {
-                if name.starts_with(&format!("{}-", slot)) {
-                    let _ = fs::remove_file(entry.path());
+        if let Ok(entries) = fs::read_dir(sounds_dir) {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if name.starts_with(&format!("{}-", slot_owned)) {
+                        let _ = fs::remove_file(entry.path());
+                    }
                 }
             }
         }
-    }
 
-    let ext = match mime.as_str() {
-        "audio/mpeg" | "audio/mp3" => ".mp3",
-        "audio/wav" => ".wav",
-        "audio/ogg" => ".ogg",
-        _ => ".mp3",
-    };
+        let ext = match mime.as_str() {
+            "audio/mpeg" | "audio/mp3" => ".mp3",
+            "audio/wav" => ".wav",
+            "audio/ogg" => ".ogg",
+            _ => ".mp3",
+        };
 
-    let timestamp = Utc::now().timestamp_millis();
-    let filename = format!("{}-{}{}", slot, timestamp, ext);
-    let filepath = sounds_dir.join(&filename);
+        let timestamp = Utc::now().timestamp_millis();
+        let filename = format!("{}-{}{}", slot_owned, timestamp, ext);
+        let filepath = sounds_dir.join(&filename);
 
-    fs::write(&filepath, &buffer)
-        .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        fs::write(&filepath, &buffer)
+            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
-    Ok(format!("/media/sounds/{}", filename))
+        Ok(format!("/media/sounds/{}", filename))
+    })
+    .await
+    .map_err(|_| "errors:theme.uploadFailed".to_string())?
 }
 
-/// Set skeleton asset and update theme
+/// Set skeleton asset and update theme (no empty check, 512 KB size cap check)
 fn set_skeleton_asset(kind: &str, content: &str, current_theme: &serde_json::Value) -> Result<serde_json::Value, String> {
     if kind != "css" && kind != "js" {
         return Err("errors:skeleton.invalidKind".to_string());
     }
 
-    if content.is_empty() {
-        return Err("errors:skeleton.invalidContent".to_string());
+    // Check size cap (512 KB) — Node checks Buffer.byteLength(content) > SKELETON_ASSET_MAX_BYTES
+    if content.as_bytes().len() > SKELETON_ASSET_MAX_BYTES {
+        return Err("errors:skeleton.assetTooLarge".to_string());
     }
 
     let skeleton_dir = Path::new("config/theme");
@@ -663,6 +675,25 @@ fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
                 .await
                 {
                     Ok(Ok(new_theme)) => {
+                        // MAJOR FIX: snapshot theme revision BEFORE persisting (Node calls setTheme which snapshots)
+                        let snapshot_result = tokio::task::spawn_blocking({
+                            move || {
+                                if let Some(cur) = load_current_theme() {
+                                    save_theme_revision(cur)
+                                } else {
+                                    Ok(())
+                                }
+                            }
+                        })
+                        .await;
+
+                        if let Ok(Err(_)) = snapshot_result {
+                            socket
+                                .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                .ok();
+                            return;
+                        }
+
                         let theme_dir = Path::new("config/theme");
                         if let Err(_) = fs::create_dir_all(theme_dir) {
                             socket
@@ -908,6 +939,26 @@ fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let current_theme = load_current_theme()
                     .unwrap_or_else(|| serde_json::json!({}));
+
+                // MAJOR FIX: snapshot theme revision BEFORE persisting (Node calls setTheme which snapshots)
+                let snapshot_result = tokio::task::spawn_blocking({
+                    let current = current_theme.clone();
+                    move || {
+                        if let Some(cur) = load_current_theme() {
+                            save_theme_revision(cur)
+                        } else {
+                            Ok(())
+                        }
+                    }
+                })
+                .await;
+
+                if let Ok(Err(_)) = snapshot_result {
+                    socket
+                        .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                        .ok();
+                    return;
+                }
 
                 let mut new_theme = current_theme.clone();
                 if let Some(obj) = new_theme.as_object_mut() {
