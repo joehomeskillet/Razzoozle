@@ -10,8 +10,9 @@ pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     };
 
     let rows: Vec<(String, String)> =
+        // The 'active' row is the theme-mirror written by upsert_theme (name=NULL), not a template — exclude it instead of Option<String>-decoding; Node lists templates from disk and never sees the mirror row.
         match sqlx::query_as(
-            "SELECT id, name FROM themes ORDER BY id"
+            "SELECT id, name FROM themes WHERE id <> 'active' AND name IS NOT NULL ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -79,8 +80,9 @@ pub async fn get_theme_templates_full(pool: &Option<PgPool>) -> Vec<serde_json::
     };
 
     let rows: Vec<(String, String, serde_json::Value)> =
+        // The 'active' row is the theme-mirror written by upsert_theme (name=NULL), not a template — exclude it instead of Option<String>-decoding; Node lists templates from disk and never sees the mirror row.
         match sqlx::query_as(
-            "SELECT id, name, theme FROM themes ORDER BY id"
+            "SELECT id, name, theme FROM themes WHERE id <> 'active' AND name IS NOT NULL ORDER BY id"
         )
         .fetch_all(pool)
         .await
