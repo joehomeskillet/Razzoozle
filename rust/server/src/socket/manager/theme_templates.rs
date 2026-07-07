@@ -74,49 +74,6 @@ fn load_current_theme() -> Option<serde_json::Value> {
 }
 
 /// Save theme revision snapshot before overwriting
-fn save_theme_revision(current_theme: serde_json::Value) -> Result<(), String> {
-    let revisions_path = Path::new("config/theme-revisions.json");
-
-    // Load existing revisions
-    let mut revisions: Vec<serde_json::Value> = if revisions_path.exists() {
-        if let Ok(content) = fs::read_to_string(revisions_path) {
-            if let Ok(arr) = serde_json::from_str(&content) {
-                arr
-            } else {
-                Vec::new()
-            }
-        } else {
-            Vec::new()
-        }
-    } else {
-        Vec::new()
-    };
-
-    // Create new revision with timestamp-based ID
-    let timestamp_ms = Utc::now().timestamp_millis();
-    let id = format!("rev-{}", timestamp_ms);
-    let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-
-    let revision = serde_json::json!({
-        "id": id,
-        "createdAt": created_at,
-        "theme": current_theme
-    });
-
-    // Prepend new revision and cap at THEME_REVISIONS_MAX
-    revisions.insert(0, revision);
-    if revisions.len() > THEME_REVISIONS_MAX {
-        revisions.truncate(THEME_REVISIONS_MAX);
-    }
-
-    // Write back to disk
-    let json = serde_json::to_string_pretty(&revisions)
-        .map_err(|e| format!("Failed to serialize revisions: {}", e))?;
-    fs::write(revisions_path, json)
-        .map_err(|e| format!("Failed to save revisions: {}", e))?;
-
-    Ok(())
-}
 
 /// Load theme revisions from disk, ordered newest-first
 fn load_theme_revisions() -> Vec<serde_json::Value> {
@@ -160,7 +117,7 @@ fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::theme_template::ERROR, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -189,7 +146,7 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::theme_template::ERROR, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -282,7 +239,7 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::theme_template::ERROR, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -332,7 +289,7 @@ fn register_theme_revision_list(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::theme_revision::ERROR, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
@@ -361,7 +318,7 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::theme_revision::ERROR, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
                     return;
                 }
