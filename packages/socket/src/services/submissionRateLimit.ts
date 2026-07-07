@@ -60,12 +60,6 @@ export const checkRateLimit = (key: string): boolean => {
   return true
 }
 
-// Retained for back-compat / explicit eviction in tests. NOT called on
-// disconnect anymore (that reset was the reconnect-bypass). Safe to keep.
-export const clearRateLimit = (key: string): void => {
-  store.delete(key)
-}
-
 // ── Global server-wide submission rate (defense-in-depth) ─────────────────────
 // A coarse server-wide ceiling so a botnet of distinct clientIds cannot each
 // stay just under the per-client limit and still flood the queue in aggregate.

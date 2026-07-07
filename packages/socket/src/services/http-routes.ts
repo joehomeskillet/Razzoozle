@@ -30,7 +30,6 @@ import type { SoloCheckAnswerResponse } from "@razzoozle/common/types/game"
 import type { Assignment } from "@razzoozle/common/validators/assignment"
 import { assignmentValidator } from "@razzoozle/common/validators/assignment"
 import { mergeAchievementsConfig } from "@razzoozle/common/achievements"
-import { EVENTS } from "@razzoozle/common/constants"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { evaluateAnswer } from "@razzoozle/socket/services/game/answer-eval"
 import manager from "@razzoozle/socket/services/manager"
@@ -235,8 +234,6 @@ const authorizeManagerRequest = (req: IncomingMessage): boolean => {
 }
 
 let themeBroadcaster: ((theme: unknown) => void) | null = null
-
-export const themeBroadcastEvent = EVENTS.MANAGER.THEME
 
 export const registerThemeBroadcaster = (
   fn: (theme: unknown) => void,

@@ -131,6 +131,3 @@ export const metrics = {
 }
 
 export type MetricsSnapshot = ReturnType<typeof metrics.snapshot>
-
-// Exported for unit tests only.
-export const __percentile = percentile

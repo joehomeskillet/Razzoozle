@@ -62,12 +62,6 @@ export const clockRttMs = new client.Histogram({
 })
 
 // ── Gauges ─────────────────────────────────────────────────────────────────
-export const activeGames = new client.Gauge({
-  name: "active_games",
-  help: "Number of currently-active games.",
-  registers: [registry],
-})
-
 export const connectedSockets = new client.Gauge({
   name: "connected_sockets",
   help: "Number of connected sockets, by role.",
