@@ -5,4 +5,4 @@ import type { MetricPercentiles } from "./MetricPercentiles";
  * Metrics health snapshot (server->host).
  * Emitted on `metrics:health`.
  */
-export type MetricsHealthSnapshot = { rtt: MetricPercentiles, clockOffset: MetricPercentiles, answerAck: MetricPercentiles, reconnectCount: number, rejected: { [key in string]?: number }, };
+export type MetricsHealthSnapshot = { rtt: MetricPercentiles, clockOffset: MetricPercentiles, answerAck: MetricPercentiles, reconnectCount: bigint, rejected: { [key in string]?: bigint }, };

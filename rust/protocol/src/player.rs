@@ -167,7 +167,7 @@ pub enum MetricKind {
 #[serde(rename_all = "camelCase")]
 pub struct MetricsReport {
     pub kind: MetricKind,
-    pub value: i32,
+    pub value: f64,
 }
 
 /// Metrics subscription (client->server).
@@ -186,12 +186,10 @@ pub struct MetricsSubscribe {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct MetricPercentiles {
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub p50: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub p50: Option<f64>,
     #[ts(optional)]
-    pub p95: Option<i32>,
+    pub p95: Option<f64>,
     pub count: i32,
 }
 
@@ -204,8 +202,8 @@ pub struct MetricsHealthSnapshot {
     pub rtt: MetricPercentiles,
     pub clock_offset: MetricPercentiles,
     pub answer_ack: MetricPercentiles,
-    pub reconnect_count: i32,
-    pub rejected: std::collections::HashMap<String, i32>,
+    pub reconnect_count: u64,
+    pub rejected: std::collections::HashMap<String, u64>,
 }
 
 // ============================================================================
@@ -278,13 +276,13 @@ mod tests {
     fn test_metrics_health_snapshot_roundtrip() {
         let snapshot = MetricsHealthSnapshot {
             rtt: MetricPercentiles {
-                p50: Some(50),
-                p95: Some(100),
+                p50: Some(50.0),
+                p95: Some(100.0),
                 count: 10,
             },
             clock_offset: MetricPercentiles {
-                p50: Some(5),
-                p95: Some(15),
+                p50: Some(5.0),
+                p95: Some(15.0),
                 count: 10,
             },
             answer_ack: MetricPercentiles {
