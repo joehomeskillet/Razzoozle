@@ -68,6 +68,14 @@ import {
   resumeRound,
   waitWhilePaused as waitWhilePausedFn,
 } from "@razzoozle/socket/services/game/round-manager/pause-resume"
+import {
+  applyAutoMode,
+  AUTO_LEADERBOARD_MS,
+  AUTO_RESULT_MS,
+  clearAuto as clearAutoFn,
+  emitResultCountdown as emitResultCountdownFn,
+  scheduleAuto as scheduleAutoFn,
+} from "@razzoozle/socket/services/game/round-manager/auto-mode"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -146,12 +154,10 @@ export class RoundManager {
   private roundRecapShown = false
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
+  // Live setTimeout handle for the auto-advance chain. Stays a class field
+  // (round-manager/auto-mode.ts's logic only reads/writes it via getter/
+  // setter callbacks — see that module's header comment for why).
   private autoTimer: ReturnType<typeof setTimeout> | null = null
-  // Auto-mode advance durations (ms). Hoisted to class level so setAutoMode (the
-  // mid-screen immediacy path) and showResults/showLeaderboard (the countdown
-  // emit) read the SAME values scheduleAuto arms its timers with.
-  private static readonly AUTO_RESULT_MS = 6000
-  private static readonly AUTO_LEADERBOARD_MS = 5000
   // FIX 8/9 bookkeeping: true while the post-results screen is showing (set at the
   // end of showResults, cleared once showLeaderboard runs). Lets setAutoMode arm
   // the advance for the screen ALREADY on display when auto-mode is toggled on.
@@ -259,6 +265,9 @@ export class RoundManager {
     )
   }
 
+  // ── Auto-advance — logic extracted to round-manager/auto-mode.ts (Modul 4 of
+  // the SRP split). autoTimer stays a class field; scheduleAuto's callbacks
+  // read live state via getter callbacks (see that module's header comment).
   setAutoMode(on: boolean): void {
     // Always record the intent — even while paused. scheduleAuto()'s pause
     // handling (waitWhilePaused) already defers the actual advance, so storing
@@ -266,118 +275,58 @@ export class RoundManager {
     // desync where auto-advance never resumes after un-pausing.
     this.autoMode = on
 
-    if (!on) {
-      this.clearAuto()
-
-      return
-    }
-
-    // FIX 8 (immediacy): toggled ON while a result screen is already showing —
-    // arm the advance for THAT screen now instead of waiting for the next phase
-    // boundary. Guard against a duplicate timer (do nothing if one is pending).
-    // scheduleAuto() re-sends the result payload with autoAdvanceMs (FIX 9) so
-    // the client gets the countdown for the screen it is already on.
-    if (this.started && this.resultScreenActive && this.autoTimer === null) {
-      this.scheduleAuto()
-      // FIX 9: the SHOW_RESULT screen was already broadcast WITHOUT a countdown
-      // (auto-mode was off then) — re-send it with autoAdvanceMs so the client
-      // can render the local countdown for the screen it is already on.
-      this.emitResultCountdown(RoundManager.AUTO_RESULT_MS)
-    }
+    applyAutoMode({
+      on,
+      started: this.started,
+      resultScreenActive: this.resultScreenActive,
+      autoTimer: this.autoTimer,
+      scheduleAuto: () => this.scheduleAuto(),
+      emitResultCountdown: (autoAdvanceMs) =>
+        this.emitResultCountdown(autoAdvanceMs),
+      clearAuto: () => this.clearAuto(),
+    })
   }
 
   private clearAuto(): void {
-    if (this.autoTimer) {
-      clearTimeout(this.autoTimer)
-      this.autoTimer = null
-    }
+    clearAutoFn({
+      autoTimer: this.autoTimer,
+      setAutoTimer: (t) => {
+        this.autoTimer = t
+      },
+    })
   }
 
-  // FIX 9 (mid-screen re-send): re-deliver the cached SHOW_RESULT payload to each
-  // player with autoAdvanceMs added, so a client already sitting on the result
-  // screen gets the countdown when auto-mode is toggled on. Re-sends the FULL
-  // cached payload (not a partial), so it is safe regardless of how the client
-  // applies the screen state. No-op when the cache is empty (not on the result
-  // screen / already advanced).
   private emitResultCountdown(autoAdvanceMs: number): void {
-    if (this.lastResultPayloads.size === 0) {
-      return
-    }
-
-    for (const [socketId, payload] of this.lastResultPayloads) {
-      this.send(socketId, STATUS.SHOW_RESULT, { ...payload, autoAdvanceMs })
-    }
+    emitResultCountdownFn(
+      {
+        lastResultPayloads: this.lastResultPayloads,
+        send: (target, status, data) => this.send(target, status, data),
+      },
+      autoAdvanceMs,
+    )
   }
 
-  // Auto mode: after results, advance to leaderboard then the next question
-  // automatically (with pauses), so the host doesn't click through every round.
   private scheduleAuto(): void {
-    this.clearAuto()
-    const AUTO_RESULT_MS = RoundManager.AUTO_RESULT_MS
-    const AUTO_LEADERBOARD_MS = RoundManager.AUTO_LEADERBOARD_MS
-
-    // After the leaderboard dwell, advance to the next question (honouring pause).
-    const advanceToNext = () => {
-      this.autoTimer = setTimeout(() => {
-        if (this.paused) {
-          void this.waitWhilePaused().then(() => {
-            if (!this.started || !this.autoMode) {
-              return
-            }
-
-            if (this.opts.quizz.questions[this.currentQuestion + 1]) {
-              this.currentQuestion += 1
-              void this.newQuestion()
-            }
-          })
-
-          return
-        }
-
-        if (!this.started || !this.autoMode) {
-          return
-        }
-
-        if (this.opts.quizz.questions[this.currentQuestion + 1]) {
-          this.currentQuestion += 1
-          void this.newQuestion()
-        }
-      }, AUTO_LEADERBOARD_MS)
-    }
-
-    this.autoTimer = setTimeout(() => {
-      if (!this.started || !this.autoMode) {
-        return
-      }
-
-      // First hop off the result screen: showLeaderboard() may divert to the
-      // per-round recap screen (manager-only). Detect via roundRecapShown.
-      this.showLeaderboard()
-
-      if (!this.started) {
-        return
-      }
-
-      if (this.roundRecapShown) {
-        // We are on the recap screen — hold it for AUTO_RESULT_MS, then the
-        // SECOND showLeaderboard() passes the guard and shows the real board.
-        this.autoTimer = setTimeout(() => {
-          if (!this.started || !this.autoMode) {
-            return
-          }
-
-          this.showLeaderboard()
-
-          if (!this.started) {
-            return
-          }
-
-          advanceToNext()
-        }, AUTO_RESULT_MS)
-      } else {
-        advanceToNext()
-      }
-    }, AUTO_RESULT_MS)
+    scheduleAutoFn({
+      setAutoTimer: (t) => {
+        this.autoTimer = t
+      },
+      clearAuto: () => this.clearAuto(),
+      isStarted: () => this.started,
+      isAutoMode: () => this.autoMode,
+      isPaused: () => this.paused,
+      waitWhilePaused: () => this.waitWhilePaused(),
+      hasNextQuestion: () =>
+        Boolean(this.opts.quizz.questions[this.currentQuestion + 1]),
+      incrementCurrentQuestion: () => {
+        this.currentQuestion += 1
+      },
+      newQuestion: () => {
+        void this.newQuestion()
+      },
+      showLeaderboard: () => this.showLeaderboard(),
+      isRoundRecapShown: () => this.roundRecapShown,
+    })
   }
 
   private rememberPauseState<T extends Status>(
@@ -1170,9 +1119,7 @@ export class RoundManager {
 
       this.send(player.id, STATUS.SHOW_RESULT, {
         ...resultPayload,
-        ...(this.autoMode
-          ? { autoAdvanceMs: RoundManager.AUTO_RESULT_MS }
-          : {}),
+        ...(this.autoMode ? { autoAdvanceMs: AUTO_RESULT_MS } : {}),
       })
     emitLifecycle("onResult", { gameId: this.opts.gameId, status: "SHOW_RESULT", data: {} })
     })
@@ -2033,9 +1980,7 @@ export class RoundManager {
       // FIX 9: in auto-mode the leaderboard auto-advances to the next question
       // after AUTO_LEADERBOARD_MS — carry it so the client can render a local
       // countdown. Absent in manual mode (old clients ignore it).
-      ...(this.autoMode
-        ? { autoAdvanceMs: RoundManager.AUTO_LEADERBOARD_MS }
-        : {}),
+      ...(this.autoMode ? { autoAdvanceMs: AUTO_LEADERBOARD_MS } : {}),
       ...(this.tempRoundRecap && this.tempRoundRecap.length > 0
         ? { roundRecap: this.tempRoundRecap }
         : {}),
