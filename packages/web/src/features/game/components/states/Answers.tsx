@@ -393,12 +393,20 @@ const Answers = ({
   // Normal-mode countdown: keep listening to the server COOLDOWN broadcast. In
   // low-latency mode the server still emits COOLDOWN, but the local server-clock
   // timer above is the source of truth, so we ignore it there to avoid jitter.
+  // Defensive: if the value is suspiciously large (>100k seconds, ~27 hours),
+  // it's likely an absolute deadline in seconds (Unix epoch) rather than remaining
+  // seconds. Convert it back to remaining seconds.
   useEvent(EVENTS.GAME.COOLDOWN, (sec) => {
     if (lowLatency) {
       return
     }
 
-    setCooldown(sec)
+    if (sec > 100000) {
+      const remainingMs = (sec * 1000) - Date.now()
+      setCooldown(Math.max(0, Math.ceil(remainingMs / 1000)))
+    } else {
+      setCooldown(sec)
+    }
   })
 
   useEvent(EVENTS.GAME.PLAYER_ANSWER, (count) => {
