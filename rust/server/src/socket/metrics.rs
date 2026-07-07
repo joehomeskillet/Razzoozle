@@ -73,18 +73,18 @@ fn percentile(values: &[f64], p: f64) -> Option<f64> {
 fn build_snapshot(metrics: &RoomMetrics) -> MetricsHealthSnapshot {
     MetricsHealthSnapshot {
         rtt: MetricPercentiles {
-            p50: percentile(&metrics.rtt, 50.0).map(|v| v as i32),
-            p95: percentile(&metrics.rtt, 95.0).map(|v| v as i32),
+            p50: percentile(&metrics.rtt, 50.0),
+            p95: percentile(&metrics.rtt, 95.0),
             count: metrics.rtt.len() as i32,
         },
         clock_offset: MetricPercentiles {
-            p50: percentile(&metrics.clock_offset, 50.0).map(|v| v as i32),
-            p95: percentile(&metrics.clock_offset, 95.0).map(|v| v as i32),
+            p50: percentile(&metrics.clock_offset, 50.0),
+            p95: percentile(&metrics.clock_offset, 95.0),
             count: metrics.clock_offset.len() as i32,
         },
         answer_ack: MetricPercentiles {
-            p50: percentile(&metrics.answer_ack, 50.0).map(|v| v as i32),
-            p95: percentile(&metrics.answer_ack, 95.0).map(|v| v as i32),
+            p50: percentile(&metrics.answer_ack, 50.0),
+            p95: percentile(&metrics.answer_ack, 95.0),
             count: metrics.answer_ack.len() as i32,
         },
         reconnect_count: metrics.reconnect_count,
