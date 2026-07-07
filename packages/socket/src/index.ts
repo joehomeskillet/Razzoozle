@@ -35,6 +35,7 @@ import {
 } from "@razzoozle/socket/services/plugin-runtime"
 import { logger, socketLogger } from "@razzoozle/socket/services/logger"
 import { connectedSockets } from "@razzoozle/socket/services/prom"
+import { hydrateConfigFromPg } from "@razzoozle/socket/services/storage/hydrate-pg"
 import { createServer } from "http"
 import { Server as ServerIO } from "socket.io"
 
@@ -51,6 +52,12 @@ const io: Server = new ServerIO({
   pingTimeout: WS_PING_TIMEOUT_MS,
 })
 initConfig()
+
+// Materialize Postgres state to config/ files on boot (pg/pg-only modes).
+// Non-blocking: errors are logged per-category, boot continues.
+void hydrateConfigFromPg().catch((error: unknown) => {
+  logger.error({ err: error }, "hydrateConfigFromPg failed")
+})
 
 // Explicit HTTP server so we can serve a tiny health endpoint alongside the
 // socket.io upgrade path. socket.io owns its own `/ws` path (handled before
