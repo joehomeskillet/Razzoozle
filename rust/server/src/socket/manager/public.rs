@@ -106,6 +106,10 @@ lazy_static! {
     });
 }
 
+
+pub fn get_default_theme() -> serde_json::Value {
+    DEFAULT_THEME.clone()
+}
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_get_theme(socket, ctx.clone());
     register_submit_question(socket, ctx);
