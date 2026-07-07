@@ -4,6 +4,7 @@ use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
 use crate::http::RATE_LIMITER;
+use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -15,6 +16,26 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_reconnect(socket, ctx.clone());
 }
 
+/// Constant-time, length-checked byte compare. Mirrors Node's
+/// `presented.length !== expected.length || !timingSafeEqual(...)` — a length
+/// mismatch is itself a rejection (checked first, short-circuiting before the
+/// fixed-time fold), so response timing never leaks the real password length
+/// or contents. No `subtle`/`constant_time_eq` crate in Cargo.toml (checked
+/// before writing this), so this hand-rolls the XOR-fold instead of adding a
+/// new dependency.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+
+    diff == 0
+}
+
 fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::AUTH, {
         let ctx = ctx.clone();
@@ -23,33 +44,73 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                // Auth brute-force throttle (per client ID)
-                if RATE_LIMITER.record_auth_failure_and_check_throttle(&ctx.client_id) {
-                    socket
-                        .emit(constants::manager::ERROR_MESSAGE, "errors:manager.authThrottled")
-                        .ok();
-                    return;
-                }
-
                 let expected_password = match db::get_manager_password(&ctx.db_pool).await {
                     Some(pw) => pw,
                     None => std::env::var("MANAGER_PASSWORD")
                         .unwrap_or_else(|_| DEFAULT_MANAGER_PASSWORD.to_string()),
                 };
 
-                if password == expected_password {
-                    {
-                        let mut registry = ctx.registry.write().await;
-                        registry.login_client(ctx.client_id.clone());
-                    }
-
-                    // Emit manager:config with all manager-visible data
-                    config_helper::build_and_emit_config(&socket, &ctx).await;
-                } else {
+                // Refuse EVERY login while the configured password is still the
+                // shipped default — mirrors Node (auth.ts:34-41): a host must
+                // set a real password before manager:auth can ever succeed, so
+                // a forgotten/unconfigured install can't be logged into with
+                // the publicly-known default. Checked BEFORE the throttle/
+                // compare, same order as Node.
+                if expected_password == DEFAULT_MANAGER_PASSWORD {
                     socket
-                        .emit(constants::manager::ERROR_MESSAGE, "errors:manager.invalidPassword")
+                        .emit(
+                            constants::manager::ERROR_MESSAGE,
+                            "errors:manager.passwordNotConfigured",
+                        )
                         .ok();
+
+                    return;
                 }
+
+                // Server-wide brute-force throttle: PEEK (no increment) before
+                // comparing, so a throttled window rejects even a
+                // would-be-correct password with the SAME invalidPassword key
+                // (deliberately hides the throttle) instead of a distinct
+                // (and previously non-existent) authThrottled key. Global —
+                // not per-client_id — window, matching Node's single
+                // module-level counter (trivially bypassed per-client-id
+                // counters are pointless since a client can mint a fresh
+                // clientId for free).
+                if RATE_LIMITER.is_auth_throttled_global() {
+                    socket
+                        .emit(
+                            constants::manager::ERROR_MESSAGE,
+                            "errors:manager.invalidPassword",
+                        )
+                        .ok();
+
+                    return;
+                }
+
+                if !constant_time_eq(password.as_bytes(), expected_password.as_bytes()) {
+                    // Only a REAL failed compare counts toward the throttle
+                    // (never on success — the previous code incremented
+                    // unconditionally, trivially defeated by reconnecting).
+                    RATE_LIMITER.record_auth_failure_global();
+                    socket
+                        .emit(
+                            constants::manager::ERROR_MESSAGE,
+                            "errors:manager.invalidPassword",
+                        )
+                        .ok();
+
+                    return;
+                }
+
+                {
+                    let mut registry = ctx.registry.write().await;
+                    registry.login_client(ctx.client_id.clone());
+                }
+
+                // Emit manager:config with all manager-visible data (also
+                // re-pushes ai:settings on every successful auth — see
+                // config_helper.rs).
+                config_helper::build_and_emit_config(&socket, &ctx).await;
             });
         }
     });
@@ -78,63 +139,180 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let game_id_opt = payload
+                    .get("gameId")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                let Some(game_id) = game_id_opt else {
+                    return;
                 };
 
-                if !is_logged {
-                    socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                let game_opt = {
+                    let registry = ctx.registry.read().await;
+                    registry.get_game_by_id(&game_id)
+                };
+
+                let Some(game_ref) = game_opt else {
+                    socket
+                        .emit(constants::game::ERROR_MESSAGE, "errors:game.notFound")
+                        .ok();
+
+                    return;
+                };
+
+                // OWNERSHIP, not prior is_logged, gates reconnect — mirrors
+                // Node (game.ts:95-116): registry.getManagerGame(gameId,
+                // clientId) alone is treated as proof of prior authentication,
+                // and managerAuth.login(socket) is called UNCONDITIONALLY
+                // whenever that ownership match succeeds. The old Rust code
+                // required is_logged to ALREADY be true before it would even
+                // look at ownership — but is_logged (loggedClients) is
+                // in-memory and wiped on every server restart, so a genuine
+                // host could never pass that gate again and was permanently
+                // locked out of a running game (chicken-and-egg).
+                //
+                // Rust has no per-game `manager_client_id` field (only a
+                // random `host_token` + the live `manager_socket_id`), so
+                // is_game_host() — the SAME ownership primitive every other
+                // manager mutation handler in this codebase uses — is reused
+                // here. TODO(parity): the shipped web client does not yet
+                // send hostToken on manager:reconnect (grep confirms it sends
+                // only {gameId}), so is_game_host() takes its legacy
+                // "hostToken absent -> allow" branch for the real client
+                // today. Ownership is therefore effectively proven by knowing
+                // the (UUID-v4, 122-bit) gameId rather than by a matching
+                // clientId — a materially different token than Node's, but a
+                // comparably-strong secret (unlike the low-entropy, shared
+                // inviteCode). A byte-for-byte match of Node's model needs a
+                // new `manager_client_id` field captured at game-creation
+                // time on `state::Game` — that's a struct/constructor change
+                // on state.rs, out of scope for this auth-only fix (state.rs
+                // is owned by another worker); flagged here for a follow-up
+                // wave instead of silently leaving the restart-lockout bug in
+                // place.
+                let is_owner = {
+                    let game = game_ref.lock().unwrap();
+                    crate::is_game_host(&game, &payload)
+                };
+
+                if !is_owner {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .ok();
+
                     return;
                 }
 
-                let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                // Ownership verified: (re-)establish login UNCONDITIONALLY,
+                // regardless of prior is_logged state (fixes the restart
+                // chicken-and-egg lockout).
+                {
+                    let mut registry = ctx.registry.write().await;
+                    registry.login_client(ctx.client_id.clone());
+                }
 
-                if let Some(game_id) = game_id_opt {
-                    let game_id = game_id.to_string();
+                let new_socket_id = socket.id.to_string();
 
-                    let game_opt = {
-                        let registry = ctx.registry.read().await;
-                        registry.get_game_by_id(&game_id)
-                    };
+                // Reject while a DIFFERENT manager socket is still genuinely
+                // connected — mirrors Node's `this._manager.connected` guard
+                // (GAME.RESET "errors:game.managerAlreadyConnected"). Rust's
+                // Game has no `connected` bool (state.rs owns that struct),
+                // so liveness is checked via the socket.io registry instead:
+                // if the previously-stored manager_socket_id still resolves
+                // to a live socket, and it isn't THIS reconnecting socket,
+                // refuse instead of stealing the connection out from under
+                // the still-live tab.
+                let previous_socket_id = {
+                    let game = game_ref.lock().unwrap();
+                    game.manager_socket_id.clone()
+                };
 
-                    if let Some(game_ref) = game_opt {
-                        {
-                            let game = game_ref.lock().unwrap();
-                            if !crate::is_game_host(&game, &payload) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
-                                return;
-                            }
+                if previous_socket_id != new_socket_id {
+                    if let Ok(sid) = previous_socket_id.parse() {
+                        if ctx.io.get_socket(sid).is_some() {
+                            socket
+                                .emit(
+                                    constants::game::RESET,
+                                    "errors:game.managerAlreadyConnected",
+                                )
+                                .ok();
+
+                            return;
                         }
-
-                        let mut game = game_ref.lock().unwrap();
-
-                        // Update manager socket
-                        game.manager_socket_id = socket.id.to_string();
-
-                        let game_id = game.game_id.clone();
-                        let players = game.players.clone();
-
-                        drop(game);
-
-                        // Join the room
-                        socket.join(game_id.clone());
-
-                        // Emit reconnect success with game state
-                        socket.emit(constants::manager::SUCCESS_RECONNECT, &serde_json::json!({
-                            "gameId": game_id,
-                            "status": "reconnected",
-                            "players": players,
-                        })).ok();
-
-                        // Broadcast to room that manager reconnected
-                        ctx.io.to(game_id)
-                            .emit(constants::manager::PLAYER_RECONNECTED, &serde_json::json!({}))
-                            .ok();
-                    } else {
-                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.notFound").ok();
                     }
                 }
+
+                // TODO(parity): Node also calls registry.reactivateGame(gameId)
+                // here, pulling the game out of the empty-grace cleanup
+                // window armed by a manager disconnect. Rust's GameRegistry
+                // has no empty-grace/reactivate mechanism at all yet (grep
+                // confirms no markGameAsEmpty/reactivateGame equivalent) — so
+                // there is nothing to hook into without adding that whole
+                // subsystem, which is out of scope for this auth-only fix.
+
+                let (game_id, players, current_question_index, total_questions, phase) = {
+                    let mut game = game_ref.lock().unwrap();
+                    game.manager_socket_id = new_socket_id;
+                    (
+                        game.game_id.clone(),
+                        game.players.clone(),
+                        game.engine.current_question_index,
+                        game.engine.quiz.questions.len(),
+                        game.engine.phase,
+                    )
+                };
+
+                socket.join(game_id.clone());
+
+                // status.name is derived from the live engine phase (cheap +
+                // accurate). `data` is best-effort: Rust has no
+                // managerStatus/lastBroadcastStatus tracking (Node's
+                // round-manager status system), so only the WAIT/lobby case
+                // gets the exact literal Node itself falls back to when
+                // nothing has been broadcast yet. TODO(parity): port
+                // per-phase status data (question/result/leaderboard
+                // payloads) once the engine tracks a broadcastable status, so
+                // a manager reconnecting mid-game gets the full
+                // SHOW_QUESTION/SHOW_RESULT/... data instead of an empty
+                // object.
+                let (status_name, status_data) = match phase {
+                    GamePhase::ShowRoom => {
+                        ("WAIT", serde_json::json!({ "text": "game:waitingForPlayers" }))
+                    }
+                    GamePhase::ShowStart => ("SHOW_START", serde_json::json!({})),
+                    GamePhase::ShowQuestion => ("SHOW_QUESTION", serde_json::json!({})),
+                    GamePhase::SelectAnswer => ("SELECT_ANSWER", serde_json::json!({})),
+                    GamePhase::ShowResult => ("SHOW_RESULT", serde_json::json!({})),
+                    GamePhase::ShowLeaderboard => ("SHOW_LEADERBOARD", serde_json::json!({})),
+                    GamePhase::Finished => ("FINISHED", serde_json::json!({})),
+                };
+
+                // currentQuestion mirrors Node's round.getReconnectInfo()
+                // ({current: index+1, total}) — trivially available from the
+                // engine's own current_question_index/quiz.questions.len(),
+                // unlike `status.data` above.
+                socket
+                    .emit(
+                        constants::manager::SUCCESS_RECONNECT,
+                        &serde_json::json!({
+                            "gameId": game_id,
+                            "currentQuestion": {
+                                "current": current_question_index + 1,
+                                "total": total_questions,
+                            },
+                            "status": { "name": status_name, "data": status_data },
+                            "players": players,
+                        }),
+                    )
+                    .ok();
+
+                // NB: no PLAYER_RECONNECTED broadcast here (removed) — Node
+                // only emits manager:playerReconnected (to the manager's own
+                // socket, with {id, username}) when a PLAYER reconnects, never
+                // on a MANAGER reconnect. The old code broadcast an empty `{}`
+                // to the whole room on every manager reconnect, which has no
+                // Node equivalent.
             });
         }
     });

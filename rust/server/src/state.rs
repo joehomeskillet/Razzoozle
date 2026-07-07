@@ -155,6 +155,44 @@ impl RateLimiter {
     pub fn record_auth_failure_and_check_throttle_global(&self) -> bool {
         self.record_auth_failure_and_check_throttle("global")
     }
+
+    // ── APPENDED for rust-auth-parity (manager:auth throttle fix) ────────────
+    // Node's submissionRateLimit.ts keeps isAuthThrottled() (pure read) and
+    // recordAuthFailure() (increments ONLY on an actual failed compare) as two
+    // separate primitives against a single global window, so a throttled
+    // window rejects even a would-be-correct password without ever counting
+    // that rejection as a new failure. The existing
+    // record_auth_failure_and_check_throttle() above conflates "record" and
+    // "check" into one call, which can't reproduce that pre-compare peek
+    // without also incrementing on success. These two thin wrappers restore
+    // that split, reusing the same "global" key + window/threshold as the
+    // existing method above (append-only — no existing method touched).
+
+    /// Peek whether the global auth-failure window has already crossed the
+    /// throttle threshold, WITHOUT recording a new failure. Mirrors Node's
+    /// isAuthThrottled().
+    pub fn is_auth_throttled_global(&self) -> bool {
+        let now = get_now_ms();
+        if let Ok(map) = self.auth_by_key.lock() {
+            if let Some(entry) = map.get("global") {
+                return now.saturating_sub(entry.window_start_ms) <= SOLO_RATE_WINDOW_MS
+                    && entry.count >= AUTH_RATE_MAX_PER_CLIENT;
+            }
+        }
+        false
+    }
+
+    /// Record a failed manager:auth attempt against the global window WITHOUT
+    /// checking throttle. Mirrors Node's recordAuthFailure() — call ONLY after
+    /// an actual failed password compare, never on success.
+    pub fn record_auth_failure_global(&self) {
+        let now = get_now_ms();
+        if let Ok(mut map) = self.auth_by_key.lock() {
+            let entry = map.entry("global".to_string()).or_insert_with(RateState::new);
+            entry.maybe_reset(now);
+            entry.count += 1;
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
