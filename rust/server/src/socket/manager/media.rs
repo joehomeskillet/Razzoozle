@@ -229,15 +229,25 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Extract category and filename for disk deletion
-                let category = media_entry
-                    .get("category")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("questions");
-                let filename = media_entry
-                    .get("filename")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                // Extract category and filename for disk deletion — treat missing fields as error
+                let category = match media_entry.get("category").and_then(|v| v.as_str()) {
+                    Some(cat) => cat,
+                    None => {
+                        socket
+                            .emit(constants::media::ERROR, "errors:media.notFound")
+                            .ok();
+                        return;
+                    }
+                };
+                let filename = match media_entry.get("filename").and_then(|v| v.as_str()) {
+                    Some(f) => f,
+                    None => {
+                        socket
+                            .emit(constants::media::ERROR, "errors:media.notFound")
+                            .ok();
+                        return;
+                    }
+                };
 
                 // Delete from disk (spawn_blocking)
                 let category_owned = category.to_string();
@@ -335,40 +345,10 @@ fn decode_data_url(data_url: &str) -> Result<(String, Vec<u8>), String> {
         .map(|m| m.as_str())
         .ok_or_else(|| "errors:media.invalidDataUrl".to_string())?;
 
-    let buffer = base64_decode(base64_part)
+    let buffer = super::theme::decode_base64(base64_part)
         .map_err(|_| "errors:media.invalidDataUrl".to_string())?;
 
     Ok((mime, buffer))
-}
-
-/// Simple base64 decoder.
-fn base64_decode(s: &str) -> Result<Vec<u8>, String> {
-    const BASE64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut result = Vec::new();
-    let mut buf = 0u32;
-    let mut bits = 0;
-
-    for &byte in s.as_bytes() {
-        let val = if byte == b'=' {
-            break;
-        } else if let Some(pos) = BASE64_CHARS.iter().position(|&b| b == byte) {
-            pos as u32
-        } else if byte.is_ascii_whitespace() {
-            continue;
-        } else {
-            return Err("Invalid base64 character".to_string());
-        };
-
-        buf = (buf << 6) | val;
-        bits += 6;
-
-        if bits >= 8 {
-            bits -= 8;
-            result.push(((buf >> bits) & 0xff) as u8);
-        }
-    }
-
-    Ok(result)
 }
 
 /// Infer media type from MIME and validate against allowed MIME types.
@@ -423,6 +403,7 @@ fn infer_type_and_validate_mime(
 }
 
 /// Normalize filename: lowercase, strip non-alphanumeric (keep hyphens/underscores), max 64 chars.
+/// parity: minimal accent fold — full Unicode NFD = Wave 4b
 fn normalize_media_stem(filename: &str) -> String {
     // Extract stem (filename without extension)
     let stem = Path::new(filename)
@@ -430,9 +411,31 @@ fn normalize_media_stem(filename: &str) -> String {
         .and_then(|s| s.to_str())
         .unwrap_or("media");
 
-    // Lowercase, replace spaces/non-alnum with hyphens, trim leading/trailing hyphens, cap at 64
-    let normalized = stem
+    // Lowercase first, then fold accents: ä→a, ö→o, ü→u, ß→ss, é/è/ê/ë→e, etc.
+    let folded = stem
         .to_lowercase()
+        .chars()
+        .flat_map(|c| match c {
+            // Umlauts & German
+            'ä' => vec!['a'],
+            'ö' => vec!['o'],
+            'ü' => vec!['u'],
+            'ß' => vec!['s', 's'],
+            // French/Spanish accents: e-family
+            'é' | 'è' | 'ê' | 'ë' => vec!['e'],
+            // e-family continued
+            'á' | 'à' | 'â' | 'ã' | 'å' => vec!['a'],
+            'í' | 'ì' | 'î' | 'ï' => vec!['i'],
+            'ó' | 'ò' | 'ô' | 'õ' => vec!['o'],
+            'ú' | 'ù' | 'û' | 'ũ' => vec!['u'],
+            'ç' => vec!['c'],
+            'ñ' => vec!['n'],
+            other => vec![other],
+        })
+        .collect::<String>();
+
+    // Replace spaces/non-alnum with hyphens, trim leading/trailing hyphens, cap at 64
+    let normalized = folded
         .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
@@ -457,11 +460,13 @@ fn normalize_media_stem(filename: &str) -> String {
     }
 }
 
-/// Map MIME type to file extension (per Node media.ts:140-170).
-/// Images (png/jpeg/webp) all return .webp; audio/video return appropriate extensions.
+/// Map MIME type to file extension.
+/// parity: raw bytes + honest extension, not .webp transcode (Wave 4b)
 fn extension_for_mime(mime: &str) -> &'static str {
     match mime {
-        "image/png" | "image/jpeg" | "image/webp" => ".webp",
+        "image/png" => ".png",
+        "image/jpeg" => ".jpg",
+        "image/webp" => ".webp",
         "audio/mpeg" | "audio/mp3" => ".mp3",
         "audio/wav" => ".wav",
         "audio/ogg" => ".ogg",

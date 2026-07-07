@@ -33,7 +33,7 @@ const SOUND_SIZE_CAP: usize = 4 * 1024 * 1024; // 4 MB
 const SKELETON_ASSET_MAX_BYTES: usize = 512 * 1024; // 512 KB
 
 /// Simple base64 decoder (no external dependency)
-fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
+pub(crate) fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
     const BASE64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut result = Vec::new();
     let mut buf = 0u32;
@@ -559,7 +559,7 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -
     .map_err(|_| "errors:theme.uploadFailed".to_string())??;
 
     // Insert into DB with source="theme" and category="audio"
-    let url = format!("/media/audio/{}", filename);
+    let url = format!("/media/sounds/{}", filename);
     let asset_id = format!("audio-{}", filename.replace(".", "-"));
     let uploaded_at = Utc::now();
     let _ = db::insert_media_asset(
