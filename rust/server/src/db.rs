@@ -1056,8 +1056,8 @@ pub async fn upsert_theme(
     };
 
     sqlx::query(
-        "INSERT INTO themes (id, theme_data, updated_at) VALUES ('active', $1, now()) \
-         ON CONFLICT (id) DO UPDATE SET theme_data = $1, updated_at = now()"
+        "INSERT INTO themes (id, theme, updated_at) VALUES ('active', $1, now()) \
+         ON CONFLICT (id) DO UPDATE SET theme = $1, updated_at = now()"
     )
     .bind(theme_data)
     .execute(pool)
