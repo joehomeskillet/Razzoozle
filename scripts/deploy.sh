@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # deploy.sh — canonical, idempotent, health-gated, auto-rollback deploy for the
-# live self-hosted Razzoozle app. Mirrors the manual runbook in docs/OPERATIONS.md §2.
+# live self-hosted Razzoozle app.
 #
 # What it does:
 #   0. (unless SKIP_PULL=1) hard-reset source to origin/main

@@ -1,6 +1,6 @@
 /**
- * RoundRecapCard — one compact award card for the per-round recap strip
- * (SPEC-recap.md §B). A smaller sibling of the end-game `RecapSequence` card:
+ * RoundRecapCard — one compact award card for the per-round recap strip.
+ * A smaller sibling of the end-game `RecapSequence` card:
  * same white liquid-glass surface, emoji medal disc, ink label/name, and value
  * pill, but tighter padding for a horizontal strip.
  *
@@ -32,7 +32,7 @@ interface Props {
   highlight?: boolean
 }
 
-// German fallbacks (du-form, no exclamation marks) — SPEC-recap.md §i18n.
+// German fallbacks (du-form, no exclamation marks).
 const LABEL_FALLBACK: Record<RoundRecapKey, string> = {
   fastest_finger: "Schnellster Finger",
   first_correct: "Erste richtige Antwort",

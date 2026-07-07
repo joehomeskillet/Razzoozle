@@ -3,9 +3,9 @@
  *
  * Single source of truth shared by every file under `celebration/`. Code labels
  * are brand-neutral (no "Razzoozle" in identifiers); the cream visual language is
- * applied only through CSS tokens / Tailwind classes (see SPEC.md).
+ * applied only through CSS tokens / Tailwind classes.
  *
- * Do not change these shapes without updating SPEC.md and every consumer.
+ * Do not change these shapes without updating every consumer.
  */
 import type { AchievementTier } from "@razzoozle/web/features/game/utils/achievements"
 

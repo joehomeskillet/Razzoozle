@@ -57,7 +57,7 @@ First public Razzoozle release — [github.com/joehomeskillet/Razzoozle](https:/
 
 - **Violet liquid-glass theme** — an opt-in glassmorphism style variant plus a
   live manager "Design" cockpit (colours, per-view backgrounds, logo, a
-  Flat ⇄ Glass toggle, presets, contrast-aware pickers). The flat "Südhang"
+  Flat ⇄ Glass toggle, presets, contrast-aware pickers). The flat cream
   preset stays the default and renders byte-identical to before.
 - **Kahoot-faithful game screens** — answer tiles with shape icons
   (triangle / diamond / circle / square), a circular countdown timer and an
@@ -69,7 +69,7 @@ First public Razzoozle release — [github.com/joehomeskillet/Razzoozle](https:/
 - More spacing between manager-config nav items and Design-tab sections.
 - Razzoozle branding throughout (no upstream logo flash on load).
 
-## [Südhang lobby + mobile bugfixes] — 2026-06-13
+## [Lobby + mobile bugfixes] — 2026-06-13
 
 Three field-reported bugs, fixed and verified end-to-end (unit tests +
 Playwright against a production container). See
@@ -101,7 +101,7 @@ Gitea issues #1–#3.
   centering) and `::-moz-range-track` / `::-moz-range-thumb` rules under a
   dedicated `.quiz-range` class; the thumb uses the runtime theme accent.
 
-## [Südhang optimize pass] — 2026-06-06
+## [Optimize pass] — 2026-06-06
 
 An 8-wave hardening and optimization pass across the `common` / `socket` / `web`
 pnpm monorepo. Headline results: TypeScript went **RED → GREEN** in all three
@@ -128,7 +128,7 @@ the server was **load-proven at 600 concurrent players** (< 10% socket CPU) with
 
 ### Changed
 
-- **Branding.** The themed `appTitle` ("Südhang Kahoot") now renders above the
+- **Branding.** The themed `appTitle` now renders above the
   login screen in place of the default Razzia logo.
 - **Display / beamer mode.** `/display` hides the manager-only controls so the
   beamer view is clean for the audience; the fullscreen button on the beamer was

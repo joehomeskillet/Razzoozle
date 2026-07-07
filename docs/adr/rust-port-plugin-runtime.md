@@ -1,7 +1,7 @@
 # ADR: Plugin Runtime Strategy for Rust Port (WP P0-3)
 
 **Date:** 2026-07-05  
-**Status:** Accepted (Option C — Node-Sidecar; vom User freigegeben 2026-07-05)  
+**Status:** Accepted (Option C — Node sidecar, 2026-07-05)  
 **Scope:** Phase 0 gate decision; affects Phase 3 server-shell integration and Phase 5 Tauri-desktop  
 
 ---

@@ -15,7 +15,7 @@ import {
  * 0 = triangle, 1 = diamond (square rotated 45deg), 2 = circle, 3 = square.
  * Rendered as an inline SVG filled with `currentColor`, so it inherits the
  * tile's `var(--answer-text)` and stays legible on every answer color in both
- * the flat (Suedhang) and glass (Razzoozle) themes.
+ * the flat cream and glass (Razzoozle) themes.
  */
 const ShapeIcon = ({ colorIndex }: { colorIndex: number }) => {
   const shape = colorIndex % 4
