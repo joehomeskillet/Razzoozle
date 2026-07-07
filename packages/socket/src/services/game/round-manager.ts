@@ -54,6 +54,14 @@ import { nanoid } from "nanoid"
 import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
 import { computeAchievementAwards } from "@razzoozle/socket/services/game/round-manager/achievement-awards"
 import { computeRoundRecap } from "@razzoozle/socket/services/game/round-manager/round-recap"
+import {
+  buildRestoreState,
+  computeReconnectInfo,
+  computeSnapshot,
+  disposeRoundState,
+  type RestoreSnapshotInput,
+  type RoundSnapshot,
+} from "@razzoozle/socket/services/game/round-manager/snapshot"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -459,123 +467,23 @@ export class RoundManager {
   }
 
   // ── Crash-recovery snapshot ──────────────────────────────────────────────
+  // Logic extracted to round-manager/snapshot.ts (Modul 2 of the SRP split).
   // Serialize only STABLE, serializable round state — never live timers, the
   // in-flight question's partial answers, or per-tap dedup bookkeeping. Pure
   // read; no behaviour change for a running game.
-  toSnapshot(): {
-    started: boolean
-    currentQuestion: number
-    leaderboard: Player[]
-    questionsHistory: QuestionResult[]
-    autoMode: boolean
-    paused: boolean
-    pausedState: { status: Status; data: StatusDataMap[Status] } | null
-    // Per-player achievement counters keyed by clientId. Survives restore so a
-    // resumed game keeps participation / perfect_game / first_correct accurate.
-    // Serialized as a plain object (a Map can't be structured-cloned to JSON).
-    gameCounters?: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    >
-    // Per-player recap accumulator (WP-A) — survives restore so a resumed game
-    // keeps accurate end-of-game superlatives. Serialized as a plain object.
-    recapStats?: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    >
-    // Per-question correctness tally (WP-A) for the hardest_question superlative.
-    questionStats?: Record<number, { correct: number; total: number }>
-  } {
-    // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
-    // them from BOTH the leaderboard AND each question's playerAnswers — a
-    // reviewer trace proved that filtering only the player list still
-    // resurrects bot ghosts via the round leaderboard / saved result on restore.
-    // playerAnswers store the username (not isBot), so we derive the set of bot
-    // usernames from the leaderboard and drop those entries by name.
-    const botUsernames = new Set(
-      this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
-    )
-    // Drop bot clientIds from the persisted counters (a restored game must not
-    // resurrect bot achievement state). Bots are identified via the leaderboard.
-    const botClientIds = new Set(
-      this.leaderboard.filter((p) => p.isBot).map((p) => p.clientId),
-    )
-    const gameCounters: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    > = {}
-
-    for (const [clientId, counter] of this.gameCounters) {
-      if (!botClientIds.has(clientId)) {
-        gameCounters[clientId] = { ...counter }
-      }
-    }
-
-    // Recap accumulator (WP-A): drop bot clientIds (a restored game must not
-    // resurrect bot recap state) and deep-copy each scalar record.
-    const recapStats: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    > = {}
-
-    for (const [clientId, stat] of this.recapStats) {
-      if (!botClientIds.has(clientId)) {
-        recapStats[clientId] = {
-          ...stat,
-          achievementIds: [...stat.achievementIds],
-        }
-      }
-    }
-
-    // Per-question tally is not player-keyed (counts are already bot-free, since
-    // bots never enter the loop branch that increments it) — copy verbatim.
-    const questionStats: Record<number, { correct: number; total: number }> = {}
-
-    for (const [index, q] of this.questionStats) {
-      questionStats[index] = { ...q }
-    }
-
-    return {
+  toSnapshot(): RoundSnapshot {
+    return computeSnapshot({
+      leaderboard: this.leaderboard,
+      questionsHistory: this.questionsHistory,
       started: this.started,
       currentQuestion: this.currentQuestion,
-      leaderboard: this.leaderboard.filter((p) => !p.isBot),
-      questionsHistory: this.questionsHistory.map((q) => ({
-        ...q,
-        playerAnswers: q.playerAnswers.filter(
-          (a) => !botUsernames.has(a.playerName),
-        ),
-      })),
       autoMode: this.autoMode,
       paused: this.paused,
       pausedState: this.pausedState,
-      gameCounters,
-      recapStats,
-      questionStats,
-    }
+      gameCounters: this.gameCounters,
+      recapStats: this.recapStats,
+      questionStats: this.questionStats,
+    })
   }
 
   // Rebuild round state from a snapshot. We deliberately DO NOT resume a live
@@ -583,82 +491,34 @@ export class RoundManager {
   // game must not auto-advance), every timer/map is reset. leaderboard and
   // questionsHistory are deep-copied so the snapshot object can't alias live
   // state. Resume happens "at the leaderboard" (see Game.fromSnapshot).
-  restore(snap: {
-    started: boolean
-    currentQuestion: number
-    leaderboard: Player[]
-    questionsHistory: QuestionResult[]
-    autoMode: boolean
-    paused?: boolean
-    pausedState?: { status: Status; data: StatusDataMap[Status] } | null
-    gameCounters?: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    >
-    recapStats?: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    >
-    questionStats?: Record<number, { correct: number; total: number }>
-  }): void {
-    this.started = snap.started
-    this.currentQuestion = snap.currentQuestion
-    this.leaderboard = snap.leaderboard.map((p) => ({ ...p }))
-    this.questionsHistory = snap.questionsHistory.map((q) => ({ ...q }))
-    // Force OFF: never auto-advance a restored game regardless of saved value.
-    this.autoMode = false
-    this.paused = snap.paused ?? false
-    this.pausedState = snap.pausedState ?? null
-    this.pauseState = snap.pausedState ?? null
+  // buildRestoreState (snapshot.ts) is a PURE function of `snap` alone; the
+  // few remaining side effects below (clearAuto, transient-map clears, the
+  // pauseWaiters drain) mirror the original method's statement order exactly.
+  restore(snap: RestoreSnapshotInput): void {
+    const state = buildRestoreState(snap)
 
-    // No live question is resumed — drop partial answers + transient anchors.
-    this.playersAnswers = []
-    this.startTime = 0
-    this.tempOldLeaderboard = null
-    this.answerDeadlineAtServerMs = 0
-
-    // Rebuild the per-player achievement counters so a resumed game keeps an
-    // accurate participation / perfect_game / first_correct picture. The
-    // per-question answerReceivedAt is transient and starts empty.
-    this.gameCounters = new Map(
-      Object.entries(snap.gameCounters ?? {}).map(([clientId, counter]) => [
-        clientId,
-        { ...counter },
-      ]),
-    )
-    // Rebuild the recap accumulator (WP-A) so a resumed game's end-of-game
-    // superlatives stay accurate across a crash/restore.
-    this.recapStats = new Map(
-      Object.entries(snap.recapStats ?? {}).map(([clientId, stat]) => [
-        clientId,
-        { ...stat, achievementIds: [...stat.achievementIds] },
-      ]),
-    )
-    this.questionStats = new Map(
-      Object.entries(snap.questionStats ?? {}).map(([index, q]) => [
-        Number(index),
-        { ...q },
-      ]),
-    )
+    this.started = state.started
+    this.currentQuestion = state.currentQuestion
+    this.leaderboard = state.leaderboard
+    this.questionsHistory = state.questionsHistory
+    this.autoMode = state.autoMode
+    this.paused = state.paused
+    this.pausedState = state.pausedState
+    this.pauseState = state.pauseState
+    this.playersAnswers = state.playersAnswers
+    this.startTime = state.startTime
+    this.tempOldLeaderboard = state.tempOldLeaderboard
+    this.answerDeadlineAtServerMs = state.answerDeadlineAtServerMs
+    this.gameCounters = state.gameCounters
+    this.recapStats = state.recapStats
+    this.questionStats = state.questionStats
     this.answerReceivedAt.clear()
-    this.currentDisplayOrder = undefined
-    this.currentShuffledChunks = undefined
+    this.currentDisplayOrder = state.currentDisplayOrder
+    this.currentShuffledChunks = state.currentShuffledChunks
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
-    this.resultScreenActive = false
+    this.resultScreenActive = state.resultScreenActive
     this.lastResultPayloads.clear()
     this.seenMessageIds.clear()
     this.answerMeta.clear()
@@ -670,15 +530,17 @@ export class RoundManager {
 
   // Clean up all pending timers to prevent leaks on game disposal.
   dispose(): void {
-    this.clearAuto()
-    this.answerCountThrottle.cancel()
+    disposeRoundState({
+      clearAuto: () => this.clearAuto(),
+      answerCountThrottle: this.answerCountThrottle,
+    })
   }
 
   getReconnectInfo() {
-    return {
-      current: this.currentQuestion + 1,
-      total: this.opts.quizz.questions.length,
-    }
+    return computeReconnectInfo(
+      this.currentQuestion,
+      this.opts.quizz.questions.length,
+    )
   }
 
   async start(socket: Socket): Promise<void> {
