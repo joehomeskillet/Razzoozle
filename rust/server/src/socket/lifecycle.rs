@@ -17,6 +17,7 @@
 //! engine's phase guards (see `razzoozle_engine::state::GameState`) as the
 //! race-safety net for "timer elapsed vs. skip vs. all-answered".
 
+use crate::db;
 use crate::state::{Game, GameRegistry};
 use crate::question_type_wire;
 use razzoozle_engine::state::GamePhase;
@@ -217,6 +218,7 @@ pub async fn run_game_lifecycle(
     io: SocketIo,
     registry: Arc<RwLock<GameRegistry>>,
     game_id: String,
+    db_pool: Option<sqlx::PgPool>,
 ) {
     let game_ref = {
         let reg = registry.read().await;
@@ -270,8 +272,16 @@ pub async fn run_game_lifecycle(
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
         // Result dwell — host may cut it short via manager:showLeaderboard.
+        // FIX L105 (abort race): re-arm BEFORE phase becomes visible to prevent window
+        // where a NEXT_QUESTION signal lands on stale Notify.
         let abort = { game_ref.lock().unwrap().arm_abort() };
-        wait_abortable(RESULT_DWELL_SECS, abort).await;
+        if !game_ref.lock().unwrap().auto_mode {
+            // L274: Manual mode (Node default) — wait for host signal OR fall back to long safety timeout
+            wait_abortable(3600, abort).await; // 1-hour safety net for manual mode
+        } else {
+            // Auto mode — use fixed RESULT_DWELL timeout
+            wait_abortable(RESULT_DWELL_SECS, abort).await;
+        }
 
         let (leaderboard_result, phase_after_leaderboard) = {
             let mut game = game_ref.lock().unwrap();
@@ -296,11 +306,38 @@ pub async fn run_game_lifecycle(
         // Last round: leaderboard_view() (engine/state.rs) already transitioned
         // straight to FINISHED (mirrors round-manager.ts showLeaderboard()
         // skipping the intermediate SHOW_LEADERBOARD screen on the last
-        // question). Broadcast FINISHED now and stop — no leaderboard dwell,
+        // question). Persist result and stop — no leaderboard dwell,
         // no next_or_finish() call (which would reject: phase is no longer
         // ShowLeaderboard).
         if phase_after_leaderboard == GamePhase::Finished {
             info!("Game finished: gameId={}", game_id);
+            let (game_id_copy, subject, players_json, quiz_id) = {
+                let game = game_ref.lock().unwrap();
+                let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> =
+                    game.engine.players.iter().enumerate()
+                        .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                            username: p.username.clone(),
+                            points: p.points,
+                            rank: (idx + 1) as i32,
+                        })
+                        .collect();
+                (
+                    game.game_id.clone(),
+                    game.engine.quiz.subject.clone(),
+                    serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
+                    None as Option<&str>, // quiz_id: TODO — extract from engine/quiz
+                )
+            };
+            // L104: Fire-and-forget result persistence (mirror Node's behavior)
+            let db = db_pool.clone();
+            let gid = game_id_copy.clone();
+            tokio::spawn(async move {
+                let now = chrono::Utc::now();
+                if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                    warn!("Result persistence failed for gameId={}: {}", gid, e);
+                }
+            });
+
             let finished = {
                 let game = game_ref.lock().unwrap();
                 build_finished_data(&game)
@@ -311,7 +348,9 @@ pub async fn run_game_lifecycle(
             return;
         }
 
-        io.to(game_id.clone())
+        // L296: Targeted send — SHOW_LEADERBOARD only to manager socket, not broadcast
+        let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
+        io.to(manager_socket_id)
             .emit(
                 constants::game::STATUS,
                 &GameStatus::ShowLeaderboard(leaderboard_data),
@@ -319,8 +358,15 @@ pub async fn run_game_lifecycle(
             .ok();
 
         // Leaderboard dwell — host may cut it short via manager:nextQuestion.
+        // FIX L105: re-arm BEFORE phase becomes visible
         let abort = { game_ref.lock().unwrap().arm_abort() };
-        wait_abortable(LEADERBOARD_DWELL_SECS, abort).await;
+        if !game_ref.lock().unwrap().auto_mode {
+            // L274: Manual mode — wait for host signal OR fall back to long safety timeout
+            wait_abortable(3600, abort).await; // 1-hour safety net for manual mode
+        } else {
+            // Auto mode — use fixed LEADERBOARD_DWELL timeout
+            wait_abortable(LEADERBOARD_DWELL_SECS, abort).await;
+        }
 
         let next_phase = {
             let mut game = game_ref.lock().unwrap();
@@ -330,6 +376,33 @@ pub async fn run_game_lifecycle(
         match next_phase {
             Ok(GamePhase::Finished) => {
                 info!("Game finished: gameId={}", game_id);
+                let (game_id_copy, subject, players_json, quiz_id) = {
+                    let game = game_ref.lock().unwrap();
+                    let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> =
+                        game.engine.players.iter().enumerate()
+                            .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                                username: p.username.clone(),
+                                points: p.points,
+                                rank: (idx + 1) as i32,
+                            })
+                            .collect();
+                    (
+                        game.game_id.clone(),
+                        game.engine.quiz.subject.clone(),
+                        serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
+                        None as Option<&str>, // quiz_id: TODO
+                    )
+                };
+                // L104: Fire-and-forget result persistence
+                let db = db_pool.clone();
+                let gid = game_id_copy.clone();
+                tokio::spawn(async move {
+                    let now = chrono::Utc::now();
+                    if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                        warn!("Result persistence failed for gameId={}: {}", gid, e);
+                    }
+                });
+
                 let finished = {
                     let game = game_ref.lock().unwrap();
                     build_finished_data(&game)
@@ -397,6 +470,7 @@ mod tests {
             )
             .unwrap();
             game.engine.start().unwrap();
+            game.auto_mode = true; // Test uses auto-advance
         }
 
         let registry = Arc::new(RwLock::new(registry));
@@ -415,7 +489,7 @@ mod tests {
         // fast-forwards while every task is parked on a timer.
         let outcome = tokio::time::timeout(
             Duration::from_secs(120),
-            run_game_lifecycle(io, registry, game_id.clone()),
+            run_game_lifecycle(io, registry, game_id.clone(), None),
         )
         .await;
 
