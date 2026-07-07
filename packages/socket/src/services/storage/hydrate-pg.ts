@@ -31,6 +31,15 @@ const shouldHydrate = (): boolean => {
 }
 
 /**
+ * Strip the id field from a record before writing to file.
+ * Files are identified by their name, not by an internal id field.
+ */
+function stripId<T extends { id: string }>(record: T): Omit<T, "id"> {
+  const { id: _, ...rest } = record
+  return rest
+}
+
+/**
  * Hydrate config/quizz/<id>.json from DB quizzes.
  * Zombie-cleanup: delete quizz files whose ids are not in the DB list.
  */
@@ -46,8 +55,7 @@ async function hydrateQuizzes(stats: HydrationStats): Promise<void> {
     // Write each quizz from DB
     for (const quizz of quizzes) {
       const filePath = getPath(`quizz/${quizz.id}.json`)
-      const { id, ...data } = quizz
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+      fs.writeFileSync(filePath, JSON.stringify(stripId(quizz), null, 2))
     }
 
     // Zombie cleanup: delete files not in DB
@@ -85,8 +93,7 @@ async function hydrateCatalog(stats: HydrationStats): Promise<void> {
     // Write each catalog entry from DB
     for (const entry of entries) {
       const filePath = getPath(`catalog/${entry.id}.json`)
-      const { id, ...data } = entry
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+      fs.writeFileSync(filePath, JSON.stringify(stripId(entry), null, 2))
     }
 
     // Zombie cleanup
@@ -124,8 +131,7 @@ async function hydrateResults(stats: HydrationStats): Promise<void> {
     // Write each result from DB
     for (const result of results) {
       const filePath = getPath(`results/${result.id}.json`)
-      const { id, ...data } = result
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+      fs.writeFileSync(filePath, JSON.stringify(stripId(result), null, 2))
     }
 
     // Zombie cleanup
@@ -163,8 +169,7 @@ async function hydrateSubmissions(stats: HydrationStats): Promise<void> {
     // Write each submission from DB
     for (const submission of submissions) {
       const filePath = getPath(`submissions/${submission.id}.json`)
-      const { id, ...data } = submission
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+      fs.writeFileSync(filePath, JSON.stringify(stripId(submission), null, 2))
     }
 
     // Zombie cleanup
