@@ -126,13 +126,20 @@ export const getClientId = (): string => {
 
 const clientId = getClientId()
 
-// Read the game backend preference from localStorage, env, or default to Rust.
-// Exported so the dev panel can query the current backend choice.
+// Read the game backend preference from hostname pin, localStorage, env, or default to Rust.
+// A `rust.*` / `node.*` hostname hard-pins the backend for the twin-test domains and
+// overrides localStorage. Exported so the dev panel can query the current backend choice.
 export function getGameBackend(): "rust" | "node" {
   try {
     if (typeof window === "undefined") {
       return "rust"
     }
+    // Hostname pin overrides localStorage: the twin-test domains (rust.razzoozle.xyz
+    // now, node.* prepared) must deterministically keep their backend, otherwise the
+    // Node-vs-Rust A/B comparisons are not trustworthy.
+    const host = window.location.hostname
+    if (host.startsWith("rust.")) return "rust"
+    if (host.startsWith("node.")) return "node"
     const stored = localStorage.getItem("gameBackend")
     if (stored === "node" || stored === "rust") {
       return stored
