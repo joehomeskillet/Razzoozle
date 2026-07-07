@@ -93,7 +93,7 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                     _ => "errors:game.notFound".to_string(),
                                 };
                                 socket
-                                    .emit(constants::game::ERROR_MESSAGE, &serde_json::json!([error_msg]))
+                                    .emit(constants::game::ERROR_MESSAGE, error_msg.as_str())
                                     .ok();
                             }
                         }
@@ -101,7 +101,7 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                         socket
                             .emit(
                                 constants::game::ERROR_MESSAGE,
-                                &serde_json::json!(["errors:game.notFound"]),
+                                "errors:game.notFound",
                             )
                             .ok();
                     }
@@ -109,7 +109,7 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                     socket
                         .emit(
                             constants::game::ERROR_MESSAGE,
-                            &serde_json::json!(["errors:game.notFound"]),
+                            "errors:game.notFound",
                         )
                         .ok();
                 }
