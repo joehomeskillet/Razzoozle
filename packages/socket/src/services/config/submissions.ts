@@ -45,7 +45,7 @@ export const saveSubmission = (data: Submission): void => {
 
   // Fire-and-forget pg mirror write
   if (isDbBackedSubmissionMode()) {
-    void upsertSubmissionPg(data)
+    upsertSubmissionPg(data).catch((error) => console.error("submissions-pg mirror failed", error))
   }
 
   // A fresh public submission is always "pending". Keep the cached counter in
@@ -167,7 +167,7 @@ export const updateSubmission = (
 
   // Fire-and-forget pg mirror write
   if (isDbBackedSubmissionMode()) {
-    void upsertSubmissionPg(merged)
+    upsertSubmissionPg(merged).catch((error) => console.error("submissions-pg mirror failed", error))
   }
 }
 
@@ -193,6 +193,6 @@ export const deleteSubmission = (id: string): void => {
 
   // Fire-and-forget pg mirror delete
   if (isDbBackedSubmissionMode()) {
-    void deleteSubmissionPg(id)
+    deleteSubmissionPg(id).catch((error) => console.error("submissions-pg mirror failed", error))
   }
 }

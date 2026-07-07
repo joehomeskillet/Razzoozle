@@ -42,6 +42,7 @@ interface SubmissionRow {
   submitted_at: string
   status: string
   question: unknown
+  source?: string
   category?: string
   rejection_reason?: string
 }
@@ -55,6 +56,7 @@ const rowToSubmission = (row: SubmissionRow): Submission | null => {
     question: row.question,
     ...(row.category && { category: row.category }),
     ...(row.rejection_reason && { rejectionReason: row.rejection_reason }),
+    ...(row.source && { source: row.source }),
   }
   const result = submissionRecordValidator.safeParse(candidate)
 
@@ -70,7 +72,7 @@ const rowToSubmission = (row: SubmissionRow): Submission | null => {
 export const listAllSubmissionsPg = async (): Promise<Submission[]> => {
   try {
     const result = await getPool().query(
-      `SELECT id, submitted_by, submitted_at, status, question, category, rejection_reason
+      `SELECT id, submitted_by, submitted_at, status, question, source, category, rejection_reason
        FROM submissions ORDER BY submitted_at DESC`,
     )
     return result.rows
