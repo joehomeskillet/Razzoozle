@@ -59,6 +59,11 @@ import {
   type InstalledPlugin,
   type PluginManifest,
 } from "@razzoozle/common/validators/plugin"
+import {
+  deleteQuizzPg,
+  setQuizzArchivedPg,
+  updateQuizzPg,
+} from "@razzoozle/socket/services/storage/quizz-pg"
 import { hasKey } from "@razzoozle/socket/services/ai-secrets"
 import { gameResultValidator } from "@razzoozle/socket/services/validators"
 import { toWebp, webpDimensions } from "@razzoozle/socket/services/webp"
@@ -93,6 +98,16 @@ interface QuizzCache {
   mtime: number
 }
 const quizzCache = new Map<string, QuizzCache>()
+
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth for
+// the 6 quizz functions below (they can't become async without breaking their
+// ~20 existing sync call sites), but writes are additionally mirrored to
+// Postgres via services/storage/quizz-pg.ts (fire-and-forget, errors logged
+// not thrown — file write remains authoritative and never blocks on the DB).
+const isDbBackedQuizzMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 const inContainerPath = process.env.CONFIG_PATH
 
@@ -778,8 +793,10 @@ export const getQuizzById = (id: string) => {
   }
 
   const stat = fs.statSync(filePath)
-  const cached = quizzCache.get(filePath)
-  
+  // dual/pg: skip the in-memory cache so a DB-mirrored write never leaves a
+  // stale cached read behind (file read below is always fresh either way).
+  const cached = isDbBackedQuizzMode() ? undefined : quizzCache.get(filePath)
+
   if (cached && cached.mtime === stat.mtimeMs) {
     return cached.data
   }
@@ -848,6 +865,12 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
   quizzCache.delete(oldPath)
   fs.writeFileSync(oldPath, JSON.stringify(result.data, null, 2))
 
+  if (isDbBackedQuizzMode()) {
+    updateQuizzPg(id, result.data).catch((error) =>
+      console.error(`quizz-pg mirror write failed for "${id}":`, error),
+    )
+  }
+
   return { id }
 }
 
@@ -875,6 +898,12 @@ export const setQuizzArchived = (id: string, archived: boolean): void => {
     filePath,
     JSON.stringify({ ...result.data, archived }, null, 2),
   )
+
+  if (isDbBackedQuizzMode()) {
+    setQuizzArchivedPg(id, archived).catch((error) =>
+      console.error(`quizz-pg mirror archive failed for "${id}":`, error),
+    )
+  }
 }
 
 export const deleteQuizz = (id: string): void => {
@@ -888,6 +917,12 @@ export const deleteQuizz = (id: string): void => {
 
   quizzCache.delete(filePath)
   fs.unlinkSync(filePath)
+
+  if (isDbBackedQuizzMode()) {
+    deleteQuizzPg(id).catch((error) =>
+      console.error(`quizz-pg mirror delete failed for "${id}":`, error),
+    )
+  }
 }
 
 export const saveResult = (data: GameResult): void => {
