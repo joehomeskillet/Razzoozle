@@ -33,10 +33,10 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
         None => return result,
     };
 
-    // The quizzes table has no theme_id column (themes are separate); theme_id stays None.
-    let rows: Vec<(String, String, serde_json::Value, Option<bool>)> =
+    // Load all quizzes including archived; theme_id is populated from the column.
+    let rows: Vec<(String, String, serde_json::Value, Option<bool>, Option<String>)> =
         match sqlx::query_as(
-            "SELECT id, subject, questions, archived FROM quizzes WHERE archived = false ORDER BY id"
+            "SELECT id, subject, questions, archived, theme_id FROM quizzes ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -48,7 +48,7 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
             }
         };
 
-    for (id, subject, questions_json, archived) in rows {
+    for (id, subject, questions_json, archived, theme_id) in rows {
         // Deserialize questions from JSONB
         let questions: Vec<Question> = match serde_json::from_value(questions_json) {
             Ok(q) => q,
@@ -62,7 +62,7 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
             subject,
             questions,
             archived,
-            theme_id: None,
+            theme_id,
         };
 
         result.insert(id, quiz);
@@ -167,7 +167,7 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 }
 
 /// Load a single game result by id (for results:get / results:getShared).
-/// Returns {id, subject, date, players} matching the SharedResult / result-detail
+/// Returns {id, subject, date, players, recap?} matching the SharedResult / result-detail
 /// shape, or None if the id is absent or pool is None.
 pub async fn get_result_by_id(pool: &Option<PgPool>, id: &str) -> Option<serde_json::Value> {
     let pool = match pool {
@@ -175,36 +175,40 @@ pub async fn get_result_by_id(pool: &Option<PgPool>, id: &str) -> Option<serde_j
         None => return None,
     };
 
-    let row: Option<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value)> =
-        sqlx::query_as("SELECT id, subject, date, players FROM game_results WHERE id = $1")
+    let row: Option<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value, Option<serde_json::Value>)> =
+        sqlx::query_as("SELECT id, subject, date, players, recap FROM game_results WHERE id = $1")
             .bind(id)
             .fetch_optional(pool)
             .await
             .ok()
             .flatten();
 
-    row.map(|(id, subject, date, players)| {
-        serde_json::json!({
+    row.map(|(id, subject, date, players, recap)| {
+        let mut obj = serde_json::json!({
             "id": id,
             "subject": subject,
             "date": date.to_rfc3339(),
             "players": players,
-        })
+        });
+        if let Some(recap_val) = recap {
+            obj["recap"] = recap_val;
+        }
+        obj
     })
 }
 
 /// Load submissions with the FULL question OBJECT (not the preview string) for the
-/// Suggestions moderation panel (manager:submissionsData). Shape mirrors Node's
-/// Submission: {id, submittedBy, submittedAt, status, question}.
+/// Suggestions moderation panel (manager:submissionsData). Includes rejectionReason and category.
+/// Shape mirrors Node's Submission: {id, submittedBy, submittedAt, status, question, rejectionReason?, category?}.
 pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
+    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
         match sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at \
+            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
              FROM submissions ORDER BY submitted_at DESC",
         )
         .fetch_all(pool)
@@ -218,14 +222,21 @@ pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Valu
         };
 
     rows.into_iter()
-        .map(|(id, submitted_by, status, question, submitted_at)| {
-            serde_json::json!({
+        .map(|(id, submitted_by, status, question, submitted_at, rejection_reason, category)| {
+            let mut obj = serde_json::json!({
                 "id": id,
                 "submittedBy": submitted_by,
                 "submittedAt": submitted_at.to_rfc3339(),
                 "status": status,
                 "question": question,
-            })
+            });
+            if let Some(rr) = rejection_reason {
+                obj["rejectionReason"] = serde_json::json!(rr);
+            }
+            if let Some(cat) = category {
+                obj["category"] = serde_json::json!(cat);
+            }
+            obj
         })
         .collect()
 }
@@ -474,23 +485,27 @@ pub async fn upsert_quiz(
     id: &str,
     subject: &str,
     questions: serde_json::Value,
+    theme_id: Option<String>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Err("no database configured".to_string()),
+        None => return Err("errors:quizz.failedToSave".to_string()),
     };
 
     sqlx::query(
-        "INSERT INTO quizzes (id, subject, questions, archived) \
-         VALUES ($1, $2, $3, false) \
+        "INSERT INTO quizzes (id, subject, questions, archived, theme_id) \
+         VALUES ($1, $2, $3, false, $4) \
          ON CONFLICT (id) DO UPDATE SET \
              subject = EXCLUDED.subject, \
              questions = EXCLUDED.questions, \
+             archived = false, \
+             theme_id = EXCLUDED.theme_id, \
              updated_at = now()",
     )
     .bind(id)
     .bind(subject)
     .bind(questions)
+    .bind(theme_id.clone())
     .execute(pool)
     .await
     .map(|_| id.to_string())
@@ -501,7 +516,7 @@ pub async fn upsert_quiz(
 pub async fn delete_quiz(pool: &Option<PgPool>, id: &str) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Err("no database configured".to_string()),
+        None => return Err("errors:quizz.failedToDelete".to_string()),
     };
 
     let result = sqlx::query("DELETE FROM quizzes WHERE id = $1")
@@ -528,30 +543,31 @@ pub async fn duplicate_quiz(
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Err("no database configured".to_string()),
+        None => return Err("errors:quizz.failedToSave".to_string()),
     };
 
-    // Fetch source quiz
-    let source_row: Option<(serde_json::Value,)> =
-        sqlx::query_as("SELECT questions FROM quizzes WHERE id = $1")
+    // Fetch source quiz (including theme_id)
+    let source_row: Option<(serde_json::Value, Option<String>)> =
+        sqlx::query_as("SELECT questions, theme_id FROM quizzes WHERE id = $1")
             .bind(source_id)
             .fetch_optional(pool)
             .await
             .map_err(|e| e.to_string())?;
 
-    let questions = match source_row {
-        Some((q,)) => q,
-        None => return Err(format!("Quizz \"{}\" not found", source_id)),
+    let (questions, theme_id) = match source_row {
+        Some((q, t)) => (q, t),
+        None => return Err("errors:quizz.notFound".to_string()),
     };
 
-    // Insert as new quiz
+    // Insert as new quiz (preserving theme_id)
     sqlx::query(
-        "INSERT INTO quizzes (id, subject, questions, archived) \
-         VALUES ($1, $2, $3, false)",
+        "INSERT INTO quizzes (id, subject, questions, archived, theme_id) \
+         VALUES ($1, $2, $3, false, $4)",
     )
     .bind(new_id)
     .bind(new_subject)
     .bind(questions)
+    .bind(theme_id.clone())
     .execute(pool)
     .await
     .map(|_| new_id.to_string())
@@ -566,7 +582,7 @@ pub async fn update_quiz_archived(
 ) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Err("no database configured".to_string()),
+        None => return Err("errors:quizz.failedToUpdate".to_string()),
     };
 
     let result = sqlx::query("UPDATE quizzes SET archived = $1, updated_at = now() WHERE id = $2")
@@ -577,7 +593,7 @@ pub async fn update_quiz_archived(
         .map_err(|e| e.to_string())?;
 
     if result.rows_affected() == 0 {
-        return Err(format!("Quizz \"{}\" not found", id));
+        return Err("errors:quizz.notFound".to_string());
     }
 
     Ok(())
@@ -818,6 +834,13 @@ pub async fn update_submission(
         ));
     }
 
+    if let Some(category) = patch_obj.get("category").and_then(|v| v.as_str()) {
+        updates.push((
+            "UPDATE submissions SET category = $1, updated_at = now() WHERE id = $2",
+            category.to_string(),
+        ));
+    }
+
     if let Some(question) = patch_obj.get("question") {
         // For question, we need to handle JSON differently
         sqlx::query(
@@ -843,7 +866,7 @@ pub async fn update_submission(
     Ok(())
 }
 
-/// Fetch a submission by id. Returns the full submission including question object.
+/// Fetch a submission by id. Returns the full submission including question, rejectionReason, and category.
 pub async fn get_submission_by_id(
     pool: &Option<PgPool>,
     id: &str,
@@ -853,9 +876,9 @@ pub async fn get_submission_by_id(
         None => return None,
     };
 
-    let row: Option<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
+    let row: Option<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
         sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at FROM submissions WHERE id = $1"
+            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category FROM submissions WHERE id = $1"
         )
         .bind(id)
         .fetch_optional(pool)
@@ -863,14 +886,21 @@ pub async fn get_submission_by_id(
         .ok()
         .flatten();
 
-    row.map(|(id, submitted_by, status, question, submitted_at)| {
-        serde_json::json!({
+    row.map(|(id, submitted_by, status, question, submitted_at, rejection_reason, category)| {
+        let mut obj = serde_json::json!({
             "id": id,
             "submittedBy": submitted_by,
             "submittedAt": submitted_at.to_rfc3339(),
             "status": status,
             "question": question,
-        })
+        });
+        if let Some(rr) = rejection_reason {
+            obj["rejectionReason"] = serde_json::json!(rr);
+        }
+        if let Some(cat) = category {
+            obj["category"] = serde_json::json!(cat);
+        }
+        obj
     })
 }
 
@@ -947,7 +977,7 @@ pub async fn get_catalog(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         .collect()
 }
 
-/// Update a catalog entry's question + tags fields.
+/// Update a catalog entry's question + tags fields. Returns Err if entry not found.
 pub async fn update_catalog_entry(
     pool: &Option<PgPool>,
     id: &str,
@@ -959,17 +989,22 @@ pub async fn update_catalog_entry(
         None => return Err("no database configured".to_string()),
     };
 
-    sqlx::query("UPDATE catalog_entries SET question = $1, tags = $2 WHERE id = $3")
+    let result = sqlx::query("UPDATE catalog_entries SET question = $1, tags = $2 WHERE id = $3")
         .bind(question)
         .bind(tags)
         .bind(id)
         .execute(pool)
         .await
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if result.rows_affected() == 0 {
+        return Err("errors:catalog.notFound".to_string());
+    }
+
+    Ok(())
 }
 
-/// Delete a catalog entry by id.
+/// Delete a catalog entry by id. Returns Err if entry not found.
 pub async fn delete_catalog_entry(
     pool: &Option<PgPool>,
     id: &str,
@@ -979,12 +1014,17 @@ pub async fn delete_catalog_entry(
         None => return Err("no database configured".to_string()),
     };
 
-    sqlx::query("DELETE FROM catalog_entries WHERE id = $1")
+    let result = sqlx::query("DELETE FROM catalog_entries WHERE id = $1")
         .bind(id)
         .execute(pool)
         .await
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if result.rows_affected() == 0 {
+        return Err("errors:catalog.notFound".to_string());
+    }
+
+    Ok(())
 }
 
 /// Fetch the active theme (currently stored in a dedicated table or config).
@@ -1023,5 +1063,37 @@ pub async fn upsert_theme(
     .execute(pool)
     .await
     .map(|_| ())
+    .map_err(|e| e.to_string())
+}
+
+/// Insert a new game result with full player data and optional recap.
+/// Returns Ok(id) on success, or Err on database failure.
+pub async fn insert_result(
+    pool: &Option<PgPool>,
+    id: &str,
+    quiz_id: Option<&str>,
+    subject: &str,
+    date: chrono::DateTime<chrono::Utc>,
+    players: &serde_json::Value,
+    recap: Option<&serde_json::Value>,
+) -> Result<String, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("errors:result.failedToSave".to_string()),
+    };
+
+    sqlx::query(
+        "INSERT INTO game_results (id, quiz_id, subject, date, players, recap) \
+         VALUES ($1, $2, $3, $4, $5, $6)",
+    )
+    .bind(id)
+    .bind(quiz_id)
+    .bind(subject)
+    .bind(date)
+    .bind(players)
+    .bind(recap)
+    .execute(pool)
+    .await
+    .map(|_| id.to_string())
     .map_err(|e| e.to_string())
 }
