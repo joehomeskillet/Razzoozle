@@ -1097,3 +1097,19 @@ pub async fn insert_result(
     .map(|_| id.to_string())
     .map_err(|e| e.to_string())
 }
+
+pub async fn delete_result(pool: &Option<PgPool>, id: &str) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query("DELETE FROM game_results WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+    {
+        Ok(result) => result.rows_affected() > 0,
+        Err(_) => false,
+    }
+}

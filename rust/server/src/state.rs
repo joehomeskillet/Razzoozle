@@ -744,6 +744,25 @@ impl GameRegistry {
             }
         }
     }
+    /// Remove a game from the registry by game_id. Returns true if the game was found and removed,
+    /// false otherwise (silent no-op pattern per Node parity).
+    pub fn remove_game(&mut self, game_id: &str) -> bool {
+        // Try to find the game by id and remove it
+        if let Some(game_ref) = self.games_by_id.remove(game_id) {
+            let game = Self::lock_game_recover(&game_ref);
+            // Also remove from games_by_code lookup
+            self.games_by_code.remove(&game.invite_code);
+            // Remove all players from the socket_to_game index
+            for player in &game.players {
+                self.socket_to_game.remove(&player.id);
+            }
+            // Also remove the manager socket (defensive; may not be indexed)
+            self.socket_to_game.remove(&game.manager_socket_id);
+            return true;
+        }
+        false
+    }
+
 
     pub fn remove_player_by_socket_id(
         &mut self,
