@@ -70,29 +70,13 @@ jobs:
       - name: Install dependencies
         run: CI=true corepack pnpm install --frozen-lockfile --ignore-scripts
 
-      # Blocking gate: the FULL @razzoozle/socket suite MINUS the 2 known
-      # pre-existing reds documented below. Any NEW failure — in any other file,
-      # or a 3rd failure appearing anywhere — fails CI hard. This step is
-      # intentionally NOT continue-on-error.
+      # Blocking gate: the FULL @razzoozle/socket suite. Green since 2026-07-07
+      # (555 passed / 0 failed / 6 DB-guarded skips) — commit 554cee39 fixed the
+      # former 2 stale reds (lobby-disconnect, player-manager). Any red test is
+      # a regression and fails CI hard. This step is intentionally NOT
+      # continue-on-error.
       - name: Socket unit tests (blocking gate)
-        run: |
-          CI=true corepack pnpm --filter @razzoozle/socket exec vitest run \
-            --exclude "**/lobby-disconnect.test.ts" \
-            --exclude "**/player-manager.test.ts"
-
-      # Known pre-existing failures (tracked, NOT silently green-washed):
-      #   - lobby-disconnect.test.ts: BUG 1 — lobby reconnect grace-period regression
-      #   - player-manager.test.ts: SUCCESS_JOIN payload API-drift (test still
-      #     expects a bare gameId string; the handler now emits {gameId, playerToken})
-      # Run in a SEPARATE, non-blocking step so CI stays visibly red-annotated
-      # instead of hiding 2 real, known bugs. continue-on-error is scoped to
-      # ONLY this step — never applied to the blocking gate above.
-      - name: Socket known-failures (non-blocking, documented pre-existing reds)
-        continue-on-error: true
-        run: |
-          CI=true corepack pnpm --filter @razzoozle/socket exec vitest run \
-            src/handlers/__tests__/lobby-disconnect.test.ts \
-            src/services/game/__tests__/player-manager.test.ts
+        run: CI=true corepack pnpm --filter @razzoozle/socket exec vitest run
 
   rust:
     name: rust gate
