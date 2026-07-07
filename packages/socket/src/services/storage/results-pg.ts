@@ -1,0 +1,115 @@
+import type { GameResult, GameResultPlayer } from "@razzoozle/common/types/game"
+import { gameResultValidator } from "@razzoozle/socket/services/validators"
+
+// Lazy-load pg so it is only required when DATABASE_MODE is dual/pg/pg-only.
+// Mirrors the pattern in storage/postgres-repository.ts.
+let Pool: any = null
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Pool = require("pg").Pool
+} catch {
+  // pg not installed — the functions below will throw when invoked.
+}
+
+// Own lazily-initialized pool, separate from PostgresRepository's pool.
+// Results are a distinct table/concern, so a dedicated pool keeps migrations decoupled.
+let pool: any = null
+
+const getPool = (): any => {
+  if (pool) {
+    return pool
+  }
+  if (!Pool) {
+    throw new Error("pg package not installed. Install with: pnpm add pg")
+  }
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not configured")
+  }
+  pool = new Pool({
+    connectionString: databaseUrl,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  })
+  return pool
+}
+
+interface ResultRow {
+  id: string
+  quiz_id: string | null
+  subject: string | null
+  date: string | null
+  players: unknown
+}
+
+const rowToResult = (row: ResultRow): GameResult | null => {
+  const candidate = {
+    id: row.id,
+    subject: row.subject ?? "",
+    date: row.date ?? new Date().toISOString(),
+    players: Array.isArray(row.players) ? row.players : [],
+    questions: [],
+  }
+  const result = gameResultValidator.safeParse(candidate)
+
+  if (!result.success) {
+    console.warn(`results-pg: invalid result row "${row.id}":`, result.error.issues)
+    return null
+  }
+
+  return result.data as GameResult
+}
+
+/** Read all results from Postgres (for boot-time hydration). */
+export const listAllResultsPg = async (): Promise<GameResult[]> => {
+  try {
+    const result = await getPool().query(
+      `SELECT id, quiz_id, subject, date, players FROM game_results ORDER BY date DESC`,
+    )
+    return result.rows
+      .map((row: ResultRow) => rowToResult(row))
+      .filter((r: GameResult | null): r is GameResult => r !== null)
+  } catch (error) {
+    console.error("results-pg.listAllResultsPg failed", error)
+    return []
+  }
+}
+
+/** Upsert (create-or-update) a result by id. version += 1 on update, updated_at = NOW(). */
+export const updateResultPg = async (data: GameResult): Promise<{ id: string }> => {
+  try {
+    const playersArray = (data.players ?? []) as GameResultPlayer[]
+    await getPool().query(
+      `INSERT INTO game_results (id, subject, date, players)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO UPDATE SET
+         subject = EXCLUDED.subject,
+         date = EXCLUDED.date,
+         players = EXCLUDED.players,
+         version = game_results.version + 1,
+         updated_at = NOW()`,
+      [data.id, data.subject, data.date, JSON.stringify(playersArray)],
+    )
+    return { id: data.id }
+  } catch (error) {
+    console.error("results-pg.updateResultPg failed", error)
+    throw error
+  }
+}
+
+/** Delete a result by id. */
+export const deleteResultPg = async (id: string): Promise<void> => {
+  try {
+    const result = await getPool().query(
+      `DELETE FROM game_results WHERE id = $1`,
+      [id],
+    )
+    if (result.rowCount === 0) {
+      throw new Error(`Result "${id}" not found`)
+    }
+  } catch (error) {
+    console.error("results-pg.deleteResultPg failed", error)
+    throw error
+  }
+}
