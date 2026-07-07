@@ -20,8 +20,8 @@ struct RoomMetrics {
     rtt: Vec<f64>,
     clock_offset: Vec<f64>,
     answer_ack: Vec<f64>,
-    reconnect_count: i32,
-    rejected: HashMap<String, i32>,
+    reconnect_count: u64,
+    rejected: HashMap<String, u64>,
 }
 
 impl RoomMetrics {
