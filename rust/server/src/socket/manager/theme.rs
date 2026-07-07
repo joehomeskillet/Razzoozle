@@ -25,9 +25,45 @@ lazy_static! {
 }
 
 const THEME_REVISIONS_MAX: usize = 10;
+const BACKGROUND_SIZE_CAP: usize = 8 * 1024 * 1024; // 8 MB
+const SOUND_SIZE_CAP: usize = 4 * 1024 * 1024; // 4 MB
+
+/// Simple base64 decoder (no external dependency)
+fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
+    const BASE64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = Vec::new();
+    let mut buf = 0u32;
+    let mut bits = 0;
+
+    for &byte in s.as_bytes() {
+        let val = if byte == b'=' {
+            break;
+        } else if let Some(pos) = BASE64_CHARS.iter().position(|&b| b == byte) {
+            pos as u32
+        } else if byte.is_ascii_whitespace() {
+            continue;
+        } else {
+            return Err("Invalid base64 character".to_string());
+        };
+
+        buf = (buf << 6) | val;
+        bits += 6;
+
+        if bits >= 8 {
+            bits -= 8;
+            result.push(((buf >> bits) & 0xff) as u8);
+        }
+    }
+
+    Ok(result)
+}
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
-    register_set_theme(socket, ctx);
+    register_set_theme(socket, ctx.clone());
+    register_set_skeleton_asset(socket, ctx.clone());
+    register_reset_skeleton(socket, ctx.clone());
+    register_upload_background(socket, ctx.clone());
+    register_upload_sound(socket, ctx.clone());
 }
 
 /// Validate hex color format (3 or 6 hex digits)
@@ -351,6 +387,188 @@ pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Resul
 
     Ok(payload.clone())
 }
+
+/// Decode a data URL and return MIME type + buffer
+fn decode_data_url(data_url: &str, expected_mimes: &[&str]) -> Result<(String, Vec<u8>), String> {
+    let prefix_end = data_url.find(',')
+        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+
+    let (header, data_part) = data_url.split_at(prefix_end);
+    let data_part = &data_part[1..];
+
+    let mime_part = header.strip_prefix("data:")
+        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+
+    let mime_type = if let Some(pos) = mime_part.find(';') {
+        &mime_part[..pos]
+    } else {
+        mime_part
+    };
+
+    if !expected_mimes.contains(&mime_type) {
+        return Err("errors:theme.invalidImage".to_string());
+    }
+
+    let buffer = decode_base64(data_part)
+        .map_err(|_| "errors:theme.invalidImage".to_string())?;
+
+    Ok((mime_type.to_string(), buffer))
+}
+
+/// Save background image with 8 MB cap
+async fn save_background_image(slot: &str, data_url: &str) -> Result<String, String> {
+    let valid_slots = ["auth", "managerGame", "playerGame", "logo"];
+    if !valid_slots.contains(&slot) {
+        return Err("errors:theme.invalidSlot".to_string());
+    }
+
+    let (_, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"])?;
+
+    if buffer.len() > BACKGROUND_SIZE_CAP {
+        return Err("errors:theme.imageTooLarge".to_string());
+    }
+
+    let backgrounds_dir = Path::new("config/media/backgrounds");
+    if !backgrounds_dir.exists() {
+        fs::create_dir_all(backgrounds_dir)
+            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+    }
+
+    if let Ok(entries) = fs::read_dir(backgrounds_dir) {
+        for entry in entries.flatten() {
+            if let Ok(name) = entry.file_name().into_string() {
+                if name.starts_with(&format!("{}-", slot)) {
+                    let _ = fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+
+    let timestamp = Utc::now().timestamp_millis();
+    let filename = format!("{}-{}.webp", slot, timestamp);
+    let filepath = backgrounds_dir.join(&filename);
+
+    fs::write(&filepath, &buffer)
+        .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+
+    Ok(format!("/media/backgrounds/{}", filename))
+}
+
+/// Save sound file with 4 MB cap
+async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
+    let valid_slots = [
+        "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
+        "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
+        "tierGold", "tierDiamant"
+    ];
+    if !valid_slots.contains(&slot) {
+        return Err("errors:theme.invalidSlot".to_string());
+    }
+
+    let (mime, buffer) = decode_data_url(
+        data_url,
+        &["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"]
+    )?;
+
+    if buffer.len() > SOUND_SIZE_CAP {
+        return Err("errors:theme.audioTooLarge".to_string());
+    }
+
+    let sounds_dir = Path::new("config/media/sounds");
+    if !sounds_dir.exists() {
+        fs::create_dir_all(sounds_dir)
+            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+    }
+
+    if let Ok(entries) = fs::read_dir(sounds_dir) {
+        for entry in entries.flatten() {
+            if let Ok(name) = entry.file_name().into_string() {
+                if name.starts_with(&format!("{}-", slot)) {
+                    let _ = fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+
+    let ext = match mime.as_str() {
+        "audio/mpeg" | "audio/mp3" => ".mp3",
+        "audio/wav" => ".wav",
+        "audio/ogg" => ".ogg",
+        _ => ".mp3",
+    };
+
+    let timestamp = Utc::now().timestamp_millis();
+    let filename = format!("{}-{}{}", slot, timestamp, ext);
+    let filepath = sounds_dir.join(&filename);
+
+    fs::write(&filepath, &buffer)
+        .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+
+    Ok(format!("/media/sounds/{}", filename))
+}
+
+/// Set skeleton asset and update theme
+fn set_skeleton_asset(kind: &str, content: &str, current_theme: &serde_json::Value) -> Result<serde_json::Value, String> {
+    if kind != "css" && kind != "js" {
+        return Err("errors:skeleton.invalidKind".to_string());
+    }
+
+    if content.is_empty() {
+        return Err("errors:skeleton.invalidContent".to_string());
+    }
+
+    let skeleton_dir = Path::new("config/theme");
+    if !skeleton_dir.exists() {
+        fs::create_dir_all(skeleton_dir)
+            .map_err(|_| "errors:theme.saveFailed".to_string())?;
+    }
+
+    let filename = format!("skeleton.{}", kind);
+    let filepath = skeleton_dir.join(&filename);
+
+    fs::write(&filepath, content)
+        .map_err(|_| "errors:theme.saveFailed".to_string())?;
+
+    let mut theme = current_theme.clone();
+
+    let enabled_key = if kind == "css" {
+        "customCssEnabled"
+    } else {
+        "customJsEnabled"
+    };
+
+    if let Some(obj) = theme.as_object_mut() {
+        obj.insert(enabled_key.to_string(), serde_json::json!(true));
+
+        let current_version = obj.get("skeletonVersion")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+        obj.insert("skeletonVersion".to_string(), serde_json::json!(current_version + 1));
+    }
+
+    Ok(theme)
+}
+
+/// Reset skeleton to defaults
+fn reset_skeleton(current_theme: &serde_json::Value) -> Result<serde_json::Value, String> {
+    save_theme_revision(current_theme.clone())
+        .map_err(|e| format!("Revision save failed: {}", e))?;
+
+    let mut theme = current_theme.clone();
+
+    if let Some(obj) = theme.as_object_mut() {
+        obj.insert("customCssEnabled".to_string(), serde_json::json!(false));
+        obj.insert("customJsEnabled".to_string(), serde_json::json!(false));
+        obj.insert("skeletonVersion".to_string(), serde_json::json!(0));
+    }
+
+    let skeleton_dir = Path::new("config/theme");
+    let _ = fs::remove_file(skeleton_dir.join("skeleton.css"));
+    let _ = fs::remove_file(skeleton_dir.join("skeleton.js"));
+
+    Ok(theme)
+}
+
 fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SET_THEME, {
         let ctx = ctx.clone();
@@ -359,7 +577,6 @@ fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                // Auth-gate
                 let is_logged = {
                     let registry = ctx.registry.read().await;
                     registry.is_logged(&ctx.client_id)
@@ -367,25 +584,21 @@ fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, "")
                         .ok();
                     return;
                 }
 
-                // Apply theme (validate, save revision, persist to disk, mirror to DB)
                 match apply_theme(&payload, &ctx).await {
                     Ok(theme) => {
-                        // Emit success to requester only
                         socket
                             .emit(constants::manager::SET_THEME_SUCCESS, &theme)
                             .ok();
 
-                        // Broadcast new theme to all connected clients EXCEPT the sender
                         socket.broadcast()
                             .emit(constants::manager::THEME, &theme)
                             .ok();
 
-                        // Re-emit full manager config to requester so admin panel stays in sync
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
                     Err(error) => {
@@ -394,6 +607,357 @@ fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                 }
+            });
+        }
+    });
+}
+
+fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::SET_SKELETON_ASSET, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .ok();
+                    return;
+                }
+
+                let kind = match payload.get("kind").and_then(|v| v.as_str()) {
+                    Some(k) if k == "css" || k == "js" => k,
+                    _ => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:skeleton.invalidKind")
+                            .ok();
+                        return;
+                    }
+                };
+
+                let content = match payload.get("content").and_then(|v| v.as_str()) {
+                    Some(c) => c,
+                    None => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:skeleton.invalidContent")
+                            .ok();
+                        return;
+                    }
+                };
+
+                let current_theme = load_current_theme()
+                    .unwrap_or_else(|| serde_json::json!({}));
+
+                match tokio::task::spawn_blocking({
+                    let kind = kind.to_string();
+                    let content = content.to_string();
+                    move || set_skeleton_asset(&kind, &content, &current_theme)
+                })
+                .await
+                {
+                    Ok(Ok(new_theme)) => {
+                        let theme_dir = Path::new("config/theme");
+                        if let Err(_) = fs::create_dir_all(theme_dir) {
+                            socket
+                                .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                .ok();
+                            return;
+                        }
+
+                        let theme_json = match serde_json::to_string_pretty(&new_theme) {
+                            Ok(s) => s,
+                            Err(_) => {
+                                socket
+                                    .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                    .ok();
+                                return;
+                            }
+                        };
+
+                        if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                            socket
+                                .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                .ok();
+                            return;
+                        }
+
+                        if let Err(e) = db::upsert_theme(&ctx.db_pool, &new_theme).await {
+                            eprintln!("set_skeleton_asset — DB mirror failed: {}", e);
+                        }
+
+                        socket
+                            .emit(constants::manager::THEME, &new_theme)
+                            .ok();
+                        socket.broadcast()
+                            .emit(constants::manager::THEME, &new_theme)
+                            .ok();
+                        socket
+                            .emit(
+                                constants::manager::SET_SKELETON_ASSET_SUCCESS,
+                                &serde_json::json!({ "kind": kind })
+                            )
+                            .ok();
+                    }
+                    _ => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::RESET_SKELETON, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .ok();
+                    return;
+                }
+
+                let current_theme = load_current_theme()
+                    .unwrap_or_else(|| serde_json::json!({}));
+
+                match tokio::task::spawn_blocking({
+                    let current = current_theme.clone();
+                    move || reset_skeleton(&current)
+                })
+                .await
+                {
+                    Ok(Ok(new_theme)) => {
+                        let theme_dir = Path::new("config/theme");
+                        if let Err(_) = fs::create_dir_all(theme_dir) {
+                            socket
+                                .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                .ok();
+                            return;
+                        }
+
+                        let theme_json = match serde_json::to_string_pretty(&new_theme) {
+                            Ok(s) => s,
+                            Err(_) => {
+                                socket
+                                    .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                    .ok();
+                                return;
+                            }
+                        };
+
+                        if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                            socket
+                                .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                                .ok();
+                            return;
+                        }
+
+                        if let Err(e) = db::upsert_theme(&ctx.db_pool, &new_theme).await {
+                            eprintln!("reset_skeleton — DB mirror failed: {}", e);
+                        }
+
+                        socket
+                            .emit(constants::manager::THEME, &new_theme)
+                            .ok();
+                        socket.broadcast()
+                            .emit(constants::manager::THEME, &new_theme)
+                            .ok();
+                        socket
+                            .emit(constants::manager::RESET_SKELETON_SUCCESS, "")
+                            .ok();
+                    }
+                    _ => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::UPLOAD_BACKGROUND, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .ok();
+                    return;
+                }
+
+                let slot = match payload.get("slot").and_then(|v| v.as_str()) {
+                    Some(s) => s.to_string(),
+                    None => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.invalidSlot")
+                            .ok();
+                        return;
+                    }
+                };
+
+                let data_url = match payload.get("dataUrl").and_then(|v| v.as_str()) {
+                    Some(d) => d.to_string(),
+                    None => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.invalidImage")
+                            .ok();
+                        return;
+                    }
+                };
+
+                match save_background_image(&slot, &data_url).await {
+                    Ok(path) => {
+                        socket
+                            .emit(
+                                constants::manager::BACKGROUND_UPLOADED,
+                                &serde_json::json!({ "slot": slot, "path": path })
+                            )
+                            .ok();
+                    }
+                    Err(error) => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, &error)
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::UPLOAD_SOUND, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, "")
+                        .ok();
+                    return;
+                }
+
+                let slot = match payload.get("slot").and_then(|v| v.as_str()) {
+                    Some(s) => s.to_string(),
+                    None => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.invalidSlot")
+                            .ok();
+                        return;
+                    }
+                };
+
+                let data_url = match payload.get("dataUrl").and_then(|v| v.as_str()) {
+                    Some(d) => d.to_string(),
+                    None => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.invalidAudio")
+                            .ok();
+                        return;
+                    }
+                };
+
+                let asset_ref = match save_sound_file(&slot, &data_url).await {
+                    Ok(ref_path) => ref_path,
+                    Err(error) => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, &error)
+                            .ok();
+                        return;
+                    }
+                };
+
+                let current_theme = load_current_theme()
+                    .unwrap_or_else(|| serde_json::json!({}));
+
+                let mut new_theme = current_theme.clone();
+                if let Some(obj) = new_theme.as_object_mut() {
+                    if !obj.contains_key("sounds") {
+                        obj.insert("sounds".to_string(), serde_json::json!({}));
+                    }
+                    if let Some(sounds) = obj.get_mut("sounds").and_then(|s| s.as_object_mut()) {
+                        sounds.insert(slot.clone(), serde_json::json!(asset_ref.clone()));
+                    }
+                }
+
+                let theme_dir = Path::new("config/theme");
+                if let Err(_) = fs::create_dir_all(theme_dir) {
+                    socket
+                        .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                        .ok();
+                    return;
+                }
+
+                let theme_json = match serde_json::to_string_pretty(&new_theme) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        socket
+                            .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                            .ok();
+                        return;
+                    }
+                };
+
+                if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                    socket
+                        .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
+                        .ok();
+                    return;
+                }
+
+                if let Err(e) = db::upsert_theme(&ctx.db_pool, &new_theme).await {
+                    eprintln!("upload_sound — DB mirror failed: {}", e);
+                }
+
+                socket
+                    .emit(
+                        constants::manager::SOUND_UPLOADED,
+                        &serde_json::json!({ "slot": slot, "assetRef": asset_ref })
+                    )
+                    .ok();
+
+                socket.broadcast()
+                    .emit(constants::manager::THEME, &new_theme)
+                    .ok();
             });
         }
     });
