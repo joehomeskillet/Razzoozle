@@ -60,9 +60,15 @@ pub async fn perform_reveal_and_broadcast(
                 rank_map.insert(client_id.clone(), (idx + 1) as i32);
             }
 
+            // Build results map for O(1) lookup instead of O(n) result_for call per player
+            let results_map: HashMap<String, &_> = game.engine.last_round_results
+                .iter()
+                .map(|r| (r.client_id.clone(), r))
+                .collect();
+
             // Send SHOW_RESULT to each player
             for player in &game.engine.players {
-                if let Some(result) = game.engine.result_for(&player.client_id) {
+                if let Some(result) = results_map.get(&player.client_id) {
                     let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
                     let mut show_result_data = result.to_show_result_data(&player, total_players);
                     show_result_data.rank = rank;
