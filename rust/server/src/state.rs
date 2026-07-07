@@ -61,6 +61,12 @@ pub const AUTH_RATE_MAX_PER_CLIENT: i32 = 10; // max 10 auth failures/min per cl
 pub const SOLO_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
 pub const SOLO_RESULTS_MAX_ENTRIES: usize = 1000; // cap solo leaderboard growth
 
+// ── Public question submission rate limiting (durable per-client + global cap) ──
+pub const SUBMISSION_RATE_MAX_PER_CLIENT: i32 = 3; // max 3 submissions/60s per durable client
+pub const SUBMISSION_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
+pub const SUBMISSION_GLOBAL_MAX: i32 = 60; // max 60 submissions/min server-wide
+pub const SUBMISSION_GLOBAL_WINDOW_MS: u64 = 60_000; // 60 seconds
+
 #[derive(Debug, Clone)]
 pub struct RateState {
     pub count: i32,
@@ -91,10 +97,13 @@ pub fn get_now_ms() -> u64 {
         .as_millis() as u64
 }
 
-/// Rate limiter for solo API and auth attempts — per-IP (or per-client-ID for socket handlers)
+/// Rate limiter for solo API, auth attempts, and public question submissions
+/// per-IP (or per-client-ID for socket handlers)
 pub struct RateLimiter {
     solo_by_key: Mutex<HashMap<String, RateState>>,
     auth_by_key: Mutex<HashMap<String, RateState>>,
+    submission_by_key: Mutex<HashMap<String, RateState>>,
+    submission_global: Mutex<RateState>,
 }
 
 impl RateLimiter {
@@ -102,6 +111,8 @@ impl RateLimiter {
         Self {
             solo_by_key: Mutex::new(HashMap::new()),
             auth_by_key: Mutex::new(HashMap::new()),
+            submission_by_key: Mutex::new(HashMap::new()),
+            submission_global: Mutex::new(RateState::new()),
         }
     }
 
@@ -199,6 +210,60 @@ impl RateLimiter {
             let entry = map.entry("global".to_string()).or_insert_with(RateState::new);
             entry.maybe_reset(now);
             entry.count += 1;
+        }
+    }
+
+    /// Check if a submission is allowed for the given durable client ID (per-client throttle).
+    /// Returns true if allowed, false if rate-limited.
+    /// Mirrors Node's checkRateLimit(): MAX_COUNT=3 per WINDOW_MS=60s per durable client.
+    pub fn check_submission_rate(&self, key: &str) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut map) = self.submission_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+            
+            // Reset if window expired
+            if now.saturating_sub(entry.window_start_ms) > SUBMISSION_RATE_WINDOW_MS {
+                entry.count = 0;
+                entry.window_start_ms = now;
+            }
+            
+            let is_limited = entry.count >= SUBMISSION_RATE_MAX_PER_CLIENT;
+            if !is_limited {
+                entry.count += 1;
+            }
+            
+            // Evict stale keys to prevent unbounded growth
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SUBMISSION_RATE_WINDOW_MS);
+            }
+            
+            !is_limited
+        } else {
+            true // lock failed, allow in fail-open mode
+        }
+    }
+
+    /// Check if a submission is allowed against the global server-wide ceiling.
+    /// Returns true if allowed, false if rate-limited.
+    /// Mirrors Node's checkGlobalSubmissionRate(): MAX_COUNT=60 per GLOBAL_WINDOW_MS=60s.
+    pub fn check_global_submission_rate(&self) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut global) = self.submission_global.lock() {
+            if now.saturating_sub(global.window_start_ms) > SUBMISSION_GLOBAL_WINDOW_MS {
+                global.window_start_ms = now;
+                global.count = 1;
+                return true;
+            }
+            
+            if global.count >= SUBMISSION_GLOBAL_MAX {
+                return false;
+            }
+            
+            global.count += 1;
+            true
+        } else {
+            true // lock failed, allow in fail-open mode
         }
     }
 }
