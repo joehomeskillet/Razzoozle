@@ -1,12 +1,14 @@
 use axum::{
-    extract::{Path, Request},
+    extract::{Path, State},
     http::{StatusCode, HeaderMap},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
-use crate::state::safe_asset_id;
+use crate::state::{safe_asset_id, GameRegistry};
 use super::get_config_path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -100,6 +102,7 @@ fn authorize_manager_request(headers: &HeaderMap) -> Result<(), (StatusCode, Str
 /// POST /api/assignment — create a new assignment (manager-gated).
 pub async fn handle_create_assignment(
     headers: HeaderMap,
+    State(registry): State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<CreateAssignmentRequest>,
 ) -> Result<Json<CreateAssignmentResponse>, (StatusCode, String)> {
     // DEFER: manager auth check should also accept manager.isLoggedClientId().
@@ -114,8 +117,12 @@ pub async fn handle_create_assignment(
     safe_asset_id(&payload.quizz_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-    // DEFER: Check if quiz exists in registry — requires registry access.
-    // For MVP, we skip this check. In production, load from GameRegistry.
+    // Check if quiz exists in registry
+    let registry = registry.read().await;
+    if registry.get_quiz_by_id(&payload.quizz_id).is_none() {
+        return Err((StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", payload.quizz_id)));
+    }
+    drop(registry);
 
     // Generate nanoid-like ID (for simplicity, use UUID)
     let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
