@@ -16,6 +16,7 @@ pub mod media;
 pub mod quizz;
 pub mod submissions;
 pub mod theme;
+pub mod theme_templates;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     auth::register(socket, ctx.clone());
@@ -30,4 +31,5 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     quizz::register(socket, ctx.clone());
     submissions::register(socket, ctx.clone());
     theme::register(socket, ctx.clone());
+    theme_templates::register(socket, ctx.clone());
 }
