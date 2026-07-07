@@ -12,6 +12,7 @@ use lazy_static::lazy_static;
 use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
 use razzoozle_protocol::quizz::QuestionType;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -112,6 +113,23 @@ struct HealthResponse {
     ts: String,
 }
 
+// ── HTTP helpers (auth, error formatting, dev-gating) ──────────────────────
+
+pub(crate) fn json_error_response(
+    status: StatusCode,
+    msg: impl Into<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (status, Json(json!({"error": msg.into()})))
+}
+
+pub(crate) fn is_dev_mode() -> bool {
+    std::env::var("RAZZOOLE_DEV").ok() == Some("1".to_string())
+}
+
+pub(crate) fn dev_api_key() -> Option<String> {
+    std::env::var("DEV_API_KEY").ok()
+}
+
 // ── HTTP handlers ────────────────────────────────────────────────────────────
 
 lazy_static! {
@@ -123,6 +141,10 @@ pub async fn handle_health() -> Json<HealthResponse> {
         status: "ok".to_string(),
         ts: chrono::Utc::now().to_rfc3339(),
     })
+}
+
+pub async fn handle_healthz() -> (StatusCode, &'static str) {
+    (StatusCode::OK, "ok")
 }
 
 pub async fn handle_get_quizzes(
@@ -584,6 +606,7 @@ pub async fn handle_sounds_asset(
 pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
     Router::new()
         .route("/health", get(handle_health))
+        .route("/healthz", get(handle_healthz))
         .route("/api/v1/health", get(handle_health))
         .route("/api/quizzes", get(handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(handle_get_quiz_solo))

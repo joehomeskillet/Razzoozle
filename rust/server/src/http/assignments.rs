@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::state::{safe_asset_id, GameRegistry};
-use super::get_config_path;
+use super::{get_config_path, json_error_response, is_dev_mode, dev_api_key};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Assignment {
@@ -51,82 +51,79 @@ pub struct GetAssignmentResultsResponse {
     pub results: Vec<serde_json::Value>,
 }
 
-/// Helper: get path to assignment file
 fn get_assignment_path(id: &str) -> String {
     format!("{}/assignments/{}.json", get_config_path(), id)
 }
 
-/// Helper: get path to solo-results file for a quiz
 fn get_solo_results_path(quiz_id: &str) -> String {
     format!("{}/solo-results/{}.json", get_config_path(), quiz_id)
 }
 
-/// DEFER: manager.isLoggedClientId() is socket-only. For MVP, auth is dev-key only.
-/// Checks X-Manager-Token header for devApiKey match (constant-time compare).
-/// Returns Err(401) if not authorized.
-fn authorize_manager_request(headers: &HeaderMap) -> Result<(), (StatusCode, String)> {
-    // Get dev API key from env (RAZZOOZLE_DEV_API_KEY)
-    let dev_key = std::env::var("RAZZOOZLE_DEV_API_KEY").ok();
-
-    if dev_key.is_none() {
-        // No dev key configured — auth fails
-        return Err((StatusCode::UNAUTHORIZED, "unauthorized".to_string()));
-    }
-
+async fn authorize_manager_request(
+    headers: &HeaderMap,
+    registry: &Arc<RwLock<GameRegistry>>,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
     let header_token = headers
         .get("x-manager-token")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    let expected = dev_key.unwrap();
-    let a = header_token.as_bytes();
-    let b = expected.as_bytes();
-
-    // Constant-time compare (mimic Node's timingSafeEqual)
-    if a.len() != b.len() {
-        return Err((StatusCode::UNAUTHORIZED, "unauthorized".to_string()));
+    if header_token.is_empty() {
+        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 
-    let mut equal = true;
-    for (x, y) in a.iter().zip(b.iter()) {
-        equal = equal && (x == y);
+    let reg = registry.read().await;
+    if reg.is_logged(header_token) {
+        drop(reg);
+        return Ok(());
+    }
+    drop(reg);
+
+    if is_dev_mode() {
+        if let Some(dev_key) = dev_api_key() {
+            let a = header_token.as_bytes();
+            let b = dev_key.as_bytes();
+
+            if a.len() == b.len() {
+                let mut equal = true;
+                for (x, y) in a.iter().zip(b.iter()) {
+                    equal = equal && (x == y);
+                }
+
+                if equal {
+                    return Ok(());
+                }
+            }
+        }
     }
 
-    if !equal {
-        return Err((StatusCode::UNAUTHORIZED, "unauthorized".to_string()));
-    }
-
-    Ok(())
+    Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
 }
 
-/// POST /api/assignment — create a new assignment (manager-gated).
 pub async fn handle_create_assignment(
     headers: HeaderMap,
     State(registry): State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<CreateAssignmentRequest>,
-) -> Result<Json<CreateAssignmentResponse>, (StatusCode, String)> {
-    // DEFER: manager auth check should also accept manager.isLoggedClientId().
-    // For now, devApiKey only.
-    authorize_manager_request(&headers)?;
+) -> Result<Json<CreateAssignmentResponse>, (StatusCode, Json<serde_json::Value>)> {
+    authorize_manager_request(&headers, &registry).await?;
 
-    // Validate quizzId is not empty
     if payload.quizz_id.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "quizzId required".to_string()));
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "quizzId required"));
     }
 
     safe_asset_id(&payload.quizz_id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
-    // Check if quiz exists in registry
-    let registry = registry.read().await;
-    if registry.get_quiz_by_id(&payload.quizz_id).is_none() {
-        return Err((StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", payload.quizz_id)));
+    let registry_read = registry.read().await;
+    if registry_read.get_quiz_by_id(&payload.quizz_id).is_none() {
+        return Err(json_error_response(
+            StatusCode::NOT_FOUND,
+            format!("Quizz \"{}\" not found", payload.quizz_id),
+        ));
     }
-    drop(registry);
+    drop(registry_read);
 
-    // Generate nanoid-like ID (for simplicity, use UUID)
     let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
-
     let now = chrono::Utc::now().timestamp_millis();
 
     let assignment = Assignment {
@@ -139,10 +136,9 @@ pub async fn handle_create_assignment(
         show_correct_answers: payload.show_correct_answers,
     };
 
-    // Persist to file (blocking I/O off-thread)
     let file_path = get_assignment_path(&id);
     let assignment_json = serde_json::to_string_pretty(&assignment)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JSON error: {}", e)))?;
+        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("JSON error: {}", e)))?;
 
     tokio::task::spawn_blocking({
         let file_path = file_path.clone();
@@ -171,13 +167,12 @@ pub async fn handle_create_assignment(
         }
     })
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
-    .map_err(|e| e)?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
+    .map_err(|e| json_error_response(e.0, e.1))?;
 
     Ok(Json(CreateAssignmentResponse { id }))
 }
 
-/// GET /api/assignment/:id — get assignment metadata (public).
 pub async fn handle_get_assignment(
     Path(id): Path<String>,
 ) -> Result<Json<Assignment>, (StatusCode, String)> {
@@ -201,32 +196,28 @@ pub async fn handle_get_assignment(
     Ok(Json(assignment))
 }
 
-/// GET /api/assignment/:id/results — get solo results filtered by assignmentId (manager-gated).
 pub async fn handle_get_assignment_results(
     headers: HeaderMap,
     Path(id): Path<String>,
-) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, String)> {
-    // DEFER: manager auth check should also accept manager.isLoggedClientId().
-    // For now, devApiKey only.
-    authorize_manager_request(&headers)?;
+    State(registry): State<Arc<RwLock<GameRegistry>>>,
+) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    authorize_manager_request(&headers, &registry).await?;
 
     safe_asset_id(&id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
-    // First, check if assignment exists
     let file_path = get_assignment_path(&id);
     let assignment_exists = tokio::task::spawn_blocking({
         let path = file_path.clone();
         move || std::path::Path::new(&path).exists()
     })
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
 
     if !assignment_exists {
-        return Err((StatusCode::NOT_FOUND, "Assignment not found".to_string()));
+        return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
     }
 
-    // Read assignment to get quizzId
     let assignment = tokio::task::spawn_blocking({
         let path = file_path.clone();
         move || {
@@ -236,10 +227,9 @@ pub async fn handle_get_assignment_results(
         }
     })
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
-    .ok_or_else(|| (StatusCode::NOT_FOUND, "Assignment not found".to_string()))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
+    .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
-    // Read solo-results for this quiz
     let quiz_id = assignment.quizz_id;
     let results_path = get_solo_results_path(&quiz_id);
 
@@ -262,7 +252,7 @@ pub async fn handle_get_assignment_results(
         }
     })
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
 
     Ok(Json(GetAssignmentResultsResponse { results }))
 }

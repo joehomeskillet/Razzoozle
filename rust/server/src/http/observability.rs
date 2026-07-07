@@ -1,5 +1,8 @@
 use axum::Json;
+use axum::http::StatusCode;
 use serde_json::json;
+
+use super::{is_dev_mode, json_error_response};
 
 #[derive(Debug, serde::Serialize)]
 pub struct EventsResponse {
@@ -12,11 +15,11 @@ pub struct SchemaResponse {
     pub schema: serde_json::Value,
 }
 
-/// GET /api/v1/observability/events — return static event catalog.
-/// Dev-gated (dev mode only; no key required).
-pub async fn handle_observability_events() -> Json<EventsResponse> {
-    // DEFER: buildEventCatalog() needs to be ported from Node's @razzoozle/common/openapi/events-catalog.
-    // For now, return a minimal stub. This should be a static const built from the common types.
+pub async fn handle_observability_events() -> Result<Json<EventsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    if !is_dev_mode() {
+        return Err(json_error_response(StatusCode::NOT_FOUND, "not found"));
+    }
+
     let events = json!([
         {
             "name": "QUIZ_LOAD",
@@ -24,14 +27,14 @@ pub async fn handle_observability_events() -> Json<EventsResponse> {
             "role": "player"
         }
     ]);
-    Json(EventsResponse { events })
+    Ok(Json(EventsResponse { events }))
 }
 
-/// GET /api/v1/observability/schema — return JSON Schema for client-events.
-/// Dev-gated (dev mode only; no key required).
-pub async fn handle_observability_schema() -> Json<SchemaResponse> {
-    // DEFER: z.toJSONSchema(clientEventValidator, { target: "draft-2020-12", unrepresentable: "any" })
-    // For now, return a minimal JSON Schema. This should be generated from the Zod schema in common.
+pub async fn handle_observability_schema() -> Result<Json<SchemaResponse>, (StatusCode, Json<serde_json::Value>)> {
+    if !is_dev_mode() {
+        return Err(json_error_response(StatusCode::NOT_FOUND, "not found"));
+    }
+
     let schema = json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -41,5 +44,5 @@ pub async fn handle_observability_schema() -> Json<SchemaResponse> {
         },
         "required": ["clientId", "type"]
     });
-    Json(SchemaResponse { schema })
+    Ok(Json(SchemaResponse { schema }))
 }
