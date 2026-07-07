@@ -23,7 +23,6 @@ import type {
   QuestionResult,
   Quizz,
   RoundRecapAward,
-  RoundRecapKey,
   Superlative,
   SuperlativeKey,
   TeamStanding,
@@ -53,6 +52,8 @@ import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
 import { nanoid } from "nanoid"
 import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
+import { computeAchievementAwards } from "@razzoozle/socket/services/game/round-manager/achievement-awards"
+import { computeRoundRecap } from "@razzoozle/socket/services/game/round-manager/round-recap"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -859,223 +860,6 @@ export class RoundManager {
     this.showResults(question)
   }
 
-  // ── Achievements config helpers ───────────────────────────────────────────
-  // enabled gate: a badge with `enabled === false` in the merged config is
-  // skipped entirely (never pushed). A missing entry (never happens once merged
-  // off the registry, but defensive) defaults to enabled.
-  private achievementEnabled(id: AchievementId): boolean {
-    return this.achievementsConfig.get(id)?.enabled ?? true
-  }
-
-  // configured numeric threshold for a badge, falling back to `fallback` (the
-  // shipped default) when the config carries no number for it. Merged config
-  // already clamped the value to the registry [min,max], so this is read-only.
-  private achievementThreshold(id: AchievementId, fallback: number): number {
-    return this.achievementsConfig.get(id)?.threshold ?? fallback
-  }
-
-  // Per-badge bonus points awarded when the badge unlocks. Falls back to 0 when
-  // the merged config carries no number for it (registry holds no per-id bonus),
-  // so an empty/missing config reproduces the previous scoring exactly. Merged
-  // config already clamped the value to [0, BONUS_MAX], so this is read-only.
-  private achievementBonus(id: AchievementId): number {
-    return this.achievementsConfig.get(id)?.bonus ?? 0
-  }
-
-  // ── Per-round recap awards (additive, optional) ───────────────────────────
-  // Build up to 3 game-wide RoundRecapAward highlights for THIS round from the
-  // already-computed per-player intermediate rows (the aXxx fields + rankBefore
-  // + the freshly-unlocked achievements). Bots are excluded. Awards are picked
-  // by the SPEC priority list; we prefer variety (a clientId already used as a
-  // winner is de-prioritised but allowed when nothing else qualifies). Returns
-  // an empty array when nothing qualifies — the caller then omits the field so
-  // old clients are unaffected. NEVER throws.
-  private computeRoundRecap(
-    rows: ReadonlyArray<{
-      clientId: string
-      username: string
-      avatar?: string
-      isBot?: boolean
-      aIsCorrect: boolean
-      aResponseTimeMs: number | null
-      aStreakAfter: number
-      lastPoints: number
-      answeredThisRound: boolean
-    }>,
-    rankAfterByClient: ReadonlyMap<string, number>,
-    rankBefore: ReadonlyMap<string, number>,
-    achievementsByClient: ReadonlyMap<string, string[]>,
-    firstCorrectId: string | null,
-    hasPriorRound: boolean,
-  ): RoundRecapAward[] {
-    try {
-      // Only non-bot players are eligible for any highlight.
-      const eligible = rows.filter((r) => !r.isBot)
-      if (eligible.length === 0) {
-        // ponytail: no human players this round — nothing to highlight.
-        return []
-      }
-
-      const awards: RoundRecapAward[] = []
-      const used = new Set<string>()
-
-      const findRow = (clientId: string) =>
-        eligible.find((r) => r.clientId === clientId)
-
-      // Push one award if a winning row exists; prefer a not-yet-used winner but
-      // accept an already-used one rather than skipping a real highlight. The
-      // `pick` callback resolves the winning row (or null) given a candidate set.
-      const add = (
-        key: RoundRecapKey,
-        candidates: ReadonlyArray<{ clientId: string; metric: number }>,
-        order: "max" | "min",
-        value: (metric: number) => number | undefined,
-      ): void => {
-        if (awards.length >= 3 || candidates.length === 0) {
-          return
-        }
-        const better = (a: number, b: number) =>
-          order === "max" ? a > b : a < b
-        // Prefer a fresh winner; fall back to the best overall if all are used.
-        const pickFrom = (
-          pool: ReadonlyArray<{ clientId: string; metric: number }>,
-        ): { clientId: string; metric: number } | null => {
-          let best: { clientId: string; metric: number } | null = null
-          for (const c of pool) {
-            if (best === null || better(c.metric, best.metric)) {
-              best = c
-            }
-          }
-          return best
-        }
-        const fresh = candidates.filter((c) => !used.has(c.clientId))
-        const winner = pickFrom(fresh) ?? pickFrom(candidates)
-        if (winner === null) {
-          return
-        }
-        const row = findRow(winner.clientId)
-        if (row === undefined) {
-          return
-        }
-        const v = value(winner.metric)
-        awards.push({
-          key,
-          winnerName: row.username,
-          ...(row.avatar !== undefined ? { winnerAvatar: row.avatar } : {}),
-          ...(v !== undefined ? { value: v } : {}),
-        })
-        used.add(winner.clientId)
-      }
-
-      // 1. fastest_finger — correct answerer, smallest response time (ms).
-      add(
-        "fastest_finger",
-        eligible
-          .filter((r) => r.aIsCorrect && r.aResponseTimeMs !== null)
-          .map((r) => ({
-            clientId: r.clientId,
-            metric: r.aResponseTimeMs!,
-          })),
-        "min",
-        (ms) => ms,
-      )
-
-      // 2. first_correct — first correct answerer this round (arrival order). No value.
-      if (
-        awards.length < 3 &&
-        firstCorrectId !== null &&
-        findRow(firstCorrectId) !== undefined
-      ) {
-        add(
-          "first_correct",
-          [{ clientId: firstCorrectId, metric: 0 }],
-          "max",
-          () => undefined,
-        )
-      }
-
-      // 3. streak — highest current streak >= 2 (value = streak length).
-      add(
-        "streak",
-        eligible
-          .filter((r) => r.aStreakAfter >= 2)
-          .map((r) => ({ clientId: r.clientId, metric: r.aStreakAfter })),
-        "max",
-        (n) => n,
-      )
-
-      // 4. highest_round_score — most points gained THIS round (> 0).
-      add(
-        "highest_round_score",
-        eligible
-          .filter((r) => r.lastPoints > 0)
-          .map((r) => ({ clientId: r.clientId, metric: r.lastPoints })),
-        "max",
-        (n) => n,
-      )
-
-      // 5. rank_climber — biggest positive rank improvement vs pre-round order.
-      if (hasPriorRound) {
-        const climbers: { clientId: string; metric: number }[] = []
-        for (const r of eligible) {
-          const before = rankBefore.get(r.clientId)
-          const after = rankAfterByClient.get(r.clientId)
-          if (before !== undefined && after !== undefined) {
-            const climbed = before - after
-            if (climbed > 0) {
-              climbers.push({ clientId: r.clientId, metric: climbed })
-            }
-          }
-        }
-        add("rank_climber", climbers, "max", (n) => n)
-      } else {
-        // ponytail: round 1 has no pre-round order — rank_climber is meaningless.
-      }
-
-      // 6. achievement_unlock — a player who unlocked an achievement this round. No value.
-      if (awards.length < 3) {
-        const unlockers: { clientId: string; metric: number }[] = []
-        for (const r of eligible) {
-          const got = achievementsByClient.get(r.clientId)
-          if (got !== undefined && got.length > 0) {
-            unlockers.push({ clientId: r.clientId, metric: got.length })
-          }
-        }
-        add("achievement_unlock", unlockers, "max", () => undefined)
-      }
-
-      // 7. slowest_player (filler) — largest response time among answerers (ms).
-      add(
-        "slowest_player",
-        eligible
-          .filter((r) => r.answeredThisRound && r.aResponseTimeMs !== null)
-          .map((r) => ({
-            clientId: r.clientId,
-            metric: r.aResponseTimeMs!,
-          })),
-        "max",
-        (ms) => ms,
-      )
-
-      // 8. most_wrong (filler) — per-round this is 0/1 wrong per player, so the
-      // count is 1 for any wrong answerer; surfaced only as a last-resort filler.
-      add(
-        "most_wrong",
-        eligible
-          .filter((r) => r.answeredThisRound && !r.aIsCorrect)
-          .map((r) => ({ clientId: r.clientId, metric: 1 })),
-        "max",
-        (n) => n,
-      )
-
-      return awards.slice(0, 3)
-    } catch {
-      // ponytail: recap is best-effort — any unexpected error yields no awards
-      // and the caller omits the field (old clients keep working).
-      return []
-    }
-  }
-
   private showResults(question: Question): void {
     // Sim mode: the window is closing — cancel pending bot timers first so no
     // late bot answer can land after results are computed.
@@ -1370,308 +1154,32 @@ export class RoundManager {
       })
       .sort((a, b) => b.points - a.points)
 
-    // ── Achievements: compute per player AFTER points/streak are finalized ────
-    // rankAfter = 1-based index in the just-sorted list (FULL list, not top-5).
-    // underdog needs every player's before/after totals, so we resolve them from
-    // the sorted rows. Counters (answered/correct/everCorrect) are updated here,
-    // surviving across rounds via this.gameCounters (+ snapshot/restore).
-    const achievementsByClient = new Map<string, string[]>()
-
-    sortedPlayers.forEach((row, index) => {
-      // Bots never earn achievements and must not mutate the persistent
-      // gameCounters (per the sim-mode contract: bots are excluded from
-      // counters and badges in live play). Short-circuit before any mutation.
-      if (row.isBot) {
-        return
-      }
-
-      const rankAfter = index + 1
-      const unlocked: string[] = []
-
-      // Only a SCORED answer (non-poll, non-practice) can unlock anything. Poll/
-      // practice rows still get the persistent counters left untouched.
-      if (row.aScored) {
-        const counter = this.gameCounters.get(row.clientId) ?? {
-          answered: 0,
-          correct: 0,
-          ever: false,
-        }
-        const answeredThisRound = this.answerReceivedAt.has(row.clientId)
-        // Count this round into the persistent per-player totals.
-        const everBefore = counter.ever
-        const nextCounter = {
-          answered: counter.answered + (answeredThisRound ? 1 : 0),
-          correct: counter.correct + (row.aIsCorrect ? 1 : 0),
-          ever: counter.ever || row.aIsCorrect,
-        }
-        this.gameCounters.set(row.clientId, nextCounter)
-
-        const rt = row.aResponseTimeMs
-
-        // Push a badge only when it is enabled in the merged config. A disabled
-        // badge is never unlocked even if its condition holds. Every condition
-        // reads its numeric threshold from the merged config (clamped to the
-        // registry range); the fallback is the SHIPPED default, so an empty/
-        // missing config reproduces the previous hardcoded behaviour exactly.
-        const award = (id: AchievementId, condition: boolean): void => {
-          if (condition && this.achievementEnabled(id)) {
-            unlocked.push(id)
-          }
-        }
-
-        // ── Bronze ────────────────────────────────────────────────────────────
-        // first_correct: this player's FIRST EVER correct answer in the game.
-        award("first_correct", row.aIsCorrect && !everBefore)
-
-        // lucky_guess: correct AND answered in the last `lastPercent`% of the
-        // window (default 5 → rt >= 95% of the window in ms).
-        const luckyLastPercent = this.achievementThreshold("lucky_guess", 5)
-        award(
-          "lucky_guess",
-          row.aIsCorrect &&
-            rt !== null &&
-            rt >= (1 - luckyLastPercent / 100) * question.time * 1000,
-        )
-
-        // participation: answered EVERY scored question. Awarded on the last
-        // scored round once the running answered count reaches the scored total.
-        award(
-          "participation",
-          isLastScoredRound &&
-            totalScoredQuestions > 0 &&
-            nextCounter.answered === totalScoredQuestions,
-        )
-
-        // ── Silver ────────────────────────────────────────────────────────────
-        // speed_demon: correct in under `maxMs` (default 1000).
-        const speedMaxMs = this.achievementThreshold("speed_demon", 1000)
-        award("speed_demon", row.aIsCorrect && rt !== null && rt < speedMaxMs)
-
-        // streak_3: streak hit exactly the configured value (default 3).
-        award(
-          "streak_3",
-          row.aStreakAfter === this.achievementThreshold("streak_3", 3),
-        )
-
-        // sharpshooter: slider question, correct, accuracy > `minAccuracyPct`%
-        // (default 95 → baseFactor > 0.95).
-        const sharpMinPct = this.achievementThreshold("sharpshooter", 95)
-        award(
-          "sharpshooter",
-          question.type === "slider" &&
-            row.aIsCorrect &&
-            row.aBaseFactor > sharpMinPct / 100,
-        )
-
-        // climber: moved up >= `minRanksUp` ranks vs the prior round (default 3,
-        // skip round 1).
-        const climberMinUp = this.achievementThreshold("climber", 3)
-        const climbedBefore = hasPriorRound
-          ? rankBefore.get(row.clientId)
-          : undefined
-        award(
-          "climber",
-          climbedBefore !== undefined &&
-            climbedBefore - rankAfter >= climberMinUp,
-        )
-
-        // ── Gold ──────────────────────────────────────────────────────────────
-        // first_responder: the round's first correct answer (by arrival order).
-        award(
-          "first_responder",
-          firstCorrectId !== null && row.clientId === firstCorrectId,
-        )
-
-        // streak_5 + perfect_round both fire at their configured streak (both
-        // default 5). Each reads its own threshold so the manager can split them.
-        award(
-          "streak_5",
-          row.aStreakAfter === this.achievementThreshold("streak_5", 5),
-        )
-        award(
-          "perfect_round",
-          row.aStreakAfter === this.achievementThreshold("perfect_round", 5),
-        )
-
-        // underdog: beat someone who was > `minPointsAhead` pts ahead pre-round
-        // (default 2000) and now sits below this player.
-        const underdogMinAhead = this.achievementThreshold("underdog", 2000)
-        award(
-          "underdog",
-          sortedPlayers.some(
-            (other) =>
-              other.clientId !== row.clientId &&
-              other.aPointsBefore - row.aPointsBefore > underdogMinAhead &&
-              row.aPointsAfter > other.aPointsAfter,
-          ),
-        )
-
-        // ── Diamant ───────────────────────────────────────────────────────────
-        // streak_10: streak hit exactly the configured value (default 10).
-        award(
-          "streak_10",
-          row.aStreakAfter === this.achievementThreshold("streak_10", 10),
-        )
-
-        // speedy_gonzales: correct in under `maxMs` (default 400).
-        const speedyMaxMs = this.achievementThreshold("speedy_gonzales", 400)
-        award(
-          "speedy_gonzales",
-          row.aIsCorrect && rt !== null && rt < speedyMaxMs,
-        )
-
-        // perfect_game: 100% correct over all scored questions (last scored round).
-        award(
-          "perfect_game",
-          isLastScoredRound &&
-            totalScoredQuestions > 0 &&
-            nextCounter.correct === totalScoredQuestions,
-        )
-      }
-
-      if (unlocked.length > 0) {
-        // Defensive cap: never emit an unbounded list (≤ 20 per the spec).
-        achievementsByClient.set(row.clientId, unlocked.slice(0, 20))
-      }
-
-      // ── RECAP accumulator (WP-A) ────────────────────────────────────────────
-      // Fold THIS round's already-computed per-player fields into the persistent
-      // scalar accumulator (bots are excluded — they returned at the top). Only a
-      // SCORED row contributes to correctness/streak/timing/achievements; poll &
-      // practice rows leave those untouched (mirrors gameCounters above).
-      const recap = this.recapStats.get(row.clientId) ?? {
-        username: row.username,
-        fastestMs: null as number | null,
-        peakStreak: 0,
-        correct: 0,
-        wrong: 0,
-        answered: 0,
-        bestClimb: 0,
-        worstRankEver: index + 1,
-        achievementCount: 0,
-        achievementIds: [] as string[],
-        luckyGuess: false,
-      }
-      // Keep the freshest display name (a player can rename mid-game).
-      recap.username = row.username
-
-      if (row.aScored) {
-        const answeredThisRound = this.answerReceivedAt.has(row.clientId)
-        const rt = row.aResponseTimeMs
-
-        if (answeredThisRound) {
-          recap.answered += 1
-          if (rt !== null) {
-            recap.fastestMs =
-              recap.fastestMs === null ? rt : Math.min(recap.fastestMs, rt)
-          }
-        }
-
-        if (row.aIsCorrect) {
-          recap.correct += 1
-        } else if (answeredThisRound) {
-          // wrong = an actual incorrect submission (a no-show is neither).
-          recap.wrong += 1
-        }
-
-        recap.peakStreak = Math.max(recap.peakStreak, row.aStreakAfter)
-
-        // bestClimb: largest single-round upward rank move (only meaningful once
-        // a prior round exists; rankBefore is empty on round 1 → no climb).
-        const climbedFrom = hasPriorRound
-          ? rankBefore.get(row.clientId)
-          : undefined
-        if (climbedFrom !== undefined) {
-          recap.bestClimb = Math.max(recap.bestClimb, climbedFrom - rankAfter)
-        }
-
-        // worstRankEver: the lowest (highest-numbered) rank this player ever
-        // held, tracked across rounds so comeback_kid can measure climb from the
-        // nadir.
-        recap.worstRankEver = Math.max(recap.worstRankEver, index + 1)
-
-        // luckyGuess: a correct answer that landed in the last ~10% of the timer.
-        if (row.aIsCorrect && rt !== null && rt >= 0.9 * question.time * 1000) {
-          recap.luckyGuess = true
-        }
-
-        // Per-question correctness tally for hardest_question (non-bot only).
-        const q = this.questionStats.get(this.currentQuestion) ?? {
-          correct: 0,
-          total: 0,
-        }
-        q.total += answeredThisRound ? 1 : 0
-        q.correct += row.aIsCorrect ? 1 : 0
-        this.questionStats.set(this.currentQuestion, q)
-      }
-
-      // Union the badges unlocked THIS round into the full-game set (capped) —
-      // BEFORE achievements are stripped from the player below.
-      if (unlocked.length > 0) {
-        for (const id of unlocked) {
-          if (!recap.achievementIds.includes(id)) {
-            recap.achievementIds.push(id)
-          }
-        }
-        recap.achievementCount += unlocked.length
-        if (recap.achievementIds.length > 50) {
-          recap.achievementIds = recap.achievementIds.slice(0, 50)
-        }
-      }
-
-      this.recapStats.set(row.clientId, recap)
-    })
-
-    // ── Achievements: award configurable BONUS POINTS (Wave B) ────────────────
-    // Second pass over the scored rows: sum each client's per-badge bonus over
-    // the ids it just unlocked. When the sum > 0 we (1) add it to the LIVE player
-    // object's `points` so any subsequent read of the roster stays consistent,
-    // (2) fold it into the row's `points` + `lastPoints` so the SHOW_RESULT
-    // payload (myPoints / +points) and the round leaderboard reflect the bonus,
-    // and (3) record it in bonusByClient for the per-player SHOW_RESULT field.
-    // Default bonus is 0 (registry holds no per-id bonus), so a config without
-    // any bonus override leaves scoring byte-identical to the shipped behaviour.
-    const bonusByClient = new Map<string, number>()
-
-    for (const row of sortedPlayers) {
-      // Bots never earn achievements (and so never any bonus) — skip entirely.
-      if (row.isBot) {
-        continue
-      }
-
-      const unlocked = achievementsByClient.get(row.clientId)
-
-      if (!unlocked || unlocked.length === 0) {
-        continue
-      }
-
-      const bonus = unlocked.reduce(
-        (sum, id) => sum + this.achievementBonus(id as AchievementId),
-        0,
-      )
-
-      if (bonus > 0) {
-        // (1) LIVE player object — find by durable clientId among the players
-        // whose `points` was just mutated in the scoring map above.
-        const livePlayer = currentPlayers.find(
-          (p) => p.clientId === row.clientId,
-        )
-
-        if (livePlayer) {
-          livePlayer.points += bonus
-        }
-
-        // (2) Row totals feeding SHOW_RESULT + the round leaderboard.
-        row.points += bonus
-        row.lastPoints += bonus
-
-        // (3) Per-player bonus, surfaced as SHOW_RESULT.bonusPoints when > 0.
-        bonusByClient.set(row.clientId, bonus)
-      }
-    }
-
-    // RE-SORT after folding the bonus in so rank / aheadOf reflect the new totals.
-    sortedPlayers.sort((a, b) => b.points - a.points)
+    // ── Achievements: badge unlocks + configurable bonus points ───────────────
+    // Extracted to round-manager/achievement-awards.ts (Modul 1 of the SRP
+    // split). Mutates `sortedPlayers` (bonus folded into points/lastPoints,
+    // re-sorted) and `currentPlayers` (live player points) in place, and the
+    // persistent gameCounters/recapStats/questionStats maps — exactly as the
+    // inline code did via `this.X` before the extraction.
+    const { achievementsByClient, bonusByClient } = computeAchievementAwards(
+      {
+        gameCounters: this.gameCounters,
+        recapStats: this.recapStats,
+        questionStats: this.questionStats,
+        achievementsConfig: this.achievementsConfig,
+        answerReceivedAt: this.answerReceivedAt,
+        currentQuestion: this.currentQuestion,
+      },
+      {
+        sortedPlayers,
+        currentPlayers,
+        rankBefore,
+        hasPriorRound,
+        firstCorrectId,
+        isLastScoredRound,
+        totalScoredQuestions,
+        question,
+      },
+    )
 
     // Persist the freshly-unlocked badges onto the live player objects so they
     // are visible in the roster / leaderboard payloads too. We DROP the internal
@@ -1748,7 +1256,7 @@ export class RoundManager {
     sortedPlayers.forEach((row, index) => {
       rankAfterByClient.set(row.clientId, index + 1)
     })
-    const roundRecap = this.computeRoundRecap(
+    const roundRecap = computeRoundRecap(
       sortedPlayers.map((row) => ({
         clientId: row.clientId,
         username: row.username,
