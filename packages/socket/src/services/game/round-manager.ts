@@ -1,11 +1,7 @@
 import {
   EVENTS,
-  FIRST_CORRECT_BONUS,
   MAX_LATENCY_COMPENSATION_MS,
   MEDIA_TYPES,
-  SLIDER_TOLERANCE_FRACTION,
-  STREAK_CAP,
-  STREAK_STEP,
   TEAMS,
 } from "@razzoozle/common/constants"
 import {
@@ -42,10 +38,7 @@ import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
 import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
 import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
-import {
-  matchAnswer,
-  normalizeText,
-} from "@razzoozle/socket/services/game/text-match"
+import { normalizeText } from "@razzoozle/socket/services/game/text-match"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
@@ -54,6 +47,32 @@ import { nanoid } from "nanoid"
 import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
 import { computeAchievementAwards } from "@razzoozle/socket/services/game/round-manager/achievement-awards"
 import { computeRoundRecap } from "@razzoozle/socket/services/game/round-manager/round-recap"
+import {
+  buildRestoreState,
+  computeReconnectInfo,
+  computeSnapshot,
+  disposeRoundState,
+  type RestoreSnapshotInput,
+  type RoundSnapshot,
+} from "@razzoozle/socket/services/game/round-manager/snapshot"
+import {
+  isPaused as computeIsPaused,
+  pauseRound,
+  resumeRound,
+  waitWhilePaused as waitWhilePausedFn,
+} from "@razzoozle/socket/services/game/round-manager/pause-resume"
+import {
+  applyAutoMode,
+  AUTO_LEADERBOARD_MS,
+  AUTO_RESULT_MS,
+  clearAuto as clearAutoFn,
+  emitResultCountdown as emitResultCountdownFn,
+  scheduleAuto as scheduleAutoFn,
+} from "@razzoozle/socket/services/game/round-manager/auto-mode"
+import {
+  evalAnswer,
+  scorePlayerAnswer,
+} from "@razzoozle/socket/services/game/round-manager/scoring"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -132,12 +151,10 @@ export class RoundManager {
   private roundRecapShown = false
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
+  // Live setTimeout handle for the auto-advance chain. Stays a class field
+  // (round-manager/auto-mode.ts's logic only reads/writes it via getter/
+  // setter callbacks — see that module's header comment for why).
   private autoTimer: ReturnType<typeof setTimeout> | null = null
-  // Auto-mode advance durations (ms). Hoisted to class level so setAutoMode (the
-  // mid-screen immediacy path) and showResults/showLeaderboard (the countdown
-  // emit) read the SAME values scheduleAuto arms its timers with.
-  private static readonly AUTO_RESULT_MS = 6000
-  private static readonly AUTO_LEADERBOARD_MS = 5000
   // FIX 8/9 bookkeeping: true while the post-results screen is showing (set at the
   // end of showResults, cleared once showLeaderboard runs). Lets setAutoMode arm
   // the advance for the screen ALREADY on display when auto-mode is toggled on.
@@ -245,6 +262,9 @@ export class RoundManager {
     )
   }
 
+  // ── Auto-advance — logic extracted to round-manager/auto-mode.ts (Modul 4 of
+  // the SRP split). autoTimer stays a class field; scheduleAuto's callbacks
+  // read live state via getter callbacks (see that module's header comment).
   setAutoMode(on: boolean): void {
     // Always record the intent — even while paused. scheduleAuto()'s pause
     // handling (waitWhilePaused) already defers the actual advance, so storing
@@ -252,128 +272,58 @@ export class RoundManager {
     // desync where auto-advance never resumes after un-pausing.
     this.autoMode = on
 
-    if (!on) {
-      this.clearAuto()
-
-      return
-    }
-
-    // FIX 8 (immediacy): toggled ON while a result screen is already showing —
-    // arm the advance for THAT screen now instead of waiting for the next phase
-    // boundary. Guard against a duplicate timer (do nothing if one is pending).
-    // scheduleAuto() re-sends the result payload with autoAdvanceMs (FIX 9) so
-    // the client gets the countdown for the screen it is already on.
-    if (this.started && this.resultScreenActive && this.autoTimer === null) {
-      this.scheduleAuto()
-      // FIX 9: the SHOW_RESULT screen was already broadcast WITHOUT a countdown
-      // (auto-mode was off then) — re-send it with autoAdvanceMs so the client
-      // can render the local countdown for the screen it is already on.
-      this.emitResultCountdown(RoundManager.AUTO_RESULT_MS)
-    }
+    applyAutoMode({
+      on,
+      started: this.started,
+      resultScreenActive: this.resultScreenActive,
+      autoTimer: this.autoTimer,
+      scheduleAuto: () => this.scheduleAuto(),
+      emitResultCountdown: (autoAdvanceMs) =>
+        this.emitResultCountdown(autoAdvanceMs),
+      clearAuto: () => this.clearAuto(),
+    })
   }
 
   private clearAuto(): void {
-    if (this.autoTimer) {
-      clearTimeout(this.autoTimer)
-      this.autoTimer = null
-    }
+    clearAutoFn({
+      autoTimer: this.autoTimer,
+      setAutoTimer: (t) => {
+        this.autoTimer = t
+      },
+    })
   }
 
-  // FIX 9 (mid-screen re-send): re-deliver the cached SHOW_RESULT payload to each
-  // player with autoAdvanceMs added, so a client already sitting on the result
-  // screen gets the countdown when auto-mode is toggled on. Re-sends the FULL
-  // cached payload (not a partial), so it is safe regardless of how the client
-  // applies the screen state. No-op when the cache is empty (not on the result
-  // screen / already advanced).
   private emitResultCountdown(autoAdvanceMs: number): void {
-    if (this.lastResultPayloads.size === 0) {
-      return
-    }
-
-    for (const [socketId, payload] of this.lastResultPayloads) {
-      this.send(socketId, STATUS.SHOW_RESULT, { ...payload, autoAdvanceMs })
-    }
-  }
-
-  // Auto mode: after results, advance to leaderboard then the next question
-  // automatically (with pauses), so the host doesn't click through every round.
-  private scheduleAuto(): void {
-    this.clearAuto()
-    const AUTO_RESULT_MS = RoundManager.AUTO_RESULT_MS
-    const AUTO_LEADERBOARD_MS = RoundManager.AUTO_LEADERBOARD_MS
-
-    // After the leaderboard dwell, advance to the next question (honouring pause).
-    const advanceToNext = () => {
-      this.autoTimer = setTimeout(() => {
-        if (this.paused) {
-          void this.waitWhilePaused().then(() => {
-            if (!this.started || !this.autoMode) {
-              return
-            }
-
-            if (this.opts.quizz.questions[this.currentQuestion + 1]) {
-              this.currentQuestion += 1
-              void this.newQuestion()
-            }
-          })
-
-          return
-        }
-
-        if (!this.started || !this.autoMode) {
-          return
-        }
-
-        if (this.opts.quizz.questions[this.currentQuestion + 1]) {
-          this.currentQuestion += 1
-          void this.newQuestion()
-        }
-      }, AUTO_LEADERBOARD_MS)
-    }
-
-    this.autoTimer = setTimeout(() => {
-      if (!this.started || !this.autoMode) {
-        return
-      }
-
-      // First hop off the result screen: showLeaderboard() may divert to the
-      // per-round recap screen (manager-only). Detect via roundRecapShown.
-      this.showLeaderboard()
-
-      if (!this.started) {
-        return
-      }
-
-      if (this.roundRecapShown) {
-        // We are on the recap screen — hold it for AUTO_RESULT_MS, then the
-        // SECOND showLeaderboard() passes the guard and shows the real board.
-        this.autoTimer = setTimeout(() => {
-          if (!this.started || !this.autoMode) {
-            return
-          }
-
-          this.showLeaderboard()
-
-          if (!this.started) {
-            return
-          }
-
-          advanceToNext()
-        }, AUTO_RESULT_MS)
-      } else {
-        advanceToNext()
-      }
-    }, AUTO_RESULT_MS)
-  }
-
-  private isPausableStatus(status: Status): boolean {
-    return (
-      status === STATUS.SHOW_LEADERBOARD ||
-      status === STATUS.SHOW_START ||
-      status === STATUS.SHOW_PREPARED ||
-      status === STATUS.WAIT ||
-      status === STATUS.SHOW_ROOM
+    emitResultCountdownFn(
+      {
+        lastResultPayloads: this.lastResultPayloads,
+        send: (target, status, data) => this.send(target, status, data),
+      },
+      autoAdvanceMs,
     )
+  }
+
+  private scheduleAuto(): void {
+    scheduleAutoFn({
+      setAutoTimer: (t) => {
+        this.autoTimer = t
+      },
+      clearAuto: () => this.clearAuto(),
+      isStarted: () => this.started,
+      isAutoMode: () => this.autoMode,
+      isPaused: () => this.paused,
+      waitWhilePaused: () => this.waitWhilePaused(),
+      hasNextQuestion: () =>
+        Boolean(this.opts.quizz.questions[this.currentQuestion + 1]),
+      incrementCurrentQuestion: () => {
+        this.currentQuestion += 1
+      },
+      newQuestion: () => {
+        void this.newQuestion()
+      },
+      showLeaderboard: () => this.showLeaderboard(),
+      isRoundRecapShown: () => this.roundRecapShown,
+    })
   }
 
   private rememberPauseState<T extends Status>(
@@ -400,52 +350,47 @@ export class RoundManager {
     this.opts.send(target, status, data)
   }
 
+  // ── Pause/resume — logic extracted to round-manager/pause-resume.ts (Modul 3
+  // of the SRP split). autoTimer/paused/pauseState/pausedState/pauseWaiters
+  // stay as class fields; only the decision logic moved.
   private waitWhilePaused(): Promise<void> {
-    if (!this.paused) {
-      return Promise.resolve()
-    }
-
-    return new Promise((resolve) => {
-      this.pauseWaiters.push(resolve)
+    return waitWhilePausedFn({
+      paused: this.paused,
+      pauseWaiters: this.pauseWaiters,
     })
   }
 
   pause(): void {
-    if (this.paused) {
-      return
-    }
-
-    if (!this.pauseState || !this.isPausableStatus(this.pauseState.status)) {
-      console.log("Pause rejected: current status is not pausable")
-
-      return
-    }
-
-    this.paused = true
-    this.pausedState = this.pauseState
-    this.opts.broadcast(STATUS.PAUSED, { reason: "paused" })
+    pauseRound({
+      paused: this.paused,
+      pauseState: this.pauseState,
+      setPaused: (v) => {
+        this.paused = v
+      },
+      setPausedState: (v) => {
+        this.pausedState = v
+      },
+      broadcastRaw: (status, data) => this.opts.broadcast(status, data),
+    })
   }
 
   resume(): void {
-    if (!this.paused) {
-      return
-    }
-
-    const state = this.pausedState
-    this.paused = false
-    this.pausedState = null
-
-    if (state) {
-      this.broadcast(state.status, state.data)
-    }
-
-    const waiters = this.pauseWaiters
-    this.pauseWaiters = []
-    waiters.forEach((resolve) => resolve())
+    resumeRound({
+      paused: this.paused,
+      pausedState: this.pausedState,
+      pauseWaiters: this.pauseWaiters,
+      setPaused: (v) => {
+        this.paused = v
+      },
+      setPausedState: (v) => {
+        this.pausedState = v
+      },
+      broadcast: (status, data) => this.broadcast(status, data),
+    })
   }
 
   isPaused(): boolean {
-    return this.paused
+    return computeIsPaused(this.paused)
   }
 
   isStarted(): boolean {
@@ -459,123 +404,23 @@ export class RoundManager {
   }
 
   // ── Crash-recovery snapshot ──────────────────────────────────────────────
+  // Logic extracted to round-manager/snapshot.ts (Modul 2 of the SRP split).
   // Serialize only STABLE, serializable round state — never live timers, the
   // in-flight question's partial answers, or per-tap dedup bookkeeping. Pure
   // read; no behaviour change for a running game.
-  toSnapshot(): {
-    started: boolean
-    currentQuestion: number
-    leaderboard: Player[]
-    questionsHistory: QuestionResult[]
-    autoMode: boolean
-    paused: boolean
-    pausedState: { status: Status; data: StatusDataMap[Status] } | null
-    // Per-player achievement counters keyed by clientId. Survives restore so a
-    // resumed game keeps participation / perfect_game / first_correct accurate.
-    // Serialized as a plain object (a Map can't be structured-cloned to JSON).
-    gameCounters?: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    >
-    // Per-player recap accumulator (WP-A) — survives restore so a resumed game
-    // keeps accurate end-of-game superlatives. Serialized as a plain object.
-    recapStats?: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    >
-    // Per-question correctness tally (WP-A) for the hardest_question superlative.
-    questionStats?: Record<number, { correct: number; total: number }>
-  } {
-    // Sim mode: bots must NEVER persist to a crash-recovery snapshot. Filter
-    // them from BOTH the leaderboard AND each question's playerAnswers — a
-    // reviewer trace proved that filtering only the player list still
-    // resurrects bot ghosts via the round leaderboard / saved result on restore.
-    // playerAnswers store the username (not isBot), so we derive the set of bot
-    // usernames from the leaderboard and drop those entries by name.
-    const botUsernames = new Set(
-      this.leaderboard.filter((p) => p.isBot).map((p) => p.username),
-    )
-    // Drop bot clientIds from the persisted counters (a restored game must not
-    // resurrect bot achievement state). Bots are identified via the leaderboard.
-    const botClientIds = new Set(
-      this.leaderboard.filter((p) => p.isBot).map((p) => p.clientId),
-    )
-    const gameCounters: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    > = {}
-
-    for (const [clientId, counter] of this.gameCounters) {
-      if (!botClientIds.has(clientId)) {
-        gameCounters[clientId] = { ...counter }
-      }
-    }
-
-    // Recap accumulator (WP-A): drop bot clientIds (a restored game must not
-    // resurrect bot recap state) and deep-copy each scalar record.
-    const recapStats: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    > = {}
-
-    for (const [clientId, stat] of this.recapStats) {
-      if (!botClientIds.has(clientId)) {
-        recapStats[clientId] = {
-          ...stat,
-          achievementIds: [...stat.achievementIds],
-        }
-      }
-    }
-
-    // Per-question tally is not player-keyed (counts are already bot-free, since
-    // bots never enter the loop branch that increments it) — copy verbatim.
-    const questionStats: Record<number, { correct: number; total: number }> = {}
-
-    for (const [index, q] of this.questionStats) {
-      questionStats[index] = { ...q }
-    }
-
-    return {
+  toSnapshot(): RoundSnapshot {
+    return computeSnapshot({
+      leaderboard: this.leaderboard,
+      questionsHistory: this.questionsHistory,
       started: this.started,
       currentQuestion: this.currentQuestion,
-      leaderboard: this.leaderboard.filter((p) => !p.isBot),
-      questionsHistory: this.questionsHistory.map((q) => ({
-        ...q,
-        playerAnswers: q.playerAnswers.filter(
-          (a) => !botUsernames.has(a.playerName),
-        ),
-      })),
       autoMode: this.autoMode,
       paused: this.paused,
       pausedState: this.pausedState,
-      gameCounters,
-      recapStats,
-      questionStats,
-    }
+      gameCounters: this.gameCounters,
+      recapStats: this.recapStats,
+      questionStats: this.questionStats,
+    })
   }
 
   // Rebuild round state from a snapshot. We deliberately DO NOT resume a live
@@ -583,82 +428,34 @@ export class RoundManager {
   // game must not auto-advance), every timer/map is reset. leaderboard and
   // questionsHistory are deep-copied so the snapshot object can't alias live
   // state. Resume happens "at the leaderboard" (see Game.fromSnapshot).
-  restore(snap: {
-    started: boolean
-    currentQuestion: number
-    leaderboard: Player[]
-    questionsHistory: QuestionResult[]
-    autoMode: boolean
-    paused?: boolean
-    pausedState?: { status: Status; data: StatusDataMap[Status] } | null
-    gameCounters?: Record<
-      string,
-      { answered: number; correct: number; ever: boolean }
-    >
-    recapStats?: Record<
-      string,
-      {
-        username: string
-        fastestMs: number | null
-        peakStreak: number
-        correct: number
-        wrong: number
-        answered: number
-        bestClimb: number
-        worstRankEver: number
-        achievementCount: number
-        achievementIds: string[]
-        luckyGuess: boolean
-      }
-    >
-    questionStats?: Record<number, { correct: number; total: number }>
-  }): void {
-    this.started = snap.started
-    this.currentQuestion = snap.currentQuestion
-    this.leaderboard = snap.leaderboard.map((p) => ({ ...p }))
-    this.questionsHistory = snap.questionsHistory.map((q) => ({ ...q }))
-    // Force OFF: never auto-advance a restored game regardless of saved value.
-    this.autoMode = false
-    this.paused = snap.paused ?? false
-    this.pausedState = snap.pausedState ?? null
-    this.pauseState = snap.pausedState ?? null
+  // buildRestoreState (snapshot.ts) is a PURE function of `snap` alone; the
+  // few remaining side effects below (clearAuto, transient-map clears, the
+  // pauseWaiters drain) mirror the original method's statement order exactly.
+  restore(snap: RestoreSnapshotInput): void {
+    const state = buildRestoreState(snap)
 
-    // No live question is resumed — drop partial answers + transient anchors.
-    this.playersAnswers = []
-    this.startTime = 0
-    this.tempOldLeaderboard = null
-    this.answerDeadlineAtServerMs = 0
-
-    // Rebuild the per-player achievement counters so a resumed game keeps an
-    // accurate participation / perfect_game / first_correct picture. The
-    // per-question answerReceivedAt is transient and starts empty.
-    this.gameCounters = new Map(
-      Object.entries(snap.gameCounters ?? {}).map(([clientId, counter]) => [
-        clientId,
-        { ...counter },
-      ]),
-    )
-    // Rebuild the recap accumulator (WP-A) so a resumed game's end-of-game
-    // superlatives stay accurate across a crash/restore.
-    this.recapStats = new Map(
-      Object.entries(snap.recapStats ?? {}).map(([clientId, stat]) => [
-        clientId,
-        { ...stat, achievementIds: [...stat.achievementIds] },
-      ]),
-    )
-    this.questionStats = new Map(
-      Object.entries(snap.questionStats ?? {}).map(([index, q]) => [
-        Number(index),
-        { ...q },
-      ]),
-    )
+    this.started = state.started
+    this.currentQuestion = state.currentQuestion
+    this.leaderboard = state.leaderboard
+    this.questionsHistory = state.questionsHistory
+    this.autoMode = state.autoMode
+    this.paused = state.paused
+    this.pausedState = state.pausedState
+    this.pauseState = state.pauseState
+    this.playersAnswers = state.playersAnswers
+    this.startTime = state.startTime
+    this.tempOldLeaderboard = state.tempOldLeaderboard
+    this.answerDeadlineAtServerMs = state.answerDeadlineAtServerMs
+    this.gameCounters = state.gameCounters
+    this.recapStats = state.recapStats
+    this.questionStats = state.questionStats
     this.answerReceivedAt.clear()
-    this.currentDisplayOrder = undefined
-    this.currentShuffledChunks = undefined
+    this.currentDisplayOrder = state.currentDisplayOrder
+    this.currentShuffledChunks = state.currentShuffledChunks
 
     // Clear any timers/maps so a restored game starts from a clean slate.
     this.clearAuto()
-    this.resultScreenActive = false
+    this.resultScreenActive = state.resultScreenActive
     this.lastResultPayloads.clear()
     this.seenMessageIds.clear()
     this.answerMeta.clear()
@@ -670,15 +467,17 @@ export class RoundManager {
 
   // Clean up all pending timers to prevent leaks on game disposal.
   dispose(): void {
-    this.clearAuto()
-    this.answerCountThrottle.cancel()
+    disposeRoundState({
+      clearAuto: () => this.clearAuto(),
+      answerCountThrottle: this.answerCountThrottle,
+    })
   }
 
   getReconnectInfo() {
-    return {
-      current: this.currentQuestion + 1,
-      total: this.opts.quizz.questions.length,
-    }
+    return computeReconnectInfo(
+      this.currentQuestion,
+      this.opts.quizz.questions.length,
+    )
   }
 
   async start(socket: Socket): Promise<void> {
@@ -954,84 +753,16 @@ export class RoundManager {
 
     const isPoll = question.type === "poll"
 
-    // Correctness + base factor (0..1) for a single answer, before multipliers.
-    // answerIds carries a multiple-select player's selected set; answerText the
-    // type-answer free text. Both are undefined for choice/boolean/slider/poll.
-    const evalAnswer = (
-      answerId: number,
-      answerIds?: number[],
-      answerText?: string,
-    ): { correct: boolean; base: number } => {
-      // Type-answer: server-authoritative text match (anti-cheat — acceptedAnswers
-      // never leave the server). All-or-nothing (base 1 on a match, else 0).
-      if (question.type === "type-answer") {
-        if (!answerText || !question.acceptedAnswers?.length) {
-          return { correct: false, base: 0 }
-        }
-
-        const correct = matchAnswer(
-          answerText,
-          question.acceptedAnswers,
-          question.matchMode ?? "normalized",
-        )
-
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      if (question.type === "sentence-builder") {
-        if (!answerText || !question.chunks?.length) {
-          return { correct: false, base: 0 }
-        }
-        const correct = normalizeText(answerText) === normalizeText(question.chunks.join(" "))
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      if (
-        question.type === "slider" &&
-        question.min != null &&
-        question.max != null &&
-        question.correct != null
-      ) {
-        const range = question.max - question.min || 1
-        const dist = Math.abs(answerId - question.correct)
-        const accuracy = Math.max(0, 1 - dist / range)
-        const within =
-          dist <=
-          Math.max(question.step ?? 0, range * SLIDER_TOLERANCE_FRACTION)
-
-        return { correct: within, base: within ? accuracy : 0 }
-      }
-
-      // Multiple-select: all-or-nothing. The selected set must equal solutions
-      // EXACTLY by size and content (order irrelevant — Set comparison). No
-      // partial credit.
-      if (question.type === "multiple-select" && answerIds !== undefined) {
-        // Dedupe solutions too: a hand-crafted/imported quiz could carry
-        // duplicate indices (the validator only enforces length>=2), which would
-        // otherwise let a wrong same-size selection score as correct.
-        const solutions = [...new Set(question.solutions ?? [])]
-
-        if (answerIds.length !== solutions.length) {
-          return { correct: false, base: 0 }
-        }
-
-        const selectedSet = new Set(answerIds)
-        const correct = solutions.every((s) => selectedSet.has(s))
-
-        return { correct, base: correct ? 1 : 0 }
-      }
-
-      const correct = question.solutions?.includes(answerId) ?? false
-
-      return { correct, base: correct ? 1 : 0 }
-    }
+    // Correctness/scoring math extracted to round-manager/scoring.ts (Modul 5
+    // of the SRP split): evalAnswer (pure, `question` now an explicit param)
+    // + scorePlayerAnswer (the per-player streak/bonus/points block).
 
     // The first player (by answer arrival order) to get it right earns a flat bonus.
     let firstCorrectId: string | null = null
 
     if (!isPoll && !question.practice) {
       for (const a of this.playersAnswers) {
-        if (evalAnswer(a.answerId, a.answerIds, a.answerText).correct) {
+        if (evalAnswer(question, a.answerId, a.answerIds, a.answerText).correct) {
           firstCorrectId = a.clientId
 
           break
@@ -1044,45 +775,6 @@ export class RoundManager {
         const playerAnswer = this.playersAnswers.find(
           (a) => a.clientId === player.clientId,
         )
-
-        // Poll: opinion vote — neutral, no points, streak untouched. No
-        // achievement is ever awarded on a poll (gated below via aScored=false).
-        if (isPoll) {
-          return {
-            ...player,
-            lastCorrect: false,
-            lastPoints: 0,
-            lastPoll: true,
-            lastStreak: player.streak,
-            lastStreakBonus: false,
-            lastBonus: false,
-            lastFirstCorrect: false,
-            // Achievement intermediates (internal, stripped before the wire).
-            aScored: false,
-            aIsCorrect: false,
-            aBaseFactor: 0,
-            aStreakAfter: player.streak,
-            aGotFirst: false,
-            aResponseTimeMs: null as number | null,
-            aPointsBefore: player.points,
-            aPointsAfter: player.points,
-          }
-        }
-
-        let isCorrect = false
-        let rawPoints = 0
-        let baseFactor = 0
-
-        if (playerAnswer) {
-          const ev = evalAnswer(
-            playerAnswer.answerId,
-            playerAnswer.answerIds,
-            playerAnswer.answerText,
-          )
-          isCorrect = ev.correct
-          baseFactor = ev.base
-          rawPoints = ev.base * playerAnswer.points
-        }
 
         // Achievements: server-receive response time for this player this round
         // (ALL modes). null when the player did not answer. Clamped to >= 0 so a
@@ -1098,59 +790,15 @@ export class RoundManager {
         const myPointsBefore =
           pointsBefore.get(player.clientId) ?? player.points
 
-        const streakBefore = player.streak
-        // Streak multiplier: +10% per consecutive correct, capped at +50%.
-        const streakMult = isCorrect
-          ? 1 + STREAK_STEP * Math.min(streakBefore, STREAK_CAP)
-          : 1
-        const bonusMult = question.bonus ? 2 : 1
-
-        let points = question.practice
-          ? 0
-          : Math.round(rawPoints * streakMult * bonusMult)
-
-        let gotFirst = false
-
-        if (
-          !question.practice &&
-          isCorrect &&
-          player.clientId === firstCorrectId
-        ) {
-          // Scale the first-correct bonus by accuracy (full for choice/boolean,
-          // proportional for slider) so a fast near-miss can't beat an accurate one.
-          points += Math.round(FIRST_CORRECT_BONUS * baseFactor)
-          gotFirst = true
-        }
-
-        player.points += points
-        // Practice questions don't touch the streak (they award no points).
-        player.streak = question.practice
-          ? streakBefore
-          : isCorrect
-            ? streakBefore + 1
-            : 0
-
-        return {
-          ...player,
-          lastCorrect: isCorrect,
-          lastPoints: points,
-          lastPoll: false,
-          lastStreak: player.streak,
-          lastStreakBonus: isCorrect && streakBefore > 0 && !question.practice,
-          lastBonus: Boolean(question.bonus) && isCorrect && !question.practice,
-          lastFirstCorrect: gotFirst,
-          // Achievement intermediates (internal, stripped before the wire). A
-          // scored question is one that counts toward streaks/points: non-poll,
-          // non-practice. Practice answers never unlock anything.
-          aScored: !question.practice,
-          aIsCorrect: isCorrect,
-          aBaseFactor: baseFactor,
-          aStreakAfter: player.streak,
-          aGotFirst: gotFirst,
-          aResponseTimeMs: responseTimeMs,
-          aPointsBefore: myPointsBefore,
-          aPointsAfter: player.points,
-        }
+        return scorePlayerAnswer({
+          player,
+          playerAnswer,
+          question,
+          isPoll,
+          firstCorrectId,
+          myPointsBefore,
+          responseTimeMs,
+        })
       })
       .sort((a, b) => b.points - a.points)
 
@@ -1317,9 +965,7 @@ export class RoundManager {
 
       this.send(player.id, STATUS.SHOW_RESULT, {
         ...resultPayload,
-        ...(this.autoMode
-          ? { autoAdvanceMs: RoundManager.AUTO_RESULT_MS }
-          : {}),
+        ...(this.autoMode ? { autoAdvanceMs: AUTO_RESULT_MS } : {}),
       })
     emitLifecycle("onResult", { gameId: this.opts.gameId, status: "SHOW_RESULT", data: {} })
     })
@@ -2180,9 +1826,7 @@ export class RoundManager {
       // FIX 9: in auto-mode the leaderboard auto-advances to the next question
       // after AUTO_LEADERBOARD_MS — carry it so the client can render a local
       // countdown. Absent in manual mode (old clients ignore it).
-      ...(this.autoMode
-        ? { autoAdvanceMs: RoundManager.AUTO_LEADERBOARD_MS }
-        : {}),
+      ...(this.autoMode ? { autoAdvanceMs: AUTO_LEADERBOARD_MS } : {}),
       ...(this.tempRoundRecap && this.tempRoundRecap.length > 0
         ? { roundRecap: this.tempRoundRecap }
         : {}),
