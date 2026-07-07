@@ -41,3 +41,7 @@ docs/rust-port-phase2-plan.md
 docs/rust-port-event-inventory.md
 .env.postgres
 postgres-data/
+
+# build caches + agent scratch (untracked 2026-07-07)
+*.tsbuildinfo
+scratchpad/
