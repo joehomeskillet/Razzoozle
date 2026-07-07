@@ -1,23 +1,20 @@
-//! AI.GET_SETTINGS — public AI settings for the KI manager tab.
+//! AI provider configuration + text generation handlers (6 socket events).
 //!
-//! Reads persisted AI settings from config/ai-settings.json (same as Node's
-//! getAISettings). If missing or corrupted, falls back to seed defaults. Each
-//! text provider's `keyConfigured` is always false (Rust has no secret storage
-//! yet — TODO(parity): integrate ai-secrets on disk or DB).
+//! All handlers are auth-gated (manager-only) and text-gen handlers use a shared
+//! rate limiter (per-client cooldown + lifetime cap, keyed by durable client ID).
+//!
+//! Integrates with ai_secrets, ai_provider, and ai_ratelimit modules.
 
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
-use socketioxide::extract::SocketRef;
-use std::fs;
+use socketioxide::extract::{Data, SocketRef};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
-    // No-payload event → bare `SocketRef` signature (see submissions.rs note).
+    // ---- GET_SETTINGS ----
     socket.on(constants::ai::GET_SETTINGS, {
         let ctx = ctx.clone();
-
         move |socket: SocketRef| {
             let ctx = ctx.clone();
-
             tokio::spawn(async move {
                 let is_logged = {
                     let registry = ctx.registry.read().await;
@@ -26,112 +23,340 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &"")
                         .ok();
                     return;
                 }
 
                 socket
-                    .emit(constants::ai::SETTINGS, &get_public_ai_settings())
+                    .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
                     .ok();
             });
         }
     });
-}
 
-/// Read persisted AI settings from config/ai-settings.json and return as
-/// AISettingsPublic. Falls back to seed defaults if file missing or corrupted.
-/// Always returns `keyConfigured: false` for all providers (Rust has no secrets
-/// storage yet).
-pub fn get_public_ai_settings() -> serde_json::Value {
-    // Try to read persisted settings from config/ai-settings.json (same path
-    // Node's config/ai.ts uses). If missing or corrupted, fall back to seed
-    // defaults.
-    match fs::read_to_string("config/ai-settings.json") {
-        Ok(content) => {
-            // Attempt to parse the persisted settings.
-            match serde_json::from_str::<serde_json::Value>(&content) {
-                Ok(mut settings) => {
-                    // TODO(parity): integrate ai-secrets on disk or DB so
-                    // keyConfigured can reflect actual stored keys instead of
-                    // always being false.
+    // ---- SET_SETTINGS ----
+    socket.on(constants::ai::SET_SETTINGS, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
 
-                    // Ensure all text providers have keyConfigured: false.
-                    if let Some(text) = settings.get_mut("text") {
-                        if let Some(providers) = text.get_mut("providers") {
-                            if let Some(arr) = providers.as_array_mut() {
-                                for provider in arr {
-                                    provider["keyConfigured"] = serde_json::json!(false);
-                                }
-                            }
-                        }
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
+                }
+
+                // Validate payload
+                if let Err(err) = super::ai_validate::validate_set_settings(&payload) {
+                    socket.emit(constants::ai::ERROR, &err).ok();
+                    return;
+                }
+
+                match super::ai_config::persist_ai_settings(&payload).await {
+                    Ok(_) => {
+                        socket.emit(constants::ai::SET_SETTINGS_SUCCESS, &"").ok();
+                        socket
+                            .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
+                            .ok();
                     }
-
-                    return settings;
+                    Err(e) => {
+                        socket.emit(constants::ai::ERROR, &e).ok();
+                    }
                 }
-                Err(e) => {
-                    eprintln!(
-                        "Failed to parse config/ai-settings.json: {}, using seed defaults",
-                        e
-                    );
-                }
-            }
+            });
         }
-        Err(_) => {
-            // File doesn't exist or can't be read — use seed defaults.
-        }
-    }
+    });
 
-    // Fall back to seed defaults (mirrors Node's seedAISettings()).
-    seed_public_ai_settings()
-}
+    // ---- SET_KEY ----
+    socket.on(constants::ai::SET_KEY, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
 
-/// Mirror of Node `toPublicAISettings(seedAISettings())` — provider presets from
-/// `AI_TEXT_PROVIDER_PRESETS`, `activeProvider: "off"` (AI_PROVIDER_OFF), each
-/// text provider carrying `keyConfigured: false` (no secret on the wire).
-fn seed_public_ai_settings() -> serde_json::Value {
-    serde_json::json!({
-        "text": {
-            "activeProvider": "off",
-            "providers": [
-                {
-                    "id": "local",
-                    "label": "Lokal (Ollama)",
-                    "kind": "openai-compatible",
-                    "baseUrl": "http://host.docker.internal:11434/v1",
-                    "model": "llama3.2:3b",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "claude",
-                    "label": "Claude (Anthropic)",
-                    "kind": "anthropic",
-                    "model": "claude-haiku-4-5-20251001",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "openai",
-                    "label": "OpenAI",
-                    "kind": "openai-compatible",
-                    "baseUrl": "https://api.openai.com/v1",
-                    "model": "gpt-4o-mini",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "openrouter",
-                    "label": "OpenRouter",
-                    "kind": "openai-compatible",
-                    "baseUrl": "https://openrouter.ai/api/v1",
-                    "model": "meta-llama/llama-3.3-70b-instruct",
-                    "keyConfigured": false
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
                 }
-            ]
-        },
-        "image": {
-            "activeProvider": "comfyui",
-            "providers": [
-                { "id": "comfyui", "label": "ComfyUI / Z-Image" }
-            ]
+
+                // Validate and extract payload
+                let (provider_id, key) = match super::ai_validate::validate_set_key(&payload) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        socket.emit(constants::ai::ERROR, &err).ok();
+                        return;
+                    }
+                };
+
+                match super::ai_secrets::set_key(&provider_id, key) {
+                    Ok(()) => {
+                        socket
+                            .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
+                            .ok();
+                    }
+                    Err(e) => {
+                        socket.emit(constants::ai::ERROR, &e).ok();
+                    }
+                }
+            });
         }
-    })
+    });
+
+    // ---- TEST_PROVIDER ----
+    socket.on(constants::ai::TEST_PROVIDER, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
+                }
+
+                if !super::ai_ratelimit::allow_text_gen(
+                    &ctx.client_id,
+                    constants::AI::TEXT_GEN_COOLDOWN_MS,
+                    constants::AI::TEXT_GEN_MAX_PER_SOCKET,
+                ) {
+                    socket
+                        .emit(
+                            constants::ai::TEST_RESULT,
+                            &serde_json::json!({
+                                "ok": false,
+                                "message": "errors:ai.rateLimited"
+                            }),
+                        )
+                        .ok();
+                    return;
+                }
+
+                // Validate payload (emit TEST_RESULT on failure, not ERROR)
+                if let Err(err) = super::ai_validate::validate_test_provider(&payload) {
+                    socket
+                        .emit(
+                            constants::ai::TEST_RESULT,
+                            &serde_json::json!({
+                                "ok": false,
+                                "message": err
+                            }),
+                        )
+                        .ok();
+                    return;
+                }
+
+                match super::ai_provider::generate_text(super::ai_provider::GenerateTextOptions {
+                    system: None,
+                    prompt: "ping".to_string(),
+                    json: false,
+                    max_tokens: Some(5),
+                })
+                .await
+                {
+                    Ok(_) => {
+                        socket
+                            .emit(
+                                constants::ai::TEST_RESULT,
+                                &serde_json::json!({
+                                    "ok": true,
+                                    "message": "manager:ai.testOk"
+                                }),
+                            )
+                            .ok();
+                    }
+                    Err(e) => {
+                        socket
+                            .emit(
+                                constants::ai::TEST_RESULT,
+                                &serde_json::json!({
+                                    "ok": false,
+                                    "message": e
+                                }),
+                            )
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+
+    // ---- GENERATE_QUESTION ----
+    socket.on(constants::ai::GENERATE_QUESTION, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
+                }
+
+                if !super::ai_ratelimit::allow_text_gen(
+                    &ctx.client_id,
+                    constants::AI::TEXT_GEN_COOLDOWN_MS,
+                    constants::AI::TEXT_GEN_MAX_PER_SOCKET,
+                ) {
+                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    return;
+                }
+
+                // Validate and extract payload
+                let (topic, q_type, language) = match super::ai_validate::validate_generate_question(&payload) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        socket.emit(constants::ai::ERROR, &err).ok();
+                        return;
+                    }
+                };
+
+                match super::ai_provider::generate_question(&topic, &q_type, &language).await {
+                    Ok(question) => {
+                        socket
+                            .emit(
+                                constants::ai::QUESTION_GENERATED,
+                                &serde_json::json!({ "question": question }),
+                            )
+                            .ok();
+                    }
+                    Err(e) => {
+                        socket.emit(constants::ai::ERROR, &e).ok();
+                    }
+                }
+            });
+        }
+    });
+
+    // ---- GENERATE_DISTRACTORS ----
+    socket.on(constants::ai::GENERATE_DISTRACTORS, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
+                }
+
+                if !super::ai_ratelimit::allow_text_gen(
+                    &ctx.client_id,
+                    constants::AI::TEXT_GEN_COOLDOWN_MS,
+                    constants::AI::TEXT_GEN_MAX_PER_SOCKET,
+                ) {
+                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    return;
+                }
+
+                // Validate and extract payload
+                let (question, correct, count, language) = match super::ai_validate::validate_generate_distractors(&payload) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        socket.emit(constants::ai::ERROR, &err).ok();
+                        return;
+                    }
+                };
+
+                match super::ai_provider::generate_distractors(&question, &correct, count, &language)
+                    .await
+                {
+                    Ok(distractors) => {
+                        socket
+                            .emit(
+                                constants::ai::DISTRACTORS_GENERATED,
+                                &serde_json::json!({ "distractors": distractors }),
+                            )
+                            .ok();
+                    }
+                    Err(e) => {
+                        socket.emit(constants::ai::ERROR, &e).ok();
+                    }
+                }
+            });
+        }
+    });
+
+    // ---- GENERATE_QUIZ ----
+    socket.on(constants::ai::GENERATE_QUIZ, {
+        let ctx = ctx.clone();
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+            tokio::spawn(async move {
+                let is_logged = {
+                    let registry = ctx.registry.read().await;
+                    registry.is_logged(&ctx.client_id)
+                };
+
+                if !is_logged {
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &"")
+                        .ok();
+                    return;
+                }
+
+                if !super::ai_ratelimit::allow_text_gen(
+                    &ctx.client_id,
+                    constants::AI::TEXT_GEN_COOLDOWN_MS,
+                    constants::AI::TEXT_GEN_MAX_PER_SOCKET,
+                ) {
+                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    return;
+                }
+
+                // Validate and extract payload
+                let (topic, count, language) = match super::ai_validate::validate_generate_quiz(&payload) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        socket.emit(constants::ai::ERROR, &err).ok();
+                        return;
+                    }
+                };
+
+                match super::ai_provider::generate_quiz(&topic, count, &language).await {
+                    Ok(quizz) => {
+                        socket
+                            .emit(
+                                constants::ai::QUIZ_GENERATED,
+                                &serde_json::json!({ "quizz": quizz }),
+                            )
+                            .ok();
+                    }
+                    Err(e) => {
+                        socket.emit(constants::ai::ERROR, &e).ok();
+                    }
+                }
+            });
+        }
+    });
 }

@@ -60,7 +60,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     // payload reflects persisted AI provider config (see socket/ai.rs for the
     // full persisted-config read logic).
     socket
-        .emit(constants::ai::SETTINGS, &super::super::ai::get_public_ai_settings())
+        .emit(constants::ai::SETTINGS, &super::super::ai_config::get_public_ai_settings())
         .ok();
 }
 

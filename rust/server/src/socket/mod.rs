@@ -17,6 +17,15 @@ pub struct HandlerCtx {
     pub db_pool: Option<sqlx::PgPool>,
 }
 
+// AI submodules (used by ai handler)
+pub mod ai_provider;
+pub mod ai_config;
+pub mod ai_validate;
+pub mod ai_http;
+pub mod ai_utils;
+pub mod ai_ratelimit;
+pub mod ai_secrets;
+
 pub mod ai;
 pub mod clock_ping;
 pub mod cooldown;
