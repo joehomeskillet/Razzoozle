@@ -54,7 +54,7 @@ fn is_safe_asset_path(value: &str) -> bool {
 }
 
 /// Validate the theme payload structure and field types
-fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
+pub fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
     if !payload.is_object() {
         return Err("Theme must be an object".to_string());
     }
@@ -290,6 +290,67 @@ fn save_theme_revision(current_theme: serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+
+/// Apply theme: validate, save revision (if existing theme), persist to disk, and mirror to DB.
+/// Returns the persisted theme on success, or an error message on failure.
+pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Result<serde_json::Value, String> {
+    // Validate theme payload structure and field types
+    if let Err(error) = validate_theme(&payload) {
+        return Err(error);
+    }
+
+    // Capture current theme and save as revision BEFORE overwriting
+    // Run file I/O in a blocking task since we're in an async context
+    let revision_result = tokio::task::spawn_blocking(|| {
+        if let Some(current_theme) = load_current_theme() {
+            save_theme_revision(current_theme)
+        } else {
+            // No existing theme to snapshot (first save), skip revision
+            Ok(())
+        }
+    })
+    .await;
+
+    if let Err(_) = revision_result {
+        return Err("Failed to save revision".to_string());
+    }
+
+    if let Ok(Err(e)) = revision_result {
+        return Err(format!("Revision save failed: {}", e));
+    }
+
+    // Persist to disk — MANAGER.GET_THEME reads this exact file, so
+    // writing it keeps the read/write round-trip consistent (a reload or a
+    // fresh GET_THEME must see the theme this handler just saved).
+    let theme_dir = std::path::Path::new("config/theme");
+
+    if !theme_dir.exists() {
+        if let Err(e) = fs::create_dir_all(theme_dir) {
+            return Err(format!("Failed to save theme: {}", e));
+        }
+    }
+
+    let theme_json = match serde_json::to_string_pretty(&payload) {
+        Ok(s) => s,
+        Err(e) => {
+            return Err(format!("Failed to save theme: {}", e));
+        }
+    };
+
+    if let Err(e) = fs::write(theme_dir.join("theme.json"), theme_json) {
+        return Err(format!("Failed to save theme: {}", e));
+    }
+
+    // Mirror to DB (additive; keeps the themes table in sync for future
+    // DB-only reads). The file write above is the source of truth for
+    // GET_THEME, so a DB hiccup (or no pool configured) must not fail the
+    // save — just log it and continue.
+    if let Err(e) = db::upsert_theme(&ctx.db_pool, &payload).await {
+        eprintln!("apply_theme — DB mirror failed (non-fatal): {}", e);
+    }
+
+    Ok(payload.clone())
+}
 fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SET_THEME, {
         let ctx = ctx.clone();
@@ -311,91 +372,28 @@ fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Validate theme payload structure and field types
-                if let Err(error) = validate_theme(&payload) {
-                    socket
-                        .emit(constants::manager::THEME_ERROR, &error)
-                        .ok();
-                    return;
-                }
-
-                // Capture current theme and save as revision BEFORE overwriting
-                // Run file I/O in a blocking task since we're in an async context
-                let revision_result = tokio::task::spawn_blocking(|| {
-                    if let Some(current_theme) = load_current_theme() {
-                        save_theme_revision(current_theme)
-                    } else {
-                        // No existing theme to snapshot (first save), skip revision
-                        Ok(())
-                    }
-                })
-                .await;
-
-                if let Err(_) = revision_result {
-                    socket
-                        .emit(constants::manager::THEME_ERROR, &"Failed to save revision")
-                        .ok();
-                    return;
-                }
-
-                if let Ok(Err(e)) = revision_result {
-                    socket
-                        .emit(constants::manager::THEME_ERROR, &format!("Revision save failed: {}", e))
-                        .ok();
-                    return;
-                }
-
-                // Persist to disk — MANAGER.GET_THEME reads this exact file, so
-                // writing it keeps the read/write round-trip consistent (a reload or a
-                // fresh GET_THEME must see the theme this handler just saved).
-                let theme_dir = std::path::Path::new("config/theme");
-
-                if !theme_dir.exists() {
-                    if let Err(e) = fs::create_dir_all(theme_dir) {
+                // Apply theme (validate, save revision, persist to disk, mirror to DB)
+                match apply_theme(&payload, &ctx).await {
+                    Ok(theme) => {
+                        // Emit success to requester only
                         socket
-                            .emit(constants::manager::THEME_ERROR, &format!("Failed to save theme: {}", e))
+                            .emit(constants::manager::SET_THEME_SUCCESS, &theme)
                             .ok();
-                        return;
-                    }
-                }
 
-                let theme_json = match serde_json::to_string_pretty(&payload) {
-                    Ok(s) => s,
-                    Err(e) => {
+                        // Broadcast new theme to all connected clients EXCEPT the sender
+                        socket.broadcast()
+                            .emit(constants::manager::THEME, &theme)
+                            .ok();
+
+                        // Re-emit full manager config to requester so admin panel stays in sync
+                        config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Err(error) => {
                         socket
-                            .emit(constants::manager::THEME_ERROR, &format!("Failed to save theme: {}", e))
+                            .emit(constants::manager::THEME_ERROR, &error)
                             .ok();
-                        return;
                     }
-                };
-
-                if let Err(e) = fs::write(theme_dir.join("theme.json"), theme_json) {
-                    socket
-                        .emit(constants::manager::THEME_ERROR, &format!("Failed to save theme: {}", e))
-                        .ok();
-                    return;
                 }
-
-                // Mirror to DB (additive; keeps the themes table in sync for future
-                // DB-only reads). The file write above is the source of truth for
-                // GET_THEME, so a DB hiccup (or no pool configured) must not fail the
-                // save — just log it and continue.
-                if let Err(e) = db::upsert_theme(&ctx.db_pool, &payload).await {
-                    eprintln!("manager:setTheme — DB mirror failed (non-fatal): {}", e);
-                }
-
-                // Emit success to requester only
-                socket
-                    .emit(constants::manager::SET_THEME_SUCCESS, &payload)
-                    .ok();
-
-                // Broadcast new theme to all connected clients EXCEPT the sender
-                socket.broadcast()
-                    .emit(constants::manager::THEME, &payload)
-                    .ok();
-
-                // Re-emit full manager config to requester so admin panel stays in sync
-                config_helper::build_and_emit_config(&socket, &ctx).await;
             });
         }
     });
