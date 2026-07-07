@@ -3,7 +3,9 @@
 use super::super::HandlerCtx;
 use crate::is_game_host;
 use razzoozle_protocol::constants;
+use razzoozle_engine::state::GamePhase;
 use socketioxide::extract::{Data, SocketRef};
+use std::collections::HashSet;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_kick_player(socket, ctx.clone());
@@ -46,6 +48,11 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                             }
 
                             let mut game = game_ref.lock().unwrap();
+                            // SECURITY: Only the manager socket of THIS game can kick players from it
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                return;
+                            }
                             if let Some(pos) = game.players.iter().position(|p| p.client_id == player_id) {
                                 game.players.remove(pos);
                                 game.engine.players.retain(|p| p.client_id != player_id);
@@ -91,9 +98,14 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Extract gameId and count
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
-                let count_opt = payload.get("count").and_then(|v| v.as_i64()).map(|v| v as i32);
+                let count_opt = payload.get("count").and_then(|v| v.as_i64());
 
                 if let (Some(game_id), Some(count)) = (game_id_opt, count_opt) {
+                    // Validate count is in [1, 50]
+                    if count < 1 || count > 50 {
+                        return;
+                    }
+                    let count = count as usize;
                     let game_id = game_id.to_string();
 
                     // Check SIM_MODE
@@ -126,14 +138,22 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        // Add bots (clamped to a reasonable max per batch)
-                        let to_add = std::cmp::min(count, 100) as usize;
+                        // Check if answer window is open (cannot add bots during SelectAnswer phase)
+                        if game.engine.phase == GamePhase::SelectAnswer {
+                            socket.emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:manager.simWindowOpen"
+                            ).ok();
+                            return;
+                        }
+
+                        // Validate cumulative cap (BOT.MAX_TOTAL = 200)
                         let existing_bots = game.players.iter()
                             .filter(|p| p.is_bot.unwrap_or(false))
                             .count();
-                        let max_total = 50;
+                        let max_total = 200;
                         let room = std::cmp::max(0, max_total - existing_bots);
-                        let actual_count = std::cmp::min(to_add, room);
+                        let actual_count = std::cmp::min(count, room);
 
                         if actual_count <= 0 {
                             return;
@@ -146,8 +166,40 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                             "Scout", "Taylor", "Ulysses", "Valerie", "Wilder", "Xavier",
                         ];
 
+                        // Build set of taken names: existing roster + names being added in this batch
+                        let mut taken_names: HashSet<String> = game.players.iter()
+                            .map(|p| p.username.clone())
+                            .collect();
+
                         for i in 0..actual_count {
-                            let bot_name = bot_names[i % bot_names.len()].to_string();
+                            // Find next available name from pool, or use numeric suffix
+                            let bot_name = {
+                                let mut found = None;
+                                for base_name in &bot_names {
+                                    if !taken_names.contains(*base_name) {
+                                        found = Some(base_name.to_string());
+                                        break;
+                                    }
+                                }
+                                match found {
+                                    Some(name) => name,
+                                    None => {
+                                        // Pool exhausted: use numeric suffix
+                                        let mut suffix = 2;
+                                        loop {
+                                            let base_idx = (suffix - 2) % bot_names.len();
+                                            let base = &bot_names[base_idx];
+                                            let candidate = format!("{} {}", base, suffix);
+                                            if !taken_names.contains(&candidate) {
+                                                break candidate;
+                                            }
+                                            suffix += 1;
+                                        }
+                                    }
+                                }
+                            };
+                            taken_names.insert(bot_name.clone());
+
                             let bot_socket_id = format!("bot-{}", uuid::Uuid::new_v4());
                             let bot_client_id = format!("bot-{}", uuid::Uuid::new_v4());
 
@@ -170,7 +222,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
                             }
 
-                            // Broadcast NEW_PLAYER
+                            // Broadcast NEW_PLAYER only to the manager socket
                             let new_player_payload = serde_json::json!({
                                 "id": player.id,
                                 "clientId": player.client_id,
@@ -180,7 +232,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                                 "streak": 0,
                                 "connected": true,
                             });
-                            ctx.io.to(game_id.clone())
+                            ctx.io.to(game.manager_socket_id.clone())
                                 .emit(constants::manager::NEW_PLAYER, &new_player_payload)
                                 .ok();
                         }
