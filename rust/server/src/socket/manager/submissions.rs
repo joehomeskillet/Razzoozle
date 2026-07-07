@@ -9,6 +9,7 @@ use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::manager::SubmissionCategory;
 use socketioxide::extract::{Data, SocketRef};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
@@ -90,6 +91,22 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
+                // Check submission exists
+                if db::get_submission_by_id(&ctx.db_pool, &id).await.is_none() {
+                    socket
+                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.notFound")
+                        .ok();
+                    return;
+                }
+
+                // Validate question payload with serde_json::from_value
+                if serde_json::from_value::<razzoozle_protocol::quizz::Question>(question.clone()).is_err() {
+                    socket
+                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidQuestion")
+                        .ok();
+                    return;
+                }
+
                 // Update submission with the new question
                 let patch = serde_json::json!({ "question": question });
 
@@ -166,8 +183,16 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         Ok(_) => {
                             // Update submission status to "approved"
                             let patch = serde_json::json!({ "status": "approved" });
-                            let _ = db::update_submission(&ctx.db_pool, &id, &patch).await;
-                            config_helper::build_and_emit_config(&socket, &ctx).await;
+                            match db::update_submission(&ctx.db_pool, &id, &patch).await {
+                                Ok(_) => {
+                                    config_helper::build_and_emit_config(&socket, &ctx).await;
+                                }
+                                Err(e) => {
+                                    socket
+                                        .emit(constants::manager::SUBMISSION_ERROR, &e)
+                                        .ok();
+                                }
+                            }
                         }
                         Err(e) => {
                             socket
@@ -200,16 +225,23 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     Ok(_) => {
                         // Update submission status to "approved"
                         let patch = serde_json::json!({ "status": "approved" });
-                        let _ = db::update_submission(&ctx.db_pool, &id, &patch).await;
+                        match db::update_submission(&ctx.db_pool, &id, &patch).await {
+                            Ok(_) => {
+                                // Reload quiz registry and emit config
+                                {
+                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let mut registry = ctx.registry.write().await;
+                                    registry.reload_quizzes(quizzes);
+                                }
 
-                        // Reload quiz registry and emit config
-                        {
-                            let quizzes = db::get_quizzes(&ctx.db_pool).await;
-                            let mut registry = ctx.registry.write().await;
-                            registry.reload_quizzes(quizzes);
+                                config_helper::build_and_emit_config(&socket, &ctx).await;
+                            }
+                            Err(e) => {
+                                socket
+                                    .emit(constants::manager::SUBMISSION_ERROR, &e)
+                                    .ok();
+                            }
                         }
-
-                        config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
                     Err(e) => {
                         socket
@@ -256,6 +288,31 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 // Extract optional reason and category
                 let reason = payload.get("reason").and_then(|v| v.as_str());
                 let category = payload.get("category").and_then(|v| v.as_str());
+
+                // Validate reason length (max 500 chars)
+                if let Some(r) = reason {
+                    if r.len() > 500 {
+                        socket
+                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.reasonTooLong")
+                            .ok();
+                        return;
+                    }
+                }
+
+                // Validate category enum if provided
+                if let Some(c) = category {
+                    match serde_json::from_value::<SubmissionCategory>(serde_json::json!(c)) {
+                        Ok(_) => {
+                            // Category is valid, continue
+                        }
+                        Err(_) => {
+                            socket
+                                .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidCategory")
+                                .ok();
+                            return;
+                        }
+                    }
+                }
 
                 // Build the patch: always set status to "rejected"
                 let mut patch = serde_json::json!({ "status": "rejected" });
