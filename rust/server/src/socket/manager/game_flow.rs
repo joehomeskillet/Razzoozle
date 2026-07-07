@@ -358,9 +358,12 @@ fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
-/// Host-only: pause the currently running game. Gates pause to "safe" statuses
-/// (static screens: SHOW_LEADERBOARD, SHOW_START, SHOW_PREPARED, WAIT, SHOW_ROOM).
-/// Non-pausable or already paused → early return (idempotent).
+/// Host-only: pause the currently running game on static screens (SHOW_ROOM,
+/// SHOW_START, SHOW_LEADERBOARD). Snapshots the current status + data for replay
+/// on resume. Note: SHOW_PREPARED and WAIT lack corresponding GamePhase variants
+/// in Rust and cannot be paused in Wave 1 (architectural limitation requiring
+/// separate last-broadcast-status tracking in lifecycle.rs).
+/// Already paused → early return (idempotent). Non-pausable phase → log + return.
 fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::PAUSE_GAME, {
         let ctx = ctx.clone();
@@ -442,12 +445,8 @@ fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 if let Ok(leaderboard_data) = game.engine.leaderboard_view() {
                                     (razzoozle_protocol::status::Status::ShowLeaderboard, serde_json::to_value(&leaderboard_data).unwrap_or(serde_json::json!({})))
                                 } else {
-                                if let Ok(leaderboard_data) = game.engine.leaderboard_view() {
-                                    (razzoozle_protocol::status::Status::ShowLeaderboard, serde_json::to_value(&leaderboard_data).unwrap_or(serde_json::json!({})))
-                                } else {
                                     info!("Pause rejected: leaderboard_view failed: gameId={}", game_id);
                                     return;
-                                }
                                 }
                             }
                             _ => return,
