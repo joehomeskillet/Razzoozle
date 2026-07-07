@@ -358,12 +358,10 @@ fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
-/// Host-only: pause the currently running game on static screens (SHOW_ROOM,
-/// SHOW_START, SHOW_LEADERBOARD). Snapshots the current status + data for replay
-/// on resume. Note: SHOW_PREPARED and WAIT lack corresponding GamePhase variants
-/// in Rust and cannot be paused in Wave 1 (architectural limitation requiring
-/// separate last-broadcast-status tracking in lifecycle.rs).
-/// Already paused → early return (idempotent). Non-pausable phase → log + return.
+/// Wave 1: pause only SHOW_LEADERBOARD. ShowRoom/ShowStart snapshots are not
+/// broadcast as STATUS events (synthetic replay glitches client state machines);
+/// ShowStart is a 3s transient whose lifecycle ignores pause. SHOW_PREPARED/WAIT
+/// lack GamePhase variants. Already paused → early return (idempotent).
 fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::PAUSE_GAME, {
         let ctx = ctx.clone();
@@ -406,12 +404,7 @@ fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         // Check if current phase is pausable
-                        let is_pausable = matches!(
-                            game.engine.phase,
-                            GamePhase::ShowRoom
-                                | GamePhase::ShowStart
-                                | GamePhase::ShowLeaderboard
-                        );
+                        let is_pausable = matches!(game.engine.phase, GamePhase::ShowLeaderboard);
 
                         if !is_pausable {
                             info!(
@@ -423,23 +416,6 @@ fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Snapshot the current status from engine phase
                         let status_to_save = match game.engine.phase {
-                            GamePhase::ShowRoom => {
-                                use razzoozle_protocol::status::ShowRoomData;
-                                let data = ShowRoomData {
-                                    text: "game:inviteCode".to_string(),
-                                    invite_code: Some(game.invite_code.clone()),
-                                    team_mode: None,
-                                };
-                                (razzoozle_protocol::status::Status::ShowRoom, serde_json::to_value(data).unwrap_or(serde_json::json!({})))
-                            }
-                            GamePhase::ShowStart => {
-                                use razzoozle_protocol::status::ShowStartData;
-                                let data = ShowStartData {
-                                    time: 5000,
-                                    subject: game.engine.quiz.subject.clone(),
-                                };
-                                (razzoozle_protocol::status::Status::ShowStart, serde_json::to_value(data).unwrap_or(serde_json::json!({})))
-                            }
                             GamePhase::ShowLeaderboard => {
                                 // Build leaderboard status using the same logic as lifecycle.rs
                                 if let Ok(leaderboard_data) = game.engine.leaderboard_view() {
@@ -524,20 +500,6 @@ fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
 
                             // Reconstruct and broadcast the saved status
                             let status_to_broadcast = match status {
-                                razzoozle_protocol::status::Status::ShowRoom => {
-                                    if let Ok(room_data) = serde_json::from_value(data) {
-                                        GameStatus::ShowRoom(room_data)
-                                    } else {
-                                        return;
-                                    }
-                                }
-                                razzoozle_protocol::status::Status::ShowStart => {
-                                    if let Ok(start_data) = serde_json::from_value(data) {
-                                        GameStatus::ShowStart(start_data)
-                                    } else {
-                                        return;
-                                    }
-                                }
                                 razzoozle_protocol::status::Status::ShowLeaderboard => {
                                     if let Ok(leaderboard_data) = serde_json::from_value(data) {
                                         GameStatus::ShowLeaderboard(leaderboard_data)
@@ -553,12 +515,9 @@ fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 .emit(constants::game::STATUS, &status_to_broadcast)
                                 .ok();
                         } else {
-                            // paused_state is None — log and clear paused flag, no broadcast
-                            tracing::warn!(
-                                "Resume called but paused_state is None: gameId={}",
-                                game_id
-                            );
                             game.paused = false;
+                            info!("Resume with empty paused_state: gameId={} — clearing pause flag", game_id);
+                            return;
                         }
                     }
                 }
