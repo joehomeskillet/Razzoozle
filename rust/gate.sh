@@ -14,7 +14,7 @@
 set -uo pipefail
 cd "$(dirname "$0")" || exit 2  # -> rust/
 SRC="server/src"     # whole server crate — markers may live in main.rs OR any src/socket/*.rs
-STATE="server/src/state.rs"
+STATE="server/src/state"
 fail=0
 say() { printf '%s\n' "$*"; }
 
