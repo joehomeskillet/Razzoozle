@@ -5,6 +5,8 @@
 // the defaults, so an empty record reproduces the SHIPPED hardcoded behaviour.
 // Mirrors the getGameConfig + saveResult patterns (zod-validate, safe-write).
 // Extracted verbatim from services/config.ts (SRP split).
+// DATABASE_MODE=dual/pg/pg-only: writes are mirrored to Postgres via
+// services/storage/achievements-pg.ts (fire-and-forget, errors logged).
 import {
   achievementsConfigValidator,
   type AchievementsConfig,
@@ -13,8 +15,16 @@ import {
   mergeAchievementsConfig,
   type MergedAchievement,
 } from "@razzoozle/common/achievements"
+import { upsertAchievementPg } from "@razzoozle/socket/services/storage/achievements-pg"
 import fs from "fs"
 import { ensureDir, getPath } from "@razzoozle/socket/services/config/shared"
+
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth, but
+// writes are additionally mirrored to Postgres via achievements-pg.ts (fire-and-forget).
+const isDbBackedAchievementsMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const getAchievementsConfig = (): AchievementsConfig => {
   const filePath = getPath("achievements.json")
@@ -70,6 +80,14 @@ export const saveAchievementsConfig = (
     getPath("achievements.json"),
     JSON.stringify(result.data, null, 2),
   )
+
+  if (isDbBackedAchievementsMode()) {
+    for (const [id, override] of Object.entries(patch)) {
+      upsertAchievementPg(id, override).catch((error) =>
+        console.error(`achievements-pg mirror write failed for "${id}":`, error),
+      )
+    }
+  }
 
   return result.data
 }
