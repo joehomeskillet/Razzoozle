@@ -85,7 +85,7 @@ pub struct SoloScoreRequest {
     pub assignment_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SoloResultEntry {
     #[serde(rename = "playerName")]
     pub player_name: String,
@@ -297,51 +297,92 @@ pub async fn handle_solo_score(
         assignment_id: payload.assignment_id,
     };
 
-    // Persist to file
+    // Persist to file (blocking I/O off-thread)
     let file_path = get_solo_results_path(&quiz_id);
-    let dir_path = std::path::Path::new(&file_path).parent();
 
-    if let Some(dir) = dir_path {
-        if !dir.exists() {
-            fs::create_dir_all(dir).map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to create directory: {}", e),
-                )
-            })?;
+    let (leaderboard, write_err) = tokio::task::spawn_blocking({
+        let file_path = file_path.clone();
+        let result_entry = result_entry.clone();
+        move || {
+            let dir_path = std::path::Path::new(&file_path).parent();
+
+            if let Some(dir) = dir_path {
+                if !dir.exists() {
+                    if let Err(e) = fs::create_dir_all(dir) {
+                        return (
+                            Vec::new(),
+                            Some((
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                format!("Failed to create directory: {}", e),
+                            )),
+                        );
+                    }
+                }
+            }
+
+            let mut leaderboard: Vec<SoloResultEntry> = if std::path::Path::new(&file_path).exists()
+            {
+                match fs::read_to_string(&file_path) {
+                    Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
+                    Err(e) => {
+                        return (
+                            Vec::new(),
+                            Some((
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                format!("Failed to read results file: {}", e),
+                            )),
+                        );
+                    }
+                }
+            } else {
+                Vec::new()
+            };
+
+            leaderboard.push(result_entry);
+            leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
+
+            // Cap leaderboard to prevent unbounded growth — keep top N by score
+            if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
+                leaderboard.truncate(SOLO_RESULTS_MAX_ENTRIES);
+            }
+
+            let json_str = match serde_json::to_string_pretty(&leaderboard) {
+                Ok(s) => s,
+                Err(e) => {
+                    return (
+                        Vec::new(),
+                        Some((
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            format!("JSON serialization error: {}", e),
+                        )),
+                    );
+                }
+            };
+
+            if let Err(e) = fs::write(&file_path, json_str) {
+                return (
+                    Vec::new(),
+                    Some((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to write results file: {}", e),
+                    )),
+                );
+            }
+
+            (leaderboard, None)
         }
-    }
-
-    let mut leaderboard: Vec<SoloResultEntry> =
-        if std::path::Path::new(&file_path).exists() {
-            let contents = fs::read_to_string(&file_path).map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to read results file: {}", e),
-                )
-            })?;
-            serde_json::from_str(&contents).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-
-    leaderboard.push(result_entry);
-    leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
-
-    // Cap leaderboard to prevent unbounded growth — keep top N by score
-    if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
-        leaderboard.truncate(SOLO_RESULTS_MAX_ENTRIES);
-    }
-
-    let json_str = serde_json::to_string_pretty(&leaderboard)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JSON serialization error: {}", e)))?;
-
-    fs::write(&file_path, json_str).map_err(|e| {
+    })
+    .await
+    .map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to write results file: {}", e),
+            format!("Task join error: {}", e),
         )
     })?;
+
+    if let Some(err) = write_err {
+        return Err(err);
+    }
 
     Ok(Json(SoloScoreResponse { leaderboard }))
 }
@@ -420,19 +461,45 @@ async fn serve_static_file(base_dir: &str, rel_path: &str) -> Result<(StatusCode
     let file_path = std::path::Path::new(base_dir)
         .join(rel_path);
 
-    // Ensure the resolved path stays under base_dir (prevent symlink escapes)
-    let canonical = file_path.canonicalize()
+    // Move blocking FS operations off-thread
+    let (canonical, base_canonical) = tokio::task::spawn_blocking({
+        let base_dir = base_dir.to_string();
+        move || {
+            let canonical = file_path.canonicalize();
+            let base_canonical = std::path::Path::new(&base_dir).canonicalize();
+            (canonical, base_canonical)
+        }
+    })
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Task join error: {}", e),
+        )
+    })?;
+
+    let canonical = canonical
         .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
-    let base_canonical = std::path::Path::new(base_dir).canonicalize()
+    let base_canonical = base_canonical
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid base directory".to_string()))?;
 
     if !canonical.starts_with(&base_canonical) {
         return Err((StatusCode::FORBIDDEN, "Path traversal detected".to_string()));
     }
 
-    let body = fs::read(&canonical)
-        .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
+    let body = tokio::task::spawn_blocking({
+        let canonical = canonical.clone();
+        move || fs::read(&canonical)
+    })
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Task join error: {}", e),
+        )
+    })?
+    .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
     let ext = canonical
         .extension()
