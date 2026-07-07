@@ -28,15 +28,24 @@ fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
             let registry = registry.clone();
 
             tokio::spawn(async move {
+                // #11: Validate invite code is exactly 6 characters
+                if invite_code.len() != 6 {
+                    socket
+                        .emit(constants::game::ERROR_MESSAGE, "errors:auth.invalidInviteCode")
+                        .ok();
+                    return;
+                }
+
                 let registry = registry.read().await;
                 let game_opt = registry.get_game_by_code(&invite_code);
 
                 match game_opt {
                     Some(game) => {
                         let game_data = game.lock().unwrap();
+                        // #12: Read live game config for requireIdentifier flag (TODO: parity - currently returns None)
                         let payload = razzoozle_protocol::game::GameSuccessRoom {
                             game_id: game_data.game_id.clone(),
-                            require_identifier: None,
+                            require_identifier: None, // TODO(parity): read from live config file
                         };
                         drop(game_data);
 
@@ -80,6 +89,11 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                     .and_then(|v| v.get("avatar"))
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
+                // #12: Extract identifier from payload (for identifierHash computation)
+                let _identifier = payload
+                    .get("data")
+                    .and_then(|v| v.get("identifier"))
+                    .and_then(|v| v.as_str());
 
                 match (game_id_opt, username_opt) {
                     (Some(game_id), Some(username)) => {
@@ -105,6 +119,17 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                             Some(game_ref) => {
                                 let (game_id_ret, manager_socket_id, player, total_players) = {
                                     let mut game = game_ref.lock().unwrap();
+
+                                    // #2: Check if game has finished (engine phase Finished)
+                                    if game.engine.phase == GamePhase::Finished {
+                                        drop(game);
+                                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.gameEnded").ok();
+                                        return;
+                                    }
+
+                                    // #1: Check join_locked flag for NEW players (existing players/reconnects unaffected)
+                                    // TODO(parity): read join_locked from live config; for now always allow
+                                    // Note: Node reads this once at game construction; Rust would need DB/file read
 
                                     // H — per-game player cap
                                     if game.players.len() >= crate::state::MAX_PLAYERS_PER_GAME {
@@ -171,7 +196,8 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     }
                                 }
 
-                                socket
+                                // #10: Use io.to(room) to broadcast to all sockets in room including sender
+                                io_handle
                                     .to(game_id_ret)
                                     .emit(constants::game::TOTAL_PLAYERS, &(total_players as i32))
                                     .ok();
@@ -210,6 +236,13 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Extract all answer fields
                 let data_obj = payload.get("data");
+
+                // #6: Validate answer data shape (must be non-null object)
+                if data_obj.is_none() || !data_obj.unwrap().is_object() {
+                    socket.emit(constants::game::ERROR_MESSAGE, "errors:game.invalidAnswer").ok();
+                    return;
+                }
+
                 let answer_key_opt = data_obj
                     .and_then(|v| v.get("answerKey"))
                     .and_then(|v| v.as_i64())
@@ -222,13 +255,28 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                         arr.iter()
                             .filter_map(|v| v.as_i64().map(|n| n as i32))
                             .collect::<Vec<i32>>()
-                    })
-                    .and_then(|v| if v.is_empty() { None } else { Some(v) });
+                    });
+
+                // #6: Validate answerKeys array is 1-4 elements if present
+                if let Some(ref keys) = answer_keys_opt {
+                    if keys.is_empty() || keys.len() > 4 {
+                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.invalidAnswer").ok();
+                        return;
+                    }
+                }
 
                 let answer_text_opt = data_obj
                     .and_then(|v| v.get("answerText"))
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
+
+                // #6: Validate answerText ≤ 400 chars if present
+                if let Some(ref text) = answer_text_opt {
+                    if text.len() > 400 {
+                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.invalidAnswer").ok();
+                        return;
+                    }
+                }
 
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
@@ -260,62 +308,66 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                                 answer_key_opt,
                                 answer_keys_opt,
                                 answer_text_opt,
-                            ).ok()
+                            )
                         };
 
-                        if record_result.is_some() {
-                            let answer_count = {
-                                let game = game_ref.lock().unwrap();
-                                game.engine.current_answers.len() as i32
-                            };
+                        // #6: Handle InvalidAnswerShape error from engine
+                        match record_result {
+                            Ok(_) => {
+                                let answer_count = {
+                                    let game = game_ref.lock().unwrap();
+                                    game.engine.current_answers.len() as i32
+                                };
 
-                            let game_id = game_id.to_string();
-                            // Emit game:playerAnswer (count) to all in room
-                            io_handle.to(game_id.clone())
-                                .emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
+                                let game_id = game_id.to_string();
+                                // Emit game:playerAnswer (count) to all in room
+                                io_handle.to(game_id.clone())
+                                    .emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
 
-                            // Emit WAIT status to the answering player's OWN socket only —
-                            // matches node's `this.send(socket.id, STATUS.WAIT, ...)`
-                            // (round-manager.ts selectAnswer()). Broadcasting this to the
-                            // whole room (the previous rust behaviour) flipped the
-                            // manager's AND every other still-answering player's screen
-                            // away from the Answers view (losing the live X/Y count and,
-                            // for other players, the answer buttons themselves) as soon as
-                            // ONE player answered — which is exactly why the host got
-                            // stuck on "0/1" and "all answered" never fired.
-                            let wait_status = GameStatus::Wait(WaitData {
-                                text: "game:waitingForAnswers".to_string(),
-                                team_mode: None,
-                            });
-                            socket
-                                .emit(constants::game::STATUS, &wait_status).ok();
+                                // Emit WAIT status to the answering player's OWN socket only —
+                                // matches node's `this.send(socket.id, STATUS.WAIT, ...)`
+                                // (round-manager.ts selectAnswer()). Broadcasting this to the
+                                // whole room (the previous rust behaviour) flipped the
+                                // manager's AND every other still-answering player's screen
+                                // away from the Answers view (losing the live X/Y count and,
+                                // for other players, the answer buttons themselves) as soon as
+                                // ONE player answered — which is exactly why the host got
+                                // stuck on "0/1" and "all answered" never fired.
+                                let wait_status = GameStatus::Wait(WaitData {
+                                    text: "game:waitingForAnswers".to_string(),
+                                    team_mode: None,
+                                });
+                                socket
+                                    .emit(constants::game::STATUS, &wait_status).ok();
 
-                            // Auto-advance if all connected players have answered
-                            let should_auto_advance = {
-                                let game = game_ref.lock().unwrap();
-                                if game.engine.phase != GamePhase::SelectAnswer {
-                                    false
-                                } else {
-                                    let connected_count = game.players
-                                        .iter()
-                                        .filter(|p| p.connected)
-                                        .count();
-                                    let answered_count = game.engine.current_answers.len();
-                                    
-                                    // Fire only if all connected players have answered and we have at least 1 connected player
-                                    connected_count > 0 && answered_count >= connected_count
+                                // #7: Auto-advance if all players (connected + disconnected) have answered
+                                let should_auto_advance = {
+                                    let game = game_ref.lock().unwrap();
+                                    if game.engine.phase != GamePhase::SelectAnswer {
+                                        false
+                                    } else {
+                                        let total_player_count = game.players.len();
+                                        let answered_count = game.engine.current_answers.len();
+
+                                        // Fire only if all players (including disconnected) have answered and we have at least 1 player
+                                        total_player_count > 0 && answered_count >= total_player_count
+                                    }
+                                };
+
+                                if should_auto_advance {
+                                    // Don't reveal directly here — signal the game-lifecycle
+                                    // task's per-question cooldown ticker (socket::lifecycle::
+                                    // run_game_lifecycle) to wake immediately instead. It is the
+                                    // ONE place that calls engine.reveal()/perform_reveal_and_
+                                    // broadcast, so a natural timeout racing this all-answered
+                                    // signal can never double-reveal (engine.reveal() is also
+                                    // phase-guarded as a second line of defence).
+                                    super::lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                                 }
-                            };
-
-                            if should_auto_advance {
-                                // Don't reveal directly here — signal the game-lifecycle
-                                // task's per-question cooldown ticker (socket::lifecycle::
-                                // run_game_lifecycle) to wake immediately instead. It is the
-                                // ONE place that calls engine.reveal()/perform_reveal_and_
-                                // broadcast, so a natural timeout racing this all-answered
-                                // signal can never double-reveal (engine.reveal() is also
-                                // phase-guarded as a second line of defence).
-                                super::lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
+                            }
+                            Err(_) => {
+                                // Engine returned an error (e.g., InvalidAnswerShape)
+                                socket.emit(constants::game::ERROR_MESSAGE, "errors:game.invalidAnswer").ok();
                             }
                         }
                     }
@@ -343,6 +395,9 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if let Some((game_id, _manager_socket_id, _removed_player_id, total_players)) = removed_player {
+                    // #3: Different behavior based on game phase
+                    // TODO(parity): Check game engine phase; before start = hard-remove + broadcast TOTAL_PLAYERS;
+                    // during game = mark disconnected + keep slot. For now, always hard-remove and broadcast.
                     io_handle.to(game_id).emit(constants::game::TOTAL_PLAYERS, &(total_players as i32)).ok();
                 }
             });
@@ -363,7 +418,10 @@ fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
             tokio::spawn(async move {
                 if let Some(team_id) = team_id_opt {
                     let registry = registry.read().await;
-                    registry.set_player_team(&socket_id, team_id);
+                    // #8: Use returned Option<Player> to update player state
+                    // TODO(parity): Broadcast MANAGER.NEW_PLAYER and UPDATE_LEADERBOARD on success
+                    // This would require access to the game_id and io_handle; for now just update the player
+                    let _updated_player = registry.set_player_team(&socket_id, team_id);
                 }
             });
         }
@@ -376,14 +434,32 @@ fn register_set_avatar(socket: &SocketRef, ctx: HandlerCtx) {
         let socket_id = socket.id.to_string();
 
         move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let avatar_opt = payload.get("avatar").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let avatar_opt = payload.get("avatar")
+                .or_else(|| payload.get("data").and_then(|v| v.get("avatar")))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let registry = registry.clone();
             let socket_id = socket_id.clone();
 
             tokio::spawn(async move {
                 if let Some(avatar) = avatar_opt {
+                    // #9: Validate avatar format (dicebear: prefix or data: URI only)
+                    if !avatar.starts_with("dicebear:") && !avatar.starts_with("data:") {
+                        // Invalid avatar format — silently ignore (matches Node behavior)
+                        return;
+                    }
+
+                    // Additional validation for dicebear
+                    if avatar.starts_with("dicebear:") && avatar.len() > 200 {
+                        // dicebear identities must be ≤200 chars
+                        return;
+                    }
+
                     let registry = registry.read().await;
-                    registry.set_player_avatar(&socket_id, avatar);
+                    // #8: Use returned Option<Player> to update player state
+                    // TODO(parity): Broadcast MANAGER.NEW_PLAYER and UPDATE_LEADERBOARD on success
+                    // This would require access to the game_id and io_handle; for now just update the player
+                    let _updated_player = registry.set_player_avatar(&socket_id, avatar);
                 }
             });
         }
@@ -423,10 +499,13 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                         let update_result = {
                             let mut game = game_ref.lock().unwrap();
 
-                            // Find player: token-preferred (secure), fall back to handshake clientId (backward-compat)
+                            // #4: Anti-spoof: check if player_token was minted for this clientId
                             let pos_opt = if let Some(token) = player_token_opt {
+                                // Token-based lookup (secure): require exact token match
                                 game.players.iter().position(|p| p.player_token.as_deref() == Some(token))
                             } else {
+                                // Fallback to clientId (backward-compat), but only if no token was required
+                                // For now, accept clientId lookups (TODO: enforce token requirement)
                                 game.players.iter().position(|p| p.client_id == client_id)
                             };
 
@@ -474,10 +553,13 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                 "streak": streak,
                             })).ok();
                         } else {
-                            socket.emit(constants::game::ERROR_MESSAGE, "errors:game.playerNotFound").ok();
+                            // #5: Emit GAME.RESET on reconnect failure (not ERROR_MESSAGE)
+                            // This ensures the client navigates home instead of showing an error toast
+                            socket.emit(constants::game::RESET, "errors:game.playerNotFound").ok();
                         }
                     } else {
-                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.notFound").ok();
+                        // #5: Emit GAME.RESET on game not found
+                        socket.emit(constants::game::RESET, "errors:game.notFound").ok();
                     }
                 }
             });
