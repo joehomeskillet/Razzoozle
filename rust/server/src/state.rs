@@ -741,6 +741,8 @@ impl GameRegistry {
                 for player in &game.players {
                     self.socket_to_game.remove(&player.id);
                 }
+                // Drop the evicted game's metrics ring as well
+                crate::socket::metrics::clear_room(&game.game_id);
             }
         }
     }
@@ -758,6 +760,8 @@ impl GameRegistry {
             }
             // Also remove the manager socket (defensive; may not be indexed)
             self.socket_to_game.remove(&game.manager_socket_id);
+            // Drop the dead game's metrics ring (~5KB/game leak otherwise)
+            crate::socket::metrics::clear_room(game_id);
             return true;
         }
         false
