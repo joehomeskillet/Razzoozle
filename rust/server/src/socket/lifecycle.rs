@@ -277,10 +277,20 @@ pub async fn run_game_lifecycle(
         info!("Question cooldown resolved: gameId={}, revealing", game_id);
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
-        // Result dwell — host may cut it short via manager:showLeaderboard.
-        // FIX L105 (abort race): arm BEFORE phase flip to prevent race window
-        // where a NEXT_QUESTION signal lands on stale Notify.
-        let abort = { game_ref.lock().unwrap().arm_abort() };
+        // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
+        // before the leaderboard. Notify armed right after reveal (Restfenster
+        // reveal->arm ist mikroskopisch + selbstheilend).
+        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+        if !game_ref.lock().unwrap().auto_mode {
+            wait_abortable(3600, abort_result).await; // manual: Host-Signal, 1h Sicherheitsnetz
+        } else {
+            wait_abortable(RESULT_DWELL_SECS, abort_result).await;
+        }
+
+        // Leaderboard-Notify VOR dem phase-flip armen (L105-Race:
+        // ein request_abort der phase==ShowLeaderboard sieht, landet garantiert auf DIESEM Notify).
+        let abort_leaderboard = { game_ref.lock().unwrap().arm_abort() };
+
         let (leaderboard_result, phase_after_leaderboard) = {
             let mut game = game_ref.lock().unwrap();
             let result = game.engine.leaderboard_view();
@@ -375,7 +385,7 @@ pub async fn run_game_lifecycle(
             return;
         }
 
-        // L296: Emit SHOW_LEADERBOARD to manager socket only
+        // Emit SHOW_LEADERBOARD to manager socket only
         let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
         io.to(manager_socket_id)
             .emit(
@@ -384,14 +394,14 @@ pub async fn run_game_lifecycle(
             )
             .ok();
 
-        // Leaderboard dwell — host may cut it short via manager:nextQuestion.
-        // FIX L105: abort was already armed before phase flip, now just wait
+        // Leaderboard dwell: host may cut it short via manager:nextQuestion.
+        // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
         if !game_ref.lock().unwrap().auto_mode {
-            // L274: Manual mode — wait for host signal OR fall back to long safety timeout
-            wait_abortable(3600, abort).await; // 1-hour safety net for manual mode
+            // Manual mode — wait for host signal OR fall back to long safety timeout
+            wait_abortable(3600, abort_leaderboard).await; // 1-hour safety net for manual mode
         } else {
             // Auto mode — use fixed LEADERBOARD_DWELL timeout
-            wait_abortable(LEADERBOARD_DWELL_SECS, abort).await;
+            wait_abortable(LEADERBOARD_DWELL_SECS, abort_leaderboard).await;
         }
 
         let next_phase = {
