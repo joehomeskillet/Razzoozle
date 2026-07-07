@@ -120,10 +120,3 @@ export const socketLogger = (bind: {
 // Per-HTTP-request correlation child (one per inbound request).
 export const requestLogger = (route: string): Logger =>
   logger.child({ requestId: nanoid(), route, role: "system" })
-
-// Game-scoped child for lifecycle lines.
-export const gameLogger = (bind: {
-  gameId: string
-  pin?: string
-  quizId?: string
-}): Logger => logger.child(bind)

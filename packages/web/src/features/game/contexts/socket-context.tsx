@@ -325,10 +325,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useSocket = () => useContext(SocketContext)
 
-// Re-exported so the satellite route (and any server-coordination code) can
-// reference the same header/storage keys instead of redefining the strings.
-export { SATELLITE_TOKEN_HEADER, SATELLITE_TOKEN_STORAGE_KEY, satelliteAuth }
-
 export const useEvent = <E extends keyof ServerToClientEvents>(
   event: E,
   callback: ServerToClientEvents[E],

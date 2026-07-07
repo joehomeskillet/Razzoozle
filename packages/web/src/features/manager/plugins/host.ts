@@ -252,10 +252,6 @@ export const getPluginTab = (
   key: string,
 ): PluginTabRegistration | undefined => registry.get(key)
 
-/** v2: Get all registered render slots. */
-export const getRegisteredRenderSlots =
-  (): PluginRenderSlotRegistration[] =>
-    Array.from(renderSlotRegistry.values())
 
 // ── Script injection (manager-only) ─────────────────────────────────────────
 

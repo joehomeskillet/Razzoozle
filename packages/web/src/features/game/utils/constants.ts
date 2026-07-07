@@ -25,17 +25,6 @@ export {
   answerLabel,
 } from "./answers"
 
-export const GAME_STATES = {
-  status: {
-    name: STATUS.WAIT,
-    data: { text: "Waiting for the players" },
-  },
-  question: {
-    current: 1,
-    total: null,
-  },
-}
-
 export const GAME_STATE_COMPONENTS = {
   [STATUS.SELECT_ANSWER]: Answers,
   [STATUS.SHOW_QUESTION]: Question,
@@ -58,28 +47,6 @@ export const GAME_STATE_COMPONENTS_MANAGER = {
   [STATUS.SHOW_LEADERBOARD]: Leaderboard,
   [STATUS.FINISHED]: Podium,
 }
-
-export const SFX = {
-  ANSWERS: {
-    MUSIC: "/sounds/answersMusic.mp3",
-    SOUND: "/sounds/answersSound.mp3",
-  },
-  PODIUM: {
-    THREE: "/sounds/three.mp3",
-    SECOND: "/sounds/second.mp3",
-    FIRST: "/sounds/first.mp3",
-    SNEAR_ROOL: "/sounds/snearRoll.mp3",
-  },
-  RESULTS_SOUND: "/sounds/results.mp3",
-  SHOW_SOUND: "/sounds/show.mp3",
-  BOUMP_SOUND: "/sounds/boump.mp3",
-  TIERS: {
-    BRONZE: "/sounds/bronze.mp3",
-    SILVER: "/sounds/silver.mp3",
-    GOLD: "/sounds/gold.mp3",
-    DIAMANT: "/sounds/diamant.mp3",
-  },
-} as const
 
 export const MANAGER_SKIP_EVENTS = {
   [STATUS.SHOW_ROOM]: EVENTS.MANAGER.START_GAME,

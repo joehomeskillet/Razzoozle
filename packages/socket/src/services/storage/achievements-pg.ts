@@ -134,18 +134,3 @@ export const upsertAchievementPg = async (
     throw error
   }
 }
-
-export const deleteAchievementPg = async (id: string): Promise<void> => {
-  try {
-    const result = await getPool().query(
-      `DELETE FROM achievements_config WHERE id = $1`,
-      [id],
-    )
-    if (result.rowCount === 0) {
-      throw new Error(`Achievement "${id}" not found`)
-    }
-  } catch (error) {
-    console.error("achievements-pg.deleteAchievementPg failed", error)
-    throw error
-  }
-}

@@ -86,5 +86,4 @@ export const teamDot = (team: string): string | undefined =>
 export const teamColor = (team: string) =>
   isTeam(team) ? COLOR[team] : COLOR_FALLBACK
 
-export { TEAMS }
 export type { Team }
