@@ -30,7 +30,7 @@ use socketioxide::SocketIo;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{Notify, RwLock};
-use tracing::info;
+use tracing::{info, warn};
 
 use super::cooldown::run_cooldown;
 use super::reveal_helpers::perform_reveal_and_broadcast;
@@ -125,9 +125,31 @@ async fn open_question(
 ) -> bool {
     let show_data = {
         let mut game = game_ref.lock().unwrap();
-        match game.engine.show_question(index) {
-            Ok(d) => d,
-            Err(_) => return false,
+        // `next_or_finish()` (engine/state.rs) already performs the exact
+        // ShowLeaderboard -> ShowQuestion transition for `index` when advancing
+        // past a question's leaderboard, BEFORE the driver loop gets back here.
+        // Calling `show_question(index)` again in that case is rejected by its
+        // own phase guard (it only accepts ShowStart/ShowLeaderboard) — that Err
+        // used to be swallowed silently, killing the whole lifecycle task right
+        // as it tried to open the SECOND question (the reported "dies after
+        // reveal, SHOW_LEADERBOARD/next question never arrives" bug). If the
+        // engine is already sitting on this exact question, just read its data
+        // instead of re-transitioning.
+        if game.engine.phase == GamePhase::ShowQuestion
+            && game.engine.current_question_index == index
+        {
+            game.engine.current_show_question_data()
+        } else {
+            match game.engine.show_question(index) {
+                Ok(d) => d,
+                Err(e) => {
+                    warn!(
+                        "Lifecycle stopping: show_question({}) rejected for gameId={}: {}",
+                        index, game_id, e
+                    );
+                    return false;
+                }
+            }
         }
     };
 
@@ -251,13 +273,22 @@ pub async fn run_game_lifecycle(
         let abort = { game_ref.lock().unwrap().arm_abort() };
         wait_abortable(RESULT_DWELL_SECS, abort).await;
 
-        let leaderboard_data = {
+        let leaderboard_result = {
             let mut game = game_ref.lock().unwrap();
-            game.engine.leaderboard_view().ok()
+            game.engine.leaderboard_view()
         };
-        let Some(leaderboard_data) = leaderboard_data else {
-            // Already advanced/finished via another path (e.g. manager:abortQuiz) — stop.
-            return;
+        let leaderboard_data = match leaderboard_result {
+            Ok(data) => data,
+            Err(e) => {
+                // Already advanced/finished via another path (e.g. manager:abortQuiz) — stop,
+                // but LOUDLY: a silent return here is exactly what made past driver deaths
+                // invisible in the logs.
+                warn!(
+                    "Lifecycle stopping before leaderboard: gameId={}, err={}",
+                    game_id, e
+                );
+                return;
+            }
         };
         io.to(game_id.clone())
             .emit(
@@ -290,7 +321,83 @@ pub async fn run_game_lifecycle(
             Ok(GamePhase::ShowQuestion) => {
                 index = game_ref.lock().unwrap().engine.current_question_index;
             }
-            _ => return,
+            Ok(other) => {
+                warn!(
+                    "Lifecycle stopping: next_or_finish returned unexpected phase {:?} for gameId={}",
+                    other, game_id
+                );
+                return;
+            }
+            Err(e) => {
+                warn!(
+                    "Lifecycle stopping: next_or_finish rejected for gameId={}: {}",
+                    game_id, e
+                );
+                return;
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::QuizFixture;
+
+    /// Reproduces the reported "driver dies silently after reveal" bug end to
+    /// end: drive a full game (fixture quiz, 1 player, nobody answers) through
+    /// natural per-question cooldown timeouts and assert the task actually
+    /// reaches FINISHED — i.e. every question's SHOW_LEADERBOARD/advance step
+    /// ran — instead of hanging forever right after the reveal.
+    #[tokio::test(start_paused = true)]
+    async fn lifecycle_continues_past_reveal_to_leaderboard_and_finishes() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut registry = GameRegistry::new(&None, quiz).await;
+        let (game_id, _invite_code, _host_token) =
+            registry.create_game("manager-socket".to_string(), None).unwrap();
+
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.add_player(
+                "player-socket".to_string(),
+                "client-1".to_string(),
+                "Alice".to_string(),
+                None,
+            );
+            game.engine.start().unwrap();
+        }
+
+        let registry = Arc::new(RwLock::new(registry));
+        let (_layer, io) = SocketIo::builder().build_layer();
+        // `io.to(...).emit(...)` requires the default namespace to exist first
+        // (mirrors main.rs's `io.ns("/", ...)`) — otherwise it panics instead of
+        // being a harmless no-op broadcast to an empty room.
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        // Bounded so a genuine hang fails this test instead of blocking the whole
+        // suite forever. Under `start_paused = true` this duration races the
+        // driver's own dwells on the SAME virtual clock — it must comfortably
+        // exceed the full 2-question walk (intro 3s + per question ~23s of
+        // dwells) but a real deadlock/infinite-loop still burns real wall time
+        // (caught by the test harness's own timeout) since paused time only
+        // fast-forwards while every task is parked on a timer.
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(120),
+            run_game_lifecycle(io, registry, game_id.clone()),
+        )
+        .await;
+
+        assert!(
+            outcome.is_ok(),
+            "run_game_lifecycle never returned — the driver died/hung after reveal"
+        );
+
+        let final_phase = game_ref.lock().unwrap().engine.phase;
+        assert_eq!(
+            final_phase,
+            GamePhase::Finished,
+            "lifecycle stalled before reaching FINISHED (leaderboard/advance never happened)"
+        );
     }
 }
