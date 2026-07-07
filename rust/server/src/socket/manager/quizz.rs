@@ -123,7 +123,7 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
 
                         let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
 
-                        match db::upsert_quiz(&ctx.db_pool, &id, subj, questions_json).await {
+                        match db::upsert_quiz(&ctx.db_pool, &id, subj, questions_json, None).await {
                             Ok(_quiz_id) => {
                                 // Reload registry from DB
                                 {
@@ -187,7 +187,7 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
 
                         let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
 
-                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json).await {
+                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json, None).await {
                             Ok(_quiz_id) => {
                                 // Reload registry from DB so a live game uses the edited quiz
                                 {
