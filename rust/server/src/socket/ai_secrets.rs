@@ -79,15 +79,28 @@ fn write_secrets(secrets: &BTreeMap<String, String>) -> Result<(), String> {
     let json = serde_json::to_string_pretty(secrets)
         .map_err(|e| format!("Failed to serialize secrets: {}", e))?;
 
-    fs::write(&path, &json)
-        .map_err(|e| format!("Failed to write secrets file: {}", e))?;
-
-    // Set file mode to 0o600 (owner read/write only).
+    // Create file atomically with mode 0o600 on Unix, then write contents.
     #[cfg(unix)]
     {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(&path)
+            .map_err(|e| format!("Failed to open secrets file: {}", e))?;
+        file.write_all(json.as_bytes())
+            .map_err(|e| format!("Failed to write secrets file: {}", e))?;
+        // Repair existing file with wrong perms (legacy case, harmless for new files).
         let perms = fs::Permissions::from_mode(0o600);
         fs::set_permissions(&path, perms)
             .map_err(|e| format!("Failed to set file permissions: {}", e))?;
+    }
+    #[cfg(not(unix))]
+    {
+        fs::write(&path, &json).map_err(|e| format!("Failed to write secrets file: {}", e))?;
     }
 
     Ok(())
