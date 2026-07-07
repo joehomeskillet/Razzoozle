@@ -53,7 +53,7 @@ fn register_reveal_answer(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -100,7 +100,7 @@ fn register_show_leaderboard(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }

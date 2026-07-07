@@ -113,12 +113,19 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         return;
                                     }
 
-                                    let player = game.add_player(
+                                    let player = match game.add_player(
                                         socket_id.clone(),
                                         client_id.clone(),
                                         username.to_string(),
                                         avatar,
-                                    );
+                                    ) {
+                                        Ok(p) => p,
+                                        Err(e) => {
+                                            drop(game);
+                                            socket.emit(constants::game::ERROR_MESSAGE, e).ok();
+                                            return;
+                                        }
+                                    };
 
                                     let game_id = game.game_id.clone();
                                     let manager_socket_id = game.manager_socket_id.clone();
@@ -126,6 +133,14 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 
                                     (game_id, manager_socket_id, player, total_players)
                                 };
+
+                                // O(1) socket_id -> game_id index (state.rs) — keeps
+                                // remove/mark-disconnected/set_player_team/set_player_avatar
+                                // off the old full-scan path for this connection.
+                                {
+                                    let mut registry = registry.write().await;
+                                    registry.index_player_socket(socket_id.clone(), game_id_ret.clone());
+                                }
 
                                 info!(
                                     "Player joined game: gameId={}, username={}",
@@ -401,35 +416,52 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     };
 
                     if let Some(game_ref) = game_opt {
-                        let mut game = game_ref.lock().unwrap();
+                        // The whole game-lock-holding computation lives in this
+                        // block so the MutexGuard (!Send) is fully dropped
+                        // before the .await below — otherwise the enclosing
+                        // future can't be spawned (tokio::spawn requires Send).
+                        let update_result = {
+                            let mut game = game_ref.lock().unwrap();
 
-                        // Find player: token-preferred (secure), fall back to handshake clientId (backward-compat)
-                        let pos_opt = if let Some(token) = player_token_opt {
-                            game.players.iter().position(|p| p.player_token.as_deref() == Some(token))
-                        } else {
-                            game.players.iter().position(|p| p.client_id == client_id)
-                        };
-
-                        if let Some(pos) = pos_opt {
-                            let game_id_ret = game.game_id.clone();
-                            game.players[pos].id = socket_id.clone();
-                            game.players[pos].connected = true;
-
-                            // Update engine players
-                            if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
-                                game.engine.players[engine_pos].id = socket_id.clone();
-                                game.engine.players[engine_pos].connected = true;
-                            }
-
-                            // Read points/streak from engine.players (where scoring happens)
-                            let (username, points, streak) = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
-                                let ep = &game.engine.players[engine_pos];
-                                (ep.username.clone(), ep.points, ep.streak)
+                            // Find player: token-preferred (secure), fall back to handshake clientId (backward-compat)
+                            let pos_opt = if let Some(token) = player_token_opt {
+                                game.players.iter().position(|p| p.player_token.as_deref() == Some(token))
                             } else {
-                                (game.players[pos].username.clone(), game.players[pos].points, game.players[pos].streak)
+                                game.players.iter().position(|p| p.client_id == client_id)
                             };
 
-                            drop(game);
+                            pos_opt.map(|pos| {
+                                let game_id_ret = game.game_id.clone();
+                                let old_socket_id = game.players[pos].id.clone();
+                                game.players[pos].id = socket_id.clone();
+                                game.players[pos].connected = true;
+
+                                // Update engine players
+                                if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                    game.engine.players[engine_pos].id = socket_id.clone();
+                                    game.engine.players[engine_pos].connected = true;
+                                }
+
+                                // Read points/streak from engine.players (where scoring happens)
+                                let (username, points, streak) = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                    let ep = &game.engine.players[engine_pos];
+                                    (ep.username.clone(), ep.points, ep.streak)
+                                } else {
+                                    (game.players[pos].username.clone(), game.players[pos].points, game.players[pos].streak)
+                                };
+
+                                (game_id_ret, old_socket_id, username, points, streak)
+                            })
+                        };
+
+                        if let Some((game_id_ret, old_socket_id, username, points, streak)) = update_result {
+                            // Keep the O(1) socket_id -> game_id index (state.rs)
+                            // current: this player's socket_id just changed.
+                            {
+                                let mut registry = registry.write().await;
+                                registry.deindex_player_socket(&old_socket_id);
+                                registry.index_player_socket(socket_id.clone(), game_id_ret.clone());
+                            }
 
                             // Join the room
                             socket.join(game_id_ret.clone());

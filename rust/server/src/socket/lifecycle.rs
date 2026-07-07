@@ -273,9 +273,11 @@ pub async fn run_game_lifecycle(
         let abort = { game_ref.lock().unwrap().arm_abort() };
         wait_abortable(RESULT_DWELL_SECS, abort).await;
 
-        let leaderboard_result = {
+        let (leaderboard_result, phase_after_leaderboard) = {
             let mut game = game_ref.lock().unwrap();
-            game.engine.leaderboard_view()
+            let result = game.engine.leaderboard_view();
+            let phase = game.engine.phase;
+            (result, phase)
         };
         let leaderboard_data = match leaderboard_result {
             Ok(data) => data,
@@ -290,6 +292,25 @@ pub async fn run_game_lifecycle(
                 return;
             }
         };
+
+        // Last round: leaderboard_view() (engine/state.rs) already transitioned
+        // straight to FINISHED (mirrors round-manager.ts showLeaderboard()
+        // skipping the intermediate SHOW_LEADERBOARD screen on the last
+        // question). Broadcast FINISHED now and stop — no leaderboard dwell,
+        // no next_or_finish() call (which would reject: phase is no longer
+        // ShowLeaderboard).
+        if phase_after_leaderboard == GamePhase::Finished {
+            info!("Game finished: gameId={}", game_id);
+            let finished = {
+                let game = game_ref.lock().unwrap();
+                build_finished_data(&game)
+            };
+            io.to(game_id.clone())
+                .emit(constants::game::STATUS, &GameStatus::Finished(finished))
+                .ok();
+            return;
+        }
+
         io.to(game_id.clone())
             .emit(
                 constants::game::STATUS,
@@ -352,9 +373,18 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn lifecycle_continues_past_reveal_to_leaderboard_and_finishes() {
         let quiz = QuizFixture::load().expect("fixture quiz loads");
-        let mut registry = GameRegistry::new(&None, quiz).await;
-        let (game_id, _invite_code, _host_token) =
-            registry.create_game("manager-socket".to_string(), None).unwrap();
+        let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+        let mut quizzes = std::collections::HashMap::new();
+        quizzes.insert("test-quiz".to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+        let (game_id, _invite_code, _host_token) = registry
+            .create_game(
+                "manager-socket".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+            )
+            .unwrap();
 
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         {
@@ -364,7 +394,8 @@ mod tests {
                 "client-1".to_string(),
                 "Alice".to_string(),
                 None,
-            );
+            )
+            .unwrap();
             game.engine.start().unwrap();
         }
 

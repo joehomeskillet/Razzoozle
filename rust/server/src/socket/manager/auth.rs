@@ -172,28 +172,15 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 // host could never pass that gate again and was permanently
                 // locked out of a running game (chicken-and-egg).
                 //
-                // Rust has no per-game `manager_client_id` field (only a
-                // random `host_token` + the live `manager_socket_id`), so
-                // is_game_host() — the SAME ownership primitive every other
-                // manager mutation handler in this codebase uses — is reused
-                // here. TODO(parity): the shipped web client does not yet
-                // send hostToken on manager:reconnect (grep confirms it sends
-                // only {gameId}), so is_game_host() takes its legacy
-                // "hostToken absent -> allow" branch for the real client
-                // today. Ownership is therefore effectively proven by knowing
-                // the (UUID-v4, 122-bit) gameId rather than by a matching
-                // clientId — a materially different token than Node's, but a
-                // comparably-strong secret (unlike the low-entropy, shared
-                // inviteCode). A byte-for-byte match of Node's model needs a
-                // new `manager_client_id` field captured at game-creation
-                // time on `state::Game` — that's a struct/constructor change
-                // on state.rs, out of scope for this auth-only fix (state.rs
-                // is owned by another worker); flagged here for a follow-up
-                // wave instead of silently leaving the restart-lockout bug in
-                // place.
+                // is_game_host() now checks REAL ownership via
+                // game.manager_client_id (state.rs) when no hostToken is sent
+                // — the shipped client's manager:reconnect only sends
+                // {gameId} — instead of the old blanket "hostToken absent ->
+                // allow" legacy branch. Byte-for-byte match of Node's
+                // clientId-based ownership model.
                 let is_owner = {
                     let game = game_ref.lock().unwrap();
-                    crate::is_game_host(&game, &payload)
+                    crate::is_game_host(&game, &payload, &ctx.client_id)
                 };
 
                 if !is_owner {
@@ -206,10 +193,16 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Ownership verified: (re-)establish login UNCONDITIONALLY,
                 // regardless of prior is_logged state (fixes the restart
-                // chicken-and-egg lockout).
+                // chicken-and-egg lockout). Also refresh manager_client_id to
+                // this reconnecting clientId, keeping ownership current across
+                // e.g. a cleared-localStorage reconnect that mints a new one.
                 {
                     let mut registry = ctx.registry.write().await;
                     registry.login_client(ctx.client_id.clone());
+                }
+                {
+                    let mut game = game_ref.lock().unwrap();
+                    game.manager_client_id = Some(ctx.client_id.clone());
                 }
 
                 let new_socket_id = socket.id.to_string();

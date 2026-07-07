@@ -59,12 +59,7 @@ fn register_list_games(socket: &SocketRef, ctx: HandlerCtx) {
                                 "playerCount": game.players.len(),
                                 "started": game.engine.phase != razzoozle_engine::state::GamePhase::ShowRoom,
                                 "managerConnected": manager_connected,
-                                // TODO(parity): createdAt should use the actual game creation timestamp.
-                                // The Game struct does not track a separate created_at field, so we
-                                // use last_activity_ms as a best-effort approximation. This diverges from
-                                // the actual creation time as the game progresses. Add a created_at field
-                                // to the Game struct in state.rs to fix this.
-                                "createdAt": game.last_activity_ms,
+                                "createdAt": game.created_at_ms,
                             })
                         })
                         .collect::<Vec<_>>()

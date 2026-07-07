@@ -59,7 +59,7 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -138,7 +138,7 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -191,7 +191,7 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -235,7 +235,7 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -302,7 +302,7 @@ fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }

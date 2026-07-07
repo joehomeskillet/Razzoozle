@@ -99,6 +99,19 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 // Persist to DB
                 match db::update_game_config(&ctx.db_pool, &patch).await {
                     Ok(_) => {
+                        // Config is server-global (games_config id=1), so a
+                        // lowLatencyEnabled change must refresh the in-memory
+                        // cache (state.rs Game.low_latency) on every currently
+                        // active game, not just future ones.
+                        if let Some(new_value) = patch.get("lowLatencyEnabled").and_then(|v| v.as_bool()) {
+                            let registry = ctx.registry.read().await;
+                            for game_ref in registry.get_all_games() {
+                                if let Ok(mut game) = game_ref.lock() {
+                                    game.low_latency = new_value;
+                                }
+                            }
+                        }
+
                         // Round-trip config back to client
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
