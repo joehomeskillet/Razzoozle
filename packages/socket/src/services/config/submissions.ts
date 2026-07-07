@@ -8,6 +8,10 @@ import type {
   SubmissionMeta,
 } from "@razzoozle/common/types/submission"
 import { submissionRecordValidator } from "@razzoozle/common/validators/submission"
+import {
+  deleteSubmissionPg,
+  upsertSubmissionPg,
+} from "@razzoozle/socket/services/storage/submissions-pg"
 import fs from "fs"
 import { assertSafeId, getPath } from "@razzoozle/socket/services/config/shared"
 
@@ -15,6 +19,15 @@ import { assertSafeId, getPath } from "@razzoozle/socket/services/config/shared"
 // (one-time O(N) scan) and then kept in sync incrementally by save/update/delete
 // so the hot public SUBMIT path no longer re-scans the whole submissions dir.
 let pendingCount: number | null = null
+
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth for
+// the submission functions below (they can't become async without breaking their
+// call sites), but writes are additionally mirrored to Postgres via services/storage/submissions-pg.ts
+// (fire-and-forget, errors logged not thrown — file write remains authoritative and never blocks on the DB).
+const isDbBackedSubmissionMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const saveSubmission = (data: Submission): void => {
   assertSafeId(data.id)
@@ -29,6 +42,11 @@ export const saveSubmission = (data: Submission): void => {
     getPath(`submissions/${data.id}.json`),
     JSON.stringify(data, null, 2),
   )
+
+  // Fire-and-forget pg mirror write
+  if (isDbBackedSubmissionMode()) {
+    upsertSubmissionPg(data).catch((error) => console.error("submissions-pg mirror failed", error))
+  }
 
   // A fresh public submission is always "pending". Keep the cached counter in
   // sync only once it has been initialized (null = not yet primed).
@@ -146,6 +164,11 @@ export const updateSubmission = (
     getPath(`submissions/${id}.json`),
     JSON.stringify(merged, null, 2),
   )
+
+  // Fire-and-forget pg mirror write
+  if (isDbBackedSubmissionMode()) {
+    upsertSubmissionPg(merged).catch((error) => console.error("submissions-pg mirror failed", error))
+  }
 }
 
 export const deleteSubmission = (id: string): void => {
@@ -167,4 +190,9 @@ export const deleteSubmission = (id: string): void => {
   }
 
   fs.unlinkSync(filePath)
+
+  // Fire-and-forget pg mirror delete
+  if (isDbBackedSubmissionMode()) {
+    deleteSubmissionPg(id).catch((error) => console.error("submissions-pg mirror failed", error))
+  }
 }
