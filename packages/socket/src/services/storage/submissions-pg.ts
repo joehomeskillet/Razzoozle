@@ -47,11 +47,22 @@ interface SubmissionRow {
   rejection_reason?: string
 }
 
+// Normalize Date to ISO string (node-postgres parses timestamptz as Date).
+const toIsoString = (value: unknown): string => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+  if (typeof value === "string") {
+    return value
+  }
+  return new Date().toISOString()
+}
+
 const rowToSubmission = (row: SubmissionRow): Submission | null => {
   const candidate = {
     id: row.id,
     submittedBy: row.submitted_by,
-    submittedAt: row.submitted_at,
+    submittedAt: toIsoString(row.submitted_at),
     status: row.status,
     question: row.question,
     ...(row.category && { category: row.category }),
@@ -61,7 +72,7 @@ const rowToSubmission = (row: SubmissionRow): Submission | null => {
   const result = submissionRecordValidator.safeParse(candidate)
 
   if (!result.success) {
-    console.warn(`submissions-pg: invalid submission row "${row.id}":`, result.error.issues)
+    console.error(`submissions-pg: invalid submission row "${row.id}":`, result.error.issues)
     return null
   }
 
@@ -75,9 +86,15 @@ export const listAllSubmissionsPg = async (): Promise<Submission[]> => {
       `SELECT id, submitted_by, submitted_at, status, question, source, category, rejection_reason
        FROM submissions ORDER BY submitted_at DESC`,
     )
-    return result.rows
+    const submissions = result.rows
       .map((row: SubmissionRow) => rowToSubmission(row))
       .filter((s: Submission | null): s is Submission => s !== null)
+    
+    if (result.rows.length > 0 && submissions.length === 0) {
+      console.error(`submissions-pg: all ${result.rows.length} rows failed validation`)
+    }
+    
+    return submissions
   } catch (error) {
     console.error("submissions-pg.listAllSubmissionsPg failed", error)
     return []
