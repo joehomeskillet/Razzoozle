@@ -3,7 +3,7 @@
 use crate::eval::{self, AnswerInput};
 use crate::scoring::{apply_first_correct_bonus, calculate_points};
 use razzoozle_protocol::player::Player;
-use razzoozle_protocol::quizz::{Question, Quizz};
+use razzoozle_protocol::quizz::{Question, QuestionType, Quizz};
 use razzoozle_protocol::status::{
     ScoringMode, ShowLeaderboardData, ShowQuestionData, ShowResultData, ShowStartData,
 };
@@ -27,6 +27,7 @@ pub enum GameError {
     InvalidQuestionIndex { index: usize, total: usize },
     UnknownPlayer { client_id: String },
     DuplicateAnswer { client_id: String },
+    InvalidAnswerShape { client_id: String },
 }
 
 impl std::fmt::Display for GameError {
@@ -44,6 +45,9 @@ impl std::fmt::Display for GameError {
             }
             Self::DuplicateAnswer { client_id } => {
                 write!(f, "player {client_id} already answered")
+            }
+            Self::InvalidAnswerShape { client_id } => {
+                write!(f, "player {client_id} sent an answer payload shape invalid for this question type")
             }
         }
     }
@@ -116,7 +120,10 @@ impl GameState {
 
         self.phase = GamePhase::ShowStart;
         Ok(ShowStartData {
-            time: 5000,
+            // Seconds, not ms — matches Node's `{time: 3, subject}` broadcast
+            // (round-manager.ts start(), which then `sleep(3)`s before the
+            // real 3s START_COOLDOWN).
+            time: 3,
             subject: self.quiz.subject.clone(),
         })
     }
@@ -181,6 +188,35 @@ impl GameState {
         }
         if self.current_answers.contains_key(client_id) {
             return Err(GameError::DuplicateAnswer {
+                client_id: client_id.to_string(),
+            });
+        }
+
+        // Per-question-type payload guards (parity with round-manager.ts
+        // selectAnswer() ANTI-CHEAT checks, lines ~1147-1192) — unconditional,
+        // independent of low-latency mode: multiple-select MUST carry an
+        // answer_keys array, any other type must NOT, and type-answer /
+        // sentence-builder require non-empty trimmed text.
+        let question_type = self.current_question().r#type.clone();
+        let is_multi_select = question_type == Some(QuestionType::MultipleSelect);
+        let is_text_answer = matches!(
+            question_type,
+            Some(QuestionType::TypeAnswer) | Some(QuestionType::SentenceBuilder)
+        );
+        let trimmed_text_is_empty = answer_text.as_deref().map(str::trim).unwrap_or("").is_empty();
+
+        if is_multi_select && answer_keys.is_none() {
+            return Err(GameError::InvalidAnswerShape {
+                client_id: client_id.to_string(),
+            });
+        }
+        if !is_multi_select && answer_keys.is_some() {
+            return Err(GameError::InvalidAnswerShape {
+                client_id: client_id.to_string(),
+            });
+        }
+        if is_text_answer && trimmed_text_is_empty {
+            return Err(GameError::InvalidAnswerShape {
                 client_id: client_id.to_string(),
             });
         }
@@ -295,7 +331,19 @@ impl GameState {
         self.old_leaderboard = self.players.clone();
         let leaderboard = self.sorted_leaderboard();
         self.players = leaderboard.clone();
-        self.phase = GamePhase::ShowLeaderboard;
+
+        // Last round: Node's showLeaderboard() (round-manager.ts:1778-1882)
+        // skips the intermediate SHOW_LEADERBOARD screen entirely and jumps
+        // straight to FINISHED/podium. Result persistence for that finish
+        // path is a separate, later WP — this only fixes the phase
+        // transition so callers don't get a spurious extra leaderboard hop
+        // on the last question.
+        let is_last_round = self.current_question_index + 1 == self.quiz.questions.len();
+        self.phase = if is_last_round {
+            GamePhase::Finished
+        } else {
+            GamePhase::ShowLeaderboard
+        };
 
         Ok(ShowLeaderboardData {
             old_leaderboard: self.old_leaderboard.clone(),
@@ -484,8 +532,9 @@ mod tests {
         assert_eq!(state.result_for("player1").unwrap().streak, 2);
         assert_eq!(state.sorted_leaderboard()[0].client_id, "player1");
 
-        let final_phase = state.next_or_finish().unwrap();
-        assert_eq!(final_phase, GamePhase::Finished);
+        // Last round: leaderboard_view() (called inside advance_round) already
+        // transitioned straight to FINISHED — no separate next_or_finish() call
+        // needed (or possible: phase is no longer ShowLeaderboard).
         assert_eq!(state.phase, GamePhase::Finished);
     }
 
@@ -525,6 +574,74 @@ mod tests {
             state.record_answer("player1", Some(0), None, None),
             Err(GameError::DuplicateAnswer { .. })
         ));
+    }
+
+    /// Builds a single-question quiz of the given `question_type` (JSON
+    /// `type` string, e.g. "multiple-select" / "type-answer") for the
+    /// per-question-type record_answer payload-guard tests below.
+    fn quiz_with_question_type(question_type: &str) -> Quizz {
+        let json = format!(
+            r#"{{"question": "Q?", "type": "{question_type}", "answers": ["a", "b"], "solutions": [0], "cooldown": 1, "time": 10}}"#
+        );
+        let question: Question = serde_json::from_str(&json).expect("question parses");
+        Quizz {
+            subject: "Test".to_string(),
+            questions: vec![question],
+            archived: None,
+            theme_id: None,
+        }
+    }
+
+    fn ready_state(question_type: &str) -> GameState {
+        let quiz = quiz_with_question_type(question_type);
+        let mut state = GameState::new(quiz, vec![make_player("player1", "Alice")]);
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        state.open_answers().unwrap();
+        state
+    }
+
+    #[test]
+    fn record_answer_rejects_multi_select_without_array() {
+        let mut state = ready_state("multiple-select");
+        assert!(matches!(
+            state.record_answer("player1", Some(0), None, None),
+            Err(GameError::InvalidAnswerShape { .. })
+        ));
+    }
+
+    #[test]
+    fn record_answer_accepts_multi_select_with_array() {
+        let mut state = ready_state("multiple-select");
+        assert!(state.record_answer("player1", None, Some(vec![0, 1]), None).is_ok());
+    }
+
+    #[test]
+    fn record_answer_rejects_array_for_non_multi_select() {
+        let mut state = ready_state("choice");
+        assert!(matches!(
+            state.record_answer("player1", None, Some(vec![0]), None),
+            Err(GameError::InvalidAnswerShape { .. })
+        ));
+    }
+
+    #[test]
+    fn record_answer_rejects_empty_text_for_type_answer() {
+        let mut state = ready_state("type-answer");
+        assert!(matches!(
+            state.record_answer("player1", None, None, Some("   ".to_string())),
+            Err(GameError::InvalidAnswerShape { .. })
+        ));
+        assert!(matches!(
+            state.record_answer("player1", None, None, None),
+            Err(GameError::InvalidAnswerShape { .. })
+        ));
+    }
+
+    #[test]
+    fn record_answer_accepts_non_empty_text_for_type_answer() {
+        let mut state = ready_state("type-answer");
+        assert!(state.record_answer("player1", None, None, Some("Paris".to_string())).is_ok());
     }
 
     // Race-safety net for R3/R4 (rust/server socket::lifecycle): the server's

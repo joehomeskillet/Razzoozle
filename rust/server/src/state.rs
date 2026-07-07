@@ -4,7 +4,7 @@ use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -24,6 +24,14 @@ pub const AVATAR_SVG_MAX_CHARS: usize = 64 * 1024;
 
 // Game eviction: TTL for finished/stale games (milliseconds)
 pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
+
+// logged_clients cap + staleness TTL (same idiom as the RateLimiter maps
+// below: bound unbounded growth from distinct client IDs, pruning only once
+// the cap is exceeded). TTL is deliberately generous — far longer than any
+// realistic manager session — since pruning here (unlike the rate limiter)
+// would wrongly log out a still-active manager, not just reset a counter.
+pub const LOGGED_CLIENTS_MAX_ENTRIES: usize = 10_000;
+pub const LOGGED_CLIENT_STALE_MS: u64 = 6 * 60 * 60 * 1000; // 6 hours
 
 // ── Path-traversal protection ─────────────────────────────────────────────────
 // Validate asset IDs (quiz/result file names) to prevent path-traversal attacks
@@ -217,11 +225,25 @@ pub struct Game {
     pub game_id: String,
     pub invite_code: String,
     pub manager_socket_id: String,
+    // The clientId (socket handshake auth, NOT the volatile socket_id) of the
+    // manager who created this game — real ownership proof, refreshed on a
+    // verified manager:reconnect. `None` only ever for a Game built directly
+    // via `Game::new()` in a test that doesn't set it.
+    pub manager_client_id: Option<String>,
     pub host_token: String,
     pub players: Vec<Player>,
     pub engine: GameState,
+    // Creation timestamp (ms since UNIX epoch) — distinct from last_activity_ms,
+    // which advances as the game is used. games_list.rs's admin panel wants the
+    // actual creation time, not "how recently touched".
+    pub created_at_ms: u64,
     // Last activity timestamp (ms since UNIX epoch)
     pub last_activity_ms: u64,
+    // In-memory cache of the (server-global) low-latency config, snapshotted at
+    // create time and refreshed on every manager:setGameConfig write. Lets a
+    // future per-ping gate check this synchronously instead of an async DB
+    // round-trip on every clock:ping.
+    pub low_latency: bool,
     // Question-lifecycle abort signal (R3/R5): whichever abortable wait the
     // game-lifecycle task (socket::lifecycle::run_game_lifecycle) is currently
     // in — the per-question SELECT_ANSWER cooldown, the post-reveal dwell, or
@@ -250,10 +272,13 @@ impl Game {
             game_id,
             invite_code,
             manager_socket_id,
+            manager_client_id: None,
             host_token,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),
+            created_at_ms: now,
             last_activity_ms: now,
+            low_latency: false,
             cooldown_abort: None,
         }
     }
@@ -289,13 +314,21 @@ impl Game {
     }
 
     /// Add a player to the game and return their player data.
+    /// Rejects a clientId that's already connected (parity with Node's
+    /// player-manager.ts join(): `findByClientId` dup-guard —
+    /// "errors:game.playerAlreadyConnected") instead of pushing a second
+    /// player record for the same client.
     pub fn add_player(
         &mut self,
         socket_id: String,
         client_id: String,
         username: String,
         avatar: Option<String>,
-    ) -> Player {
+    ) -> Result<Player, &'static str> {
+        if self.players.iter().any(|p| p.client_id == client_id) {
+            return Err("errors:game.playerAlreadyConnected");
+        }
+
         let player = Player {
             id: socket_id,
             client_id: client_id.clone(),
@@ -313,7 +346,7 @@ impl Game {
         self.players.push(player.clone());
         // Also add to engine's players list
         self.engine.players.push(player.clone());
-        player
+        Ok(player)
     }
 }
 
@@ -323,7 +356,17 @@ pub struct GameRegistry {
     games_by_id: HashMap<String, Arc<Mutex<Game>>>,
     quizzes: HashMap<String, Quizz>,
     default_quiz: Quizz,
-    logged_clients: HashSet<String>,
+    // client_id -> last-touched ms (login/reconnect). Capped + stale-pruned
+    // like the RateLimiter maps above — see LOGGED_CLIENT_STALE_MS.
+    logged_clients: HashMap<String, u64>,
+    // O(1) socket_id -> game_id lookup for the hot per-connection paths
+    // (remove/mark-disconnected/set_player_team/set_player_avatar), which
+    // used to scan every active game and lock its Mutex on every call.
+    // Maintained at player join/reconnect/disconnect and game eviction; a
+    // miss (e.g. an edge case that didn't update it) falls back to the old
+    // full scan, so a stale/incomplete index degrades to the previous
+    // behavior instead of losing correctness.
+    socket_to_game: HashMap<String, String>,
 }
 
 impl GameRegistry {
@@ -384,16 +427,26 @@ impl GameRegistry {
             games_by_id: HashMap::new(),
             quizzes,
             default_quiz: quiz_fixture,
-            logged_clients: HashSet::new(),
+            logged_clients: HashMap::new(),
+            socket_to_game: HashMap::new(),
         }
     }
 
     pub fn is_logged(&self, client_id: &str) -> bool {
-        self.logged_clients.contains(client_id)
+        self.logged_clients.contains_key(client_id)
     }
 
     pub fn login_client(&mut self, client_id: String) {
-        self.logged_clients.insert(client_id);
+        let now = get_now_ms();
+        self.logged_clients.insert(client_id, now);
+
+        // Cap unbounded growth from distinct client IDs (same idiom as
+        // RateLimiter's solo_by_key/auth_by_key above): prune stale entries
+        // only once the registry grows past the cap.
+        if self.logged_clients.len() > LOGGED_CLIENTS_MAX_ENTRIES {
+            self.logged_clients
+                .retain(|_, last_seen| now.saturating_sub(*last_seen) <= LOGGED_CLIENT_STALE_MS);
+        }
     }
 
     pub fn logout_client(&mut self, client_id: &str) {
@@ -440,9 +493,27 @@ impl GameRegistry {
         Ok(())
     }
 
-    /// Create a new game with the specified quiz ID, or use default if not found.
-    /// Returns Err if active-game cap exceeded (C3).
-    pub fn create_game(&mut self, manager_socket_id: String, quiz_id: Option<String>) -> Result<(String, String, String), &'static str> {
+    /// Create a new game with the specified quiz ID. Mirrors Node's
+    /// game:create (packages/socket/src/handlers/game.ts:118-143): the
+    /// quizzId MUST resolve to a real, known quiz — a missing, empty, or
+    /// unknown id is rejected with "errors:quizz.notFound" and creates NO
+    /// game, never silently falling back to a default quiz.
+    /// Returns Err if active-game cap exceeded (C3) or the quiz lookup fails.
+    pub fn create_game(
+        &mut self,
+        manager_socket_id: String,
+        quiz_id: Option<String>,
+        manager_client_id: String,
+        low_latency: bool,
+    ) -> Result<(String, String, String), &'static str> {
+        let quiz = match quiz_id {
+            Some(id) if !id.is_empty() => match self.quizzes.get(&id) {
+                Some(q) => q.clone(),
+                None => return Err("errors:quizz.notFound"),
+            },
+            _ => return Err("errors:quizz.notFound"),
+        };
+
         // C3 — active-game cap: reject once N concurrent games exist
         if self.games_by_id.len() >= MAX_ACTIVE_GAMES {
             return Err("errors:game.serverBusy");
@@ -451,18 +522,14 @@ impl GameRegistry {
         let game_id = Uuid::new_v4().to_string();
         let invite_code = Self::generate_invite_code();
 
-        let quiz = if let Some(id) = quiz_id {
-            self.quizzes.get(&id).cloned().unwrap_or_else(|| self.default_quiz.clone())
-        } else {
-            self.default_quiz.clone()
-        };
-
-        let game = Game::new(
+        let mut game = Game::new(
             game_id.clone(),
             invite_code.clone(),
             manager_socket_id,
             quiz,
         );
+        game.manager_client_id = Some(manager_client_id);
+        game.low_latency = low_latency;
         let host_token = game.host_token.clone();
         let game = Arc::new(Mutex::new(game));
 
@@ -516,20 +583,51 @@ impl GameRegistry {
         self.games_by_id.values().cloned().collect()
     }
 
+    /// Lock a game, recovering from mutex poisoning (a prior panic while some
+    /// other task held this same lock) instead of propagating a second panic.
+    /// A poisoned Game is still structurally usable data — Rust only poisons
+    /// out of caution — so recovering it here keeps the eviction reaper (a
+    /// single unsupervised background loop, see main.rs) alive instead of it
+    /// dying forever on the first panic anywhere that touches a Game lock.
+    fn lock_game_recover(game_ref: &Arc<Mutex<Game>>) -> std::sync::MutexGuard<'_, Game> {
+        game_ref.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Record (or update) which game a socket_id currently belongs to. Call
+    /// whenever a socket starts representing a player in a game (join,
+    /// reconnect-with-new-socket-id).
+    pub fn index_player_socket(&mut self, socket_id: String, game_id: String) {
+        self.socket_to_game.insert(socket_id, game_id);
+    }
+
+    /// Drop a socket_id from the index once it's dead/superseded (leave,
+    /// disconnect-remove, mark-disconnected, or reconnect assigning a new id
+    /// to the same player).
+    pub fn deindex_player_socket(&mut self, socket_id: &str) {
+        self.socket_to_game.remove(socket_id);
+    }
+
+    /// Candidate games to scan for a given socket_id: the O(1) index hit if
+    /// we have one, else every active game (self-healing fallback if the
+    /// index is ever incomplete/stale).
+    fn socket_lookup_candidates(&self, socket_id: &str) -> Vec<Arc<Mutex<Game>>> {
+        match self.socket_to_game.get(socket_id) {
+            Some(game_id) => self.games_by_id.get(game_id).cloned().into_iter().collect(),
+            None => self.games_by_id.values().cloned().collect(),
+        }
+    }
+
     /// C4 — Game eviction: remove stale/finished games and clear their player sessions.
     /// Call periodically to prevent memory leaks. Clears player entries to prevent
     /// "resume reconnect" from keeping sessions forever.
     pub fn evict_stale_games(&mut self) {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
+        let now = get_now_ms();
 
         let stale_games: Vec<String> = self
             .games_by_id
             .values()
             .filter_map(|game_ref| {
-                let game = game_ref.lock().unwrap();
+                let game = Self::lock_game_recover(game_ref);
                 if game.is_stale(now) {
                     Some(game.invite_code.clone())
                 } else {
@@ -541,9 +639,15 @@ impl GameRegistry {
         for invite_code in stale_games {
             // Remove by invite code (which removes from games_by_code)
             if let Some(game_ref) = self.games_by_code.remove(&invite_code) {
-                let game = game_ref.lock().unwrap();
+                let game = Self::lock_game_recover(&game_ref);
                 // Remove from games_by_id as well
                 self.games_by_id.remove(&game.game_id);
+                // Drop this evicted game's players from the socket_id index —
+                // otherwise those entries would linger forever pointing at a
+                // game_id that no longer exists.
+                for player in &game.players {
+                    self.socket_to_game.remove(&player.id);
+                }
             }
         }
     }
@@ -552,7 +656,7 @@ impl GameRegistry {
         &mut self,
         socket_id: &str,
     ) -> Option<(String, String, String, usize)> {
-        for game_ref in self.games_by_id.values() {
+        for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
             if let Some(player_index) = game
@@ -568,12 +672,15 @@ impl GameRegistry {
                     .answer_order
                     .retain(|client_id| client_id != &removed_player_id);
 
-                return Some((
+                let result = (
                     game.game_id.clone(),
                     game.manager_socket_id.clone(),
                     removed_player_id,
                     game.players.len(),
-                ));
+                );
+                drop(game);
+                self.socket_to_game.remove(socket_id);
+                return Some(result);
             }
         }
 
@@ -584,7 +691,7 @@ impl GameRegistry {
         &mut self,
         socket_id: &str,
     ) -> Option<(String, String, String, usize, bool)> {
-        for game_ref in self.games_by_id.values() {
+        for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
             if let Some(player_index) = game
@@ -614,21 +721,30 @@ impl GameRegistry {
                     false
                 };
 
-                return Some((
+                let result = (
                     game.game_id.clone(),
                     game.manager_socket_id.clone(),
                     removed_player_id,
                     game.players.len(),
                     removed,
-                ));
+                );
+                drop(game);
+                // Either way this socket_id is dead: hard-removed, or kept as
+                // a disconnected slot that will get a BRAND NEW socket_id on
+                // reconnect (this one is never looked up again).
+                self.socket_to_game.remove(socket_id);
+                return Some(result);
             }
         }
 
         None
     }
 
-    pub fn set_player_team(&self, socket_id: &str, team_id: String) {
-        for game_ref in self.games_by_id.values() {
+    /// Updates the player's team and returns their updated snapshot (for a
+    /// future handler-WP to broadcast MANAGER.NEW_PLAYER / UPDATE_LEADERBOARD
+    /// with). No broadcast happens here.
+    pub fn set_player_team(&self, socket_id: &str, team_id: String) -> Option<Player> {
+        for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
             if let Some(pos) = game.players.iter().position(|p| p.id == socket_id) {
@@ -636,13 +752,17 @@ impl GameRegistry {
                 if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
                     game.engine.players[pos].team_id = Some(team_id);
                 }
-                return;
+                return Some(game.players[pos].clone());
             }
         }
+        None
     }
 
-    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) {
-        for game_ref in self.games_by_id.values() {
+    /// Updates the player's avatar and returns their updated snapshot (for a
+    /// future handler-WP to broadcast MANAGER.NEW_PLAYER / UPDATE_LEADERBOARD
+    /// with). No broadcast happens here.
+    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) -> Option<Player> {
+        for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
             if let Some(pos) = game.players.iter().position(|p| p.id == socket_id) {
@@ -650,9 +770,10 @@ impl GameRegistry {
                 if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
                     game.engine.players[pos].avatar = Some(avatar);
                 }
-                return;
+                return Some(game.players[pos].clone());
             }
         }
+        None
     }
 }
 
@@ -711,6 +832,15 @@ mod tests {
         assert!(safe_asset_id("prototype").is_err());
     }
 
+    /// Registers `quiz` under `id` (via reload_quizzes) so create_game's
+    /// quizzId-must-resolve validation has something real to find — the tests
+    /// below care about cap/eviction/player behavior, not quiz lookup itself.
+    fn seed_quiz(registry: &mut GameRegistry, id: &str, quiz: Quizz) {
+        let mut quizzes = HashMap::new();
+        quizzes.insert(id.to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+    }
+
     #[test]
     fn test_active_game_cap() {
         let empty_quiz = Quizz {
@@ -720,19 +850,171 @@ mod tests {
             theme_id: None,
         };
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
-        let mut registry = registry;
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz.clone()));
+        seed_quiz(&mut registry, "test-quiz", empty_quiz);
 
         // Create MAX_ACTIVE_GAMES games
         for i in 0..MAX_ACTIVE_GAMES {
-            let result = registry.create_game(format!("socket-{}", i), None);
+            let result = registry.create_game(
+                format!("socket-{}", i),
+                Some("test-quiz".to_string()),
+                format!("client-{}", i),
+                false,
+            );
             assert!(result.is_ok(), "Game {} creation failed", i);
         }
 
         // 101st game should fail (cap exceeded)
-        let result = registry.create_game("socket-overflow".to_string(), None);
+        let result = registry.create_game(
+            "socket-overflow".to_string(),
+            Some("test-quiz".to_string()),
+            "client-overflow".to_string(),
+            false,
+        );
         assert!(result.is_err(), "101st game should fail");
         assert_eq!(result.unwrap_err(), "errors:game.serverBusy");
+    }
+
+    #[test]
+    fn test_create_game_rejects_missing_or_unknown_quiz_id() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
+
+        // Missing quizzId
+        let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), false);
+        assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
+
+        // Empty-string quizzId
+        let result = registry.create_game(
+            "socket-2".to_string(),
+            Some(String::new()),
+            "client-2".to_string(),
+            false,
+        );
+        assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
+
+        // Unknown quizzId (not registered)
+        let result = registry.create_game(
+            "socket-3".to_string(),
+            Some("does-not-exist".to_string()),
+            "client-3".to_string(),
+            false,
+        );
+        assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
+
+        // None of the above should have created a game (parity with Node:
+        // an unresolved quizzId creates NO game, never a default fallback).
+        assert_eq!(registry.game_count(), 0);
+    }
+
+    #[test]
+    fn test_add_player_rejects_duplicate_client_id() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut game = Game::new(
+            "game-1".to_string(),
+            "INV1".to_string(),
+            "manager-1".to_string(),
+            empty_quiz,
+        );
+
+        assert!(game
+            .add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None)
+            .is_ok());
+
+        let result = game.add_player(
+            "socket-2".to_string(),
+            "client-1".to_string(),
+            "AliceAgain".to_string(),
+            None,
+        );
+        assert_eq!(result.unwrap_err(), "errors:game.playerAlreadyConnected");
+        assert_eq!(game.players.len(), 1, "duplicate join must not create a second player record");
+    }
+
+    #[test]
+    fn test_logged_clients_prunes_stale_entries_past_cap() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
+
+        // Seed one entry as if logged in long before the staleness TTL.
+        registry.logged_clients.insert("ancient-client".to_string(), 0);
+        assert!(registry.is_logged("ancient-client"));
+
+        // Push the map past the cap with fresh logins — triggers a prune pass.
+        for i in 0..=LOGGED_CLIENTS_MAX_ENTRIES {
+            registry.login_client(format!("client-{}", i));
+        }
+
+        assert!(!registry.is_logged("ancient-client"), "stale entry should have been pruned");
+        assert!(
+            registry.is_logged(&format!("client-{}", LOGGED_CLIENTS_MAX_ENTRIES)),
+            "fresh entries must survive pruning"
+        );
+    }
+
+    #[test]
+    fn test_evict_stale_games_recovers_poisoned_mutex() {
+        let empty_quiz = Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz.clone()));
+        seed_quiz(&mut registry, "test-quiz", empty_quiz);
+
+        let (game_id, _, _) = registry
+            .create_game(
+                "manager-1".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+            )
+            .unwrap();
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+
+        // Poison the mutex the standard way: panic on another thread while
+        // holding the lock (mirrors a real handler bug mid-lock).
+        let poison_ref = Arc::clone(&game_ref);
+        let _ = std::thread::spawn(move || {
+            let _guard = poison_ref.lock().unwrap();
+            panic!("simulated handler panic while holding the Game lock");
+        })
+        .join();
+        assert!(game_ref.is_poisoned(), "setup: mutex should be poisoned");
+
+        // Mark it stale (via the same poison-recovering access evict_stale_games
+        // itself uses) so eviction actually targets it.
+        {
+            let mut game = GameRegistry::lock_game_recover(&game_ref);
+            game.last_activity_ms = 0;
+        }
+
+        // Must NOT panic — that's the whole point of the fix.
+        registry.evict_stale_games();
+
+        assert!(
+            registry.get_game_by_id(&game_id).is_none(),
+            "poisoned-but-stale game should still be evicted, not leaked forever"
+        );
     }
 
     #[test]
@@ -744,17 +1026,25 @@ mod tests {
             theme_id: None,
         };
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
+        let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz.clone()));
+        seed_quiz(&mut registry, "test-quiz", empty_quiz);
 
         // Create a game
-        let (game_id, _, _) = registry.create_game("manager-1".to_string(), None).unwrap();
+        let (game_id, _, _) = registry
+            .create_game(
+                "manager-1".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+            )
+            .unwrap();
 
         // Add players to the game
         {
             let game_ref = registry.get_game_by_id(&game_id).unwrap();
             let mut game = game_ref.lock().unwrap();
-            game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None);
-            game.add_player("socket-2".to_string(), "client-2".to_string(), "Bob".to_string(), None);
+            game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None).unwrap();
+            game.add_player("socket-2".to_string(), "client-2".to_string(), "Bob".to_string(), None).unwrap();
         }
 
         // Verify 2 players are in the game

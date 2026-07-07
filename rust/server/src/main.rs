@@ -37,12 +37,21 @@ pub(crate) fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
     }
 }
 
-/// Helper: Check if the payload's hostToken matches the game's host_token.
-pub(crate) fn is_game_host(game: &state::Game, payload: &serde_json::Value) -> bool {
+/// Helper: Check if the caller owns this game. Payloads carrying a hostToken
+/// are checked against it (unchanged). Payloads WITHOUT one (e.g. the shipped
+/// client's manager:reconnect, which only sends {gameId}) now fall back to
+/// REAL ownership via the authenticated clientId compared against
+/// `game.manager_client_id` — closing the gap where any client who merely
+/// knew the gameId could pass this check (see auth.rs's former TODO(parity)).
+/// A Game with no recorded manager_client_id (only possible via `Game::new()`
+/// directly, e.g. in a test — `create_game()` always populates it) keeps the
+/// old legacy allow.
+pub(crate) fn is_game_host(game: &state::Game, payload: &serde_json::Value, client_id: &str) -> bool {
     match payload.get("hostToken") {
-        // Absent (or explicit null) → legacy path, still gated by is_logged. Backward-compat
-        // for old clients that don't send a token yet.
-        None | Some(serde_json::Value::Null) => true,
+        None | Some(serde_json::Value::Null) => match &game.manager_client_id {
+            Some(owner_client_id) => owner_client_id == client_id,
+            None => true,
+        },
         // Present → it MUST be a string that matches the game's token. A non-string value
         // (hostToken: 123 / {} / []) DENIES — fail-CLOSED, so the check can't be bypassed by
         // sending a malformed token instead of the right one.
@@ -75,7 +84,7 @@ mod host_token_tests {
         let game = test_game();
         let payload = serde_json::json!({ "hostToken": game.host_token.clone() });
 
-        assert!(is_game_host(&game, &payload));
+        assert!(is_game_host(&game, &payload, "any-client-id"));
     }
 
     #[test]
@@ -83,15 +92,28 @@ mod host_token_tests {
         let game = test_game();
         let payload = serde_json::json!({ "hostToken": "wrong-token" });
 
-        assert!(!is_game_host(&game, &payload));
+        assert!(!is_game_host(&game, &payload, "any-client-id"));
     }
 
     #[test]
-    fn is_game_host_accepts_legacy_payload_without_token() {
+    fn is_game_host_accepts_legacy_payload_without_token_or_recorded_owner() {
+        // No manager_client_id recorded (test_game() uses Game::new() directly —
+        // create_game() always populates it for real games) keeps the old
+        // legacy allow for a tokenless payload.
         let game = test_game();
         let payload = serde_json::json!({ "gameId": game.game_id });
 
-        assert!(is_game_host(&game, &payload));
+        assert!(is_game_host(&game, &payload, "any-client-id"));
+    }
+
+    #[test]
+    fn is_game_host_matches_real_owner_via_client_id_when_no_token_sent() {
+        let mut game = test_game();
+        game.manager_client_id = Some("owner-client".to_string());
+        let payload = serde_json::json!({ "gameId": game.game_id });
+
+        assert!(is_game_host(&game, &payload, "owner-client"));
+        assert!(!is_game_host(&game, &payload, "impostor-client"));
     }
 }
 
@@ -157,9 +179,18 @@ async fn main() {
             let mut interval = tokio::time::interval(Duration::from_secs(60));
             loop {
                 interval.tick().await;
-                {
-                    let mut reg = registry_clone.write().await;
+                let mut reg = registry_clone.write().await;
+                // This reaper is a single unsupervised background task —
+                // nothing awaits/restarts it — so any panic inside
+                // evict_stale_games would otherwise end this loop
+                // PERMANENTLY, leaking every future finished/stale game
+                // forever. evict_stale_games() itself already recovers from a
+                // poisoned Game mutex; this is the second line of defence for
+                // any other panic.
+                if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     reg.evict_stale_games();
+                })) {
+                    tracing::error!("game eviction reaper tick panicked (continuing): {:?}", e);
                 }
             }
         });

@@ -13,10 +13,14 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::game::CREATE, {
         let registry = ctx.registry.clone();
         let socket_id = socket.id.to_string();
+        let client_id = ctx.client_id.clone();
+        let db_pool = ctx.db_pool.clone();
 
         move |socket: SocketRef, Data::<String>(quizz_id)| {
             let registry = registry.clone();
             let socket_id = socket_id.clone();
+            let client_id = client_id.clone();
+            let db_pool = db_pool.clone();
             let quiz_id = if quizz_id.is_empty() {
                 None
             } else {
@@ -24,9 +28,17 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
             };
 
             tokio::spawn(async move {
+                // Snapshot the current (server-global) low-latency config onto
+                // the new Game at creation time, so a later per-ping gate
+                // (separate WP) can check game.low_latency synchronously
+                // instead of an async DB round-trip on every clock:ping.
+                let (_, low_latency_enabled, _, _, _) = crate::db::get_game_config(&db_pool).await;
+                let low_latency = low_latency_enabled.unwrap_or(false);
+
                 let mut registry = registry.write().await;
-                // C3 — active-game cap
-                match registry.create_game(socket_id.clone(), quiz_id) {
+                // C3 — active-game cap; also rejects an unresolved quizzId
+                // (parity with Node — see create_game's own doc comment).
+                match registry.create_game(socket_id.clone(), quiz_id, client_id.clone(), low_latency) {
                     Ok((game_id, invite_code, host_token)) => {
                         info!(
                             "Game created: gameId={}, inviteCode={}",

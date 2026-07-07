@@ -39,7 +39,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                         if let Some(game_ref) = game_opt {
                             {
                                 let game = game_ref.lock().unwrap();
-                                if !is_game_host(&game, &payload) {
+                                if !is_game_host(&game, &payload, &ctx.client_id) {
                                     socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                     return;
                                 }
@@ -113,7 +113,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload) {
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
@@ -151,12 +151,17 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                             let bot_socket_id = format!("bot-{}", uuid::Uuid::new_v4());
                             let bot_client_id = format!("bot-{}", uuid::Uuid::new_v4());
 
-                            let player = game.add_player(
+                            // Fresh v4 UUID client_id, so a dup-guard rejection
+                            // here is not a real-world case — skip defensively.
+                            let player = match game.add_player(
                                 bot_socket_id.clone(),
                                 bot_client_id,
                                 bot_name,
                                 None,
-                            );
+                            ) {
+                                Ok(p) => p,
+                                Err(_) => continue,
+                            };
 
                             // Mark as bot
                             if !game.players.is_empty() {
