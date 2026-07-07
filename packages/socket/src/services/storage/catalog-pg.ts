@@ -84,6 +84,13 @@ export const upsertCatalogEntryPg = async (
   data: { question: CatalogEntry["question"]; tags?: string[]; source?: string; addedAt: string },
 ): Promise<{ id: string }> => {
   try {
+    // Catalog source must be one of: upload, ai, submission (DB CHECK constraint).
+    // If missing or invalid, default to 'upload'.
+    const validSource =
+      data.source && ["upload", "ai", "submission"].includes(data.source)
+        ? data.source
+        : "upload"
+
     await getPool().query(
       `INSERT INTO catalog_entries (id, question, tags, source, added_at)
        VALUES ($1, $2, $3, $4, $5)
@@ -97,7 +104,7 @@ export const upsertCatalogEntryPg = async (
         id,
         JSON.stringify(data.question),
         data.tags ? JSON.stringify(data.tags) : null,
-        data.source ?? "manual",
+        validSource,
         data.addedAt,
       ],
     )
