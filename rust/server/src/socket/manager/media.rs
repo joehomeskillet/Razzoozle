@@ -14,6 +14,7 @@ use lazy_static::lazy_static;
 
 lazy_static! {
     static ref DATA_URL_REGEX: Regex = Regex::new(r"^data:([^;,]+);base64,(.+)$").unwrap();
+    static ref DATA_URL_VALIDATOR_REGEX: Regex = Regex::new(r"^data:(?:image|audio)\/").unwrap();
 }
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
@@ -38,7 +39,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &())
                         .ok();
                     return;
                 }
@@ -67,33 +68,19 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &())
                         .ok();
                     return;
                 }
 
-                // Validate request format
-                let filename = match payload.get("filename").and_then(|v| v.as_str()) {
-                    Some(f) if !f.is_empty() && f.len() <= 200 => f,
-                    _ => {
-                        socket
-                            .emit(constants::media::ERROR, "errors:media.invalidDataUrl")
-                            .ok();
+                // Validate payload (Zod-like validator). Returns first error message.
+                let (filename, data_url, category) = match validate_upload_payload(&payload) {
+                    Ok(data) => data,
+                    Err(error_msg) => {
+                        socket.emit(constants::media::ERROR, &error_msg).ok();
                         return;
                     }
                 };
-
-                let data_url = match payload.get("dataUrl").and_then(|v| v.as_str()) {
-                    Some(d) if d.starts_with("data:") => d,
-                    _ => {
-                        socket
-                            .emit(constants::media::ERROR, "errors:media.invalidDataUrl")
-                            .ok();
-                        return;
-                    }
-                };
-
-                let category = payload.get("category").and_then(|v| v.as_str());
 
                 // Decode base64 data URL
                 let (mime, buffer) = match decode_data_url(data_url) {
@@ -211,18 +198,16 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_logged {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::manager::UNAUTHORIZED, &())
                         .ok();
                     return;
                 }
 
-                // Extract and validate ID
-                let id = match payload.get("id").and_then(|v| v.as_str()) {
-                    Some(id_str) if !id_str.is_empty() => id_str,
-                    _ => {
-                        socket
-                            .emit(constants::media::ERROR, "errors:media.invalidId")
-                            .ok();
+                // Validate payload (Zod-like validator). Returns first error message or the ID.
+                let id = match validate_delete_payload(&payload) {
+                    Ok(id) => id,
+                    Err(error_msg) => {
+                        socket.emit(constants::media::ERROR, &error_msg).ok();
                         return;
                     }
                 };
@@ -233,67 +218,104 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Get media list to find the entry (so we know the filename and category for disk deletion)
-                let media_list = db::get_media_list(&ctx.db_pool).await;
-                let entry = media_list.iter().find(|item| {
-                    item.get("id").and_then(|v| v.as_str()) == Some(id)
-                });
-
-                match entry {
+                // Get media asset by ID from database
+                let media_entry = match get_media_asset_by_id(&ctx.db_pool, id).await {
+                    Some(entry) => entry,
                     None => {
                         socket
                             .emit(constants::media::ERROR, "errors:media.notFound")
                             .ok();
                         return;
                     }
-                    Some(media_entry) => {
-                        // Extract category and filename for disk deletion
-                        let category = media_entry
-                            .get("category")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("questions");
-                        let filename = media_entry
-                            .get("filename")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("");
+                };
 
-                        // Delete from disk (spawn_blocking)
-                        let category_owned = category.to_string();
-                        let filename_owned = filename.to_string();
-                        let disk_result =
-                            tokio::task::spawn_blocking(move || {
-                                delete_media_file(&category_owned, &filename_owned)
-                            })
-                            .await;
+                // Extract category and filename for disk deletion
+                let category = media_entry
+                    .get("category")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("questions");
+                let filename = media_entry
+                    .get("filename")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
 
-                        if let Ok(Err(e)) = disk_result {
-                            socket.emit(constants::media::ERROR, &e).ok();
-                            return;
-                        }
+                // Delete from disk (spawn_blocking)
+                let category_owned = category.to_string();
+                let filename_owned = filename.to_string();
+                let disk_result =
+                    tokio::task::spawn_blocking(move || {
+                        delete_media_file(&category_owned, &filename_owned)
+                    })
+                    .await;
 
-                        if let Err(_) = disk_result {
-                            socket
-                                .emit(constants::media::ERROR, "errors:media.saveFailed")
-                                .ok();
-                            return;
-                        }
-
-                        // Delete from database
-                        if !db::delete_media_asset(&ctx.db_pool, id).await {
-                            socket
-                                .emit(constants::media::ERROR, "errors:media.notFound")
-                                .ok();
-                            return;
-                        }
-
-                        // Emit updated list
-                        let media_list = db::get_media_list(&ctx.db_pool).await;
-                        socket.emit(constants::media::DATA, &media_list).ok();
-                    }
+                if let Ok(Err(e)) = disk_result {
+                    socket.emit(constants::media::ERROR, &e).ok();
+                    return;
                 }
+
+                if let Err(_) = disk_result {
+                    socket
+                        .emit(constants::media::ERROR, "errors:media.saveFailed")
+                        .ok();
+                    return;
+                }
+
+                // Delete from database
+                if !db::delete_media_asset(&ctx.db_pool, id).await {
+                    socket
+                        .emit(constants::media::ERROR, "errors:media.notFound")
+                        .ok();
+                    return;
+                }
+
+                // Emit updated list
+                let media_list = db::get_media_list(&ctx.db_pool).await;
+                socket.emit(constants::media::DATA, &media_list).ok();
             });
         }
     });
+}
+
+/// Validate upload payload and return (filename, dataUrl, category) or error message.
+/// Mimics Zod validation: returns first error message if validation fails.
+fn validate_upload_payload(payload: &serde_json::Value) -> Result<(&str, &str, Option<&str>), String> {
+    // Validate filename: required, string, 1-200 chars
+    let filename = match payload.get("filename").and_then(|v| v.as_str()) {
+        Some(f) if !f.is_empty() && f.len() <= 200 => f,
+        Some(_) => return Err("errors:media.invalidDataUrl".to_string()),
+        None => return Err("errors:media.invalidDataUrl".to_string()),
+    };
+
+    // Validate dataUrl: required, string, regex /^data:(?:image|audio)\/
+    let data_url = match payload.get("dataUrl").and_then(|v| v.as_str()) {
+        Some(d) if DATA_URL_VALIDATOR_REGEX.is_match(d) => d,
+        Some(_) => return Err("errors:media.invalidDataUrl".to_string()),
+        None => return Err("errors:media.invalidDataUrl".to_string()),
+    };
+
+    // Validate category: optional, enum of valid categories
+    let category = payload
+        .get("category")
+        .and_then(|v| v.as_str())
+        .map(|c| {
+            // Validate against allowed categories: backgrounds, questions, generated, avatars, audio
+            match c {
+                "backgrounds" | "questions" | "generated" | "avatars" | "audio" => Ok(c),
+                _ => Err("errors:media.invalidDataUrl".to_string()),
+            }
+        })
+        .transpose()?;
+
+    Ok((filename, data_url, category))
+}
+
+/// Validate delete payload and return ID or error message.
+fn validate_delete_payload(payload: &serde_json::Value) -> Result<&str, String> {
+    // Validate id: required, string, min 1 char
+    match payload.get("id").and_then(|v| v.as_str()) {
+        Some(id) if !id.is_empty() => Ok(id),
+        _ => Err("errors:media.invalidId".to_string()),
+    }
 }
 
 /// Decode a data URL and extract MIME type and base64-decoded buffer.
@@ -477,4 +499,43 @@ fn delete_media_file(category: &str, filename: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Query database for a media asset by ID.
+/// Returns the full media asset object or None if not found.
+async fn get_media_asset_by_id(
+    pool: &Option<sqlx::PgPool>,
+    id: &str,
+) -> Option<serde_json::Value> {
+    let pool = pool.as_ref()?;
+
+    match sqlx::query_as::<_, (String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)>(
+        "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at FROM media_assets WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(Some((id, filename, url, size, media_type, category, source, width, height, uploaded_at))) => {
+            let uploaded_at_rfc3339 = uploaded_at.to_rfc3339();
+            let mut obj = serde_json::json!({
+                "id": id,
+                "filename": filename,
+                "url": url,
+                "size": size,
+                "type": media_type,
+                "category": category,
+                "source": source,
+                "uploadedAt": uploaded_at_rfc3339,
+            });
+            if let Some(w) = width {
+                obj["width"] = serde_json::json!(w);
+            }
+            if let Some(h) = height {
+                obj["height"] = serde_json::json!(h);
+            }
+            Some(obj)
+        }
+        _ => None,
+    }
 }
