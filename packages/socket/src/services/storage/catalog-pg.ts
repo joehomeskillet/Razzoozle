@@ -44,6 +44,17 @@ interface CatalogRow {
   added_at: string | null
 }
 
+// Normalize Date to ISO string (node-postgres parses timestamptz as Date).
+const toIsoString = (value: unknown): string | null => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+  if (typeof value === "string") {
+    return value
+  }
+  return null
+}
+
 // Convert DB row to CatalogEntry, validating against the schema.
 const rowToCatalogEntry = (row: CatalogRow): CatalogEntry | null => {
   const candidate = {
@@ -51,7 +62,7 @@ const rowToCatalogEntry = (row: CatalogRow): CatalogEntry | null => {
     question: row.question,
     tags: row.tags,
     source: row.source,
-    addedAt: row.added_at,
+    addedAt: toIsoString(row.added_at),
   }
   const result = catalogEntryValidator.safeParse(candidate)
 

@@ -43,11 +43,22 @@ interface ResultRow {
   players: unknown
 }
 
+// Normalize Date to ISO string (node-postgres parses timestamptz as Date).
+const toIsoString = (value: unknown): string => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+  if (typeof value === "string") {
+    return value
+  }
+  return new Date().toISOString()
+}
+
 const rowToResult = (row: ResultRow): GameResult | null => {
   const candidate = {
     id: row.id,
     subject: row.subject ?? "",
-    date: row.date ?? new Date().toISOString(),
+    date: toIsoString(row.date),
     players: Array.isArray(row.players) ? row.players : [],
     questions: [],
   }

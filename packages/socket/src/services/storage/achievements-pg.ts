@@ -72,12 +72,20 @@ export const listAllAchievementsPg = async (): Promise<AchievementsConfig> => {
       `SELECT id, enabled, name, description, threshold, bonus FROM achievements_config ORDER BY id`,
     )
     const config: AchievementsConfig = {}
+    let skipped = 0
     for (const row of result.rows) {
       const [id, override] = rowToAchievementConfig(row as AchievementRow)
       if (Object.keys(override).length > 0) {
         config[id] = override
+      } else {
+        skipped++
       }
     }
+    
+    if (result.rows.length > 0 && skipped === result.rows.length) {
+      console.error(`achievements-pg: all ${result.rows.length} rows have empty overrides (all defaults)`)
+    }
+    
     return config
   } catch (error) {
     console.error("achievements-pg.listAllAchievementsPg failed", error)
