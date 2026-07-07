@@ -22,6 +22,8 @@ lazy_static! {
     static ref THEME_PATH_REGEX: Regex = Regex::new(r"^/theme/[\w.-]+$").unwrap();
     // Segment pattern for media paths: [A-Za-z0-9_.-]+
     static ref SEGMENT_REGEX: Regex = Regex::new(r"^[A-Za-z0-9_.-]+$").unwrap();
+    // Data URL pattern: data:<mime>;base64,<base64-data>
+    static ref DATA_URL_REGEX: Regex = Regex::new(r"^data:([^;,]+);base64,(.+)$").unwrap();
 }
 
 const THEME_REVISIONS_MAX: usize = 10;
@@ -389,31 +391,37 @@ pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Resul
     Ok(payload.clone())
 }
 
-/// Decode a data URL and return MIME type + buffer
+/// Decode a data URL with required ;base64, marker and return MIME type + buffer
 fn decode_data_url(data_url: &str, expected_mimes: &[&str]) -> Result<(String, Vec<u8>), String> {
-    let prefix_end = data_url.find(',')
+    let caps = DATA_URL_REGEX.captures(data_url)
         .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
 
-    let (header, data_part) = data_url.split_at(prefix_end);
-    let data_part = &data_part[1..];
-
-    let mime_part = header.strip_prefix("data:")
+    let mime_type = caps.get(1)
+        .map(|m| m.as_str())
         .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
-
-    let mime_type = if let Some(pos) = mime_part.find(';') {
-        &mime_part[..pos]
-    } else {
-        mime_part
-    };
 
     if !expected_mimes.contains(&mime_type) {
         return Err("errors:theme.invalidImage".to_string());
     }
 
+    let data_part = caps.get(2)
+        .map(|m| m.as_str())
+        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+
     let buffer = decode_base64(data_part)
         .map_err(|_| "errors:theme.invalidImage".to_string())?;
 
     Ok((mime_type.to_string(), buffer))
+}
+
+/// Map MIME type to file extension for background images
+fn extension_for_image_mime(mime: &str) -> &'static str {
+    match mime {
+        "image/png" => "png",
+        "image/jpeg" => "jpg",
+        "image/webp" => "webp",
+        _ => "png",
+    }
 }
 
 /// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking)
@@ -423,7 +431,7 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
         return Err("errors:theme.invalidSlot".to_string());
     }
 
-    let (_, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"])?;
+    let (mime, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"])?;
 
     if buffer.len() > BACKGROUND_SIZE_CAP {
         return Err("errors:theme.imageTooLarge".to_string());
@@ -448,7 +456,9 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
         }
 
         let timestamp = Utc::now().timestamp_millis();
-        let filename = format!("{}-{}.webp", slot_owned, timestamp);
+        // parity: no WebP transcode in Rust (no image lib) — original bytes + honest extension; transcode = Wave 4b (media-wr ADR)
+        let ext = extension_for_image_mime(&mime);
+        let filename = format!("{}-{}.{}", slot_owned, timestamp, ext);
         let filepath = backgrounds_dir.join(&filename);
 
         fs::write(&filepath, &buffer)
