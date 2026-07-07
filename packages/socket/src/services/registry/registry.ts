@@ -365,13 +365,24 @@ class Registry {
     return resolve(Registry.snapshotDir(), "registry.json")
   }
 
+  // Mark the in-memory game state stale so the next periodic saveSnapshot()
+  // actually persists it. Registry-level mutations (addGame/removeGame/...)
+  // already set this; round-level mutation paths (e.g. round-manager.ts, once
+  // a question's results are finalized) call this too so the snapshot doesn't
+  // go stale for the lifetime of a long-running game.
+  markDirty(): void {
+    this.dirty = true
+  }
+
   // Atomically write the current game state. Writes to a .tmp sibling then
-  // fs.renameSync (atomic on the same filesystem) so a crash mid-write can never
-  // leave a half-written, unparseable snapshot. Wrapped in try/catch: a save
-  // failure logs and continues — it must NEVER throw into the periodic task or
-  // a signal handler.
-  saveSnapshot(): void {
-    if (!this.dirty && this.games.length === 0) {
+  // renames it (atomic on the same filesystem) so a crash mid-write can never
+  // leave a half-written, unparseable snapshot. The write itself uses the
+  // async fs API so a full-state snapshot (up to 200 players' avatars +
+  // questionsHistory) never blocks the event loop on the 5s periodic tick.
+  // Wrapped in try/catch: a save failure logs and continues — it must NEVER
+  // throw into the periodic task or a signal handler.
+  async saveSnapshot(): Promise<void> {
+    if (!this.dirty) {
       return
     }
     try {
@@ -397,8 +408,8 @@ class Registry {
       const file = Registry.snapshotFile()
       const tmp = `${file}.tmp`
 
-      fs.writeFileSync(tmp, JSON.stringify(payload))
-      fs.renameSync(tmp, file)
+      await fs.promises.writeFile(tmp, JSON.stringify(payload))
+      await fs.promises.rename(tmp, file)
       this.dirty = false
     } catch (error) {
       // Never propagate — a failed snapshot must not disrupt live gameplay.
@@ -488,7 +499,7 @@ class Registry {
     }
 
     this.snapshotInterval = setInterval(() => {
-      this.saveSnapshot()
+      void this.saveSnapshot()
     }, intervalMs)
 
     console.log("Snapshot task started")
