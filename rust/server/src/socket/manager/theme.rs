@@ -18,6 +18,10 @@ use chrono::Utc;
 lazy_static! {
     // Hex color pattern: #xxx or #xxxxxx (3 or 6 hex digits)
     static ref HEX_COLOR_REGEX: Regex = Regex::new(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$").unwrap();
+    // Theme asset path pattern: /theme/{name}
+    static ref THEME_PATH_REGEX: Regex = Regex::new(r"^/theme/[\w.-]+$").unwrap();
+    // Segment pattern for media paths: [A-Za-z0-9_.-]+
+    static ref SEGMENT_REGEX: Regex = Regex::new(r"^[A-Za-z0-9_.-]+$").unwrap();
 }
 
 const THEME_REVISIONS_MAX: usize = 10;
@@ -31,6 +35,24 @@ fn is_valid_hex_color(color: &str) -> bool {
     HEX_COLOR_REGEX.is_match(color)
 }
 
+/// Validate asset path: must match /theme/{name} or /media/{segments}
+/// Each segment must be non-empty, not ".", not "..", and match [A-Za-z0-9_.-]+
+fn is_safe_asset_path(value: &str) -> bool {
+    // Check /theme/{name} pattern
+    if THEME_PATH_REGEX.is_match(value) {
+        return true;
+    }
+
+    // Check /media/{segments} pattern
+    if !value.starts_with("/media/") {
+        return false;
+    }
+
+    value["/media/".len()..].split('/').all(|segment| {
+        !segment.is_empty() && segment != "." && segment != ".." && SEGMENT_REGEX.is_match(segment)
+    })
+}
+
 /// Validate the theme payload structure and field types
 fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
     if !payload.is_object() {
@@ -39,7 +61,7 @@ fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
 
     let obj = payload.as_object().unwrap();
 
-    // Validate style: must be "flat" or "glass"
+    // Validate style: must be "flat" or "glass" (optional, defaults to "flat")
     if let Some(style) = obj.get("style") {
         if let Some(s) = style.as_str() {
             if s != "flat" && s != "glass" {
@@ -48,8 +70,6 @@ fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
         } else {
             return Err("errors:theme.invalidStyle".to_string());
         }
-    } else {
-        return Err("errors:theme.missingStyle".to_string());
     }
 
     // Validate colorPrimary: hex color
@@ -95,7 +115,7 @@ fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
             if arr.len() != 4 {
                 return Err("errors:theme.invalidAnswerColors".to_string());
             }
-            for (i, color) in arr.iter().enumerate() {
+            for (_i, color) in arr.iter().enumerate() {
                 if let Some(c) = color.as_str() {
                     if !is_valid_hex_color(c) {
                         return Err("errors:theme.invalidColor".to_string());
@@ -167,9 +187,13 @@ fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
         }
     }
 
-    // Validate logo: string or null (optional)
+    // Validate logo: string or null (optional), must be safe asset path if string
     if let Some(logo) = obj.get("logo") {
-        if !logo.is_null() && !logo.is_string() {
+        if let Some(logo_str) = logo.as_str() {
+            if !is_safe_asset_path(logo_str) {
+                return Err("errors:theme.invalidAsset".to_string());
+            }
+        } else if !logo.is_null() {
             return Err("errors:theme.invalidLogo".to_string());
         }
     }
@@ -191,7 +215,11 @@ fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
                     continue;
                 }
                 if key == "auth" || key == "managerGame" || key == "playerGame" {
-                    if !value.is_null() && !value.is_string() {
+                    if let Some(asset_str) = value.as_str() {
+                        if !is_safe_asset_path(asset_str) {
+                            return Err("errors:theme.invalidAsset".to_string());
+                        }
+                    } else if !value.is_null() {
                         return Err("errors:theme.invalidAsset".to_string());
                     }
                 }
