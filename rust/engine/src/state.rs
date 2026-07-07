@@ -517,6 +517,31 @@ mod tests {
         ));
     }
 
+    // Race-safety net for R3/R4 (rust/server socket::lifecycle): the server's
+    // per-question cooldown-timeout, manager:skipQuestion/revealAnswer, and the
+    // all-answered path can all independently decide "reveal now" and race each
+    // other. They all funnel into engine.reveal() — this phase guard is what
+    // makes AT MOST ONE of them actually score/transition; every other racer's
+    // call is a no-op Err, never a double-reveal.
+    #[test]
+    fn reveal_twice_is_rejected_once_already_revealed() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(quiz, vec![make_player("player1", "Alice")]);
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        state.open_answers().unwrap();
+        state.record_answer("player1", Some(1), None, None).unwrap();
+
+        assert!(state.reveal(ScoringMode::Speed).is_ok());
+        // A second "reveal now" racing in (e.g. all-answered firing just after a
+        // manager:skipQuestion already resolved it) must be rejected, not
+        // silently re-score the round.
+        assert!(matches!(
+            state.reveal(ScoringMode::Speed),
+            Err(GameError::InvalidTransition { .. })
+        ));
+    }
+
     #[test]
     fn practice_question_skips_first_correct_bonus() {
         let mut quiz = fixture_quizz();

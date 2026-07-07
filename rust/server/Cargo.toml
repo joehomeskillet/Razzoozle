@@ -22,5 +22,12 @@ razzoozle-protocol = { path = "../protocol" }
 razzoozle-engine = { path = "../engine" }
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chrono"] }
 
+# test-util only actually matters for `cargo test` (paused-clock timer tests in
+# socket/cooldown.rs), but Cargo unifies feature flags for a dep across the
+# whole build — declaring it here (rather than [dependencies]) keeps it a
+# dev-only addition that never ships in a release binary.
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util"] }
+
 [profile.release]
 opt-level = 3

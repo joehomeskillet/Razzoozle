@@ -19,8 +19,10 @@ pub struct HandlerCtx {
 
 pub mod ai;
 pub mod clock_ping;
+pub mod cooldown;
 pub mod display;
 pub mod game;
+pub mod lifecycle;
 pub mod manager;
 pub mod metrics;
 pub mod results;

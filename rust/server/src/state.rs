@@ -184,6 +184,13 @@ pub struct Game {
     pub engine: GameState,
     // Last activity timestamp (ms since UNIX epoch)
     pub last_activity_ms: u64,
+    // Question-lifecycle abort signal (R3/R5): whichever abortable wait the
+    // game-lifecycle task (socket::lifecycle::run_game_lifecycle) is currently
+    // in — the per-question SELECT_ANSWER cooldown, the post-reveal dwell, or
+    // the post-leaderboard dwell — is interrupted by notifying this handle.
+    // Re-armed (replaced with a fresh Notify) each time a new abortable wait
+    // starts; `None` while no abortable wait is live.
+    pub cooldown_abort: Option<Arc<tokio::sync::Notify>>,
 }
 
 impl Game {
@@ -209,6 +216,23 @@ impl Game {
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),
             last_activity_ms: now,
+            cooldown_abort: None,
+        }
+    }
+
+    /// Arm a fresh abort signal for a new abortable wait, returning the handle
+    /// the waiting task should select on. Replaces any prior (stale) handle.
+    pub fn arm_abort(&mut self) -> Arc<tokio::sync::Notify> {
+        let notify = Arc::new(tokio::sync::Notify::new());
+        self.cooldown_abort = Some(notify.clone());
+        notify
+    }
+
+    /// Wake whatever abortable wait is currently live (skip / reveal-now /
+    /// all-answered / a manager live-control). No-op if nothing is waiting.
+    pub fn signal_abort(&self) {
+        if let Some(notify) = &self.cooldown_abort {
+            notify.notify_one();
         }
     }
 

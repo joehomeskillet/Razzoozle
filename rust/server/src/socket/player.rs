@@ -1,6 +1,5 @@
 //! Player event handlers: JOIN, LOGIN, SELECTED_ANSWER, LEAVE, SELECT_TEAM, SET_AVATAR, RECONNECT
 use super::HandlerCtx;
-use super::reveal_helpers;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::{
@@ -294,20 +293,14 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                             };
 
                             if should_auto_advance {
-                                let game_id_clone = game_id.clone();
-                                let io_handle_clone = io_handle.clone();
-                                let game_ref_clone = game_ref.clone();
-                                let registry_clone = registry.clone();
-                                
-                                tokio::spawn(async move {
-                                    reveal_helpers::perform_reveal_and_broadcast(
-                                        game_ref_clone,
-                                        game_id_clone,
-                                        io_handle_clone,
-                                        registry_clone,
-                                        true, // is_auto_advance
-                                    ).await;
-                                });
+                                // Don't reveal directly here — signal the game-lifecycle
+                                // task's per-question cooldown ticker (socket::lifecycle::
+                                // run_game_lifecycle) to wake immediately instead. It is the
+                                // ONE place that calls engine.reveal()/perform_reveal_and_
+                                // broadcast, so a natural timeout racing this all-answered
+                                // signal can never double-reveal (engine.reveal() is also
+                                // phase-guarded as a second line of defence).
+                                super::lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                             }
                         }
                     }
