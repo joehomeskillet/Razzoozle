@@ -41,6 +41,7 @@ import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-t
 import { normalizeText } from "@razzoozle/socket/services/game/text-match"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
+import Registry from "@razzoozle/socket/services/registry"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
 import { nanoid } from "nanoid"
@@ -149,6 +150,14 @@ export class RoundManager {
   // → recap screen, second call → real leaderboard). Reset each round in
   // showResults().
   private roundRecapShown = false
+  // True once showLeaderboard() has run the final-round finish branch
+  // (onGameFinished + FINISHED emit) for THIS RoundManager instance. Guards
+  // that branch against a double SHOW_LEADERBOARD race re-running it (a
+  // duplicate saved result + a second FINISHED emit) — deliberately separate
+  // from `started` (which many call sites/tests flip independently) so this
+  // idempotency check only ever depends on whether the finish branch itself
+  // already ran.
+  private gameFinished = false
   private questionsHistory: QuestionResult[] = []
   private autoMode = false
   // Live setTimeout handle for the auto-advance chain. Stays a class field
@@ -167,6 +176,14 @@ export class RoundManager {
   // Sim mode: true while the SELECT_ANSWER window is open. Gates Game.addBots
   // (no mid-window bot injection) via isAnswerWindowOpen().
   private answerWindowOpen = false
+  // Transition lock: true from the moment a question-advance is committed
+  // (nextQuestion()/auto-mode's incrementCurrentQuestion) until the new
+  // question has been broadcast and its answer window opened. Guards against
+  // a manual NEXT_QUESTION racing an auto-mode advance (or two overlapping
+  // advances) double-incrementing currentQuestion / double-firing
+  // SHOW_QUESTION. Cleared defensively on every early-return path inside
+  // newQuestion() too, so a mid-transition game-stop can never leave it stuck.
+  private transitioning = false
   // Permutation of answer indices for the current question when randomizeAnswers
   // is enabled. Computed once when the question opens and reused for reconnects.
   // Undefined when not randomizing or for slider/type-answer questions.
@@ -316,6 +333,11 @@ export class RoundManager {
       hasNextQuestion: () =>
         Boolean(this.opts.quizz.questions[this.currentQuestion + 1]),
       incrementCurrentQuestion: () => {
+        // A manual NEXT_QUESTION already claimed the transition — skip the
+        // auto-mode increment so currentQuestion can't double-advance.
+        if (this.transitioning) {
+          return
+        }
         this.currentQuestion += 1
       },
       newQuestion: () => {
@@ -513,14 +535,29 @@ export class RoundManager {
   }
 
   async newQuestion(): Promise<void> {
+    // Transition lock: a second concurrent advance (manual NEXT_QUESTION
+    // racing auto-mode, or two overlapping auto-mode ticks) is ignored rather
+    // than double-firing SHOW_QUESTION / double-incrementing currentQuestion.
+    if (this.transitioning) {
+      return
+    }
+
     if (!this.started) {
       return
     }
+
+    this.transitioning = true
 
     this.clearAuto()
     // Leaving the result screen for a fresh question — drop its FIX 8/9 state.
     this.resultScreenActive = false
     this.lastResultPayloads.clear()
+    // Defensive re-clear: showResults() already empties playersAnswers, but a
+    // stale tap for the JUST-FINISHED question can still land in the gap
+    // between that reset and this new question's SELECT_ANSWER (re)opening
+    // the window. Clearing again here stops it from surviving into (and
+    // inflating the all-answered count of) the question about to start.
+    this.playersAnswers = []
     await this.waitWhilePaused()
 
     const question = this.opts.quizz.questions[this.currentQuestion]
@@ -541,6 +578,8 @@ export class RoundManager {
     await this.waitWhilePaused()
 
     if (!this.started) {
+      this.transitioning = false
+
       return
     }
     this.pauseState = null
@@ -584,6 +623,8 @@ export class RoundManager {
     emitLifecycle("onQuestionShown", { gameId: this.opts.gameId, status: "SHOW_QUESTION", data: {} })
 
     if (!this.started) {
+      this.transitioning = false
+
       return
     }
 
@@ -648,6 +689,9 @@ export class RoundManager {
     // Sim mode: the answer window is now open — let the BotManager schedule its
     // per-bot answers against the real selectAnswer path.
     this.answerWindowOpen = true
+    // The question is now fully shown — release the transition lock so the
+    // NEXT advance (manual or auto-mode) is no longer blocked.
+    this.transitioning = false
     this.opts.onQuestionOpen?.(question)
 
     await this.opts.cooldown.start(question.time)
@@ -1047,6 +1091,11 @@ export class RoundManager {
     this.answerCountThrottle.cancel()
     this.answerDeadlineAtServerMs = 0
 
+    // The round's STABLE, snapshotted state (leaderboard/questionsHistory/
+    // scores) just changed — mark the crash-recovery snapshot stale so the
+    // next periodic saveSnapshot() actually persists this round's outcome.
+    Registry.getInstance().markDirty()
+
     if (this.autoMode) {
       this.scheduleAuto()
     }
@@ -1301,6 +1350,12 @@ export class RoundManager {
     }
 
     if (!this.opts.quizz.questions[this.currentQuestion + 1]) {
+      return
+    }
+
+    // A transition is already in flight (auto-mode advancing at the same
+    // moment) — ignore this manual advance rather than double-incrementing.
+    if (this.transitioning) {
       return
     }
 
@@ -1689,6 +1744,16 @@ export class RoundManager {
   }
 
   showLeaderboard(): void {
+    // Entry guard: the final round's branch below sets gameFinished right
+    // before saving the result + emitting FINISHED. A second call that races
+    // in afterwards (double SHOW_LEADERBOARD) must be a no-op instead of
+    // re-running onGameFinished (duplicate result file + a second FINISHED
+    // emit). Non-final rounds never set gameFinished, so this guard never
+    // affects the round-recap-diversion behavior below.
+    if (this.gameFinished) {
+      return
+    }
+
     // First hop off the answer-reveal screen: divert to the per-round recap
     // screen (its OWN full-screen page) when there is a non-empty recap that
     // has not been shown yet. NOT on the last round — that goes straight to
@@ -1715,6 +1780,7 @@ export class RoundManager {
 
     if (isLastRound) {
       this.started = false
+      this.gameFinished = true
 
       // Attach FULL-GAME achievements onto the podium slice so the FINISHED
       // top[] can render medals. We STOP stripping achievements here: read each

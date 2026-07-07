@@ -43,6 +43,43 @@ export function computeAchievementAwards(
   // surviving across rounds via ctx.gameCounters (+ snapshot/restore).
   const achievementsByClient = new Map<string, string[]>()
 
+  // underdog precompute (was O(n^2)): for each rank, the max aPointsBefore
+  // among every player with a STRICTLY LOWER aPointsAfter — i.e. every valid
+  // "beat someone who was way ahead" candidate for that rank. sortedPlayers is
+  // already sorted descending by aPointsAfter with a stable sort, so exact
+  // ties land in a contiguous run; walking it once backward — folding each
+  // run's own aPointsBefore into the running max only AFTER assigning it,
+  // never to itself — reproduces the original `sortedPlayers.some(...)` scan
+  // exactly (including ties never "beating" each other) in a single O(n) pass.
+  const maxBeforeStrictlyBelow: number[] = new Array(sortedPlayers.length)
+  let underdogRunningMax = -Infinity
+  let underdogIndex = sortedPlayers.length - 1
+
+  while (underdogIndex >= 0) {
+    const tiedValue = sortedPlayers[underdogIndex].aPointsAfter
+    let runStart = underdogIndex
+
+    while (
+      runStart > 0 &&
+      sortedPlayers[runStart - 1].aPointsAfter === tiedValue
+    ) {
+      runStart -= 1
+    }
+
+    for (let k = runStart; k <= underdogIndex; k += 1) {
+      maxBeforeStrictlyBelow[k] = underdogRunningMax
+    }
+
+    for (let k = runStart; k <= underdogIndex; k += 1) {
+      underdogRunningMax = Math.max(
+        underdogRunningMax,
+        sortedPlayers[k].aPointsBefore,
+      )
+    }
+
+    underdogIndex = runStart - 1
+  }
+
   sortedPlayers.forEach((row, index) => {
     // Bots never earn achievements and must not mutate the persistent
     // gameCounters (per the sim-mode contract: bots are excluded from
@@ -187,12 +224,7 @@ export function computeAchievementAwards(
       )
       award(
         "underdog",
-        sortedPlayers.some(
-          (other) =>
-            other.clientId !== row.clientId &&
-            other.aPointsBefore - row.aPointsBefore > underdogMinAhead &&
-            row.aPointsAfter > other.aPointsAfter,
-        ),
+        maxBeforeStrictlyBelow[index] - row.aPointsBefore > underdogMinAhead,
       )
 
       // ── Diamant ───────────────────────────────────────────────────────────
