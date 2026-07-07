@@ -328,6 +328,16 @@ impl GameState {
         &self.quiz.questions[self.current_question_index]
     }
 
+    /// Read-only ShowQuestionData for the CURRENT question, without attempting
+    /// the ShowStart/ShowLeaderboard -> ShowQuestion transition. Callers use this
+    /// when the engine has ALREADY moved into ShowQuestion for this question
+    /// (e.g. via `next_or_finish()`, which performs that transition itself) and
+    /// merely need the announcement payload again — re-calling `show_question()`
+    /// in that situation would be rejected by its own phase guard.
+    pub fn current_show_question_data(&self) -> ShowQuestionData {
+        self.build_show_question_data()
+    }
+
     pub fn result_for(&self, client_id: &str) -> Option<&RoundResult> {
         self.last_round_results
             .iter()
