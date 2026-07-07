@@ -65,7 +65,7 @@ export const saveAchievementsConfig = (
   const current = getAchievementsConfig()
   const merged: AchievementsConfig = { ...current }
 
-  for (const [id, override] of Object.entries(patch)) {
+  for (const [id, override] of Object.entries(patch) as [string, AchievementsConfig[string]][]) {
     merged[id] = { ...(current[id] ?? {}), ...override }
   }
 
@@ -82,7 +82,7 @@ export const saveAchievementsConfig = (
   )
 
   if (isDbBackedAchievementsMode()) {
-    for (const [id, override] of Object.entries(patch)) {
+    for (const [id, override] of Object.entries(patch) as [string, AchievementsConfig[string]][]) {
       upsertAchievementPg(id, override).catch((error) =>
         console.error(`achievements-pg mirror write failed for "${id}":`, error),
       )
