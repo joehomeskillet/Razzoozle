@@ -62,6 +62,12 @@ import {
   type RestoreSnapshotInput,
   type RoundSnapshot,
 } from "@razzoozle/socket/services/game/round-manager/snapshot"
+import {
+  isPaused as computeIsPaused,
+  pauseRound,
+  resumeRound,
+  waitWhilePaused as waitWhilePausedFn,
+} from "@razzoozle/socket/services/game/round-manager/pause-resume"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -374,16 +380,6 @@ export class RoundManager {
     }, AUTO_RESULT_MS)
   }
 
-  private isPausableStatus(status: Status): boolean {
-    return (
-      status === STATUS.SHOW_LEADERBOARD ||
-      status === STATUS.SHOW_START ||
-      status === STATUS.SHOW_PREPARED ||
-      status === STATUS.WAIT ||
-      status === STATUS.SHOW_ROOM
-    )
-  }
-
   private rememberPauseState<T extends Status>(
     status: T,
     data: StatusDataMap[T],
@@ -408,52 +404,47 @@ export class RoundManager {
     this.opts.send(target, status, data)
   }
 
+  // ── Pause/resume — logic extracted to round-manager/pause-resume.ts (Modul 3
+  // of the SRP split). autoTimer/paused/pauseState/pausedState/pauseWaiters
+  // stay as class fields; only the decision logic moved.
   private waitWhilePaused(): Promise<void> {
-    if (!this.paused) {
-      return Promise.resolve()
-    }
-
-    return new Promise((resolve) => {
-      this.pauseWaiters.push(resolve)
+    return waitWhilePausedFn({
+      paused: this.paused,
+      pauseWaiters: this.pauseWaiters,
     })
   }
 
   pause(): void {
-    if (this.paused) {
-      return
-    }
-
-    if (!this.pauseState || !this.isPausableStatus(this.pauseState.status)) {
-      console.log("Pause rejected: current status is not pausable")
-
-      return
-    }
-
-    this.paused = true
-    this.pausedState = this.pauseState
-    this.opts.broadcast(STATUS.PAUSED, { reason: "paused" })
+    pauseRound({
+      paused: this.paused,
+      pauseState: this.pauseState,
+      setPaused: (v) => {
+        this.paused = v
+      },
+      setPausedState: (v) => {
+        this.pausedState = v
+      },
+      broadcastRaw: (status, data) => this.opts.broadcast(status, data),
+    })
   }
 
   resume(): void {
-    if (!this.paused) {
-      return
-    }
-
-    const state = this.pausedState
-    this.paused = false
-    this.pausedState = null
-
-    if (state) {
-      this.broadcast(state.status, state.data)
-    }
-
-    const waiters = this.pauseWaiters
-    this.pauseWaiters = []
-    waiters.forEach((resolve) => resolve())
+    resumeRound({
+      paused: this.paused,
+      pausedState: this.pausedState,
+      pauseWaiters: this.pauseWaiters,
+      setPaused: (v) => {
+        this.paused = v
+      },
+      setPausedState: (v) => {
+        this.pausedState = v
+      },
+      broadcast: (status, data) => this.broadcast(status, data),
+    })
   }
 
   isPaused(): boolean {
-    return this.paused
+    return computeIsPaused(this.paused)
   }
 
   isStarted(): boolean {
