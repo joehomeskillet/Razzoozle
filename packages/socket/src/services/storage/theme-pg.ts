@@ -62,7 +62,7 @@ const rowToThemeTemplate = (row: ThemeRow): ThemeTemplate | null => {
     console.warn(`theme-pg: invalid theme template row "${row.id}":`, result.error.issues)
     return null
   }
-  return result.data
+  return { ...result.data, id: row.id }
 }
 
 /** Read all themes and templates from Postgres (mirrors file-based getTheme + getThemeTemplates). */
