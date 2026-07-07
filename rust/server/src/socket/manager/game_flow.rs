@@ -12,12 +12,12 @@
 use super::super::HandlerCtx;
 use crate::is_game_host;
 use crate::socket::lifecycle;
-use razzoozle_engine::state::GamePhase;
+use razzoozle_engine::state::{GameError, GamePhase};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::GameStatus;
 use socketioxide::extract::{Data, SocketRef};
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::info;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_start_game(socket, ctx.clone());
@@ -35,18 +35,6 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
-                };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
-
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
                 info!("manager:startGame received: gameId={:?}", game_id_opt);
 
@@ -59,8 +47,18 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
+                            // Per-game ownership check: only the socket that created this game can start it
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
                             if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                                 return;
                             }
                         }
@@ -90,14 +88,30 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 });
                             }
                             Err(e) => {
-                                warn!("startGame rejected: gameId={}, err={}", game_id, e);
+                                let error_msg = match e {
+                                    GameError::NoPlayers => "errors:game.noPlayersConnected".to_string(),
+                                    _ => "errors:game.notFound".to_string(),
+                                };
+                                socket
+                                    .emit(constants::game::ERROR_MESSAGE, &serde_json::json!([error_msg]))
+                                    .ok();
                             }
                         }
                     } else {
-                        warn!("startGame: unknown gameId={}", game_id);
+                        socket
+                            .emit(
+                                constants::game::ERROR_MESSAGE,
+                                &serde_json::json!(["errors:game.notFound"]),
+                            )
+                            .ok();
                     }
                 } else {
-                    warn!("startGame: missing gameId in payload");
+                    socket
+                        .emit(
+                            constants::game::ERROR_MESSAGE,
+                            &serde_json::json!(["errors:game.notFound"]),
+                        )
+                        .ok();
                 }
             });
         }
@@ -117,18 +131,6 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
-                };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
-
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
                         let registry = ctx.registry.read().await;
@@ -138,8 +140,18 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
+                            // Per-game ownership check
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check
                             if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                                 return;
                             }
                         }
@@ -170,18 +182,6 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
-                };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
-
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
                         let registry = ctx.registry.read().await;
@@ -191,8 +191,18 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
+                            // Per-game ownership check
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check
                             if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                                 return;
                             }
                         }
@@ -214,18 +224,6 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
-                };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
-
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
                         let registry = ctx.registry.read().await;
@@ -235,35 +233,27 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
+                            // Per-game ownership check
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check
                             if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                                 return;
                             }
                         }
 
-                        {
-                            let mut game = game_ref.lock().unwrap();
-                            game.engine.phase = GamePhase::Finished;
-                            // Wake the lifecycle task's current abortable wait (if any) so
-                            // it stops promptly instead of running out its full dwell —
-                            // it will find the phase already Finished and exit quietly.
-                            game.signal_abort();
-                        }
-
-                        info!("Quiz aborted: gameId={}", game_id);
-                        let finished = razzoozle_protocol::status::FinishedData {
-                            subject: "Quiz".to_string(),
-                            top: {
-                                let game = game_ref.lock().unwrap();
-                                game.engine.players.clone()
-                            },
-                            rank: None,
-                            team_standings: None,
-                            recap: None,
-                            auto_mode: None,
-                        };
-                        let status = GameStatus::Finished(finished);
-                        ctx.io.to(game_id).emit(constants::game::STATUS, &status).ok();
+                        // Abort the current question (end the answer window and move to results),
+                        // exactly like skipQuestion. Node's abortQuiz (round.abortQuestion) just
+                        // closes the live answer window and lets normal flow continue — it does NOT
+                        // end the game.
+                        lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                     }
                 }
             });
@@ -281,18 +271,6 @@ fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
-                };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
-
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
                         let registry = ctx.registry.read().await;
@@ -302,15 +280,25 @@ fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
+                            // Per-game ownership check
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check
                             if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                                 return;
                             }
                         }
                     }
                 }
 
-                // Timer adjustment stored in game state but no emit needed for basic impl
+                // TODO(parity): adjustTimer needs lifecycle deadline-shift design — separate WP
             });
         }
     });
