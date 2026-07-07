@@ -37,6 +37,11 @@ import {
   removeManifestWhere,
   upsertMediaMeta,
 } from "@razzoozle/socket/services/config/media"
+import {
+  deleteThemeTemplatePg,
+  updateThemePg,
+  upsertThemeTemplatePg,
+} from "@razzoozle/socket/services/storage/theme-pg"
 
 const safeAssetPath = (value: string): boolean => {
   if (/^\/theme\/[\w.-]+$/u.test(value)) {
@@ -124,6 +129,16 @@ const socketThemeValidator = z.object({
   }),
 })
 
+// DATABASE_MODE=dual/pg/pg-only: files stay the sync read source of truth for
+// the theme functions below (they can't become async without breaking their
+// existing sync call sites), but writes are additionally mirrored to
+// Postgres via services/storage/theme-pg.ts (fire-and-forget, errors logged
+// not thrown — file write remains authoritative and never blocks on the DB).
+const isDbBackedThemeMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
+
 const parseTheme = (data: unknown): Theme => {
   const commonResult = themeValidator.safeParse(data)
 
@@ -202,6 +217,12 @@ export const setTheme = (
   }
 
   fs.writeFileSync(getPath("theme/theme.json"), JSON.stringify(theme, null, 2))
+
+  if (isDbBackedThemeMode()) {
+    updateThemePg(theme).catch((error) =>
+      console.error("theme-pg mirror write failed:", error),
+    )
+  }
 
   return theme
 }
@@ -306,6 +327,12 @@ export const saveThemeTemplate = (payload: {
     JSON.stringify(record, null, 2),
   )
 
+  if (isDbBackedThemeMode()) {
+    upsertThemeTemplatePg(id, record.name, record.theme).catch((error) =>
+      console.error(`theme-pg mirror write failed for template "${id}":`, error),
+    )
+  }
+
   return { id }
 }
 
@@ -319,6 +346,12 @@ export const deleteThemeTemplate = (id: string): void => {
   }
 
   fs.unlinkSync(filePath)
+
+  if (isDbBackedThemeMode()) {
+    deleteThemeTemplatePg(id).catch((error) =>
+      console.error(`theme-pg mirror delete failed for template "${id}":`, error),
+    )
+  }
 }
 
 // ---- Theme revisions (per-save version ring) ------------------------------
