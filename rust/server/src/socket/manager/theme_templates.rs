@@ -60,21 +60,6 @@ fn normalize_filename(s: &str) -> String {
     format!("{}-{}", slug, short_id)
 }
 
-/// Load current theme from disk for revision snapshot
-fn load_current_theme() -> Option<serde_json::Value> {
-    let theme_path = Path::new("config/theme/theme.json");
-    if theme_path.exists() {
-        if let Ok(content) = fs::read_to_string(theme_path) {
-            if let Ok(theme) = serde_json::from_str(&content) {
-                return Some(theme);
-            }
-        }
-    }
-    None
-}
-
-/// Save theme revision snapshot before overwriting
-
 /// Load theme revisions from disk, ordered newest-first
 fn load_theme_revisions() -> Vec<serde_json::Value> {
     let revisions_path = Path::new("config/theme-revisions.json");
