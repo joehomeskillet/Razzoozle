@@ -4,6 +4,7 @@ use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
+use razzoozle_protocol::status::Status;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -324,6 +325,10 @@ pub struct Game {
     // Re-armed (replaced with a fresh Notify) each time a new abortable wait
     // starts; `None` while no abortable wait is live.
     pub cooldown_abort: Option<Arc<tokio::sync::Notify>>,
+    // Pause state: when true, the game is paused; paused_state holds the pre-pause status to resume from
+    pub paused: bool,
+    // Snapshot of the status + data at the time of pause, for replay on resume
+    pub paused_state: Option<(Status, serde_json::Value)>,
 }
 
 impl Game {
@@ -354,6 +359,8 @@ impl Game {
             low_latency: false,
             auto_mode: false,
             cooldown_abort: None,
+            paused: false,
+            paused_state: None,
         }
     }
 
