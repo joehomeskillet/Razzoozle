@@ -35,15 +35,11 @@ import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
 import { CooldownTimer } from "@razzoozle/socket/services/game/cooldown-timer"
 import { PlayerManager } from "@razzoozle/socket/services/game/player-manager"
 import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
-import { normalizeText } from "@razzoozle/socket/services/game/text-match"
 import { shuffleChunksWithGuard } from "@razzoozle/common/utils/chunks"
 import { metrics } from "@razzoozle/socket/services/metrics"
-import Registry from "@razzoozle/socket/services/registry"
 import { timeToPoint } from "@razzoozle/socket/utils/game"
 import sleep from "@razzoozle/socket/utils/sleep"
 import { emitLifecycle } from "@razzoozle/socket/services/plugin-runtime"
-import { computeAchievementAwards } from "@razzoozle/socket/services/game/round-manager/achievement-awards"
-import { computeRoundRecap } from "@razzoozle/socket/services/game/round-manager/round-recap"
 import {
   buildRestoreState,
   computeReconnectInfo,
@@ -60,15 +56,10 @@ import {
 } from "@razzoozle/socket/services/game/round-manager/pause-resume"
 import {
   applyAutoMode,
-  AUTO_RESULT_MS,
   clearAuto as clearAutoFn,
   emitResultCountdown as emitResultCountdownFn,
   scheduleAuto as scheduleAutoFn,
 } from "@razzoozle/socket/services/game/round-manager/auto-mode"
-import {
-  evalAnswer,
-  scorePlayerAnswer,
-} from "@razzoozle/socket/services/game/round-manager/scoring"
 import {
   computeTeamStandings as computeTeamStandingsFn,
   selectTeam as selectTeamFn,
@@ -78,6 +69,8 @@ import {
   showLeaderboard as showLeaderboardFn,
   showRoundRecap as showRoundRecapFn,
 } from "@razzoozle/socket/services/game/round-manager/leaderboard-flow"
+import { computeResultsStats } from "@razzoozle/socket/services/game/round-manager/results-stats"
+import { broadcastResults } from "@razzoozle/socket/services/game/round-manager/results-broadcast"
 
 // Server-side bookkeeping for a stored answer that never leaves the server: the
 // authoritative receive timestamp and the per-tap dedup id. Kept separate from
@@ -707,157 +700,25 @@ export class RoundManager {
     this.showResults(question)
   }
 
+  // ── Results — logic extracted to round-manager/results-stats.ts +
+  // results-broadcast.ts (Modul 9 of the SRP split), cut at the natural
+  // compute/emit seam: everything up to and including `cleanedSorted` is
+  // computation (results-stats), everything from players.replace() on is
+  // emission + round-state mutation (results-broadcast). The answer-window
+  // close stays here (hot sim-mode state, mirrors selectAnswer/skipQuestion).
   private showResults(question: Question): void {
     // Sim mode: the window is closing — cancel pending bot timers first so no
     // late bot answer can land after results are computed.
     this.answerWindowOpen = false
     this.opts.onAnswerWindowClose?.()
 
-    const currentPlayers = this.opts.players.getAll()
-
-    const oldLeaderboard = (() => {
-      if (this.leaderboard.length === 0) {
-        return currentPlayers.map((p) => ({ ...p }))
-      }
-
-      return this.leaderboard.map((p) => ({ ...p }))
-    })()
-
-    // ── Achievements pre-round snapshot ───────────────────────────────────────
-    // A prior round exists iff this.leaderboard was populated (round >= 1). The
-    // `climber` badge needs the FULL pre-round ranking (not the top-5 slice), so
-    // we rank EVERY current player by their points BEFORE this round's scoring.
-    const hasPriorRound = this.leaderboard.length > 0
-    const pointsBefore = new Map<string, number>()
-
-    for (const p of currentPlayers) {
-      pointsBefore.set(p.clientId, p.points)
-    }
-
-    // rankBefore: 1-based index over all players sorted by pre-round points desc.
-    // Only meaningful when a prior round exists (else every climb is spurious).
-    const rankBefore = new Map<string, number>()
-
-    if (hasPriorRound) {
-      const preRanked = [...currentPlayers].sort((a, b) => b.points - a.points)
-      preRanked.forEach((p, index) => {
-        rankBefore.set(p.clientId, index + 1)
-      })
-    }
-
-    // Scored = the questions that actually count toward participation / 100%:
-    // non-poll AND non-practice. Counted once for the whole quiz.
-    const totalScoredQuestions = this.opts.quizz.questions.filter(
-      (q) => q.type !== "poll" && !q.practice,
-    ).length
-    // participation / perfect_game must fire on the last SCORED question — not
-    // the literal last question. If the quiz ends on a poll/practice round, the
-    // counters never reach their total inside the `aScored` branch (poll/practice
-    // rows are skipped), so we anchor on the index of the final scored question.
-    const lastScoredIndex = this.opts.quizz.questions.reduce(
-      (last, q, i) => (q.type !== "poll" && !q.practice ? i : last),
-      -1,
-    )
-    const isLastScoredRound = this.currentQuestion === lastScoredIndex
-
-    const totalType = this.playersAnswers.reduce(
-      (acc: Record<number, number>, answer) => {
-        // Multiple-select: increment EACH selected option's bucket so the
-        // manager histogram shows how many players picked each option. All other
-        // types keep the single-bucket behaviour (answerId === -1 for type-answer
-        // lands in a bucket the text histogram ignores).
-        if (answer.answerIds !== undefined) {
-          for (const id of answer.answerIds) {
-            acc[id] = (acc[id] || 0) + 1
-          }
-        } else {
-          acc[answer.answerId] = (acc[answer.answerId] || 0) + 1
-        }
-
-        return acc
-      },
-      {},
-    )
-
-    // Type-answer: a parallel text-keyed histogram (normalized text -> count) so
-    // the manager can see how the free-text answers clustered. undefined for all
-    // other types. Keyed by the SAME normalization used for scoring so case/accent
-    // variants collapse into one bar.
-    const textResponses =
-      question.type === "type-answer" || question.type === "sentence-builder"
-        ? this.playersAnswers.reduce(
-            (acc: Record<string, number>, { answerText }) => {
-              const key = normalizeText(answerText ?? "")
-
-              if (key) {
-                acc[key] = (acc[key] || 0) + 1
-              }
-
-              return acc
-            },
-            {},
-          )
-        : undefined
-
-    const isPoll = question.type === "poll"
-
-    // Correctness/scoring math extracted to round-manager/scoring.ts (Modul 5
-    // of the SRP split): evalAnswer (pure, `question` now an explicit param)
-    // + scorePlayerAnswer (the per-player streak/bonus/points block).
-
-    // The first player (by answer arrival order) to get it right earns a flat bonus.
-    let firstCorrectId: string | null = null
-
-    if (!isPoll && !question.practice) {
-      for (const a of this.playersAnswers) {
-        if (evalAnswer(question, a.answerId, a.answerIds, a.answerText).correct) {
-          firstCorrectId = a.clientId
-
-          break
-        }
-      }
-    }
-
-    const sortedPlayers = currentPlayers
-      .map((player) => {
-        const playerAnswer = this.playersAnswers.find(
-          (a) => a.clientId === player.clientId,
-        )
-
-        // Achievements: server-receive response time for this player this round
-        // (ALL modes). null when the player did not answer. Clamped to >= 0 so a
-        // clock skew can't produce a negative "faster than instant" badge.
-        const receivedAt = this.answerReceivedAt.get(player.clientId)
-        const responseTimeMs =
-          receivedAt !== undefined
-            ? Math.max(0, receivedAt - this.startTime)
-            : null
-
-        // pointsBefore is captured BEFORE the mutation below (from the snapshot
-        // taken before this map ran), so it is the player's pre-round total.
-        const myPointsBefore =
-          pointsBefore.get(player.clientId) ?? player.points
-
-        return scorePlayerAnswer({
-          player,
-          playerAnswer,
-          question,
-          isPoll,
-          firstCorrectId,
-          myPointsBefore,
-          responseTimeMs,
-        })
-      })
-      .sort((a, b) => b.points - a.points)
-
-    // ── Achievements: badge unlocks + configurable bonus points ───────────────
-    // Extracted to round-manager/achievement-awards.ts (Modul 1 of the SRP
-    // split). Mutates `sortedPlayers` (bonus folded into points/lastPoints,
-    // re-sorted) and `currentPlayers` (live player points) in place, and the
-    // persistent gameCounters/recapStats/questionStats maps — exactly as the
-    // inline code did via `this.X` before the extraction.
-    const { achievementsByClient, bonusByClient } = computeAchievementAwards(
+    const stats = computeResultsStats(
       {
+        players: this.opts.players,
+        leaderboard: this.leaderboard,
+        quizz: this.opts.quizz,
+        playersAnswers: this.playersAnswers,
+        startTime: this.startTime,
         gameCounters: this.gameCounters,
         recapStats: this.recapStats,
         questionStats: this.questionStats,
@@ -865,244 +726,48 @@ export class RoundManager {
         answerReceivedAt: this.answerReceivedAt,
         currentQuestion: this.currentQuestion,
       },
+      question,
+    )
+
+    broadcastResults(
       {
-        sortedPlayers,
-        currentPlayers,
-        rankBefore,
-        hasPriorRound,
-        firstCorrectId,
-        isLastScoredRound,
-        totalScoredQuestions,
-        question,
+        players: this.opts.players,
+        answerReceivedAt: this.answerReceivedAt,
+        startTime: this.startTime,
+        autoMode: this.autoMode,
+        lastResultPayloads: this.lastResultPayloads,
+        send: (target, status, data) => this.send(target, status, data),
+        getManagerId: () => this.opts.getManagerId(),
+        gameId: this.opts.gameId,
+        playersAnswers: this.playersAnswers,
+        setPlayersAnswers: (v) => {
+          this.playersAnswers = v
+        },
+        questionsHistory: this.questionsHistory,
+        setLeaderboard: (v) => {
+          this.leaderboard = v
+        },
+        setTempOldLeaderboard: (v) => {
+          this.tempOldLeaderboard = v
+        },
+        setTempRoundRecap: (v) => {
+          this.tempRoundRecap = v
+        },
+        setRoundRecapShown: (v) => {
+          this.roundRecapShown = v
+        },
+        setResultScreenActive: (v) => {
+          this.resultScreenActive = v
+        },
+        answerCountThrottle: this.answerCountThrottle,
+        setAnswerDeadlineAtServerMs: (v) => {
+          this.answerDeadlineAtServerMs = v
+        },
+        scheduleAuto: () => this.scheduleAuto(),
       },
+      question,
+      stats,
     )
-
-    // Persist the freshly-unlocked badges onto the live player objects so they
-    // are visible in the roster / leaderboard payloads too. We DROP the internal
-    // achievement-intermediate (aXxx) fields here so they never reach the wire.
-    const cleanedSorted = sortedPlayers.map((row) => {
-      const {
-        aScored: _aScored,
-        aIsCorrect: _aIsCorrect,
-        aBaseFactor: _aBaseFactor,
-        aStreakAfter: _aStreakAfter,
-        aGotFirst: _aGotFirst,
-        aResponseTimeMs: _aResponseTimeMs,
-        aPointsBefore: _aPointsBefore,
-        aPointsAfter: _aPointsAfter,
-        ...rest
-      } = row
-      const unlocked = achievementsByClient.get(row.clientId)
-
-      if (unlocked) {
-        return { ...rest, achievements: unlocked }
-      }
-
-      // No fresh unlock this round: STRIP any prior-round `achievements` so a
-      // stale badge can't ride into SHOW_LEADERBOARD / FINISHED / the roster
-      // (rest is spread from persisted player objects that may still carry an
-      // earlier round's achievements). Per-player SHOW_RESULT reads fresh from
-      // achievementsByClient, so it is unaffected.
-      const { achievements: _dropStale, ...cleanRest } = rest
-
-      return cleanRest
-    })
-
-    this.opts.players.replace(cleanedSorted)
-
-    // The question is OVER, so the correct answer is now safe to reveal in the
-    // per-player RESULT payload (anti-cheat: it is NEVER added to the live
-    // SHOW_QUESTION / SELECT_ANSWER payloads above). Built as a display string
-    // per question type so the wrong-answer "Too bad" screen can show what the
-    // right answer was. undefined for poll (no correct answer) and when the
-    // question carries no solution data.
-    const correctAnswer = ((): string | undefined => {
-      if (isPoll) {
-        return undefined
-      }
-
-      if (question.type === "slider") {
-        return question.correct != null
-          ? `${question.correct}${question.unit ? ` ${question.unit}` : ""}`
-          : undefined
-      }
-
-      if (question.type === "type-answer") {
-        return question.acceptedAnswers?.[0]
-      }
-
-      // choice / boolean / multiple-select: map solution indices to answer texts.
-      const texts = (question.solutions ?? [])
-        .map((i) => question.answers?.[i])
-        .filter((t): t is string => typeof t === "string")
-
-      return texts.length > 0 ? texts.join(", ") : undefined
-    })()
-
-    // FIX 9: when auto-mode is already on at results time, the SHOW_RESULT screen
-    // will auto-advance after AUTO_RESULT_MS — carry that as autoAdvanceMs so the
-    // client can render a local countdown. Absent in manual mode (old clients
-    // ignore it). The cache below also feeds the FIX 8 mid-screen re-send.
-    // ── Per-round recap (additive, optional) ──────────────────────────────────
-    // Game-wide highlights for THIS round, same array on every player's payload.
-    // Built from the intermediate `sortedPlayers` rows (which still carry the
-    // aXxx fields) — cleanedSorted has them stripped. Best-effort: an empty array
-    // means we omit the field so old clients are unaffected.
-    const rankAfterByClient = new Map<string, number>()
-    sortedPlayers.forEach((row, index) => {
-      rankAfterByClient.set(row.clientId, index + 1)
-    })
-    const roundRecap = computeRoundRecap(
-      sortedPlayers.map((row) => ({
-        clientId: row.clientId,
-        username: row.username,
-        avatar: row.avatar,
-        isBot: row.isBot,
-        aIsCorrect: row.aIsCorrect,
-        aResponseTimeMs: row.aResponseTimeMs,
-        aStreakAfter: row.aStreakAfter,
-        lastPoints: row.lastPoints,
-        answeredThisRound: this.answerReceivedAt.has(row.clientId),
-      })),
-      rankAfterByClient,
-      rankBefore,
-      achievementsByClient,
-      firstCorrectId,
-      hasPriorRound,
-    )
-
-    this.lastResultPayloads.clear()
-
-    cleanedSorted.forEach((player, index) => {
-      const rank = index + 1
-      const aheadPlayer = cleanedSorted[index - 1]
-      const unlocked = achievementsByClient.get(player.clientId)
-      const bonusPoints = bonusByClient.get(player.clientId) ?? 0
-
-      const resultPayload: StatusDataMap["SHOW_RESULT"] = {
-        correct: player.lastCorrect,
-        message: player.lastPoll
-          ? "game:pollThanks"
-          : player.lastCorrect
-            ? "game:correct"
-            : "game:wrong",
-        points: player.lastPoints,
-        myPoints: player.points,
-        rank,
-        aheadOfMe: aheadPlayer ? aheadPlayer.username : null,
-        streak: player.lastStreak,
-        streakBonus: player.lastStreakBonus,
-        bonus: player.lastBonus,
-        firstCorrect: player.lastFirstCorrect,
-        poll: player.lastPoll,
-        // Total players in this game, so the client can suppress a hollow "1st
-        // place" label in a solo (single-player) game (W1-D FIX 2).
-        playerCount: cleanedSorted.length,
-        ...(correctAnswer !== undefined ? { correctAnswer } : {}),
-        ...(question.type === "sentence-builder" && question.chunks
-          ? { correctChunks: question.chunks }
-          : {}),
-        ...(unlocked ? { achievements: unlocked } : {}),
-        ...(bonusPoints > 0 ? { bonusPoints } : {}),
-        ...(roundRecap.length > 0 ? { roundRecap } : {}),
-      }
-
-      // Cache WITHOUT autoAdvanceMs; emitResultCountdown adds the live remaining
-      // time on a mid-screen re-send so a late toggle gets an accurate value.
-      this.lastResultPayloads.set(player.id, resultPayload)
-
-      this.send(player.id, STATUS.SHOW_RESULT, {
-        ...resultPayload,
-        ...(this.autoMode ? { autoAdvanceMs: AUTO_RESULT_MS } : {}),
-      })
-    emitLifecycle("onResult", { gameId: this.opts.gameId, status: "SHOW_RESULT", data: {} })
-    })
-
-    // The post-results screen is now on display: a subsequent setAutoMode(true)
-    // (FIX 8) arms the advance for THIS screen. Cleared once we leave it.
-    this.resultScreenActive = true
-
-    const guesses = this.playersAnswers.map((a) => a.answerId)
-    const averageGuess =
-      question.type === "slider" && guesses.length
-        ? Math.round(guesses.reduce((s, v) => s + v, 0) / guesses.length)
-        : undefined
-
-    this.send(this.opts.getManagerId(), STATUS.SHOW_RESPONSES, {
-      ...question,
-      // Question is validator-inferred, so these are optional; the status
-      // payload requires concrete arrays. Default to empty for slider/poll.
-      solutions: question.solutions ?? [],
-      answers: question.answers ?? [],
-      responses: totalType,
-      averageGuess,
-      // Type-answer (MANAGER-ONLY send — players never receive SHOW_RESPONSES):
-      // the normalized text histogram plus the authored accepted answers and the
-      // match mode so the host result view can render them. Gated to type-answer
-      // so other types carry none of these (acceptedAnswers/matchMode are
-      // anti-cheat-sensitive and must never leak to a player-facing payload).
-      textResponses,
-      acceptedAnswers:
-        question.type === "type-answer" ? question.acceptedAnswers : undefined,
-      matchMode:
-        question.type === "type-answer" ? question.matchMode : undefined,
-      correctChunks:
-        question.type === "sentence-builder" ? question.chunks : undefined,
-      // Per-round recap awards — same highlights the phone shows on SHOW_RESULT
-      // — so the presenter/projector displays them at result-reveal time too.
-      // Read from the local `roundRecap` const (computed above); safe to read
-      // here, well before tempRoundRecap is cleared after SHOW_LEADERBOARD.
-      ...(roundRecap.length > 0 ? { roundRecap } : {}),
-    })
-
-    this.questionsHistory.push({
-      ...question,
-      playerAnswers: currentPlayers.map((player) => {
-        const playerAnswer = this.playersAnswers.find(
-          (a) => a.clientId === player.clientId,
-        )
-
-        return {
-          playerName: player.username,
-          answerId: playerAnswer?.answerId ?? null,
-          // Multiple-select selected set / type-answer free text, persisted so
-          // the saved-result view can render the player's actual answer. null
-          // when not applicable (matches PlayerAnswerRecord).
-          answerIds: playerAnswer?.answerIds ?? null,
-          answerText: playerAnswer?.answerText ?? null,
-          // ms from question start to answer; null when no answer or legacy results.
-          responseMs: (() => {
-            const receivedAt = this.answerReceivedAt.get(player.clientId)
-            return receivedAt !== undefined
-              ? Math.max(0, receivedAt - this.startTime)
-              : null
-          })(),
-        }
-      }),
-    })
-
-    // Use the cleaned rows (avatar/achievements preserved, internal aXxx fields
-    // dropped) as the round leaderboard so the between-questions SHOW_LEADERBOARD
-    // rows carry `avatar` (bug #4 fix) without leaking achievement intermediates.
-    this.leaderboard = cleanedSorted
-    this.tempOldLeaderboard = oldLeaderboard
-    this.tempRoundRecap = roundRecap
-    this.roundRecapShown = false
-    this.playersAnswers = []
-
-    // Low-latency mode: the question is over — drop any pending throttled count
-    // and close the answer window so a late tap is rejected as `too_late`.
-    this.answerCountThrottle.cancel()
-    this.answerDeadlineAtServerMs = 0
-
-    // The round's STABLE, snapshotted state (leaderboard/questionsHistory/
-    // scores) just changed — mark the crash-recovery snapshot stale so the
-    // next periodic saveSnapshot() actually persists this round's outcome.
-    Registry.getInstance().markDirty()
-
-    if (this.autoMode) {
-      this.scheduleAuto()
-    }
   }
 
   selectAnswer(
