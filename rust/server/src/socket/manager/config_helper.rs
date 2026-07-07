@@ -57,63 +57,11 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     // restart without racing a withAuth ai:getSettings request. This function
     // is also called after quiz/config writes (not just login), which is
     // slightly broader than Node's login-only re-emit, but harmless — the
-    // payload is a static, key-free default (see socket/ai.rs).
+    // payload reflects persisted AI provider config (see socket/ai.rs for the
+    // full persisted-config read logic).
     socket
-        .emit(constants::ai::SETTINGS, &seed_public_ai_settings())
+        .emit(constants::ai::SETTINGS, &super::super::ai::get_public_ai_settings())
         .ok();
-}
-
-/// Mirror of socket/ai.rs's `seed_public_ai_settings()` (duplicated here
-/// rather than made `pub(crate)` there, since ai.rs is out of scope for this
-/// auth-parity fix — only auth.rs/config_helper.rs are owned by this change).
-/// Mirror of Node `toPublicAISettings(seedAISettings())`: provider presets
-/// from `AI_TEXT_PROVIDER_PRESETS`, `activeProvider: "off"`, each text
-/// provider carrying `keyConfigured: false` (no secret on the wire).
-fn seed_public_ai_settings() -> serde_json::Value {
-    serde_json::json!({
-        "text": {
-            "activeProvider": "off",
-            "providers": [
-                {
-                    "id": "local",
-                    "label": "Lokal (Ollama)",
-                    "kind": "openai-compatible",
-                    "baseUrl": "http://host.docker.internal:11434/v1",
-                    "model": "llama3.2:3b",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "claude",
-                    "label": "Claude (Anthropic)",
-                    "kind": "anthropic",
-                    "model": "claude-haiku-4-5-20251001",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "openai",
-                    "label": "OpenAI",
-                    "kind": "openai-compatible",
-                    "baseUrl": "https://api.openai.com/v1",
-                    "model": "gpt-4o-mini",
-                    "keyConfigured": false
-                },
-                {
-                    "id": "openrouter",
-                    "label": "OpenRouter",
-                    "kind": "openai-compatible",
-                    "baseUrl": "https://openrouter.ai/api/v1",
-                    "model": "meta-llama/llama-3.3-70b-instruct",
-                    "keyConfigured": false
-                }
-            ]
-        },
-        "image": {
-            "activeProvider": "comfyui",
-            "providers": [
-                { "id": "comfyui", "label": "ComfyUI / Z-Image" }
-            ]
-        }
-    })
 }
 
 /// Build QuizzMeta array from registry: {id, subject, archived, questionCount}
