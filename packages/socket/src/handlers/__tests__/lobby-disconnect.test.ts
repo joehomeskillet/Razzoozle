@@ -150,13 +150,26 @@ describe("BUG 1 — lobby disconnect grace", () => {
     game.join(playerSocket as unknown as Socket, "Alice")
     gameSocketHandlers(ctxOf(playerSocket))
 
+    // P2b — join() mints a server-side playerToken and hands it to the joiner
+    // via SUCCESS_JOIN; a real client (see web/pages/party/$gameId.tsx) persists
+    // it and replays it on PLAYER.RECONNECT for anti-spoof verification.
+    const successJoin = playerSocket.emitted.find(
+      (e) => e.event === EVENTS.GAME.SUCCESS_JOIN,
+    )
+    const playerToken = (
+      successJoin?.payload as { playerToken?: string } | undefined
+    )?.playerToken
+
     playerSocket.handlers.get("disconnect")!()
     expect(game.players[0].connected).toBe(false)
 
     const reSocket = makeFakeSocket("sock-alice-2", "client-alice")
     gameSocketHandlers(ctxOf(reSocket))
 
-    reSocket.handlers.get(EVENTS.PLAYER.RECONNECT)!({ gameId: game.gameId })
+    reSocket.handlers.get(EVENTS.PLAYER.RECONNECT)!({
+      gameId: game.gameId,
+      playerToken,
+    })
 
     const reconnectSuccess = reSocket.emitted.some(
       (e) => e.event === EVENTS.PLAYER.SUCCESS_RECONNECT,

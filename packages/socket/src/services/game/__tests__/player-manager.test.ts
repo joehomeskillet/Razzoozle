@@ -139,10 +139,15 @@ describe("PlayerManager.join", () => {
     expect(total[0].target).toBe(GAME_ID)
     expect(total[0].payload).toBe(1)
 
-    // SUCCESS_JOIN is emitted directly to the joiner, carrying the gameId.
+    // SUCCESS_JOIN is emitted directly to the joiner, carrying the gameId
+    // and a freshly-minted playerToken (P2b — object payload, not bare
+    // gameId string).
     const success = eventsOf(emitted, EVENTS.GAME.SUCCESS_JOIN)
     expect(success).toHaveLength(1)
-    expect(success[0].payload).toBe(GAME_ID)
+    expect(success[0].payload).toEqual({
+      gameId: GAME_ID,
+      playerToken: expect.any(String),
+    })
 
     // No error was emitted to the joiner.
     expect(eventsOf(emitted, EVENTS.GAME.ERROR_MESSAGE)).toHaveLength(0)
