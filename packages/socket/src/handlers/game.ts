@@ -476,8 +476,13 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
         // Round-trip the saved value back so the manager's toggle reflects the
         // persisted config rather than its optimistic local state.
         emitConfig(socket)
-      } catch {
-        // Validation failure is non-fatal for the socket session.
+      } catch (error) {
+        // Validation (zod) or disk-write failure: log it and tell the manager —
+        // the config UI already shows an optimistic success toast for this
+        // patch, so silently swallowing this left the host believing an
+        // unsaved change (e.g. a rejected scoringMode) actually persisted.
+        console.error("Failed to update game config:", error)
+        socket.emit(EVENTS.MANAGER.ERROR_MESSAGE, "errors:manager.saveFailed")
       }
     }),
   )
@@ -501,8 +506,12 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       try {
         saveAchievementsConfig(config as AchievementsConfig)
         emitConfig(socket)
-      } catch {
-        // Validation failure is non-fatal for the socket session.
+      } catch (error) {
+        // Validation (zod) or disk-write failure: log it and tell the manager —
+        // same rationale as SET_GAME_CONFIG above, the achievements editor
+        // shows an optimistic success toast that must be corrected on failure.
+        console.error("Failed to save achievements config:", error)
+        socket.emit(EVENTS.MANAGER.ERROR_MESSAGE, "errors:manager.saveFailed")
       }
     }),
   )

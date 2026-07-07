@@ -11,7 +11,15 @@ export const resultsSocketHandlers = ({ socket }: SocketContext) => {
       try {
         socket.emit(EVENTS.RESULTS.DATA, getResultById(id))
       } catch (error) {
+        // Unlike GET_SHARED (public, intentionally silent with a client-side
+        // timeout fallback), this is the manager's authenticated "open result"
+        // click — it needs its own feedback so a missing/corrupt result
+        // doesn't leave the console stuck with no explanation.
         console.error("Failed to get result:", error)
+        socket.emit(
+          EVENTS.MANAGER.ERROR_MESSAGE,
+          "errors:manager.resultNotFound",
+        )
       }
     }),
   )
@@ -23,7 +31,16 @@ export const resultsSocketHandlers = ({ socket }: SocketContext) => {
         deleteResult(id)
         emitConfig(socket)
       } catch (error) {
+        // The client shows an unconditional success toast on DELETE, so a
+        // failure here needs its own error emit; re-emitting the config also
+        // refreshes the results list so the manager sees the result is still
+        // there rather than trusting the stale optimistic removal.
         console.error("Failed to delete result:", error)
+        socket.emit(
+          EVENTS.MANAGER.ERROR_MESSAGE,
+          "errors:manager.resultDeleteFailed",
+        )
+        emitConfig(socket)
       }
     }),
   )
