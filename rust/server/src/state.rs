@@ -618,6 +618,25 @@ impl GameRegistry {
         self.games_by_id.get(game_id).cloned()
     }
 
+
+    /// Resolve a game by socket ID (clock_ping gate): uses the O(1) socket_to_game
+    /// index, with fallback to a full scan if the index misses (graceful degradation).
+    pub fn get_game_by_socket_id(&self, socket_id: &str) -> Option<Arc<Mutex<Game>>> {
+        for game_ref in self.socket_lookup_candidates(socket_id) {
+            let is_member = {
+                let game = match game_ref.lock() {
+                    Ok(g) => g,
+                    Err(_) => continue,
+                };
+                game.manager_socket_id == socket_id
+                    || game.players.iter().any(|p| p.id == socket_id)
+            };
+            if is_member {
+                return Some(game_ref);
+            }
+        }
+        None
+    }
     /// Get a quiz by ID.
     pub fn get_quiz_by_id(&self, quiz_id: &str) -> Option<Quizz> {
         self.quizzes.get(quiz_id).cloned()
