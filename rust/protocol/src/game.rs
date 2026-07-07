@@ -129,8 +129,20 @@ pub struct GameSuccessRoom {
     pub require_identifier: Option<bool>,
 }
 
-/// game:successJoin payload (S2C) — gameId string
-pub type GameSuccessJoin = String;
+/// game:successJoin payload (S2C) — mirrors node's player-manager.ts join():
+/// `socket.emit(EVENTS.GAME.SUCCESS_JOIN, { gameId, playerToken })`. Was
+/// previously a bare-string alias; the client (Username.tsx) reads
+/// `payload.gameId` / `payload.playerToken` off an OBJECT, so a bare string
+/// left both undefined — the player landed on `/party/undefined`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct GameSuccessJoin {
+    pub game_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub player_token: Option<String>,
+}
 
 /// game:totalPlayers payload (S2C) — count number
 pub type GameTotalPlayers = i32;
@@ -201,6 +213,20 @@ mod tests {
         let re_parsed: GameSuccessRoom = serde_json::from_value(json).unwrap();
         assert_eq!(re_parsed.game_id, "room-456");
         assert_eq!(re_parsed.require_identifier, Some(true));
+    }
+
+    #[test]
+    fn test_game_success_join_roundtrip() {
+        let join = GameSuccessJoin {
+            game_id: "game-789".to_string(),
+            player_token: Some("tok-abc".to_string()),
+        };
+        let json = serde_json::to_value(&join).unwrap();
+        assert_eq!(json["gameId"], "game-789");
+        assert_eq!(json["playerToken"], "tok-abc");
+        let re_parsed: GameSuccessJoin = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.game_id, "game-789");
+        assert_eq!(re_parsed.player_token, Some("tok-abc".to_string()));
     }
 
     #[test]

@@ -135,12 +135,22 @@ fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 
                                 socket.join(game_id_ret.clone()).ok();
 
+                                // SUCCESS_JOIN carries gameId + playerToken as an OBJECT (matches
+                                // node player-manager.ts join()). The client's Username.tsx reads
+                                // `payload.gameId` to navigate to `/party/$gameId` and
+                                // `payload.playerToken` to persist the reconnect token — a bare
+                                // string left both undefined, routing the player to
+                                // `/party/undefined`.
                                 socket
-                                    .emit(constants::game::SUCCESS_JOIN, &game_id_ret)
+                                    .emit(
+                                        constants::game::SUCCESS_JOIN,
+                                        &razzoozle_protocol::game::GameSuccessJoin {
+                                            game_id: game_id_ret.clone(),
+                                            player_token: player.player_token.clone(),
+                                        },
+                                    )
                                     .ok();
 
-
-                                socket.emit("player:token", &serde_json::json!({"playerToken": player.player_token})).ok();
                                 if let Ok(sid) = manager_socket_id.parse() {
                                     if let Some(mgr) = io_handle.get_socket(sid) {
                                         mgr.emit(constants::manager::NEW_PLAYER, &player).ok();
@@ -176,7 +186,7 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
         let io_handle = ctx.io.clone();
         let client_id = ctx.client_id.clone();
 
-        move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let registry = registry.clone();
             let io_handle = io_handle.clone();
             let client_id = client_id.clone();
@@ -250,12 +260,20 @@ fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                             io_handle.to(game_id.clone())
                                 .emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
 
-                            // Emit WAIT status to all players
+                            // Emit WAIT status to the answering player's OWN socket only —
+                            // matches node's `this.send(socket.id, STATUS.WAIT, ...)`
+                            // (round-manager.ts selectAnswer()). Broadcasting this to the
+                            // whole room (the previous rust behaviour) flipped the
+                            // manager's AND every other still-answering player's screen
+                            // away from the Answers view (losing the live X/Y count and,
+                            // for other players, the answer buttons themselves) as soon as
+                            // ONE player answered — which is exactly why the host got
+                            // stuck on "0/1" and "all answered" never fired.
                             let wait_status = GameStatus::Wait(WaitData {
                                 text: "game:waitingForAnswers".to_string(),
                                 team_mode: None,
                             });
-                            io_handle.to(game_id.clone())
+                            socket
                                 .emit(constants::game::STATUS, &wait_status).ok();
 
                             // Auto-advance if all connected players have answered
