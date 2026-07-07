@@ -561,24 +561,16 @@ fn set_skeleton_asset(kind: &str, content: &str, current_theme: &serde_json::Val
     Ok(theme)
 }
 
-/// Reset skeleton to defaults
+/// Reset skeleton to defaults, restoring DEFAULT_THEME
 fn reset_skeleton(current_theme: &serde_json::Value) -> Result<serde_json::Value, String> {
     save_theme_revision(current_theme.clone())
         .map_err(|e| format!("Revision save failed: {}", e))?;
-
-    let mut theme = current_theme.clone();
-
-    if let Some(obj) = theme.as_object_mut() {
-        obj.insert("customCssEnabled".to_string(), serde_json::json!(false));
-        obj.insert("customJsEnabled".to_string(), serde_json::json!(false));
-        obj.insert("skeletonVersion".to_string(), serde_json::json!(0));
-    }
 
     let skeleton_dir = Path::new("config/theme");
     let _ = fs::remove_file(skeleton_dir.join("skeleton.css"));
     let _ = fs::remove_file(skeleton_dir.join("skeleton.js"));
 
-    Ok(theme)
+    Ok(super::public::get_default_theme())
 }
 
 fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
@@ -664,8 +656,10 @@ fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let current_theme = load_current_theme()
-                    .unwrap_or_else(|| serde_json::json!({}));
+                let current_theme = match load_current_theme() {
+                    Some(theme) => theme,
+                    None => super::public::get_default_theme(),
+                };
 
                 match tokio::task::spawn_blocking({
                     let kind = kind.to_string();
@@ -723,10 +717,10 @@ fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
                             eprintln!("set_skeleton_asset — DB mirror failed: {}", e);
                         }
 
-                        socket
+                        socket.broadcast()
                             .emit(constants::manager::THEME, &new_theme)
                             .ok();
-                        socket.broadcast()
+                        socket
                             .emit(constants::manager::THEME, &new_theme)
                             .ok();
                         socket
@@ -767,8 +761,10 @@ fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                let current_theme = load_current_theme()
-                    .unwrap_or_else(|| serde_json::json!({}));
+                let current_theme = match load_current_theme() {
+                    Some(theme) => theme,
+                    None => super::public::get_default_theme(),
+                };
 
                 match tokio::task::spawn_blocking({
                     let current = current_theme.clone();
@@ -806,10 +802,10 @@ fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
                             eprintln!("reset_skeleton — DB mirror failed: {}", e);
                         }
 
-                        socket
+                        socket.broadcast()
                             .emit(constants::manager::THEME, &new_theme)
                             .ok();
-                        socket.broadcast()
+                        socket
                             .emit(constants::manager::THEME, &new_theme)
                             .ok();
                         socket
@@ -937,8 +933,10 @@ fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let current_theme = load_current_theme()
-                    .unwrap_or_else(|| serde_json::json!({}));
+                let current_theme = match load_current_theme() {
+                    Some(theme) => theme,
+                    None => super::public::get_default_theme(),
+                };
 
                 // MAJOR FIX: snapshot theme revision BEFORE persisting (Node calls setTheme which snapshots)
                 let snapshot_result = tokio::task::spawn_blocking({
