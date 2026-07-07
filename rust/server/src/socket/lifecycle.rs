@@ -113,7 +113,7 @@ fn build_finished_data(game: &Game) -> FinishedData {
         rank: None,
         team_standings: None,
         recap: None,
-        auto_mode: None,
+        auto_mode: Some(game.auto_mode),
     }
 }
 

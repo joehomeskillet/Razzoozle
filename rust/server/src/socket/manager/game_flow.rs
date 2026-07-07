@@ -1,4 +1,4 @@
-//! MANAGER.START_GAME, NEXT_QUESTION, SKIP_QUESTION, ABORT_QUIZ, ADJUST_TIMER — game flow handlers
+//! MANAGER.START_GAME, SET_AUTO, NEXT_QUESTION, SKIP_QUESTION, ABORT_QUIZ, ADJUST_TIMER — game flow handlers
 //!
 //! START_GAME is the only handler that DRIVES the game forward — it spawns the
 //! single long-lived `socket::lifecycle::run_game_lifecycle` task that owns
@@ -21,6 +21,7 @@ use tracing::info;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_start_game(socket, ctx.clone());
+    register_set_auto(socket, ctx.clone());
     register_next_question(socket, ctx.clone());
     register_skip_question(socket, ctx.clone());
     register_abort_quiz(socket, ctx.clone());
@@ -113,6 +114,56 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                             "errors:game.notFound",
                         )
                         .ok();
+                }
+            });
+        }
+    });
+}
+
+/// Host-only: toggle auto-advance mode. Routed via withAuth + getManagerGame
+/// (same ownership gate as START_GAME / PAUSE_GAME). A non-host emit is
+/// silently ignored (no state change, no emit).
+fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::manager::SET_AUTO, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                // Extract gameId from payload; silent no-op if missing or not a string
+                let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+
+                if let Some(game_id) = game_id_opt {
+                    let game_opt = {
+                        let registry = ctx.registry.read().await;
+                        registry.get_game_by_id(game_id)
+                    };
+
+                    if let Some(game_ref) = game_opt {
+                        {
+                            let game = game_ref.lock().unwrap();
+                            // Per-game ownership check: only the socket that created this game can set auto
+                            if game.manager_socket_id != socket.id.to_string() {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                            // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
+                            if !is_game_host(&game, &payload, &ctx.client_id) {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                                return;
+                            }
+                        }
+
+                        // Set auto_mode based on payload; no state change or emit on success
+                        let mut game = game_ref.lock().unwrap();
+                        game.auto_mode = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
+                        info!("auto_mode set to {} for game {}", game.auto_mode, game_id);
+                    }
                 }
             });
         }
