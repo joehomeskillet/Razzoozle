@@ -4,9 +4,19 @@ import type { Player } from "@razzoozle/common/types/game"
 import type { Server, Socket } from "@razzoozle/common/types/game/socket"
 import { usernameValidator } from "@razzoozle/common/validators/auth"
 import { getGameConfig } from "@razzoozle/socket/services/config"
+import { ScoreboardThrottle } from "@razzoozle/socket/services/game/scoreboard-throttle"
 
 // Hard cap on concurrent players per game (DoS / resource guard).
 const MAX_PLAYERS_PER_GAME = 200
+
+// Lobby-burst throttle for the UPDATE_LEADERBOARD broadcast in
+// broadcastPlayerUpdate(). setAvatar/selectTeam can fire rapidly (many players
+// picking avatars/teams within the same few seconds), and every call
+// re-serializes the ENTIRE roster (up to MAX_PLAYERS_PER_GAME players, each
+// carrying up to a 64KB avatar data URL) to the whole room. Leading+trailing
+// coalescing keeps the first update instant while collapsing a burst into one
+// trailing emit with the latest roster, instead of one full-roster emit per tap.
+const LEADERBOARD_BROADCAST_THROTTLE_MS = 150
 
 // I2 — Privacy-first identifier salt for pseudonymous assignment tracking.
 // Per-server salt via environment variable; constant fallback for dev/test.
@@ -30,6 +40,16 @@ export class PlayerManager {
   // P2b — Server-side player tokens: clientId → token. Tokens are minted on
   // join and used to verify reconnects. NEVER serialized on Player (anti-spoof).
   private readonly playerTokens = new Map<string, string>()
+  // I2 — Read ONCE at construction (like lowLatency/teamMode on Game), instead
+  // of a blocking sync fs read+parse+zod-validate on every join. getGameConfig()
+  // was previously called per join() call, so a lobby filling up with players
+  // meant one disk read per player. Crash-guarded: a config read error falls
+  // back to false (guest mode), matching the try/catch this replaces.
+  private readonly requireIdentifier: boolean
+  // See LEADERBOARD_BROADCAST_THROTTLE_MS above.
+  private readonly leaderboardThrottle: ScoreboardThrottle<
+    Array<Omit<Player, "identifierHash">>
+  >
 
   constructor(
     io: Server,
@@ -43,6 +63,21 @@ export class PlayerManager {
     this.getManagerId = getManagerId
     this.isGameEnded = isGameEnded
     this.getJoinLocked = getJoinLocked
+    this.requireIdentifier = (() => {
+      try {
+        return getGameConfig().requireIdentifier ?? false
+      } catch {
+        return false
+      }
+    })()
+    this.leaderboardThrottle = new ScoreboardThrottle(
+      LEADERBOARD_BROADCAST_THROTTLE_MS,
+      (leaderboard) => {
+        this.io
+          .to(this.gameId)
+          .emit(EVENTS.PLAYER.UPDATE_LEADERBOARD, { leaderboard })
+      },
+    )
   }
 
   // I2 — Compute salted SHA-256 hash of pseudonymous identifier (lowercase + trimmed).
@@ -123,14 +158,10 @@ export class PlayerManager {
 
     // I2 — Compute and set identifierHash if the game requires identification
     // AND the client supplied a non-empty identifier. Opt-in, guest-default.
-    try {
-      const config = getGameConfig()
-      if (config.requireIdentifier && identifier?.trim()) {
-        player.identifierHash = this.computeIdentifierHash(identifier)
-      }
-    } catch {
-      // Config read error: fall back to guest mode (no identifier).
-      // The game continues normally; identifierHash stays undefined.
+    // Uses the read-once this.requireIdentifier snapshot (see constructor) —
+    // no per-join config read.
+    if (this.requireIdentifier && identifier?.trim()) {
+      player.identifierHash = this.computeIdentifierHash(identifier)
     }
 
     this.players.push(player)
@@ -234,10 +265,11 @@ export class PlayerManager {
     // I2: Strip identifierHash before broadcast (never visible to manager/players).
     const safe = this.stripIdentifierHash(player)
     this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, safe)
+    // The full-roster UPDATE_LEADERBOARD broadcast is throttled (see
+    // LEADERBOARD_BROADCAST_THROTTLE_MS) — the single-player NEW_PLAYER emit
+    // above is small and stays immediate.
     const safeLeaderboard = this.players.map((p) => this.stripIdentifierHash(p))
-    this.io
-      .to(this.gameId)
-      .emit(EVENTS.PLAYER.UPDATE_LEADERBOARD, { leaderboard: safeLeaderboard })
+    this.leaderboardThrottle.push(safeLeaderboard)
   }
 
   replace(players: Player[]): void {
