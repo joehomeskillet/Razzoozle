@@ -22,6 +22,10 @@ pub const USERNAME_MAX_LEN: usize = 20;
 pub const AVATAR_MAX_BYTES: usize = 4_000_000;
 pub const AVATAR_SVG_MAX_CHARS: usize = 64 * 1024;
 
+// Valid team identifiers for team-mode games (parity with Node's TEAMS enum,
+// packages/common/src/constants.ts).
+pub const TEAMS: [&str; 4] = ["red", "blue", "green", "yellow"];
+
 // Game eviction: TTL for finished/stale games (milliseconds)
 pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
 
@@ -805,10 +809,11 @@ impl GameRegistry {
         None
     }
 
-    /// Updates the player's team and returns their updated snapshot (for a
-    /// future handler-WP to broadcast MANAGER.NEW_PLAYER / UPDATE_LEADERBOARD
-    /// with). No broadcast happens here.
-    pub fn set_player_team(&self, socket_id: &str, team_id: String) -> Option<Player> {
+    /// Updates the player's team and returns their updated snapshot plus the
+    /// game_id/manager_socket_id a caller needs to broadcast MANAGER.NEW_PLAYER
+    /// / PLAYER.UPDATE_LEADERBOARD (the Game is locked here anyway, so reading
+    /// them out costs nothing extra). No broadcast happens here.
+    pub fn set_player_team(&self, socket_id: &str, team_id: String) -> Option<(Player, String, String)> {
         for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
@@ -817,16 +822,20 @@ impl GameRegistry {
                 if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
                     game.engine.players[pos].team_id = Some(team_id);
                 }
-                return Some(game.players[pos].clone());
+                return Some((
+                    game.players[pos].clone(),
+                    game.game_id.clone(),
+                    game.manager_socket_id.clone(),
+                ));
             }
         }
         None
     }
 
-    /// Updates the player's avatar and returns their updated snapshot (for a
-    /// future handler-WP to broadcast MANAGER.NEW_PLAYER / UPDATE_LEADERBOARD
-    /// with). No broadcast happens here.
-    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) -> Option<Player> {
+    /// Updates the player's avatar and returns their updated snapshot plus the
+    /// game_id/manager_socket_id (see set_player_team above). No broadcast
+    /// happens here.
+    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) -> Option<(Player, String, String)> {
         for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
@@ -835,7 +844,11 @@ impl GameRegistry {
                 if pos < game.engine.players.len() && game.engine.players[pos].id == socket_id {
                     game.engine.players[pos].avatar = Some(avatar);
                 }
-                return Some(game.players[pos].clone());
+                return Some((
+                    game.players[pos].clone(),
+                    game.game_id.clone(),
+                    game.manager_socket_id.clone(),
+                ));
             }
         }
         None
