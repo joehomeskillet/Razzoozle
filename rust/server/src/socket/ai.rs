@@ -43,7 +43,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 /// AISettingsPublic. Falls back to seed defaults if file missing or corrupted.
 /// Always returns `keyConfigured: false` for all providers (Rust has no secrets
 /// storage yet).
-fn get_public_ai_settings() -> serde_json::Value {
+pub fn get_public_ai_settings() -> serde_json::Value {
     // Try to read persisted settings from config/ai-settings.json (same path
     // Node's config/ai.ts uses). If missing or corrupted, fall back to seed
     // defaults.
