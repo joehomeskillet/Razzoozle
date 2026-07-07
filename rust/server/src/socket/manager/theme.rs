@@ -392,24 +392,24 @@ pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Resul
 }
 
 /// Decode a data URL with required ;base64, marker and return MIME type + buffer
-fn decode_data_url(data_url: &str, expected_mimes: &[&str]) -> Result<(String, Vec<u8>), String> {
+fn decode_data_url(data_url: &str, expected_mimes: &[&str], error_key: &str) -> Result<(String, Vec<u8>), String> {
     let caps = DATA_URL_REGEX.captures(data_url)
-        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+        .ok_or_else(|| error_key.to_string())?;
 
     let mime_type = caps.get(1)
         .map(|m| m.as_str())
-        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+        .ok_or_else(|| error_key.to_string())?;
 
     if !expected_mimes.contains(&mime_type) {
-        return Err("errors:theme.invalidImage".to_string());
+        return Err(error_key.to_string());
     }
 
     let data_part = caps.get(2)
         .map(|m| m.as_str())
-        .ok_or_else(|| "errors:theme.invalidImage".to_string())?;
+        .ok_or_else(|| error_key.to_string())?;
 
     let buffer = decode_base64(data_part)
-        .map_err(|_| "errors:theme.invalidImage".to_string())?;
+        .map_err(|_| error_key.to_string())?;
 
     Ok((mime_type.to_string(), buffer))
 }
@@ -431,7 +431,7 @@ async fn save_background_image(slot: &str, data_url: &str) -> Result<String, Str
         return Err("errors:theme.invalidSlot".to_string());
     }
 
-    let (mime, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"])?;
+    let (mime, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"], "errors:theme.invalidImage")?;
 
     if buffer.len() > BACKGROUND_SIZE_CAP {
         return Err("errors:theme.imageTooLarge".to_string());
@@ -483,7 +483,7 @@ async fn save_sound_file(slot: &str, data_url: &str) -> Result<String, String> {
 
     let (mime, buffer) = decode_data_url(
         data_url,
-        &["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"]
+        &["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"], "errors:theme.invalidAudio"
     )?;
 
     if buffer.len() > SOUND_SIZE_CAP {
