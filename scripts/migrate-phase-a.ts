@@ -36,17 +36,7 @@ export async function migrateGameConfig(pool: Pool | null): Promise<void> {
       (id, manager_password, team_mode, join_locked, randomize_answers, scoring_mode,
        low_latency_enabled, low_latency_config, version, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        manager_password = $2,
-        team_mode = $3,
-        join_locked = $4,
-        randomize_answers = $5,
-        scoring_mode = $6,
-        low_latency_enabled = $7,
-        low_latency_config = $8,
-        version = $9,
-        updated_at = NOW()
-      WHERE games_config.id = $1
+      ON CONFLICT (id) DO NOTHING
     `
     await pool.query(query, [
       id,
@@ -93,13 +83,7 @@ export async function migrateQuizzes(pool: Pool | null): Promise<void> {
       const query = `
         INSERT INTO quizzes (id, subject, questions, archived, version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          subject = $2,
-          questions = $3,
-          archived = $4,
-          version = $5,
-          updated_at = NOW()
-        WHERE quizzes.id = $1
+        ON CONFLICT (id) DO NOTHING
       `
       try {
         await pool.query(query, [id, subject, JSON.stringify(questions), archived, version])
@@ -146,12 +130,7 @@ export async function migrateThemes(pool: Pool | null): Promise<void> {
       const query = `
         INSERT INTO themes (id, name, theme, version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          name = $2,
-          theme = $3,
-          version = $4,
-          updated_at = NOW()
-        WHERE themes.id = $1
+        ON CONFLICT (id) DO NOTHING
       `
       try {
         await pool.query(query, [id, name, JSON.stringify(theme), version])

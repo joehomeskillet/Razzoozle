@@ -21,7 +21,7 @@
  *   C: Metadata tables (media_assets, achievements_config, installed_plugins)
  *
  * Deduplication & Idempotency:
- *   All tables use ON CONFLICT ... DO UPDATE for idempotent upserts.
+ *   All tables use ON CONFLICT (id) DO NOTHING — additive seed: inserts only missing ids, never mutates existing rows (DB-wins).
  *   Key dedup fields per plan:
  *   - game_results: id (primary key)
  *   - submissions: id (primary key, uuid)
