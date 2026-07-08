@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http"
 import fs from "fs"
-import { getResultById } from "@razzoozle/socket/services/config"
+import { readResultById } from "@razzoozle/socket/services/storage/config-read"
 
 // ── per-result Open Graph unfurl (/r/:id) ───────────────────────────────────
 // Crawlers fetch /r/:id and read the og:* meta tags. Without this every share
@@ -30,11 +30,11 @@ const injectOg = (html: string, title: string, desc: string): string =>
     )
     .replace(/(<title>)[^<]*(<\/title>)/i, `$1${escHtml(title)}$2`)
 
-export const handleResultOg = (
+export const handleResultOg = async (
   _req: IncomingMessage,
   res: ServerResponse,
   id: string | undefined,
-): void => {
+): Promise<void> => {
   let html: string
   try {
     html = fs.readFileSync(OG_INDEX_HTML, "utf-8")
@@ -46,7 +46,7 @@ export const handleResultOg = (
   }
 
   try {
-    const result = getResultById(id ?? "")
+    const result = await readResultById(id ?? "")
     const winner = result.players?.[0]
     const subject = result.subject || "Razzoozle"
     const title = winner ? `${subject} — ${winner.username} gewinnt!` : subject

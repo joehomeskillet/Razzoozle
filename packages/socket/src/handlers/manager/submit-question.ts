@@ -3,10 +3,8 @@ import type { Submission } from "@razzoozle/common/types/submission"
 import { submissionValidator } from "@razzoozle/common/validators/submission"
 import { getClientId } from "@razzoozle/socket/handlers/imageGenThrottle"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
-import {
-  countPendingSubmissions,
-  saveSubmission,
-} from "@razzoozle/socket/services/config"
+import { saveSubmission } from "@razzoozle/socket/services/config"
+import { countPendingSubmissions } from "@razzoozle/socket/services/storage/config-read"
 import {
   checkGlobalSubmissionRate,
   checkRateLimit,
@@ -19,7 +17,7 @@ export const registerSubmitQuestionHandler = ({ socket }: SocketContext) => {
   // Guards: per-socket throttle, full zod validation (incl. questionValidator
   // superRefine), assertSafeId on the persisted id. solutions are stored but
   // never broadcast to clients.
-  socket.on(EVENTS.MANAGER.SUBMIT_QUESTION, (payload: unknown) => {
+  socket.on(EVENTS.MANAGER.SUBMIT_QUESTION, async (payload: unknown) => {
     // Coarse server-wide ceiling FIRST: it has no per-user side effect, whereas
     // the per-client check below increments the user's counter. Checking the
     // global ceiling first means tripping it never burns a legit user's personal
@@ -60,7 +58,7 @@ export const registerSubmitQuestionHandler = ({ socket }: SocketContext) => {
     // save (a counter bug must not lock out legitimate users). The cap is the
     // only place we hard-block on uncertainty-free, observed state.
     try {
-      if (countPendingSubmissions() >= PENDING_QUEUE_CAP) {
+      if ((await countPendingSubmissions()) >= PENDING_QUEUE_CAP) {
         socket.emit(
           EVENTS.MANAGER.SUBMISSION_ERROR,
           "errors:submission.queueFull",

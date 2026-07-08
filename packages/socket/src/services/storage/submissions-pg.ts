@@ -101,6 +101,21 @@ export const listAllSubmissionsPg = async (): Promise<Submission[]> => {
   }
 }
 
+/** Read a single submission by id from Postgres (in-memory find over the full
+ * list — mirrors file-based getSubmissionById(), which returns null on a miss). */
+export const getSubmissionByIdPg = async (id: string): Promise<Submission | null> => {
+  const submissions = await listAllSubmissionsPg()
+  return submissions.find((s) => s.id === id) ?? null
+}
+
+/** Count submissions still awaiting moderation (mirrors file-based
+ * countPendingSubmissions()). NO in-memory cache here — a fresh listAllSubmissionsPg
+ * query per call, consistent with the "no cache" principle for the PG read path. */
+export const countPendingSubmissionsPg = async (): Promise<number> => {
+  const submissions = await listAllSubmissionsPg()
+  return submissions.filter((s) => s.status === "pending").length
+}
+
 /** Upsert (create-or-update) a submission by id. version += 1 on update, updated_at = NOW(). */
 export const upsertSubmissionPg = async (data: Submission): Promise<{ id: string }> => {
   try {

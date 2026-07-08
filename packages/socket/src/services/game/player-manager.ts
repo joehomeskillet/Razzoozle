@@ -57,19 +57,27 @@ export class PlayerManager {
     getManagerId: () => string,
     isGameEnded: () => boolean = () => false,
     getJoinLocked: () => boolean = () => false,
+    // P3 — pre-fetched by Game's ctor (which itself received it from the async
+    // CREATE handler) so this ctor stays synchronous ("hoist, don't cascade").
+    // `undefined` (every direct `new PlayerManager(...)` test call site, and
+    // any Game construction without a preloadedConfig) falls back to the
+    // ORIGINAL sync getGameConfig() read below, unchanged.
+    requireIdentifier?: boolean,
   ) {
     this.io = io
     this.gameId = gameId
     this.getManagerId = getManagerId
     this.isGameEnded = isGameEnded
     this.getJoinLocked = getJoinLocked
-    this.requireIdentifier = (() => {
-      try {
-        return getGameConfig().requireIdentifier ?? false
-      } catch {
-        return false
-      }
-    })()
+    this.requireIdentifier =
+      requireIdentifier ??
+      (() => {
+        try {
+          return getGameConfig().requireIdentifier ?? false
+        } catch {
+          return false
+        }
+      })()
     this.leaderboardThrottle = new ScoreboardThrottle(
       LEADERBOARD_BROADCAST_THROTTLE_MS,
       (leaderboard) => {

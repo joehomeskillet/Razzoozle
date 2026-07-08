@@ -11,9 +11,11 @@ import {
   appendSoloResult,
   assertSafeId,
   getResultById,
-  getQuizzById,
-  getSoloResults,
 } from "@razzoozle/socket/services/config"
+import {
+  readQuizzById,
+  readSoloResults,
+} from "@razzoozle/socket/services/storage/config-read"
 import { checkGlobalSoloRate } from "@razzoozle/socket/services/submissionRateLimit"
 import { jsonOk, jsonError } from "./respond"
 import { readBody, statusFrom413 } from "./body"
@@ -29,32 +31,34 @@ export const handleSoloGet = (
     return
   }
 
-  // Check assignment deadline if assignmentId provided (from query param or caller)
-  if (assignmentId && !checkAssignmentDeadline(assignmentId)) {
-    jsonError(res, 403, "assignment_closed")
-    return
-  }
-
-  try {
-    assertSafeId(id ?? "")
-    const quiz = getQuizzById(id!)
-    const questions = quiz.questions.map((question) => {
-      // Strip secrets: solutions, correct, acceptedAnswers, chunks
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { solutions: _s, correct: _c, acceptedAnswers: _a, chunks: _ch, ...rest } = question
-      // For sentence-builder, add shuffledChunks (a permutation of the correct chunks)
-      if (question.type === "sentence-builder" && question.chunks?.length) {
-        return {
-          ...rest,
-          shuffledChunks: shuffleChunksWithGuard(question.chunks),
-        }
+  void (async () => {
+    try {
+      // Check assignment deadline if assignmentId provided (from query param or caller)
+      if (assignmentId && !(await checkAssignmentDeadline(assignmentId))) {
+        jsonError(res, 403, "assignment_closed")
+        return
       }
-      return rest
-    })
-    jsonOk(res, { subject: quiz.subject, questions })
-  } catch (err) {
-    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
-  }
+
+      assertSafeId(id ?? "")
+      const quiz = await readQuizzById(id!)
+      const questions = quiz.questions.map((question) => {
+        // Strip secrets: solutions, correct, acceptedAnswers, chunks
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { solutions: _s, correct: _c, acceptedAnswers: _a, chunks: _ch, ...rest } = question
+        // For sentence-builder, add shuffledChunks (a permutation of the correct chunks)
+        if (question.type === "sentence-builder" && question.chunks?.length) {
+          return {
+            ...rest,
+            shuffledChunks: shuffleChunksWithGuard(question.chunks),
+          }
+        }
+        return rest
+      })
+      jsonOk(res, { subject: quiz.subject, questions })
+    } catch (err) {
+      jsonError(res, 404, err instanceof Error ? err.message : "Not found")
+    }
+  })()
 }
 
 export const handleCheckAnswer = (
@@ -78,7 +82,7 @@ export const handleCheckAnswer = (
       }
 
       const { questionIndex, answerId, answerIds, answerText } = parsed.data
-      const quiz = getQuizzById(id!)
+      const quiz = await readQuizzById(id!)
 
       if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
         jsonError(res, 400, "Invalid questionIndex")
@@ -139,7 +143,7 @@ export const handleSoloScore = (
       const { playerName, score: clientScore, answers: clientAnswers, assignmentId } = parsed.data
 
       // Check assignment deadline if provided
-      if (assignmentId && !checkAssignmentDeadline(assignmentId)) {
+      if (assignmentId && !(await checkAssignmentDeadline(assignmentId))) {
         jsonError(res, 403, "assignment_closed")
         return
       }
@@ -147,7 +151,7 @@ export const handleSoloScore = (
       // Load quiz before persisting: 404 (not the outer 500) when missing
       let quiz
       try {
-        quiz = getQuizzById(id!)
+        quiz = await readQuizzById(id!)
       } catch {
         jsonError(res, 404, `Quizz "${id}" not found`)
         return
@@ -196,7 +200,9 @@ export const handleSoloScore = (
         assignmentId,
       )
 
-      const leaderboard = getSoloResults(id!).sort((a, b) => b.score - a.score)
+      const leaderboard = (await readSoloResults(id!)).sort(
+        (a, b) => b.score - a.score,
+      )
       jsonOk(res, { leaderboard })
     } catch (err) {
       jsonError(

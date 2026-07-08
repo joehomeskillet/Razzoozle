@@ -6,10 +6,10 @@ import {
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteCatalogEntry,
-  getCatalog,
   saveCatalogEntry,
   updateCatalogEntry,
 } from "@razzoozle/socket/services/config"
+import { readCatalog } from "@razzoozle/socket/services/storage/config-read"
 import manager from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
@@ -19,14 +19,14 @@ import { z } from "zod"
 export const catalogSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.CATALOG.LIST,
-    manager.withAuth(socket, () => {
-      socket.emit(EVENTS.CATALOG.DATA, getCatalog())
+    manager.withAuth(socket, async () => {
+      socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
     }),
   )
 
   socket.on(
     EVENTS.CATALOG.ADD,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = catalogAddValidator.safeParse(payload)
 
       if (!result.success) {
@@ -38,7 +38,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
       try {
         saveCatalogEntry(result.data)
         socket.emit(EVENTS.CATALOG.ADD_SUCCESS)
-        socket.emit(EVENTS.CATALOG.DATA, getCatalog())
+        socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
       } catch (error) {
         socket.emit(
           EVENTS.CATALOG.ERROR,
@@ -50,7 +50,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.CATALOG.UPDATE,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = catalogUpdateValidator.safeParse(payload)
 
       if (!result.success) {
@@ -65,7 +65,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
           tags: result.data.tags,
         })
         socket.emit(EVENTS.CATALOG.ADD_SUCCESS)
-        socket.emit(EVENTS.CATALOG.DATA, getCatalog())
+        socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
       } catch (error) {
         socket.emit(
           EVENTS.CATALOG.ERROR,
@@ -77,7 +77,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.CATALOG.DELETE,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = z.object({ id: z.string() }).safeParse(payload)
 
       if (!result.success) {
@@ -88,7 +88,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
 
       try {
         deleteCatalogEntry(result.data.id)
-        socket.emit(EVENTS.CATALOG.DATA, getCatalog())
+        socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
       } catch (error) {
         socket.emit(
           EVENTS.CATALOG.ERROR,

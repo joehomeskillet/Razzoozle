@@ -5,13 +5,15 @@ import { questionValidator } from "@razzoozle/common/validators/quizz"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   assertSafeId,
-  getQuizzById,
-  getSubmissionById,
-  getSubmissions,
   saveCatalogEntry,
   updateQuizz,
   updateSubmission,
 } from "@razzoozle/socket/services/config"
+import {
+  readQuizzById,
+  readSubmissionById,
+  readSubmissions,
+} from "@razzoozle/socket/services/storage/config-read"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
@@ -19,14 +21,14 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
   // ── Admin (auth-gated) submission moderation ──────────────────────────────
   socket.on(
     EVENTS.MANAGER.LIST_SUBMISSIONS,
-    manager.withAuth(socket, () => {
-      socket.emit(EVENTS.MANAGER.SUBMISSIONS_DATA, getSubmissions())
+    manager.withAuth(socket, async () => {
+      socket.emit(EVENTS.MANAGER.SUBMISSIONS_DATA, await readSubmissions())
     }),
   )
 
   socket.on(
     EVENTS.MANAGER.EDIT_SUBMISSION,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       // questionValidator is a ZodEffects (.superRefine) so .partial() is not
       // available — admin edits submit the full corrected question object.
       const schema = z.object({ id: z.string(), question: questionValidator })
@@ -46,7 +48,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
         updateSubmission(result.data.id, {
           question: result.data.question as Question,
         })
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         socket.emit(
           EVENTS.MANAGER.SUBMISSION_ERROR,
@@ -60,7 +62,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.MANAGER.APPROVE_SUBMISSION,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       // Two destinations: append to an existing quizz (quizzId required) OR file
       // the submission into the reusable catalog (toCatalog: true).
       const schema = z.object({
@@ -82,7 +84,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
       try {
         assertSafeId(result.data.id)
 
-        const submission = getSubmissionById(result.data.id)
+        const submission = await readSubmissionById(result.data.id)
 
         if (!submission) {
           socket.emit(
@@ -102,7 +104,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
           })
 
           updateSubmission(result.data.id, { status: "approved" })
-          emitConfig(socket)
+          await emitConfig(socket)
 
           return
         }
@@ -119,7 +121,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
 
         assertSafeId(result.data.quizzId)
 
-        const quizz = getQuizzById(result.data.quizzId)
+        const quizz = await readQuizzById(result.data.quizzId)
 
         // Append the question with submittedBy preserved; updateQuizz runs
         // quizzValidator which keeps submittedBy (now optional on questionValidator).
@@ -134,7 +136,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
         })
 
         updateSubmission(result.data.id, { status: "approved" })
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         socket.emit(
           EVENTS.MANAGER.SUBMISSION_ERROR,
@@ -148,7 +150,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.MANAGER.REJECT_SUBMISSION,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       // WP-17 — widened: optional moderator reason + optional category override.
       const schema = z.object({
         id: z.string(),
@@ -181,7 +183,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
         }
 
         updateSubmission(result.data.id, update)
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         socket.emit(
           EVENTS.MANAGER.SUBMISSION_ERROR,

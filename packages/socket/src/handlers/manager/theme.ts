@@ -5,26 +5,26 @@ import {
 } from "@razzoozle/common/constants"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
-  getTheme,
   resetSkeleton,
   saveBackgroundImage,
   saveSoundFile,
   setSkeletonAsset,
   setTheme,
 } from "@razzoozle/socket/services/config"
+import { readTheme } from "@razzoozle/socket/services/storage/config-read"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 
 export const registerThemeHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MANAGER.GET_CONFIG,
-    manager.withAuth(socket, () => {
-      emitConfig(socket)
+    manager.withAuth(socket, async () => {
+      await emitConfig(socket)
     }),
   )
 
   // Public: any client (player or manager) may read the theme to apply it.
-  socket.on(EVENTS.MANAGER.GET_THEME, () => {
-    socket.emit(EVENTS.MANAGER.THEME, getTheme())
+  socket.on(EVENTS.MANAGER.GET_THEME, async () => {
+    socket.emit(EVENTS.MANAGER.THEME, await readTheme())
   })
 
   socket.on(
@@ -125,7 +125,7 @@ export const registerThemeHandlers = ({ socket }: SocketContext) => {
       async (payload: { slot: SoundSlot; dataUrl: string }) => {
         try {
           const assetRef = await saveSoundFile(payload.slot, payload.dataUrl)
-          const current = getTheme()
+          const current = await readTheme()
           const theme = setTheme({
             ...current,
             sounds: { ...current.sounds, [payload.slot]: assetRef },

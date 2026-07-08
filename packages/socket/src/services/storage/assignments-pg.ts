@@ -90,6 +90,13 @@ export const listAllAssignmentsPg = async (): Promise<Assignment[]> => {
   }
 }
 
+/** Read a single assignment by id from Postgres (in-memory find over the full
+ * list — mirrors file-based getAssignment(), which returns null on a miss). */
+export const getAssignmentByIdPg = async (id: string): Promise<Assignment | null> => {
+  const assignments = await listAllAssignmentsPg()
+  return assignments.find((a) => a.id === id) ?? null
+}
+
 /** Upsert (create-or-update) an assignment by id. version += 1 on update, updated_at = NOW(). */
 export const upsertAssignmentPg = async (a: Assignment): Promise<{ id: string }> => {
   try {

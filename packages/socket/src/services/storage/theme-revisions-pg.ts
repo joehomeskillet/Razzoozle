@@ -96,6 +96,14 @@ export const listThemeRevisionsPg = async (): Promise<ThemeRevision[]> => {
   }
 }
 
+/** Read a single theme revision by id from Postgres (in-memory find over the
+ * newest-10 ring — mirrors file-based getThemeRevisionById(), which returns
+ * null on a miss). */
+export const getThemeRevisionByIdPg = async (id: string): Promise<ThemeRevision | null> => {
+  const revisions = await listThemeRevisionsPg()
+  return revisions.find((r) => r.id === id) ?? null
+}
+
 /** Insert a theme revision (theme_id='active', snapshot=$1, created_at=$2), then prune to newest 10. */
 export const insertThemeRevisionPg = async (entry: ThemeRevision): Promise<void> => {
   try {
