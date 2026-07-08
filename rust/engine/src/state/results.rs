@@ -10,6 +10,8 @@ pub struct RoundResult {
     pub first_correct: bool,
     pub response_time_ms: i64,
     pub answered: bool,
+    pub achievements: Vec<String>,
+    pub bonus_points: i32,
 }
 
 impl RoundResult {
@@ -26,8 +28,8 @@ impl RoundResult {
             bonus: None,
             first_correct: Some(self.first_correct),
             poll: None,
-            achievements: None,
-            bonus_points: None,
+            achievements: (!self.achievements.is_empty()).then(|| self.achievements.clone()),
+            bonus_points: (self.bonus_points > 0).then_some(self.bonus_points),
             player_count: Some(total_players),
             correct_answer: None,
             correct_chunks: None,
