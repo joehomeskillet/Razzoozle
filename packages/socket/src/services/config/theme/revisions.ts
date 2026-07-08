@@ -1,6 +1,7 @@
 import { type Theme, type ThemeRevision } from "@razzoozle/common/types/theme"
 import { themeRevisionValidator } from "@razzoozle/common/validators/theme"
 import { THEME_REVISIONS_MAX } from "@razzoozle/common/constants"
+import { insertThemeRevisionPg } from "@razzoozle/socket/services/storage/theme-revisions-pg"
 import fs from "fs"
 import { themeRevisionsFile } from "./core"
 
@@ -10,6 +11,12 @@ import { themeRevisionsFile } from "./core"
 // (see setTheme). Reads validate every entry via themeRevisionValidator and drop
 // invalid ones (like getThemeTemplates); a missing file yields []. No per-file id
 // slugging → no extra path-traversal surface (single fixed filename).
+
+// Guard: only mirror to PG if DATABASE_MODE is dual/pg/pg-only
+const isDbBackedThemeRevMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const getThemeRevisions = (): ThemeRevision[] => {
   const file = themeRevisionsFile()
@@ -60,6 +67,13 @@ export const saveThemeRevision = (theme: Theme): { id: string } => {
   const next = [record, ...getThemeRevisions()].slice(0, THEME_REVISIONS_MAX)
 
   fs.writeFileSync(themeRevisionsFile(), JSON.stringify(next, null, 2))
+
+  // Fire-and-forget pg mirror write
+  if (isDbBackedThemeRevMode()) {
+    insertThemeRevisionPg(record).catch((error) =>
+      console.error("theme-revisions-pg mirror failed", error),
+    )
+  }
 
   return { id }
 }
