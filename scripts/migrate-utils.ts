@@ -29,7 +29,14 @@ export async function connectDb(): Promise<Pool> {
 }
 
 export function getConfigPath(): string {
-  return process.env.CONFIG_PATH || './config'
+  const configPath = process.env.CONFIG_PATH
+  if (!configPath) {
+    throw new Error(
+      "CONFIG_PATH must be set explicitly (the corpus to seed FROM). " +
+        "Refusing to default — never seed from the stale source/config or the live /config mount by accident.",
+    )
+  }
+  return configPath
 }
 
 export function isDryRun(): boolean {

@@ -35,14 +35,7 @@ export async function migrateAchievementsConfig(pool: Pool | null): Promise<void
       const query = `
         INSERT INTO achievements_config (id, enabled, name, description, threshold, version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          enabled = $2,
-          name = $3,
-          description = $4,
-          threshold = $5,
-          version = $6,
-          updated_at = NOW()
-        WHERE achievements_config.id = $1
+        ON CONFLICT (id) DO NOTHING
       `
       try {
         await pool.query(query, [id, enabled, name, description, threshold, version])
@@ -95,18 +88,7 @@ export async function migrateMediaAssets(pool: Pool | null): Promise<void> {
       const query = `
         INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          filename = $2,
-          url = $3,
-          size = $4,
-          type = $5,
-          category = $6,
-          source = $7,
-          width = $8,
-          height = $9,
-          uploaded_at = $10,
-          updated_at = NOW()
-        WHERE media_assets.id = $1
+        ON CONFLICT (id) DO NOTHING
       `
       try {
         await pool.query(query, [id, filename, url, size, type, category, source, width, height, uploadedAt])
@@ -156,15 +138,7 @@ export async function migrateInstalledPlugins(pool: Pool | null): Promise<void> 
       const query = `
         INSERT INTO installed_plugins (id, name, version, enabled, capabilities, config, plugin_version, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          name = $2,
-          version = $3,
-          enabled = $4,
-          capabilities = $5,
-          config = $6,
-          plugin_version = $7,
-          updated_at = NOW()
-        WHERE installed_plugins.id = $1
+        ON CONFLICT (id) DO NOTHING
       `
       try {
         await pool.query(query, [
