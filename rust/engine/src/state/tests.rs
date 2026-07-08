@@ -257,4 +257,81 @@ mod tests {
         assert!(!p1_result.first_correct, "practice question should not award first_correct");
         assert!(!p2_result.first_correct);
     }
+
+    #[test]
+    fn wp_s_whole_game_fields_persist_and_questions_history_accumulates() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(
+            quiz,
+            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+        );
+
+        assert_eq!(state.phase, GamePhase::ShowRoom);
+
+        state.start().unwrap();
+        assert_eq!(state.phase, GamePhase::ShowStart);
+
+        // First question
+        state.show_question(0).unwrap();
+        
+        // Insert sentinels into game_counters and recap_stats before first reveal
+        state.game_counters.insert("sentinel_counter".into(), GameCounter {
+            answered: 99,
+            correct: 88,
+            ever: true,
+        });
+        state.recap_stats.insert("sentinel_recap".into(), RecapStat {
+            username: "TestUser".to_string(),
+            fastest_ms: Some(1000),
+            peak_streak: 42,
+            correct: 10,
+            wrong: 5,
+            answered: 15,
+            best_climb: 3,
+            worst_rank_ever: 5,
+            achievement_ids: vec!["ach1".into()],
+            lucky_guess: true,
+        });
+
+        state.open_answers().unwrap();
+        state.set_clock_ms(100);
+        state.record_answer("player1", Some(1), None, None).unwrap();
+        state.set_clock_ms(200);
+        state.record_answer("player2", Some(0), None, None).unwrap();
+        state.reveal(ScoringMode::Speed).unwrap();
+        state.leaderboard_view().unwrap();
+
+        // Verify questions_history has 1 entry after first round
+        assert_eq!(state.questions_history.len(), 1, "questions_history should have 1 entry after first round");
+
+        // Verify sentinels still exist (show_question didn't clear them)
+        assert!(state.game_counters.contains_key("sentinel_counter"), 
+                "game_counters should persist after show_question");
+        assert!(state.recap_stats.contains_key("sentinel_recap"), 
+                "recap_stats should persist after show_question");
+
+        // Second question
+        let phase = state.next_or_finish().unwrap();
+        assert_eq!(phase, GamePhase::ShowQuestion);
+
+        state.open_answers().unwrap();
+        state.set_clock_ms(150);
+        state.record_answer("player1", Some(2), None, None).unwrap();
+        state.set_clock_ms(250);
+        state.record_answer("player2", Some(1), None, None).unwrap();
+        state.reveal(ScoringMode::Speed).unwrap();
+
+        // Verify questions_history has 2 entries after second round
+        assert_eq!(state.questions_history.len(), 2, "questions_history should have 2 entries after second round");
+
+        // Verify sentinels STILL exist (show_question didn't clear them on second call either)
+        assert!(state.game_counters.contains_key("sentinel_counter"), 
+                "game_counters should persist after second show_question");
+        assert_eq!(state.game_counters["sentinel_counter"].answered, 99, 
+                   "game_counters sentinel value should not be mutated");
+        assert!(state.recap_stats.contains_key("sentinel_recap"), 
+                "recap_stats should persist after second show_question");
+        assert_eq!(state.recap_stats["sentinel_recap"].peak_streak, 42, 
+                   "recap_stats sentinel value should not be mutated");
+    }
 }
