@@ -18,6 +18,7 @@
 //! race-safety net for "timer elapsed vs. skip vs. all-answered".
 
 use crate::db;
+use uuid::Uuid;
 use crate::state::{Game, GameRegistry};
 use crate::question_type_wire;
 use razzoozle_engine::state::GamePhase;
@@ -370,7 +371,9 @@ pub async fn run_game_lifecycle(
             let recap_json_clone = recap_json.clone();
             tokio::spawn(async move {
                 let now = chrono::Utc::now();
-                if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
+                let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
+                let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
+                if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
                     warn!("Result persistence failed for gameId={}: {}", gid, e);
                 }
             });
@@ -478,7 +481,9 @@ pub async fn run_game_lifecycle(
                 let questions_json_for_insert = questions_json.clone();
                 tokio::spawn(async move {
                     let now = chrono::Utc::now();
-                    if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_for_insert), recap_json_for_insert.as_ref()).await {
+                    let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
+                    let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
+                    if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_for_insert), recap_json_for_insert.as_ref()).await {
                         warn!("Result persistence failed for gameId={}: {}", gid, e);
                     }
                 });
