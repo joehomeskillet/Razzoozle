@@ -193,5 +193,11 @@ export const saveQuizz = (data: unknown): { id: string } => {
 
   fs.writeFileSync(filePath, JSON.stringify(result.data, null, 2))
 
+  if (isDbBackedQuizzMode()) {
+    updateQuizzPg(id, result.data).catch((error) =>
+      console.error(`quizz-pg mirror write failed for "${id}":`, error),
+    )
+  }
+
   return { id }
 }
