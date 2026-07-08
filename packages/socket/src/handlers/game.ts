@@ -467,7 +467,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // no-op guards).
   socket.on(
     EVENTS.MANAGER.SET_GAME_CONFIG,
-    managerAuth.withAuth(socket, (payload: unknown) => {
+    managerAuth.withAuth(socket, async (payload: unknown) => {
       const patchPayload = payload as
         | { teamMode?: unknown; lowLatencyEnabled?: unknown; joinLocked?: unknown; randomizeAnswers?: unknown; scoringMode?: unknown }
         | null
@@ -514,7 +514,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
         }
         // Round-trip the saved value back so the manager's toggle reflects the
         // persisted config rather than its optimistic local state.
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         // Validation (zod) or disk-write failure: log it and tell the manager —
         // the config UI already shows an optimistic success toast for this
@@ -534,7 +534,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // emitConfig so the manager's editor reflects the persisted config.
   socket.on(
     EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG,
-    managerAuth.withAuth(socket, (payload: unknown) => {
+    managerAuth.withAuth(socket, async (payload: unknown) => {
       const config = (payload as { config?: unknown } | null | undefined)
         ?.config
 
@@ -544,7 +544,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
       try {
         saveAchievementsConfig(config as AchievementsConfig)
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         // Validation (zod) or disk-write failure: log it and tell the manager —
         // same rationale as SET_GAME_CONFIG above, the achievements editor

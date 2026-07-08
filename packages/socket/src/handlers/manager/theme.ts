@@ -24,7 +24,11 @@ export const registerThemeHandlers = ({ socket }: SocketContext) => {
 
   // Public: any client (player or manager) may read the theme to apply it.
   socket.on(EVENTS.MANAGER.GET_THEME, async () => {
-    socket.emit(EVENTS.MANAGER.THEME, await readTheme())
+    try {
+      socket.emit(EVENTS.MANAGER.THEME, await readTheme())
+    } catch (error) {
+      console.error("[theme.GET_THEME] readTheme failed:", error)
+    }
   })
 
   socket.on(

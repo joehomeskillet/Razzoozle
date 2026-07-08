@@ -75,7 +75,7 @@ class Manager {
 
   withAuth<T extends unknown[]>(
     socket: Socket,
-    handler: (..._args: T) => void,
+    handler: (..._args: T) => void | Promise<void>,
   ) {
     return (..._args: T) => {
       if (!this.isLogged(socket)) {
@@ -84,7 +84,13 @@ class Manager {
         return
       }
 
-      handler(..._args)
+      const result = handler(..._args)
+
+      if (result && typeof (result as { then?: unknown }).then === "function") {
+        ;(result as Promise<void>).catch((err) => {
+          console.error("[manager.withAuth] handler rejected:", err)
+        })
+      }
     }
   }
 }
