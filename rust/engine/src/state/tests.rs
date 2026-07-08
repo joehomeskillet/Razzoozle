@@ -398,4 +398,41 @@ mod tests {
         let results = state.reveal(ScoringMode::Speed).unwrap();
         assert_eq!(results[0].bonus_points, 0, "default config has zero bonus");
     }
+
+    #[test]
+    fn achievement_ids_enrichment_and_superlatives() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(
+            quiz,
+            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+        );
+
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        
+        // Play the first round: player1 answers correctly (triggers first_correct achievement)
+        state.open_answers().unwrap();
+        state.set_clock_ms(100);
+        state.record_answer("player1", Some(1), None, None).unwrap();
+        state.set_clock_ms(200);
+        state.record_answer("player2", Some(0), None, None).unwrap();
+        let results = state.reveal(ScoringMode::Speed).unwrap();
+        
+        // Verify that player1 unlocked at least one achievement (first_correct)
+        let p1_result = results.iter().find(|r| r.client_id == "player1").unwrap();
+        assert!(!p1_result.achievements.is_empty(), "player1 should have unlocked achievements");
+        
+        // Verify that achievement_ids is populated in recap_stats
+        let p1_stat = state.recap_stats.get("player1").unwrap();
+        assert!(!p1_stat.achievement_ids.is_empty(), 
+                "recap_stats should have achievement_ids populated");
+        
+        // Verify that MostAchievements superlative is present
+        let recap = state.build_manager_recap();
+        let has_most_achievements = recap.superlatives.iter()
+            .any(|s| s.key == razzoozle_protocol::results_display::SuperlativeKey::MostAchievements);
+        assert!(has_most_achievements, 
+                "recap should include MostAchievements superlative when achievements are unlocked");
+    }
 }
+
