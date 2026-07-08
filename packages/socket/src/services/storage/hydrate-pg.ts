@@ -11,6 +11,7 @@ import { listAllAssignmentsPg } from "@razzoozle/socket/services/storage/assignm
 import { listAllAchievementsPg } from "@razzoozle/socket/services/storage/achievements-pg"
 import { listAllThemesPg } from "@razzoozle/socket/services/storage/theme-pg"
 import { listAllSoloResultsPg } from "@razzoozle/socket/services/storage/solo-results-pg"
+import { listThemeRevisionsPg } from "@razzoozle/socket/services/storage/theme-revisions-pg"
 
 interface HydrationStats {
   quizzes: number
@@ -23,6 +24,7 @@ interface HydrationStats {
   templates: number
   gameConfig: number
   soloResults: number
+  themeRevisions: number
   errors: string[]
 }
 
@@ -277,6 +279,34 @@ async function hydrateSoloResults(stats: HydrationStats): Promise<void> {
 }
 
 /**
+ * Hydrate config/theme-revisions.json from DB theme_revisions.
+ * Single file, no zombie cleanup. Only overwrite if DB returned ≥1 row
+ * (avoids nuking a file the seed hasn't populated).
+ */
+async function hydrateThemeRevisions(stats: HydrationStats): Promise<void> {
+  try {
+    const revisions = await listThemeRevisionsPg()
+
+    // Guard: only overwrite the file when the DB returned ≥1 row
+    if (revisions.length === 0) {
+      stats.themeRevisions = 0
+      return
+    }
+
+    ensureDir(getPath())
+    fs.writeFileSync(
+      getPath("theme-revisions.json"),
+      JSON.stringify(revisions, null, 2),
+    )
+    stats.themeRevisions = revisions.length
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("pg-hydration: theme-revisions failed:", msg)
+    stats.errors.push(`theme-revisions: ${msg}`)
+  }
+}
+
+/**
  * Hydrate config/achievements.json from DB achievements_config.
  * Overwrites (no zombie cleanup: single file).
  */
@@ -417,6 +447,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     templates: 0,
     gameConfig: 0,
     soloResults: 0,
+    themeRevisions: 0,
     errors: [],
   }
 
@@ -427,6 +458,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
   await hydrateSubmissions(stats)
   await hydrateAssignments(stats)
   await hydrateSoloResults(stats)
+  await hydrateThemeRevisions(stats)
   await hydrateAchievements(stats)
   await hydrateGameConfig(stats)
   await hydrateThemes(stats)
@@ -439,6 +471,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     `${stats.submissions} submissions, ` +
     `${stats.assignments} assignments, ` +
     `${stats.soloResults} solo-results, ` +
+    `${stats.themeRevisions} theme-revisions, ` +
     `${stats.achievements} achievements, ` +
     `${stats.themes} active-theme, ` +
     `${stats.templates} templates, ` +
