@@ -17,20 +17,25 @@ import {
 const getClientId = (socket: SocketContext["socket"]) =>
   socket.handshake.auth.clientId as string
 
-export const emitConfig = (socket: SocketContext["socket"]) =>
-  socket.emit(EVENTS.MANAGER.CONFIG, {
+export const emitConfig = (socket: SocketContext["socket"]) => {
+  const gameConfig = getGameConfig()
+  return socket.emit(EVENTS.MANAGER.CONFIG, {
     quizz: getQuizzMeta(),
     results: getResultsMeta(),
     submissions: getSubmissionsMeta(),
     media: getMediaList(),
     themeTemplates: getThemeTemplatesMeta(),
-    teamMode: getGameConfig().teamMode,
-    lowLatencyEnabled: getGameConfig().lowLatencyMode.enabled,
+    teamMode: gameConfig.teamMode,
+    lowLatencyEnabled: gameConfig.lowLatencyMode.enabled,
+    randomizeAnswers: gameConfig.randomizeAnswers ?? false,
+    joinLocked: gameConfig.joinLocked ?? false,
+    scoringMode: gameConfig.scoringMode ?? "speed",
     achievements: getMergedAchievements(),
     devMode: isDevMode(),
     devApiKey: devApiKey(),
     plugins: readPlugins(),
   })
+}
 
 // Auth model is shared by every manager-equivalent client. The Raspberry Pi
 // "satellite" display (kiosk on a beamer/TV, see ../../web .../pages/satellite)
