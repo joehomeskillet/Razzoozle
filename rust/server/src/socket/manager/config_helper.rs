@@ -54,25 +54,14 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     };
 
     socket.emit(constants::manager::CONFIG, &payload).ok();
-
-    // Re-push AI settings alongside manager:config — mirrors Node's auth.ts,
-    // which re-emits ai:settings on every successful manager:auth (login AND
-    // reconnect re-auth) so the open KI tab repopulates after a server
-    // restart without racing a withAuth ai:getSettings request. This function
-    // is also called after quiz/config writes (not just login), which is
-    // slightly broader than Node's login-only re-emit, but harmless — the
-    // payload reflects persisted AI provider config (see socket/ai.rs for the
-    // full persisted-config read logic).
-    socket
-        .emit(constants::ai::SETTINGS, &super::super::ai_config::get_public_ai_settings())
-        .ok();
 }
 
 /// Build QuizzMeta array from registry: {id, subject, archived, questionCount}
 /// (NOT the full questions array — matches Node's getQuizzMeta behavior)
 async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
     let registry = ctx.registry.read().await;
-    let quiz_ids = registry.list_quiz_ids();
+    let mut quiz_ids = registry.list_quiz_ids();
+    quiz_ids.sort();
     drop(registry);
 
     let mut quizz = Vec::new();

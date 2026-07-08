@@ -5,6 +5,7 @@ use razzoozle_protocol::status::Status;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+use rand::Rng;
 
 use super::GAME_EVICTION_TTL_MS;
 
@@ -138,6 +139,10 @@ impl Game {
             return Err("errors:game.playerAlreadyConnected");
         }
 
+        let mut rng = rand::thread_rng();
+        const URLSAFE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        let player_token_str: String = (0..43).map(|_| URLSAFE[rng.gen_range(0..URLSAFE.len())] as char).collect();
+
         let player = Player {
             id: socket_id,
             client_id: client_id.clone(),
@@ -146,7 +151,7 @@ impl Game {
             points: 0,
             streak: 0,
             is_bot: None,
-            player_token: Some(Uuid::new_v4().to_string()),
+            player_token: Some(player_token_str),
             avatar,
             achievements: None,
             team_id: None,

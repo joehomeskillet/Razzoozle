@@ -255,7 +255,7 @@ pub async fn run_game_lifecycle(
 
     // Pre-Q1 3-2-1 intro (node: game:startCooldown then cooldown.start(3)).
     io.to(game_id.clone())
-        .emit(constants::game::START_COOLDOWN, &serde_json::json!({}))
+        .emit(constants::game::START_COOLDOWN, &())
         .ok();
     let intro_abort = { game_ref.lock().unwrap().arm_abort() };
     let io_intro = io.clone();
