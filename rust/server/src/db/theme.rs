@@ -39,7 +39,7 @@ pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
     };
 
     let row: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT theme_data FROM themes WHERE id = 'active' LIMIT 1"
+        "SELECT theme FROM themes WHERE id = 'active' LIMIT 1"
     )
     .fetch_optional(pool)
     .await
