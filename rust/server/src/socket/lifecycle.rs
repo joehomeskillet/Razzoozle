@@ -356,9 +356,12 @@ pub async fn run_game_lifecycle(
 
             // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
             let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-            io.to(manager_socket_id)
-                .emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
-                .ok();
+            if let Ok(sid) = manager_socket_id.parse() {
+                if let Some(sock) = io.get_socket(sid) {
+                    sock.emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
+                        .ok();
+                }
+            }
 
             // Send personalized FINISHED data to each player
             let game = game_ref.lock().unwrap();
@@ -377,9 +380,12 @@ pub async fn run_game_lifecycle(
                         recap: finished.recap.clone(),
                         auto_mode: finished.auto_mode,
                     };
-                    io.to(player_info.id.clone())
-                        .emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
-                        .ok();
+                    if let Ok(sid) = player_info.id.parse() {
+                        if let Some(sock) = io.get_socket(sid) {
+                            sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
+                                .ok();
+                        }
+                    }
                 }
             }
             return;
@@ -387,12 +393,15 @@ pub async fn run_game_lifecycle(
 
         // Emit SHOW_LEADERBOARD to manager socket only
         let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-        io.to(manager_socket_id)
-            .emit(
-                constants::game::STATUS,
-                &GameStatus::ShowLeaderboard(leaderboard_data),
-            )
-            .ok();
+        if let Ok(sid) = manager_socket_id.parse() {
+            if let Some(sock) = io.get_socket(sid) {
+                sock.emit(
+                    constants::game::STATUS,
+                    &GameStatus::ShowLeaderboard(leaderboard_data),
+                )
+                .ok();
+            }
+        }
 
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
         // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
@@ -449,9 +458,12 @@ pub async fn run_game_lifecycle(
 
                 // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
                 let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-                io.to(manager_socket_id)
-                    .emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
-                    .ok();
+                if let Ok(sid) = manager_socket_id.parse() {
+                    if let Some(sock) = io.get_socket(sid) {
+                        sock.emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
+                            .ok();
+                    }
+                }
 
                 // Send personalized FINISHED data to each player
                 let game = game_ref.lock().unwrap();
@@ -470,9 +482,12 @@ pub async fn run_game_lifecycle(
                             recap: finished.recap.clone(),
                             auto_mode: finished.auto_mode,
                         };
-                        io.to(player_info.id.clone())
-                            .emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
-                            .ok();
+                        if let Ok(sid) = player_info.id.parse() {
+                            if let Some(sock) = io.get_socket(sid) {
+                                sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
+                                    .ok();
+                            }
+                        }
                     }
                 }
                 return;
