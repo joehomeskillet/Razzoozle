@@ -8,6 +8,7 @@ pub struct RoundResult {
     pub points: i32,
     pub streak: i32,
     pub first_correct: bool,
+    pub response_time_ms: i64,
 }
 
 impl RoundResult {
