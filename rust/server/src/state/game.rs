@@ -51,6 +51,10 @@ pub struct Game {
     pub paused: bool,
     // Snapshot of the status + data at the time of pause, for replay on resume
     pub paused_state: Option<(Status, serde_json::Value)>,
+    // Low-latency playerAnswer coalesce flag: prevents multiple PLAYER_ANSWER
+    // emits within the throttle window (100ms). Leading-edge sets true, trailing
+    // task resets to false after emitting.
+    pub answer_count_push_pending: bool,
 }
 
 impl Game {
@@ -84,6 +88,7 @@ impl Game {
             cooldown_abort: None,
             paused: false,
             paused_state: None,
+            answer_count_push_pending: false,
         }
     }
 

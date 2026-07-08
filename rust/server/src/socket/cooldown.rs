@@ -4,8 +4,8 @@
 //!
 //! Mirrors node's `cooldown-timer.ts` exactly: `count` starts at `seconds - 1`
 //! and is emitted BEFORE the tick that resolves — nothing is ever emitted for
-//! 0, and the timer naturally resolves ~`seconds` after it started. This is
-//! parity with the shipped node behaviour, not a redesign.
+//! 0, and the timer resolves ON the tick at t=`seconds`. Abort resolves at the
+//! next 1s tick boundary, not immediately (setInterval semantics).
 //!
 //! IO-agnostic on purpose: the caller supplies an `on_tick` callback, so this
 //! stays unit-testable without a live socket.io server (see tests below).
@@ -20,30 +20,31 @@ pub enum CooldownOutcome {
     /// Reached 0 naturally — the answer window (or intro) elapsed.
     Elapsed,
     /// `abort` was notified before reaching 0 — skip / reveal-now / all-answered
-    /// / a manager live-control interrupted the wait.
+    /// / a manager live-control interrupted the wait. Resolves at the next 1s
+    /// tick boundary, matching Node's setInterval semantics.
     Aborted,
 }
 
 /// Run the countdown, calling `on_tick(remaining)` once per second while it is
-/// live. Resolves IMMEDIATELY once `abort.notified()` fires (no waiting for the
-/// next 1s tick) — this is the "abortable tokio task" R3 asks for.
+/// live. The timer resolves naturally ON the tick at t=`seconds`, or at the next
+/// 1s tick boundary after `abort.notified()` fires — matching Node's setInterval
+/// behavior (not immediately).
 pub async fn run_cooldown<F: FnMut(i32)>(
     seconds: i32,
     abort: Arc<Notify>,
     mut on_tick: F,
 ) -> CooldownOutcome {
+    let mut ticker = tokio::time::interval(Duration::from_secs(1));
+    ticker.tick().await; // discard the immediate t=0 tick → first real tick at +1s (setInterval semantics)
     let mut count = seconds - 1;
+    let mut aborted = false;
 
     loop {
-        if count <= 0 {
-            return CooldownOutcome::Elapsed;
-        }
-
         tokio::select! {
-            _ = abort.notified() => {
-                return CooldownOutcome::Aborted;
-            }
-            _ = tokio::time::sleep(Duration::from_secs(1)) => {
+            _ = abort.notified(), if !aborted => { aborted = true; }
+            _ = ticker.tick() => {
+                if aborted { return CooldownOutcome::Aborted; }
+                if count <= 0 { return CooldownOutcome::Elapsed; }
                 on_tick(count);
                 count -= 1;
             }
