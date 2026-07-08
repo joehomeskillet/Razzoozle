@@ -2,6 +2,7 @@ use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use razzoozle_protocol::status::Status;
+use razzoozle_protocol::status::RoundRecapAward;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
@@ -54,6 +55,8 @@ pub struct Game {
     pub paused_state: Option<(Status, serde_json::Value)>,
     // Low-latency playerAnswer coalesce flag: prevents multiple PLAYER_ANSWER
     // emits within the throttle window (100ms). Leading-edge sets true, trailing
+    // Per-round recap awards to be emitted via SHOW_ROUND_RECAP phase
+    pub temp_round_recap: Option<Vec<RoundRecapAward>>,
     // task resets to false after emitting.
     pub answer_count_push_pending: bool,
 }
@@ -86,6 +89,7 @@ impl Game {
             low_latency: false,
             server_seq: 0,
             auto_mode: false,
+            temp_round_recap: None,
             cooldown_abort: None,
             paused: false,
             paused_state: None,

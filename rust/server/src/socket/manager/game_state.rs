@@ -106,7 +106,10 @@ fn register_show_leaderboard(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
-                        lifecycle::request_abort(&game_ref, GamePhase::ShowResult);
+                        // Abort whichever dwelling phase is currently active (ShowResult or ShowRoundRecap)
+                        if !lifecycle::request_abort(&game_ref, GamePhase::ShowResult) {
+                            lifecycle::request_abort(&game_ref, GamePhase::ShowRoundRecap);
+                        }
                     }
                 }
             });

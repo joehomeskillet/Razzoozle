@@ -166,8 +166,21 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Set auto_mode based on payload; no state change or emit on success
                         let mut game = game_ref.lock().unwrap();
+                        let was_auto = game.auto_mode;
                         game.auto_mode = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
                         info!("auto_mode set to {} for game {}", game.auto_mode, game_id);
+                        
+                        // If transitioning to auto=true and a dwelling phase is active, re-arm the abort
+                        // so the lifecycle loop picks up the new auto-advance timing immediately.
+                        if !was_auto && game.auto_mode {
+                            let current_phase = game.engine.phase;
+                            drop(game); // release lock before calling request_abort
+                            
+                            // Only re-arm if we're in a dwelling phase (not during answer window)
+                            if matches!(current_phase, GamePhase::ShowResult | GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard) {
+                                lifecycle::request_abort(&game_ref, current_phase);
+                            }
+                        }
                     }
                 }
             });

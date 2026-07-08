@@ -7,7 +7,7 @@ services:
     container_name: razzoozle
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3010:3000"
+      - "127.0.0.1:3011:3000"
     volumes:
       - ./config:/app/config
     # AI image gen: the socket reaches the host's ComfyUI (:8188, published on
@@ -15,3 +15,12 @@ services:
     # http://host.docker.internal:8188 in the image.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - source_razzoozle_network
+      - razzoozle_default
+
+networks:
+  source_razzoozle_network:
+    external: true
+  razzoozle_default:
+    external: true
