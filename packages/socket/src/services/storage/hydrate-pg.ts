@@ -18,6 +18,7 @@ interface HydrationStats {
   achievements: number
   themes: number
   templates: number
+  gameConfig: number
   errors: string[]
 }
 
@@ -212,6 +213,46 @@ async function hydrateAchievements(stats: HydrationStats): Promise<void> {
 }
 
 /**
+ * Hydrate config/game.json behavioral fields from PG games_config.
+ * Preserves all non-behavioral fields (managerPassword, requireIdentifier, etc).
+ */
+async function hydrateGameConfig(stats: HydrationStats): Promise<void> {
+  try {
+    // Guard: only hydrate if game.json exists (initConfig owns first-boot scaffold).
+    if (!fs.existsSync(getPath("game.json"))) {
+      return
+    }
+
+    // Read PG config using the same inline-require pattern as game-config.ts
+    const { storageRepository } =
+      require("@razzoozle/socket/services/storage") as typeof import("@razzoozle/socket/services/storage")
+    const pg = await storageRepository().getGameConfig()
+
+    // Read current file config
+    const { getGameConfig } =
+      require("@razzoozle/socket/services/config/game-config") as typeof import("@razzoozle/socket/services/config/game-config")
+    const current = getGameConfig()
+
+    // Merge ONLY the 5 behavioral fields from PG, preserving everything else
+    const merged = {
+      ...current,
+      teamMode: pg.teamMode,
+      joinLocked: pg.joinLocked,
+      randomizeAnswers: pg.randomizeAnswers,
+      scoringMode: pg.scoringMode,
+      lowLatencyMode: pg.lowLatencyMode,
+    }
+
+    fs.writeFileSync(getPath("game.json"), JSON.stringify(merged, null, 2))
+    stats.gameConfig = 1
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("pg-hydration: game-config failed:", msg)
+    stats.errors.push(`gameConfig: ${msg}`)
+  }
+}
+
+/**
  * Hydrate config/theme/theme.json (active) and config/theme-templates/<id>.json (templates).
  * Zombie-cleanup: delete template files whose ids are not in the DB list.
  * Note: active theme id is always 'active', templates have their own ids.
@@ -289,6 +330,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     achievements: 0,
     themes: 0,
     templates: 0,
+    gameConfig: 0,
     errors: [],
   }
 
@@ -298,6 +340,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
   await hydrateResults(stats)
   await hydrateSubmissions(stats)
   await hydrateAchievements(stats)
+  await hydrateGameConfig(stats)
   await hydrateThemes(stats)
 
   // Emit summary
@@ -308,7 +351,8 @@ export async function hydrateConfigFromPg(): Promise<void> {
     `${stats.submissions} submissions, ` +
     `${stats.achievements} achievements, ` +
     `${stats.themes} active-theme, ` +
-    `${stats.templates} templates`
+    `${stats.templates} templates, ` +
+    `${stats.gameConfig} game-config`
 
   if (stats.errors.length > 0) {
     console.warn(`${summary} — errors: ${stats.errors.join("; ")}`)
