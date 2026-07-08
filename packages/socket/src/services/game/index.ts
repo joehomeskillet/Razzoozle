@@ -41,6 +41,24 @@ import { createInviteCode } from "@razzoozle/socket/utils/game"
 import { v7 as uuid } from "uuid"
 import { randomUUID } from "crypto"
 
+import {
+  recordMetricImpl,
+  canSubscribeMetricsImpl,
+  emitHealthMetricsImpl,
+  scheduleHealthPushImpl,
+} from "@razzoozle/socket/services/game/game-metrics"
+import {
+  reconnectManagerImpl,
+  reconnectPlayerImpl,
+} from "@razzoozle/socket/services/game/game-reconnect"
+import {
+  resolveAvatarImpl,
+} from "@razzoozle/socket/services/game/game-avatar"
+import {
+  toSnapshotImpl,
+  prepareFromSnapshotImpl,
+} from "@razzoozle/socket/services/game/game-snapshot"
+
 const registry = Registry.getInstance()
 const DICEBEAR_IDENTITY_RE = /^dicebear:[a-z]+:.+$/
 
