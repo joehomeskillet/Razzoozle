@@ -8,8 +8,6 @@ use std::fs;
 use std::path::Path;
 use chrono::Utc;
 
-const THEME_REVISIONS_MAX: usize = 10;
-
 /// Load current theme from disk for revision snapshot
 pub(super) fn load_current_theme() -> Option<serde_json::Value> {
     let theme_path = Path::new("config/theme/theme.json");
@@ -23,29 +21,12 @@ pub(super) fn load_current_theme() -> Option<serde_json::Value> {
     None
 }
 
-/// Save theme revision snapshot before overwriting
-pub(super) fn save_theme_revision(current_theme: serde_json::Value) -> Result<(), String> {
-    let revisions_path = Path::new("config/theme-revisions.json");
-
-    // Load existing revisions
-    let mut revisions: Vec<serde_json::Value> = if revisions_path.exists() {
-        if let Ok(content) = fs::read_to_string(revisions_path) {
-            if let Ok(arr) = serde_json::from_str(&content) {
-                arr
-            } else {
-                Vec::new()
-            }
-        } else {
-            Vec::new()
-        }
-    } else {
-        Vec::new()
-    };
-
+/// Save theme revision snapshot before overwriting (to database).
+async fn save_theme_revision(current_theme: serde_json::Value, ctx: &HandlerCtx) -> Result<(), String> {
     // Create new revision with timestamp-based ID
     let timestamp_ms = Utc::now().timestamp_millis();
     let id = format!("rev-{}", timestamp_ms);
-    let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
 
     let revision = serde_json::json!({
         "id": id,
@@ -53,21 +34,9 @@ pub(super) fn save_theme_revision(current_theme: serde_json::Value) -> Result<()
         "theme": current_theme
     });
 
-    // Prepend new revision and cap at THEME_REVISIONS_MAX
-    revisions.insert(0, revision);
-    if revisions.len() > THEME_REVISIONS_MAX {
-        revisions.truncate(THEME_REVISIONS_MAX);
-    }
-
-    // Write back to disk
-    let json = serde_json::to_string_pretty(&revisions)
-        .map_err(|e| format!("Failed to serialize revisions: {}", e))?;
-    fs::write(revisions_path, json)
-        .map_err(|e| format!("Failed to save revisions: {}", e))?;
-
-    Ok(())
+    // Persist to database
+    db::insert_theme_revision(&ctx.db_pool, &revision, &created_at).await
 }
-
 
 /// Apply theme: validate, save revision (if existing theme), persist to disk, and mirror to DB.
 /// Returns the persisted theme on success, or an error message on failure.
@@ -78,23 +47,10 @@ pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Resul
     }
 
     // Capture current theme and save as revision BEFORE overwriting
-    // Run file I/O in a blocking task since we're in an async context
-    let revision_result = tokio::task::spawn_blocking(|| {
-        if let Some(current_theme) = load_current_theme() {
-            save_theme_revision(current_theme)
-        } else {
-            // No existing theme to snapshot (first save), skip revision
-            Ok(())
+    if let Some(current_theme) = load_current_theme() {
+        if let Err(e) = save_theme_revision(current_theme, ctx).await {
+            return Err(format!("Revision save failed: {}", e));
         }
-    })
-    .await;
-
-    if let Err(_) = revision_result {
-        return Err("Failed to save revision".to_string());
-    }
-
-    if let Ok(Err(e)) = revision_result {
-        return Err(format!("Revision save failed: {}", e));
     }
 
     // Persist to disk — MANAGER.GET_THEME reads this exact file, so

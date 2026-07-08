@@ -149,3 +149,84 @@ pub async fn delete_theme_template(pool: &Option<PgPool>, id: &str) -> Result<()
     }
 }
 
+/// Insert a theme revision into the database and prune to newest 10.
+/// The full revision entry {id, createdAt, theme} is stored in theme_snapshot.
+/// No-op if pool is None.
+pub async fn insert_theme_revision(
+    pool: &Option<PgPool>,
+    snapshot: &serde_json::Value,
+    created_at_rfc3339: &str,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Ok(()),
+    };
+
+    // INSERT the revision
+    sqlx::query(
+        "INSERT INTO theme_revisions (theme_id, theme_snapshot, created_at) \
+         VALUES ('active', $1, $2::timestamptz)"
+    )
+    .bind(snapshot)
+    .bind(created_at_rfc3339)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to insert theme revision: {}", e))?;
+
+    // Prune to keep only newest 10
+    sqlx::query(
+        "DELETE FROM theme_revisions WHERE theme_id='active' AND id NOT IN \
+         (SELECT id FROM theme_revisions WHERE theme_id='active' ORDER BY id DESC LIMIT 10)"
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to prune theme revisions: {}", e))?;
+
+    Ok(())
+}
+
+/// List all theme revisions for the active theme, newest-first (up to 10).
+/// Each item in the returned vec IS the full theme_snapshot {id, createdAt, theme}.
+/// Returns empty vec if pool is None or on error.
+pub async fn list_theme_revisions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(serde_json::Value,)> = match sqlx::query_as(
+        "SELECT theme_snapshot FROM theme_revisions WHERE theme_id='active' \
+         ORDER BY id DESC LIMIT 10"
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch theme revisions: {}", e);
+            return Vec::new();
+        }
+    };
+
+    rows.into_iter().map(|(snapshot,)| snapshot).collect()
+}
+
+/// Get a specific theme revision by its id field (within theme_snapshot).
+/// Returns the full theme_snapshot if found, None otherwise.
+pub async fn get_theme_revision_by_id(
+    pool: &Option<PgPool>,
+    id: &str,
+) -> Option<serde_json::Value> {
+    let pool = pool.as_ref()?;
+
+    sqlx::query_as::<_, (serde_json::Value,)>(
+        "SELECT theme_snapshot FROM theme_revisions WHERE theme_id='active' AND \
+         theme_snapshot->>'id' = $1 ORDER BY id DESC LIMIT 1"
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+    .map(|(snapshot,)| snapshot)
+}
