@@ -44,6 +44,42 @@ pub async fn perform_reveal_and_broadcast(
             let game = game_ref.lock().unwrap();
             let total_players = game.engine.players.len() as i32;
 
+            // STEP 1: One-time extraction of constant fields (same across all players)
+            let question = game.engine.current_question().clone();
+            let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+            let bonus_flag = question.bonus.unwrap_or(false);
+            let is_practice = question.practice == Some(true);
+            let correct_answer: Option<String> = if is_poll {
+                None
+            } else {
+                match question.r#type.as_ref() {
+                    Some(QuestionType::Slider) => {
+                        question.correct.map(|c| match &question.unit {
+                            Some(u) => format!("{} {}", c, u),
+                            None => format!("{}", c),
+                        })
+                    }
+                    Some(QuestionType::TypeAnswer) => {
+                        question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
+                    }
+                    _ => {
+                        // choice / boolean / multiple-select: map solution indices to answer texts
+                        let texts: Vec<String> = question
+                            .solutions
+                            .as_deref()
+                            .unwrap_or(&[])
+                            .iter()
+                            .filter_map(|&i| {
+                                question.answers.as_ref().and_then(|a| {
+                                    a.get(i as usize).cloned()
+                                })
+                            })
+                            .collect();
+                        if texts.is_empty() { None } else { Some(texts.join(", ")) }
+                    }
+                }
+            };
+
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
                 .engine
@@ -72,6 +108,32 @@ pub async fn perform_reveal_and_broadcast(
                     let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
                     let mut show_result_data = result.to_show_result_data(&player, total_players);
                     show_result_data.rank = rank;
+
+                    // STEP 1 parity fields
+                    show_result_data.correct_answer = correct_answer.clone();
+                    show_result_data.poll = Some(is_poll);
+                    show_result_data.bonus = Some(bonus_flag && result.correct && !is_practice);
+                    show_result_data.scoring_mode = None; // parity: Node omits it
+                    show_result_data.message = (if is_poll {
+                        "game:pollThanks"
+                    } else if result.correct {
+                        "game:correct"
+                    } else {
+                        "game:wrong"
+                    }).to_string();
+
+                    // ahead_of_me: rank-1 player from sorted_by_points
+                    show_result_data.ahead_of_me = if rank > 1 {
+                        sorted_by_points.get((rank as usize) - 2).map(|(cid, _)| {
+                            game.engine
+                                .players
+                                .iter()
+                                .find(|p| p.client_id == *cid)
+                                .map(|p| p.username.clone())
+                        }).flatten()
+                    } else {
+                        None
+                    };
 
                     let status = GameStatus::ShowResult(show_result_data);
 
