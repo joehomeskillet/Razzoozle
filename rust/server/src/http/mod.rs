@@ -1,7 +1,8 @@
-mod achievements;
 mod assignments;
-pub mod logs;
 mod observability;
+mod achievements;
+mod logs;
+mod skeleton;
 
 use axum::{
     extract::{ConnectInfo, Path},
@@ -21,29 +22,6 @@ use tokio::sync::RwLock;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
 use crate::question_type_wire;
-
-// ── Shared HTTP state ────────────────────────────────────────────────────────
-//
-// AppState bundles everything the HTTP layer needs WITHOUT stuffing it into
-// GameRegistry: the registry itself (games/quizzes/auth), an optional PgPool
-// for DB-backed routes (/api/achievements), and the SocketIo handle so future
-// routes (skeleton import, Wave gamma) can broadcast directly via state.io.
-// DB queries never take the registry lock.
-
-#[derive(Clone)]
-pub struct AppState {
-    pub registry: Arc<RwLock<GameRegistry>>,
-    pub db_pool: Option<sqlx::PgPool>,
-    pub io: socketioxide::SocketIo,
-}
-
-// Bridge so handlers still extracting State<Arc<RwLock<GameRegistry>>>
-// (assignments.rs) keep working unchanged against the AppState router.
-impl axum::extract::FromRef<AppState> for Arc<RwLock<GameRegistry>> {
-    fn from_ref(state: &AppState) -> Self {
-        Arc::clone(&state.registry)
-    }
-}
 
 // ── Solo play types ─────────────────────────────────────────────────────────
 
@@ -172,9 +150,9 @@ pub async fn handle_healthz() -> (StatusCode, &'static str) {
 }
 
 pub async fn handle_get_quizzes(
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
 ) -> Json<Vec<String>> {
-    let registry = state.registry.read().await;
+    let registry = registry.read().await;
     let ids = registry.list_quiz_ids();
     Json(ids)
 }
@@ -182,7 +160,7 @@ pub async fn handle_get_quizzes(
 pub async fn handle_get_quiz_solo(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
 ) -> Result<Json<SoloResponse>, (StatusCode, String)> {
     // Path-traversal protection
     safe_asset_id(&quiz_id)
@@ -194,7 +172,7 @@ pub async fn handle_get_quiz_solo(
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
-    let registry = state.registry.read().await;
+    let registry = registry.read().await;
     let quiz = registry
         .get_quiz_by_id(&quiz_id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
@@ -230,7 +208,7 @@ pub async fn handle_get_quiz_solo(
 pub async fn handle_check_answer(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<CheckAnswerRequest>,
 ) -> Result<Json<CheckAnswerResponse>, (StatusCode, String)> {
     // Path-traversal protection
@@ -243,7 +221,7 @@ pub async fn handle_check_answer(
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
-    let registry = state.registry.read().await;
+    let registry = registry.read().await;
     let quiz = registry
         .get_quiz_by_id(&quiz_id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
@@ -305,7 +283,7 @@ pub fn get_solo_results_path(quiz_id: &str) -> String {
 pub async fn handle_solo_score(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(registry): axum::extract::State<Arc<RwLock<GameRegistry>>>,
     Json(payload): Json<SoloScoreRequest>,
 ) -> Result<Json<SoloScoreResponse>, (StatusCode, String)> {
     // Path-traversal protection
@@ -318,7 +296,7 @@ pub async fn handle_solo_score(
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
-    let registry = state.registry.read().await;
+    let registry = registry.read().await;
 
     // Load quiz to verify it exists and calculate theoretical max
     let quiz = registry
@@ -627,12 +605,11 @@ pub async fn handle_sounds_asset(
 }
 
 /// Build and return the HTTP router for solo play and health check endpoints
-pub fn router(state: AppState) -> Router {
+pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
     Router::new()
         .route("/health", get(handle_health))
         .route("/healthz", get(handle_healthz))
         .route("/api/v1/health", get(handle_health))
-        .route("/api/achievements", get(achievements::handle_achievements))
         .route("/api/quizzes", get(handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(handle_get_quiz_solo))
         .route("/api/quizz/:id/check-answer", post(handle_check_answer))
@@ -640,12 +617,15 @@ pub fn router(state: AppState) -> Router {
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))
-        .route("/api/v1/observability/events", get(observability::handle_observability_events))
-        .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
+        .route("/api/achievements", get(achievements::handle_achievements))
+        .route("/api/skeleton/export", get(skeleton::handle_skeleton_export))
+        .route("/api/skeleton/import", post(skeleton::handle_skeleton_import))
         .route("/api/v1/observability/logs/server", get(logs::handle_logs_server))
         .route("/api/v1/observability/logs/client", get(logs::handle_logs_client))
+        .route("/api/v1/observability/events", get(observability::handle_observability_events))
+        .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
         .route("/theme/*path", get(handle_theme_asset))
         .route("/plugins/:id/*path", get(handle_plugin_asset))
         .route("/sounds/*path", get(handle_sounds_asset))
-        .with_state(state)
+        .with_state(registry)
 }
