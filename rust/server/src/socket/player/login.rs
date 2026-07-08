@@ -1,6 +1,7 @@
 use super::HandlerCtx;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
@@ -110,7 +111,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 // once at Game construction (this.joinLocked); Rust's Game
                                 // doesn't cache config, so a per-login DB read is the
                                 // cheapest correct source available today.
-                                let (_, _, join_locked_opt, _, _) = crate::db::get_game_config(&db_pool).await;
+                                let (team_mode_opt, _, join_locked_opt, _, _) = crate::db::get_game_config(&db_pool).await;
                                 let join_locked = join_locked_opt.unwrap_or(false);
 
                                 let (game_id_ret, manager_socket_id, player, total_players) = {
@@ -191,6 +192,17 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         },
                                     )
                                     .ok();
+
+                                // N7 parity: push lobby WAIT (carrying teamMode) to the joining player's OWN socket
+                                // after SUCCESS_JOIN — node index.ts join()->sendLobbyWait(). Client's own
+                                // SUCCESS_JOIN-driven WAIT lacks teamMode, so the team picker never shows without this.
+                                // Emit directly on socket (SocketRef in scope) — do NOT use io.to(sid): socketioxide
+                                // has no per-socket-id room so it would go nowhere.
+                                let wait_status = GameStatus::Wait(WaitData {
+                                    text: "game:waitingForPlayers".to_string(),
+                                    team_mode: Some(team_mode_opt.unwrap_or(false)),
+                                });
+                                socket.emit(constants::game::STATUS, &wait_status).ok();
 
                                 if let Ok(sid) = manager_socket_id.parse() {
                                     if let Some(mgr) = io_handle.get_socket(sid) {
