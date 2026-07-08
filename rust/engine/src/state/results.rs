@@ -1,5 +1,5 @@
 use razzoozle_protocol::player::Player;
-use razzoozle_protocol::status::{ScoringMode, ShowResultData};
+use razzoozle_protocol::status::ShowResultData;
 
 #[derive(Debug, Clone)]
 pub struct RoundResult {
@@ -8,17 +8,15 @@ pub struct RoundResult {
     pub points: i32,
     pub streak: i32,
     pub first_correct: bool,
+    pub response_time_ms: i64,
+    pub answered: bool,
 }
 
 impl RoundResult {
     pub fn to_show_result_data(&self, player: &Player, total_players: i32) -> ShowResultData {
         ShowResultData {
             correct: self.correct,
-            message: if self.correct {
-                "Correct".to_string()
-            } else {
-                "Incorrect".to_string()
-            },
+            message: String::new(), // Will be set by reveal_helpers
             points: self.points,
             my_points: player.points,
             rank: 1,
@@ -35,7 +33,7 @@ impl RoundResult {
             correct_chunks: None,
             auto_advance_ms: None,
             round_recap: None,
-            scoring_mode: Some(ScoringMode::Speed),
+            scoring_mode: None,
         }
     }
 }

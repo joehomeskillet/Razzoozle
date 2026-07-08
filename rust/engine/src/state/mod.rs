@@ -77,6 +77,7 @@ pub struct GameState {
     pub scoring_mode: ScoringMode,
     pub clock_ms: i64,
     question_opened_at_ms: i64,
+    pub last_round_rank_before: HashMap<String, i32>,
 }
 
 impl GameState {
@@ -93,6 +94,7 @@ impl GameState {
             scoring_mode: ScoringMode::Speed,
             clock_ms: 0,
             question_opened_at_ms: 0,
+            last_round_rank_before: HashMap::new(),
         }
     }
 
@@ -260,6 +262,16 @@ impl GameState {
             None
         };
 
+        // STEP 2: Snapshot rankBefore (pre-scoring rank order, by points descending)
+        let mut rank_before_vec: Vec<(String, i32)> = self.players.iter()
+            .map(|p| (p.client_id.clone(), p.points))
+            .collect();
+        rank_before_vec.sort_by(|a, b| b.1.cmp(&a.1));
+        self.last_round_rank_before.clear();
+        for (idx, (client_id, _)) in rank_before_vec.iter().enumerate() {
+            self.last_round_rank_before.insert(client_id.clone(), (idx + 1) as i32);
+        }
+
         let mut results = Vec::new();
 
         for player in &mut self.players {
@@ -269,7 +281,8 @@ impl GameState {
                 .map(|a| eval::evaluate_answer(&question, &a.answer_input));
             let correct = eval_result.as_ref().is_some_and(|r| r.correct);
             let base_factor = eval_result.as_ref().map(|r| r.base).unwrap_or(0.0);
-            let _response_time_ms = answer.map(|a| a.response_time_ms).unwrap_or(0);
+            let response_time_ms = answer.map(|a| a.response_time_ms).unwrap_or(0);
+            let answered = answer.is_some();
             let streak_before = player.streak;
 
             let mut points = if let Some(answer) = answer {
@@ -306,6 +319,8 @@ impl GameState {
                 points,
                 streak: player.streak,
                 first_correct,
+                response_time_ms,
+                answered,
             });
         }
 
