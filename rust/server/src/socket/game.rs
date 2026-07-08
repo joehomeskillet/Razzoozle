@@ -35,6 +35,9 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let (_, low_latency_enabled, _, _, _) = crate::db::get_game_config(&db_pool).await;
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
+                // Fetch achievements config for this game (N3 requirement)
+                let ach_rows = crate::db::get_achievements(&db_pool).await;
+
                 let mut registry = registry.write().await;
                 // C3 — active-game cap; also rejects an unresolved quizzId
                 // (parity with Node — see create_game's own doc comment).
@@ -47,6 +50,13 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Join socket to the game room
                         socket.join(game_id.clone()).ok();
+
+                        // Inject achievements config via setter (inside the write guard)
+                        let overrides = razzoozle_engine::achievements::rows_to_overrides(&ach_rows);
+                        let cfg = razzoozle_engine::achievements::merge_config(&overrides);
+                        if let Some(game_arc) = registry.get_game_by_id(&game_id) {
+                            game_arc.lock().unwrap().engine.set_achievements_config(cfg);
+                        }
 
                         // Emit manager:gameCreated with protocol type
                         let payload = razzoozle_protocol::manager::ManagerGameCreated {

@@ -1,3 +1,4 @@
+pub mod achievements;
 pub mod chunks;
 pub mod eval;
 pub mod round_recap;

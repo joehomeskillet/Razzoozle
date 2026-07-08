@@ -14,6 +14,8 @@ pub use results::RoundResult;
 mod accum;
 pub use accum::*;
 mod recap;
+mod achievement_awards;
+pub use achievement_awards::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamePhase {
@@ -85,6 +87,7 @@ pub struct GameState {
     pub recap_stats: HashMap<String, RecapStat>,
     pub question_stats: HashMap<i32, QuestionStat>,
     pub questions_history: Vec<razzoozle_protocol::results_display::QuestionResult>,
+    pub achievements_config: HashMap<String, crate::achievements::MergedAchievement>,
 }
 
 impl GameState {
@@ -106,12 +109,18 @@ impl GameState {
             recap_stats: HashMap::new(),
             question_stats: HashMap::new(),
             questions_history: Vec::new(),
+            achievements_config: crate::achievements::default_config(),
         }
     }
 
     /// Test helper: advance the internal server clock.
     pub fn set_clock_ms(&mut self, ms: i64) {
         self.clock_ms = ms;
+    }
+
+    /// Set the achievements configuration (typically injected from DB by server).
+    pub fn set_achievements_config(&mut self, cfg: HashMap<String, crate::achievements::MergedAchievement>) {
+        self.achievements_config = cfg;
     }
 
     pub fn start(&mut self) -> Result<ShowStartData, GameError> {
@@ -188,7 +197,7 @@ impl GameState {
                 action: "record_answer",
             });
         }
-        if !self.players.iter().any(|p| p.client_id == client_id) {
+        if !self.players.iter().any(|p| p.client_id == *client_id) {
             return Err(GameError::UnknownPlayer {
                 client_id: client_id.to_string(),
             });
@@ -332,6 +341,8 @@ impl GameState {
                 first_correct,
                 response_time_ms,
                 answered,
+                achievements: Vec::new(),
+                bonus_points: 0,
             });
         }
 
@@ -364,7 +375,7 @@ impl GameState {
         // === N4 recap/question fold (begin) ===
         // Only fold for scored (non-practice) rounds
         if question.practice != Some(true) {
-            // Compute rank_after map
+            // Compute rank_after map (from PRE-bonus points — N3 bonus fold runs after)
             let mut rank_after_vec: Vec<(String, i32)> = self.players
                 .iter()
                 .map(|p| (p.client_id.clone(), p.points))
@@ -451,6 +462,109 @@ impl GameState {
         }
         // === N4 recap/question fold (end) ===
 
+        // === N3 achievements fold (begin) ===
+        // Runs AFTER the N4 recap fold so recap rank_after stays pre-bonus (Node
+        // parity: achievement bonus mutates points here, the final leaderboard
+        // reflects it, but the recap's internal rank_after does not).
+        // Build AwardRow structs for each player, sorted DESC by points_after (results order)
+        let mut award_rows: Vec<AwardRow> = Vec::new();
+        for (_idx, result) in results.iter().enumerate() {
+            if let Some(player) = self.players.iter().find(|p| p.client_id == result.client_id) {
+                award_rows.push(AwardRow {
+                    client_id: result.client_id.clone(),
+                    is_bot: player.is_bot == Some(true),
+                    scored: question.practice != Some(true),
+                    is_correct: result.correct,
+                    base_factor: {
+                        self.current_answers
+                            .get(&result.client_id)
+                            .and_then(|a| {
+                                eval::evaluate_answer(&question, &a.answer_input)
+                                    .base
+                                    .into()
+                            })
+                            .unwrap_or(0.0)
+                    },
+                    streak_after: result.streak,
+                    response_time_ms: if result.answered { Some(result.response_time_ms) } else { None },
+                    points_before: self.last_round_rank_before
+                        .get(&result.client_id)
+                        .and_then(|_rank_before| {
+                            // Infer points_before from rank_before (rough — ideally from snapshot)
+                            // For now, use the player's previous points state
+                            self.old_leaderboard.iter()
+                                .find(|p| p.client_id == result.client_id)
+                                .map(|p| p.points)
+                        })
+                        .unwrap_or(0),
+                    points_after: self.players
+                        .iter()
+                        .find(|p| p.client_id == result.client_id)
+                        .map(|p| p.points)
+                        .unwrap_or(0),
+                });
+            }
+        }
+
+        // Stable sort DESC by points_after (they should already be in this order, but ensure it)
+        award_rows.sort_by(|a, b| b.points_after.cmp(&a.points_after));
+
+        // Calculate metadata
+        let total_scored = self.quiz.questions.iter()
+            .filter(|q| q.practice != Some(true))
+            .count() as i32;
+        let is_last_scored = question.practice != Some(true)
+            && self.current_question_index + 1 == self.quiz.questions.len();
+        let has_prior = self.current_question_index > 0;
+
+        // Compute achievements (Pass A: unlocks, Pass B: bonus)
+        let (unlocked_by_client, bonus_by_client) = compute_achievement_awards(
+            &self.achievements_config,
+            &mut self.game_counters,
+            &award_rows,
+            &self.last_round_rank_before,
+            has_prior,
+            first_correct_id.as_deref(),
+            is_last_scored,
+            total_scored,
+            &question,
+        );
+
+        // Fold bonus into player.points and results
+        for (client_id, bonus) in bonus_by_client.iter() {
+            if *bonus > 0 {
+                // Update live player points
+                if let Some(player) = self.players.iter_mut().find(|p| p.client_id == *client_id) {
+                    player.points += bonus;
+                }
+
+                // Update result points and set achievements/bonus
+                if let Some(result) = results.iter_mut().find(|r| r.client_id == *client_id) {
+                    result.points += bonus;
+                    if let Some(unlocked) = unlocked_by_client.get(client_id) {
+                        result.achievements = unlocked.clone();
+                    }
+                    result.bonus_points = *bonus;
+                }
+            } else if let Some(unlocked) = unlocked_by_client.get(client_id) {
+                if !unlocked.is_empty() {
+                    if let Some(result) = results.iter_mut().find(|r| r.client_id == *client_id) {
+                        result.achievements = unlocked.clone();
+                    }
+                }
+            }
+        }
+
+        // Handle unlocked badges with no bonus
+        for (client_id, unlocked) in unlocked_by_client.iter() {
+            if !bonus_by_client.contains_key(client_id) && !unlocked.is_empty() {
+                if let Some(result) = results.iter_mut().find(|r| r.client_id == *client_id) {
+                    result.achievements = unlocked.clone();
+                }
+            }
+        }
+        // === N3 achievements fold (end) ===
+
         self.last_round_results = results.clone();
         self.phase = GamePhase::ShowResult;
         Ok(results)
@@ -529,7 +643,7 @@ impl GameState {
     }
 
     pub fn player_by_client_id(&self, client_id: &str) -> Option<&Player> {
-        self.players.iter().find(|p| p.client_id == client_id)
+        self.players.iter().find(|p| p.client_id == *client_id)
     }
 
     fn sorted_leaderboard(&self) -> Vec<Player> {
