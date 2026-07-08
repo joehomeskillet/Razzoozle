@@ -433,6 +433,52 @@ mod tests {
             .any(|s| s.key == razzoozle_protocol::results_display::SuperlativeKey::MostAchievements);
         assert!(has_most_achievements, 
                 "recap should include MostAchievements superlative when achievements are unlocked");
+    
+    #[test]
+    fn display_order_permutation_and_reconnect_stability() {
+        // Test that randomize_answers generates a Fisher-Yates permutation
+        // and that reconnect (current_show_question_data) returns the same order.
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(quiz, vec![make_player("p1", "Alice")]);
+        
+        // Initially, display_order should be None
+        state.start().unwrap();
+        let q1 = state.show_question(0).unwrap();
+        assert_eq!(q1.display_order, None, "display_order should be None when randomize_answers is false");
+        
+        // Enable randomization
+        state.set_randomize_answers(true);
+        let q1_randomized = state.show_question(0).unwrap();
+        
+        // With randomizeAnswers enabled and a question with >1 answers (non-slider),
+        // display_order should be Some(permutation)
+        let order = q1_randomized.display_order.as_ref()
+            .expect("display_order should be Some when randomize_answers is true");
+        
+        let expected_len = state.current_question().answers.as_ref()
+            .map(|a| a.len())
+            .unwrap_or(0);
+        assert_eq!(order.len(), expected_len, "permutation length should match answer count");
+        
+        // Verify it's a permutation: sorted == (0..n)
+        let mut sorted = order.clone();
+        sorted.sort();
+        let expected: Vec<i32> = (0..expected_len as i32).collect();
+        assert_eq!(sorted, expected, "display_order should be a valid permutation");
+        
+        // Reconnect should return the SAME order (stored, not regenerated)
+        let q1_reconnect = state.current_show_question_data();
+        assert_eq!(
+            q1_reconnect.display_order, q1_randomized.display_order,
+            "current_show_question_data should return the same stored order for reconnect stability"
+        );
+        
+        // Disable randomization
+        state.set_randomize_answers(false);
+        let q1_disabled = state.show_question(0).unwrap();
+        assert_eq!(q1_disabled.display_order, None, "display_order should be None when randomize_answers is disabled");
     }
+
+}
 }
 

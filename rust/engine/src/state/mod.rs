@@ -88,6 +88,8 @@ pub struct GameState {
     pub question_stats: HashMap<i32, QuestionStat>,
     pub questions_history: Vec<razzoozle_protocol::results_display::QuestionResult>,
     pub achievements_config: HashMap<String, crate::achievements::MergedAchievement>,
+    pub randomize_answers: bool,
+    pub current_display_order: Option<Vec<i32>>,
 }
 
 impl GameState {
@@ -110,6 +112,8 @@ impl GameState {
             question_stats: HashMap::new(),
             questions_history: Vec::new(),
             achievements_config: crate::achievements::default_config(),
+            randomize_answers: false,
+            current_display_order: None,
         }
     }
 
@@ -123,6 +127,10 @@ impl GameState {
         self.achievements_config = cfg;
     }
 
+
+    pub fn set_randomize_answers(&mut self, v: bool) {
+        self.randomize_answers = v;
+    }
     pub fn start(&mut self) -> Result<ShowStartData, GameError> {
         if self.phase != GamePhase::ShowRoom {
             return Err(GameError::InvalidTransition {
@@ -167,6 +175,22 @@ impl GameState {
         self.answer_order.clear();
         self.last_round_results.clear();
         self.phase = GamePhase::ShowQuestion;
+
+        // Compute display_order if randomizeAnswers is enabled
+        let n = self.current_question().answers.as_ref().map(|a| a.len()).unwrap_or(0);
+        let is_slider = self.current_question().r#type == Some(QuestionType::Slider);
+        self.current_display_order = if self.randomize_answers && !is_slider && n > 1 {
+            use rand::Rng;
+            let mut order: Vec<i32> = (0..n as i32).collect();
+            let mut rng = rand::thread_rng();
+            for i in (1..order.len()).rev() {
+                let j = rng.gen_range(0..=i);
+                order.swap(i, j);
+            }
+            Some(order)
+        } else {
+            None
+        };
 
         Ok(self.build_show_question_data())
     }
@@ -679,7 +703,7 @@ impl GameState {
         ShowQuestionData {
             question: question.question.clone(),
             answers: question.answers.clone(),
-            display_order: None,
+            display_order: self.current_display_order.clone(),
             media: question.media.clone(),
             cooldown: question.cooldown,
             submitted_by: question.submitted_by.clone(),

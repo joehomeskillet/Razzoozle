@@ -32,7 +32,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 // the new Game at creation time, so a later per-ping gate
                 // (separate WP) can check game.low_latency synchronously
                 // instead of an async DB round-trip on every clock:ping.
-                let (_, low_latency_enabled, _, _, _) = crate::db::get_game_config(&db_pool).await;
+                let (_, low_latency_enabled, _, randomize_answers, _) = crate::db::get_game_config(&db_pool).await;
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Fetch achievements config for this game (N3 requirement)
@@ -55,7 +55,9 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                         let overrides = razzoozle_engine::achievements::rows_to_overrides(&ach_rows);
                         let cfg = razzoozle_engine::achievements::merge_config(&overrides);
                         if let Some(game_arc) = registry.get_game_by_id(&game_id) {
-                            game_arc.lock().unwrap().engine.set_achievements_config(cfg);
+                            let mut g = game_arc.lock().unwrap();
+                            g.engine.set_achievements_config(cfg);
+                            g.engine.set_randomize_answers(randomize_answers.unwrap_or(false));
                         }
 
                         // Emit manager:gameCreated with protocol type
