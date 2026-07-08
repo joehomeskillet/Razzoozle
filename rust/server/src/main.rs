@@ -119,9 +119,18 @@ mod host_token_tests {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .init();
+    // fmt layer (stdout, unchanged behaviour) + ADDITIVE ring layer: every
+    // event is also mirrored (redacted) into the bounded DEV log ring that
+    // backs GET /api/v1/observability/logs/server (see http/logs.rs).
+    {
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::util::SubscriberInitExt;
+        tracing_subscriber::registry()
+            .with(tracing_subscriber::filter::LevelFilter::INFO)
+            .with(tracing_subscriber::fmt::layer())
+            .with(http::logs::RingLayer)
+            .init();
+    }
 
     // Create database pool first (if DATABASE_URL is set)
     let db_pool = crate::db::create_pool().await;
@@ -139,6 +148,9 @@ async fn main() {
     let io_handle = io.clone();
     io.ns("/", {
         let registry = Arc::clone(&registry);
+        // Clone so the ns-closure captures a copy and the original db_pool
+        // stays available for the HTTP AppState below.
+        let db_pool = db_pool.clone();
         move |socket: SocketRef, Data(auth): Data<serde_json::Value>| {
             let registry = Arc::clone(&registry);
             let io_handle = io_handle.clone();
@@ -197,8 +209,12 @@ async fn main() {
     }
 
     // Axum router with socketioxide middleware and HTTP routes
-    let app = http::router(Arc::clone(&registry))
-        .layer(layer);
+    let app = http::router(http::AppState {
+        registry: Arc::clone(&registry),
+        db_pool: db_pool.clone(),
+        io: io.clone(),
+    })
+    .layer(layer);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3020".into());
     // 0.0.0.0 so the server is reachable through Docker port forwarding
