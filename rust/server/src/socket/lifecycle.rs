@@ -103,7 +103,7 @@ fn build_select_answer_data(
     }
 }
 
-fn build_finished_data(game: &Game) -> FinishedData {
+fn build_finished_data(game: &Game, recap_json: Option<serde_json::Value>) -> FinishedData {
     FinishedData {
         subject: game.engine.quiz.subject.clone(),
         top: {
@@ -113,9 +113,22 @@ fn build_finished_data(game: &Game) -> FinishedData {
         },
         rank: None,
         team_standings: None,
-        recap: None,
+        recap: recap_json,
         auto_mode: Some(game.auto_mode),
     }
+}
+
+fn build_recap_and_questions(engine: &razzoozle_engine::state::GameState)
+    -> (Option<serde_json::Value>, serde_json::Value) {
+    let recap = engine.build_manager_recap();
+    let recap_json = if recap.superlatives.is_empty() {
+        None
+    } else {
+        serde_json::to_value(&recap).ok()
+    };
+    let questions_json =
+        serde_json::to_value(&engine.questions_history).unwrap_or_else(|_| serde_json::json!([]));
+    (recap_json, questions_json)
 }
 
 /// Open question `index`: transitions the engine ShowStart/ShowLeaderboard ->
@@ -347,18 +360,24 @@ pub async fn run_game_lifecycle(
                 )
             };
             // L104: Fire-and-forget result persistence (mirror Node's behavior)
+            let (recap_json, questions_json) = {
+                let game = game_ref.lock().unwrap();
+                build_recap_and_questions(&game.engine)
+            };
             let db = db_pool.clone();
             let gid = game_id_copy.clone();
+            let questions_json_clone = questions_json.clone();
+            let recap_json_clone = recap_json.clone();
             tokio::spawn(async move {
                 let now = chrono::Utc::now();
-                if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
                     warn!("Result persistence failed for gameId={}: {}", gid, e);
                 }
             });
 
             let finished = {
                 let game = game_ref.lock().unwrap();
-                build_finished_data(&game)
+                build_finished_data(&game, recap_json.clone())
             };
 
             // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
@@ -451,16 +470,22 @@ pub async fn run_game_lifecycle(
                 // L104: Fire-and-forget result persistence
                 let db = db_pool.clone();
                 let gid = game_id_copy.clone();
+                let (recap_json, questions_json) = {
+                    let game = game_ref.lock().unwrap();
+                    build_recap_and_questions(&game.engine)
+                };
+                let recap_json_for_insert = recap_json.clone();
+                let questions_json_for_insert = questions_json.clone();
                 tokio::spawn(async move {
                     let now = chrono::Utc::now();
-                    if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, None).await {
+                    if let Err(e) = db::insert_result(&db, &gid, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_for_insert), recap_json_for_insert.as_ref()).await {
                         warn!("Result persistence failed for gameId={}: {}", gid, e);
                     }
                 });
 
                 let finished = {
                     let game = game_ref.lock().unwrap();
-                    build_finished_data(&game)
+                    build_finished_data(&game, recap_json.clone())
                 };
 
                 // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank

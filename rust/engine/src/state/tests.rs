@@ -334,4 +334,56 @@ mod tests {
         assert_eq!(state.recap_stats["sentinel_recap"].peak_streak, 42, 
                    "recap_stats sentinel value should not be mutated");
     }
+
+    #[test]
+    fn recap_stats_fold_per_player() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(
+            quiz,
+            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+        );
+
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        advance_round(&mut state, 1, 0, 150, 250);
+
+        // Verify recap_stats for p1
+        let p1_stat = state.recap_stats.get("player1").unwrap();
+        assert_eq!(p1_stat.username, "Alice");
+        assert_eq!(p1_stat.answered, 1);
+        assert_eq!(p1_stat.correct, 1);
+        assert_eq!(p1_stat.wrong, 0);
+
+        // Verify recap_stats for p2
+        let p2_stat = state.recap_stats.get("player2").unwrap();
+        assert_eq!(p2_stat.username, "Bob");
+        assert_eq!(p2_stat.answered, 1);
+        assert_eq!(p2_stat.correct, 0);
+        assert_eq!(p2_stat.wrong, 1);
+
+        // Verify question_stats for question 0
+        let q0_stat = state.question_stats.get(&0).unwrap();
+        assert_eq!(q0_stat.total, 2);
+        assert_eq!(q0_stat.correct, 1);
+    }
+
+    #[test]
+    fn build_manager_recap_superlatives() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(
+            quiz,
+            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+        );
+
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        advance_round(&mut state, 1, 0, 100, 300);
+
+        // Build recap
+        let recap = state.build_manager_recap();
+
+        // Verify superlatives were generated (should have fastest_finger at minimum)
+        assert!(!recap.superlatives.is_empty(), "Should have superlatives after round 1");
+    }
+
 }

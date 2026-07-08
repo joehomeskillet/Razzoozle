@@ -13,6 +13,7 @@ mod results;
 pub use results::RoundResult;
 mod accum;
 pub use accum::*;
+mod recap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamePhase {
@@ -359,6 +360,96 @@ impl GameState {
                     .unwrap_or_else(|_| serde_json::json!({})),
                 player_answers,
             });
+
+        // === N4 recap/question fold (begin) ===
+        // Only fold for scored (non-practice) rounds
+        if question.practice != Some(true) {
+            // Compute rank_after map
+            let mut rank_after_vec: Vec<(String, i32)> = self.players
+                .iter()
+                .map(|p| (p.client_id.clone(), p.points))
+                .collect();
+            rank_after_vec.sort_by(|a, b| {
+                b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0))
+            });
+            let rank_after_map: HashMap<String, i32> = rank_after_vec
+                .iter()
+                .enumerate()
+                .map(|(idx, (cid, _))| (cid.clone(), (idx + 1) as i32))
+                .collect();
+
+            // Fold per-player recap_stats + question_stats
+            for (i, player) in self.players.iter().enumerate() {
+                // Skip bots
+                if player.is_bot == Some(true) {
+                    continue;
+                }
+
+                let result = &results[i];
+                let rank_before = self.last_round_rank_before.get(&player.client_id).copied().unwrap_or(0);
+                let rank_after = rank_after_map.get(&player.client_id).copied().unwrap_or(0);
+
+                let stat = self.recap_stats.entry(player.client_id.clone()).or_insert_with(|| {
+                    crate::state::RecapStat {
+                        username: player.username.clone(),
+                        fastest_ms: None,
+                        peak_streak: 0,
+                        correct: 0,
+                        wrong: 0,
+                        answered: 0,
+                        best_climb: 0,
+                        worst_rank_ever: 0,
+                        achievement_ids: Vec::new(),
+                        lucky_guess: false,
+                    }
+                });
+
+                // Update recap_stats
+                if result.answered {
+                    stat.answered += 1;
+                    // fastest_ms: fastest ANSWERED response (Node parity, not correct-only)
+                    if stat.fastest_ms.is_none() || result.response_time_ms < stat.fastest_ms.unwrap() {
+                        stat.fastest_ms = Some(result.response_time_ms);
+                    }
+                    if result.correct {
+                        stat.correct += 1;
+                    } else {
+                        stat.wrong += 1;
+                    }
+                }
+
+                // peak_streak: track highest streak reached
+                if result.streak > stat.peak_streak {
+                    stat.peak_streak = result.streak;
+                }
+
+                // best_climb: max rank improvement in single round
+                let climb = rank_before - rank_after;
+                if climb > stat.best_climb {
+                    stat.best_climb = climb;
+                }
+
+                // worst_rank_ever: max rank (worst position) ever reached
+                if rank_after > stat.worst_rank_ever {
+                    stat.worst_rank_ever = rank_after;
+                }
+
+                // question_stats: per-question total and correct counts
+                let q_stat = self.question_stats.entry(self.current_question_index as i32).or_insert_with(|| {
+                    crate::state::QuestionStat {
+                        correct: 0,
+                        total: 0,
+                    }
+                });
+                if result.answered {
+                    q_stat.total += 1;
+                    if result.correct {
+                        q_stat.correct += 1;
+                    }
+                }
+            }
+        }
+        // === N4 recap/question fold (end) ===
 
         self.last_round_results = results.clone();
         self.phase = GamePhase::ShowResult;
