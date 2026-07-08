@@ -1,6 +1,7 @@
 //! build_and_emit_config — loads all manager-visible data and emits manager:config
 
 use super::super::HandlerCtx;
+use super::plugins;
 use crate::db;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::ScoringMode;
@@ -15,7 +16,10 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     let submissions = db::get_submissions(&ctx.db_pool).await;
     let theme_templates = db::get_themes(&ctx.db_pool).await;
     let achievements = db::get_achievements(&ctx.db_pool).await;
-    let plugins = db::get_plugins(&ctx.db_pool).await;
+    // DISK read (spec_plugins.md ruling 2): config/plugins/index.json is the
+    // source of truth; the installed_plugins DB table is never written by Node,
+    // so db::get_plugins always returned [] — a live bug this fixes.
+    let plugins = plugins::read_plugins_index();
     let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode) =
         db::get_game_config(&ctx.db_pool).await;
 
@@ -45,7 +49,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         } else {
             None
         },
-        plugins: Some(parse_plugins_from_json(plugins)),
+        plugins: Some(plugins),
         observability: None,
     };
 
@@ -87,39 +91,4 @@ async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
     }
 
     quizz
-}
-
-/// Parse plugins from JSON array and convert to InstalledPlugin structs
-fn parse_plugins_from_json(plugins: Vec<serde_json::Value>) -> Vec<razzoozle_protocol::manager::InstalledPlugin> {
-    plugins.into_iter()
-        .filter_map(|p| {
-            let id = p["id"].as_str()?.to_string();
-            let name = p["name"].as_str()?.to_string();
-            let version = p["version"].as_str()?.to_string();
-            let enabled = p["enabled"].as_bool().unwrap_or(false);
-            let capabilities = p["capabilities"]
-                .as_array()?
-                .iter()
-                .filter_map(|c| c.as_str().map(|s| s.to_string()))
-                .collect();
-            let config = p.get("config").and_then(|c| {
-                if c.is_object() {
-                    Some(c.as_object()?.clone().into_iter()
-                        .map(|(k, v)| (k, v))
-                        .collect())
-                } else {
-                    None
-                }
-            });
-
-            Some(razzoozle_protocol::manager::InstalledPlugin {
-                id,
-                name,
-                version,
-                enabled,
-                capabilities,
-                config,
-            })
-        })
-        .collect()
 }

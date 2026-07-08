@@ -21,6 +21,10 @@ lazy_static = "1.4"
 razzoozle-protocol = { path = "../protocol" }
 razzoozle-engine = { path = "../engine" }
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chrono"] }
+# Plugin ZIP import (spec_plugins.md ruling 3 — orchestrator-approved).
+# deflate-flate2-zlib-rs is the minimal pure-Rust deflate backend (the plain
+# "deflate" meta-feature would additionally pull the zopfli encoder).
+zip = { version = "8.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 # test-util only actually matters for `cargo test` (paused-clock timer tests in
 # socket/cooldown.rs), but Cargo unifies feature flags for a dep across the
