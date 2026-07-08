@@ -4,12 +4,11 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::state::{safe_asset_id, GameRegistry};
-use super::{get_config_path, json_error_response, is_dev_mode, dev_api_key};
+use super::{json_error_response, is_dev_mode, dev_api_key, AppState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Assignment {
@@ -49,14 +48,6 @@ pub struct CreateAssignmentResponse {
 #[derive(Debug, Serialize)]
 pub struct GetAssignmentResultsResponse {
     pub results: Vec<serde_json::Value>,
-}
-
-fn get_assignment_path(id: &str) -> String {
-    format!("{}/assignments/{}.json", get_config_path(), id)
-}
-
-fn get_solo_results_path(quiz_id: &str) -> String {
-    format!("{}/solo-results/{}.json", get_config_path(), quiz_id)
 }
 
 async fn authorize_manager_request(
@@ -102,10 +93,10 @@ async fn authorize_manager_request(
 
 pub async fn handle_create_assignment(
     headers: HeaderMap,
-    State(registry): State<Arc<RwLock<GameRegistry>>>,
+    State(state): State<AppState>,
     Json(payload): Json<CreateAssignmentRequest>,
 ) -> Result<Json<CreateAssignmentResponse>, (StatusCode, Json<serde_json::Value>)> {
-    authorize_manager_request(&headers, &registry).await?;
+    authorize_manager_request(&headers, &state.registry).await?;
 
     if payload.quizz_id.is_empty() {
         return Err(json_error_response(StatusCode::BAD_REQUEST, "quizzId required"));
@@ -114,7 +105,7 @@ pub async fn handle_create_assignment(
     safe_asset_id(&payload.quizz_id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
-    let registry_read = registry.read().await;
+    let registry_read = state.registry.read().await;
     if registry_read.get_quiz_by_id(&payload.quizz_id).is_none() {
         return Err(json_error_response(
             StatusCode::NOT_FOUND,
@@ -123,75 +114,85 @@ pub async fn handle_create_assignment(
     }
     drop(registry_read);
 
-    let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
-    let now = chrono::Utc::now().timestamp_millis();
-
-    let assignment = Assignment {
-        id: id.clone(),
-        quizz_id: payload.quizz_id,
-        created_at: now,
-        deadline: payload.deadline,
-        max_attempts: payload.max_attempts,
-        require_identifier: payload.require_identifier,
-        show_correct_answers: payload.show_correct_answers,
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
     };
 
-    let file_path = get_assignment_path(&id);
-    let assignment_json = serde_json::to_string_pretty(&assignment)
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("JSON error: {}", e)))?;
+    let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
+    let now = chrono::Utc::now().timestamp_millis();
+    let assigned_at = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(now)
+        .ok_or_else(|| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "invalid timestamp"))?;
 
-    tokio::task::spawn_blocking({
-        let file_path = file_path.clone();
-        let json = assignment_json.clone();
-        move || {
-            let dir = std::path::Path::new(&file_path).parent();
-            if let Some(d) = dir {
-                if !d.exists() {
-                    if let Err(e) = fs::create_dir_all(d) {
-                        return Err((
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            format!("Failed to create directory: {}", e),
-                        ));
-                    }
-                }
-            }
+    // Build metadata JSON with only present optionals
+    let mut metadata = serde_json::Map::new();
+    if let Some(deadline) = payload.deadline {
+        metadata.insert("deadline".to_string(), serde_json::Value::Number(deadline.into()));
+    }
+    if let Some(max_attempts) = payload.max_attempts {
+        metadata.insert("maxAttempts".to_string(), serde_json::Value::Number(max_attempts.into()));
+    }
+    if let Some(require_identifier) = payload.require_identifier {
+        metadata.insert("requireIdentifier".to_string(), serde_json::Value::Bool(require_identifier));
+    }
+    if let Some(show_correct_answers) = payload.show_correct_answers {
+        metadata.insert("showCorrectAnswers".to_string(), serde_json::Value::Bool(show_correct_answers));
+    }
+    let metadata_value = serde_json::Value::Object(metadata);
 
-            if let Err(e) = fs::write(&file_path, json) {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to write assignment: {}", e),
-                ));
-            }
-
-            Ok::<(), (StatusCode, String)>(())
-        }
-    })
+    sqlx::query(
+        "INSERT INTO assignments (id, quiz_id, assigned_to, assigned_at, metadata, version) \
+         VALUES ($1, $2, NULL, $3, $4, 0)"
+    )
+    .bind(&id)
+    .bind(&payload.quizz_id)
+    .bind(assigned_at)
+    .bind(metadata_value)
+    .execute(pool)
     .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
-    .map_err(|e| json_error_response(e.0, e.1))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert assignment: {}", e)))?;
 
     Ok(Json(CreateAssignmentResponse { id }))
 }
 
 pub async fn handle_get_assignment(
     Path(id): Path<String>,
+    State(state): State<AppState>,
 ) -> Result<Json<Assignment>, (StatusCode, Json<serde_json::Value>)> {
     safe_asset_id(&id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
-    let file_path = get_assignment_path(&id);
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
+    };
 
-    let assignment = tokio::task::spawn_blocking({
-        let path = file_path.clone();
-        move || {
-            fs::read_to_string(&path)
-                .ok()
-                .and_then(|s| serde_json::from_str::<Assignment>(&s).ok())
-        }
-    })
+    let (quiz_id, assigned_at, metadata) = sqlx::query_as::<_, (String, chrono::DateTime<chrono::Utc>, serde_json::Value)>(
+        "SELECT quiz_id, assigned_at, metadata FROM assignments WHERE id = $1"
+    )
+    .bind(&id)
+    .fetch_optional(pool)
     .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
     .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+
+    let created_at_ms = assigned_at.timestamp_millis();
+
+    // Reconstruct optional fields from metadata
+    let deadline = metadata.get("deadline").and_then(|v| v.as_i64());
+    let max_attempts = metadata.get("maxAttempts").and_then(|v| v.as_i64().map(|n| n as i32));
+    let require_identifier = metadata.get("requireIdentifier").and_then(|v| v.as_bool());
+    let show_correct_answers = metadata.get("showCorrectAnswers").and_then(|v| v.as_bool());
+
+    let assignment = Assignment {
+        id,
+        quizz_id: quiz_id,
+        created_at: created_at_ms,
+        deadline,
+        max_attempts,
+        require_identifier,
+        show_correct_answers,
+    };
 
     Ok(Json(assignment))
 }
@@ -199,45 +200,35 @@ pub async fn handle_get_assignment(
 pub async fn handle_get_assignment_results(
     headers: HeaderMap,
     Path(id): Path<String>,
-    State(registry): State<Arc<RwLock<GameRegistry>>>,
+    State(state): State<AppState>,
 ) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    authorize_manager_request(&headers, &registry).await?;
+    authorize_manager_request(&headers, &state.registry).await?;
 
     safe_asset_id(&id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
-    let file_path = get_assignment_path(&id);
-    let assignment_exists = tokio::task::spawn_blocking({
-        let path = file_path.clone();
-        move || std::path::Path::new(&path).exists()
-    })
-    .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
+    };
 
-    if !assignment_exists {
-        return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
-    }
+    // SELECT quiz_id from assignments (replacing file read)
+    let quiz_id: String = sqlx::query_scalar("SELECT quiz_id FROM assignments WHERE id = $1")
+        .bind(&id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
+        .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
-    let assignment = tokio::task::spawn_blocking({
-        let path = file_path.clone();
-        move || {
-            fs::read_to_string(&path)
-                .ok()
-                .and_then(|s| serde_json::from_str::<Assignment>(&s).ok())
-        }
-    })
-    .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?
-    .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
-
-    let quiz_id = assignment.quizz_id;
-    let results_path = get_solo_results_path(&quiz_id);
+    // File read for solo-results (unchanged, E2 phase)
+    let config_path = super::get_config_path();
+    let results_path = format!("{}/solo-results/{}.json", config_path, quiz_id);
 
     let results = tokio::task::spawn_blocking({
         let path = results_path.clone();
         let assignment_id = id.clone();
         move || {
-            fs::read_to_string(&path)
+            std::fs::read_to_string(&path)
                 .ok()
                 .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
                 .map(|entries| {
