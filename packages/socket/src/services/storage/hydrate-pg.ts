@@ -7,6 +7,7 @@ import { getQuizzPg } from "@razzoozle/socket/services/storage/quizz-pg"
 import { listAllCatalogEntriesPg } from "@razzoozle/socket/services/storage/catalog-pg"
 import { listAllResultsPg } from "@razzoozle/socket/services/storage/results-pg"
 import { listAllSubmissionsPg } from "@razzoozle/socket/services/storage/submissions-pg"
+import { listAllAssignmentsPg } from "@razzoozle/socket/services/storage/assignments-pg"
 import { listAllAchievementsPg } from "@razzoozle/socket/services/storage/achievements-pg"
 import { listAllThemesPg } from "@razzoozle/socket/services/storage/theme-pg"
 
@@ -15,6 +16,7 @@ interface HydrationStats {
   catalog: number
   results: number
   submissions: number
+  assignments: number
   achievements: number
   themes: number
   templates: number
@@ -193,6 +195,46 @@ async function hydrateSubmissions(stats: HydrationStats): Promise<void> {
 }
 
 /**
+ * Hydrate config/assignments/<id>.json from DB assignments.
+ * ⚠️ CRITICAL: DO NOT stripId — write the FULL assignment (with `id`).
+ * `assignmentValidator`/`getAssignment` require the id field.
+ * Zombie-cleanup: delete assignment files whose ids are not in the DB list.
+ */
+async function hydrateAssignments(stats: HydrationStats): Promise<void> {
+  try {
+    const assignments = await listAllAssignmentsPg()
+    const assignmentsDir = getPath("assignments")
+
+    if (!fs.existsSync(assignmentsDir)) {
+      fs.mkdirSync(assignmentsDir, { recursive: true })
+    }
+
+    // Write each assignment from DB (with id, unlike quizzes/submissions)
+    for (const assignment of assignments) {
+      const filePath = getPath(`assignments/${assignment.id}.json`)
+      fs.writeFileSync(filePath, JSON.stringify(assignment, null, 2))
+    }
+
+    // Zombie cleanup
+    const dbIds = new Set(assignments.map((a) => a.id))
+    for (const file of fs.readdirSync(assignmentsDir)) {
+      if (file.endsWith(".json")) {
+        const id = file.replace(".json", "")
+        if (!dbIds.has(id)) {
+          fs.unlinkSync(getPath(`assignments/${file}`))
+        }
+      }
+    }
+
+    stats.assignments = assignments.length
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("pg-hydration: assignments failed:", msg)
+    stats.errors.push(`assignments: ${msg}`)
+  }
+}
+
+/**
  * Hydrate config/achievements.json from DB achievements_config.
  * Overwrites (no zombie cleanup: single file).
  */
@@ -327,6 +369,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     catalog: 0,
     results: 0,
     submissions: 0,
+    assignments: 0,
     achievements: 0,
     themes: 0,
     templates: 0,
@@ -339,6 +382,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
   await hydrateCatalog(stats)
   await hydrateResults(stats)
   await hydrateSubmissions(stats)
+  await hydrateAssignments(stats)
   await hydrateAchievements(stats)
   await hydrateGameConfig(stats)
   await hydrateThemes(stats)
@@ -349,6 +393,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     `${stats.catalog} catalog, ` +
     `${stats.results} results, ` +
     `${stats.submissions} submissions, ` +
+    `${stats.assignments} assignments, ` +
     `${stats.achievements} achievements, ` +
     `${stats.themes} active-theme, ` +
     `${stats.templates} templates, ` +
