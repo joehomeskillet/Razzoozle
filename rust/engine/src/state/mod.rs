@@ -428,6 +428,13 @@ impl GameState {
                         stat.wrong += 1;
                     }
                 }
+                // lucky_guess: a correct answer landing in the last ~10% of the timer.
+                if result.answered
+                    && result.correct
+                    && (result.response_time_ms as f64) >= 0.9 * question.time as f64 * 1000.0
+                {
+                    stat.lucky_guess = true;
+                }
 
                 // peak_streak: track highest streak reached
                 if result.streak > stat.peak_streak {
@@ -563,6 +570,21 @@ impl GameState {
                 }
             }
         }
+        // Enrich recap_stats with unlocked achievement ids (Node achievement-awards.ts:335;
+        // feeds the most_achievements superlative). Entries created by the N4 recap fold above.
+        for (cid, ids) in unlocked_by_client.iter() {
+            if let Some(stat) = self.recap_stats.get_mut(cid) {
+                for id in ids {
+                    if !stat.achievement_ids.contains(id) {
+                        stat.achievement_ids.push(id.clone());
+                    }
+                }
+                if stat.achievement_ids.len() > 50 {
+                    stat.achievement_ids.truncate(50);
+                }
+            }
+        }
+
         // === N3 achievements fold (end) ===
 
         self.last_round_results = results.clone();
