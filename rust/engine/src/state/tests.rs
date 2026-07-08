@@ -386,4 +386,16 @@ mod tests {
         assert!(!recap.superlatives.is_empty(), "Should have superlatives after round 1");
     }
 
+    #[test]
+    fn wp_n3_default_config_zero_bonus_points() {
+        let quiz = fixture_quizz();
+        let mut state = GameState::new(quiz, vec![make_player("p1", "Alice")]);
+        state.start().unwrap();
+        state.show_question(0).unwrap();
+        state.open_answers().unwrap();
+        state.set_clock_ms(100);
+        state.record_answer("p1", Some(1), None, None).unwrap();
+        let results = state.reveal(ScoringMode::Speed).unwrap();
+        assert_eq!(results[0].bonus_points, 0, "default config has zero bonus");
+    }
 }

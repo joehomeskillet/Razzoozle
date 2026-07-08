@@ -88,7 +88,7 @@ pub fn compute_achievement_awards(
             // Update counters (this is a simplification; in the real port we track
             // whether this player answered THIS round separately). For now, assume
             // any scored row counts as answered.
-            let answered_this_round = true; // TODO: actual answer tracking
+            let answered_this_round = row.response_time_ms.is_some();
             counter.answered += if answered_this_round { 1 } else { 0 };
             counter.correct += if row.is_correct { 1 } else { 0 };
             counter.ever = counter.ever || row.is_correct;
