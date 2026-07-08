@@ -66,6 +66,19 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 }
 
+                // Parse clientMessageId for low-latency ack
+                let client_message_id = data_obj
+                    .and_then(|v| v.get("clientMessageId"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                // Get current server time (wall-clock) for response_time_ms calculation
+                // This must be hoisted ABOVE the lock so it survives to the emit
+                let server_now_ms = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0);
+
                 if let Some(game_id) = game_id_opt {
                     let game_opt = {
                         let registry = registry.read().await;
@@ -73,7 +86,7 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                     };
 
                     if let Some(game_ref) = game_opt {
-                        let record_result = {
+                        let (record_result, low_latency) = {
                             let mut game = game_ref.lock().unwrap();
                             // Use the durable clientId from the socket handshake (captured at
                             // connect). The old code matched `p.id == socket.id`, but p.id is a
@@ -81,22 +94,19 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                             // stored under the raw socket id and reveal never found it → 0 points
                             // for every player. clientId is the same key reveal looks answers up by.
 
-                            // Get current server time (wall-clock) for response_time_ms calculation
-                            let server_now_ms = SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .map(|d| d.as_millis() as i64)
-                                .unwrap_or(0);
-
                             // Set engine clock to current wall-clock time so record_answer
                             // calculates response_time_ms correctly
                             game.engine.set_clock_ms(server_now_ms);
 
-                            game.engine.record_answer(
+                            let result = game.engine.record_answer(
                                 &client_id,
                                 answer_key_opt,
                                 answer_keys_opt,
                                 answer_text_opt,
-                            )
+                            );
+
+                            // Capture low_latency flag for later use outside the lock
+                            (result, game.low_latency)
                         };
 
                         // #6: Handle InvalidAnswerShape error from engine
@@ -127,6 +137,17 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                                 });
                                 socket
                                     .emit(constants::game::STATUS, &wait_status).ok();
+
+                                // Emit player:answerAck for low-latency mode
+                                if low_latency {
+                                    let ack = razzoozle_protocol::player::AnswerAck {
+                                        accepted: true,
+                                        reason: razzoozle_protocol::player::AnswerAckReason::Ok,
+                                        server_received_at_ms: server_now_ms,
+                                        client_message_id: client_message_id.clone(),
+                                    };
+                                    socket.emit(constants::player::ANSWER_ACK, &ack).ok();
+                                }
 
                                 // #7: Auto-advance if all players (connected + disconnected) have answered
                                 let should_auto_advance = {
