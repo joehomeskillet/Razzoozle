@@ -2,6 +2,7 @@ mod achievements;
 mod assignments;
 pub mod logs;
 mod observability;
+mod skeleton;
 
 use axum::{
     extract::{ConnectInfo, Path},
@@ -650,6 +651,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))
+        .route("/api/skeleton/export", get(skeleton::handle_skeleton_export))
+        .route(
+            "/api/skeleton/import",
+            post(skeleton::handle_skeleton_import)
+                .layer(axum::extract::DefaultBodyLimit::disable()),
+        )
         .route("/api/v1/observability/events", get(observability::handle_observability_events))
         .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
         .route("/api/v1/observability/logs/server", get(logs::handle_logs_server))
