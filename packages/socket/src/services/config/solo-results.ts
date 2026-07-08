@@ -1,6 +1,7 @@
 // Extracted verbatim from services/config.ts (SRP split).
 import fs from "fs"
 import { assertSafeId, ensureDir, getPath } from "@razzoozle/socket/services/config/shared"
+import { insertSoloResultPg } from "@razzoozle/socket/services/storage/solo-results-pg"
 
 // ---- Solo-play leaderboard (config/solo-results/:quizzId.json) ------------
 // Each file is a JSON array of SoloScoreEntry objects (playerName, score,
@@ -53,6 +54,12 @@ export const getSoloResults = (id: string): SoloScoreEntry[] => {
 // Bound unbounded per-quiz solo-results growth: keep only the most recent entries
 const SOLO_RESULTS_MAX_ENTRIES = 1000
 
+// Guard: only mirror to PG if DATABASE_MODE is dual/pg/pg-only
+const isDbBackedSoloMode = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
+
 export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId?: string): void => {
   assertSafeId(id)
 
@@ -74,4 +81,11 @@ export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId
     getPath(`solo-results/${id}.json`),
     JSON.stringify(capped, null, 2),
   )
+
+  // Fire-and-forget PG mirror write
+  if (isDbBackedSoloMode()) {
+    insertSoloResultPg(id, entry).catch((error) =>
+      console.error("solo-results-pg mirror failed", error),
+    )
+  }
 }
