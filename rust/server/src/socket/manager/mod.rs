@@ -18,7 +18,7 @@ pub mod submissions;
 pub mod theme;
 pub mod theme_templates;
 pub mod plugins;
-mod plugins_zip;
+pub(crate) mod plugins_zip;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     auth::register(socket, ctx.clone());

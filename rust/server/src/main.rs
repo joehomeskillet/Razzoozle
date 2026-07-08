@@ -141,8 +141,17 @@ async fn main() {
     // Initialize registry with pool (prefers DB quizzes when available, falls back to files)
     let registry = Arc::new(RwLock::new(GameRegistry::new(&db_pool, quiz_fixture).await));
 
+    // Node parity: WS_MAX_HTTP_BUFFER_BYTES = ceil(8_000_000 * 4 / 3) + 256_000
+    // (packages/socket/src/index.ts:48-52) — covers base64-inflated avatar/media
+    // uploads (up to 8MB raw) sent over the socket transport.
+    const WS_MAX_HTTP_BUFFER_BYTES: u64 = 10_922_667;
+
     // Create Socket.IO instance
-    let (layer, io) = SocketIo::builder().build_layer();
+    let (layer, io) = SocketIo::builder()
+        .max_payload(WS_MAX_HTTP_BUFFER_BYTES)
+        .ping_interval(Duration::from_millis(10000))
+        .ping_timeout(Duration::from_millis(8000))
+        .build_layer();
 
     // Configure socket handlers
     let io_handle = io.clone();

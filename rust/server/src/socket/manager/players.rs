@@ -232,9 +232,11 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                                 "streak": 0,
                                 "connected": true,
                             });
-                            ctx.io.to(game.manager_socket_id.clone())
-                                .emit(constants::manager::NEW_PLAYER, &new_player_payload)
-                                .ok();
+                            if let Ok(sid) = game.manager_socket_id.parse() {
+                                if let Some(s) = ctx.io.get_socket(sid) {
+                                    s.emit(constants::manager::NEW_PLAYER, &new_player_payload).ok();
+                                }
+                            }
                         }
 
                         // Broadcast TOTAL_PLAYERS once

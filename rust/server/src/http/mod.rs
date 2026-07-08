@@ -21,6 +21,7 @@ use tokio::sync::RwLock;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
 use crate::question_type_wire;
+use crate::socket::manager::plugins_zip::PLUGIN_ASSET_EXT;
 
 // ── Shared HTTP state ────────────────────────────────────────────────────────
 //
@@ -593,6 +594,15 @@ pub async fn handle_plugin_asset(
     // Validate plugin ID
     safe_asset_id(&plugin_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    // Public unauth surface: mirror Node resolvePluginAsset — only ui.js or assets/**, allowlisted ext, no svg.
+    if rel_path != "ui.js" && !rel_path.starts_with("assets/") {
+        return Err((StatusCode::NOT_FOUND, "not found".to_string()));
+    }
+    let ext = rel_path.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    if !PLUGIN_ASSET_EXT.contains(&ext.as_str()) {
+        return Err((StatusCode::NOT_FOUND, "not found".to_string()));
+    }
 
     let base_dir = format!("{}/plugins/{}", get_config_path(), plugin_id);
     serve_static_file(&base_dir, &rel_path).await

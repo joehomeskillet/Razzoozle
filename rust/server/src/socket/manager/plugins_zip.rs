@@ -30,7 +30,7 @@ const SKELETON_TOTAL_MAX_BYTES: usize = 32 * 1024 * 1024;
 /// theme-skeleton.ts:23 — 512 KB per single decompressed file.
 const SKELETON_ASSET_MAX_BYTES: usize = 512 * 1024;
 
-const PLUGIN_ASSET_EXT: [&str; 16] = [
+pub(crate) const PLUGIN_ASSET_EXT: [&str; 16] = [
     "webp", "png", "jpg", "jpeg", "woff2", "mp3", "wav", "ogg", // skeleton media (minus svg)
     "js", "mjs", "cjs", "json", "css", "ttf", "woff", "gif", // plugin additions
 ];
