@@ -103,12 +103,22 @@ pub async fn handle_skeleton_import(
     let buf = bytes.to_vec();
     // ZIP parse/validate + disk writes are blocking -> off-thread. Any parse /
     // cap / validation error -> 400 (Node: importSkeletonZip throw -> 400).
-    let theme = tokio::task::spawn_blocking(move || bundle::import_skeleton_zip(&buf))
+    let (theme, revision) = tokio::task::spawn_blocking(move || bundle::import_skeleton_zip(&buf))
         .await
         .map_err(|e| {
             json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e))
         })?
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
+
+    // Save revision to DB (if snapshot exists)
+    if let Some(rev) = revision {
+        let created_at = rev.get("createdAt")
+            .and_then(|v| v.as_str())
+            .unwrap_or("1970-01-01T00:00:00.000Z");
+        if let Err(e) = crate::db::insert_theme_revision(&state.db_pool, &rev, created_at).await {
+            eprintln!("skeleton import — revision save failed (non-fatal): {}", e);
+        }
+    }
 
     // Mirror to DB (additive, non-fatal — parity with the socket theme handlers).
     if let Err(e) = crate::db::upsert_theme(&state.db_pool, &theme).await {

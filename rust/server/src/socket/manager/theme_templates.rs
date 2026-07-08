@@ -12,12 +12,7 @@ use crate::db;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use serde_json;
-use std::fs;
-use std::path::Path;
 use uuid::Uuid;
-use chrono::Utc;
-
-const THEME_REVISIONS_MAX: usize = 10;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_theme_template_list(socket, ctx.clone());
@@ -58,32 +53,6 @@ fn normalize_filename(s: &str) -> String {
         .collect::<String>();
 
     format!("{}-{}", slug, short_id)
-}
-
-/// Load theme revisions from disk, ordered newest-first
-fn load_theme_revisions() -> Vec<serde_json::Value> {
-    let revisions_path = Path::new("config/theme-revisions.json");
-
-    if !revisions_path.exists() {
-        return Vec::new();
-    }
-
-    if let Ok(content) = fs::read_to_string(revisions_path) {
-        if let Ok(arr) = serde_json::from_str(&content) {
-            if let Some(revisions) = arr {
-                return revisions;
-            }
-        }
-    }
-
-    Vec::new()
-}
-
-/// Find a revision by id
-fn get_theme_revision_by_id(id: &str) -> Option<serde_json::Value> {
-    load_theme_revisions()
-        .into_iter()
-        .find(|rev| rev.get("id").and_then(|v| v.as_str()) == Some(id))
 }
 
 fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
@@ -279,8 +248,8 @@ fn register_theme_revision_list(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Load revisions (already newest-first from disk)
-                let revisions = load_theme_revisions();
+                // Load revisions from database (newest-first, capped at 10)
+                let revisions = db::list_theme_revisions(&ctx.db_pool).await;
                 socket.emit(constants::theme_revision::DATA, &revisions).ok();
             });
         }
@@ -319,8 +288,8 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Find revision
-                let revision = get_theme_revision_by_id(id);
+                // Find revision by id
+                let revision = db::get_theme_revision_by_id(&ctx.db_pool, id).await;
                 if revision.is_none() {
                     socket
                         .emit(constants::theme_revision::ERROR, &"errors:themeRevision.notFound")
@@ -349,7 +318,7 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::manager::THEME, &theme)
                             .ok();
                         // Re-emit fresh revisions to this socket
-                        let revisions = load_theme_revisions();
+                        let revisions = db::list_theme_revisions(&ctx.db_pool).await;
                         socket.emit(constants::theme_revision::DATA, &revisions).ok();
                     }
                     Err(e) => {

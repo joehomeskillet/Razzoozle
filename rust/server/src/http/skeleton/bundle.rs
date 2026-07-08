@@ -11,6 +11,7 @@ use serde_json::{json, Value};
 use std::fs;
 use std::io::{Cursor, Read, Write};
 use std::path::{Path, PathBuf};
+use chrono::Utc;
 
 use crate::socket::manager::public::get_default_theme;
 use crate::socket::manager::theme::validate_theme;
@@ -19,7 +20,6 @@ const SKELETON_FORMAT_VERSION: u64 = 1;
 const SKELETON_ASSET_MAX_BYTES: usize = 512 * 1024;
 const SKELETON_TOTAL_MAX_BYTES: usize = 32 * 1024 * 1024;
 const SKELETON_ENTRY_MAX: usize = 200;
-const THEME_REVISIONS_MAX: usize = 10;
 
 /// theme-skeleton.ts:26-36 — INCLUDES svg (trusted manager surface).
 const SKELETON_ASSET_EXT: [&str; 9] =
@@ -158,9 +158,9 @@ pub(super) fn build_skeleton_zip() -> Result<Vec<u8>, String> {
 // ── Import ─────────────────────────────────────────────────────────────────
 
 /// importSkeletonZip parity + plugins-style zip-slip hardening. Returns the
-/// persisted theme (mutated refs + skeletonVersion). All errors -> 400 (Node:
+/// persisted theme + optional revision snapshot. All errors -> 400 (Node:
 /// throw -> statusFrom413 -> 400). Error keys are EXACT Node strings.
-pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<Value, String> {
+pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<(Value, Option<Value>), String> {
     let base = config_base();
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes))
         .map_err(|_| "errors:skeleton.invalidZip".to_string())?;
@@ -281,8 +281,8 @@ pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<Value, String> {
         o.insert("skeletonVersion".to_string(), json!(next_ver));
     }
 
-    persist_theme(&base, &theme)?;
-    Ok(theme)
+    let revision = persist_theme(&base, &theme)?;
+    Ok((theme, revision))
 }
 
 /// If theme[path] is a string whose basename == `base_name`, replace it with
@@ -309,42 +309,34 @@ fn rewrite_ref(theme: &mut Value, path: &[&str], base_name: &str, new: &str) {
     }
 }
 
-/// setTheme() parity (config/theme/core.ts): snapshot the current on-disk theme
-/// to the revision ring, then overwrite theme.json. (DB mirror runs on the
-/// async side.) Snapshot is skipped when no theme.json exists yet, matching the
-/// Rust twin's apply.rs.
-fn persist_theme(base: &Path, theme: &Value) -> Result<(), String> {
+/// Persist theme: snapshot current theme BEFORE overwriting, then write new theme to disk.
+/// Returns optional revision snapshot if current theme existed.
+fn persist_theme(base: &Path, theme: &Value) -> Result<Option<Value>, String> {
     let theme_dir = base.join("theme");
     fs::create_dir_all(&theme_dir).map_err(|e| e.to_string())?;
     let theme_json = theme_dir.join("theme.json");
-    if let Ok(cur) = fs::read_to_string(&theme_json) {
+
+    // Snapshot current theme BEFORE overwriting (parity with Node setTheme → snapshot)
+    let revision = if let Ok(cur) = fs::read_to_string(&theme_json) {
         if let Ok(cur_val) = serde_json::from_str::<Value>(&cur) {
-            save_theme_revision(base, cur_val)?;
+            let ts = Utc::now().timestamp_millis();
+            let id = format!("rev-{}", ts);
+            let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+            Some(serde_json::json!({
+                "id": id,
+                "createdAt": created_at,
+                "theme": cur_val
+            }))
+        } else {
+            None
         }
-    }
+    } else {
+        None
+    };
+
     let out = serde_json::to_string_pretty(theme).map_err(|e| e.to_string())?;
     fs::write(&theme_json, out).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-fn save_theme_revision(base: &Path, current: Value) -> Result<(), String> {
-    let path = base.join("theme-revisions.json");
-    let mut revisions: Vec<Value> = fs::read_to_string(&path)
-        .ok()
-        .and_then(|c| serde_json::from_str(&c).ok())
-        .unwrap_or_default();
-    let ts = chrono::Utc::now().timestamp_millis();
-    revisions.insert(0, json!({
-        "id": format!("rev-{}", ts),
-        "createdAt": chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-        "theme": current,
-    }));
-    if revisions.len() > THEME_REVISIONS_MAX {
-        revisions.truncate(THEME_REVISIONS_MAX);
-    }
-    let s = serde_json::to_string_pretty(&revisions).map_err(|e| e.to_string())?;
-    fs::write(&path, s).map_err(|e| e.to_string())?;
-    Ok(())
+    Ok(revision)
 }
 
 #[cfg(test)]

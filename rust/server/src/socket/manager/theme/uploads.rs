@@ -1,5 +1,5 @@
 use super::super::super::HandlerCtx;
-use super::apply::{load_current_theme, save_theme_revision};
+use super::apply::load_current_theme;
 use super::decode_base64;
 use crate::db;
 use razzoozle_protocol::constants;
@@ -321,24 +321,35 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     None => super::public::get_default_theme(),
                 };
 
-                // MAJOR FIX: snapshot theme revision BEFORE persisting (Node calls setTheme which snapshots)
-                let snapshot_result = tokio::task::spawn_blocking({
-                    let current = current_theme.clone();
+                // Snapshot theme revision BEFORE persisting new theme
+                let revision_snapshot = tokio::task::spawn_blocking({
                     move || {
                         if let Some(cur) = load_current_theme() {
-                            save_theme_revision(cur)
+                            let ts = Utc::now().timestamp_millis();
+                            let id = format!("rev-{}", ts);
+                            let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+                            Some(serde_json::json!({
+                                "id": id,
+                                "createdAt": created_at,
+                                "theme": cur
+                            }))
                         } else {
-                            Ok(())
+                            None
                         }
                     }
                 })
-                .await;
+                .await
+                .ok()
+                .flatten();
 
-                if let Ok(Err(_)) = snapshot_result {
-                    socket
-                        .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
-                        .ok();
-                    return;
+                // Save revision to DB (if snapshot exists)
+                if let Some(revision) = revision_snapshot {
+                    let created_at = revision.get("createdAt")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("1970-01-01T00:00:00Z");
+                    if let Err(e) = db::insert_theme_revision(&ctx.db_pool, &revision, created_at).await {
+                        eprintln!("upload_sound — revision save failed (non-fatal): {}", e);
+                    }
                 }
 
                 let mut new_theme = current_theme.clone();
