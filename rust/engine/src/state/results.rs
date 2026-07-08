@@ -1,5 +1,5 @@
 use razzoozle_protocol::player::Player;
-use razzoozle_protocol::status::{ScoringMode, ShowResultData};
+use razzoozle_protocol::status::ShowResultData;
 
 #[derive(Debug, Clone)]
 pub struct RoundResult {
