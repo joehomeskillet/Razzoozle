@@ -33,6 +33,9 @@ pub struct Game {
     // future per-ping gate check this synchronously instead of an async DB
     // round-trip on every clock:ping.
     pub low_latency: bool,
+    // Monotonic per-game server sequence counter for SELECT_ANSWER emissions.
+    // Incremented once per opened question when low_latency is true.
+    pub server_seq: i32,
     // Auto-advance gate: when false (Node default), the game waits for explicit host
     // signals (manager:nextQuestion / manager:showLeaderboard) instead of auto-advancing
     // on RESULT_DWELL_SECS / LEADERBOARD_DWELL_SECS timeout. Toggleable via MANAGER.SET_AUTO.
@@ -76,6 +79,7 @@ impl Game {
             created_at_ms: now,
             last_activity_ms: now,
             low_latency: false,
+            server_seq: 0,
             auto_mode: false,
             cooldown_abort: None,
             paused: false,

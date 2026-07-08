@@ -78,6 +78,7 @@ fn build_select_answer_data(
     total_players: i32,
     server_now_ms: i64,
     deadline_ms: i64,
+    server_seq: Option<i32>,
 ) -> SelectAnswerData {
     SelectAnswerData {
         question: question.question.clone(),
@@ -94,7 +95,7 @@ fn build_select_answer_data(
         step: question.step.map(|v| v as i32),
         unit: question.unit.clone(),
         shuffled_chunks: None,
-        server_seq: None,
+        server_seq,
         server_now_ms: Some(server_now_ms),
         question_start_at_server_ms: Some(server_now_ms),
         answer_deadline_at_server_ms: Some(deadline_ms),
@@ -194,7 +195,7 @@ async fn open_question(
         .emit(constants::game::STATUS, &GameStatus::ShowQuestion(show_data))
         .ok();
 
-    let (question, total_players, server_now_ms, deadline_ms) = {
+    let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
         let mut game = game_ref.lock().unwrap();
         let server_now_ms = now_ms();
         game.engine.set_clock_ms(server_now_ms);
@@ -202,10 +203,16 @@ async fn open_question(
         let question = game.engine.current_question().clone();
         let total_players = game.players.len() as i32;
         let deadline_ms = server_now_ms + question.time as i64 * 1000;
-        (question, total_players, server_now_ms, deadline_ms)
+        let server_seq = if game.low_latency {
+            game.server_seq += 1;
+            Some(game.server_seq)
+        } else {
+            None
+        };
+        (question, total_players, server_now_ms, deadline_ms, server_seq)
     };
 
-    let select_data = build_select_answer_data(&question, total_players, server_now_ms, deadline_ms);
+    let select_data = build_select_answer_data(&question, total_players, server_now_ms, deadline_ms, server_seq);
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
         .ok();
