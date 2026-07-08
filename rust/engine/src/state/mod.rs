@@ -282,6 +282,7 @@ impl GameState {
             let correct = eval_result.as_ref().is_some_and(|r| r.correct);
             let base_factor = eval_result.as_ref().map(|r| r.base).unwrap_or(0.0);
             let response_time_ms = answer.map(|a| a.response_time_ms).unwrap_or(0);
+            let answered = answer.is_some();
             let streak_before = player.streak;
 
             let mut points = if let Some(answer) = answer {
@@ -319,6 +320,7 @@ impl GameState {
                 streak: player.streak,
                 first_correct,
                 response_time_ms,
+                answered,
             });
         }
 

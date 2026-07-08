@@ -9,6 +9,7 @@ pub struct RoundResult {
     pub streak: i32,
     pub first_correct: bool,
     pub response_time_ms: i64,
+    pub answered: bool,
 }
 
 impl RoundResult {
