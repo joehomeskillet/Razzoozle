@@ -10,6 +10,7 @@ import { listAllSubmissionsPg } from "@razzoozle/socket/services/storage/submiss
 import { listAllAssignmentsPg } from "@razzoozle/socket/services/storage/assignments-pg"
 import { listAllAchievementsPg } from "@razzoozle/socket/services/storage/achievements-pg"
 import { listAllThemesPg } from "@razzoozle/socket/services/storage/theme-pg"
+import { listAllSoloResultsPg } from "@razzoozle/socket/services/storage/solo-results-pg"
 
 interface HydrationStats {
   quizzes: number
@@ -21,6 +22,7 @@ interface HydrationStats {
   themes: number
   templates: number
   gameConfig: number
+  soloResults: number
   errors: string[]
 }
 
@@ -235,6 +237,46 @@ async function hydrateAssignments(stats: HydrationStats): Promise<void> {
 }
 
 /**
+ * Hydrate config/solo-results/<quizId>.json from DB solo_results.
+ * Files are plain arrays of SoloScoreEntry (NO id field).
+ * Zombie-cleanup: delete solo-results files whose quiz_id has no rows in DB.
+ */
+async function hydrateSoloResults(stats: HydrationStats): Promise<void> {
+  try {
+    const grouped = await listAllSoloResultsPg()
+    const soloResultsDir = getPath("solo-results")
+
+    if (!fs.existsSync(soloResultsDir)) {
+      fs.mkdirSync(soloResultsDir, { recursive: true })
+    }
+
+    // Write each quiz's solo results (as plain array, no id field)
+    const dbQuizIds = new Set<string>()
+    for (const { quizId, entries } of grouped) {
+      dbQuizIds.add(quizId)
+      const filePath = getPath(`solo-results/${quizId}.json`)
+      fs.writeFileSync(filePath, JSON.stringify(entries, null, 2))
+    }
+
+    // Zombie cleanup: delete files for quizzes with no DB rows
+    for (const file of fs.readdirSync(soloResultsDir)) {
+      if (file.endsWith(".json")) {
+        const quizId = file.replace(".json", "")
+        if (!dbQuizIds.has(quizId)) {
+          fs.unlinkSync(getPath(`solo-results/${file}`))
+        }
+      }
+    }
+
+    stats.soloResults = grouped.length
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("pg-hydration: solo-results failed:", msg)
+    stats.errors.push(`solo-results: ${msg}`)
+  }
+}
+
+/**
  * Hydrate config/achievements.json from DB achievements_config.
  * Overwrites (no zombie cleanup: single file).
  */
@@ -374,6 +416,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     themes: 0,
     templates: 0,
     gameConfig: 0,
+    soloResults: 0,
     errors: [],
   }
 
@@ -383,6 +426,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
   await hydrateResults(stats)
   await hydrateSubmissions(stats)
   await hydrateAssignments(stats)
+  await hydrateSoloResults(stats)
   await hydrateAchievements(stats)
   await hydrateGameConfig(stats)
   await hydrateThemes(stats)
@@ -394,6 +438,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     `${stats.results} results, ` +
     `${stats.submissions} submissions, ` +
     `${stats.assignments} assignments, ` +
+    `${stats.soloResults} solo-results, ` +
     `${stats.achievements} achievements, ` +
     `${stats.themes} active-theme, ` +
     `${stats.templates} templates, ` +
