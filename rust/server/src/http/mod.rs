@@ -1,7 +1,7 @@
 mod assignments;
 mod observability;
 mod achievements;
-mod logs;
+pub mod logs;
 mod skeleton;
 
 use axum::{
@@ -22,6 +22,17 @@ use tokio::sync::RwLock;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
 use crate::question_type_wire;
+use sqlx::PgPool;
+use socketioxide::SocketIo;
+
+// ── AppState: HTTP handler context (registry + DB + socket.io) ──────────────
+
+#[derive(Clone)]
+pub struct AppState {
+    pub registry: Arc<RwLock<GameRegistry>>,
+    pub db_pool: Option<PgPool>,
+    pub io: SocketIo,
+}
 
 // ── Solo play types ─────────────────────────────────────────────────────────
 
@@ -605,7 +616,7 @@ pub async fn handle_sounds_asset(
 }
 
 /// Build and return the HTTP router for solo play and health check endpoints
-pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
+pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(handle_health))
         .route("/healthz", get(handle_healthz))
@@ -627,5 +638,5 @@ pub fn router(registry: Arc<RwLock<GameRegistry>>) -> Router {
         .route("/theme/*path", get(handle_theme_asset))
         .route("/plugins/:id/*path", get(handle_plugin_asset))
         .route("/sounds/*path", get(handle_sounds_asset))
-        .with_state(registry)
+        .with_state(state.registry)
 }

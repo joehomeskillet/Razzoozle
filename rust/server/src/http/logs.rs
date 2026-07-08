@@ -48,6 +48,34 @@ pub fn get_client_logs() -> Vec<String> {
         .unwrap_or_default()
 }
 
+
+// ── Tracing Layer for ring buffer integration ────────────────────────────────
+
+pub struct RingLayer;
+
+impl<S> tracing_subscriber::Layer<S> for RingLayer
+where
+    S: tracing::Subscriber,
+{
+    fn on_event(
+        &self,
+        event: &tracing::Event<'_>,
+        _ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) {
+        // Minimal implementation: just log the level and target
+        let metadata = event.metadata();
+        let log_entry = format!(
+            r#"{{"level":"{}","target":"{}","ts":"{}"}}"#,
+            metadata.level(),
+            metadata.target(),
+            chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+        );
+        
+        push_server_log(log_entry);
+    }
+}
+
+
 /// Constant-time string comparison (defense against timing attacks)
 fn constant_time_equals(a: &str, b: &str) -> bool {
     let a_bytes = a.as_bytes();
