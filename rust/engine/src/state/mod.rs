@@ -11,6 +11,8 @@ use std::collections::HashMap;
 
 mod results;
 pub use results::RoundResult;
+mod accum;
+pub use accum::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamePhase {
@@ -78,6 +80,10 @@ pub struct GameState {
     pub clock_ms: i64,
     question_opened_at_ms: i64,
     pub last_round_rank_before: HashMap<String, i32>,
+    pub game_counters: HashMap<String, GameCounter>,
+    pub recap_stats: HashMap<String, RecapStat>,
+    pub question_stats: HashMap<i32, QuestionStat>,
+    pub questions_history: Vec<razzoozle_protocol::results_display::QuestionResult>,
 }
 
 impl GameState {
@@ -95,6 +101,10 @@ impl GameState {
             clock_ms: 0,
             question_opened_at_ms: 0,
             last_round_rank_before: HashMap::new(),
+            game_counters: HashMap::new(),
+            recap_stats: HashMap::new(),
+            question_stats: HashMap::new(),
+            questions_history: Vec::new(),
         }
     }
 
@@ -323,6 +333,32 @@ impl GameState {
                 answered,
             });
         }
+
+        // WP-S: append this question + all player answers to whole-game history
+        // (Node parity: round-manager/results-broadcast.ts:228). Non-bot players
+        // only. Once per question — reveal() is phase-guarded, sole caller
+        // reveal_helpers.rs:33.
+        let player_answers: Vec<razzoozle_protocol::results_display::PlayerAnswerRecord> = self
+            .players
+            .iter()
+            .filter(|p| p.is_bot != Some(true))
+            .map(|p| {
+                let a = self.current_answers.get(&p.client_id);
+                razzoozle_protocol::results_display::PlayerAnswerRecord {
+                    player_name: p.username.clone(),
+                    answer_id: a.and_then(|ans| ans.answer_input.answer_key),
+                    answer_ids: a.and_then(|ans| ans.answer_input.answer_keys.clone()),
+                    answer_text: a.and_then(|ans| ans.answer_input.answer_text.clone()),
+                    response_ms: a.map(|ans| ans.response_time_ms as i32),
+                }
+            })
+            .collect();
+        self.questions_history
+            .push(razzoozle_protocol::results_display::QuestionResult {
+                question: serde_json::to_value(&question)
+                    .unwrap_or_else(|_| serde_json::json!({})),
+                player_answers,
+            });
 
         self.last_round_results = results.clone();
         self.phase = GamePhase::ShowResult;
