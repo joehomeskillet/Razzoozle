@@ -48,6 +48,10 @@ export {
   handleCheckAnswer,
   handleSoloScore,
 } from "./http/solo"
+import {
+  soloCheckAnswerRequestValidator,
+  soloScoreSubmitValidator,
+} from "@razzoozle/common/validators/solo"
 export {
   registerThemeBroadcaster,
   registerPluginBroadcaster,
@@ -130,6 +134,7 @@ export const routes: Route[] = [
     method: "POST",
     path: "/api/quizz/:id/check-answer",
     summary: "Stateless server-side answer check for solo play.",
+    requestSchema: soloCheckAnswerRequestValidator,
     match: /^\/api\/quizz\/([^/]+)\/check-answer$/,
     handle: (req, res, id) => handleCheckAnswer(req, res, id),
   },
@@ -137,6 +142,7 @@ export const routes: Route[] = [
     method: "POST",
     path: "/api/quizz/:id/solo-score",
     summary: "Persist a solo-play score and return the leaderboard.",
+    requestSchema: soloScoreSubmitValidator,
     match: /^\/api\/quizz\/([^/]+)\/solo-score$/,
     handle: (req, res, id) => handleSoloScore(req, res, id),
   },
