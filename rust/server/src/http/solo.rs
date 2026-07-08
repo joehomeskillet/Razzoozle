@@ -6,7 +6,6 @@ use axum::{
 use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
 use razzoozle_protocol::quizz::QuestionType;
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -218,22 +217,6 @@ pub async fn handle_check_answer(
     Ok(Json(response))
 }
 
-pub fn get_solo_results_path(quiz_id: &str) -> String {
-    if let Ok(config_path) = std::env::var("CONFIG_PATH") {
-        format!("{}/solo-results/{}.json", config_path, quiz_id)
-    } else {
-        let cwd = std::env::current_dir().unwrap();
-        cwd.parent()
-            .and_then(|p| p.parent())
-            .map(|p| {
-                p.join(format!("config/solo-results/{}.json", quiz_id))
-                    .to_string_lossy()
-                    .to_string()
-            })
-            .unwrap_or_else(|| format!("config/solo-results/{}.json", quiz_id))
-    }
-}
-
 pub async fn handle_solo_score(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
@@ -279,101 +262,53 @@ pub async fn handle_solo_score(
     // Cap at theoretical maximum
     let final_score = std::cmp::min(verified_score, theoretical_max);
 
-    let now = chrono::Utc::now().to_rfc3339();
+    // Use current time for answered_at
+    let now = chrono::Utc::now();
 
-    let result_entry = SoloResultEntry {
-        player_name: payload.player_name,
-        score: final_score,
-        answered_at: now,
-        assignment_id: payload.assignment_id,
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err((StatusCode::INTERNAL_SERVER_ERROR, "database not configured".to_string())),
     };
 
-    // Persist to file (blocking I/O off-thread)
-    let file_path = get_solo_results_path(&quiz_id);
+    // Generate unique ID: format!("{}-{}", quiz_id, uuid12)
+    let uuid12 = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
+    let result_id = format!("{}-{}", quiz_id, uuid12);
 
-    let (leaderboard, write_err) = tokio::task::spawn_blocking({
-        let file_path = file_path.clone();
-        let result_entry = result_entry.clone();
-        move || {
-            let dir_path = std::path::Path::new(&file_path).parent();
-
-            if let Some(dir) = dir_path {
-                if !dir.exists() {
-                    if let Err(e) = fs::create_dir_all(dir) {
-                        return (
-                            Vec::new(),
-                            Some((
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                format!("Failed to create directory: {}", e),
-                            )),
-                        );
-                    }
-                }
-            }
-
-            let mut leaderboard: Vec<SoloResultEntry> = if std::path::Path::new(&file_path).exists()
-            {
-                match fs::read_to_string(&file_path) {
-                    Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
-                    Err(e) => {
-                        return (
-                            Vec::new(),
-                            Some((
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                format!("Failed to read results file: {}", e),
-                            )),
-                        );
-                    }
-                }
-            } else {
-                Vec::new()
-            };
-
-            leaderboard.push(result_entry);
-            leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
-
-            // Cap leaderboard to prevent unbounded growth — keep top N by score
-            if leaderboard.len() > SOLO_RESULTS_MAX_ENTRIES {
-                leaderboard.truncate(SOLO_RESULTS_MAX_ENTRIES);
-            }
-
-            let json_str = match serde_json::to_string_pretty(&leaderboard) {
-                Ok(s) => s,
-                Err(e) => {
-                    return (
-                        Vec::new(),
-                        Some((
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            format!("JSON serialization error: {}", e),
-                        )),
-                    );
-                }
-            };
-
-            if let Err(e) = fs::write(&file_path, json_str) {
-                return (
-                    Vec::new(),
-                    Some((
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("Failed to write results file: {}", e),
-                    )),
-                );
-            }
-
-            (leaderboard, None)
-        }
-    })
+    // INSERT into solo_results
+    sqlx::query(
+        "INSERT INTO solo_results (id, quiz_id, player_name, score, answered_at, assignment_id) \
+         VALUES ($1, $2, $3, $4, $5, $6)"
+    )
+    .bind(&result_id)
+    .bind(&quiz_id)
+    .bind(&payload.player_name)
+    .bind(final_score)
+    .bind(now)
+    .bind(&payload.assignment_id)
+    .execute(pool)
     .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Task join error: {}", e),
-        )
-    })?;
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert result: {}", e)))?;
 
-    if let Some(err) = write_err {
-        return Err(err);
-    }
+    // SELECT leaderboard: ORDER BY score DESC LIMIT 1000
+    let leaderboard: Vec<(String, i32, chrono::DateTime<chrono::Utc>, Option<String>)> = sqlx::query_as(
+        "SELECT player_name, score, answered_at, assignment_id FROM solo_results WHERE quiz_id = $1 ORDER BY score DESC LIMIT 1000"
+    )
+    .bind(&quiz_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to fetch leaderboard: {}", e)))?;
+
+    let leaderboard = leaderboard
+        .into_iter()
+        .map(|(player_name, score, answered_at, assignment_id)| {
+            SoloResultEntry {
+                player_name,
+                score,
+                answered_at: answered_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                assignment_id,
+            }
+        })
+        .collect();
 
     Ok(Json(SoloScoreResponse { leaderboard }))
 }

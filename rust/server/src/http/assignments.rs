@@ -212,38 +212,38 @@ pub async fn handle_get_assignment_results(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
     };
 
-    // SELECT quiz_id from assignments (replacing file read)
-    let quiz_id: String = sqlx::query_scalar("SELECT quiz_id FROM assignments WHERE id = $1")
+    // Check that assignment exists
+    let _quiz_id: String = sqlx::query_scalar("SELECT quiz_id FROM assignments WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
         .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
-    // File read for solo-results (unchanged, E2 phase)
-    let config_path = super::get_config_path();
-    let results_path = format!("{}/solo-results/{}.json", config_path, quiz_id);
-
-    let results = tokio::task::spawn_blocking({
-        let path = results_path.clone();
-        let assignment_id = id.clone();
-        move || {
-            std::fs::read_to_string(&path)
-                .ok()
-                .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
-                .map(|entries| {
-                    entries
-                        .into_iter()
-                        .filter(|entry| {
-                            entry.get("assignmentId").and_then(|v| v.as_str()) == Some(&assignment_id)
-                        })
-                        .collect()
-                })
-                .unwrap_or_default()
-        }
-    })
+    // Fetch solo_results for this assignment
+    let results: Vec<(String, i32, chrono::DateTime<chrono::Utc>, Option<String>)> = sqlx::query_as(
+        "SELECT player_name, score, answered_at, assignment_id FROM solo_results WHERE assignment_id = $1"
+    )
+    .bind(&id)
+    .fetch_all(pool)
     .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e)))?;
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?;
+
+    // Convert to entry JSON format
+    let results = results
+        .into_iter()
+        .map(|(player_name, score, answered_at, assignment_id)| {
+            let mut entry = serde_json::json!({
+                "playerName": player_name,
+                "score": score,
+                "answeredAt": answered_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+            });
+            if let Some(aid) = assignment_id {
+                entry["assignmentId"] = serde_json::Value::String(aid);
+            }
+            entry
+        })
+        .collect();
 
     Ok(Json(GetAssignmentResultsResponse { results }))
 }
