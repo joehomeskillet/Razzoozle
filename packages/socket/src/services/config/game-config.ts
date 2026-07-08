@@ -65,6 +65,26 @@ export const updateGameConfig = (patch: {
 
   fs.writeFileSync(getPath("game.json"), JSON.stringify(result.data, null, 2))
 
+  // Fire-and-forget PG mirror of the behavioral toggles (db-backed modes only),
+  // mirroring the submissions dual-write pattern. NEVER mirror managerPassword —
+  // Node auth + smoke read the password straight from PG.
+  const dbMode = process.env.DATABASE_MODE?.toLowerCase()
+  if (dbMode === "dual" || dbMode === "pg" || dbMode === "pg-only") {
+    const pgPatch: Record<string, unknown> = {}
+    if (patch.teamMode !== undefined) pgPatch.teamMode = patch.teamMode
+    if (patch.joinLocked !== undefined) pgPatch.joinLocked = patch.joinLocked
+    if (patch.randomizeAnswers !== undefined) pgPatch.randomizeAnswers = patch.randomizeAnswers
+    if (patch.scoringMode !== undefined) pgPatch.scoringMode = patch.scoringMode
+    if (lowLatencyEnabled !== undefined) pgPatch.lowLatencyMode = { enabled: lowLatencyEnabled }
+    if (Object.keys(pgPatch).length > 0) {
+      const { storageRepository } =
+        require("@razzoozle/socket/services/storage") as typeof import("@razzoozle/socket/services/storage")
+      storageRepository()
+        .updateGameConfig(pgPatch as Partial<GameConfig>)
+        .catch((error) => console.error("game-config pg mirror failed", error))
+    }
+  }
+
   return result.data
 }
 
