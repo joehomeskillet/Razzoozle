@@ -111,6 +111,7 @@ fn register_auth(socket: &SocketRef, ctx: HandlerCtx) {
                 // re-pushes ai:settings on every successful auth — see
                 // config_helper.rs).
                 config_helper::build_and_emit_config(&socket, &ctx).await;
+                socket.emit(constants::ai::SETTINGS, &super::super::ai_config::get_public_ai_settings()).ok();
             });
         }
     });
