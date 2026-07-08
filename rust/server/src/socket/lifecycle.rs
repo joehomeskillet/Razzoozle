@@ -26,7 +26,7 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::game::GameUpdateQuestion;
 use razzoozle_protocol::quizz::Question;
 use razzoozle_protocol::status::{
-    FinishedData, GameStatus, SelectAnswerData, ShowPreparedData,
+    FinishedData, GameStatus, SelectAnswerData, ShowPreparedData, ShowRoundRecapData,
 };
 use socketioxide::SocketIo;
 use std::sync::{Arc, Mutex};
@@ -307,6 +307,57 @@ pub async fn run_game_lifecycle(
         } else {
             wait_abortable(RESULT_DWELL_SECS, abort_result).await;
         }
+
+        // SHOW_ROUND_RECAP: per-round awards screen (manager-only), one per round except the last.
+        // Inserted between RESULT dwell and SHOW_LEADERBOARD, executed only if temp_round_recap
+        // is populated (done by reveal_helpers). After recap dwell, temp_round_recap is cleared.
+        let should_show_recap = {
+            let game = game_ref.lock().unwrap();
+            let is_last_round = game.engine.current_question_index + 1 == game.engine.quiz.questions.len();
+            !is_last_round && game.temp_round_recap.is_some() && !game.temp_round_recap.as_ref().unwrap().is_empty()
+        };
+
+        if should_show_recap {
+            // Arm abort for the recap dwell
+            let abort_recap = { game_ref.lock().unwrap().arm_abort() };
+
+            // Set phase to ShowRoundRecap and emit to manager
+            {
+                let mut game = game_ref.lock().unwrap();
+                game.engine.phase = GamePhase::ShowRoundRecap;
+                let recap_data = game.temp_round_recap.clone().unwrap_or_default();
+                let manager_socket_id = game.manager_socket_id.clone();
+                drop(game);
+
+                if let Ok(sid) = manager_socket_id.parse() {
+                    if let Some(sock) = io.get_socket(sid) {
+                        sock.emit(
+                            constants::game::STATUS,
+                            &GameStatus::ShowRoundRecap(ShowRoundRecapData {
+                                round_recap: recap_data,
+                            }),
+                        )
+                        .ok();
+                    }
+                }
+            }
+
+            // Dwell on the recap screen (manual or auto mode)
+            if !game_ref.lock().unwrap().auto_mode {
+                wait_abortable(3600, abort_recap).await; // manual: Host-Signal, 1h Sicherheitsnetz
+            } else {
+                wait_abortable(RESULT_DWELL_SECS, abort_recap).await;
+            }
+
+            // Clear temp_round_recap after showing
+            {
+                let mut game = game_ref.lock().unwrap();
+                game.temp_round_recap = None;
+                // Transition phase back to ShowResult so leaderboard_view() can proceed normally
+                game.engine.phase = GamePhase::ShowResult;
+            }
+        }
+
 
         // Leaderboard-Notify VOR dem phase-flip armen (L105-Race:
         // ein request_abort der phase==ShowLeaderboard sieht, landet garantiert auf DIESEM Notify).

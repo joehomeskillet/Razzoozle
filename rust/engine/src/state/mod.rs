@@ -16,7 +16,6 @@ pub use accum::*;
 mod recap;
 mod achievement_awards;
 pub use achievement_awards::*;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamePhase {
     ShowRoom,
@@ -24,6 +23,7 @@ pub enum GamePhase {
     ShowQuestion,
     SelectAnswer,
     ShowResult,
+    ShowRoundRecap,
     ShowLeaderboard,
     Finished,
 }

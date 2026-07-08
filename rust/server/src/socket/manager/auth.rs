@@ -278,6 +278,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     GamePhase::ShowQuestion => ("SHOW_QUESTION", serde_json::json!({})),
                     GamePhase::SelectAnswer => ("SELECT_ANSWER", serde_json::json!({})),
                     GamePhase::ShowResult => ("SHOW_RESULT", serde_json::json!({})),
+                    GamePhase::ShowRoundRecap => ("SHOW_ROUND_RECAP", serde_json::json!({})),
                     GamePhase::ShowLeaderboard => ("SHOW_LEADERBOARD", serde_json::json!({})),
                     GamePhase::Finished => ("FINISHED", serde_json::json!({})),
                 };

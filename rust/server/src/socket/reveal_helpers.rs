@@ -42,7 +42,7 @@ pub async fn perform_reveal_and_broadcast(
 
         // Send SHOW_RESULT to each player with their personalized data
         {
-            let game = game_ref.lock().unwrap();
+            let mut game = game_ref.lock().unwrap();
             let total_players = game.engine.players.len() as i32;
 
             // STEP 1: One-time extraction of constant fields (same across all players)
@@ -191,6 +191,8 @@ pub async fn perform_reveal_and_broadcast(
                     }
                 }
             }
+            // Stash the round recap for the lifecycle loop to emit via SHOW_ROUND_RECAP phase
+            game.temp_round_recap = round_recap_opt.clone();
         }
 
         // Prepare manager responses (ShowResponses status)
