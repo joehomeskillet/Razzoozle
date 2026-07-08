@@ -624,8 +624,15 @@ impl GameState {
             });
         }
 
-        self.old_leaderboard = self.players.clone();
         let leaderboard = self.sorted_leaderboard();
+        // First leaderboard has no prior ranking — everyone started tied — so use
+        // the current order as `old` to avoid spurious rank arrows on round 1
+        // (matches the Node twin). Round 2+ keeps the previous round's sorted order.
+        self.old_leaderboard = if self.current_question_index == 0 {
+            leaderboard.clone()
+        } else {
+            self.players.clone()
+        };
         self.players = leaderboard.clone();
 
         // Last round: Node's showLeaderboard() (round-manager.ts:1778-1882)
