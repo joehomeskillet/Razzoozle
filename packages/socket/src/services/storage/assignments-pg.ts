@@ -90,6 +90,28 @@ export const listAllAssignmentsPg = async (): Promise<Assignment[]> => {
   }
 }
 
+/** Read a single assignment by id from Postgres via a direct single-row query.
+ * Unlike listAllAssignmentsPg, a DB/query error here PROPAGATES (throws)
+ * instead of being swallowed — callers (assignment-deadline enforcement)
+ * must fail closed on a transient DB error, not silently treat it as a
+ * genuine not-found (which is the only case this returns null for). */
+export const getAssignmentByIdPg = async (id: string): Promise<Assignment | null> => {
+  try {
+    const result = await getPool().query(
+      `SELECT id, quiz_id, assigned_at, metadata
+       FROM assignments WHERE id = $1`,
+      [id],
+    )
+    if (result.rows.length === 0) {
+      return null
+    }
+    return rowToAssignment(result.rows[0] as AssignmentRow)
+  } catch (error) {
+    console.error("assignments-pg.getAssignmentByIdPg failed", error)
+    throw error
+  }
+}
+
 /** Upsert (create-or-update) an assignment by id. version += 1 on update, updated_at = NOW(). */
 export const upsertAssignmentPg = async (a: Assignment): Promise<{ id: string }> => {
   try {

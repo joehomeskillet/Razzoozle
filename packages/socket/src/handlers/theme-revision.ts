@@ -1,10 +1,10 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
+import { setTheme } from "@razzoozle/socket/services/config"
 import {
-  getThemeRevisionById,
-  getThemeRevisions,
-  setTheme,
-} from "@razzoozle/socket/services/config"
+  readThemeRevisionById,
+  readThemeRevisions,
+} from "@razzoozle/socket/services/storage/config-read"
 import manager from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
@@ -17,14 +17,14 @@ import { z } from "zod"
 export const themeRevisionSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.THEME_REVISION.LIST_REVISIONS,
-    manager.withAuth(socket, () => {
-      socket.emit(EVENTS.THEME_REVISION.DATA, getThemeRevisions())
+    manager.withAuth(socket, async () => {
+      socket.emit(EVENTS.THEME_REVISION.DATA, await readThemeRevisions())
     }),
   )
 
   socket.on(
     EVENTS.THEME_REVISION.RESTORE_REVISION,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = z.object({ id: z.string() }).safeParse(payload)
 
       if (!result.success) {
@@ -37,7 +37,7 @@ export const themeRevisionSocketHandlers = ({ socket }: SocketContext) => {
       }
 
       try {
-        const revision = getThemeRevisionById(result.data.id)
+        const revision = await readThemeRevisionById(result.data.id)
 
         if (!revision) {
           socket.emit(
@@ -55,7 +55,7 @@ export const themeRevisionSocketHandlers = ({ socket }: SocketContext) => {
         // Live-update every other connected client.
         socket.broadcast.emit(EVENTS.MANAGER.THEME, theme)
         // The pre-restore state is now a new revision → re-emit the fresh list.
-        socket.emit(EVENTS.THEME_REVISION.DATA, getThemeRevisions())
+        socket.emit(EVENTS.THEME_REVISION.DATA, await readThemeRevisions())
       } catch (error) {
         socket.emit(
           EVENTS.THEME_REVISION.ERROR,

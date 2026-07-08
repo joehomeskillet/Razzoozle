@@ -1,13 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "http"
 import type { Assignment } from "@razzoozle/common/validators/assignment"
 import { assignmentValidator } from "@razzoozle/common/validators/assignment"
+import { assertSafeId, saveAssignment } from "@razzoozle/socket/services/config"
 import {
-  assertSafeId,
-  getQuizzById,
-  getAssignment,
-  saveAssignment,
-  getSoloResults,
-} from "@razzoozle/socket/services/config"
+  readAssignment,
+  readQuizzById,
+  readSoloResults,
+} from "@razzoozle/socket/services/storage/config-read"
 import { nanoid } from "nanoid"
 import { jsonOk, jsonError } from "./respond"
 import { readBody, statusFrom413 } from "./body"
@@ -34,7 +33,7 @@ export const handleCreateAssignment = (
 
       // Validate quizzId exists
       try {
-        getQuizzById(quizzId)
+        await readQuizzById(quizzId)
       } catch {
         jsonError(res, 404, `Quizz "${quizzId}" not found`)
         return
@@ -71,19 +70,21 @@ export const handleGetAssignment = (
   res: ServerResponse,
   id: string | undefined,
 ): void => {
-  try {
-    assertSafeId(id ?? "")
-    const assignment = getAssignment(id!)
+  void (async () => {
+    try {
+      assertSafeId(id ?? "")
+      const assignment = await readAssignment(id!)
 
-    if (!assignment) {
-      jsonError(res, 404, "Assignment not found")
-      return
+      if (!assignment) {
+        jsonError(res, 404, "Assignment not found")
+        return
+      }
+
+      jsonOk(res, assignment)
+    } catch (err) {
+      jsonError(res, 404, err instanceof Error ? err.message : "Not found")
     }
-
-    jsonOk(res, assignment)
-  } catch (err) {
-    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
-  }
+  })()
 }
 
 export const handleGetAssignmentResults = (
@@ -96,31 +97,35 @@ export const handleGetAssignmentResults = (
     return
   }
 
-  try {
-    assertSafeId(id ?? "")
-    const assignment = getAssignment(id!)
+  void (async () => {
+    try {
+      assertSafeId(id ?? "")
+      const assignment = await readAssignment(id!)
 
-    if (!assignment) {
-      jsonError(res, 404, "Assignment not found")
-      return
+      if (!assignment) {
+        jsonError(res, 404, "Assignment not found")
+        return
+      }
+
+      // Get solo results and filter by assignmentId
+      const results = (await readSoloResults(assignment.quizzId)).filter(
+        (r) => (r as unknown as Record<string, unknown>).assignmentId === id,
+      )
+
+      jsonOk(res, { results })
+    } catch (err) {
+      jsonError(res, 404, err instanceof Error ? err.message : "Not found")
     }
-
-    // Get solo results and filter by assignmentId
-    const results = getSoloResults(assignment.quizzId).filter(
-      (r) => (r as unknown as Record<string, unknown>).assignmentId === id,
-    )
-
-    jsonOk(res, { results })
-  } catch (err) {
-    jsonError(res, 404, err instanceof Error ? err.message : "Not found")
-  }
+  })()
 }
 
 // Helper to check assignment deadline
-export const checkAssignmentDeadline = (assignmentId?: string): boolean => {
+export const checkAssignmentDeadline = async (
+  assignmentId?: string,
+): Promise<boolean> => {
   if (!assignmentId) return true
 
-  const assignment = getAssignment(assignmentId)
+  const assignment = await readAssignment(assignmentId)
   if (!assignment) return true
 
   if (assignment.deadline && Date.now() > assignment.deadline) {

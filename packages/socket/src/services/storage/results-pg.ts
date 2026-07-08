@@ -87,6 +87,17 @@ export const listAllResultsPg = async (): Promise<GameResult[]> => {
   }
 }
 
+/** Read a single result by id from Postgres (in-memory find over listAllResultsPg
+ * — mirrors the file-based getResultById(), which also throws on a missing id). */
+export const getResultByIdPg = async (id: string): Promise<GameResult> => {
+  const results = await listAllResultsPg()
+  const result = results.find((r) => r.id === id)
+  if (!result) {
+    throw new Error(`Result "${id}" not found`)
+  }
+  return result
+}
+
 /** Upsert (create-or-update) a result by id. version += 1 on update, updated_at = NOW(). */
 export const updateResultPg = async (data: GameResult): Promise<{ id: string }> => {
   try {

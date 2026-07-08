@@ -1,15 +1,16 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { SharedResult } from "@razzoozle/common/types/game"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
-import { deleteResult, getResultById } from "@razzoozle/socket/services/config"
+import { deleteResult } from "@razzoozle/socket/services/config"
+import { readResultById } from "@razzoozle/socket/services/storage/config-read"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 
 export const resultsSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.RESULTS.GET,
-    manager.withAuth(socket, (id) => {
+    manager.withAuth(socket, async (id) => {
       try {
-        socket.emit(EVENTS.RESULTS.DATA, getResultById(id))
+        socket.emit(EVENTS.RESULTS.DATA, await readResultById(id))
       } catch (error) {
         // Unlike GET_SHARED (public, intentionally silent with a client-side
         // timeout fallback), this is the manager's authenticated "open result"
@@ -26,10 +27,10 @@ export const resultsSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.RESULTS.DELETE,
-    manager.withAuth(socket, (id) => {
+    manager.withAuth(socket, async (id) => {
       try {
         deleteResult(id)
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         // The client shows an unconditional success toast on DELETE, so a
         // failure here needs its own error emit; re-emitting the config also
@@ -40,16 +41,16 @@ export const resultsSocketHandlers = ({ socket }: SocketContext) => {
           EVENTS.MANAGER.ERROR_MESSAGE,
           "errors:manager.resultDeleteFailed",
         )
-        emitConfig(socket)
+        await emitConfig(socket)
       }
     }),
   )
 
   // PUBLIC (no auth): a shareable post-event leaderboard. Strips `questions`
   // so a public link never leaks per-question answers/solutions (anti-cheat).
-  socket.on(EVENTS.RESULTS.GET_SHARED, (id) => {
+  socket.on(EVENTS.RESULTS.GET_SHARED, async (id) => {
     try {
-      const result = getResultById(id)
+      const result = await readResultById(id)
       const shared: SharedResult = {
         id: result.id,
         subject: result.subject,

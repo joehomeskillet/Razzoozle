@@ -3,20 +3,20 @@ import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   assertSafeId,
   deleteQuizz,
-  getQuizzById,
   saveQuizz,
   setQuizzArchived,
   updateQuizz,
 } from "@razzoozle/socket/services/config"
+import { readQuizzById } from "@razzoozle/socket/services/storage/config-read"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
 export const quizzSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.QUIZZ.GET,
-    manager.withAuth(socket, (id) => {
+    manager.withAuth(socket, async (id) => {
       try {
-        const quizz = getQuizzById(id)
+        const quizz = await readQuizzById(id)
 
         socket.emit(EVENTS.QUIZZ.DATA, quizz)
       } catch (error) {
@@ -28,12 +28,12 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.QUIZZ.SAVE,
-    manager.withAuth(socket, (data) => {
+    manager.withAuth(socket, async (data) => {
       try {
         const { id } = saveQuizz(data)
 
         socket.emit(EVENTS.QUIZZ.SAVE_SUCCESS, { id })
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         console.error("Failed to save quizz:", error)
         const message =
@@ -45,11 +45,11 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.QUIZZ.DELETE,
-    manager.withAuth(socket, (id) => {
+    manager.withAuth(socket, async (id) => {
       try {
         deleteQuizz(id)
 
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         console.error("Failed to delete quizz:", error)
         socket.emit(EVENTS.QUIZZ.ERROR, "errors:quizz.failedToDelete")
@@ -59,16 +59,16 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.QUIZZ.DUPLICATE,
-    manager.withAuth(socket, (id) => {
+    manager.withAuth(socket, async (id) => {
       try {
         // Read the source quizz, drop its id, and re-save with a suffixed
         // subject. saveQuizz derives a fresh id from the new subject via
         // normalizeFilename, so the original is left untouched.
-        const { id: _sourceId, subject, ...rest } = getQuizzById(id)
+        const { id: _sourceId, subject, ...rest } = await readQuizzById(id)
 
         saveQuizz({ ...rest, subject: `${subject} (Kopie)` })
 
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         console.error("Failed to duplicate quizz:", error)
         socket.emit(EVENTS.QUIZZ.ERROR, "errors:quizz.failedToSave")
@@ -78,12 +78,12 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.QUIZZ.UPDATE,
-    manager.withAuth(socket, ({ id, ...data }) => {
+    manager.withAuth(socket, async ({ id, ...data }) => {
       try {
         const { id: newId } = updateQuizz(id, data)
 
         socket.emit(EVENTS.QUIZZ.UPDATE_SUCCESS, { id: newId })
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         console.error("Failed to update quizz:", error)
         const message =
@@ -96,7 +96,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
   // Archive toggle: hides a quizz from the play list without deleting it.
   socket.on(
     EVENTS.QUIZZ.SET_ARCHIVED,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = z
         .object({ id: z.string(), archived: z.boolean() })
         .safeParse(payload)
@@ -110,7 +110,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
       try {
         assertSafeId(result.data.id)
         setQuizzArchived(result.data.id, result.data.archived)
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         console.error("Failed to set quizz archived:", error)
         socket.emit(

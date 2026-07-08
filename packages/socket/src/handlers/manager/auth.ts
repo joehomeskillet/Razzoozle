@@ -69,7 +69,7 @@ export const registerAuthHandlers = ({ socket }: SocketContext) => {
       }
 
       manager.login(socket)
-      emitConfig(socket)
+      await emitConfig(socket)
       // Re-push AI settings on every successful auth (login + reconnect re-auth)
       // so the open KI tab repopulates after a server restart without the client
       // racing a withAuth GET_SETTINGS against re-auth. Public shape — no keys.

@@ -5,7 +5,7 @@ import {
 } from "@razzoozle/common/constants"
 import type { Server } from "@razzoozle/common/types/game/socket"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
-import { getGameConfig } from "@razzoozle/socket/services/config"
+import { readGameConfig } from "@razzoozle/socket/services/storage/config-read"
 import Registry from "@razzoozle/socket/services/registry"
 import { randomInt } from "crypto"
 
@@ -80,10 +80,10 @@ const broadcastStatus = (io: Server, gameId: string): void => {
 // Validate a manager's pairing attempt and, on success, join the DISPLAY socket
 // (the one that registered the code) to the game room so the kiosk receives
 // GAME.STATUS broadcasts. The manager (caller) only triggers + gets confirmation.
-export const handlePair = (
+export const handlePair = async (
   { socket, io }: SocketContext,
   payload: PairPayload,
-): boolean => {
+): Promise<boolean> => {
   const registry = Registry.getInstance()
   const { code, managerPassword, gameId } = payload
 
@@ -110,7 +110,7 @@ export const handlePair = (
     let config
 
     try {
-      config = getGameConfig()
+      config = await readGameConfig()
     } catch {
       socket.emit(
         EVENTS.DISPLAY.PAIR_ERROR,
@@ -184,8 +184,8 @@ export const displaySocketHandlers = (context: SocketContext) => {
     socket.emit(EVENTS.DISPLAY.REGISTERED, { code })
   })
 
-  socket.on(EVENTS.DISPLAY.PAIR, (payload) => {
-    handlePair(context, payload)
+  socket.on(EVENTS.DISPLAY.PAIR, async (payload) => {
+    await handlePair(context, payload)
   })
 
   socket.on(EVENTS.DISPLAY.DISCONNECT, ({ code }) => {

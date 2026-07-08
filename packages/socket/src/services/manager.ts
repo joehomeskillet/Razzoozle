@@ -3,34 +3,41 @@ import type { Socket } from "@razzoozle/common/types/game/socket"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   devApiKey,
-  getGameConfig,
-  getMergedAchievements,
-  getQuizzMeta,
   getMediaList,
-  getResultsMeta,
-  getSubmissionsMeta,
-  getThemeTemplatesMeta,
   isDevMode,
   readPlugins,
 } from "@razzoozle/socket/services/config"
+import {
+  readGameConfig,
+  readMergedAchievements,
+  readQuizzMeta,
+  readResultsMeta,
+  readSubmissionsMeta,
+  readThemeTemplatesMeta,
+} from "@razzoozle/socket/services/storage/config-read"
 
 const getClientId = (socket: SocketContext["socket"]) =>
   socket.handshake.auth.clientId as string
 
-export const emitConfig = (socket: SocketContext["socket"]) => {
-  const gameConfig = getGameConfig()
+// P3 — every read below now routes through the config-read facade (async;
+// pg-native when DATABASE_MODE is pg/pg-only, same sync file read otherwise).
+// ALL callers must `await emitConfig(...)` — see handlers/quizz.ts,
+// catalog.ts, results.ts, theme-revision.ts, manager/theme.ts,
+// theme-template.ts, manager/moderation.ts, manager/auth.ts.
+export const emitConfig = async (socket: SocketContext["socket"]) => {
+  const gameConfig = await readGameConfig()
   return socket.emit(EVENTS.MANAGER.CONFIG, {
-    quizz: getQuizzMeta(),
-    results: getResultsMeta(),
-    submissions: getSubmissionsMeta(),
+    quizz: await readQuizzMeta(),
+    results: await readResultsMeta(),
+    submissions: await readSubmissionsMeta(),
     media: getMediaList(),
-    themeTemplates: getThemeTemplatesMeta(),
+    themeTemplates: await readThemeTemplatesMeta(),
     teamMode: gameConfig.teamMode,
     lowLatencyEnabled: gameConfig.lowLatencyMode.enabled,
     randomizeAnswers: gameConfig.randomizeAnswers ?? false,
     joinLocked: gameConfig.joinLocked ?? false,
     scoringMode: gameConfig.scoringMode ?? "speed",
-    achievements: getMergedAchievements(),
+    achievements: await readMergedAchievements(),
     devMode: isDevMode(),
     devApiKey: devApiKey(),
     plugins: readPlugins(),
@@ -68,7 +75,7 @@ class Manager {
 
   withAuth<T extends unknown[]>(
     socket: Socket,
-    handler: (..._args: T) => void,
+    handler: (..._args: T) => void | Promise<void>,
   ) {
     return (..._args: T) => {
       if (!this.isLogged(socket)) {
@@ -77,7 +84,13 @@ class Manager {
         return
       }
 
-      handler(..._args)
+      const result = handler(..._args)
+
+      if (result && typeof (result as { then?: unknown }).then === "function") {
+        ;(result as Promise<void>).catch((err) => {
+          console.error("[manager.withAuth] handler rejected:", err)
+        })
+      }
     }
   }
 }

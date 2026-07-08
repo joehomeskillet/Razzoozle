@@ -20,7 +20,8 @@ import {
   type Status,
   type StatusDataMap,
 } from "@razzoozle/common/types/game/status"
-import type { LowLatencyMode } from "@razzoozle/common/validators/game-config"
+import type { GameConfig, LowLatencyMode } from "@razzoozle/common/validators/game-config"
+import type { ThemeTemplate } from "@razzoozle/common/types/theme"
 import { setAvatarValidator } from "@razzoozle/common/validators/avatar"
 import {
   deleteGameAvatars,
@@ -61,6 +62,20 @@ import {
 
 const registry = Registry.getInstance()
 const DICEBEAR_IDENTITY_RE = /^dicebear:[a-z]+:.+$/
+
+// P3 — pre-fetched config snapshot, read ONCE by the async CREATE handler
+// (handlers/game.ts) via the services/storage/config-read facade BEFORE
+// construction, then passed in here so the ctor itself stays fully
+// synchronous ("hoist, don't cascade" — see
+// .claude/state/P3_node_pg_native_contract.md). Optional: every OTHER caller
+// (crash-recovery restore, the unit-test suite's direct `new Game(...)`)
+// omits it and the ctor falls back to the ORIGINAL sync reads below,
+// unchanged.
+export interface GamePreloadedConfig {
+  gameConfig: GameConfig
+  achievements: MergedAchievement[]
+  themeTemplate: ThemeTemplate | null
+}
 
 // Serializable crash-recovery snapshot for a single game. Only STABLE state is
 // captured — never live sockets, timers, or a mid-question's partial answers.
@@ -158,6 +173,13 @@ class Game {
   // teamMode) so a mid-game config edit can't change a running game's badges.
   // Crash-guarded — a config error falls back to the registry defaults.
   private readonly achievements: MergedAchievement[]
+  // P3 — the quiz's resolved theme template, pre-fetched ONCE by the async
+  // CREATE handler (like achievements/lowLatency above) and reused by every
+  // applyQuizTheme() call for this game's lifetime. `undefined` = "not
+  // preloaded" (no preloadedConfig given to the ctor) → applyQuizTheme falls
+  // back to its ORIGINAL sync getThemeTemplateById() read. `null` = preloaded
+  // and resolved to "no template" (no themeId, or it didn't match one).
+  private readonly preloadedThemeTemplate?: ThemeTemplate | null
   // Lobby join lock: when true, new players cannot join. Can be toggled live
   // (unlike lowLatency/teamMode which are read-once snapshots). Accessed via
   // a getter passed to PlayerManager so mid-game toggles take effect immediately.
@@ -209,6 +231,7 @@ class Game {
     socket: Socket | null,
     quizz: Quizz,
     restore?: { gameId: string; inviteCode: string; managerClientId: string },
+    preloadedConfig?: GamePreloadedConfig,
   ) {
     const clientId = socket
       ? (socket.handshake.auth.clientId as string)
@@ -231,65 +254,82 @@ class Game {
 
     // Read the LL config once. getGameConfig() is zod-defaulted/back-compatible,
     // but guard the read so a config error can never crash game creation — fall
-    // back to "disabled" (normal mode).
-    this.lowLatency = (() => {
-      try {
-        return getGameConfig().lowLatencyMode
-      } catch {
-        return {
-          enabled: false,
-          clockSync: true,
-          preloadNextQuestion: true,
-          answerAck: true,
-          scoreboardBroadcastThrottleMs: 100,
-          maxLatencyCompensationMs: 150,
-        }
-      }
-    })()
+    // back to "disabled" (normal mode). P3 — when the async CREATE handler
+    // pre-fetched the config (preloadedConfig), reuse that snapshot instead of
+    // a fresh sync read; every other caller keeps the ORIGINAL crash-guarded
+    // sync read.
+    this.lowLatency = preloadedConfig
+      ? preloadedConfig.gameConfig.lowLatencyMode
+      : (() => {
+          try {
+            return getGameConfig().lowLatencyMode
+          } catch {
+            return {
+              enabled: false,
+              clockSync: true,
+              preloadNextQuestion: true,
+              answerAck: true,
+              scoreboardBroadcastThrottleMs: 100,
+              maxLatencyCompensationMs: 150,
+            }
+          }
+        })()
 
     // Read teamMode once. Crash-guarded like lowLatency — a config error falls
     // back to false (normal mode, no team aggregation).
-    this.teamMode = (() => {
-      try {
-        return getGameConfig().teamMode
-      } catch {
-        return false
-      }
-    })()
+    this.teamMode = preloadedConfig
+      ? preloadedConfig.gameConfig.teamMode
+      : (() => {
+          try {
+            return getGameConfig().teamMode
+          } catch {
+            return false
+          }
+        })()
 
     // Read joinLocked once at game creation. Unlike teamMode, this CAN be
     // toggled live via setJoinLocked so the host can gate new players mid-game.
     // Crash-guarded — falls back to false (unlocked).
-    this.joinLocked = (() => {
-      try {
-        return getGameConfig().joinLocked ?? false
-      } catch {
-        return false
-      }
-    })()
+    this.joinLocked = preloadedConfig
+      ? (preloadedConfig.gameConfig.joinLocked ?? false)
+      : (() => {
+          try {
+            return getGameConfig().joinLocked ?? false
+          } catch {
+            return false
+          }
+        })()
 
-    
     // Read randomizeAnswers once at game creation. Crash-guarded — falls back
     // to false (disabled). Like teamMode, this is a read-once snapshot that
     // can't change mid-game.
-    this.randomizeAnswers = (() => {
-      try {
-        return getGameConfig().randomizeAnswers ?? false
-      } catch {
-        return false
-      }
-    })()
+    this.randomizeAnswers = preloadedConfig
+      ? (preloadedConfig.gameConfig.randomizeAnswers ?? false)
+      : (() => {
+          try {
+            return getGameConfig().randomizeAnswers ?? false
+          } catch {
+            return false
+          }
+        })()
 
     // Read the merged achievements config once. Crash-guarded like teamMode — a
     // config/read error returns an empty list, and RoundManager then falls back
     // to the registry defaults (shipped behaviour).
-    this.achievements = (() => {
-      try {
-        return getMergedAchievements()
-      } catch {
-        return []
-      }
-    })()
+    this.achievements = preloadedConfig
+      ? preloadedConfig.achievements
+      : (() => {
+          try {
+            return getMergedAchievements()
+          } catch {
+            return []
+          }
+        })()
+
+    // P3 — reuse the pre-fetched theme template (see applyQuizTheme). Left
+    // `undefined` when not preloaded, so applyQuizTheme falls back to its
+    // original sync read.
+    this.preloadedThemeTemplate = preloadedConfig?.themeTemplate
 
     this.cooldown = new CooldownTimer(io, this.gameId)
 
@@ -303,6 +343,10 @@ class Game {
       // game has ENDED instead of mis-reporting playerAlreadyConnected (item 6).
       () => this.managerStatus?.name === STATUS.FINISHED,
       () => this.joinLocked,
+      // P3 — hoisted requireIdentifier (see PlayerManager's own ctor comment):
+      // undefined when not preloaded, so PlayerManager falls back to its
+      // original sync getGameConfig() read.
+      preloadedConfig?.gameConfig.requireIdentifier,
     )
 
     // Sim mode: bots submit via the EXISTING selectAnswer path (real dedup /
@@ -378,7 +422,15 @@ class Game {
         return
       }
 
-      const template = getThemeTemplateById(themeId)
+      // P3 — reuse the theme template pre-fetched ONCE at construction
+      // (preloadedThemeTemplate !== undefined) instead of a fresh sync read,
+      // so every applyQuizTheme call site (ctor, join()'s sync branch, join()'s
+      // async IIFE) is now a no-I/O cache-of-one hit. Falls back to the
+      // ORIGINAL sync read when not preloaded (undefined).
+      const template =
+        this.preloadedThemeTemplate !== undefined
+          ? this.preloadedThemeTemplate
+          : getThemeTemplateById(themeId)
 
       if (!template) {
         return

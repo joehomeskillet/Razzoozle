@@ -3,9 +3,9 @@ import { themeTemplateValidator } from "@razzoozle/common/validators/theme"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteThemeTemplate,
-  getThemeTemplates,
   saveThemeTemplate,
 } from "@razzoozle/socket/services/config"
+import { readThemeTemplates } from "@razzoozle/socket/services/storage/config-read"
 import manager, { emitConfig } from "@razzoozle/socket/services/manager"
 import { z } from "zod"
 
@@ -16,14 +16,14 @@ import { z } from "zod"
 export const themeTemplateSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.THEME_TEMPLATE.LIST,
-    manager.withAuth(socket, () => {
-      socket.emit(EVENTS.THEME_TEMPLATE.DATA, getThemeTemplates())
+    manager.withAuth(socket, async () => {
+      socket.emit(EVENTS.THEME_TEMPLATE.DATA, await readThemeTemplates())
     }),
   )
 
   socket.on(
     EVENTS.THEME_TEMPLATE.SAVE,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = themeTemplateValidator.safeParse(payload)
 
       if (!result.success) {
@@ -38,8 +38,8 @@ export const themeTemplateSocketHandlers = ({ socket }: SocketContext) => {
           theme: result.data.theme,
         })
         socket.emit(EVENTS.THEME_TEMPLATE.SAVE_SUCCESS)
-        socket.emit(EVENTS.THEME_TEMPLATE.DATA, getThemeTemplates())
-        emitConfig(socket)
+        socket.emit(EVENTS.THEME_TEMPLATE.DATA, await readThemeTemplates())
+        await emitConfig(socket)
       } catch (error) {
         socket.emit(
           EVENTS.THEME_TEMPLATE.ERROR,
@@ -53,7 +53,7 @@ export const themeTemplateSocketHandlers = ({ socket }: SocketContext) => {
 
   socket.on(
     EVENTS.THEME_TEMPLATE.DELETE,
-    manager.withAuth(socket, (payload: unknown) => {
+    manager.withAuth(socket, async (payload: unknown) => {
       const result = z.object({ id: z.string() }).safeParse(payload)
 
       if (!result.success) {
@@ -64,8 +64,8 @@ export const themeTemplateSocketHandlers = ({ socket }: SocketContext) => {
 
       try {
         deleteThemeTemplate(result.data.id)
-        socket.emit(EVENTS.THEME_TEMPLATE.DATA, getThemeTemplates())
-        emitConfig(socket)
+        socket.emit(EVENTS.THEME_TEMPLATE.DATA, await readThemeTemplates())
+        await emitConfig(socket)
       } catch (error) {
         socket.emit(
           EVENTS.THEME_TEMPLATE.ERROR,

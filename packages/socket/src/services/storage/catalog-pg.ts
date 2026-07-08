@@ -89,6 +89,14 @@ export const listAllCatalogEntriesPg = async (): Promise<CatalogEntry[]> => {
   }
 }
 
+/** Read a single catalog entry by id from Postgres (in-memory find over the
+ * small full list — mirrors solo-results-pg's per-quiz style but catalog sets
+ * are small enough that a dedicated WHERE query isn't warranted yet). */
+export const getCatalogEntryByIdPg = async (id: string): Promise<CatalogEntry | null> => {
+  const entries = await listAllCatalogEntriesPg()
+  return entries.find((entry) => entry.id === id) ?? null
+}
+
 /** Upsert (create-or-update) a catalog entry by id. version += 1 on update, updated_at = NOW(). */
 export const upsertCatalogEntryPg = async (
   id: string,

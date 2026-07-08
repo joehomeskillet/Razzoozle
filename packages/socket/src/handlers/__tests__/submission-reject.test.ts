@@ -69,6 +69,15 @@ const makeFakeSocket = (id: string, clientId = id): FakeSocket => {
 
 const ctxOf = (socket: FakeSocket) => ({ socket }) as unknown as SocketContext
 
+// Flush pending microtasks so the now-async SUBMIT_QUESTION/APPROVE_SUBMISSION
+// handlers (P3 — config-read facade await) settle before assertions run.
+// Mirrors submission.test.ts's flush().
+const flush = async () => {
+  await Promise.resolve()
+  await Promise.resolve()
+  await new Promise((r) => setImmediate(r))
+}
+
 const lastEmit = (socket: FakeSocket, event: string): unknown => {
   const hits = socket.emitted.filter((e) => e.event === event)
 
@@ -155,10 +164,11 @@ const login = (socket: FakeSocket) => {
   managerMod.default.login(socket as unknown as Socket)
 }
 
-const seedPending = (socket: FakeSocket, overrides = {}): string => {
+const seedPending = async (socket: FakeSocket, overrides = {}): Promise<string> => {
   socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(
     validSubmission(overrides),
   )
+  await flush()
   const files = readSubmissionFiles()
 
   return files[files.length - 1].id as string
@@ -167,11 +177,11 @@ const seedPending = (socket: FakeSocket, overrides = {}): string => {
 // ── REJECT_SUBMISSION — widened schema (reason + category) ────────────────────
 
 describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
-  it("reject with a reason → rejectionReason persisted on disk", () => {
+  it("reject with a reason → rejectionReason persisted on disk", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -190,11 +200,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(onDisk.rejectionReason).toBe("Duplicate of an existing question.")
   })
 
-  it("reject with a category override → category persisted on disk", () => {
+  it("reject with a category override → category persisted on disk", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -208,11 +218,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(rec?.category).toBe("history")
   })
 
-  it("reject with both reason and category → both persisted", () => {
+  it("reject with both reason and category → both persisted", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -226,11 +236,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(rec?.category).toBe("other")
   })
 
-  it("reject with NO reason/category (back-compat) → status rejected, no extra fields written", () => {
+  it("reject with NO reason/category (back-compat) → status rejected, no extra fields written", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({ id })
@@ -243,11 +253,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(onDisk).not.toHaveProperty("category")
   })
 
-  it("reject with reason > 500 chars → SUBMISSION_ERROR, status unchanged", () => {
+  it("reject with reason > 500 chars → SUBMISSION_ERROR, status unchanged", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -260,11 +270,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(config.getSubmissionById(id)?.status).toBe("pending")
   })
 
-  it("reject with an unknown category → SUBMISSION_ERROR, status unchanged", () => {
+  it("reject with an unknown category → SUBMISSION_ERROR, status unchanged", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -276,11 +286,11 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
     expect(config.getSubmissionById(id)?.status).toBe("pending")
   })
 
-  it("reject on an unauthenticated socket → UNAUTHORIZED, submission untouched", () => {
+  it("reject on an unauthenticated socket → UNAUTHORIZED, submission untouched", async () => {
     const socket = makeFakeSocket("sock-anon", "client-anon")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket)
+    const id = await seedPending(socket)
     // No login().
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({
@@ -299,13 +309,14 @@ describe("REJECT_SUBMISSION with reason / category (auth-gated)", () => {
 // ── SUBMIT_QUESTION — public category flow ────────────────────────────────────
 
 describe("SUBMIT_QUESTION category flow (public)", () => {
-  it("submit WITH a valid category → category persisted on the pending record", () => {
+  it("submit WITH a valid category → category persisted on the pending record", async () => {
     const socket = makeFakeSocket("sock-pub")
     handlers.managerSocketHandlers(ctxOf(socket))
 
     socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(
       validSubmission({ category: "science" }),
     )
+    await flush()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(1)
     expect(countEmit(socket, EVENTS.MANAGER.SUBMISSION_ERROR)).toBe(0)
@@ -315,11 +326,12 @@ describe("SUBMIT_QUESTION category flow (public)", () => {
     expect(onDisk.category).toBe("science")
   })
 
-  it("submit WITHOUT a category → no category key written (back-compat)", () => {
+  it("submit WITHOUT a category → no category key written (back-compat)", async () => {
     const socket = makeFakeSocket("sock-pub")
     handlers.managerSocketHandlers(ctxOf(socket))
 
     socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(validSubmission())
+    await flush()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(1)
     const onDisk = readSubmissionFiles()[0]
@@ -339,11 +351,11 @@ describe("SUBMIT_QUESTION category flow (public)", () => {
     expect(readSubmissionFiles()).toHaveLength(0)
   })
 
-  it("public category survives a reject category override at moderation time", () => {
+  it("public category survives a reject category override at moderation time", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPending(socket, { category: "sports" })
+    const id = await seedPending(socket, { category: "sports" })
     expect(config.getSubmissionById(id)?.category).toBe("sports")
 
     login(socket)

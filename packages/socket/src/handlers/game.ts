@@ -1,13 +1,18 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { inviteCodeValidator } from "@razzoozle/common/validators/auth"
 import { setAvatarValidator } from "@razzoozle/common/validators/avatar"
+import { gameConfigValidator } from "@razzoozle/common/validators/game-config"
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
-  getGameConfig,
-  getQuizz,
   saveAchievementsConfig,
   updateGameConfig,
 } from "@razzoozle/socket/services/config"
+import {
+  readGameConfig,
+  readMergedAchievements,
+  readQuizz,
+  readThemeTemplateById,
+} from "@razzoozle/socket/services/storage/config-read"
 import type { AchievementsConfig } from "@razzoozle/common/validators/achievements"
 import Game from "@razzoozle/socket/services/game"
 import managerAuth, { emitConfig } from "@razzoozle/socket/services/manager"
@@ -115,9 +120,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
     socket.emit(EVENTS.GAME.RESET, "errors:game.expired")
   })
 
-  socket.on(EVENTS.GAME.CREATE, (quizzId: unknown) => {
+  socket.on(EVENTS.GAME.CREATE, async (quizzId: unknown) => {
     if (typeof quizzId !== "string") return
-    const quizzList = getQuizz()
+    const quizzList = await readQuizz()
     const quizz = quizzList.find((q) => q.id === quizzId)
 
     if (!quizz) {
@@ -138,11 +143,45 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       return
     }
 
-    const game = new Game(io, socket, quizz)
+    // P3 — hoist every config read the Game/PlayerManager ctors used to do
+    // synchronously up here (the already-async CREATE handler), and pass the
+    // resolved snapshot into the ctor. Each read is independently
+    // crash-guarded (mirrors the per-field try/catch the ctor used to do) so a
+    // corrupt game.json / achievements.json / theme template can never abort
+    // game creation.
+    const gameConfig = await (async () => {
+      try {
+        return await readGameConfig()
+      } catch {
+        return gameConfigValidator.parse({})
+      }
+    })()
+
+    const achievements = await (async () => {
+      try {
+        return await readMergedAchievements()
+      } catch {
+        return []
+      }
+    })()
+
+    const themeTemplate = await (async () => {
+      try {
+        return quizz.themeId ? await readThemeTemplateById(quizz.themeId) : null
+      } catch {
+        return null
+      }
+    })()
+
+    const game = new Game(io, socket, quizz, undefined, {
+      gameConfig,
+      achievements,
+      themeTemplate,
+    })
     registry.addGame(game)
   })
 
-  socket.on(EVENTS.PLAYER.JOIN, (inviteCode: unknown) => {
+  socket.on(EVENTS.PLAYER.JOIN, async (inviteCode: unknown) => {
     if (typeof inviteCode !== "string") return
     const result = inviteCodeValidator.safeParse(inviteCode)
 
@@ -162,9 +201,9 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
     socket.emit(EVENTS.GAME.SUCCESS_ROOM, {
       gameId: game.gameId,
-      requireIdentifier: (() => {
+      requireIdentifier: await (async () => {
         try {
-          return getGameConfig().requireIdentifier ?? false
+          return (await readGameConfig()).requireIdentifier ?? false
         } catch {
           return false
         }
@@ -428,7 +467,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // no-op guards).
   socket.on(
     EVENTS.MANAGER.SET_GAME_CONFIG,
-    managerAuth.withAuth(socket, (payload: unknown) => {
+    managerAuth.withAuth(socket, async (payload: unknown) => {
       const patchPayload = payload as
         | { teamMode?: unknown; lowLatencyEnabled?: unknown; joinLocked?: unknown; randomizeAnswers?: unknown; scoringMode?: unknown }
         | null
@@ -475,7 +514,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
         }
         // Round-trip the saved value back so the manager's toggle reflects the
         // persisted config rather than its optimistic local state.
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         // Validation (zod) or disk-write failure: log it and tell the manager —
         // the config UI already shows an optimistic success toast for this
@@ -495,7 +534,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
   // emitConfig so the manager's editor reflects the persisted config.
   socket.on(
     EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG,
-    managerAuth.withAuth(socket, (payload: unknown) => {
+    managerAuth.withAuth(socket, async (payload: unknown) => {
       const config = (payload as { config?: unknown } | null | undefined)
         ?.config
 
@@ -505,7 +544,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
 
       try {
         saveAchievementsConfig(config as AchievementsConfig)
-        emitConfig(socket)
+        await emitConfig(socket)
       } catch (error) {
         // Validation (zod) or disk-write failure: log it and tell the manager —
         // same rationale as SET_GAME_CONFIG above, the achievements editor

@@ -265,11 +265,12 @@ describe("submissionValidator", () => {
 // ── §8.1 case 4-6, 10: SUBMIT_QUESTION handler ────────────────────────────────
 
 describe("SUBMIT_QUESTION handler", () => {
-  it("(4) valid payload → file written to config/submissions/<id>.json, status pending", () => {
+  it("(4) valid payload → file written to config/submissions/<id>.json, status pending", async () => {
     const socket = makeFakeSocket("sock-1")
     handlers.managerSocketHandlers(ctxOf(socket))
 
     socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(validSubmission())
+    await flush()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(1)
     expect(countEmit(socket, EVENTS.MANAGER.SUBMISSION_ERROR)).toBe(0)
@@ -301,7 +302,7 @@ describe("SUBMIT_QUESTION handler", () => {
     expect(readSubmissionFiles()).toHaveLength(0)
   })
 
-  it("(6) 4th submission within 60s on the same socket → SUBMISSION_ERROR rateLimited, no extra file", () => {
+  it("(6) 4th submission within 60s on the same socket → SUBMISSION_ERROR rateLimited, no extra file", async () => {
     vi.useFakeTimers()
     const socket = makeFakeSocket("sock-rl")
     handlers.managerSocketHandlers(ctxOf(socket))
@@ -314,6 +315,10 @@ describe("SUBMIT_QUESTION handler", () => {
     submit(
       validSubmission({ question: validQuestion({ question: "Q three?" }) }),
     )
+    // P3 — SUBMIT_QUESTION is now async (awaits the config-read facade);
+    // runAllTimersAsync (not the plain flush() helper) safely settles pending
+    // promises alongside vi's fake timers.
+    await vi.runAllTimersAsync()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(3)
     expect(readSubmissionFiles()).toHaveLength(3)
@@ -322,6 +327,7 @@ describe("SUBMIT_QUESTION handler", () => {
     submit(
       validSubmission({ question: validQuestion({ question: "Q four?" }) }),
     )
+    await vi.runAllTimersAsync()
 
     expect(lastEmit(socket, EVENTS.MANAGER.SUBMISSION_ERROR)).toBe(
       "errors:submission.rateLimited",
@@ -335,11 +341,12 @@ describe("SUBMIT_QUESTION handler", () => {
     submit(
       validSubmission({ question: validQuestion({ question: "Q five?" }) }),
     )
+    await vi.runAllTimersAsync()
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(4)
     expect(readSubmissionFiles()).toHaveLength(4)
   })
 
-  it("(10a) path-traversal question text → normalizeFilename yields a safe id, file stays inside submissions/", () => {
+  it("(10a) path-traversal question text → normalizeFilename yields a safe id, file stays inside submissions/", async () => {
     const socket = makeFakeSocket("sock-pt")
     handlers.managerSocketHandlers(ctxOf(socket))
 
@@ -350,6 +357,7 @@ describe("SUBMIT_QUESTION handler", () => {
         }),
       }),
     )
+    await flush()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMIT_SUCCESS)).toBe(1)
     const files = readSubmissionFiles()
@@ -371,8 +379,9 @@ describe("SUBMIT_QUESTION handler", () => {
 
 describe("APPROVE_SUBMISSION / REJECT_SUBMISSION handlers", () => {
   // Persist a pending submission via the public SUBMIT path, returning its id.
-  const seedPendingSubmission = (socket: FakeSocket): string => {
+  const seedPendingSubmission = async (socket: FakeSocket): Promise<string> => {
     socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(validSubmission())
+    await flush()
     const files = readSubmissionFiles()
 
     return files[0].id as string
@@ -383,11 +392,11 @@ describe("APPROVE_SUBMISSION / REJECT_SUBMISSION handlers", () => {
     managerMod.default.login(socket as unknown as Socket)
   }
 
-  it("(7) APPROVE (auth) happy path → submission approved, question appended to target quizz with submittedBy preserved", () => {
+  it("(7) APPROVE (auth) happy path → submission approved, question appended to target quizz with submittedBy preserved", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPendingSubmission(socket)
+    const id = await seedPendingSubmission(socket)
     login(socket)
 
     // The seeded example quizz exists from initConfig.
@@ -395,6 +404,10 @@ describe("APPROVE_SUBMISSION / REJECT_SUBMISSION handlers", () => {
       id,
       quizzId: "example",
     })
+    // P3 — APPROVE_SUBMISSION's mutations (updateQuizz/updateSubmission) now
+    // land after an internal `await readQuizzById`/`readSubmissionById`; flush
+    // before asserting on-disk state.
+    await flush()
 
     expect(countEmit(socket, EVENTS.MANAGER.SUBMISSION_ERROR)).toBe(0)
     expect(countEmit(socket, EVENTS.MANAGER.UNAUTHORIZED)).toBe(0)
@@ -418,11 +431,11 @@ describe("APPROVE_SUBMISSION / REJECT_SUBMISSION handlers", () => {
     expect(lastOnDisk.submittedBy).toBe("Alice")
   })
 
-  it("(8) APPROVE on an unauthenticated socket → UNAUTHORIZED emitted, submission untouched", () => {
+  it("(8) APPROVE on an unauthenticated socket → UNAUTHORIZED emitted, submission untouched", async () => {
     const socket = makeFakeSocket("sock-anon", "client-anon")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPendingSubmission(socket)
+    const id = await seedPendingSubmission(socket)
     // No login() call.
 
     socket.handlers.get(EVENTS.MANAGER.APPROVE_SUBMISSION)!({
@@ -443,11 +456,11 @@ describe("APPROVE_SUBMISSION / REJECT_SUBMISSION handlers", () => {
     ).toBe(false)
   })
 
-  it("(9) REJECT (auth) → submission file status updated to rejected", () => {
+  it("(9) REJECT (auth) → submission file status updated to rejected", async () => {
     const socket = makeFakeSocket("sock-admin", "client-admin")
     handlers.managerSocketHandlers(ctxOf(socket))
 
-    const id = seedPendingSubmission(socket)
+    const id = await seedPendingSubmission(socket)
     login(socket)
 
     socket.handlers.get(EVENTS.MANAGER.REJECT_SUBMISSION)!({ id })
@@ -575,10 +588,11 @@ describe("anti-cheat: SHOW_QUESTION / SELECT_ANSWER broadcasts", () => {
 // ── §8.1 case 12: getSubmissionsMeta ──────────────────────────────────────────
 
 describe("getSubmissionsMeta", () => {
-  it("(12) returns SubmissionMeta[] with `question` as the question-text string (not the full object)", () => {
+  it("(12) returns SubmissionMeta[] with `question` as the question-text string (not the full object)", async () => {
     const socket = makeFakeSocket("sock-meta")
     handlers.managerSocketHandlers(ctxOf(socket))
     socket.handlers.get(EVENTS.MANAGER.SUBMIT_QUESTION)!(validSubmission())
+    await flush()
 
     const meta = config.getSubmissionsMeta()
     expect(meta).toHaveLength(1)

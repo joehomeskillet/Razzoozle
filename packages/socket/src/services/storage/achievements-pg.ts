@@ -1,4 +1,8 @@
 import type { AchievementsConfig } from "@razzoozle/common/validators/achievements"
+import {
+  mergeAchievementsConfig,
+  type MergedAchievement,
+} from "@razzoozle/common/achievements"
 
 // Lazy-load pg so it is only required when DATABASE_MODE is dual/pg/pg-only.
 // Mirrors the pattern in storage/quizz-pg.ts.
@@ -92,6 +96,15 @@ export const listAllAchievementsPg = async (): Promise<AchievementsConfig> => {
     return {}
   }
 }
+
+/**
+ * Read + shape the merged achievements list from Postgres (mirrors file-based
+ * getMergedAchievements()): reads the raw override config, then runs it
+ * through the SAME mergeAchievementsConfig used by the file path so both
+ * backends clamp/back-fill defaults identically.
+ */
+export const getMergedAchievementsPg = async (): Promise<MergedAchievement[]> =>
+  mergeAchievementsConfig(await listAllAchievementsPg())
 
 /**
  * Upsert (create-or-update) a single achievement override by id.

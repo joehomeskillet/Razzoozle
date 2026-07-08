@@ -91,6 +91,14 @@ export const listAllThemesPg = async (): Promise<{
   }
 }
 
+/** Read a single theme template by id from Postgres (in-memory find over
+ * listAllThemesPg's templates — mirrors file-based getThemeTemplateById(),
+ * which returns null on a miss). */
+export const getThemeTemplateByIdPg = async (id: string): Promise<ThemeTemplate | null> => {
+  const { templates } = await listAllThemesPg()
+  return templates.find((t) => t.id === id) ?? null
+}
+
 /** Upsert (create-or-update) the active theme (id='active'). version += 1 on update, updated_at = NOW(). */
 export const updateThemePg = async (theme: Theme): Promise<{ id: string }> => {
   try {

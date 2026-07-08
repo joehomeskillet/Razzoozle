@@ -216,7 +216,7 @@ describe("display REGISTER", () => {
 // ── PAIR: happy path (manager by socket identity) ────────────────────────────
 
 describe("handlePair — valid code, authenticated manager", () => {
-  it("joins the DISPLAY (not the caller) to the room and emits PAIR_SUCCESS to both", () => {
+  it("joins the DISPLAY (not the caller) to the room and emits PAIR_SUCCESS to both", async () => {
     const display = makeFakeSocket("disp-1")
     const manager = makeFakeSocket("mgr-sock")
     const io = makeFakeIo([display, manager])
@@ -236,7 +236,7 @@ describe("handlePair — valid code, authenticated manager", () => {
       }),
     )
 
-    const result = handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+    const result = await handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
 
     expect(result).toBe(true)
 
@@ -259,7 +259,7 @@ describe("handlePair — valid code, authenticated manager", () => {
     expect(lastPairError(manager)).toBeUndefined()
   })
 
-  it("is single-use: a second PAIR with the same code fails (invalidCode)", () => {
+  it("is single-use: a second PAIR with the same code fails (invalidCode)", async () => {
     const display = makeFakeSocket("disp-1")
     const manager = makeFakeSocket("mgr-sock")
     const io = makeFakeIo([display, manager])
@@ -277,9 +277,9 @@ describe("handlePair — valid code, authenticated manager", () => {
     )
 
     // First pairing consumes the code.
-    expect(handlePair(ctxOf(manager, io), { code, gameId: "game-A" })).toBe(
-      true,
-    )
+    expect(
+      await handlePair(ctxOf(manager, io), { code, gameId: "game-A" }),
+    ).toBe(true)
     expect(registry.getPairing(code)).toBeUndefined()
     expect(registry.isPairingValid(code)).toBe(false)
 
@@ -289,7 +289,7 @@ describe("handlePair — valid code, authenticated manager", () => {
 
     // Second attempt with the now-consumed code → rejected as invalidCode, no
     // additional join.
-    const second = handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+    const second = await handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
     expect(second).toBe(false)
     expect(lastPairError(manager)).toBe("errors:display.invalidCode")
     expect(display.joined).toEqual([])
@@ -299,7 +299,7 @@ describe("handlePair — valid code, authenticated manager", () => {
 // ── PAIR: invalid / unknown / expired code ───────────────────────────────────
 
 describe("handlePair — invalid code paths", () => {
-  it("emits PAIR_ERROR(invalidCode) for an unknown code and does not join", () => {
+  it("emits PAIR_ERROR(invalidCode) for an unknown code and does not join", async () => {
     const display = makeFakeSocket("disp-1")
     const manager = makeFakeSocket("mgr-sock")
     const io = makeFakeIo([display, manager])
@@ -312,7 +312,7 @@ describe("handlePair — invalid code paths", () => {
       }),
     )
 
-    const result = handlePair(ctxOf(manager, io), {
+    const result = await handlePair(ctxOf(manager, io), {
       code: "ZZZZZZ",
       gameId: "game-A",
     })
@@ -323,7 +323,7 @@ describe("handlePair — invalid code paths", () => {
     expect(manager.joined).toEqual([])
   })
 
-  it("treats an EXPIRED code (older than the TTL) as invalid (invalidCode)", () => {
+  it("treats an EXPIRED code (older than the TTL) as invalid (invalidCode)", async () => {
     vi.useFakeTimers()
     // Anchor "now" so the TTL diff is deterministic. isPairingValid uses
     // dayjs().diff(createdAt, 'minute') < DISPLAY_PAIRING_TTL_MINUTES (=5).
@@ -352,7 +352,7 @@ describe("handlePair — invalid code paths", () => {
     vi.setSystemTime(new Date("2026-06-04T12:06:00Z"))
     expect(registry.isPairingValid(code)).toBe(false)
 
-    const result = handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+    const result = await handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
     expect(result).toBe(false)
     expect(lastPairError(manager)).toBe("errors:display.invalidCode")
     expect(display.joined).toEqual([])
@@ -362,7 +362,7 @@ describe("handlePair — invalid code paths", () => {
 // ── PAIR: game-not-found (valid code but bad gameId) ─────────────────────────
 
 describe("handlePair — game lookup", () => {
-  it("emits PAIR_ERROR(game.notFound) for a valid code but unknown gameId", () => {
+  it("emits PAIR_ERROR(game.notFound) for a valid code but unknown gameId", async () => {
     const display = makeFakeSocket("disp-1")
     const manager = makeFakeSocket("mgr-sock")
     const io = makeFakeIo([display, manager])
@@ -372,7 +372,7 @@ describe("handlePair — game lookup", () => {
     const code = registeredCode(display)
     // No game added at all.
 
-    const result = handlePair(ctxOf(manager, io), { code, gameId: "nope" })
+    const result = await handlePair(ctxOf(manager, io), { code, gameId: "nope" })
     expect(result).toBe(false)
     expect(lastPairError(manager)).toBe("errors:game.notFound")
     expect(display.joined).toEqual([])
@@ -385,7 +385,7 @@ describe("handlePair — game lookup", () => {
 // ── PAIR: authorization (non-manager caller) ─────────────────────────────────
 
 describe("handlePair — authorization", () => {
-  it("succeeds when the caller IS the game manager by socket identity (no password)", () => {
+  it("succeeds when the caller IS the game manager by socket identity (no password)", async () => {
     const display = makeFakeSocket("disp-1")
     const manager = makeFakeSocket("mgr-sock")
     const io = makeFakeIo([display, manager])
@@ -403,12 +403,12 @@ describe("handlePair — authorization", () => {
     )
 
     // No managerPassword in the payload — identity match alone authorizes.
-    const result = handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+    const result = await handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
     expect(result).toBe(true)
     expect(display.joined).toEqual(["game-A"])
   })
 
-  it("rejects a non-manager caller with a wrong password and does NOT join", () => {
+  it("rejects a non-manager caller with a wrong password and does NOT join", async () => {
     const display = makeFakeSocket("disp-1")
     // Caller socket id differs from the game's manager.id → identity check
     // fails, so the password fallback gate is enforced.
@@ -427,7 +427,7 @@ describe("handlePair — authorization", () => {
       }),
     )
 
-    const result = handlePair(ctxOf(other, io), {
+    const result = await handlePair(ctxOf(other, io), {
       code,
       gameId: "game-A",
       managerPassword: "definitely-wrong",
@@ -458,7 +458,7 @@ const runCleanupDisplays = (r: Registry): void => {
 
 // Drive a full pair so a heartbeat record exists, returning the display socket
 // id + the game id + the io (whose routed[] captured STATUS).
-const pairDisplay = (opts?: { registerName?: string }) => {
+const pairDisplay = async (opts?: { registerName?: string }) => {
   const display = makeFakeSocket("disp-1")
   const manager = makeFakeSocket("mgr-sock")
   const io = makeFakeIo([display, manager])
@@ -478,14 +478,14 @@ const pairDisplay = (opts?: { registerName?: string }) => {
     }),
   )
 
-  handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
+  await handlePair(ctxOf(manager, io), { code, gameId: "game-A" })
 
   return { display, manager, io, gameId: "game-A" }
 }
 
 describe("WP-15 display heartbeat — register at PAIR_SUCCESS", () => {
-  it("creates a heartbeat record on pair and broadcasts STATUS to the manager", () => {
-    const { display, io } = pairDisplay({ registerName: "Aula-Beamer" })
+  it("creates a heartbeat record on pair and broadcasts STATUS to the manager", async () => {
+    const { display, io } = await pairDisplay({ registerName: "Aula-Beamer" })
 
     // Record exists for the game, labelled from the REGISTER name.
     const rows = registry.getDisplaysByGame("game-A")
@@ -505,16 +505,16 @@ describe("WP-15 display heartbeat — register at PAIR_SUCCESS", () => {
     ])
   })
 
-  it("falls back to the default name when REGISTER supplied none", () => {
-    pairDisplay()
+  it("falls back to the default name when REGISTER supplied none", async () => {
+    await pairDisplay()
     const rows = registry.getDisplaysByGame("game-A")
     expect(rows).toHaveLength(1)
     expect(rows[0].name).toBe("Beamer")
   })
 
-  it("clamps + sanitises an oversize / control-char REGISTER name", () => {
+  it("clamps + sanitises an oversize / control-char REGISTER name", async () => {
     const dirty = ` \tRoom\n${"x".repeat(80)}`
-    pairDisplay({ registerName: dirty })
+    await pairDisplay({ registerName: dirty })
     const rows = registry.getDisplaysByGame("game-A")
     // Control chars stripped, trimmed, capped to DISPLAY_NAME_MAX_LEN.
     expect(rows[0].name).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/u)
@@ -524,11 +524,11 @@ describe("WP-15 display heartbeat — register at PAIR_SUCCESS", () => {
 })
 
 describe("WP-15 display heartbeat — PING touches + re-broadcasts", () => {
-  it("bumps lastPingAt on PING and re-emits STATUS to the manager", () => {
+  it("bumps lastPingAt on PING and re-emits STATUS to the manager", async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-06-04T12:00:00Z"))
 
-    const { display, io } = pairDisplay({ registerName: "Beamer-1" })
+    const { display, io } = await pairDisplay({ registerName: "Beamer-1" })
     const before = registry.getDisplaysByGame("game-A")[0].lastPingAt
 
     // 5s later the kiosk pings → lastPingAt advances, STATUS re-emitted.
@@ -560,8 +560,8 @@ describe("WP-15 display heartbeat — PING touches + re-broadcasts", () => {
 })
 
 describe("WP-15 display heartbeat — disconnect removes + re-broadcasts", () => {
-  it("removes the record on the display socket disconnect and re-emits STATUS", () => {
-    const { display, io } = pairDisplay({ registerName: "Beamer-1" })
+  it("removes the record on the display socket disconnect and re-emits STATUS", async () => {
+    const { display, io } = await pairDisplay({ registerName: "Beamer-1" })
     expect(registry.getDisplaysByGame("game-A")).toHaveLength(1)
 
     // Drop the display socket → record removed, empty STATUS re-broadcast.
