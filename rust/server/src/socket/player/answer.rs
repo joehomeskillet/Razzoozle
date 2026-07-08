@@ -6,7 +6,10 @@ use razzoozle_protocol::status::{
 };
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH, Duration};
+
+const SCOREBOARD_THROTTLE_MS: u64 = 100;
 
 pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::player::SELECTED_ANSWER, {
@@ -112,15 +115,53 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                         // #6: Handle InvalidAnswerShape error from engine
                         match record_result {
                             Ok(_) => {
-                                let answer_count = {
-                                    let game = game_ref.lock().unwrap();
-                                    game.engine.current_answers.len() as i32
-                                };
-
                                 let game_id = game_id.to_string();
+
                                 // Emit game:playerAnswer (count) to all in room
-                                io_handle.to(game_id.clone())
-                                    .emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
+                                if low_latency {
+                                    // Low-latency mode: coalesce via pending flag
+                                    let should_spawn = {
+                                        let mut game = game_ref.lock().unwrap();
+                                        let should_spawn = !game.answer_count_push_pending;
+                                        if should_spawn {
+                                            game.answer_count_push_pending = true;
+                                        }
+                                        should_spawn
+                                    };
+
+                                    if should_spawn {
+                                        let game_ref = game_ref.clone();
+                                        let io_handle = io_handle.clone();
+                                        let game_id = game_id.clone();
+
+                                        tokio::spawn(async move {
+                                            tokio::time::sleep(Duration::from_millis(SCOREBOARD_THROTTLE_MS)).await;
+
+                                            // Re-lock and reset pending flag
+                                            let should_emit = {
+                                                let mut game = game_ref.lock().unwrap();
+                                                game.answer_count_push_pending = false;
+                                                // Only emit if still in SelectAnswer phase (not revealed yet)
+                                                game.engine.phase == GamePhase::SelectAnswer
+                                            };
+
+                                            if should_emit {
+                                                let answer_count = {
+                                                    let game = game_ref.lock().unwrap();
+                                                    game.engine.current_answers.len() as i32
+                                                };
+                                                io_handle.to(game_id).emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    // Non-LL mode: emit immediately (existing behavior)
+                                    let answer_count = {
+                                        let game = game_ref.lock().unwrap();
+                                        game.engine.current_answers.len() as i32
+                                    };
+                                    io_handle.to(game_id).emit(constants::game::PLAYER_ANSWER, &answer_count).ok();
+                                }
 
                                 // Emit WAIT status to the answering player's OWN socket only —
                                 // matches node's `this.send(socket.id, STATUS.WAIT, ...)`
