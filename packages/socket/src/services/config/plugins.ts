@@ -6,6 +6,7 @@ import {
   type InstalledPlugin,
   type PluginManifest,
 } from "@razzoozle/common/validators/plugin"
+import { upsertInstalledPluginPg, deleteInstalledPluginPg } from "@razzoozle/socket/services/storage/plugins-pg"
 import { THEME_REVISIONS_MAX } from "@razzoozle/common/constants"
 import { z } from "zod"
 import JSZip from "jszip"
@@ -18,6 +19,33 @@ import {
   SKELETON_ENTRY_MAX,
   SKELETON_TOTAL_MAX_BYTES,
 } from "@razzoozle/socket/services/config/theme-skeleton"
+
+// Helper: build a base64 map of all files in a plugin directory.
+// Used to store plugin files in Postgres for backup/restore.
+// Mirrors the buildPluginZip pattern: recursively walks the dir,
+// skips symlinks + non-regular files, and encodes each file to base64.
+const buildFilesMap = (dir: string): Record<string, string> => {
+  const filesMap: Record<string, string> = {}
+
+  const walk = (abs: string): void => {
+    for (const name of fs.readdirSync(abs)) {
+      const child = resolve(abs, name)
+      const stat = fs.lstatSync(child)
+
+      if (stat.isDirectory()) {
+        walk(child)
+        continue
+      }
+
+      if (!stat.isFile()) continue
+
+      const rel = relative(dir, child).split("\\").join("/")
+      filesMap[rel] = fs.readFileSync(child).toString("base64")
+    }
+  }
+  walk(dir)
+  return filesMap
+}
 
 // ---- Plugin system: storage + ZIP pipeline (WP2) --------------------------
 // Mirrors the skeleton ZIP+storage pipeline (buildSkeletonZip / importSkeletonZip
@@ -280,6 +308,12 @@ export const importPluginZip = async (
 
   writePlugins([...readPlugins(), record])
 
+  // Mirror to Postgres after disk write (additive: keep disk/index.json/broadcast behavior)
+  const filesMap = buildFilesMap(dir)
+  void upsertInstalledPluginPg(record, filesMap).catch((error: unknown) => {
+    console.error("importPluginZip: upsertInstalledPluginPg failed (non-blocking):", error)
+  })
+
   return record
 }
 
@@ -295,6 +329,11 @@ export const removePlugin = (id: string): void => {
   }
 
   writePlugins(readPlugins().filter((p) => p.id !== id))
+
+  // Remove from Postgres after disk delete (additive, non-blocking)
+  void deleteInstalledPluginPg(id).catch((error: unknown) => {
+    console.error("removePlugin: deleteInstalledPluginPg failed (non-blocking):", error)
+  })
 }
 
 // Merge a config bag into the index entry for <id>. Snapshots first.
@@ -305,13 +344,25 @@ export const setPluginConfig = (
   assertSafeId(id)
   savePluginRevision()
 
-  writePlugins(
-    readPlugins().map((p) =>
-      p.id === id
-        ? { ...p, config: { ...(p.config ?? {}), ...config } }
-        : p,
-    ),
+  const updated = readPlugins().map((p) =>
+    p.id === id
+      ? { ...p, config: { ...(p.config ?? {}), ...config } }
+      : p,
   )
+
+  writePlugins(updated)
+
+  // Mirror to Postgres after config update (build fresh filesMap from disk)
+  const dir = pluginDir(id)
+  if (fs.existsSync(dir)) {
+    const filesMap = buildFilesMap(dir)
+    const updatedPlugin = updated.find((p) => p.id === id)
+    if (updatedPlugin) {
+      void upsertInstalledPluginPg(updatedPlugin, filesMap).catch((error: unknown) => {
+        console.error("setPluginConfig: upsertInstalledPluginPg failed (non-blocking):", error)
+      })
+    }
+  }
 }
 
 // Resolve a public "/plugins/<id>/<rest>" request to an on-disk file + its
