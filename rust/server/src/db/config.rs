@@ -240,22 +240,25 @@ pub async fn update_achievements_config(
         let name = override_val.get("name").and_then(|v| v.as_str());
         let description = override_val.get("description").and_then(|v| v.as_str());
         let threshold = override_val.get("threshold").and_then(|v| v.as_i64()).map(|v| v as i32);
+        let bonus = override_val.get("bonus").and_then(|v| v.as_i64()).map(|v| v as i32);
 
         // UPSERT: if the row exists, update only the non-None fields; if it doesn't, insert
         sqlx::query(
-            "INSERT INTO achievements_config (id, enabled, name, description, threshold) \
-             VALUES ($1, $2, $3, $4, $5) \
+            "INSERT INTO achievements_config (id, enabled, name, description, threshold, bonus) \
+             VALUES ($1, $2, $3, $4, $5, $6) \
              ON CONFLICT (id) DO UPDATE SET \
                 enabled = COALESCE(EXCLUDED.enabled, achievements_config.enabled), \
                 name = COALESCE(EXCLUDED.name, achievements_config.name), \
                 description = COALESCE(EXCLUDED.description, achievements_config.description), \
-                threshold = COALESCE(EXCLUDED.threshold, achievements_config.threshold)"
+                threshold = COALESCE(EXCLUDED.threshold, achievements_config.threshold), \
+                bonus = COALESCE(EXCLUDED.bonus, achievements_config.bonus)"
         )
         .bind(id)
         .bind(enabled)
         .bind(name)
         .bind(description)
         .bind(threshold)
+        .bind(bonus)
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;

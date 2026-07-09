@@ -116,7 +116,10 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
                     Err(_e) => {
-                        // Validation failure is non-fatal (silent no-op, consistent with Node)
+                        // Emit error to match Node's game.ts catch block
+                        socket
+                            .emit(constants::manager::ERROR_MESSAGE, "errors:manager.saveFailed")
+                            .ok();
                     }
                 }
             });
@@ -161,7 +164,10 @@ fn register_set_achievements_config(socket: &SocketRef, ctx: HandlerCtx) {
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
                     Err(_e) => {
-                        // Validation failure is non-fatal (silent no-op, consistent with Node)
+                        // Emit error to match Node's game.ts catch block
+                        socket
+                            .emit(constants::manager::ERROR_MESSAGE, "errors:manager.saveFailed")
+                            .ok();
                     }
                 }
             });
