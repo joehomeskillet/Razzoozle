@@ -1,5 +1,5 @@
 // "We are the champions" sting for the first player to answer correctly.
-// Self-hosted at /theme/firstcorrect.mp3 (config volume, served by nginx).
+// Self-hosted at /media/audio/firstcorrect.mp3 (config volume, served by nginx).
 // Uses the native Audio API (no extra dep) and preloads on game start so it
 // plays instantly when the result arrives.
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
@@ -11,7 +11,7 @@ let loadFailed = false
 
 export const preloadFirstCorrectSound = () => {
   if (!audio) {
-    audio = new Audio("/theme/firstcorrect.mp3")
+    audio = new Audio("/media/audio/firstcorrect.mp3")
     audio.preload = "auto"
     audio.volume = 0.6
     // Swallow load/404 errors: the chime is optional, no console spam.
