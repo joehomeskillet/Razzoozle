@@ -1,10 +1,12 @@
 //! MANAGER.GET_THEME, SUBMIT_QUESTION — public/unauthenticated handlers
 
+use super::super::validation;
 use super::super::HandlerCtx;
 use crate::db;
 use crate::http::RATE_LIMITER;
 use crate::state;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::manager::SubmissionCategory;
 use socketioxide::extract::{Data, SocketRef};
 use lazy_static::lazy_static;
 
@@ -223,6 +225,32 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Full questionValidator (Node submissionValidator includes questionValidator)
+                if let Err(key) = validation::validate_question(&question) {
+                    socket
+                        .emit(constants::manager::SUBMISSION_ERROR, key)
+                        .ok();
+                    return;
+                }
+
+                // Optional category — must be a known SubmissionCategory enum value
+                let category: Option<String> = match payload.get("category") {
+                    None | Some(serde_json::Value::Null) => None,
+                    Some(v) => {
+                        if serde_json::from_value::<SubmissionCategory>(v.clone()).is_err() {
+                            socket
+                                .emit(
+                                    constants::manager::SUBMISSION_ERROR,
+                                    "errors:submission.invalid",
+                                )
+                                .ok();
+                            return;
+                        }
+                        // Persist the wire string (lowercase enum rename)
+                        v.as_str().map(|s| s.to_string())
+                    }
+                };
+
                 // Flood cap on the public, unauthenticated endpoint (mirrors Node's
                 // PENDING_QUEUE_CAP). Fail-open on a count error so a DB hiccup does
                 // not lock out legitimate submitters.
@@ -235,7 +263,15 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let id = slug_id(&q_text);
 
-                match db::insert_submission(&ctx.db_pool, &id, &submitted_by, &question).await {
+                match db::insert_submission(
+                    &ctx.db_pool,
+                    &id,
+                    &submitted_by,
+                    &question,
+                    category.as_deref(),
+                )
+                .await
+                {
                     Ok(()) => {
                         socket
                             .emit(constants::manager::SUBMIT_SUCCESS, &serde_json::json!({}))
