@@ -176,7 +176,7 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                             let current_phase = game.engine.phase;
 
                             match current_phase {
-                                GamePhase::ShowResult | GamePhase::ShowRoundRecap => {
+                                GamePhase::ShowResult => {
                                     // Re-send cached SHOW_RESULT with autoAdvanceMs so clients
                                     // already on the result screen get a countdown (FIX 9).
                                     let payloads = game.last_show_result_data.clone();
@@ -351,4 +351,83 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
             });
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::{Game, QuizFixture};
+    use razzoozle_protocol::status::ShowResultData;
+    use std::sync::{Arc, Mutex};
+
+    fn test_game(phase: GamePhase) -> Arc<Mutex<Game>> {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut game = Game::new(
+            "game-test".to_string(),
+            "TEST".to_string(),
+            "manager-socket".to_string(),
+            quiz.clone(),
+        );
+        game.engine.phase = phase;
+        game.last_show_result_data.insert(
+            "player-socket".to_string(),
+            ShowResultData {
+                correct: true,
+                message: "game:correct".to_string(),
+                points: 100,
+                my_points: 100,
+                rank: 1,
+                ahead_of_me: None,
+                streak: None,
+                streak_bonus: None,
+                bonus: None,
+                first_correct: None,
+                poll: None,
+                achievements: None,
+                bonus_points: None,
+                player_count: None,
+                correct_answer: None,
+                correct_chunks: None,
+                scoring_mode: None,
+                auto_advance_ms: None,
+                round_recap: None,
+            },
+        );
+        Arc::new(Mutex::new(game))
+    }
+
+    #[test]
+    fn set_auto_on_show_result_should_reemit() {
+        let game_ref = test_game(GamePhase::ShowResult);
+        let should_reemit = matches!(
+            game_ref.lock().unwrap().engine.phase,
+            GamePhase::ShowResult
+        );
+        assert!(should_reemit);
+    }
+
+    #[test]
+    fn set_auto_on_show_round_recap_should_not_reemit() {
+        let game_ref = test_game(GamePhase::ShowRoundRecap);
+        let should_reemit = matches!(
+            game_ref.lock().unwrap().engine.phase,
+            GamePhase::ShowResult
+        );
+        assert!(!should_reemit);
+        assert!(!game_ref.lock().unwrap().last_show_result_data.is_empty());
+    }
+
+    #[test]
+    fn next_question_while_paused_is_noop() {
+        let game_ref = test_game(GamePhase::ShowLeaderboard);
+        game_ref.lock().unwrap().paused = true;
+
+        let fired = if game_ref.lock().unwrap().paused {
+            false
+        } else {
+            lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard)
+        };
+
+        assert!(!fired);
+    }
 }

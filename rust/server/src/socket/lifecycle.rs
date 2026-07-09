@@ -34,7 +34,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{Notify, RwLock};
 use tracing::{info, warn};
 
-use super::cooldown::run_cooldown;
+use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
 
 /// 3-2-1 intro before Q1 (node: `io.emit(START_COOLDOWN)` + `cooldown.start(3)`).
@@ -75,30 +75,37 @@ async fn wait_abortable(seconds: i32, abort: Arc<Notify>) {
 }
 
 /// Suspend until the game is no longer paused (mirrors Node waitWhilePaused).
+/// CRITICAL: read paused and clone Notify under ONE lock scope to avoid lost wakeup.
 async fn wait_while_paused(game_ref: &Arc<Mutex<Game>>) {
     loop {
-        let paused = game_ref.lock().unwrap().paused;
+        let (paused, pause_notify) = {
+            let game = game_ref.lock().unwrap();
+            (game.paused, game.pause_resume.clone())
+        };
         if !paused {
             break;
         }
-        let pause_notify = game_ref.lock().unwrap().pause_resume.clone();
         pause_notify.notified().await;
     }
 }
 
-/// Auto-mode dwell: honour pause loops; manual mode waits for host signal.
+/// Auto or manual dwell: ALWAYS honour pause loops first, then wait for dwell timeout.
 async fn dwell_auto_or_manual(
     game_ref: &Arc<Mutex<Game>>,
     manual_secs: i32,
     auto_secs: i32,
     abort: Arc<Notify>,
 ) {
-    if !game_ref.lock().unwrap().auto_mode {
-        wait_abortable(manual_secs, abort).await;
+    // BOTH paths wait for pause to clear first
+    wait_while_paused(game_ref).await;
+
+    // Then dwell (manual or auto timeout)
+    let seconds = if game_ref.lock().unwrap().auto_mode {
+        auto_secs
     } else {
-        wait_while_paused(game_ref).await;
-        wait_abortable(auto_secs, abort).await;
-    }
+        manual_secs
+    };
+    wait_abortable(seconds, abort).await;
 }
 
 fn build_select_answer_data(
@@ -311,14 +318,28 @@ pub async fn run_game_lifecycle(
         // open_answers() land on the correct Notify.
         let abort = { game_ref.lock().unwrap().arm_abort() };
         let seconds = { game_ref.lock().unwrap().engine.current_question().time };
+        let game_ref_cooldown = game_ref.clone();
         let io_tick = io.clone();
         let gid_tick = game_id.clone();
-        run_cooldown(seconds, abort, move |count| {
-            io_tick
-                .to(gid_tick.clone())
-                .emit(constants::game::COOLDOWN, &count)
-                .ok();
-        })
+        run_cooldown_with_deadline(
+            seconds,
+            abort,
+            move |count| {
+                io_tick
+                    .to(gid_tick.clone())
+                    .emit(constants::game::COOLDOWN, &count)
+                    .ok();
+            },
+            move || {
+                let game = game_ref_cooldown.lock().unwrap();
+                let now_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0);
+                let remaining_ms = (game.deadline_ms - now_ms).max(0);
+                (remaining_ms / 1000) as i32
+            },
+        )
         .await;
 
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
@@ -350,6 +371,8 @@ pub async fn run_game_lifecycle(
             {
                 let mut game = game_ref.lock().unwrap();
                 game.engine.phase = GamePhase::ShowRoundRecap;
+                game.last_show_result_data.clear();
+                game.last_show_result_data.clear();
                 let recap_data = game.temp_round_recap.clone().unwrap_or_default();
                 let manager_socket_id = game.manager_socket_id.clone();
                 drop(game);
@@ -619,7 +642,7 @@ pub async fn run_game_lifecycle(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::QuizFixture;
+    use crate::state::{Game, QuizFixture};
 
     /// Reproduces the reported "driver dies silently after reveal" bug end to
     /// end: drive a full game (fixture quiz, 1 player, nobody answers) through
@@ -686,6 +709,80 @@ mod tests {
             final_phase,
             GamePhase::Finished,
             "lifecycle stalled before reaching FINISHED (leaderboard/advance never happened)"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn pause_resume_wakes_dwell_without_deadlock() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let game = Game::new(
+            "game-1".to_string(),
+            "ABCD".to_string(),
+            "manager-socket".to_string(),
+            quiz.clone(),
+        );
+        let game_ref = Arc::new(Mutex::new({
+            let mut g = game;
+            g.paused = true;
+            g
+        }));
+
+        let game_ref_waiter = game_ref.clone();
+        let waiter = tokio::spawn(async move {
+            tokio::time::timeout(Duration::from_millis(100), wait_while_paused(&game_ref_waiter)).await
+        });
+
+        tokio::time::advance(Duration::from_millis(10)).await;
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.paused = false;
+            game.pause_resume.notify_one();
+        }
+        tokio::time::advance(Duration::from_millis(10)).await;
+
+        assert!(
+            waiter.await.unwrap().is_ok(),
+            "wait_while_paused deadlocked after resume — lost-wakeup bug"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn pause_during_manual_dwell_does_not_advance() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let game = Game::new(
+            "game-2".to_string(),
+            "EFGH".to_string(),
+            "manager-socket".to_string(),
+            quiz.clone(),
+        );
+        let game_ref = Arc::new(Mutex::new({
+            let mut g = game;
+            g.auto_mode = false;
+            g.paused = true;
+            g
+        }));
+        let abort = Arc::new(Notify::new());
+        let game_ref_dwell = game_ref.clone();
+
+        let dwell = tokio::spawn(async move {
+            dwell_auto_or_manual(&game_ref_dwell, 1, 1, abort).await;
+        });
+
+        tokio::time::advance(Duration::from_secs(5)).await;
+        assert!(
+            !dwell.is_finished(),
+            "manual dwell advanced while game was paused"
+        );
+
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.paused = false;
+            game.pause_resume.notify_one();
+        }
+        tokio::time::advance(Duration::from_secs(2)).await;
+        assert!(
+            dwell.is_finished(),
+            "manual dwell did not advance after pause cleared"
         );
     }
 }

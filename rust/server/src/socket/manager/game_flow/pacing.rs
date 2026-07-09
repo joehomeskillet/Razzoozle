@@ -2,9 +2,12 @@
 
 use super::super::super::HandlerCtx;
 use crate::is_game_host;
+use crate::socket::reveal_helpers::build_manager_show_responses;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::status::{GameStatus, ShowLeaderboardData, ShowRoundRecapData, Status};
+use razzoozle_protocol::status::{
+    GameStatus, ShowLeaderboardData, ShowRoundRecapData, ShowStartData, Status, WaitData,
+};
 use socketioxide::extract::{Data, SocketRef};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -65,7 +68,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                game.deadline_ms = (game.deadline_ms + delta_clamped * 1000).max(0);
+                game.deadline_ms = game.deadline_ms.saturating_add(delta_clamped * 1000).max(0);
                 let new_remaining_ms = (game.deadline_ms - now_ms()).max(0);
                 let new_remaining_secs = (new_remaining_ms / 1000) as i32;
                 drop(game);
@@ -79,8 +82,9 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
-/// Pause on static dwell screens (SHOW_RESULT, SHOW_ROUND_RECAP, SHOW_LEADERBOARD).
+/// Pause on static pre-game / dwell screens (Node isPausableStatus parity).
 /// Lifecycle dwell loops honour `paused` via `pause_resume` on resume.
+/// Note: ShowPrepared/Wait have no GamePhase equivalent in the Rust engine.
 pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::PAUSE_GAME, {
         let ctx = ctx.clone();
@@ -125,9 +129,12 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Check if current phase is pausable (match Node's isPausableStatus)
                 let is_pausable = matches!(
                     game.engine.phase,
-                    GamePhase::ShowResult | GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard
+                    GamePhase::ShowLeaderboard
+                        | GamePhase::ShowStart
+                        | GamePhase::ShowRoom
                 );
 
                 if !is_pausable {
@@ -139,15 +146,22 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 let status_to_save = match game.engine.phase {
-                    GamePhase::ShowResult => {
-                        (Status::ShowResult, serde_json::json!({}))
-                    }
-                    GamePhase::ShowRoundRecap => {
-                        let recap_data = game.temp_round_recap.clone().unwrap_or_default();
+                    GamePhase::ShowStart => {
                         (
-                            Status::ShowRoundRecap,
-                            serde_json::to_value(&ShowRoundRecapData {
-                                round_recap: recap_data,
+                            Status::ShowStart,
+                            serde_json::to_value(&ShowStartData {
+                                time: 3,
+                                subject: game.engine.quiz.subject.clone(),
+                            })
+                            .unwrap_or(serde_json::json!({})),
+                        )
+                    }
+                    GamePhase::ShowRoom => {
+                        (
+                            Status::Wait,
+                            serde_json::to_value(&WaitData {
+                                text: "game:waitingForPlayers".to_string(),
+                                team_mode: None,
                             })
                             .unwrap_or(serde_json::json!({})),
                         )
@@ -233,6 +247,7 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
 
                     let Some((status, data)) = game.paused_state.take() else {
                         game.paused = false;
+                        game.pause_resume.notify_one();
                         info!(
                             "Resume with empty paused_state: gameId={} — clearing pause flag",
                             game_id
@@ -241,7 +256,7 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                     };
 
                     game.paused = false;
-                    game.pause_resume.notify_waiters();
+                    game.pause_resume.notify_one();
 
                     info!("Game resumed: gameId={}", game_id);
 
@@ -254,9 +269,13 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
 
                 match status {
                     Status::ShowResult => {
-                        let payloads = {
+                        let (payloads, manager_socket_id, manager_status) = {
                             let game = game_ref.lock().unwrap();
-                            game.last_show_result_data.clone()
+                            (
+                                game.last_show_result_data.clone(),
+                                game.manager_socket_id.clone(),
+                                build_manager_show_responses(&game),
+                            )
                         };
                         for (socket_id, show_result_data) in payloads {
                             let status_to_broadcast = GameStatus::ShowResult(show_result_data);
@@ -266,6 +285,30 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                                         .ok();
                                 }
                             }
+                        }
+                        if let Ok(sid) = manager_socket_id.parse() {
+                            if let Some(sock) = ctx.io.get_socket(sid) {
+                                sock.emit(constants::game::STATUS, &manager_status).ok();
+                            }
+                        }
+                    }
+                    Status::ShowStart => {
+                        if let Ok(start_data) = serde_json::from_value::<ShowStartData>(data) {
+                            ctx.io
+                                .to(game_id.clone())
+                                .emit(
+                                    constants::game::STATUS,
+                                    &GameStatus::ShowStart(start_data),
+                                )
+                                .ok();
+                        }
+                    }
+                    Status::Wait => {
+                        if let Ok(wait_data) = serde_json::from_value::<WaitData>(data) {
+                            ctx.io
+                                .to(game_id.clone())
+                                .emit(constants::game::STATUS, &GameStatus::Wait(wait_data))
+                                .ok();
                         }
                     }
                     Status::ShowRoundRecap => {
