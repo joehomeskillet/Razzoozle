@@ -123,12 +123,10 @@ pub(super) fn infer_type_and_validate_mime(
 }
 
 /// Map MIME type to file extension.
-/// parity: raw bytes + honest extension, not .webp transcode (Wave 4b)
+/// Images always land as `.webp` (parity with Node `extensionForMime` after toWebp).
 pub(super) fn extension_for_mime(mime: &str) -> &'static str {
     match mime {
-        "image/png" => ".png",
-        "image/jpeg" => ".jpg",
-        "image/webp" => ".webp",
+        "image/png" | "image/jpeg" | "image/webp" => ".webp",
         "audio/mpeg" | "audio/mp3" => ".mp3",
         "audio/wav" => ".wav",
         "audio/ogg" => ".ogg",

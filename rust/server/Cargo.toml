@@ -25,6 +25,8 @@ sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chron
 # deflate-flate2-zlib-rs is the minimal pure-Rust deflate backend (the plain
 # "deflate" meta-feature would additionally pull the zopfli encoder).
 zip = { version = "8.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+# WP3 — WebP transcode for media uploads + AI-generated images (parity with Node toWebp).
+image = { version = "0.24", features = ["webp"] }
 
 # test-util only actually matters for `cargo test` (paused-clock timer tests in
 # socket/cooldown.rs), but Cargo unifies feature flags for a dep across the

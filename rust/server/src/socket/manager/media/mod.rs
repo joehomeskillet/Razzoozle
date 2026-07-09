@@ -3,6 +3,8 @@
 use super::super::HandlerCtx;
 use crate::db;
 use crate::state::safe_asset_id;
+use image::codecs::webp::WebPEncoder;
+use image::ColorType;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use chrono::Utc;
@@ -10,6 +12,29 @@ use uuid::Uuid;
 
 mod validate;
 mod files;
+
+/// Transcode raw image bytes (PNG/JPEG/WebP) to WebP. Returns (webp_bytes, width, height).
+/// Never panics — all decode/encode failures become `Err(String)`.
+pub fn to_webp(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), String> {
+    let img = image::load_from_memory(bytes)
+        .map_err(|_| "errors:media.invalidDataUrl".to_string())?;
+
+    let width = img.width();
+    let height = img.height();
+
+    let rgba = img.to_rgba8();
+    let mut output = Vec::new();
+    WebPEncoder::new_lossless(&mut output)
+        .encode(
+            rgba.as_raw(),
+            width,
+            height,
+            ColorType::Rgba8,
+        )
+        .map_err(|_| "errors:submission.imageGenFailed".to_string())?;
+
+    Ok((output, width, height))
+}
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list(socket, ctx.clone());
@@ -85,14 +110,6 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Validate decoded size (8 MB cap = 8,000,000 bytes)
-                if buffer.len() > 8_000_000 {
-                    socket
-                        .emit(constants::media::ERROR, "errors:media.tooLarge")
-                        .ok();
-                    return;
-                }
-
                 // Infer type and validate MIME
                 let (inferred_type, resolved_category) = match validate::infer_type_and_validate_mime(&mime, category) {
                     Ok(result) => result,
@@ -102,13 +119,27 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
+                // Images are transcoded to WebP (parity with Node toWebp); audio/video stay raw.
+                let (write_buffer, size, width, height) = if inferred_type == "image" {
+                    let (webp_bytes, w, h) = match to_webp(&buffer) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            socket.emit(constants::media::ERROR, &e).ok();
+                            return;
+                        }
+                    };
+                    let webp_size = webp_bytes.len() as i32;
+                    (webp_bytes, webp_size, Some(w as i32), Some(h as i32))
+                } else {
+                    (buffer.clone(), buffer.len() as i32, None, None)
+                };
+
                 // Normalize filename and generate stored filename
                 let normalized_stem = files::normalize_media_stem(filename);
                 let random_suffix = Uuid::new_v4().to_string().replace("-", "")[0..8].to_string();
                 let ext = validate::extension_for_mime(&mime);
                 let stored_filename = format!("{}-{}{}", normalized_stem, random_suffix, ext);
                 let url = format!("/media/{}/{}", resolved_category, stored_filename);
-                let size = buffer.len() as i32;
 
                 // Generate media asset ID: <category>-<filename-without-extension>
                 let filename_stem = stored_filename
@@ -125,7 +156,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 // Write file to disk (spawn_blocking)
-                let buffer_clone = buffer.clone();
+                let buffer_clone = write_buffer.clone();
                 let stored_filename_clone = stored_filename.clone();
                 let category_clone = resolved_category.clone();
                 let write_result = tokio::task::spawn_blocking(move || {
@@ -156,10 +187,10 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                     &inferred_type,
                     &resolved_category,
                     "upload",
-                    None,
-                    None,
+                    width,
+                    height,
                     uploaded_at,
-                    &buffer,
+                    &write_buffer,
                 )
                 .await
                 {

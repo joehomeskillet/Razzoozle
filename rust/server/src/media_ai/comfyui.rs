@@ -2,10 +2,9 @@
 //! and the prompt-enhance bridge. Mirrors packages/socket/src/services/comfyui.ts.
 //!
 //! The generated PNG bytes are fetched from ComfyUI over HTTP (`/view`) — the
-//! socket container can't read ComfyUI's output dir — then written RAW as `.png`
-//! into config/media/generated/ (nginx-servable via the config mount, mirrors
-//! /theme/). The Node WebP transcode is a Wave-4b deferral, so we keep the honest
-//! `.png` extension. When ComfyUI is unreachable/misconfigured, every path yields
+//! socket container can't read ComfyUI's output dir — then transcoded to WebP and
+//! written into config/media/generated/ (nginx-servable via the config mount,
+//! mirrors /theme/). When ComfyUI is unreachable/misconfigured, every path yields
 //! the natural `errors:submission.imageGen*` error (no fake-success stub).
 
 use rand::Rng;
@@ -82,7 +81,7 @@ fn image_resolution() -> u64 {
 }
 
 /// txt2img: generate an image for `prompt`, returning its public
-/// "/media/generated/<id>.png" URL. Errors with `errors:submission.imageGen*`.
+/// "/media/generated/<id>.webp" URL. Errors with `errors:submission.imageGen*`.
 pub(crate) async fn generate_image(prompt: &str) -> Result<String, String> {
     let mut workflow = read_workflow(&txt2img_workflow_path())?;
 
@@ -111,7 +110,7 @@ pub(crate) async fn generate_image(prompt: &str) -> Result<String, String> {
 /// img2img (Z-Image Omni reference-conditioning): re-generate from `base_bytes`
 /// (resolved server-side from disk by the caller — never a client URL/fetch)
 /// conditioned on `prompt`. `ext` is the base file's extension (for the upload
-/// filename/MIME). Returns the public "/media/generated/<id>.png" URL.
+/// filename/MIME). Returns the public "/media/generated/<id>.webp" URL.
 pub(crate) async fn generate_image_from_base(
     base_bytes: &[u8],
     ext: &str,
@@ -291,7 +290,9 @@ async fn fetch_and_save(
     }
 
     let bytes = resp.bytes().await.map_err(|_| FAILED.to_string())?;
-    save_generated_image_bytes(bytes.as_ref(), &format!("gen-{}.png", short_id()))
+    let (webp_bytes, _width, _height) =
+        crate::socket::manager::media::to_webp(bytes.as_ref()).map_err(|_| FAILED.to_string())?;
+    save_generated_image_bytes(&webp_bytes, &format!("gen-{}.webp", short_id()))
 }
 
 /// Persist generated image bytes into config/media/generated/ and return the
