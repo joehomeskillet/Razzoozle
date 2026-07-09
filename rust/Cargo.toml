@@ -4,3 +4,9 @@ resolver = "2"
 
 [workspace.package]
 edition = "2021"
+
+# Dev-profile debuginfo trim (Phase 1, docs/build-baseline.md) — build config only.
+# "line-tables-only" keeps panic/backtrace file:line info but drops full DWARF,
+# cutting debug compile + link time and target/ size. No behavior change.
+[profile.dev]
+debug = "line-tables-only"

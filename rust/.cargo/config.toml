@@ -1,0 +1,16 @@
+# Build acceleration for the Razzoozle Rust workspace.
+# Phase 1 of docs/build-baseline.md — build config only, ZERO behavior change.
+#
+# mold: fast linker. Cuts the serial link tail of the razzoozle-server binary and
+# every incremental relink. Wired through the default gcc driver's `-fuse-ld=mold`
+# (gcc >= 12), so no linker/toolchain swap. Requires `mold` on PATH (present on the
+# dev host + the CI rust-ci image + the rust/Dockerfile builder).
+#
+# NB: sccache is deliberately NOT wired here. Measured on this host it gives a 0%
+# Rust cache-hit rate under cargo's default incremental mode and serializes the
+# build to a single core (~40s vs ~23s mold-only) — a net loss for local dev, and
+# it also breaks the fast incremental inner loop. sccache only pays off with a
+# STABLE target-dir path + CARGO_INCREMENTAL=0 (CI), so it is scoped to the CI
+# workflow (Phase 2), not this global config. See docs/build-baseline.md §Phase-1.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]

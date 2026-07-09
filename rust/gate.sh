@@ -20,9 +20,19 @@ say() { printf '%s\n' "$*"; }
 
 # --- 1. compile (bin) + tests -------------------------------------------------
 BUILD_ERR=$(cargo build -p razzoozle-server 2>&1 | grep -cE '^error(\[|:)')
-TEST_ERR=$(cargo test --no-run 2>&1 | grep -cE '^error(\[|:)')
 [[ "$BUILD_ERR" -ne 0 ]] && { say "NO-GO: cargo build has $BUILD_ERR error(s)"; fail=1; }
-[[ "$TEST_ERR" -ne 0 ]] && { say "NO-GO: cargo test build has $TEST_ERR error(s)"; fail=1; }
+
+# Whole-workspace tests. Prefer cargo-nextest (faster, clearer output) when it is
+# installed — same coverage, and it actually RUNS the suite now that the engine
+# golden-frames fixture exists. Fall back to the original compile-only check
+# (`cargo test --no-run`) where nextest is absent (e.g. an old local shell).
+if command -v cargo-nextest >/dev/null 2>&1; then
+  if cargo nextest run --workspace --no-fail-fast; then say "ok: cargo nextest run (workspace) green"
+  else say "NO-GO: cargo nextest run reported failing or uncompilable tests"; fail=1; fi
+else
+  TEST_ERR=$(cargo test --no-run 2>&1 | grep -cE '^error(\[|:)')
+  [[ "$TEST_ERR" -ne 0 ]] && { say "NO-GO: cargo test build has $TEST_ERR error(s)"; fail=1; }
+fi
 
 # --- 2. anti-regression feature markers (each shipped batch leaves a fingerprint)
 # min counts are floors; a drop means a batch was reverted/deleted.
@@ -47,6 +57,20 @@ check "$SRC"   'next_or_finish'                  1  "round-loop advance"
 LINES=$(find "$SRC" -name '*.rs' -exec cat {} + | wc -l)
 FLOOR=2400
 [[ "$LINES" -lt "$FLOOR" ]] && { say "NO-GO: total $SRC = $LINES lines (< floor $FLOOR) — mass deletion"; fail=1; } || say "ok: total $SRC = $LINES lines"
+
+# --- 4. advisory (NON-BLOCKING) rustfmt + clippy — report only, never fail -----
+# Informational only: it NEVER touches `fail`, so pre-existing clippy/format noise
+# cannot break CI. Runs only when the tools are present (rust-toolchain.toml adds
+# clippy+rustfmt on CI). Kept last so it can't mask a real gate failure above.
+say "--- advisory (non-blocking): rustfmt + clippy ---"
+if command -v rustfmt >/dev/null 2>&1; then
+  if cargo fmt --all --check >/dev/null 2>&1; then say "advisory: rustfmt clean"
+  else say "advisory: rustfmt would reformat some files (not blocking)"; fi
+fi
+if command -v cargo-clippy >/dev/null 2>&1; then
+  CLIPPY_N=$(cargo clippy --workspace --all-targets 2>&1 | grep -cE '^warning|^error')
+  say "advisory: clippy emitted $CLIPPY_N warning/error line(s) (not blocking)"
+fi
 
 # --- verdict ------------------------------------------------------------------
 if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests compile, all batch markers intact)"; exit 0

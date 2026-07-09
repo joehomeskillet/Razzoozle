@@ -1,0 +1,21 @@
+{
+  "subject": "Golden Test Quiz",
+  "questions": [
+    {
+      "question": "What is 2 + 2?",
+      "type": "choice",
+      "answers": ["3", "4", "5", "6"],
+      "solutions": [1],
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "What is the capital of France?",
+      "type": "choice",
+      "answers": ["London", "Berlin", "Paris", "Madrid"],
+      "solutions": [2],
+      "cooldown": 5,
+      "time": 30
+    }
+  ]
+}
