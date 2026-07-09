@@ -135,6 +135,12 @@ async fn main() {
     // Create database pool first (if DATABASE_URL is set)
     let db_pool = crate::db::create_pool().await;
 
+    // E4 media boot-hydrate: if pool is available, restore media from Postgres to disk (idempotent + empty-guard)
+    if db_pool.is_some() {
+        let config_base = http::get_config_path();
+        crate::db::hydrate_media_from_pg(&db_pool, &config_base).await;
+    }
+
     // Load fixture quiz
     let quiz_fixture = QuizFixture::load().expect("Failed to load fixture quiz");
 
