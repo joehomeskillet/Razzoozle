@@ -71,6 +71,7 @@ pub async fn insert_media_asset(
     width: Option<i32>,
     height: Option<i32>,
     uploaded_at: chrono::DateTime<chrono::Utc>,
+    data: &[u8],
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -78,8 +79,8 @@ pub async fn insert_media_asset(
     };
 
     sqlx::query(
-        "INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+        "INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, data) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"
     )
     .bind(id)
     .bind(filename)
@@ -91,6 +92,7 @@ pub async fn insert_media_asset(
     .bind(width)
     .bind(height)
     .bind(uploaded_at)
+    .bind(data)
     .execute(pool)
     .await
     .map(|_| id.to_string())
@@ -132,4 +134,3 @@ pub async fn delete_media_assets_by_slot(pool: &Option<PgPool>, slot: &str, sour
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
-

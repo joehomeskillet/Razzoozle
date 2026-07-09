@@ -159,6 +159,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                     None,
                     None,
                     uploaded_at,
+                    &buffer,
                 )
                 .await
                 {
