@@ -52,7 +52,8 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
         }
     }
 
-    // chunks (when present): non-empty, max 40 chars each, max 16 items
+    // chunks (when present): non-empty, max 40 chars each, min 2 / max 16 items
+    // (Node base schema: z.array(...).min(2).max(16).optional())
     if let Some(ref chunks) = question.chunks {
         for c in chunks {
             if c.is_empty() {
@@ -61,6 +62,9 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             if c.chars().count() > 40 {
                 return Err("errors:quizz.chunkTooLong");
             }
+        }
+        if chunks.len() < 2 {
+            return Err("errors:quizz.tooFewChunks");
         }
         if chunks.len() > 16 {
             return Err("errors:quizz.invalidPayload");
@@ -126,7 +130,9 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             }
         }
         Some(QuestionType::SentenceBuilder) => {
-            if question.chunks.as_ref().map(|c| c.len()).unwrap_or(0) < 2 {
+            // Base already enforces min(2) when chunks is present; still require
+            // the field itself (Node superRefine: !q.chunks || length < 2).
+            if question.chunks.is_none() {
                 return Err("errors:quizz.tooFewChunks");
             }
         }
@@ -149,8 +155,14 @@ fn is_valid_media_url(url: &str) -> bool {
     if url.is_empty() {
         return false;
     }
-    if url.starts_with("http://") || url.starts_with("https://") {
-        return !url.chars().any(|c| c.is_whitespace());
+    // Node: /^https?:\/\/\S+$/ — at least one non-whitespace char after scheme
+    if url.starts_with("https://") {
+        let rest = &url[8..];
+        return !rest.is_empty() && !rest.chars().any(|c| c.is_whitespace());
+    }
+    if url.starts_with("http://") {
+        let rest = &url[7..];
+        return !rest.is_empty() && !rest.chars().any(|c| c.is_whitespace());
     }
     if url.contains("..") {
         return false;
@@ -242,5 +254,82 @@ mod tests {
             "time": 20
         });
         assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn chunks_on_choice_rejected() {
+        // Base schema min(2) applies to any type when chunks is present.
+        let q = json!({
+            "question": "2+2?",
+            "type": "choice",
+            "answers": ["3", "4"],
+            "solutions": [1],
+            "chunks": ["one"],
+            "cooldown": 5,
+            "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.tooFewChunks"));
+    }
+
+    #[test]
+    fn scheme_only_url_rejected() {
+        let q = json!({
+            "question": "look?",
+            "type": "choice",
+            "answers": ["a", "b"],
+            "solutions": [0],
+            "media": { "type": "image", "url": "https://" },
+            "cooldown": 5,
+            "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidMediaUrl"));
+    }
+
+    #[test]
+    fn valid_http_url_with_path() {
+        let q = json!({
+            "question": "look?",
+            "type": "choice",
+            "answers": ["a", "b"],
+            "solutions": [0],
+            "media": { "type": "image", "url": "https://example.com/path" },
+            "cooldown": 5,
+            "time": 20
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn cooldown_boundaries() {
+        let base = |cooldown: i32, time: i32| {
+            json!({
+                "question": "2+2?",
+                "type": "choice",
+                "answers": ["3", "4"],
+                "solutions": [1],
+                "cooldown": cooldown,
+                "time": time
+            })
+        };
+        assert!(validate_question(&base(3, 20)).is_ok());
+        assert!(validate_question(&base(15, 20)).is_ok());
+        assert_eq!(
+            validate_question(&base(2, 20)),
+            Err("errors:quizz.invalidPayload")
+        );
+        assert_eq!(
+            validate_question(&base(16, 20)),
+            Err("errors:quizz.invalidPayload")
+        );
+        assert!(validate_question(&base(5, 5)).is_ok());
+        assert!(validate_question(&base(5, 120)).is_ok());
+        assert_eq!(
+            validate_question(&base(5, 4)),
+            Err("errors:quizz.invalidPayload")
+        );
+        assert_eq!(
+            validate_question(&base(5, 121)),
+            Err("errors:quizz.invalidPayload")
+        );
     }
 }
