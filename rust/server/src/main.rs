@@ -223,6 +223,20 @@ async fn main() {
         });
     }
 
+    // Empty-grace reaper: RESET+remove manager-less games after grace window
+    {
+        let registry_clone = Arc::clone(&registry);
+        let io_clone = io.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let mut reg = registry_clone.write().await;
+                reg.cleanup_empty_games(&io_clone).await;
+            }
+        });
+    }
+
     // Axum router with socketioxide middleware and HTTP routes
     let app = http::router(http::AppState {
         registry: Arc::clone(&registry),

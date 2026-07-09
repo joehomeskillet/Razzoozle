@@ -200,6 +200,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 {
                     let mut registry = ctx.registry.write().await;
                     registry.login_client(ctx.client_id.clone());
+                    registry.reactivate_game(game_id.clone());
                 }
                 {
                     let mut game = game_ref.lock().unwrap();
@@ -236,14 +237,6 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                 }
-
-                // TODO(parity): Node also calls registry.reactivateGame(gameId)
-                // here, pulling the game out of the empty-grace cleanup
-                // window armed by a manager disconnect. Rust's GameRegistry
-                // has no empty-grace/reactivate mechanism at all yet (grep
-                // confirms no markGameAsEmpty/reactivateGame equivalent) — so
-                // there is nothing to hook into without adding that whole
-                // subsystem, which is out of scope for this auth-only fix.
 
                 let (game_id, players, current_question_index, total_questions, last_manager_status) = {
                     let mut game = game_ref.lock().unwrap();

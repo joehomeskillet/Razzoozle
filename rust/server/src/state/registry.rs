@@ -11,6 +11,12 @@ use super::{
     LOGGED_CLIENT_STALE_MS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN, USERNAME_MIN_LEN,
 };
 
+/// A game whose manager has left but may reconnect within the grace window.
+pub struct EmptyGame {
+    pub game_id: String,
+    pub marked_at_ms: u64,
+}
+
 /// Registry managing all active games and available quizzes.
 pub struct GameRegistry {
     pub(super) games_by_code: HashMap<String, Arc<Mutex<Game>>>,
@@ -28,6 +34,7 @@ pub struct GameRegistry {
     // full scan, so a stale/incomplete index degrades to the previous
     // behavior instead of losing correctness.
     pub(super) socket_to_game: HashMap<String, String>,
+    pub(super) empty_games: Vec<EmptyGame>,
 }
 
 impl GameRegistry {
@@ -90,6 +97,7 @@ impl GameRegistry {
             default_quiz: quiz_fixture,
             logged_clients: HashMap::new(),
             socket_to_game: HashMap::new(),
+            empty_games: Vec::new(),
         }
     }
 

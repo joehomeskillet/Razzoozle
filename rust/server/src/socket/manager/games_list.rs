@@ -174,9 +174,11 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // If game is started: NO-OP (grace window handled by separate reconnect machinery)
-                // parity gap: Node keeps empty-grace + reconnect window (registry empty-games machinery)
-                // Rust equivalent lands with pause/resume wave
+                // Started game: park in empty-grace; cleanup reaper RESET+removes after 5 min
+                {
+                    let mut registry = ctx.registry.write().await;
+                    registry.mark_game_as_empty(game_id);
+                }
             });
         }
     });
