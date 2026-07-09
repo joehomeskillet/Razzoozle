@@ -4,7 +4,7 @@ use razzoozle_protocol::quizz::Quizz;
 use razzoozle_protocol::status::{RoundRecapAward, ShowResultData, Status};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use rand::Rng;
 
@@ -53,9 +53,28 @@ pub struct Game {
     pub paused: bool,
     // Snapshot of the status + data at the time of pause, for replay on resume
     pub paused_state: Option<(Status, serde_json::Value)>,
-    // Absolute server deadline (ms since UNIX epoch) for the current question's
-    // answer window. Set when a question opens; adjustTimer shifts it.
+    // Absolute server deadline (ms since UNIX epoch, wall-clock `SystemTime`)
+    // for the current question's answer window. This is CLIENT-facing only —
+    // it feeds `answer_deadline_at_server_ms` in the SELECT_ANSWER payload, so
+    // clients can compare it against their own `Date.now()`. Set when a
+    // question opens; adjustTimer shifts it in lockstep with `deadline_instant`.
     pub deadline_ms: i64,
+    // Internal server-side countdown deadline, expressed on tokio's clock
+    // (`tokio::time::Instant`) instead of wall-clock `SystemTime`. The
+    // lifecycle's per-question tick loop (`run_cooldown_with_deadline`) computes
+    // its remaining-seconds display from THIS field, not `deadline_ms` — under
+    // `tokio::time::pause()` (as the test suite drives time), `SystemTime` never
+    // moves while `tokio::time::Instant` advances with the virtual clock, so a
+    // wall-clock deadline would desync from the tick loop and hang forever.
+    // `None` while no question is live; set alongside `deadline_ms` when a
+    // question opens, shifted alongside it by adjustTimer.
+    pub deadline_instant: Option<tokio::time::Instant>,
+    // Wall-clock moment (ms since UNIX epoch) the CURRENT question's answer
+    // window opened. Immutable for the life of the question — unlike
+    // `deadline_ms`, adjustTimer does NOT shift this — so a resync payload
+    // (adjustTimer re-emitting SELECT_ANSWER) can report the true original
+    // start alongside the shifted deadline instead of resetting it to "now".
+    pub question_start_at_server_ms: i64,
     // Wakes lifecycle dwell pause-loops on resume (separate from cooldown_abort).
     pub pause_resume: Arc<tokio::sync::Notify>,
     // Per-player SHOW_RESULT payloads cached at reveal time — used by setAuto to
@@ -102,6 +121,8 @@ impl Game {
             paused: false,
             paused_state: None,
             deadline_ms: 0,
+            deadline_instant: None,
+            question_start_at_server_ms: 0,
             pause_resume: Arc::new(tokio::sync::Notify::new()),
             last_show_result_data: HashMap::new(),
             answer_count_push_pending: false,
@@ -121,6 +142,44 @@ impl Game {
     pub fn signal_abort(&self) {
         if let Some(notify) = &self.cooldown_abort {
             notify.notify_one();
+        }
+    }
+
+    /// Milliseconds remaining until `deadline_instant` on tokio's clock — 0 if
+    /// no question is currently live or the deadline has already passed. This
+    /// is what the lifecycle's per-question tick loop polls once a second to
+    /// decide whether to keep counting down or resolve (see the field doc on
+    /// `deadline_instant` for why tokio's clock, not wall-clock `SystemTime`).
+    pub fn remaining_answer_ms(&self) -> i64 {
+        match self.deadline_instant {
+            Some(deadline) => deadline
+                .saturating_duration_since(tokio::time::Instant::now())
+                .as_millis() as i64,
+            None => 0,
+        }
+    }
+
+    /// `manager:adjustTimer`: shifts BOTH clock representations of the current
+    /// question's answer-window deadline by `delta_seconds` (may be negative).
+    /// `deadline_ms` (wall-clock, client-facing) and `deadline_instant`
+    /// (tokio-clock, drives the actual server tick loop via
+    /// `remaining_answer_ms`) MUST move together, or the moment the reveal
+    /// really fires and what clients are told about it desync. No-op on
+    /// `deadline_instant` when no question is currently live.
+    pub fn shift_deadline(&mut self, delta_seconds: i64) {
+        self.deadline_ms = self.deadline_ms.saturating_add(delta_seconds * 1000).max(0);
+
+        if let Some(instant) = self.deadline_instant {
+            let shifted = if delta_seconds >= 0 {
+                instant.checked_add(Duration::from_secs(delta_seconds as u64))
+            } else {
+                instant.checked_sub(Duration::from_secs((-delta_seconds) as u64))
+            };
+            // A negative shift landing before "now" is valid (reveals on the very
+            // next tick); `checked_sub` only returns `None` if it would underflow
+            // tokio's `Instant` representation entirely, for which `now()` is a
+            // safe fallback (equivalent to "reveal immediately").
+            self.deadline_instant = Some(shifted.unwrap_or_else(tokio::time::Instant::now));
         }
     }
 

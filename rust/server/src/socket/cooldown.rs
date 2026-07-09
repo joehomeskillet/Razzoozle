@@ -9,6 +9,10 @@
 //!
 //! IO-agnostic on purpose: the caller supplies an `on_tick` callback, so this
 //! stays unit-testable without a live socket.io server (see tests below).
+//!
+//! For adjustable deadlines (adjustTimer WP2): we compute remaining seconds
+//! from the game's deadline_ms each tick, allowing adjustTimer to shift the
+//! countdown and reveal moment in real time.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -47,6 +51,39 @@ pub async fn run_cooldown<F: FnMut(i32)>(
                 if count <= 0 { return CooldownOutcome::Elapsed; }
                 on_tick(count);
                 count -= 1;
+            }
+        }
+    }
+}
+
+/// Variant that accepts a deadline getter for adjustable countdowns (adjustTimer).
+/// The `get_remaining_secs` closure is called each tick to get the current remaining seconds.
+/// This allows adjustTimer to shift the deadline mid-countdown.
+pub async fn run_cooldown_with_deadline<F, G>(
+    seconds: i32,
+    abort: Arc<Notify>,
+    mut on_tick: F,
+    get_remaining_secs: G,
+) -> CooldownOutcome
+where
+    F: FnMut(i32),
+    G: Fn() -> i32,
+{
+    let mut ticker = tokio::time::interval(Duration::from_secs(1));
+    ticker.tick().await; // discard the immediate t=0 tick
+    let mut aborted = false;
+
+    loop {
+        tokio::select! {
+            _ = abort.notified(), if !aborted => { aborted = true; }
+            _ = ticker.tick() => {
+                if aborted { return CooldownOutcome::Aborted; }
+                
+                // Get remaining seconds from deadline (allows adjustTimer to shift it)
+                let remaining_secs = get_remaining_secs();
+                
+                if remaining_secs <= 0 { return CooldownOutcome::Elapsed; }
+                on_tick(remaining_secs);
             }
         }
     }
