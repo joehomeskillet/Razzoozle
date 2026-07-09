@@ -118,6 +118,7 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
         None,
         None,
         uploaded_at,
+        &buffer,
     ).await;
 
     Ok(format!("/media/backgrounds/{}", filename))
@@ -201,6 +202,7 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -
         None,
         None,
         uploaded_at,
+        &buffer,
     ).await;
 
     Ok(format!("/media/sounds/{}", filename))
