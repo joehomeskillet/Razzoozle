@@ -98,9 +98,11 @@ pub async fn perform_reveal_and_broadcast(
             }
 
             // Build results map for O(1) lookup instead of O(n) result_for call per player
-            let results_map: HashMap<String, &_> = game.engine.last_round_results
+            let results_map: HashMap<String, razzoozle_engine::state::RoundResult> = game
+                .engine
+                .last_round_results
                 .iter()
-                .map(|r| (r.client_id.clone(), r))
+                .map(|r| (r.client_id.clone(), r.clone()))
                 .collect();
 
             // STEP 2: Build RoundRecapRow for all players (for round recap awards)
@@ -145,8 +147,12 @@ pub async fn perform_reveal_and_broadcast(
             );
             let round_recap_opt = if round_recap.is_empty() { None } else { Some(round_recap.clone()) };
 
+            game.last_show_result_data.clear();
+
+            let players: Vec<_> = game.engine.players.clone();
+
             // Send SHOW_RESULT to each player
-            for player in &game.engine.players {
+            for player in &players {
                 if let Some(result) = results_map.get(&player.client_id) {
                     let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
                     let mut show_result_data = result.to_show_result_data(&player, total_players);
@@ -180,6 +186,9 @@ pub async fn perform_reveal_and_broadcast(
 
                     // STEP 2: Set round recap (game-wide, same for all players)
                     show_result_data.round_recap = round_recap_opt.clone();
+
+                    game.last_show_result_data
+                        .insert(player.id.clone(), show_result_data.clone());
 
                     let status = GameStatus::ShowResult(show_result_data);
 

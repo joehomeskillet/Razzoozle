@@ -74,6 +74,33 @@ async fn wait_abortable(seconds: i32, abort: Arc<Notify>) {
     }
 }
 
+/// Suspend until the game is no longer paused (mirrors Node waitWhilePaused).
+async fn wait_while_paused(game_ref: &Arc<Mutex<Game>>) {
+    loop {
+        let paused = game_ref.lock().unwrap().paused;
+        if !paused {
+            break;
+        }
+        let pause_notify = game_ref.lock().unwrap().pause_resume.clone();
+        pause_notify.notified().await;
+    }
+}
+
+/// Auto-mode dwell: honour pause loops; manual mode waits for host signal.
+async fn dwell_auto_or_manual(
+    game_ref: &Arc<Mutex<Game>>,
+    manual_secs: i32,
+    auto_secs: i32,
+    abort: Arc<Notify>,
+) {
+    if !game_ref.lock().unwrap().auto_mode {
+        wait_abortable(manual_secs, abort).await;
+    } else {
+        wait_while_paused(game_ref).await;
+        wait_abortable(auto_secs, abort).await;
+    }
+}
+
 fn build_select_answer_data(
     question: &Question,
     total_players: i32,
@@ -217,6 +244,8 @@ async fn open_question(
         let question = game.engine.current_question().clone();
         let total_players = game.players.len() as i32;
         let deadline_ms = server_now_ms + question.time as i64 * 1000;
+        game.deadline_ms = deadline_ms;
+        game.last_show_result_data.clear();
         let server_seq = if game.low_latency {
             game.server_seq += 1;
             Some(game.server_seq)
@@ -302,11 +331,7 @@ pub async fn run_game_lifecycle(
         // before the leaderboard. Notify armed right after reveal (Restfenster
         // reveal->arm ist mikroskopisch + selbstheilend).
         let abort_result = { game_ref.lock().unwrap().arm_abort() };
-        if !game_ref.lock().unwrap().auto_mode {
-            wait_abortable(3600, abort_result).await; // manual: Host-Signal, 1h Sicherheitsnetz
-        } else {
-            wait_abortable(RESULT_DWELL_SECS, abort_result).await;
-        }
+        dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result).await;
 
         // SHOW_ROUND_RECAP: per-round awards screen (manager-only), one per round except the last.
         // Inserted between RESULT dwell and SHOW_LEADERBOARD, executed only if temp_round_recap
@@ -343,11 +368,7 @@ pub async fn run_game_lifecycle(
             }
 
             // Dwell on the recap screen (manual or auto mode)
-            if !game_ref.lock().unwrap().auto_mode {
-                wait_abortable(3600, abort_recap).await; // manual: Host-Signal, 1h Sicherheitsnetz
-            } else {
-                wait_abortable(RESULT_DWELL_SECS, abort_recap).await;
-            }
+            dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_recap).await;
 
             // Clear temp_round_recap after showing
             {
@@ -485,13 +506,7 @@ pub async fn run_game_lifecycle(
 
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
         // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
-        if !game_ref.lock().unwrap().auto_mode {
-            // Manual mode — wait for host signal OR fall back to long safety timeout
-            wait_abortable(3600, abort_leaderboard).await; // 1-hour safety net for manual mode
-        } else {
-            // Auto mode — use fixed LEADERBOARD_DWELL timeout
-            wait_abortable(LEADERBOARD_DWELL_SECS, abort_leaderboard).await;
-        }
+        dwell_auto_or_manual(&game_ref, 3600, LEADERBOARD_DWELL_SECS, abort_leaderboard).await;
 
         let next_phase = {
             let mut game = game_ref.lock().unwrap();

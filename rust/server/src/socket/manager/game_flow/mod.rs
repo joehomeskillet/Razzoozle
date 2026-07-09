@@ -19,6 +19,9 @@ use socketioxide::extract::{Data, SocketRef};
 use std::time::Duration;
 use tracing::info;
 
+/// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
+const AUTO_RESULT_MS: i32 = 6000;
+
 mod pacing;
 pub use pacing::{register_adjust_timer, register_pause_game, register_resume_game};
 
@@ -164,21 +167,36 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
-                        // Set auto_mode based on payload; no state change or emit on success
                         let mut game = game_ref.lock().unwrap();
                         let was_auto = game.auto_mode;
                         game.auto_mode = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
                         info!("auto_mode set to {} for game {}", game.auto_mode, game_id);
-                        
-                        // If transitioning to auto=true and a dwelling phase is active, re-arm the abort
-                        // so the lifecycle loop picks up the new auto-advance timing immediately.
+
                         if !was_auto && game.auto_mode {
                             let current_phase = game.engine.phase;
-                            drop(game); // release lock before calling request_abort
-                            
-                            // Only re-arm if we're in a dwelling phase (not during answer window)
-                            if matches!(current_phase, GamePhase::ShowResult | GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard) {
-                                lifecycle::request_abort(&game_ref, current_phase);
+
+                            match current_phase {
+                                GamePhase::ShowResult | GamePhase::ShowRoundRecap => {
+                                    // Re-send cached SHOW_RESULT with autoAdvanceMs so clients
+                                    // already on the result screen get a countdown (FIX 9).
+                                    let payloads = game.last_show_result_data.clone();
+                                    drop(game);
+
+                                    for (socket_id, mut show_result_data) in payloads {
+                                        show_result_data.auto_advance_ms = Some(AUTO_RESULT_MS);
+                                        let status = GameStatus::ShowResult(show_result_data);
+                                        if let Ok(sid) = socket_id.parse() {
+                                            if let Some(sock) = ctx.io.get_socket(sid) {
+                                                sock.emit(constants::game::STATUS, &status).ok();
+                                            }
+                                        }
+                                    }
+                                }
+                                GamePhase::ShowLeaderboard => {
+                                    drop(game);
+                                    lifecycle::request_abort(&game_ref, current_phase);
+                                }
+                                _ => {}
                             }
                         }
                     }
@@ -224,6 +242,10 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                                     .ok();
                                 return;
                             }
+                        }
+
+                        if game_ref.lock().unwrap().paused {
+                            return;
                         }
 
                         lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
