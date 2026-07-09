@@ -64,6 +64,13 @@ jobs:
       - name: Install dependencies
         run: CI=true corepack pnpm install --frozen-lockfile --ignore-scripts
 
+      # config/ (incl. config/quizz) is entirely gitignored — a fresh checkout
+      # lacks it. The assignments integration tests call saveQuizz(), which
+      # writeFileSync's into config/quizz/ and ENOENTs when the dir is missing
+      # (3 reds in run 9882). Only the directory is needed, no fixture content.
+      - name: Create gitignored config/quizz dir (integration tests write into it)
+        run: mkdir -p config/quizz
+
       # Blocking gate: the FULL @razzoozle/socket suite. Green since 2026-07-07
       # (555 passed / 0 failed / 6 DB-guarded skips) — commit 554cee39 fixed the
       # former 2 stale reds (lobby-disconnect, player-manager). Any red test is
@@ -86,7 +93,13 @@ jobs:
     # (cold rust builds were this pipeline's biggest cost). A stable absolute
     # CARGO_TARGET_DIR is what lets sccache actually hit (dependency --extern paths are
     # part of its hash); persisted target/ is the primary reuse layer, sccache the backstop.
-    runs-on: rust-ci
+    # runs-on swapped from `rust-ci` to an EXISTING label: Gitea evaluates
+    # job-level `if:` on the RUNNER, so a job whose label matches no runner
+    # queues forever instead of skipping (observed run 9882). With a real
+    # label the `if: false` above evaluates → job reports `skipped`, the
+    # needs-chain resolves, and the run completes. Restore `runs-on: rust-ci`
+    # when the rust-ci runner is actually provisioned.
+    runs-on: ubuntu-latest
     env:
       CARGO_HOME: /ci-cache/cargo
       CARGO_TARGET_DIR: /ci-cache/rust-target
