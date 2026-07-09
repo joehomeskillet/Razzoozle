@@ -2,13 +2,13 @@
 //! and the prompt-enhance bridge. Mirrors packages/socket/src/services/comfyui.ts.
 //!
 //! The generated PNG bytes are fetched from ComfyUI over HTTP (`/view`) — the
-//! socket container can't read ComfyUI's output dir — then written RAW as `.png`
-//! into config/media/generated/ (nginx-servable via the config mount, mirrors
-//! /theme/). The Node WebP transcode is a Wave-4b deferral, so we keep the honest
-//! `.png` extension. When ComfyUI is unreachable/misconfigured, every path yields
+//! socket container can't read ComfyUI's output dir — then transcoded to WebP and
+//! written into config/media/generated/ (nginx-servable via the config mount,
+//! mirrors /theme/). When ComfyUI is unreachable/misconfigured, every path yields
 //! the natural `errors:submission.imageGen*` error (no fake-success stub).
 
 use rand::Rng;
+use tracing::warn;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
@@ -82,7 +82,7 @@ fn image_resolution() -> u64 {
 }
 
 /// txt2img: generate an image for `prompt`, returning its public
-/// "/media/generated/<id>.png" URL. Errors with `errors:submission.imageGen*`.
+/// "/media/generated/<id>.webp" URL. Errors with `errors:submission.imageGen*`.
 pub(crate) async fn generate_image(prompt: &str) -> Result<String, String> {
     let mut workflow = read_workflow(&txt2img_workflow_path())?;
 
@@ -111,7 +111,7 @@ pub(crate) async fn generate_image(prompt: &str) -> Result<String, String> {
 /// img2img (Z-Image Omni reference-conditioning): re-generate from `base_bytes`
 /// (resolved server-side from disk by the caller — never a client URL/fetch)
 /// conditioned on `prompt`. `ext` is the base file's extension (for the upload
-/// filename/MIME). Returns the public "/media/generated/<id>.png" URL.
+/// filename/MIME). Returns the public "/media/generated/<id>.webp" URL.
 pub(crate) async fn generate_image_from_base(
     base_bytes: &[u8],
     ext: &str,
@@ -261,7 +261,12 @@ async fn queue_and_collect(workflow: Value, save_node: &str) -> Result<String, S
 
         match fetch_and_save(&client, &base, &filename, &subfolder, &img_type).await {
             Ok(url) => return Ok(url),
-            Err(_) => continue, // transient fetch error after ready — keep polling
+            Err(Some(err)) => {
+                // TERMINAL error: transcode failed. Don't retry.
+                warn!("ComfyUI output transcode failed: {}", err);
+                return Err(FAILED.to_string());
+            }
+            Err(None) => continue, // transient fetch error after ready — keep polling
         }
     }
 
@@ -274,7 +279,7 @@ async fn fetch_and_save(
     filename: &str,
     subfolder: &str,
     img_type: &str,
-) -> Result<String, String> {
+) -> Result<String, Option<String>> {
     let resp = client
         .get(format!("{}/view", base))
         .query(&[
@@ -284,14 +289,38 @@ async fn fetch_and_save(
         ])
         .send()
         .await
-        .map_err(|_| FAILED.to_string())?;
+        .map_err(|_| None)?;
 
     if !resp.status().is_success() {
-        return Err(FAILED.to_string());
+        return Err(None);
     }
 
-    let bytes = resp.bytes().await.map_err(|_| FAILED.to_string())?;
-    save_generated_image_bytes(bytes.as_ref(), &format!("gen-{}.png", short_id()))
+    let bytes = resp.bytes().await.map_err(|_| None)?;
+    
+    // Wrap transcode in spawn_blocking to avoid starving the tokio worker pool.
+    // Return Some(error_key) on TERMINAL errors (transcode failure),
+    // return None on transient fetch failures (retryable).
+    let bytes_owned = bytes.to_vec();
+    let transcode_result = tokio::task::spawn_blocking(move || {
+        crate::socket::manager::media::to_webp(&bytes_owned)
+    })
+    .await;
+    
+    let (webp_bytes, _width, _height) = match transcode_result {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => {
+            // Transcode failure is TERMINAL: image is malformed/undecodeable.
+            // Don't retry — return the actual error for logging.
+            return Err(Some(e));
+        }
+        Err(_) => {
+            // spawn_blocking panicked or was cancelled — treat as transient
+            return Err(None);
+        }
+    };
+    
+    save_generated_image_bytes(&webp_bytes, &format!("gen-{}.webp", short_id()))
+        .map_err(|_| None)
 }
 
 /// Persist generated image bytes into config/media/generated/ and return the

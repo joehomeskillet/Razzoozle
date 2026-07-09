@@ -193,7 +193,7 @@ async fn main() {
             // (registered above via socket::register_all).
 
             // Register AI/media handlers
-            media_ai::register(&socket, Arc::clone(&registry), client_id.clone());
+            media_ai::register(&socket, Arc::clone(&registry), client_id.clone(), db_pool.clone());
 
         }
     });

@@ -11,13 +11,17 @@
 //! arrays; a `["x"]` would emit a JSON array, not the string). Success payloads
 //! are plain objects: IMAGE_GENERATED/UPLOAD_IMAGE_SUCCESS {url}, PROMPT_ENHANCED {prompt}.
 
+use chrono::Utc;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
+use sqlx::PgPool;
 use std::path::Path;
 use tracing::warn;
 
 use super::{comfyui, config_root, throttle, MEDIA_UPLOAD_MAX_BYTES, PROMPT_MAX_LEN};
+use crate::db;
 use crate::http::RATE_LIMITER;
+use crate::socket::manager::media::to_webp;
 use crate::state::safe_asset_id;
 
 /// Graceful enhance: enhanced prompt when the provider succeeds and its output is
@@ -250,11 +254,16 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
 }
 
 // ── SUBMIT_UPLOAD_IMAGE ─────────────────────────────────────────────────────
-pub(super) fn register_submit_upload_image(socket: &SocketRef, client_id: String) {
+pub(super) fn register_submit_upload_image(
+    socket: &SocketRef,
+    client_id: String,
+    db_pool: Option<PgPool>,
+) {
     socket.on(
         constants::manager::SUBMIT_UPLOAD_IMAGE,
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let client_id = client_id.clone();
+            let db_pool = db_pool.clone();
             tokio::spawn(async move {
                 // 1. global rate
                 if !RATE_LIMITER.check_global_submission_rate() {
@@ -308,20 +317,56 @@ pub(super) fn register_submit_upload_image(socket: &SocketRef, client_id: String
                     return;
                 }
 
-                // 5. persist to config/media/questions/ (category hardcoded), image-only MIME
-                match save_upload_image(&mime, &bytes, &filename) {
-                    Ok(url) => {
-                        socket
-                            .emit(
-                                constants::manager::UPLOAD_IMAGE_SUCCESS,
-                                &serde_json::json!({ "url": url }),
-                            )
-                            .ok();
+                // 5. transcode to WebP + persist to config/media/questions/ (category hardcoded)
+                // Wrap entire save (includes to_webp) in spawn_blocking to avoid starving tokio pool
+                let mime_for_block = mime.clone();
+                let bytes_for_block = bytes.clone();
+                let filename_for_block = filename.clone();
+                let save_result = tokio::task::spawn_blocking(move || {
+                    save_upload_image(&mime_for_block, &bytes_for_block, &filename_for_block)
+                })
+                .await;
+                
+                let save_outcome = match save_result {
+                    Ok(result) => result,
+                    Err(_) => {
+                        socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
+                        return;
                     }
-                    Err(e) => {
-                        warn!("SUBMIT_UPLOAD_IMAGE failed: {}", e);
+                };
+                
+                if let Ok(saved) = save_outcome {
+                    let uploaded_at = Utc::now();
+                    if let Err(e) = db::insert_media_asset(
+                        &db_pool,
+                        &saved.asset_id,
+                        &saved.filename,
+                        &saved.url,
+                        saved.size,
+                        "image",
+                        "questions",
+                        "upload",
+                        Some(saved.width),
+                        Some(saved.height),
+                        uploaded_at,
+                        &saved.bytes,
+                    )
+                    .await
+                    {
+                        warn!("SUBMIT_UPLOAD_IMAGE PG insert failed: {}", e);
                         socket.emit(constants::manager::IMAGE_ERROR, &e).ok();
+                        return;
                     }
+
+                    socket
+                        .emit(
+                            constants::manager::UPLOAD_IMAGE_SUCCESS,
+                            &serde_json::json!({ "url": saved.url }),
+                        )
+                        .ok();
+                } else {
+                    warn!("SUBMIT_UPLOAD_IMAGE failed: save_upload_image error");
+                    socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
                 }
             });
         },
@@ -381,17 +426,11 @@ fn decode_image_data_url(data_url: &str) -> Result<(String, Vec<u8>), &'static s
     Ok((mime.to_string(), bytes))
 }
 
-/// Image MIME → honest file extension (png/jpeg/webp allowlist — no audio/video).
-fn image_ext_for_mime(mime: &str) -> Option<&'static str> {
-    if mime.starts_with("image/png") {
-        Some("png")
-    } else if mime.starts_with("image/jpeg") {
-        Some("jpg")
-    } else if mime.starts_with("image/webp") {
-        Some("webp")
-    } else {
-        None
-    }
+/// Image MIME allowlist (png/jpeg/webp — no audio/video). All stored outputs are `.webp`.
+fn image_mime_allowed(mime: &str) -> bool {
+    mime.starts_with("image/png")
+        || mime.starts_with("image/jpeg")
+        || mime.starts_with("image/webp")
 }
 
 /// Normalize a client filename stem to a safe slug (lowercase alnum/_/-, ≤64).
@@ -427,18 +466,45 @@ fn normalize_stem(filename: &str) -> String {
     }
 }
 
+struct SavedUploadImage {
+    asset_id: String,
+    filename: String,
+    url: String,
+    size: i32,
+    width: i32,
+    height: i32,
+    bytes: Vec<u8>,
+}
+
 /// Persist a public upload to config/media/questions/ with a server-generated
-/// name (`<stem>-<id>.<ext>`). Image-only MIME (raw bytes, honest extension — the
-/// WebP transcode is a Wave-4b deferral). Returns the public "/media/questions/<name>".
-fn save_upload_image(mime: &str, bytes: &[u8], filename: &str) -> Result<String, String> {
-    let ext = image_ext_for_mime(mime).ok_or_else(|| "errors:media.invalidDataUrl".to_string())?;
+/// name (`<stem>-<id>.webp`). Image-only MIME; bytes are transcoded to WebP first.
+fn save_upload_image(mime: &str, bytes: &[u8], filename: &str) -> Result<SavedUploadImage, String> {
+    if !image_mime_allowed(mime) {
+        return Err("errors:media.invalidDataUrl".to_string());
+    }
+
+    // This function is called from within spawn_blocking in the handler,
+    // so we don't need to wrap to_webp again. Just call it directly.
+    let (webp_bytes, width, height) = to_webp(bytes)?;
     let stem = normalize_stem(filename);
     let id: String = uuid::Uuid::new_v4().simple().to_string().chars().take(8).collect();
-    let stored = format!("{}-{}.{}", stem, id, ext);
+    let stored = format!("{}-{}.webp", stem, id);
+    let filename_stem = stored.rsplit_once('.').map(|(s, _)| s).unwrap_or(&stored);
+    let asset_id = format!("questions-{}", filename_stem);
+    safe_asset_id(&asset_id).map_err(|_| "errors:media.saveFailed".to_string())?;
 
     let dir = config_root().join("media").join("questions");
     std::fs::create_dir_all(&dir).map_err(|_| "errors:media.saveFailed".to_string())?;
-    std::fs::write(dir.join(&stored), bytes).map_err(|_| "errors:media.saveFailed".to_string())?;
+    std::fs::write(dir.join(&stored), &webp_bytes)
+        .map_err(|_| "errors:media.saveFailed".to_string())?;
 
-    Ok(format!("/media/questions/{}", stored))
+    Ok(SavedUploadImage {
+        asset_id,
+        filename: stored.clone(),
+        url: format!("/media/questions/{}", stored),
+        size: webp_bytes.len() as i32,
+        width: width as i32,
+        height: height as i32,
+        bytes: webp_bytes,
+    })
 }

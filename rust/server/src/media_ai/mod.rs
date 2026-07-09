@@ -52,9 +52,10 @@ pub fn register(
     socket: &SocketRef,
     _registry: Arc<RwLock<GameRegistry>>,
     client_id: String,
+    db_pool: Option<sqlx::PgPool>,
 ) {
     handlers::register_generate_image(socket, client_id.clone());
     handlers::register_edit_image(socket, client_id.clone());
     handlers::register_enhance_prompt(socket, client_id.clone());
-    handlers::register_submit_upload_image(socket, client_id);
+    handlers::register_submit_upload_image(socket, client_id, db_pool);
 }
