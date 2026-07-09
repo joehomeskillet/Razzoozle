@@ -55,23 +55,25 @@ export const mediaSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MEDIA.DELETE,
     manager.withAuth(socket, (payload: unknown) => {
-      const result = mediaDeleteValidator.safeParse(payload)
+      void (async () => {
+        const result = mediaDeleteValidator.safeParse(payload)
 
-      if (!result.success) {
-        socket.emit(EVENTS.MEDIA.ERROR, result.error.issues[0].message)
+        if (!result.success) {
+          socket.emit(EVENTS.MEDIA.ERROR, result.error.issues[0].message)
 
-        return
-      }
+          return
+        }
 
-      try {
-        deleteMediaFile(result.data.id)
-        socket.emit(EVENTS.MEDIA.DATA, getMediaList())
-      } catch (error) {
-        socket.emit(
-          EVENTS.MEDIA.ERROR,
-          error instanceof Error ? error.message : "errors:media.notFound",
-        )
-      }
+        try {
+          await deleteMediaFile(result.data.id)
+          socket.emit(EVENTS.MEDIA.DATA, getMediaList())
+        } catch (error) {
+          socket.emit(
+            EVENTS.MEDIA.ERROR,
+            error instanceof Error ? error.message : "errors:media.notFound",
+          )
+        }
+      })()
     }),
   )
 }

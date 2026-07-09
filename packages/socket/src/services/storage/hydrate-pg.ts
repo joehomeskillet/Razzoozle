@@ -12,6 +12,7 @@ import { listAllAchievementsPg } from "@razzoozle/socket/services/storage/achiev
 import { listAllThemesPg } from "@razzoozle/socket/services/storage/theme-pg"
 import { listAllSoloResultsPg } from "@razzoozle/socket/services/storage/solo-results-pg"
 import { listThemeRevisionsPg } from "@razzoozle/socket/services/storage/theme-revisions-pg"
+import { hydrateMediaFromPg } from "@razzoozle/socket/services/storage/media-pg"
 
 interface HydrationStats {
   quizzes: number
@@ -25,6 +26,7 @@ interface HydrationStats {
   gameConfig: number
   soloResults: number
   themeRevisions: number
+  media: number
   errors: string[]
 }
 
@@ -448,6 +450,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
     gameConfig: 0,
     soloResults: 0,
     themeRevisions: 0,
+    media: 0,
     errors: [],
   }
 
@@ -462,6 +465,7 @@ export async function hydrateConfigFromPg(): Promise<void> {
   await hydrateAchievements(stats)
   await hydrateGameConfig(stats)
   await hydrateThemes(stats)
+  await hydrateMediaFromPg(stats)
 
   // Emit summary
   const summary =
@@ -475,7 +479,8 @@ export async function hydrateConfigFromPg(): Promise<void> {
     `${stats.achievements} achievements, ` +
     `${stats.themes} active-theme, ` +
     `${stats.templates} templates, ` +
-    `${stats.gameConfig} game-config`
+    `${stats.gameConfig} game-config, ` +
+    `${stats.media} media`
 
   if (stats.errors.length > 0) {
     console.warn(`${summary} — errors: ${stats.errors.join("; ")}`)

@@ -13,6 +13,8 @@ import fs from "fs"
 import { basename, extname, relative, resolve } from "path"
 import { nanoid } from "nanoid"
 import { assertSafeId, ensureDir, getPath } from "@razzoozle/socket/services/config/shared"
+import { insertMediaAssetPg, deleteMediaAssetPg } from "@razzoozle/socket/services/storage/media-pg"
+import { logger } from "@razzoozle/socket/services/logger"
 
 export const MEDIA_MANIFEST = "media-manifest.json"
 export const MEDIA_ROOT = "media"
@@ -20,6 +22,12 @@ const MEDIA_IMAGE_MIME = /^image\/(?:png|jpeg|webp)$/u
 export const MEDIA_AUDIO_MIME = /^audio\/(?:mpeg|mp3|wav|ogg)$/u
 const MEDIA_VIDEO_MIME = /^video\/(?:mp4|webm|ogg)$/u
 const DATA_URL_RE = /^data:([^;,]+);base64,(.+)$/u
+
+// Guard: write to PG when DATABASE_MODE is dual/pg/pg-only.
+const shouldWriteToPg = (): boolean => {
+  const mode = process.env.DATABASE_MODE?.toLowerCase()
+  return mode === "dual" || mode === "pg" || mode === "pg-only"
+}
 
 export const ensureMediaDirs = (): void => {
   ensureDir(getPath(MEDIA_ROOT))
@@ -308,7 +316,7 @@ export const saveMediaFile = async (
   // Pure-JS parse; null on an unrecognized buffer → dims are simply omitted.
   const dims = inferredType === "image" ? webpDimensions(output) : null
 
-  return upsertMediaMeta(
+  const meta = upsertMediaMeta(
     createMediaMeta({
       filename: storedFilename,
       category: resolvedCategory,
@@ -319,9 +327,24 @@ export const saveMediaFile = async (
       height: dims?.height,
     }),
   )
+
+  // WP-B — dual-write to PG when in DB mode (keep disk write for cache)
+  if (shouldWriteToPg()) {
+    try {
+      await insertMediaAssetPg(meta, output)
+    } catch (error) {
+      logger.error(
+        { err: error, mediaId: meta.id },
+        "saveMediaFile: PG insert failed (disk write succeeded)",
+      )
+      // Non-blocking: disk write succeeded, PG failure is logged but doesn't break upload
+    }
+  }
+
+  return meta
 }
 
-export const deleteMediaFile = (id: string): void => {
+export const deleteMediaFile = async (id: string): Promise<void> => {
   assertSafeId(id)
 
   const manifest = readMediaManifest()
@@ -338,6 +361,19 @@ export const deleteMediaFile = (id: string): void => {
   }
 
   writeMediaManifest(manifest.filter((entry) => entry.id !== id))
+
+  // WP-B — also delete from PG when in DB mode
+  if (shouldWriteToPg()) {
+    try {
+      await deleteMediaAssetPg(id)
+    } catch (error) {
+      logger.error(
+        { err: error, mediaId: id },
+        "deleteMediaFile: PG delete failed (disk delete succeeded)",
+      )
+      // Non-blocking: disk delete succeeded, PG failure is logged but doesn't break delete
+    }
+  }
 }
 
 export const saveEphemeralAvatar = async (
