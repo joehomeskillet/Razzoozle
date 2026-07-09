@@ -323,7 +323,7 @@ const RecapSequence = ({
           >
             <svg
               viewBox={ICON_VIEWBOX}
-              className="size-24 md:size-28 text-[color:var(--game-fg)] drop-shadow-lg"
+              className="size-24 md:size-28 text-[color:var(--color-primary)] drop-shadow-lg"
               aria-hidden
             >
               <path d={ICON_PATHS[RECAP_FINAL_GLYPH]} fill="currentColor" />

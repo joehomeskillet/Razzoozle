@@ -66,7 +66,7 @@ const Background = ({
           href="https://github.com/joehomeskillet/Razzoozle"
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 text-sm font-semibold text-white/50 transition-colors hover:text-white/80"
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 text-sm font-semibold text-[color:var(--color-primary)] transition hover:brightness-125"
         >
           <GithubIcon size={14} />
           {/* oxlint-disable-next-line no-undef */}
