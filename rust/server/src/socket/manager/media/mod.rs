@@ -20,20 +20,24 @@ mod files;
 pub fn to_webp(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), String> {
     // Decode image (PNG/JPEG/WebP only, enforced by Cargo.toml feature allowlist).
     // This will fail on formats outside the allowlist due to missing decoders.
-    let reader = ImageReader::new(Cursor::new(bytes))
+    let mut reader = ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|_| "errors:media.invalidDataUrl".to_string())?;
-    
+
+    // Enforce decode limits BEFORE decoding: the decoder rejects an oversized/
+    // decompression-bomb image DURING decode, before the full pixel buffer is
+    // allocated. A post-decode dimension check is too late — the OOM already happened.
+    let mut limits = image::io::Limits::default();
+    limits.max_image_width = Some(4096);
+    limits.max_image_height = Some(4096);
+    limits.max_alloc = Some(64 * 1024 * 1024);
+    reader.limits(limits);
+
     let img = reader.decode()
         .map_err(|_| "errors:media.invalidDataUrl".to_string())?;
 
     let width = img.width();
     let height = img.height();
-
-    // Sanity check: reject unreasonably large images (4096×4096 max for quiz media).
-    if width > 4096 || height > 4096 {
-        return Err("errors:media.invalidDataUrl".to_string());
-    }
 
     let rgba = img.to_rgba8();
     let mut output = Vec::new();
