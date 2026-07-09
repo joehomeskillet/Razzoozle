@@ -233,6 +233,17 @@ export const hydrateMediaFromPg = async (stats?: HydrationStats): Promise<void> 
     // Write each media file to disk (only if missing or size mismatch)
     let written = 0
     for (const asset of assets) {
+      // Path-traversal guard: validate category and filename
+      const isSafeSeg = (s: string): boolean =>
+        !!s && !s.includes("/") && !s.includes("\\") && s !== "." && s !== ".."
+      if (!isSafeSeg(asset.category) || !isSafeSeg(asset.filename)) {
+        logger.warn(
+          { id: asset.id, category: asset.category, filename: asset.filename },
+          "media-pg.hydrateMediaFromPg: rejecting unsafe path segment (traversal)",
+        )
+        continue
+      }
+
       const filePath = getPath(`media/${asset.category}/${asset.filename}`)
 
       // Check if file exists and has matching size
