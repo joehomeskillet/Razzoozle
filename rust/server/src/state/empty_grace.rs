@@ -26,7 +26,7 @@ impl GameRegistry {
     }
 
     /// Periodic cleanup: RESET + remove games that stayed empty past their grace window.
-    pub async fn cleanup_empty_games(&mut self, io: &SocketIo) {
+    pub fn cleanup_empty_games(&mut self, io: &SocketIo) {
         let now = get_now_ms();
 
         let mut to_reset_and_remove: Vec<String> = Vec::new();

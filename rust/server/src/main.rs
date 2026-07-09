@@ -233,7 +233,11 @@ async fn main() {
             loop {
                 interval.tick().await;
                 let mut reg = registry_clone.write().await;
-                reg.cleanup_empty_games(&io_clone).await;
+                if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    reg.cleanup_empty_games(&io_clone);
+                })) {
+                    tracing::error!("empty-grace reaper tick panicked (continuing): {:?}", e);
+                }
             }
         });
     }
