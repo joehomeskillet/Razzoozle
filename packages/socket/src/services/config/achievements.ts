@@ -59,9 +59,9 @@ export const getMergedAchievements = (): MergedAchievement[] =>
 // patch that only flips `enabled` keeps an existing name/description override),
 // validate the merged record, then safe-write it. ensureDir on the config root
 // so a fresh volume never errors on the first save.
-export const saveAchievementsConfig = (
+export const saveAchievementsConfig = async (
   patch: AchievementsConfig,
-): AchievementsConfig => {
+): Promise<AchievementsConfig> => {
   const current = getAchievementsConfig()
   const merged: AchievementsConfig = { ...current }
 
@@ -81,12 +81,18 @@ export const saveAchievementsConfig = (
     JSON.stringify(result.data, null, 2),
   )
 
+  // PG mirror writes. Awaited (each .catch below means the promise never
+  // rejects, so awaiting is always safe) so same-request read-backs
+  // (SET_ACHIEVEMENTS_CONFIG -> emitConfig) see the committed mirror.
   if (isDbBackedAchievementsMode()) {
-    for (const [id, override] of Object.entries(patch) as [string, AchievementsConfig[string]][]) {
-      upsertAchievementPg(id, override).catch((error) =>
-        console.error(`achievements-pg mirror write failed for "${id}":`, error),
-      )
-    }
+    await Promise.all(
+      (Object.entries(patch) as [string, AchievementsConfig[string]][]).map(
+        ([id, override]) =>
+          upsertAchievementPg(id, override).catch((error) =>
+            console.error(`achievements-pg mirror write failed for "${id}":`, error),
+          ),
+      ),
+    )
   }
 
   return result.data

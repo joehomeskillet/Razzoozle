@@ -190,7 +190,7 @@ export const handleSoloScore = (
       // SAFETY CAP: Ensure final score never exceeds theoretical maximum.
       const finalScore = Math.min(verifiedScore, theoreticalMax)
 
-      appendSoloResult(
+      await appendSoloResult(
         id!,
         {
           playerName,

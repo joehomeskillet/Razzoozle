@@ -30,7 +30,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.QUIZZ.SAVE,
     manager.withAuth(socket, async (data) => {
       try {
-        const { id } = saveQuizz(data)
+        const { id } = await saveQuizz(data)
 
         socket.emit(EVENTS.QUIZZ.SAVE_SUCCESS, { id })
         await emitConfig(socket)
@@ -47,7 +47,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.QUIZZ.DELETE,
     manager.withAuth(socket, async (id) => {
       try {
-        deleteQuizz(id)
+        await deleteQuizz(id)
 
         await emitConfig(socket)
       } catch (error) {
@@ -66,7 +66,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
         // normalizeFilename, so the original is left untouched.
         const { id: _sourceId, subject, ...rest } = await readQuizzById(id)
 
-        saveQuizz({ ...rest, subject: `${subject} (Kopie)` })
+        await saveQuizz({ ...rest, subject: `${subject} (Kopie)` })
 
         await emitConfig(socket)
       } catch (error) {
@@ -80,7 +80,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
     EVENTS.QUIZZ.UPDATE,
     manager.withAuth(socket, async ({ id, ...data }) => {
       try {
-        const { id: newId } = updateQuizz(id, data)
+        const { id: newId } = await updateQuizz(id, data)
 
         socket.emit(EVENTS.QUIZZ.UPDATE_SUCCESS, { id: newId })
         await emitConfig(socket)
@@ -109,7 +109,7 @@ export const quizzSocketHandlers = ({ socket }: SocketContext) => {
 
       try {
         assertSafeId(result.data.id)
-        setQuizzArchived(result.data.id, result.data.archived)
+        await setQuizzArchived(result.data.id, result.data.archived)
         await emitConfig(socket)
       } catch (error) {
         console.error("Failed to set quizz archived:", error)

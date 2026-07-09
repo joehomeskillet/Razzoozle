@@ -35,7 +35,7 @@ export const getGameConfig = (): GameConfig => {
   return gameConfigValidator.parse({})
 }
 
-export const updateGameConfig = (patch: {
+export const updateGameConfig = async (patch: {
   teamMode?: boolean
   // The `lowLatencyMode.enabled` master switch, flattened for the manager
   // toggle. Deep-merged below so the other lowLatencyMode sub-fields are kept.
@@ -43,7 +43,7 @@ export const updateGameConfig = (patch: {
   joinLocked?: boolean
   randomizeAnswers?: boolean
   scoringMode?: "speed" | "accuracy"
-}): GameConfig => {
+}): Promise<GameConfig> => {
   const current = getGameConfig()
   const { lowLatencyEnabled, ...flatPatch } = patch
   const merged = {
@@ -65,9 +65,11 @@ export const updateGameConfig = (patch: {
 
   fs.writeFileSync(getPath("game.json"), JSON.stringify(result.data, null, 2))
 
-  // Fire-and-forget PG mirror of the behavioral toggles (db-backed modes only),
-  // mirroring the submissions dual-write pattern. NEVER mirror managerPassword —
-  // Node auth + smoke read the password straight from PG.
+  // PG mirror of the behavioral toggles (db-backed modes only), mirroring the
+  // submissions dual-write pattern. NEVER mirror managerPassword — Node auth +
+  // smoke read the password straight from PG. Awaited (the .catch below means
+  // it never rejects, so awaiting is always safe) so same-request read-backs
+  // (SET_GAME_CONFIG -> emitConfig) see the committed mirror, not a stale read.
   const dbMode = process.env.DATABASE_MODE?.toLowerCase()
   if (dbMode === "dual" || dbMode === "pg" || dbMode === "pg-only") {
     const pgPatch: Record<string, unknown> = {}
@@ -79,7 +81,7 @@ export const updateGameConfig = (patch: {
     if (Object.keys(pgPatch).length > 0) {
       const { storageRepository } =
         require("@razzoozle/socket/services/storage") as typeof import("@razzoozle/socket/services/storage")
-      storageRepository()
+      await storageRepository()
         .updateGameConfig(pgPatch as Partial<GameConfig>)
         .catch((error) => console.error("game-config pg mirror failed", error))
     }

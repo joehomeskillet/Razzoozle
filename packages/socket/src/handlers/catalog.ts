@@ -36,7 +36,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
       }
 
       try {
-        saveCatalogEntry(result.data)
+        await saveCatalogEntry(result.data)
         socket.emit(EVENTS.CATALOG.ADD_SUCCESS)
         socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
       } catch (error) {
@@ -60,7 +60,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
       }
 
       try {
-        updateCatalogEntry(result.data.id, {
+        await updateCatalogEntry(result.data.id, {
           question: result.data.question,
           tags: result.data.tags,
         })
@@ -87,7 +87,7 @@ export const catalogSocketHandlers = ({ socket }: SocketContext) => {
       }
 
       try {
-        deleteCatalogEntry(result.data.id)
+        await deleteCatalogEntry(result.data.id)
         socket.emit(EVENTS.CATALOG.DATA, await readCatalog())
       } catch (error) {
         socket.emit(

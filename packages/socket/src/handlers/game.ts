@@ -503,7 +503,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       }
 
       try {
-        updateGameConfig(patch)
+        await updateGameConfig(patch)
         // Apply joinLocked live so the gate takes effect immediately (unlike
         // teamMode/lowLatencyEnabled which are snapshots read at game creation).
         if (patch.joinLocked !== undefined) {
@@ -543,7 +543,7 @@ export const gameSocketHandlers = ({ io, socket }: SocketContext) => {
       }
 
       try {
-        saveAchievementsConfig(config as AchievementsConfig)
+        await saveAchievementsConfig(config as AchievementsConfig)
         await emitConfig(socket)
       } catch (error) {
         // Validation (zod) or disk-write failure: log it and tell the manager —

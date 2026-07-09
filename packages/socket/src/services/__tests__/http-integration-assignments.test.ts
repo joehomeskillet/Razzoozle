@@ -51,7 +51,7 @@ describe("Assignment system (integration)", () => {
     // Create an assignment directly via saveAssignment
     const { saveQuizz, saveAssignment } = await import("@razzoozle/socket/services/config")
     const { EXAMPLE_QUIZZ } = await import("@razzoozle/common/constants")
-    const quizzResp = saveQuizz(EXAMPLE_QUIZZ)
+    const quizzResp = await saveQuizz(EXAMPLE_QUIZZ)
     const quizzId = quizzResp.id
 
     const assignmentId = "test-assignment-" + Date.now()
@@ -74,7 +74,7 @@ describe("Assignment system (integration)", () => {
     // Create an assignment with deadline in the PAST
     const { saveQuizz, saveAssignment } = await import("@razzoozle/socket/services/config")
     const { EXAMPLE_QUIZZ } = await import("@razzoozle/common/constants")
-    const quizzResp = saveQuizz(EXAMPLE_QUIZZ)
+    const quizzResp = await saveQuizz(EXAMPLE_QUIZZ)
     const quizzId = quizzResp.id
 
     const pastDeadline = Date.now() - 1000
@@ -103,7 +103,7 @@ describe("Assignment system (integration)", () => {
     // Create an assignment with future deadline
     const { saveQuizz, saveAssignment } = await import("@razzoozle/socket/services/config")
     const { EXAMPLE_QUIZZ } = await import("@razzoozle/common/constants")
-    const quizzResp = saveQuizz(EXAMPLE_QUIZZ)
+    const quizzResp = await saveQuizz(EXAMPLE_QUIZZ)
     const quizzId = quizzResp.id
 
     const futureDeadline = Date.now() + 7200000

@@ -45,7 +45,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
 
       try {
         assertSafeId(result.data.id)
-        updateSubmission(result.data.id, {
+        await updateSubmission(result.data.id, {
           question: result.data.question as Question,
         })
         await emitConfig(socket)
@@ -103,7 +103,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
             source: "submission",
           })
 
-          updateSubmission(result.data.id, { status: "approved" })
+          await updateSubmission(result.data.id, { status: "approved" })
           await emitConfig(socket)
 
           return
@@ -130,12 +130,12 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
           submittedBy: submission.submittedBy,
         }
 
-        updateQuizz(result.data.quizzId, {
+        await updateQuizz(result.data.quizzId, {
           subject: quizz.subject,
           questions: [...quizz.questions, updatedQuestion],
         })
 
-        updateSubmission(result.data.id, { status: "approved" })
+        await updateSubmission(result.data.id, { status: "approved" })
         await emitConfig(socket)
       } catch (error) {
         socket.emit(
@@ -182,7 +182,7 @@ export const registerModerationHandlers = ({ socket }: SocketContext) => {
           update.category = result.data.category
         }
 
-        updateSubmission(result.data.id, update)
+        await updateSubmission(result.data.id, update)
         await emitConfig(socket)
       } catch (error) {
         socket.emit(

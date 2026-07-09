@@ -79,7 +79,7 @@ export const getCatalogById = (id: string): CatalogEntry | null => {
 
 export const saveCatalogEntry = (
   payload: z.infer<typeof catalogAddValidator>,
-): CatalogEntry => {
+): Promise<CatalogEntry> => {
   // Re-validate the inbound payload so callers passing a hand-built object (e.g.
   // approve-to-catalog) get the SAME superRefine guarantees as a wire ADD.
   const parsed = catalogAddValidator.safeParse(payload)
@@ -127,25 +127,29 @@ export const saveCatalogEntry = (
     JSON.stringify(entry, null, 2),
   )
 
-  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  // PG mirror-write, guarded by DATABASE_MODE. Awaited (the .catch below means
+  // it never rejects, so awaiting is always safe) so same-request read-backs
+  // (CATALOG.ADD -> readCatalog) see the committed mirror, not a stale read.
   if (isDbBackedCatalogMode()) {
-    void upsertCatalogEntryPg(id, {
+    return upsertCatalogEntryPg(id, {
       question: entry.question,
       tags: entry.tags,
       source: entry.source,
       addedAt: entry.addedAt,
-    }).catch((error) =>
-      console.error("catalog.saveCatalogEntry: pg mirror failed", error),
-    )
+    })
+      .catch((error) =>
+        console.error("catalog.saveCatalogEntry: pg mirror failed", error),
+      )
+      .then(() => entry)
   }
 
-  return entry
+  return Promise.resolve(entry)
 }
 
 export const updateCatalogEntry = (
   id: string,
   data: { question: CatalogEntry["question"]; tags?: string[] },
-): CatalogEntry => {
+): Promise<CatalogEntry> => {
   assertSafeId(id)
 
   const existing = getCatalogById(id)
@@ -172,22 +176,26 @@ export const updateCatalogEntry = (
     JSON.stringify(entry, null, 2),
   )
 
-  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  // PG mirror-write, guarded by DATABASE_MODE. Awaited (the .catch below means
+  // it never rejects, so awaiting is always safe) so same-request read-backs
+  // (CATALOG.UPDATE -> readCatalog) see the committed mirror, not a stale read.
   if (isDbBackedCatalogMode()) {
-    void upsertCatalogEntryPg(id, {
+    return upsertCatalogEntryPg(id, {
       question: entry.question,
       tags: entry.tags,
       source: entry.source,
       addedAt: entry.addedAt,
-    }).catch((error) =>
-      console.error("catalog.updateCatalogEntry: pg mirror failed", error),
-    )
+    })
+      .catch((error) =>
+        console.error("catalog.updateCatalogEntry: pg mirror failed", error),
+      )
+      .then(() => entry)
   }
 
-  return entry
+  return Promise.resolve(entry)
 }
 
-export const deleteCatalogEntry = (id: string): void => {
+export const deleteCatalogEntry = (id: string): Promise<void> => {
   assertSafeId(id)
 
   const filePath = getPath(`catalog/${id}.json`)
@@ -198,10 +206,13 @@ export const deleteCatalogEntry = (id: string): void => {
 
   fs.unlinkSync(filePath)
 
-  // Fire-and-forget pg mirror-write, guarded by DATABASE_MODE.
+  // PG mirror-write, guarded by DATABASE_MODE. Awaited (the .catch below means
+  // it never rejects, so awaiting is always safe) so same-request read-backs
+  // (CATALOG.DELETE -> readCatalog) see the committed mirror, not a stale read.
   if (isDbBackedCatalogMode()) {
-    void deleteCatalogEntryPg(id).catch((error) =>
+    return deleteCatalogEntryPg(id).catch((error) =>
       console.error("catalog.deleteCatalogEntry: pg mirror failed", error),
     )
   }
+  return Promise.resolve()
 }

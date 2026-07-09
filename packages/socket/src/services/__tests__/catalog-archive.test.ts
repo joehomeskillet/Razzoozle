@@ -106,8 +106,8 @@ describe("setQuizzArchived + getQuizzMeta", () => {
 // ── Catalog CRUD ─────────────────────────────────────────────────────────────
 
 describe("catalog CRUD round-trip", () => {
-  it("saveCatalogEntry → getCatalog round-trip (id slug, source default, addedAt)", () => {
-    const entry = config.saveCatalogEntry({ question: validQuestion() })
+  it("saveCatalogEntry → getCatalog round-trip (id slug, source default, addedAt)", async () => {
+    const entry = await config.saveCatalogEntry({ question: validQuestion() })
 
     expect(entry.id).toMatch(/^[A-Za-z0-9_-]+$/)
     expect(entry.source).toBe("manual")
@@ -124,18 +124,18 @@ describe("catalog CRUD round-trip", () => {
     expect(onDisk).toEqual([`${entry.id}.json`])
   })
 
-  it("honours an explicit source (e.g. approve-to-catalog)", () => {
-    const entry = config.saveCatalogEntry({
+  it("honours an explicit source (e.g. approve-to-catalog)", async () => {
+    const entry = await config.saveCatalogEntry({
       question: validQuestion(),
       source: "submission",
     })
     expect(entry.source).toBe("submission")
   })
 
-  it("always yields distinct ids for repeated saves (normalizeFilename adds a random id)", () => {
-    const a = config.saveCatalogEntry({ question: validQuestion() })
-    const b = config.saveCatalogEntry({ question: validQuestion() })
-    const c = config.saveCatalogEntry({ question: validQuestion() })
+  it("always yields distinct ids for repeated saves (normalizeFilename adds a random id)", async () => {
+    const a = await config.saveCatalogEntry({ question: validQuestion() })
+    const b = await config.saveCatalogEntry({ question: validQuestion() })
+    const c = await config.saveCatalogEntry({ question: validQuestion() })
 
     expect(new Set([a.id, b.id, c.id]).size).toBe(3)
     expect(config.getCatalog()).toHaveLength(3)
@@ -157,9 +157,9 @@ describe("catalog CRUD round-trip", () => {
     const cfg = await import("@razzoozle/socket/services/config")
     cfg.initConfig()
 
-    const a = cfg.saveCatalogEntry({ question: validQuestion() })
-    const b = cfg.saveCatalogEntry({ question: validQuestion() })
-    const c = cfg.saveCatalogEntry({ question: validQuestion() })
+    const a = await cfg.saveCatalogEntry({ question: validQuestion() })
+    const b = await cfg.saveCatalogEntry({ question: validQuestion() })
+    const c = await cfg.saveCatalogEntry({ question: validQuestion() })
 
     expect(a.id).toBe("fixed-slug")
     expect(b.id).toBe("fixed-slug-2")
@@ -179,9 +179,9 @@ describe("catalog CRUD round-trip", () => {
     expect(config.getCatalog()).toHaveLength(0)
   })
 
-  it("updateCatalogEntry replaces the question + preserves id/addedAt", () => {
-    const entry = config.saveCatalogEntry({ question: validQuestion() })
-    const updated = config.updateCatalogEntry(entry.id, {
+  it("updateCatalogEntry replaces the question + preserves id/addedAt", async () => {
+    const entry = await config.saveCatalogEntry({ question: validQuestion() })
+    const updated = await config.updateCatalogEntry(entry.id, {
       question: validQuestion({ question: "What is the capital of Spain?" }),
       tags: ["geo"],
     })
@@ -202,11 +202,11 @@ describe("catalog CRUD round-trip", () => {
     ).toThrow("errors:catalog.notFound")
   })
 
-  it("deleteCatalogEntry removes the file", () => {
-    const entry = config.saveCatalogEntry({ question: validQuestion() })
+  it("deleteCatalogEntry removes the file", async () => {
+    const entry = await config.saveCatalogEntry({ question: validQuestion() })
     expect(config.getCatalog()).toHaveLength(1)
 
-    config.deleteCatalogEntry(entry.id)
+    await config.deleteCatalogEntry(entry.id)
     expect(config.getCatalog()).toHaveLength(0)
     expect(config.getCatalogById(entry.id)).toBeNull()
   })

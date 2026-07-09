@@ -103,7 +103,12 @@ export const getQuizz = () => {
   }
 }
 
-export const updateQuizz = (id: string, data: unknown): { id: string } => {
+// NOTE: kept a plain (non-async) function so validation/not-found errors still
+// throw SYNCHRONOUSLY (existing callers/tests rely on `expect(() =>
+// updateQuizz(...)).toThrow(...)`); only the trailing PG-mirror + resolved id
+// are wrapped in a Promise so same-request read-backs (emitConfig ->
+// readQuizzMeta) can await it (the .catch below means it never rejects).
+export const updateQuizz = (id: string, data: unknown): Promise<{ id: string }> => {
   assertSafeId(id)
 
   const result = quizzValidator.safeParse(data)
@@ -122,18 +127,18 @@ export const updateQuizz = (id: string, data: unknown): { id: string } => {
   fs.writeFileSync(oldPath, JSON.stringify(result.data, null, 2))
 
   if (isDbBackedQuizzMode()) {
-    updateQuizzPg(id, result.data).catch((error) =>
-      console.error(`quizz-pg mirror write failed for "${id}":`, error),
-    )
+    return updateQuizzPg(id, result.data)
+      .catch((error) => console.error(`quizz-pg mirror write failed for "${id}":`, error))
+      .then(() => ({ id }))
   }
 
-  return { id }
+  return Promise.resolve({ id })
 }
 
 // Archive toggle: flip the `archived` flag on a quizz without deleting it.
 // Reads the on-disk file through quizzValidator (so the rest of the record is
 // re-validated), sets the flag, and writes it back. assertSafeId guards the path.
-export const setQuizzArchived = (id: string, archived: boolean): void => {
+export const setQuizzArchived = (id: string, archived: boolean): Promise<void> => {
   assertSafeId(id)
 
   const filePath = getPath(`quizz/${id}.json`)
@@ -156,13 +161,14 @@ export const setQuizzArchived = (id: string, archived: boolean): void => {
   )
 
   if (isDbBackedQuizzMode()) {
-    setQuizzArchivedPg(id, archived).catch((error) =>
+    return setQuizzArchivedPg(id, archived).catch((error) =>
       console.error(`quizz-pg mirror archive failed for "${id}":`, error),
     )
   }
+  return Promise.resolve()
 }
 
-export const deleteQuizz = (id: string): void => {
+export const deleteQuizz = (id: string): Promise<void> => {
   assertSafeId(id)
 
   const filePath = getPath(`quizz/${id}.json`)
@@ -175,13 +181,14 @@ export const deleteQuizz = (id: string): void => {
   fs.unlinkSync(filePath)
 
   if (isDbBackedQuizzMode()) {
-    deleteQuizzPg(id).catch((error) =>
+    return deleteQuizzPg(id).catch((error) =>
       console.error(`quizz-pg mirror delete failed for "${id}":`, error),
     )
   }
+  return Promise.resolve()
 }
 
-export const saveQuizz = (data: unknown): { id: string } => {
+export const saveQuizz = (data: unknown): Promise<{ id: string }> => {
   const result = quizzValidator.safeParse(data)
 
   if (!result.success) {
@@ -194,10 +201,10 @@ export const saveQuizz = (data: unknown): { id: string } => {
   fs.writeFileSync(filePath, JSON.stringify(result.data, null, 2))
 
   if (isDbBackedQuizzMode()) {
-    updateQuizzPg(id, result.data).catch((error) =>
-      console.error(`quizz-pg mirror write failed for "${id}":`, error),
-    )
+    return updateQuizzPg(id, result.data)
+      .catch((error) => console.error(`quizz-pg mirror write failed for "${id}":`, error))
+      .then(() => ({ id }))
   }
 
-  return { id }
+  return Promise.resolve({ id })
 }
