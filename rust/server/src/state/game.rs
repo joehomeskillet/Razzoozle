@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use rand::Rng;
+use tracing::warn;
 
 use super::GAME_EVICTION_TTL_MS;
 
@@ -139,11 +140,22 @@ impl Game {
 
     /// Record the last status payload broadcast to the manager room.
     pub fn record_last_manager_status(&mut self, status: &GameStatus) {
-        if let Ok(val) = serde_json::to_value(status) {
-            if let (Some(name_val), Some(data)) = (val.get("name"), val.get("data")) {
-                if let Ok(s) = serde_json::from_value::<Status>(name_val.clone()) {
-                    self.last_manager_status = Some((s, data.clone()));
-                }
+        let Ok(val) = serde_json::to_value(status) else {
+            warn!("record_last_manager_status: failed to serialize status, reconnect replay will be stale");
+            return;
+        };
+        
+        let (Some(name_val), Some(data)) = (val.get("name"), val.get("data")) else {
+            warn!("record_last_manager_status: missing 'name' or 'data' field, reconnect replay will be stale");
+            return;
+        };
+        
+        match serde_json::from_value::<Status>(name_val.clone()) {
+            Ok(s) => {
+                self.last_manager_status = Some((s, data.clone()));
+            }
+            Err(_) => {
+                warn!("record_last_manager_status: unserializable status name, reconnect replay will be stale");
             }
         }
     }
