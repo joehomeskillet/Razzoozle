@@ -1,5 +1,5 @@
 use crate::bot::BotManager;
-use razzoozle_engine::state::GameState;
+use razzoozle_engine::state::{GamePhase, GameState};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use razzoozle_protocol::status::{GameStatus, RoundRecapAward, ShowResultData, Status};
@@ -154,6 +154,29 @@ impl Game {
             .ok()
             .and_then(|v| v.as_str().map(str::to_string))
             .unwrap_or_else(|| "WAIT".to_string())
+    }
+
+    /// Wire-format status name from the live engine phase (manager reconnect).
+    pub fn phase_wire_name(phase: GamePhase) -> String {
+        match phase {
+            GamePhase::ShowRoom => "WAIT".to_string(),
+            GamePhase::ShowStart => "SHOW_START".to_string(),
+            GamePhase::ShowQuestion => "SHOW_QUESTION".to_string(),
+            GamePhase::SelectAnswer => "SELECT_ANSWER".to_string(),
+            GamePhase::ShowResult => "SHOW_RESULT".to_string(),
+            GamePhase::ShowRoundRecap => "SHOW_ROUND_RECAP".to_string(),
+            GamePhase::ShowLeaderboard => "SHOW_LEADERBOARD".to_string(),
+            GamePhase::Finished => "FINISHED".to_string(),
+        }
+    }
+
+    /// Status block for manager:successReconnect — name from live phase; full
+    /// per-phase data unavailable since lifecycle status recording was removed.
+    pub fn manager_reconnect_status(&self) -> (String, serde_json::Value) {
+        (
+            Self::phase_wire_name(self.engine.phase),
+            serde_json::json!({ "text": "game:waitingForPlayers" }),
+        )
     }
 
     /// Arm a fresh abort signal for a new abortable wait, returning the handle

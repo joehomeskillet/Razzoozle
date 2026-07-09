@@ -4,7 +4,6 @@ use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
 use crate::http::RATE_LIMITER;
-use crate::state::Game;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -238,29 +237,22 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 }
 
-                let (game_id, players, current_question_index, total_questions, last_manager_status) = {
+                let (game_id, players, current_question_index, total_questions, reconnect_status) = {
                     let mut game = game_ref.lock().unwrap();
                     game.manager_socket_id = new_socket_id;
+                    let reconnect_status = game.manager_reconnect_status();
                     (
                         game.game_id.clone(),
                         game.players.clone(),
                         game.engine.current_question_index,
                         game.engine.quiz.questions.len(),
-                        game.last_manager_status.clone(),
+                        reconnect_status,
                     )
                 };
 
                 socket.join(game_id.clone());
 
-                let (status_name, status_data) = last_manager_status
-                    .as_ref()
-                    .map(|(status, data)| (Game::status_wire_name(status), data.clone()))
-                    .unwrap_or_else(|| {
-                        (
-                            "WAIT".to_string(),
-                            serde_json::json!({ "text": "game:waitingForPlayers" }),
-                        )
-                    });
+                let (status_name, status_data) = reconnect_status;
 
                 // currentQuestion mirrors Node's round.getReconnectInfo()
                 // ({current: index+1, total}) — trivially available from the

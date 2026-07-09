@@ -52,6 +52,8 @@ impl BotManager {
             let io_task = io.clone();
             let game_id_task = game_id.clone();
 
+            let pending = Arc::clone(&self.pending);
+            let client_id_cleanup = bot.client_id.clone();
             let handle = tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                 submit_bot_answer(
@@ -64,6 +66,7 @@ impl BotManager {
                     answer_text,
                 )
                 .await;
+                pending.lock().unwrap().remove(&client_id_cleanup);
             });
 
             self.pending
@@ -281,6 +284,17 @@ async fn submit_bot_answer(
         if game.engine.phase == GamePhase::SelectAnswer {
             game.signal_abort();
         }
+    }
+}
+
+#[cfg(test)]
+impl BotManager {
+    pub fn pending_count(&self) -> usize {
+        self.pending.lock().unwrap().len()
+    }
+
+    pub fn set_bot_speed(&self, client_id: &str, speed: f32) {
+        self.speed.lock().unwrap().insert(client_id.to_string(), speed);
     }
 }
 

@@ -1,8 +1,15 @@
 use super::*;
 
+use crate::bot::BotManager;
+use razzoozle_engine::state::GamePhase;
+use razzoozle_protocol::constants::Bot;
+use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
+use razzoozle_protocol::status::Status;
+use socketioxide::SocketIo;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 #[test]
 fn test_validate_username() {
@@ -61,6 +68,33 @@ fn seed_quiz(registry: &mut GameRegistry, id: &str, quiz: Quizz) {
     let mut quizzes = HashMap::new();
     quizzes.insert(id.to_string(), quiz);
     registry.reload_quizzes(quizzes);
+}
+
+fn test_quiz() -> Quizz {
+    QuizFixture::load().expect("fixture quiz loads")
+}
+
+fn make_socket_io() -> SocketIo {
+    let (_layer, io) = SocketIo::builder().build_layer();
+    io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+    io
+}
+
+fn test_bot_player(client_id: &str) -> Player {
+    Player {
+        id: format!("socket-{client_id}"),
+        client_id: client_id.to_string(),
+        connected: true,
+        username: "Bot".to_string(),
+        points: 0,
+        streak: 0,
+        player_token: None,
+        is_bot: Some(true),
+        avatar: None,
+        achievements: None,
+        team_id: None,
+        identifier_hash: None,
+    }
 }
 
 #[test]
@@ -318,4 +352,194 @@ fn test_per_ip_auth_throttle() {
 
     // IP 2 should have independent limit
     assert!(!rate_limiter.record_auth_failure_and_check_throttle("192.168.1.2"), "IP2 should not be throttled");
+}
+
+#[tokio::test(start_paused = true)]
+async fn test_empty_grace_mark_reactivate_cleanup() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            false,
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+    }
+
+    registry.mark_game_as_empty(game_id.clone());
+    assert!(
+        registry.empty_games_contains(&game_id),
+        "marked game should be in empty_games"
+    );
+
+    registry.reactivate_game(game_id.clone());
+    assert!(
+        !registry.empty_games_contains(&game_id),
+        "reactivate_game should remove the game from empty_games"
+    );
+
+    registry.mark_game_as_empty(game_id.clone());
+    let io = make_socket_io();
+
+    registry.backdate_empty_game_mark(&game_id, 59_000);
+    registry.cleanup_empty_games(&io);
+    assert!(
+        registry.get_game_by_id(&game_id).is_some(),
+        "59s past mark is still inside the 5-min started-game grace window"
+    );
+
+    registry.backdate_empty_game_mark(&game_id, 301_000);
+    registry.cleanup_empty_games(&io);
+    assert!(
+        registry.get_game_by_id(&game_id).is_none(),
+        "301s past mark should trigger remove_game after grace expires"
+    );
+    assert_eq!(registry.game_count(), 0);
+}
+
+#[test]
+fn test_manager_reconnect_no_stale_status() {
+    let quiz = test_quiz();
+    let mut game = Game::new(
+        "game-reconnect".to_string(),
+        "INVITE".to_string(),
+        "manager-socket".to_string(),
+        quiz,
+    );
+    game.manager_client_id = Some("manager-client".to_string());
+    game.add_player(
+        "player-socket".to_string(),
+        "player-client".to_string(),
+        "Alice".to_string(),
+        None,
+    )
+    .unwrap();
+    game.engine.start().unwrap();
+
+    assert_eq!(game.engine.phase, GamePhase::ShowStart);
+
+    // Stale snapshot GAP 1 would have left behind — must not leak into reconnect.
+    game.last_manager_status = Some((
+        Status::SelectAnswer,
+        serde_json::json!({ "time": 10, "totalPlayers": 1 }),
+    ));
+
+    let (status_name, status_data) = game.manager_reconnect_status();
+
+    assert_eq!(status_name, Game::phase_wire_name(game.engine.phase));
+    assert_ne!(status_name, "SELECT_ANSWER", "must not replay stale SELECT_ANSWER");
+    assert_eq!(
+        status_data,
+        serde_json::json!({ "text": "game:waitingForPlayers" })
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn test_bot_manager_schedule_and_cancel() {
+    let quiz = test_quiz();
+    let question = quiz.questions[0].clone();
+    let game_ref = Arc::new(Mutex::new(Game::new(
+        "game-bot".to_string(),
+        "BOTS".to_string(),
+        "manager-socket".to_string(),
+        quiz,
+    )));
+    {
+        let mut game = game_ref.lock().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+    }
+
+    let io = make_socket_io();
+    let bot_manager = BotManager::new();
+    let bot_client_id = "bot-client-1";
+    bot_manager.add_bot_speed(bot_client_id.to_string());
+    bot_manager.set_bot_speed(bot_client_id, 0.0);
+
+    let bot = test_bot_player(bot_client_id);
+    bot_manager
+        .schedule_answers(
+            "game-bot".to_string(),
+            vec![bot],
+            question,
+            game_ref.clone(),
+            io.clone(),
+        )
+        .await;
+
+    assert_eq!(bot_manager.pending_count(), 1, "schedule_answers should register a pending task");
+
+    for _ in 0..20 {
+        tokio::time::advance(Duration::from_millis(Bot::MIN_DELAY_MS / 4 + 1)).await;
+        if bot_manager.pending_count() == 0 {
+            break;
+        }
+        tokio::task::yield_now().await;
+    }
+
+    assert_eq!(
+        bot_manager.pending_count(),
+        0,
+        "pending entry should clear after the scheduled delay fires"
+    );
+
+    bot_manager.add_bot_speed(bot_client_id.to_string());
+    bot_manager.set_bot_speed(bot_client_id, 0.0);
+    bot_manager
+        .schedule_answers(
+            "game-bot".to_string(),
+            vec![test_bot_player(bot_client_id)],
+            game_ref.lock().unwrap().engine.quiz.questions[0].clone(),
+            game_ref.clone(),
+            io.clone(),
+        )
+        .await;
+    assert_eq!(bot_manager.pending_count(), 1);
+
+    bot_manager.cancel_pending(Some(bot_client_id)).await;
+    assert_eq!(
+        bot_manager.pending_count(),
+        0,
+        "cancel_pending(Some(id)) should clear that bot's pending task immediately"
+    );
+
+    let bot_a = test_bot_player("bot-a");
+    let bot_b = test_bot_player("bot-b");
+    let question_multi = game_ref.lock().unwrap().engine.quiz.questions[0].clone();
+    bot_manager.add_bot_speed("bot-a".to_string());
+    bot_manager.add_bot_speed("bot-b".to_string());
+    bot_manager.set_bot_speed("bot-a", 0.5);
+    bot_manager.set_bot_speed("bot-b", 0.5);
+    bot_manager
+        .schedule_answers(
+            "game-bot".to_string(),
+            vec![bot_a, bot_b],
+            question_multi,
+            game_ref,
+            io,
+        )
+        .await;
+    assert_eq!(bot_manager.pending_count(), 2);
+
+    bot_manager.cancel_pending(None).await;
+    assert_eq!(
+        bot_manager.pending_count(),
+        0,
+        "cancel_pending(None) should clear all pending bot tasks"
+    );
 }
