@@ -235,21 +235,28 @@ async fn open_question(
             &GameUpdateQuestion { current, total },
         )
         .ok();
+    let prepared_status = GameStatus::ShowPrepared(ShowPreparedData {
+        total_answers,
+        question_number: current,
+    });
     io.to(game_id.to_string())
-        .emit(
-            constants::game::STATUS,
-            &GameStatus::ShowPrepared(ShowPreparedData {
-                total_answers,
-                question_number: current,
-            }),
-        )
+        .emit(constants::game::STATUS, &prepared_status)
         .ok();
+    {
+        let mut game = game_ref.lock().unwrap();
+        game.record_last_manager_status(&prepared_status);
+    }
 
     tokio::time::sleep(Duration::from_secs(PREPARED_DWELL_SECS)).await;
 
+    let show_question_status = GameStatus::ShowQuestion(show_data);
     io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &GameStatus::ShowQuestion(show_data))
+        .emit(constants::game::STATUS, &show_question_status)
         .ok();
+    {
+        let mut game = game_ref.lock().unwrap();
+        game.record_last_manager_status(&show_question_status);
+    }
 
     let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
         let mut game = game_ref.lock().unwrap();
@@ -285,9 +292,14 @@ async fn open_question(
         deadline_ms,
         server_seq,
     );
+    let select_status = GameStatus::SelectAnswer(select_data);
     io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
+        .emit(constants::game::STATUS, &select_status)
         .ok();
+    {
+        let mut game = game_ref.lock().unwrap();
+        game.record_last_manager_status(&select_status);
+    }
 
     true
 }
