@@ -106,7 +106,9 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
     let url = format!("/media/backgrounds/{}", filename);
     let asset_id = format!("backgrounds-{}", filename.replace(".", "-"));
     let uploaded_at = Utc::now();
-    let _ = db::insert_media_asset(
+    // Dual-write is non-blocking (disk already written above), but a failed PG
+    // write must NOT be silent — pg_dump would otherwise be an incomplete SSOT.
+    if let Err(e) = db::insert_media_asset(
         db_pool,
         &asset_id,
         &filename,
@@ -119,7 +121,9 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
         None,
         uploaded_at,
         &buffer,
-    ).await;
+    ).await {
+        eprintln!("Failed to persist background media asset {} to DB: {}", asset_id, e);
+    }
 
     Ok(format!("/media/backgrounds/{}", filename))
 }
@@ -190,7 +194,9 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -
     let url = format!("/media/sounds/{}", filename);
     let asset_id = format!("audio-{}", filename.replace(".", "-"));
     let uploaded_at = Utc::now();
-    let _ = db::insert_media_asset(
+    // Dual-write is non-blocking (disk already written above), but a failed PG
+    // write must NOT be silent — pg_dump would otherwise be an incomplete SSOT.
+    if let Err(e) = db::insert_media_asset(
         db_pool,
         &asset_id,
         &filename,
@@ -203,7 +209,9 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -
         None,
         uploaded_at,
         &buffer,
-    ).await;
+    ).await {
+        eprintln!("Failed to persist sound media asset {} to DB: {}", asset_id, e);
+    }
 
     Ok(format!("/media/sounds/{}", filename))
 }
