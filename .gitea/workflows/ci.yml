@@ -41,6 +41,7 @@ jobs:
         run: corepack pnpm -r run types
 
       - name: Lint (warn-only)
+        continue-on-error: true
         run: corepack pnpm lint
 
   unit:
@@ -72,6 +73,10 @@ jobs:
         run: CI=true corepack pnpm --filter @razzoozle/socket exec vitest run
 
   rust:
+    # DORMANT until a rust-ci runner is provisioned: runner ubusrv01 has no
+    # `rust-ci` label and /ci-cache does not exist — the job would queue forever.
+    # The rust gate remains the local pre-merge `rust/gate.sh`.
+    if: ${{ false }}
     name: rust gate
     needs: lint-typecheck
     # The rust-ci self-hosted runner image already ships the Rust toolchain plus
