@@ -36,6 +36,7 @@ import {
 import { logger, socketLogger } from "@razzoozle/socket/services/logger"
 import { connectedSockets } from "@razzoozle/socket/services/prom"
 import { hydrateConfigFromPg } from "@razzoozle/socket/services/storage/hydrate-pg"
+import { hydratePluginsFromPg } from "@razzoozle/socket/services/storage/plugins-pg"
 import { createServer } from "http"
 import { Server as ServerIO } from "socket.io"
 
@@ -139,6 +140,14 @@ void registry
 
     registry.startSnapshotTask()
   })
+
+// Boot-hydrate plugins from Postgres BEFORE loading them into the runtime.
+// This reconstructs config/plugins/index.json + plugin files from DB, so the
+// runtime import sees fresh files. Empty-guard inside the hydrate function
+// prevents nuking an existing plugin dir if PG is empty. Non-blocking.
+void hydratePluginsFromPg().catch((error: unknown) => {
+  logger.error({ err: error }, "hydratePluginsFromPg failed")
+})
 
 // Load every enabled plugin that declares a server hook (manifest hooks.server
 // + the SERVER_HANDLER capability). Fully crash-isolated per plugin — a broken
