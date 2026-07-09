@@ -9,3 +9,8 @@ docs
 .screenshots
 rust/target
 **/target
+config
+postgres-data
+scratchpad
+.env
+.env.postgres

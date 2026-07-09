@@ -2,11 +2,50 @@
 
 This is **Razzoozle**, a fork of [Razzia](https://github.com/Ralex91/Razzia) (a
 Kahoot-style live quiz). It documents the changes this fork carries **beyond
-upstream** — it is not the upstream changelog. Razzoozle runs as a single Docker
-image (nginx + node socket + supervisord) behind a reverse proxy; the reference
-deployment is `razzoozle.joelduss.xyz`.
+upstream** — it is not the upstream changelog. Razzoozle ships two interchangeable
+backends (Rust and Node) as Docker Compose stacks behind a reverse proxy; the
+reference deployment is `razzoozle.joelduss.xyz`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [2.0.0] — 2026-07-09
+
+**The 2.0 milestone.** The Rust backend reaches full gameplay parity and the
+repository is streamlined so anyone can self-host it without development ballast.
+
+### Added
+
+- **Rust backend at parity** — every one of the 82 client→server socket events
+  (gameplay, scoring, manager, player, display, media/AI, achievements, recap) is
+  handled by the Rust `axum` + `socketioxide` server alongside the Node.js server.
+  Both speak the same protocol over one shared Postgres database.
+- **Two self-contained Docker Compose stacks** — `compose.node.yml` and
+  `compose.rust.yml`, each bringing its own Postgres and running independently
+  (distinct project names, ports and volumes) so both backends can run side by
+  side for parity testing. Modern spec: build blocks, healthchecks, named volumes,
+  `${VAR:-default}` env, and one-time schema apply via Postgres
+  `docker-entrypoint-initdb.d`. nginx proxies `/_rust/*` to the Rust service.
+
+### Changed
+
+- **Slim, honest README** (6 languages) — trimmed to a one-line pitch, a
+  quickstart, a focused feature list and a single truthful backend-parity
+  statement; Rust internals moved to `rust/README.md`.
+- **Node is the default backend for a bare `docker build`** so the standalone
+  image works without an external reverse proxy; the compose files set the
+  backend explicitly.
+- The Rust image no longer bundles the git-ignored `config/quizz`, so a fresh
+  clone builds with no host-only runtime data.
+
+### Removed
+
+- **Development ballast** (~55 files) — Rust-port spikes, host-specific
+  ops/deploy scripts and systemd units, one-time file→Postgres migration scripts,
+  an internal ADR, and the stale v1.1 release notes.
+- **Brand backgrounds + theme presets** from `branding/` (the logos are kept);
+  the app seeds a neutral default when they are absent.
+- The obsolete single-image `compose.yml` and the separate
+  `docker-compose.postgres.yml`, replaced by the two stacks above.
 
 ## [1.2.0] — 2026-06-19
 

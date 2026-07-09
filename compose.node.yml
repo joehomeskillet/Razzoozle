@@ -1,0 +1,72 @@
+# Razzoozle — Node backend test system.
+#
+# Self-contained: one app image (nginx serving the web build + the Node socket
+# server) plus its own Postgres. The web client talks to the Node backend over
+# nginx's /ws proxy — no extra services needed.
+#
+#   docker compose -f compose.node.yml up -d      ->  http://127.0.0.1:3010
+#   docker compose -f compose.node.yml down       (add -v to also drop the DB)
+#
+# Runs independently of compose.rust.yml (distinct project name, ports and
+# volumes), so both backends can run side by side for parity testing.
+#
+# First run: open the app, log in with the default manager password and change
+# it. Put a reverse proxy (Caddy/Traefik/nginx) in front for anything public.
+name: razzoozle-node
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        VITE_DEFAULT_BACKEND: node
+    image: razzoozle-node:2.0
+    restart: unless-stopped
+    ports:
+      - "${NODE_PORT:-3010}:3000"
+    environment:
+      # Storage backend: file (no DB) | dual (file+pg) | pg | pg-only.
+      # 'file' works with no Postgres at all; drop the postgres service then.
+      DATABASE_MODE: ${DATABASE_MODE:-pg}
+      DATABASE_URL: postgres://razzoozle:${POSTGRES_PASSWORD:-razzoozle}@postgres:5432/razzoozle
+      # 1 enables scripted bot opponents (dev/testing only).
+      RAHOOT_SIM_MODE: ${RAHOOT_SIM_MODE:-0}
+      # Optional AI image generation via a ComfyUI reachable from the host.
+      COMFYUI_URL: ${COMFYUI_URL:-http://host.docker.internal:8188}
+    volumes:
+      # The image self-seeds branding/theme/example-plugin into a fresh volume
+      # on boot, so no host directory preparation is needed.
+      - config:/app/config
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 15s
+      timeout: 3s
+      start_period: 25s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: razzoozle
+      POSTGRES_USER: razzoozle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-razzoozle}
+    volumes:
+      - db:/var/lib/postgresql/data
+      # Schema is applied once on first initialisation (the app does not
+      # self-migrate). Idempotent SQL, run in filename order 001..006.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U razzoozle -d razzoozle"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  config:
+  db:

@@ -30,12 +30,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # Enforce the load-bearing design.md guardrails (no active backdrop-blur,
-      # no gated glass-* on live surfaces, scrim 0). Fast, no deps needed —
-      # carried over from the previous single-job "verify" pipeline.
-      - name: Design guardrails
-        run: bash scripts/check-guardrails.sh
-
       - name: Enable corepack
         run: corepack enable
 

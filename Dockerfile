@@ -4,7 +4,11 @@ RUN npm install -g pnpm@11.5.1
 
 # ---- BUILDER ----
 FROM base AS builder
-ARG VITE_DEFAULT_BACKEND=rust
+# Default to the self-contained Node backend so a bare `docker build .` yields a
+# working standalone image (nginx proxies the in-container node socket at /ws).
+# The compose files override this: compose.node.yml -> node, compose.rust.yml ->
+# rust (which also runs the rust service + an nginx /_rust proxy).
+ARG VITE_DEFAULT_BACKEND=node
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
