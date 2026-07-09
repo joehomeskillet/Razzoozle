@@ -242,10 +242,6 @@ async fn open_question(
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, &prepared_status)
         .ok();
-    {
-        let mut game = game_ref.lock().unwrap();
-        game.record_last_manager_status(&prepared_status);
-    }
 
     tokio::time::sleep(Duration::from_secs(PREPARED_DWELL_SECS)).await;
 
@@ -253,10 +249,6 @@ async fn open_question(
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, &show_question_status)
         .ok();
-    {
-        let mut game = game_ref.lock().unwrap();
-        game.record_last_manager_status(&show_question_status);
-    }
 
     let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
         let mut game = game_ref.lock().unwrap();
@@ -296,10 +288,6 @@ async fn open_question(
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, &select_status)
         .ok();
-    {
-        let mut game = game_ref.lock().unwrap();
-        game.record_last_manager_status(&select_status);
-    }
 
     let (bot_manager, bots) = {
         let game = game_ref.lock().unwrap();
