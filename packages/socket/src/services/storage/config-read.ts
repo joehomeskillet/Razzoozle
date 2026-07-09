@@ -223,3 +223,12 @@ export const readThemeRevisions = async (): Promise<ThemeRevision[]> =>
 
 export const readThemeRevisionById = async (id: string): Promise<ThemeRevision | null> =>
   dbReadMode() ? getThemeRevisionByIdPg(id) : getThemeRevisionById(id)
+
+// ---- media ----------------------------------------------------------------
+
+import { listMediaAssetsPg } from "@razzoozle/socket/services/storage/media-pg"
+import { getMediaList } from "@razzoozle/socket/services/config/media"
+import type { MediaMeta } from "@razzoozle/common/types/media"
+
+export const readMediaList = async (): Promise<MediaMeta[]> =>
+  dbReadMode() ? listMediaAssetsPg() : getMediaList()

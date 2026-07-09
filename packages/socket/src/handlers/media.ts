@@ -6,9 +6,9 @@ import {
 import type { SocketContext } from "@razzoozle/socket/handlers/types"
 import {
   deleteMediaFile,
-  getMediaList,
   saveMediaFile,
 } from "@razzoozle/socket/services/config"
+import { readMediaList } from "@razzoozle/socket/services/storage/config-read"
 import manager from "@razzoozle/socket/services/manager"
 
 // Media manager. ALL events are auth-gated (manager only). LIST emits the
@@ -17,8 +17,8 @@ import manager from "@razzoozle/socket/services/manager"
 export const mediaSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MEDIA.LIST,
-    manager.withAuth(socket, () => {
-      socket.emit(EVENTS.MEDIA.DATA, getMediaList())
+    manager.withAuth(socket, async () => {
+      socket.emit(EVENTS.MEDIA.DATA, await readMediaList())
     }),
   )
 
@@ -41,7 +41,7 @@ export const mediaSocketHandlers = ({ socket }: SocketContext) => {
             result.data.category,
           )
           socket.emit(EVENTS.MEDIA.UPLOAD_SUCCESS)
-          socket.emit(EVENTS.MEDIA.DATA, getMediaList())
+          socket.emit(EVENTS.MEDIA.DATA, await readMediaList())
         } catch (error) {
           socket.emit(
             EVENTS.MEDIA.ERROR,
@@ -55,23 +55,25 @@ export const mediaSocketHandlers = ({ socket }: SocketContext) => {
   socket.on(
     EVENTS.MEDIA.DELETE,
     manager.withAuth(socket, (payload: unknown) => {
-      const result = mediaDeleteValidator.safeParse(payload)
+      void (async () => {
+        const result = mediaDeleteValidator.safeParse(payload)
 
-      if (!result.success) {
-        socket.emit(EVENTS.MEDIA.ERROR, result.error.issues[0].message)
+        if (!result.success) {
+          socket.emit(EVENTS.MEDIA.ERROR, result.error.issues[0].message)
 
-        return
-      }
+          return
+        }
 
-      try {
-        deleteMediaFile(result.data.id)
-        socket.emit(EVENTS.MEDIA.DATA, getMediaList())
-      } catch (error) {
-        socket.emit(
-          EVENTS.MEDIA.ERROR,
-          error instanceof Error ? error.message : "errors:media.notFound",
-        )
-      }
+        try {
+          await deleteMediaFile(result.data.id)
+          socket.emit(EVENTS.MEDIA.DATA, await readMediaList())
+        } catch (error) {
+          socket.emit(
+            EVENTS.MEDIA.ERROR,
+            error instanceof Error ? error.message : "errors:media.notFound",
+          )
+        }
+      })()
     }),
   )
 }
