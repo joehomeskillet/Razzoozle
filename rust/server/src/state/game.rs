@@ -1,8 +1,8 @@
 use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
-use razzoozle_protocol::status::Status;
-use razzoozle_protocol::status::RoundRecapAward;
+use razzoozle_protocol::status::{RoundRecapAward, ShowResultData, Status};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
@@ -53,6 +53,14 @@ pub struct Game {
     pub paused: bool,
     // Snapshot of the status + data at the time of pause, for replay on resume
     pub paused_state: Option<(Status, serde_json::Value)>,
+    // Absolute server deadline (ms since UNIX epoch) for the current question's
+    // answer window. Set when a question opens; adjustTimer shifts it.
+    pub deadline_ms: i64,
+    // Wakes lifecycle dwell pause-loops on resume (separate from cooldown_abort).
+    pub pause_resume: Arc<tokio::sync::Notify>,
+    // Per-player SHOW_RESULT payloads cached at reveal time — used by setAuto to
+    // re-emit with autoAdvanceMs when auto-mode is toggled mid-result-screen.
+    pub last_show_result_data: HashMap<String, ShowResultData>,
     // Low-latency playerAnswer coalesce flag: prevents multiple PLAYER_ANSWER
     // emits within the throttle window (100ms). Leading-edge sets true, trailing
     // Per-round recap awards to be emitted via SHOW_ROUND_RECAP phase
@@ -93,6 +101,9 @@ impl Game {
             cooldown_abort: None,
             paused: false,
             paused_state: None,
+            deadline_ms: 0,
+            pause_resume: Arc::new(tokio::sync::Notify::new()),
+            last_show_result_data: HashMap::new(),
             answer_count_push_pending: false,
         }
     }
