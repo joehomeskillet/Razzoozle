@@ -201,6 +201,17 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
             continue;
         };
 
+
+        // Path traversal guard: reject unsafe paths
+        if rel_path.is_empty()
+            || rel_path.starts_with('/')
+            || rel_path.split('/').any(|c| c == ".." || c.is_empty())
+        {
+            eprintln!("media hydrate: rejecting unsafe path from url '{}' (traversal/absolute)", url);
+            continue;
+        }
+
+
         let file_path = format!("{}/{}", media_base, rel_path);
 
         // Check if file exists and has matching size
