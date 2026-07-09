@@ -60,7 +60,7 @@ const isDbBackedSoloMode = (): boolean => {
   return mode === "dual" || mode === "pg" || mode === "pg-only"
 }
 
-export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId?: string): void => {
+export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId?: string): Promise<void> => {
   assertSafeId(id)
 
   const dir = getPath("solo-results")
@@ -82,10 +82,14 @@ export const appendSoloResult = (id: string, entry: SoloScoreEntry, assignmentId
     JSON.stringify(capped, null, 2),
   )
 
-  // Fire-and-forget PG mirror write
+  // PG mirror write. Callers that await this get read-your-write consistency
+  // against the PG-native read path; callers that don't await keep today's
+  // fire-and-forget behavior (the .catch below means the promise never
+  // rejects, so awaiting it is always safe).
   if (isDbBackedSoloMode()) {
-    insertSoloResultPg(id, entry).catch((error) =>
+    return insertSoloResultPg(id, entry).catch((error) =>
       console.error("solo-results-pg mirror failed", error),
     )
   }
+  return Promise.resolve()
 }

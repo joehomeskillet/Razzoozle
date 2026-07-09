@@ -131,7 +131,7 @@ export const getSubmissionById = (id: string): Submission | null => {
 export const updateSubmission = (
   id: string,
   data: Partial<Submission>,
-): void => {
+): Promise<void> => {
   assertSafeId(id)
 
   const existing = getSubmissionById(id)
@@ -165,10 +165,16 @@ export const updateSubmission = (
     JSON.stringify(merged, null, 2),
   )
 
-  // Fire-and-forget pg mirror write
+  // PG mirror write. Callers that await this get read-your-write consistency
+  // against the PG-native read path (e.g. emitConfig -> readSubmissionsMeta);
+  // callers that don't await keep fire-and-forget behavior (the .catch below
+  // means the promise never rejects, so awaiting it is always safe).
   if (isDbBackedSubmissionMode()) {
-    upsertSubmissionPg(merged).catch((error) => console.error("submissions-pg mirror failed", error))
+    return upsertSubmissionPg(merged)
+      .then(() => undefined)
+      .catch((error) => console.error("submissions-pg mirror failed", error))
   }
+  return Promise.resolve()
 }
 
 export const deleteSubmission = (id: string): void => {
