@@ -28,7 +28,25 @@ Razzoozle es un **juego de cuestionarios** en tiempo real y autoalojado para aul
 
 > Proyecto de código abierto independiente. No está afiliado, respaldado ni conectado con Kahoot!® ni con ninguna otra plataforma comercial de cuestionarios.
 
-<img src="docs/screenshots/presenter.webp" width="640" alt="Presenter view" />
+---
+
+## 📸 Capturas de pantalla
+
+<div align="center">
+
+| Presentador / anfitrión | Cliente de escritorio |
+| :---: | :---: |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
+
+| Teléfono del jugador | Selección de avatar |
+| :---: | :---: |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
+
+<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
+
+</div>
 
 ---
 
@@ -49,18 +67,31 @@ Cada archivo es autónomo (aplicación + su propia Postgres) e independiente, as
 
 ---
 
-## Características
+## ✦ Lo que Razzoozle añade sobre Razzia
 
-- **Cabina de temas** — una pestaña "Design" en vivo: colores, fondos por vista, logo, radio, un conmutador Flat ⇄ Glass y presets.
-- **Pantallas fieles a Kahoot** — fichas de respuesta con formas, una cuenta atrás circular, un contador de respuestas recibidas y un podio animado.
-- **Gamificación** — 15 logros, medallas, rachas, confeti, un resumen de superlativos al final de la partida y avatares de jugador generados.
-- **7 tipos de preguntas** — opción simple y múltiple, verdadero/falso, escribe la respuesta y deslizador.
-- **Equipos e individual** — equipos de colores con una clasificación en vivo, o practica cualquier cuestionario en solitario mediante un enlace compartido.
-- **Plugins y temas skeleton** — complementos ZIP instalables por el moderador y paquetes de tema de partida completos descargables.
-- **Imágenes de IA locales** — genera arte de preguntas/temas en el dispositivo mediante ComfyUI (Z-Image); las claves permanecen en el servidor.
-- **6 idiomas + PWA** — EN/DE/FR/ES/IT/ZH, instalable y con soporte sin conexión, con una vista de proyector `/display`.
+| | Función |
+| --- | --- |
+| 🎨 | **Cabina de temas** — una pestaña "Design" en vivo en el moderador: colores, fondos por vista, logo, radio y un conmutador de estilo **Flat ⇄ Glass**, con presets (un **crema** plano por defecto + un preset opcional violeta **liquid-glass**) y selectores de color con conciencia de contraste. |
+| ☕ | **Diseño crema plano** — una interfaz crema plana y cálida con un fondo animado vivo (blobs a la deriva + iconos escolares/de conocimiento flotantes), una marca denominativa/logo plano y fichas de respuesta de tinta sobre crema. |
+| 🧊 | **UI liquid-glass** — una variante de tema glassmorphism opcional y heredada (superficies esmeriladas y difuminadas) que nunca toca la base plana. |
+| 🎯 | **Pantallas de juego fieles a Kahoot** — fichas de respuesta con los iconos de forma clásicos (triángulo / rombo / círculo / cuadrado), una cuenta atrás circular, un contador de respuestas recibidas y un podio animado. |
+| 🧑‍🎨 | **Avatares de jugador** — cada jugador obtiene un avatar DiceBear generado (elige un estilo + vuelve a tirar, o sube el tuyo); los avatares flotan por la sala y aparecen en clasificaciones, el podio y los premios. |
+| 🏆 | **Gamificación** — 15 logros, medallas, rachas, confeti y sonidos, más una galería personal de trofeos. |
+| 🥇 | **Resumen de premios de fin de partida** — una secuencia animada de superlativos (dedo más rápido, mayor escalador, racha más larga, comeback kid…) que muestra el avatar + nombre de cada ganador, con ritmo automático en autoplay. |
+| 👥 | **Modo equipos** — equipos rojo / azul / verde / amarillo con una clasificación de equipos en vivo. |
+| 📱 | **Juego individual** — practica cualquier cuestionario en solitario mediante un enlace compartido, con su propio historial de puntuaciones. |
+| ✍️ | **Más tipos de preguntas** — selección múltiple, escribe la respuesta y deslizador, además de la opción única clásica. |
+| 🔌 | **Sistema de plugins** — complementos ZIP instalables por el moderador con su propia pestaña "Plugins". |
+| 🧩 | **Addons del moderador** — sube, activa y configura addons de JavaScript desde la consola del moderador (pestaña propia, badges de capacidad, configuración persistida); incluye un starter skeleton de copiar y pegar (`examples/plugins/starter/`) con un contrato de autoría. |
+| 📦 | **ZIPs de tema skeleton** — descarga/sube un tema de partida completo como un ZIP legible por LLM ("skeleton": tokens de diseño + CSS + JS + un contrato SKELETON.md). |
+| 📳 | **Háptica móvil** — feedback de vibración opcional en los móviles de los jugadores (cuenta atrás, respuestas), consciente de reduced-motion. |
+| 🔗 | **Resultados compartibles** — vistas previas de enlace enriquecidas por resultado (Open Graph unfurl), una página de resultado con llamadas a la acción "juégalo tú mismo / organiza el tuyo" y pegatinas de ganador descargables. |
+| 🤝 | **Preguntas de la comunidad** — una página pública de envíos con una cola de moderación del moderador, más un catálogo de preguntas reutilizable y un archivo de cuestionarios. |
+| 🖼️ | **Imágenes de IA locales** — genera imágenes de preguntas/temas en el dispositivo mediante ComfyUI (Z-Image), o conecta proveedores en la nube — las claves permanecen en el servidor. |
+| 🌍 | **6 idiomas + PWA** — inglés, alemán, francés, español, italiano, chino; instalable, con soporte sin conexión. |
+| 📺 | **Kiosco de proyector + fiabilidad** — una vista de proyector `/display`, modo de baja latencia, recuperación ante fallos, reconexión y un servidor MCP para control por herramientas de IA. |
 
-Respaldado por más de 592 pruebas automatizadas, una superficie sin autenticar reforzada (límites de recursos por partida, límites de tasa por IP, autenticación con host-token emitido por el servidor) y probado con carga de 600 jugadores simultáneos.
+Respaldado por **592+ pruebas automatizadas**, un pase de seguridad de path-traversal + CVE de `ws`, una superficie sin autenticar reforzada (límites de recursos por partida + expulsión de partidas, límites de tasa por IP, freno de fuerza bruta en la auth del moderador, autenticación con host-token emitido por el servidor que cierra IDOR) y un despliegue Docker con health-gate. Probado con carga de **600 jugadores simultáneos**.
 
 ---
 

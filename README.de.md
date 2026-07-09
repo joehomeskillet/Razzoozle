@@ -28,7 +28,25 @@ Razzoozle ist eine selbstgehostete, echtzeitfähige **Quiz-Plattform** für Klas
 
 > Unabhängiges Open-Source-Projekt. Nicht mit Kahoot!® oder einer anderen kommerziellen Quiz-Plattform verbunden, von diesen nicht befürwortet und nicht daran angeschlossen.
 
-<img src="docs/screenshots/presenter.webp" width="640" alt="Presenter view" />
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+| Präsentator / Host | Desktop-Spielclient |
+| :---: | :---: |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
+
+| Spieler-Handy | Avatar-Auswahl |
+| :---: | :---: |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
+
+<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
+
+</div>
 
 ---
 
@@ -49,18 +67,31 @@ Keine Datenbank gewünscht? `DATABASE_MODE=file` setzen, um ohne Postgres zu lau
 
 ---
 
-## Funktionen
+## ✦ Was Razzoozle gegenüber Razzia bietet
 
-- **Theme-Cockpit** — ein Live-„Design"-Tab: Farben, ansichtsspezifische Hintergründe, Logo, Eckenradius, ein Flat ⇄ Glass-Umschalter und Voreinstellungen.
-- **Kahoot-getreue Bildschirme** — geformte Antwortkacheln, ein runder Countdown, ein Zähler für empfangene Antworten und ein animiertes Podium.
-- **Gamification** — 15 Erfolge, Medaillen, Streaks, Konfetti, eine Superlativ-Übersicht am Spielende und generierte Spieler-Avatare.
-- **7 Fragetypen** — Single- und Multiple-Choice, Wahr/Falsch, Textantwort und Schieberegler.
-- **Team & Solo** — farbige Teams mit Live-Rangliste, oder jedes Quiz allein über einen Freigabelink üben.
-- **Plugins & Skeleton-Themes** — vom Manager installierbare ZIP-Add-ons und herunterladbare Ganzspiel-Theme-Pakete.
-- **Lokale KI-Bilder** — Frage-/Theme-Grafiken auf dem Gerät generieren über ComfyUI (Z-Image); Schlüssel bleiben serverseitig.
-- **6 Sprachen + PWA** — EN/DE/FR/ES/IT/ZH, installierbar und offline-fähig, mit einer `/display`-Beamer-Ansicht.
+| | Funktion |
+| --- | --- |
+| 🎨 | **Theme-Cockpit** — ein Live-„Design"-Tab im Manager: Farben, ansichtsspezifische Hintergründe, Logo, Eckenradius und ein **Flat ⇄ Glass**-Umschalter, mit Voreinstellungen (ein flacher **Creme**-Standard + eine optionale violette **Liquid-Glass**-Voreinstellung) und kontrastbewussten Farbwählern. |
+| ☕ | **Flaches Creme-Design** — eine warme, flache Creme-Oberfläche mit lebendigem animiertem Hintergrund (driftende Blobs + schwebende Schul-/Wissens-Icons), einer flachen Wortmarke/Logo und Tinte-auf-Creme-Antwortkacheln. |
+| 🧊 | **Liquid-Glass-UI** — eine optionale, ältere Glasmorphismus-Theme-Variante (matte, unscharfe Oberflächen), die die flache Basis nie berührt. |
+| 🎯 | **Kahoot-getreue Spielbildschirme** — Antwortkacheln mit den klassischen Form-Icons (Dreieck / Raute / Kreis / Quadrat), ein runder Countdown-Timer, ein Zähler für empfangene Antworten und ein animiertes Podium. |
+| 🧑‍🎨 | **Spieler-Avatare** — jeder Spieler erhält einen generierten DiceBear-Avatar (Stil wählen + neu würfeln, oder eigenen hochladen); Avatare schweben in der Lobby und erscheinen auf Ranglisten, dem Podium und den Auszeichnungen. |
+| 🏆 | **Gamification** — 15 Erfolge, Medaillen, Streaks, Konfetti und Sound-Chimes, plus eine persönliche Trophäen-Galerie. |
+| 🥇 | **Auszeichnungs-Recap am Spielende** — eine animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-Kid…), die Avatar + Name jedes Gewinners zeigt, im Autoplay automatisch getaktet. |
+| 👥 | **Team-Modus** — Teams in Rot / Blau / Grün / Gelb mit einer Live-Team-Rangliste. |
+| 📱 | **Einzelspiel** — jedes Quiz allein über einen Freigabelink üben, mit eigener Punkte-Historie. |
+| ✍️ | **Mehr Fragetypen** — Mehrfachauswahl, Textantwort und Schieberegler, zusätzlich zur klassischen Einfachauswahl. |
+| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins"-Tab. |
+| 🧩 | **Manager-Addons** — JavaScript-Addons aus der Manager-Konsole hochladen, aktivieren und konfigurieren (eigener Tab, Capability-Badges, persistierte Konfiguration); liefert ein Copy-Paste-Starter-Skeleton (`examples/plugins/starter/`) mit einem Authoring-Vertrag. |
+| 📦 | **Skeleton-Theme-ZIPs** — ein ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton": Design-Tokens + CSS + JS + ein SKELETON.md-Vertrag). |
+| 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
+| 🔗 | **Teilbare Ergebnisse** — reichhaltige Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „selbst spielen / eigenes hosten"-Calls-to-Action und herunterladbare Gewinner-Sticker. |
+| 🤝 | **Community-Fragen** — eine öffentliche Einreichungsseite mit einer Manager-Moderationswarteschlange, plus ein wiederverwendbarer Fragenkatalog und ein Quiz-Archiv. |
+| 🖼️ | **Lokale KI-Bilder** — Frage-/Theme-Grafiken auf dem Gerät via ComfyUI (Z-Image) generieren, oder Cloud-Anbieter einbinden — Schlüssel bleiben serverseitig. |
+| 🌍 | **6 Sprachen + PWA** — Englisch, Deutsch, Französisch, Spanisch, Italienisch, Chinesisch; installierbar, offline-fähig. |
+| 📺 | **Beamer-Kiosk + Zuverlässigkeit** — eine `/display`-Projektor-Ansicht, Low-Latency-Modus, Crash-Recovery, Reconnect und ein MCP-Server für KI-Tool-Steuerung. |
 
-Unterstützt von über 592 automatisierten Tests, einer gehärteten unauthentifizierten Oberfläche (Ressourcen-Obergrenzen pro Spiel, Rate-Limits pro IP, serverseitig erzeugte Host-Token-Authentifizierung) und Lasttests bis 600 gleichzeitige Spieler.
+Unterstützt von **592+ automatisierten Tests**, einem Path-Traversal- + `ws`-CVE-Security-Pass, einer gehärteten unauthentifizierten Oberfläche (Ressourcen-Obergrenzen pro Spiel + Spiel-Eviction, Rate-Limits pro IP, Brute-Force-Drosselung der Manager-Auth, serverseitig erzeugte Host-Token-Authentifizierung gegen IDOR) und einem health-gated Docker-Deploy. Lastgetestet bis **600 gleichzeitige Spieler**.
 
 ---
 

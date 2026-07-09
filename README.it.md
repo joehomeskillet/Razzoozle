@@ -28,7 +28,25 @@ Razzoozle è un **quiz game** in tempo reale e self-hosted per aule, eventi e se
 
 > Progetto open source indipendente. Non affiliato, approvato o connesso a Kahoot!® o a qualsiasi altra piattaforma commerciale di quiz.
 
-<img src="docs/screenshots/presenter.webp" width="640" alt="Presenter view" />
+---
+
+## 📸 Screenshot
+
+<div align="center">
+
+| Presentatore / host | Client desktop |
+| :---: | :---: |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
+
+| Telefono del giocatore | Selezione avatar |
+| :---: | :---: |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
+
+<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
+
+</div>
 
 ---
 
@@ -49,18 +67,31 @@ Non vuoi un database? Imposta `DATABASE_MODE=file` per eseguire senza Postgres. 
 
 ---
 
-## Funzionalità
+## ✦ Cosa Razzoozle aggiunge rispetto a Razzia
 
-- **Cockpit dei temi** — una scheda "Design" live: colori, sfondi per-vista, logo, raggio, un interruttore Flat ⇄ Glass e preset.
-- **Schermate fedeli a Kahoot** — caselle di risposta sagomate, un conto alla rovescia circolare, un contatore delle risposte ricevute e un podio animato.
-- **Gamification** — 15 obiettivi, medaglie, serie, coriandoli, un riepilogo di superlativi a fine partita e avatar dei giocatori generati.
-- **7 tipi di domande** — scelta singola e multipla, vero/falso, digita-la-risposta e cursore.
-- **Squadre e solitaria** — squadre colorate con una classifica live, oppure esercitati su qualsiasi quiz da solo tramite un link di condivisione.
-- **Plugin e temi skeleton** — add-on ZIP installabili dal moderatore e pacchetti di tema per l'intera partita scaricabili.
-- **Immagini AI locali** — genera grafiche di domande/temi sul dispositivo tramite ComfyUI (Z-Image); le chiavi restano lato server.
-- **6 lingue + PWA** — EN/DE/FR/ES/IT/ZH, installabile e utilizzabile offline, con una vista proiettore `/display`.
+| | Funzionalità |
+| --- | --- |
+| 🎨 | **Cockpit dei temi** — una scheda "Design" live nel moderatore: colori, sfondi per-vista, logo, raggio e un interruttore di stile **Flat ⇄ Glass**, con preset (un **crema** piatto di default + un preset viola **liquid-glass** opzionale) e selettori di colore attenti al contrasto. |
+| ☕ | **Design crema piatto** — un'interfaccia crema piatta e calda con uno sfondo animato vivo (blob alla deriva + icone scolastiche/di conoscenza fluttuanti), un logotipo/logo piatto e caselle di risposta inchiostro-su-crema. |
+| 🧊 | **UI liquid-glass** — una variante di tema glassmorphism opzionale ed ereditata (superfici smerigliate e sfocate) che non tocca mai la base piatta. |
+| 🎯 | **Schermate di gioco fedeli a Kahoot** — caselle di risposta con le classiche icone di forma (triangolo / rombo / cerchio / quadrato), un conto alla rovescia circolare, un contatore delle risposte ricevute e un podio animato. |
+| 🧑‍🎨 | **Avatar dei giocatori** — ogni giocatore riceve un avatar DiceBear generato (scegli uno stile + rilancia, oppure carica il tuo); gli avatar fluttuano nella lobby e appaiono su classifiche, podio e premi. |
+| 🏆 | **Gamification** — 15 obiettivi, medaglie, serie, coriandoli e suoni, più una galleria personale di trofei. |
+| 🥇 | **Riepilogo dei premi di fine partita** — una sequenza animata di superlativi (dito più veloce, maggior scalatore, serie più lunga, comeback kid…) che mostra l'avatar + il nome di ogni vincitore, con ritmo automatico in autoplay. |
+| 👥 | **Modalità squadre** — squadre rossa / blu / verde / gialla con una classifica di squadra live. |
+| 📱 | **Gioco in solitaria** — esercitati su qualsiasi quiz da solo tramite un link di condivisione, con la propria cronologia dei punteggi. |
+| ✍️ | **Più tipi di domande** — selezione multipla, digita-la-risposta e cursore, oltre alla classica scelta singola. |
+| 🔌 | **Sistema di plugin** — add-on ZIP installabili dal moderatore con una propria scheda "Plugins". |
+| 🧩 | **Addon del moderatore** — carica, abilita e configura addon JavaScript dalla console del moderatore (scheda dedicata, badge di capacità, configurazione persistita); include uno starter skeleton copia-incolla (`examples/plugins/starter/`) con un contratto di authoring. |
+| 📦 | **ZIP di tema skeleton** — scarica/carica un intero tema di gioco come uno ZIP leggibile da un LLM ("skeleton": token di design + CSS + JS + un contratto SKELETON.md). |
+| 📳 | **Feedback aptico mobile** — feedback di vibrazione opzionale sui telefoni dei giocatori (conto alla rovescia, risposte), attento al reduced-motion. |
+| 🔗 | **Risultati condivisibili** — anteprime di link ricche per risultato (Open Graph unfurl), una pagina di risultato con call-to-action "giocalo tu stesso / ospita la tua" e sticker del vincitore scaricabili. |
+| 🤝 | **Domande della community** — una pagina pubblica di invio con una coda di moderazione del moderatore, più un catalogo di domande riutilizzabile e un archivio di quiz. |
+| 🖼️ | **Immagini AI locali** — genera grafiche di domande/temi sul dispositivo tramite ComfyUI (Z-Image), oppure collega provider cloud — le chiavi restano lato server. |
+| 🌍 | **6 lingue + PWA** — inglese, tedesco, francese, spagnolo, italiano, cinese; installabile, utilizzabile offline. |
+| 📺 | **Kiosk proiettore + affidabilità** — una vista proiettore `/display`, modalità a bassa latenza, ripristino dai crash, riconnessione e un server MCP per il controllo tramite strumenti AI. |
 
-Supportato da oltre 592 test automatizzati, una superficie non autenticata irrobustita (limiti di risorse per partita, limiti di frequenza per IP, autenticazione con host-token emesso dal server) e testato sotto carico fino a 600 giocatori simultanei.
+Supportato da **oltre 592 test automatizzati**, un pass di sicurezza path-traversal + CVE `ws`, una superficie non autenticata irrobustita (limiti di risorse per partita + espulsione delle partite, limiti di frequenza per IP, throttling anti-forza-bruta sull'auth del moderatore, autenticazione con host-token emesso dal server che chiude l'IDOR) e un deploy Docker con health-gate. Testato sotto carico fino a **600 giocatori simultanei**.
 
 ---
 

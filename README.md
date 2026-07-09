@@ -28,7 +28,25 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 
 > Independent open-source project. Not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
 
-<img src="docs/screenshots/presenter.webp" width="640" alt="Presenter view" />
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+| Presenter / host | Desktop game client |
+| :---: | :---: |
+| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
+
+| Player phone | Avatar selection |
+| :---: | :---: |
+| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
+
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
+
+<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
+
+</div>
 
 ---
 
@@ -49,18 +67,31 @@ No database wanted? Set `DATABASE_MODE=file` to run without Postgres. Without Do
 
 ---
 
-## Features
+## ✦ What Razzoozle adds over Razzia
 
-- **Theme cockpit** — a live "Design" tab: colors, per-view backgrounds, logo, radius, a Flat ⇄ Glass toggle and presets.
-- **Kahoot-faithful screens** — shape answer tiles, a circular countdown, an answers-received counter and an animated podium.
-- **Gamification** — 15 achievements, medals, streaks, confetti, an end-game superlatives recap, and generated player avatars.
-- **7 question types** — single & multiple choice, true/false, type-the-answer and slider.
-- **Team & solo** — colored teams with a live leaderboard, or practise any quiz alone via a share link.
-- **Plugins & skeleton themes** — manager-installable ZIP add-ons and downloadable whole-game theme bundles.
-- **Local AI images** — generate question/theme art on-device via ComfyUI (Z-Image); keys stay server-side.
-- **6 languages + PWA** — EN/DE/FR/ES/IT/ZH, installable and offline-aware, with a `/display` beamer view.
+| | Feature |
+| --- | --- |
+| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a flat **cream** default + an optional violet **liquid-glass** preset) and contrast-aware colour pickers. |
+| ☕ | **Flat cream design** — a warm flat cream interface with a living animated backdrop (drifting blobs + floating school/knowledge icons), a flat wordmark/logo, and ink-on-cream answer tiles. |
+| 🧊 | **Liquid-glass UI** — an optional, legacy glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
+| 🎯 | **Kahoot-faithful game screens** — answer tiles with the classic shape icons (triangle / diamond / circle / square), a circular countdown timer, an answers-received counter, and an animated podium. |
+| 🧑‍🎨 | **Player avatars** — each player gets a generated DiceBear avatar (pick a style + reroll, or upload your own); avatars float around the lobby and appear on leaderboards, the podium and the awards. |
+| 🏆 | **Gamification** — 15 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |
+| 🥇 | **End-game awards recap** — an animated superlatives sequence (fastest finger, biggest climber, longest streak, comeback kid…) showing each winner's avatar + name, auto-paced in autoplay. |
+| 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
+| 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
+| ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
+| 🔌 | **Plugin system** — manager-installable ZIP add-ons with their own "Plugins" tab. |
+| 🧩 | **Manager addons** — upload, enable, and configure JavaScript addons from the manager console (own tab, capability badges, persisted config); ships a copy-paste starter skeleton (`examples/plugins/starter/`) with an authoring contract. |
+| 📦 | **Skeleton theme ZIPs** — download/upload a whole-game theme as an LLM-readable ZIP ("skeleton": design tokens + CSS + JS + a SKELETON.md contract). |
+| 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
+| 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
+| 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
+| 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
+| 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
+| 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
 
-Backed by 592+ automated tests, a hardened unauthenticated surface (per-game resource caps, per-IP rate limits, server-minted host-token auth) and load-tested to 600 concurrent players.
+Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game resource caps + game eviction, per-IP rate-limits, manager-auth brute-force throttling, server-minted host-token auth closing IDOR), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
 ---
 
