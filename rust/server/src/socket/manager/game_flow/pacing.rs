@@ -4,6 +4,7 @@ use super::super::super::HandlerCtx;
 use crate::is_game_host;
 use crate::socket::lifecycle::build_select_answer_data;
 use crate::socket::reveal_helpers::build_manager_show_responses;
+use crate::socket::status_emit::{broadcast_status, send_status_to_manager};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::{
@@ -98,10 +99,12 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     .to(game_id.clone())
                     .emit(constants::game::COOLDOWN, &new_remaining_secs)
                     .ok();
-                ctx.io
-                    .to(game_id.clone())
-                    .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
-                    .ok();
+                broadcast_status(
+                    &ctx.io,
+                    &game_ref,
+                    &game_id,
+                    &GameStatus::SelectAnswer(select_data),
+                );
             });
         }
     });
@@ -215,10 +218,9 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                 let paused_status = GameStatus::Paused(razzoozle_protocol::status::PausedData {
                     reason: Some("paused".to_string()),
                 });
-                ctx.io
-                    .to(game_id.clone())
-                    .emit(constants::game::STATUS, &paused_status)
-                    .ok();
+                // Drop before chokepoint: record re-locks non-reentrant Mutex.
+                drop(game);
+                broadcast_status(&ctx.io, &game_ref, &game_id, &paused_status);
             });
         }
     });
@@ -302,6 +304,7 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 build_manager_show_responses(&game),
                             )
                         };
+                        // Per-player SHOW_RESULT stays raw (personalized — not manager status).
                         for (socket_id, show_result_data) in payloads {
                             let status_to_broadcast = GameStatus::ShowResult(show_result_data);
                             if let Ok(sid) = socket_id.parse() {
@@ -313,51 +316,51 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                         if let Ok(sid) = manager_socket_id.parse() {
                             if let Some(sock) = ctx.io.get_socket(sid) {
-                                sock.emit(constants::game::STATUS, &manager_status).ok();
+                                send_status_to_manager(&sock, &game_ref, &manager_status);
                             }
                         }
                     }
                     Status::ShowStart => {
                         if let Ok(start_data) = serde_json::from_value::<ShowStartData>(data) {
-                            ctx.io
-                                .to(game_id.clone())
-                                .emit(
-                                    constants::game::STATUS,
-                                    &GameStatus::ShowStart(start_data),
-                                )
-                                .ok();
+                            broadcast_status(
+                                &ctx.io,
+                                &game_ref,
+                                &game_id,
+                                &GameStatus::ShowStart(start_data),
+                            );
                         }
                     }
                     Status::Wait => {
                         if let Ok(wait_data) = serde_json::from_value::<WaitData>(data) {
-                            ctx.io
-                                .to(game_id.clone())
-                                .emit(constants::game::STATUS, &GameStatus::Wait(wait_data))
-                                .ok();
+                            broadcast_status(
+                                &ctx.io,
+                                &game_ref,
+                                &game_id,
+                                &GameStatus::Wait(wait_data),
+                            );
                         }
                     }
                     Status::ShowRoundRecap => {
                         if let Ok(recap_data) = serde_json::from_value::<ShowRoundRecapData>(data) {
                             if let Ok(sid) = manager_socket_id.parse() {
                                 if let Some(sock) = ctx.io.get_socket(sid) {
-                                    sock.emit(
-                                        constants::game::STATUS,
+                                    send_status_to_manager(
+                                        &sock,
+                                        &game_ref,
                                         &GameStatus::ShowRoundRecap(recap_data),
-                                    )
-                                    .ok();
+                                    );
                                 }
                             }
                         }
                     }
                     Status::ShowLeaderboard => {
                         if let Ok(leaderboard_data) = serde_json::from_value(data) {
-                            ctx.io
-                                .to(game_id.clone())
-                                .emit(
-                                    constants::game::STATUS,
-                                    &GameStatus::ShowLeaderboard(leaderboard_data),
-                                )
-                                .ok();
+                            broadcast_status(
+                                &ctx.io,
+                                &game_ref,
+                                &game_id,
+                                &GameStatus::ShowLeaderboard(leaderboard_data),
+                            );
                         }
                     }
                     _ => {}

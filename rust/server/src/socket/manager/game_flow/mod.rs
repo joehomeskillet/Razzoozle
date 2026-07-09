@@ -12,6 +12,7 @@
 use super::super::HandlerCtx;
 use crate::is_game_host;
 use crate::socket::lifecycle;
+use crate::socket::status_emit::broadcast_status;
 use razzoozle_engine::state::{GameError, GamePhase};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::GameStatus;
@@ -82,9 +83,9 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 let game_id = game_id.to_string();
                                 info!("Game started: gameId={}", game_id);
 
-                                // Emit SHOW_START to room
+                                // Emit SHOW_START to room (records manager reconnect status)
                                 let status = GameStatus::ShowStart(start_data);
-                                ctx.io.to(game_id.clone()).emit(constants::game::STATUS, &status).ok();
+                                broadcast_status(&ctx.io, &game_ref, &game_id, &status);
 
                                 // After the SHOW_START lead-time, hand off to the single
                                 // game-lifecycle task (3-2-1 intro -> Q1 -> ... -> FINISHED).
@@ -182,6 +183,7 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                                     let payloads = game.last_show_result_data.clone();
                                     drop(game);
 
+                                    // Per-player SHOW_RESULT stays raw (personalized — not manager status).
                                     for (socket_id, mut show_result_data) in payloads {
                                         show_result_data.auto_advance_ms = Some(AUTO_RESULT_MS);
                                         let status = GameStatus::ShowResult(show_result_data);

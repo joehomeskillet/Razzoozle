@@ -37,6 +37,7 @@ pub mod metrics;
 pub mod results;
 pub mod player;
 pub mod reveal_helpers;
+pub mod status_emit;
 pub mod validation;
 
 /// Register every extracted handler on a freshly-connected socket.

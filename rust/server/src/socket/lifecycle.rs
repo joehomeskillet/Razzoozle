@@ -36,6 +36,7 @@ use tracing::{info, warn};
 
 use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
+use super::status_emit::{broadcast_status, send_status_to_manager};
 
 /// 3-2-1 intro before Q1 (node: `io.emit(START_COOLDOWN)` + `cooldown.start(3)`).
 const INTRO_COOLDOWN_SECS: i32 = 3;
@@ -239,16 +240,12 @@ async fn open_question(
         total_answers,
         question_number: current,
     });
-    io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &prepared_status)
-        .ok();
+    broadcast_status(io, game_ref, game_id, &prepared_status);
 
     tokio::time::sleep(Duration::from_secs(PREPARED_DWELL_SECS)).await;
 
     let show_question_status = GameStatus::ShowQuestion(show_data);
-    io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &show_question_status)
-        .ok();
+    broadcast_status(io, game_ref, game_id, &show_question_status);
 
     let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
         let mut game = game_ref.lock().unwrap();
@@ -285,9 +282,7 @@ async fn open_question(
         server_seq,
     );
     let select_status = GameStatus::SelectAnswer(select_data);
-    io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &select_status)
-        .ok();
+    broadcast_status(io, game_ref, game_id, &select_status);
 
     let (bot_manager, bots) = {
         let game = game_ref.lock().unwrap();
@@ -435,13 +430,13 @@ pub async fn run_game_lifecycle(
 
                 if let Ok(sid) = manager_socket_id.parse() {
                     if let Some(sock) = io.get_socket(sid) {
-                        sock.emit(
-                            constants::game::STATUS,
+                        send_status_to_manager(
+                            &sock,
+                            &game_ref,
                             &GameStatus::ShowRoundRecap(ShowRoundRecapData {
                                 round_recap: recap_data,
                             }),
-                        )
-                        .ok();
+                        );
                     }
                 }
             }
@@ -538,12 +533,15 @@ pub async fn run_game_lifecycle(
             let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
             if let Ok(sid) = manager_socket_id.parse() {
                 if let Some(sock) = io.get_socket(sid) {
-                    sock.emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
-                        .ok();
+                    send_status_to_manager(
+                        &sock,
+                        &game_ref,
+                        &GameStatus::Finished(finished.clone()),
+                    );
                 }
             }
 
-            // Send personalized FINISHED data to each player
+            // Send personalized FINISHED data to each player (raw — not manager status)
             let game = game_ref.lock().unwrap();
             let sorted_players: Vec<_> = {
                 let mut sorted = game.engine.players.clone();
@@ -575,11 +573,11 @@ pub async fn run_game_lifecycle(
         let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
         if let Ok(sid) = manager_socket_id.parse() {
             if let Some(sock) = io.get_socket(sid) {
-                sock.emit(
-                    constants::game::STATUS,
+                send_status_to_manager(
+                    &sock,
+                    &game_ref,
                     &GameStatus::ShowLeaderboard(leaderboard_data),
-                )
-                .ok();
+                );
             }
         }
 
@@ -642,12 +640,15 @@ pub async fn run_game_lifecycle(
                 let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
                 if let Ok(sid) = manager_socket_id.parse() {
                     if let Some(sock) = io.get_socket(sid) {
-                        sock.emit(constants::game::STATUS, &GameStatus::Finished(finished.clone()))
-                            .ok();
+                        send_status_to_manager(
+                            &sock,
+                            &game_ref,
+                            &GameStatus::Finished(finished.clone()),
+                        );
                     }
                 }
 
-                // Send personalized FINISHED data to each player
+                // Send personalized FINISHED data to each player (raw — not manager status)
                 let game = game_ref.lock().unwrap();
                 let sorted_players: Vec<_> = {
                     let mut sorted = game.engine.players.clone();

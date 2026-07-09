@@ -2,6 +2,7 @@
 //! between manager:REVEAL_ANSWER handler and player auto-advance on all-answered
 
 use crate::state::Game;
+use crate::socket::status_emit::send_status_to_manager;
 use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
@@ -365,9 +366,7 @@ pub async fn perform_reveal_and_broadcast(
 
         if let Ok(sid) = manager_socket_id.parse() {
             if let Some(manager_socket) = io_handle.get_socket(sid) {
-                manager_socket
-                    .emit(constants::game::STATUS, &manager_status)
-                    .ok();
+                send_status_to_manager(&manager_socket, &game_ref, &manager_status);
             }
         }
     }

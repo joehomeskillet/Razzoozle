@@ -4,7 +4,7 @@ use crate::bot::BotManager;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
-use razzoozle_protocol::status::Status;
+use razzoozle_protocol::status::{GameStatus, PausedData, SelectAnswerData};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -402,7 +402,7 @@ async fn test_empty_grace_mark_reactivate_cleanup() {
 }
 
 #[test]
-fn test_manager_reconnect_no_stale_status() {
+fn test_manager_reconnect_records_status_roundtrip() {
     let quiz = test_quiz();
     let mut game = Game::new(
         "game-reconnect".to_string(),
@@ -410,31 +410,82 @@ fn test_manager_reconnect_no_stale_status() {
         "manager-socket".to_string(),
         quiz,
     );
-    game.manager_client_id = Some("manager-client".to_string());
-    game.add_player(
-        "player-socket".to_string(),
-        "player-client".to_string(),
-        "Alice".to_string(),
-        None,
-    )
-    .unwrap();
-    game.engine.start().unwrap();
+    let select = GameStatus::SelectAnswer(SelectAnswerData {
+        question: "What?".to_string(),
+        answers: Some(vec!["A".to_string(), "B".to_string()]),
+        media: None,
+        time: 10,
+        total_player: 2,
+        question_type: Some("choice".to_string()),
+        min: None,
+        max: None,
+        step: None,
+        unit: None,
+        shuffled_chunks: None,
+        server_seq: None,
+        server_now_ms: Some(1_000),
+        question_start_at_server_ms: Some(1_000),
+        answer_deadline_at_server_ms: Some(11_000),
+        submitted_by: None,
+    });
 
-    assert_eq!(game.engine.phase, GamePhase::ShowStart);
+    game.record_last_manager_status(&select);
+    let (status_name, status_data) = game.manager_reconnect_status();
 
-    // Stale snapshot GAP 1 would have left behind — must not leak into reconnect.
-    game.last_manager_status = Some((
-        Status::SelectAnswer,
-        serde_json::json!({ "time": 10, "totalPlayers": 1 }),
-    ));
+    assert_eq!(status_name, "SELECT_ANSWER");
+    assert_eq!(status_data.get("time").and_then(|v| v.as_i64()), Some(10));
+    assert_eq!(
+        status_data.get("totalPlayer").and_then(|v| v.as_i64()),
+        Some(2)
+    );
+    assert_ne!(
+        status_data,
+        serde_json::json!({ "text": "game:waitingForPlayers" }),
+        "must replay recorded payload, not WAIT fallback"
+    );
+}
+
+#[test]
+fn test_manager_reconnect_fallback_when_nothing_recorded() {
+    let quiz = test_quiz();
+    let game = Game::new(
+        "game-reconnect-fallback".to_string(),
+        "INVITE".to_string(),
+        "manager-socket".to_string(),
+        quiz,
+    );
+    assert!(game.last_manager_status.is_none());
 
     let (status_name, status_data) = game.manager_reconnect_status();
 
     assert_eq!(status_name, Game::phase_wire_name(game.engine.phase));
-    assert_ne!(status_name, "SELECT_ANSWER", "must not replay stale SELECT_ANSWER");
+    assert_eq!(status_name, "WAIT");
     assert_eq!(
         status_data,
         serde_json::json!({ "text": "game:waitingForPlayers" })
+    );
+}
+
+#[test]
+fn test_manager_reconnect_paused_status() {
+    let quiz = test_quiz();
+    let mut game = Game::new(
+        "game-reconnect-paused".to_string(),
+        "INVITE".to_string(),
+        "manager-socket".to_string(),
+        quiz,
+    );
+    let paused = GameStatus::Paused(PausedData {
+        reason: Some("paused".to_string()),
+    });
+
+    game.record_last_manager_status(&paused);
+    let (status_name, status_data) = game.manager_reconnect_status();
+
+    assert_eq!(status_name, "PAUSED");
+    assert_eq!(
+        status_data.get("reason").and_then(|v| v.as_str()),
+        Some("paused")
     );
 }
 

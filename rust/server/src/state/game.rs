@@ -170,9 +170,12 @@ impl Game {
         }
     }
 
-    /// Status block for manager:successReconnect — name from live phase; full
-    /// per-phase data unavailable since lifecycle status recording was removed.
+    /// Status block for manager:successReconnect — last recorded manager status
+    /// when available; otherwise phase wire-name + waitingForPlayers fallback.
     pub fn manager_reconnect_status(&self) -> (String, serde_json::Value) {
+        if let Some((s, data)) = &self.last_manager_status {
+            return (Self::status_wire_name(s), data.clone());
+        }
         (
             Self::phase_wire_name(self.engine.phase),
             serde_json::json!({ "text": "game:waitingForPlayers" }),
