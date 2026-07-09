@@ -4,12 +4,11 @@
 //! catalog:update (update entry)
 //! catalog:delete (delete entry)
 
+use super::super::validation;
 use super::super::HandlerCtx;
 use crate::db;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::Question;
 use socketioxide::extract::{Data, SocketRef};
-use serde_json;
 
 const CATALOG_SOURCES: &[&str] = &["manual", "submission", "editor", "ai"];
 
@@ -20,43 +19,37 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_catalog_delete(socket, ctx.clone());
 }
 
-fn validate_question(question: &serde_json::Value) -> Result<(), String> {
-    serde_json::from_value::<Question>(question.clone())
-        .map_err(|_| "Invalid question: does not match Question schema".to_string())?;
-    Ok(())
-}
-
-fn validate_tags(tags: &serde_json::Value) -> Result<(), String> {
+fn validate_tags(tags: &serde_json::Value) -> Result<(), &'static str> {
     match tags {
         serde_json::Value::Array(arr) => {
             if arr.len() > 20 {
-                return Err("tags must contain at most 20 items".to_string());
+                return Err("errors:catalog.invalid");
             }
             for tag in arr {
                 match tag {
                     serde_json::Value::String(s) => {
-                        if s.len() < 1 || s.len() > 40 {
-                            return Err("each tag must be between 1 and 40 characters".to_string());
+                        // UTF-16 parity with JS string length: use scalar-count
+                        // (chars) rather than UTF-8 byte length.
+                        let n = s.chars().count();
+                        if n < 1 || n > 40 {
+                            return Err("errors:catalog.invalid");
                         }
                     }
-                    _ => return Err("tags must be an array of strings".to_string()),
+                    _ => return Err("errors:catalog.invalid"),
                 }
             }
             Ok(())
         }
         serde_json::Value::Null => Ok(()),
-        _ => Err("tags must be an array".to_string()),
+        _ => Err("errors:catalog.invalid"),
     }
 }
 
-fn validate_source(source: &str) -> Result<(), String> {
+fn validate_source(source: &str) -> Result<(), &'static str> {
     if CATALOG_SOURCES.contains(&source) {
         Ok(())
     } else {
-        Err(format!(
-            "source must be one of: {}",
-            CATALOG_SOURCES.join(", ")
-        ))
+        Err("errors:catalog.invalid")
     }
 }
 
@@ -115,14 +108,14 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(q) => q.clone(),
                     None => {
                         socket
-                            .emit(constants::catalog::ERROR, &"question is required")
+                            .emit(constants::catalog::ERROR, "errors:catalog.invalid")
                             .ok();
                         return;
                     }
                 };
 
-                if let Err(e) = validate_question(&question) {
-                    socket.emit(constants::catalog::ERROR, &e).ok();
+                if let Err(e) = validation::validate_question(&question) {
+                    socket.emit(constants::catalog::ERROR, e).ok();
                     return;
                 }
 
@@ -133,7 +126,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     .unwrap_or_else(|| serde_json::json!([]));
 
                 if let Err(e) = validate_tags(&tags) {
-                    socket.emit(constants::catalog::ERROR, &e).ok();
+                    socket.emit(constants::catalog::ERROR, e).ok();
                     return;
                 }
 
@@ -145,14 +138,18 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     .to_string();
 
                 if let Err(e) = validate_source(&source) {
-                    socket.emit(constants::catalog::ERROR, &e).ok();
+                    socket.emit(constants::catalog::ERROR, e).ok();
                     return;
                 }
 
                 // Persist to DB
-                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags).await {
+                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags)
+                    .await
+                {
                     Ok(_id) => {
-                        socket.emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({})).ok();
+                        socket
+                            .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
+                            .ok();
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
@@ -192,7 +189,7 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(i) => i.to_string(),
                     None => {
                         socket
-                            .emit(constants::catalog::ERROR, &"id is required")
+                            .emit(constants::catalog::ERROR, "errors:catalog.invalid")
                             .ok();
                         return;
                     }
@@ -203,14 +200,14 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(q) => q.clone(),
                     None => {
                         socket
-                            .emit(constants::catalog::ERROR, &"question is required")
+                            .emit(constants::catalog::ERROR, "errors:catalog.invalid")
                             .ok();
                         return;
                     }
                 };
 
-                if let Err(e) = validate_question(&question) {
-                    socket.emit(constants::catalog::ERROR, &e).ok();
+                if let Err(e) = validation::validate_question(&question) {
+                    socket.emit(constants::catalog::ERROR, e).ok();
                     return;
                 }
 
@@ -221,14 +218,16 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                     .unwrap_or_else(|| serde_json::json!([]));
 
                 if let Err(e) = validate_tags(&tags) {
-                    socket.emit(constants::catalog::ERROR, &e).ok();
+                    socket.emit(constants::catalog::ERROR, e).ok();
                     return;
                 }
 
                 // Persist to DB
                 match db::update_catalog_entry(&ctx.db_pool, &id, &question, &tags).await {
                     Ok(_) => {
-                        socket.emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({})).ok();
+                        socket
+                            .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
+                            .ok();
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
@@ -268,7 +267,7 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(i) => i.to_string(),
                     None => {
                         socket
-                            .emit(constants::catalog::ERROR, &"id is required")
+                            .emit(constants::catalog::ERROR, "errors:catalog.invalid")
                             .ok();
                         return;
                     }

@@ -112,11 +112,14 @@ pub async fn count_pending_submissions(pool: &Option<PgPool>) -> i64 {
 /// Persist a public question submission (status 'pending') into the shared DB.
 /// Upserts by id so a re-submitted identical question overwrites rather than
 /// duplicating (mirrors Node's slug-id save). Returns Err on DB failure.
+///
+/// `category` is optional (WP-17 public topic); when `None` the column stays NULL.
 pub async fn insert_submission(
     pool: &Option<PgPool>,
     id: &str,
     submitted_by: &str,
     question: &serde_json::Value,
+    category: Option<&str>,
 ) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
@@ -124,18 +127,20 @@ pub async fn insert_submission(
     };
 
     sqlx::query(
-        "INSERT INTO submissions (id, status, submitted_by, submitted_at, question, source) \
-         VALUES ($1, 'pending', $2, now(), $3, 'submission') \
+        "INSERT INTO submissions (id, status, submitted_by, submitted_at, question, source, category) \
+         VALUES ($1, 'pending', $2, now(), $3, 'submission', $4) \
          ON CONFLICT (id) DO UPDATE SET \
              status = 'pending', \
              submitted_by = EXCLUDED.submitted_by, \
              submitted_at = now(), \
              question = EXCLUDED.question, \
+             category = EXCLUDED.category, \
              updated_at = now()",
     )
     .bind(id)
     .bind(submitted_by)
     .bind(question)
+    .bind(category)
     .execute(pool)
     .await
     .map(|_| ())

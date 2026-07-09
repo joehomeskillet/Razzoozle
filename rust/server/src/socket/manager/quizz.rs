@@ -6,12 +6,12 @@
 //! quizz:duplicate — copy quiz with new id + "(Kopie)" suffix
 //! quizz:setArchived — toggle archived flag
 
+use super::super::validation;
 use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
 use crate::state::safe_asset_id;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::Question;
 use socketioxide::extract::{Data, SocketRef};
 use uuid::Uuid;
 
@@ -49,23 +49,19 @@ fn normalize_filename(s: &str) -> String {
     format!("{}-{}", slug, short_id)
 }
 
-/// Validate questions array against protocol schema.
-/// Checks: deserialization into Vec<Question>, cooldown (3-15), time (5-120).
-fn validate_questions(questions_json: &serde_json::Value) -> Result<(), String> {
-    match serde_json::from_value::<Vec<Question>>(questions_json.clone()) {
-        Err(_) => Err("errors:quizz.invalidPayload".to_string()),
-        Ok(questions) => {
-            for q in questions {
-                if q.cooldown < 3 || q.cooldown > 15 {
-                    return Err("errors:quizz.invalidPayload".to_string());
-                }
-                if q.time < 5 || q.time > 120 {
-                    return Err("errors:quizz.invalidPayload".to_string());
-                }
-            }
-            Ok(())
-        }
+/// Validate each question in a questions array with full `validate_question` parity.
+/// Emits the specific i18n key from the first failing question.
+fn validate_questions(questions_json: &serde_json::Value) -> Result<(), &'static str> {
+    let arr = questions_json
+        .as_array()
+        .ok_or("errors:quizz.invalidPayload")?;
+    if arr.is_empty() {
+        return Err("errors:quizz.noQuestions");
     }
+    for q in arr {
+        validation::validate_question(q)?;
+    }
+    Ok(())
 }
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
@@ -100,13 +96,20 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
                 let registry = ctx.registry.read().await;
                 match registry.get_quiz_by_id(&id) {
                     Some(quiz) => {
-                        let payload = serde_json::json!({
+                        // themeId/archived only present when Some (not null) — Node parity
+                        let mut payload = serde_json::json!({
                             "id": id,
                             "subject": quiz.subject,
                             "questions": quiz.questions,
-                            "archived": quiz.archived,
-                            "themeId": quiz.theme_id,
                         });
+                        if let Some(obj) = payload.as_object_mut() {
+                            if let Some(archived) = quiz.archived {
+                                obj.insert("archived".to_string(), serde_json::json!(archived));
+                            }
+                            if let Some(theme_id) = quiz.theme_id {
+                                obj.insert("themeId".to_string(), serde_json::json!(theme_id));
+                            }
+                        }
                         socket.emit(constants::quizz::DATA, &payload).ok();
                     }
                     None => {
@@ -149,9 +152,9 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                     (Some(subj), Some(qs)) if !subj.is_empty() && !qs.is_empty() => {
                         let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
 
-                        // Validate questions against protocol schema
+                        // Validate each question with full questionValidator
                         if let Err(e) = validate_questions(&questions_json) {
-                            socket.emit(constants::quizz::ERROR, &e).ok();
+                            socket.emit(constants::quizz::ERROR, e).ok();
                             return;
                         }
 
@@ -224,14 +227,22 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                     {
                         let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
 
-                        // Validate questions against protocol schema
+                        // Validate questions against full questionValidator
                         if let Err(e) = validate_questions(&questions_json) {
-                            socket.emit(constants::quizz::ERROR, &e).ok();
+                            socket.emit(constants::quizz::ERROR, e).ok();
                             return;
                         }
 
                         if let Err(e) = safe_asset_id(quiz_id) {
                             socket.emit(constants::quizz::ERROR, &e).ok();
+                            return;
+                        }
+
+                        // Verify quiz exists before upsert — do not resurrect deleted ids
+                        if !db::quiz_exists(&ctx.db_pool, quiz_id).await {
+                            socket
+                                .emit(constants::quizz::ERROR, "errors:quizz.notFound")
+                                .ok();
                             return;
                         }
 
@@ -298,8 +309,11 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
-                    Err(e) => {
-                        socket.emit(constants::quizz::ERROR, &e).ok();
+                    Err(_) => {
+                        // Node always emits errors:quizz.failedToDelete on delete failure
+                        socket
+                            .emit(constants::quizz::ERROR, "errors:quizz.failedToDelete")
+                            .ok();
                     }
                 }
             });
@@ -346,12 +360,23 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Re-validate the source questions before duplicating
                         let questions_json = serde_json::to_value(&quiz.questions).unwrap_or(serde_json::json!([]));
-                        if let Err(_) = validate_questions(&questions_json) {
+                        if validate_questions(&questions_json).is_err() {
                             socket.emit(constants::quizz::ERROR, "errors:quizz.failedToSave").ok();
                             return;
                         }
 
-                        match db::duplicate_quiz(&ctx.db_pool, &source_id, &new_id, &new_subject).await {
+                        // Preserve archived flag from source (Node saveQuizz keeps rest fields)
+                        let archived = quiz.archived.unwrap_or(false);
+
+                        match db::duplicate_quiz(
+                            &ctx.db_pool,
+                            &source_id,
+                            &new_id,
+                            &new_subject,
+                            archived,
+                        )
+                        .await
+                        {
                             Ok(_) => {
                                 // Reload registry from DB
                                 {

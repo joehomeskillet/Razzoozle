@@ -106,19 +106,21 @@ pub async fn delete_quiz(pool: &Option<PgPool>, id: &str) -> Result<(), String> 
 
 /// Duplicate a quiz: read source by id, copy to new_id with modified subject.
 /// new_subject should be the original subject with " (Kopie)" appended (handled by caller).
+/// `archived` is preserved from the source (caller passes it after SELECT).
 /// Returns Ok(new_id) on success, or Err if source not found.
 pub async fn duplicate_quiz(
     pool: &Option<PgPool>,
     source_id: &str,
     new_id: &str,
     new_subject: &str,
+    archived: bool,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("errors:quizz.failedToSave".to_string()),
     };
 
-    // Fetch source quiz (including theme_id)
+    // Fetch source quiz (including theme_id; archived comes from caller)
     let source_row: Option<(serde_json::Value, Option<String>)> =
         sqlx::query_as("SELECT questions, theme_id FROM quizzes WHERE id = $1")
             .bind(source_id)
@@ -131,19 +133,34 @@ pub async fn duplicate_quiz(
         None => return Err("errors:quizz.notFound".to_string()),
     };
 
-    // Insert as new quiz (preserving theme_id)
+    // Insert as new quiz (preserving theme_id + archived from source)
     sqlx::query(
         "INSERT INTO quizzes (id, subject, questions, archived, theme_id) \
-         VALUES ($1, $2, $3, false, $4)",
+         VALUES ($1, $2, $3, $4, $5)",
     )
     .bind(new_id)
     .bind(new_subject)
     .bind(questions)
+    .bind(archived)
     .bind(theme_id.clone())
     .execute(pool)
     .await
     .map(|_| new_id.to_string())
     .map_err(|e| e.to_string())
+}
+
+/// Return true if a quiz row with the given id exists.
+pub async fn quiz_exists(pool: &Option<PgPool>, id: &str) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM quizzes WHERE id = $1)")
+        .bind(id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(false)
 }
 
 /// Update the archived flag on a quiz by id. Returns Ok(()) on success, or Err if not found.

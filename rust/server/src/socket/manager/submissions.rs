@@ -5,6 +5,7 @@
 //! APPROVE_SUBMISSION — approve to quiz or catalog
 //! REJECT_SUBMISSION — reject with optional reason/category
 
+use super::super::validation;
 use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
@@ -99,10 +100,10 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Validate question payload with serde_json::from_value
-                if serde_json::from_value::<razzoozle_protocol::quizz::Question>(question.clone()).is_err() {
+                // Full questionValidator parity (Node emits issue.message = i18n key)
+                if let Err(key) = validation::validate_question(&question) {
                     socket
-                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidQuestion")
+                        .emit(constants::manager::SUBMISSION_ERROR, key)
                         .ok();
                     return;
                 }
@@ -220,6 +221,14 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     question_to_append["submittedBy"] = serde_json::json!(submitted_by);
                 }
 
+                // Validate before append (Node updateQuizz runs quizzValidator)
+                if let Err(key) = validation::validate_question(&question_to_append) {
+                    socket
+                        .emit(constants::manager::SUBMISSION_ERROR, key)
+                        .ok();
+                    return;
+                }
+
                 // Append question to quiz
                 match db::append_question_to_quiz(&ctx.db_pool, &quiz_id, &question_to_append).await {
                     Ok(_) => {
@@ -244,8 +253,14 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                     Err(e) => {
+                        // Node maps missing quiz to errors:submission.quizzNotFound
+                        let msg = if e.contains("not found") || e.contains("notFound") {
+                            "errors:submission.quizzNotFound".to_string()
+                        } else {
+                            e
+                        };
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, &e)
+                            .emit(constants::manager::SUBMISSION_ERROR, &msg)
                             .ok();
                     }
                 }
@@ -289,9 +304,9 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 let reason = payload.get("reason").and_then(|v| v.as_str());
                 let category = payload.get("category").and_then(|v| v.as_str());
 
-                // Validate reason length (max 500 chars)
+                // Validate reason length (max 500 chars — UTF-16 parity via chars())
                 if let Some(r) = reason {
-                    if r.len() > 500 {
+                    if r.chars().count() > 500 {
                         socket
                             .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.reasonTooLong")
                             .ok();
