@@ -2,6 +2,7 @@
 
 use super::super::super::HandlerCtx;
 use crate::is_game_host;
+use crate::socket::lifecycle::build_select_answer_data;
 use crate::socket::reveal_helpers::build_manager_show_responses;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
@@ -68,14 +69,38 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                game.deadline_ms = game.deadline_ms.saturating_add(delta_clamped * 1000).max(0);
+                // Shifts BOTH the client-facing wall-clock deadline AND the
+                // tokio-clock deadline the server's own tick loop actually resolves
+                // on — see `Game::shift_deadline` doc: without the latter this
+                // would only cosmetically change what clients are told without
+                // moving the real reveal moment.
+                game.shift_deadline(delta_clamped);
+
                 let new_remaining_ms = (game.deadline_ms - now_ms()).max(0);
                 let new_remaining_secs = (new_remaining_ms / 1000) as i32;
+
+                // Re-emit the updated wall-clock deadline to clients (not just the
+                // COOLDOWN tick count) via the same SELECT_ANSWER status they
+                // already track `answer_deadline_at_server_ms` on — the original
+                // `question_start_at_server_ms` is preserved so this is a resync,
+                // not a restart.
+                let select_data = build_select_answer_data(
+                    &game.engine.current_question().clone(),
+                    game.players.len() as i32,
+                    now_ms(),
+                    game.question_start_at_server_ms,
+                    game.deadline_ms,
+                    if game.low_latency { Some(game.server_seq) } else { None },
+                );
                 drop(game);
 
                 ctx.io
                     .to(game_id.clone())
                     .emit(constants::game::COOLDOWN, &new_remaining_secs)
+                    .ok();
+                ctx.io
+                    .to(game_id.clone())
+                    .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
                     .ok();
             });
         }

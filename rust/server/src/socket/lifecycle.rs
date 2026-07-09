@@ -108,10 +108,18 @@ async fn dwell_auto_or_manual(
     wait_abortable(seconds, abort).await;
 }
 
-fn build_select_answer_data(
+/// Builds a SELECT_ANSWER payload. `question_start_at_server_ms` is passed
+/// separately from `server_now_ms` (rather than always being "now") so this
+/// doubles as a resync builder: `manager:adjustTimer` (pacing.rs) re-emits this
+/// with a fresh `server_now_ms`/`answer_deadline_at_server_ms` but the SAME,
+/// original `question_start_at_server_ms` — clients need the true start moment
+/// to keep rendering an accurate elapsed/total, not one that resets every time
+/// the host nudges the timer.
+pub(crate) fn build_select_answer_data(
     question: &Question,
     total_players: i32,
     server_now_ms: i64,
+    question_start_at_server_ms: i64,
     deadline_ms: i64,
     server_seq: Option<i32>,
 ) -> SelectAnswerData {
@@ -132,7 +140,7 @@ fn build_select_answer_data(
         shuffled_chunks: None,
         server_seq,
         server_now_ms: Some(server_now_ms),
-        question_start_at_server_ms: Some(server_now_ms),
+        question_start_at_server_ms: Some(question_start_at_server_ms),
         answer_deadline_at_server_ms: Some(deadline_ms),
         submitted_by: question.submitted_by.clone(),
     }
@@ -252,6 +260,13 @@ async fn open_question(
         let total_players = game.players.len() as i32;
         let deadline_ms = server_now_ms + question.time as i64 * 1000;
         game.deadline_ms = deadline_ms;
+        game.question_start_at_server_ms = server_now_ms;
+        // Internal tick-loop deadline on tokio's clock (see field doc on
+        // `Game::deadline_instant`) — kept in lockstep with `deadline_ms` but
+        // computed independently so it tracks tokio's (possibly virtual/paused)
+        // time instead of wall-clock `SystemTime`.
+        game.deadline_instant =
+            Some(tokio::time::Instant::now() + Duration::from_secs(question.time.max(0) as u64));
         game.last_show_result_data.clear();
         let server_seq = if game.low_latency {
             game.server_seq += 1;
@@ -262,7 +277,14 @@ async fn open_question(
         (question, total_players, server_now_ms, deadline_ms, server_seq)
     };
 
-    let select_data = build_select_answer_data(&question, total_players, server_now_ms, deadline_ms, server_seq);
+    let select_data = build_select_answer_data(
+        &question,
+        total_players,
+        server_now_ms,
+        server_now_ms,
+        deadline_ms,
+        server_seq,
+    );
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
         .ok();
@@ -331,12 +353,14 @@ pub async fn run_game_lifecycle(
                     .ok();
             },
             move || {
-                let game = game_ref_cooldown.lock().unwrap();
-                let now_ms = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_millis() as i64)
-                    .unwrap_or(0);
-                let remaining_ms = (game.deadline_ms - now_ms).max(0);
+                // Drive the tick loop off tokio's clock (`Game::remaining_answer_ms`),
+                // NOT wall-clock `SystemTime`/`deadline_ms`: under `tokio::time::pause()`
+                // (the whole test suite) `SystemTime::now()` never advances even as
+                // virtual time does, so a wall-clock remaining-time computation here
+                // would desync from the tick interval and the loop would spin/hang.
+                // `deadline_ms` stays wall-clock — it's only for the client-facing
+                // `answer_deadline_at_server_ms` payload field.
+                let remaining_ms = game_ref_cooldown.lock().unwrap().remaining_answer_ms();
                 (remaining_ms / 1000) as i32
             },
         )
@@ -768,7 +792,16 @@ mod tests {
             dwell_auto_or_manual(&game_ref_dwell, 1, 1, abort).await;
         });
 
-        tokio::time::advance(Duration::from_secs(5)).await;
+        // NOTE: `tokio::time::advance()` does a single atomic clock jump and does
+        // NOT cascade through a timer that gets freshly created as a *result* of
+        // a wakeup processed during that same jump (e.g. the `wait_abortable`
+        // sleep armed only after `pause_notify` resolves below) — verified via a
+        // standalone probe against this exact tokio version. `sleep(...).await`
+        // auto-advances the paused clock step-by-step instead, correctly
+        // cascading through such chained timers, so it's used here rather than
+        // `advance()`. This is a test-only distinction; it does not change what
+        // is asserted.
+        tokio::time::sleep(Duration::from_secs(5)).await;
         assert!(
             !dwell.is_finished(),
             "manual dwell advanced while game was paused"
@@ -779,10 +812,76 @@ mod tests {
             game.paused = false;
             game.pause_resume.notify_one();
         }
-        tokio::time::advance(Duration::from_secs(2)).await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
         assert!(
             dwell.is_finished(),
             "manual dwell did not advance after pause cleared"
+        );
+    }
+
+    /// Proves `manager:adjustTimer` (via `Game::shift_deadline`, the exact
+    /// method pacing.rs's handler calls) genuinely moves WHEN the reveal fires
+    /// on the server's own tick loop (`run_cooldown_with_deadline` +
+    /// `Game::remaining_answer_ms`) — not just what clients are told the
+    /// deadline is. A cosmetic-only fix (shifting `deadline_ms` without
+    /// `deadline_instant`) would still resolve at the ORIGINAL deadline; this
+    /// test fails against that regression.
+    #[tokio::test(start_paused = true)]
+    async fn adjust_timer_shifts_reveal_moment_not_just_the_display() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let game_ref = Arc::new(Mutex::new({
+            let mut g = Game::new(
+                "game-adjust".to_string(),
+                "ADJT".to_string(),
+                "manager-socket".to_string(),
+                quiz,
+            );
+            // Mirror what open_question() arms for a live answer window,
+            // without needing a full engine/lifecycle harness: a 4s deadline.
+            g.deadline_instant = Some(tokio::time::Instant::now() + Duration::from_secs(4));
+            g
+        }));
+
+        let abort = Arc::new(Notify::new());
+        let game_ref_cooldown = game_ref.clone();
+        let cooldown = tokio::spawn(async move {
+            run_cooldown_with_deadline(4, abort, |_count| {}, move || {
+                (game_ref_cooldown.lock().unwrap().remaining_answer_ms() / 1000) as i32
+            })
+            .await
+        });
+
+        // t=2s: well before the original t=4s deadline — not resolved yet.
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        assert!(
+            !cooldown.is_finished(),
+            "cooldown resolved before even the original deadline"
+        );
+
+        // manager:adjustTimer +5s — the exact call pacing.rs's handler makes.
+        // Extends the CURRENT deadline (t=4) by 5s -> new deadline at t=9.
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.shift_deadline(5);
+        }
+
+        // t=6s: past the ORIGINAL t=4s deadline, still short of the new t=9s
+        // one. If the shift only touched `deadline_ms` cosmetically, the real
+        // tokio-driven tick loop would have already resolved back at t=4 —
+        // this is the assertion that catches that regression.
+        tokio::time::sleep(Duration::from_secs(4)).await;
+        assert!(
+            !cooldown.is_finished(),
+            "adjustTimer's shift was cosmetic only — reveal still fired at the pre-shift deadline"
+        );
+
+        // t=10s: past the shifted t=9s deadline — the reveal now actually fires.
+        tokio::time::sleep(Duration::from_secs(4)).await;
+        let outcome = cooldown.await.unwrap();
+        assert_eq!(
+            outcome,
+            crate::socket::cooldown::CooldownOutcome::Elapsed,
+            "reveal did not fire at the shifted deadline"
         );
     }
 }
