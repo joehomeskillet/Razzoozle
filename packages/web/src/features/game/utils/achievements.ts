@@ -212,14 +212,19 @@ export function loadAchievementMeta(): Promise<MergedAchievement[]> {
  * Returns the display name and description for an achievement id.
  * Prefers the server-provided override (`merged.name` / `merged.description`);
  * falls back to the i18n-resolved values supplied via `i18nFallback`.
+ * Only treats a server value as a real override when it is non-empty AND
+ * differs from the raw achievement id (distinguishing genuine manager customizations
+ * from default DB rows).
  */
 export function getAchievementDisplay(
   _id: string,
   merged: MergedAchievement | undefined,
   i18nFallback: { name: string; desc: string },
 ): { name: string; description: string } {
+  const nameOverride = merged?.name && merged.name !== _id ? merged.name : undefined
+  const descOverride = merged?.description ? merged.description : undefined
   return {
-    name: merged?.name ?? i18nFallback.name,
-    description: merged?.description ?? i18nFallback.desc,
+    name: nameOverride ?? i18nFallback.name,
+    description: descOverride ?? i18nFallback.desc,
   }
 }
