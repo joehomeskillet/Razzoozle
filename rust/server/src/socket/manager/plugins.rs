@@ -9,9 +9,8 @@
 //!
 //! Substrate ruling (spec_plugins.md ORCHESTRATOR-VERIFIKATION): source of truth
 //! is DISK — config/plugins/index.json (shared with Node via the host config
-//! mount). The installed_plugins DB table is dead (Node never writes it), so
-//! PLUGIN_CONFIG broadcasts read the index from disk via read_plugins_index(),
-//! never db::get_plugins.
+//! mount). The installed_plugins DB table mirrors the disk index for boot-hydrate
+//! parity: upsert on install/setConfig, delete on remove.
 //!
 //! HONEST DEFER (documented, no fake success): Node's loadPlugin/unloadPlugin
 //! execute the plugin's server.js hook in the JS runtime. Rust cannot run
@@ -24,9 +23,42 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::manager::InstalledPlugin;
 use serde_json::Value;
 use socketioxide::extract::{Data, SocketRef};
+use tracing;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+
+/// Simple base64 encoder (no external dependency)
+fn encode_base64(bytes: &[u8]) -> String {
+    const BASE64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = String::new();
+    let mut buf = 0u32;
+    let mut bits = 0;
+
+    for &byte in bytes {
+        buf = (buf << 8) | (byte as u32);
+        bits += 8;
+
+        while bits >= 6 {
+            bits -= 6;
+            let idx = ((buf >> bits) & 0x3f) as usize;
+            result.push(BASE64_CHARS[idx] as char);
+        }
+    }
+
+    if bits > 0 {
+        buf <<= 6 - bits;
+        let idx = (buf & 0x3f) as usize;
+        result.push(BASE64_CHARS[idx] as char);
+    }
+
+    while result.len() % 4 != 0 {
+        result.push('=');
+    }
+
+    result
+}
 
 /// Mirror of Node PLUGIN_REVISIONS_MAX (= THEME_REVISIONS_MAX, constants.ts).
 const PLUGIN_REVISIONS_MAX: usize = 10;
@@ -285,11 +317,36 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                 .await;
 
                 match result {
-                    Ok(Ok(_installed)) => {
+                    Ok(Ok(installed)) => {
                         // DEFER (spec ruling 4): Node calls loadPlugin(installed)
                         // here to run the server.js hook. Rust has no JS runtime —
                         // server-hook plugins run on the Node backend only.
                         broadcast_plugins(&socket);
+
+                        // Mirror to DB for boot-hydrate parity
+                        let db_pool = ctx.db_pool.clone();
+                        let plugin_id = installed.id.clone();
+                        tokio::spawn(async move {
+                            // Build files JSON map by walking plugin_dir
+                            let mut files_map = serde_json::json!({});
+                            let dir = plugin_dir(&plugin_id);
+                            if let Ok(entries) = std::fs::read_dir(&dir) {
+                                for entry in entries.flatten() {
+                                    let path = entry.path();
+                                    if path.is_file() && !path.is_symlink() {
+                                        if let Ok(bytes) = std::fs::read(&path) {
+                                            let b64 = encode_base64(&bytes);
+                                            if let Some(relative) = path.strip_prefix(&dir).ok().and_then(|p| p.to_str()) {
+                                                files_map[relative] = serde_json::json!(b64);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &installed, &files_map).await {
+                                tracing::error!(error = %e, "failed to mirror plugin to DB");
+                            }
+                        });
                     }
                     Ok(Err(msg)) => {
                         socket.emit(constants::manager::ERROR_MESSAGE, &msg).ok();
@@ -333,13 +390,26 @@ fn register_plugin_remove(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Clone id before it's moved into the spawn_blocking closure
+                let id_for_pg = id.clone();
+
                 // DEFER (spec ruling 4): Node calls unloadPlugin(id) before the
                 // files are deleted. Rust never loaded a JS server hook, so
                 // there is nothing to tear down here.
                 let result = tokio::task::spawn_blocking(move || remove_plugin(&id)).await;
 
                 match result {
-                    Ok(Ok(())) => broadcast_plugins(&socket),
+                    Ok(Ok(())) => {
+                        broadcast_plugins(&socket);
+
+                        // Mirror to DB for boot-hydrate parity
+                        let db_pool = ctx.db_pool.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = crate::db::delete_installed_plugin(&db_pool, &id_for_pg).await {
+                                tracing::error!(error = %e, "failed to mirror plugin deletion to DB");
+                            }
+                        });
+                    }
                     _ => {
                         socket
                             .emit(constants::manager::ERROR_MESSAGE, "errors:plugin.removeFailed")
@@ -391,11 +461,42 @@ fn register_plugin_set_config(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Clone id before it's moved into the spawn_blocking closure
+                let id_for_pg = id.clone();
+
                 let result =
                     tokio::task::spawn_blocking(move || set_plugin_config(&id, &config)).await;
 
                 match result {
-                    Ok(Ok(())) => broadcast_plugins(&socket),
+                    Ok(Ok(())) => {
+                        broadcast_plugins(&socket);
+
+                        // Mirror to DB for boot-hydrate parity
+                        let db_pool = ctx.db_pool.clone();
+                        tokio::spawn(async move {
+                            if let Some(plugin) = read_plugins_index().into_iter().find(|p| p.id == id_for_pg) {
+                                // Build files JSON map by walking plugin_dir
+                                let mut files_map = serde_json::json!({});
+                                let dir = plugin_dir(&id_for_pg);
+                                if let Ok(entries) = std::fs::read_dir(&dir) {
+                                    for entry in entries.flatten() {
+                                        let path = entry.path();
+                                        if path.is_file() && !path.is_symlink() {
+                                            if let Ok(bytes) = std::fs::read(&path) {
+                                                let b64 = encode_base64(&bytes);
+                                                if let Some(relative) = path.strip_prefix(&dir).ok().and_then(|p| p.to_str()) {
+                                                    files_map[relative] = serde_json::json!(b64);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &plugin, &files_map).await {
+                                    tracing::error!(error = %e, "failed to mirror plugin config to DB");
+                                }
+                            }
+                        });
+                    }
                     _ => {
                         socket
                             .emit(constants::manager::ERROR_MESSAGE, "errors:plugin.configFailed")
