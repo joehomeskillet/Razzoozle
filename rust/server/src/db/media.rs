@@ -134,3 +134,101 @@ pub async fn delete_media_assets_by_slot(pool: &Option<PgPool>, slot: &str, sour
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
+
+/// Get media assets with url and data for hydration.
+/// Returns Vec<(url, data)> for all media_assets where data IS NOT NULL.
+/// Returns empty vec if pool is None or query fails.
+pub async fn get_media_for_hydrate(pool: &Option<sqlx::PgPool>) -> Vec<(String, Vec<u8>)> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, Vec<u8>)> =
+        match sqlx::query_as(
+            "SELECT url, data FROM media_assets WHERE data IS NOT NULL ORDER BY uploaded_at DESC"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch media_assets for hydration from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    rows
+}
+
+/// Boot-hydrate media assets from Postgres to disk.
+/// Idempotent: only writes if file is missing or size differs.
+/// Empty-guard: if no media rows, returns immediately without touching disk.
+/// Non-fatal: logs errors but doesn't panic.
+pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &str) {
+    let media_assets = get_media_for_hydrate(pool).await;
+
+    // Empty-guard: if PG has 0 media rows, do nothing (never nuke existing disk files)
+    if media_assets.is_empty() {
+        return;
+    }
+
+    let total_count = media_assets.len();
+
+    // Ensure media directories exist
+    let media_base = format!("{}/media", config_base);
+    if let Err(e) = std::fs::create_dir_all(&media_base) {
+        eprintln!("Failed to create media directory '{}': {}", media_base, e);
+        return;
+    }
+
+    // Create standard category subdirectories
+    for category in &["questions", "backgrounds", "audio", "avatars", "generated"] {
+        let cat_dir = format!("{}/{}", media_base, category);
+        if let Err(e) = std::fs::create_dir_all(&cat_dir) {
+            eprintln!("Failed to create media category directory '{}': {}", cat_dir, e);
+        }
+    }
+
+    // Write each media file to disk (only if missing or size mismatch)
+    let mut written = 0;
+    for (url, data) in media_assets {
+        // Extract path from url: "/media/<category>/<filename>" -> "<category>/<filename>"
+        let rel_path = if let Some(stripped) = url.strip_prefix("/media/") {
+            stripped
+        } else {
+            eprintln!("media hydrate: Invalid url format '{}' (expected '/media/<category>/<filename>')", url);
+            continue;
+        };
+
+        let file_path = format!("{}/{}", media_base, rel_path);
+
+        // Check if file exists and has matching size
+        if std::path::Path::new(&file_path).exists() {
+            if let Ok(stat) = std::fs::metadata(&file_path) {
+                if stat.len() == data.len() as u64 {
+                    // File exists and size matches — skip
+                    continue;
+                }
+            }
+        }
+
+        // Ensure parent directory exists
+        if let Some(parent) = std::path::Path::new(&file_path).parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                eprintln!("Failed to create parent directory for '{}': {}", file_path, e);
+                continue;
+            }
+        }
+
+        // Write the file
+        match std::fs::write(&file_path, &data) {
+            Ok(_) => written += 1,
+            Err(e) => {
+                eprintln!("Failed to write media file '{}': {}", file_path, e);
+            }
+        }
+    }
+
+    eprintln!("media hydrate: {} assets, {} written", total_count, written);
+}
