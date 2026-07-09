@@ -184,6 +184,43 @@ Changes (build config only, zero behavior change):
   `/ci-cache` persists it, and `CARGO_INCREMENTAL=0` is acceptable (no inner loop). `[profile.dev]` debuginfo
   trim reduces DWARF emission + link size with panic line-info retained.
 
+## Phase 2 — implemented (CI, 2026-07-09)
+
+- **`.gitea/workflows/ci.yml`** — the `rust` job moved to `runs-on: rust-ci` (the toolchain image already
+  ships mold + clang + clippy + rustfmt + cargo-nextest + sccache), dropping the `rust:1-bookworm` container
+  and per-run tool install. Added persistent reuse on the runner's `/ci-cache` volume via job `env`:
+  `CARGO_HOME=/ci-cache/cargo` (registry + git deps), `CARGO_TARGET_DIR=/ci-cache/rust-target` (a *stable*
+  absolute path — required for sccache to hit), `RUSTC_WRAPPER=sccache`, `SCCACHE_DIR=/ci-cache/sccache`,
+  `CARGO_INCREMENTAL=0`. The persisted `target/` is the primary dep-reuse layer; sccache is the backstop when
+  `target/` is cold. Job graph (`lint-typecheck → {unit, rust} → build`) and the main-only `build` gate are
+  unchanged. `build` job got `env: DOCKER_BUILDKIT=1` for the Dockerfile cache mounts.
+- **`rust/Dockerfile`** — added `# syntax=docker/dockerfile:1`; installs `mold` in the builder (required by the
+  Phase-1 `.cargo/config.toml`); BuildKit `--mount=type=cache` for the cargo registry, git and `target/` so
+  image rebuilds reuse compiled deps. The built binary is copied out of the ephemeral `target/` cache mount to
+  `/razzoozle-server` for the runtime `COPY`. Runtime stage unchanged (same binary, user, ports, CMD) — behavior
+  identical. **Validated locally:** `DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile .` → image built in 70 s,
+  binary present + copied correctly.
+
+## Phase 3 — implemented (reproducibility + fixture, 2026-07-09)
+
+- **`rust/rust-toolchain.toml`** — pins `channel = "1.96.1"` + `components = ["clippy", "rustfmt"]` for
+  worktree/CI parity.
+- **`spikes/golden-frames/fixture-quiz.json`** — **created (additive)**, fixing baseline problem #8. The engine
+  test `engine/src/state/tests.rs` `include_str!`s this path (resolves to the worktree root), so it was a
+  compile-time failure on a clean checkout. Minimal 2-question quiz matching the exact `Quizz`/`Question` schema
+  (`subject = "Golden Test Quiz"`, choice questions with correct indices 1 and 2). All **57 engine tests now
+  pass**; the full workspace suite is green (57 engine + 199 protocol + 44 server = 300).
+- **`rust/gate.sh`** — the whole-workspace test check now prefers `cargo nextest run --workspace --no-fail-fast`
+  when installed (falls back to the original `cargo test --no-run` compile-only check otherwise — same coverage).
+  Added a final **advisory, non-blocking** rustfmt-check + clippy step that only reports counts and never touches
+  the pass/fail verdict (pre-existing clippy noise — 404 lines — must not break CI). Gate still returns **GO**.
+
+## reqwest 0.11 → 0.12 dedup — separate final commit
+
+Isolated, cleanly revertable commit (the ONLY dependency-version change, explicitly scoped). Collapses the
+duplicate legacy async stack. See the final report for the exact diff, the removed duplicate crates and the
+green `cargo build -p razzoozle-server` proof.
+
 ## 7. Constraints honored throughout
 Never `cargo clean`; never change dependency versions; touch `Cargo.lock` only if strictly required (then
 justify); no `cargo update`; one conventional-commit per phase; never delete anything not created here;
