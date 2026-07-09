@@ -1,3 +1,4 @@
+mod bot;
 mod socket;
 mod state;
 mod media_ai;
@@ -218,6 +219,24 @@ async fn main() {
                     reg.evict_stale_games();
                 })) {
                     tracing::error!("game eviction reaper tick panicked (continuing): {:?}", e);
+                }
+            }
+        });
+    }
+
+    // Empty-grace reaper: RESET+remove manager-less games after grace window
+    {
+        let registry_clone = Arc::clone(&registry);
+        let io_clone = io.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let mut reg = registry_clone.write().await;
+                if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    reg.cleanup_empty_games(&io_clone);
+                })) {
+                    tracing::error!("empty-grace reaper tick panicked (continuing): {:?}", e);
                 }
             }
         });

@@ -1,7 +1,8 @@
-use razzoozle_engine::state::GameState;
+use crate::bot::BotManager;
+use razzoozle_engine::state::{GamePhase, GameState};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
-use razzoozle_protocol::status::{RoundRecapAward, ShowResultData, Status};
+use razzoozle_protocol::status::{GameStatus, RoundRecapAward, ShowResultData, Status};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -53,6 +54,9 @@ pub struct Game {
     pub paused: bool,
     // Snapshot of the status + data at the time of pause, for replay on resume
     pub paused_state: Option<(Status, serde_json::Value)>,
+    // Last status broadcast to the manager room (mirrors Node's lastBroadcastStatus),
+    // replayed on manager:reconnect so status.data is not an empty object.
+    pub last_manager_status: Option<(Status, serde_json::Value)>,
     // Absolute server deadline (ms since UNIX epoch, wall-clock `SystemTime`)
     // for the current question's answer window. This is CLIENT-facing only —
     // it feeds `answer_deadline_at_server_ms` in the SELECT_ANSWER payload, so
@@ -86,6 +90,8 @@ pub struct Game {
     pub temp_round_recap: Option<Vec<RoundRecapAward>>,
     // task resets to false after emitting.
     pub answer_count_push_pending: bool,
+    // Sim-mode bot answer scheduler (None until first bot is added).
+    pub bot_manager: Option<Arc<BotManager>>,
 }
 
 impl Game {
@@ -120,13 +126,57 @@ impl Game {
             cooldown_abort: None,
             paused: false,
             paused_state: None,
+            last_manager_status: None,
             deadline_ms: 0,
             deadline_instant: None,
             question_start_at_server_ms: 0,
             pause_resume: Arc::new(tokio::sync::Notify::new()),
             last_show_result_data: HashMap::new(),
             answer_count_push_pending: false,
+            bot_manager: None,
         }
+    }
+
+    /// Record the last status payload broadcast to the manager room.
+    pub fn record_last_manager_status(&mut self, status: &GameStatus) {
+        if let Ok(val) = serde_json::to_value(status) {
+            if let (Some(name_val), Some(data)) = (val.get("name"), val.get("data")) {
+                if let Ok(s) = serde_json::from_value::<Status>(name_val.clone()) {
+                    self.last_manager_status = Some((s, data.clone()));
+                }
+            }
+        }
+    }
+
+    /// Wire-format status name (e.g. `"SHOW_QUESTION"`) for reconnect payloads.
+    pub fn status_wire_name(status: &Status) -> String {
+        serde_json::to_value(status)
+            .ok()
+            .and_then(|v| v.as_str().map(str::to_string))
+            .unwrap_or_else(|| "WAIT".to_string())
+    }
+
+    /// Wire-format status name from the live engine phase (manager reconnect).
+    pub fn phase_wire_name(phase: GamePhase) -> String {
+        match phase {
+            GamePhase::ShowRoom => "WAIT".to_string(),
+            GamePhase::ShowStart => "SHOW_START".to_string(),
+            GamePhase::ShowQuestion => "SHOW_QUESTION".to_string(),
+            GamePhase::SelectAnswer => "SELECT_ANSWER".to_string(),
+            GamePhase::ShowResult => "SHOW_RESULT".to_string(),
+            GamePhase::ShowRoundRecap => "SHOW_ROUND_RECAP".to_string(),
+            GamePhase::ShowLeaderboard => "SHOW_LEADERBOARD".to_string(),
+            GamePhase::Finished => "FINISHED".to_string(),
+        }
+    }
+
+    /// Status block for manager:successReconnect — name from live phase; full
+    /// per-phase data unavailable since lifecycle status recording was removed.
+    pub fn manager_reconnect_status(&self) -> (String, serde_json::Value) {
+        (
+            Self::phase_wire_name(self.engine.phase),
+            serde_json::json!({ "text": "game:waitingForPlayers" }),
+        )
     }
 
     /// Arm a fresh abort signal for a new abortable wait, returning the handle

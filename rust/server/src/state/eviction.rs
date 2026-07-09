@@ -42,6 +42,8 @@ impl GameRegistry {
     /// Remove a game from the registry by game_id. Returns true if the game was found and removed,
     /// false otherwise (silent no-op pattern per Node parity).
     pub fn remove_game(&mut self, game_id: &str) -> bool {
+        self.empty_games.retain(|e| e.game_id != game_id);
+
         // Try to find the game by id and remove it
         if let Some(game_ref) = self.games_by_id.remove(game_id) {
             let game = Self::lock_game_recover(&game_ref);

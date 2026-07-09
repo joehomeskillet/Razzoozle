@@ -4,7 +4,6 @@ use super::super::HandlerCtx;
 use super::config_helper;
 use crate::db;
 use crate::http::RATE_LIMITER;
-use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -200,6 +199,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 {
                     let mut registry = ctx.registry.write().await;
                     registry.login_client(ctx.client_id.clone());
+                    registry.reactivate_game(game_id.clone());
                 }
                 {
                     let mut game = game_ref.lock().unwrap();
@@ -237,51 +237,22 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 }
 
-                // TODO(parity): Node also calls registry.reactivateGame(gameId)
-                // here, pulling the game out of the empty-grace cleanup
-                // window armed by a manager disconnect. Rust's GameRegistry
-                // has no empty-grace/reactivate mechanism at all yet (grep
-                // confirms no markGameAsEmpty/reactivateGame equivalent) — so
-                // there is nothing to hook into without adding that whole
-                // subsystem, which is out of scope for this auth-only fix.
-
-                let (game_id, players, current_question_index, total_questions, phase) = {
+                let (game_id, players, current_question_index, total_questions, reconnect_status) = {
                     let mut game = game_ref.lock().unwrap();
                     game.manager_socket_id = new_socket_id;
+                    let reconnect_status = game.manager_reconnect_status();
                     (
                         game.game_id.clone(),
                         game.players.clone(),
                         game.engine.current_question_index,
                         game.engine.quiz.questions.len(),
-                        game.engine.phase,
+                        reconnect_status,
                     )
                 };
 
                 socket.join(game_id.clone());
 
-                // status.name is derived from the live engine phase (cheap +
-                // accurate). `data` is best-effort: Rust has no
-                // managerStatus/lastBroadcastStatus tracking (Node's
-                // round-manager status system), so only the WAIT/lobby case
-                // gets the exact literal Node itself falls back to when
-                // nothing has been broadcast yet. TODO(parity): port
-                // per-phase status data (question/result/leaderboard
-                // payloads) once the engine tracks a broadcastable status, so
-                // a manager reconnecting mid-game gets the full
-                // SHOW_QUESTION/SHOW_RESULT/... data instead of an empty
-                // object.
-                let (status_name, status_data) = match phase {
-                    GamePhase::ShowRoom => {
-                        ("WAIT", serde_json::json!({ "text": "game:waitingForPlayers" }))
-                    }
-                    GamePhase::ShowStart => ("SHOW_START", serde_json::json!({})),
-                    GamePhase::ShowQuestion => ("SHOW_QUESTION", serde_json::json!({})),
-                    GamePhase::SelectAnswer => ("SELECT_ANSWER", serde_json::json!({})),
-                    GamePhase::ShowResult => ("SHOW_RESULT", serde_json::json!({})),
-                    GamePhase::ShowRoundRecap => ("SHOW_ROUND_RECAP", serde_json::json!({})),
-                    GamePhase::ShowLeaderboard => ("SHOW_LEADERBOARD", serde_json::json!({})),
-                    GamePhase::Finished => ("FINISHED", serde_json::json!({})),
-                };
+                let (status_name, status_data) = reconnect_status;
 
                 // currentQuestion mirrors Node's round.getReconnectInfo()
                 // ({current: index+1, total}) — trivially available from the

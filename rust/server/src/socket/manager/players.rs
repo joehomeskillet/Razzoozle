@@ -1,8 +1,10 @@
 //! MANAGER.KICK_PLAYER, ADD_BOTS — player management handlers
 
 use super::super::HandlerCtx;
+use crate::bot::BotManager;
 use crate::is_game_host;
 use razzoozle_protocol::constants;
+use std::sync::Arc;
 use razzoozle_engine::state::GamePhase;
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashSet;
@@ -35,7 +37,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 if let (Some(game_id), Some(player_id)) = (game_id_opt, player_id_opt) {
-                    let removed_count = {
+                    let (removed_count, bot_cancel) = {
                         let registry = ctx.registry.read().await;
                         let game_opt = registry.get_game_by_id(&game_id);
                         if let Some(game_ref) = game_opt {
@@ -55,18 +57,30 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                             if let Some(pos) = game.players.iter().position(|p| p.id == player_id) {
                                 let client_id = game.players[pos].client_id.clone();
+                                let bot_manager = game.bot_manager.clone();
                                 game.players.remove(pos);
                                 game.engine.players.retain(|p| p.client_id != client_id);
                                 game.engine.current_answers.remove(&client_id);
                                 game.engine.answer_order.retain(|c| c != &client_id);
-                                Some(game.players.len())
+                                let cancel = if client_id.starts_with("bot-") {
+                                    Some((bot_manager, client_id))
+                                } else {
+                                    None
+                                };
+                                (Some(game.players.len()), cancel)
                             } else {
-                                None
+                                (None, None)
                             }
                         } else {
-                            None
+                            (None, None)
                         }
                     };
+
+                    if let Some((bot_manager, client_id)) = bot_cancel {
+                        if let Some(bm) = bot_manager {
+                            bm.cancel_pending(Some(&client_id)).await;
+                        }
+                    }
 
                     if let Some(total) = removed_count {
                         ctx.io
@@ -88,8 +102,6 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
-// DEFERRED(parity): bot answer scheduling during SelectAnswer — requires delayed
-// engine.record_answer calls, bot timer tracking, and cancel-on-kick/window-close.
 fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::ADD_BOTS, {
         let ctx = ctx.clone();
@@ -215,6 +227,13 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
 
                             let bot_socket_id = format!("bot-{}", uuid::Uuid::new_v4());
                             let bot_client_id = format!("bot-{}", uuid::Uuid::new_v4());
+
+                            if game.bot_manager.is_none() {
+                                game.bot_manager = Some(Arc::new(BotManager::new()));
+                            }
+                            if let Some(bm) = &game.bot_manager {
+                                bm.add_bot_speed(bot_client_id.clone());
+                            }
 
                             // Fresh v4 UUID client_id, so a dup-guard rejection
                             // here is not a real-world case — skip defensively.

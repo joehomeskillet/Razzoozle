@@ -191,6 +191,18 @@ pub mod theme_revision {
     pub const ERROR: &str = "themeRevision:error";
 }
 
+// Sim-mode bot tuning (server-side scripted opponents). Bots are a dev/test aid,
+// gated by RAHOOT_SIM_MODE at runtime; these constants tune behaviour, not availability.
+pub struct Bot;
+
+impl Bot {
+    pub const MAX_PER_REQUEST: i32 = 50;
+    pub const MAX_TOTAL: i32 = 200;
+    pub const CORRECT_RATE: f64 = 0.6;
+    pub const MIN_DELAY_MS: u64 = 1200;
+    pub const MAX_DELAY_MS: u64 = 8000;
+}
+
 // AI generation parameters (rate limiter & model tuning)
 pub struct AI;
 

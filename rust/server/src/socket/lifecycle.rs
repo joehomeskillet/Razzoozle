@@ -235,20 +235,19 @@ async fn open_question(
             &GameUpdateQuestion { current, total },
         )
         .ok();
+    let prepared_status = GameStatus::ShowPrepared(ShowPreparedData {
+        total_answers,
+        question_number: current,
+    });
     io.to(game_id.to_string())
-        .emit(
-            constants::game::STATUS,
-            &GameStatus::ShowPrepared(ShowPreparedData {
-                total_answers,
-                question_number: current,
-            }),
-        )
+        .emit(constants::game::STATUS, &prepared_status)
         .ok();
 
     tokio::time::sleep(Duration::from_secs(PREPARED_DWELL_SECS)).await;
 
+    let show_question_status = GameStatus::ShowQuestion(show_data);
     io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &GameStatus::ShowQuestion(show_data))
+        .emit(constants::game::STATUS, &show_question_status)
         .ok();
 
     let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
@@ -285,9 +284,35 @@ async fn open_question(
         deadline_ms,
         server_seq,
     );
+    let select_status = GameStatus::SelectAnswer(select_data);
     io.to(game_id.to_string())
-        .emit(constants::game::STATUS, &GameStatus::SelectAnswer(select_data))
+        .emit(constants::game::STATUS, &select_status)
         .ok();
+
+    let (bot_manager, bots) = {
+        let game = game_ref.lock().unwrap();
+        let bots: Vec<_> = game
+            .players
+            .iter()
+            .filter(|p| p.is_bot == Some(true))
+            .cloned()
+            .collect();
+        (game.bot_manager.clone(), bots)
+    };
+    if let Some(bm) = bot_manager {
+        if !bots.is_empty() {
+            let bm_clone = bm.clone();
+            let game_arc = game_ref.clone();
+            let io_clone = io.clone();
+            let gid = game_id.to_string();
+            let question_clone = question.clone();
+            tokio::spawn(async move {
+                bm_clone
+                    .schedule_answers(gid, bots, question_clone, game_arc, io_clone)
+                    .await;
+            });
+        }
+    }
 
     true
 }
@@ -365,6 +390,13 @@ pub async fn run_game_lifecycle(
             },
         )
         .await;
+
+        {
+            let bm = game_ref.lock().unwrap().bot_manager.clone();
+            if let Some(bm) = bm {
+                bm.cancel_pending(None).await;
+            }
+        }
 
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
