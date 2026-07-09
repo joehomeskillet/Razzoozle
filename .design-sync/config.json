@@ -1,0 +1,31 @@
+{
+  "projectId": "e3bef6c9-a88d-4718-a365-6f8423321b99",
+  "shape": "package",
+  "pkg": "@razzoozle/web",
+  "srcDir": "src/components",
+  "tsconfig": "../../../../../tsconfig.json",
+  "cssEntry": "dist/assets/index-DRBxlWsy.css",
+  "buildCmd": "CI=true corepack pnpm -F @razzoozle/web build",
+  "readmeHeader": ".design-sync/conventions.md",
+  "extraEntries": ["../../../../../.design-sync/i18n-preview.ts"],
+  "extraFonts": [
+    "dist/assets/rubik-arabic-wght-normal-CGnJ-sf6.woff2",
+    "dist/assets/rubik-cyrillic-ext-wght-normal-BjodpZir.woff2",
+    "dist/assets/rubik-cyrillic-wght-normal-DveCct9I.woff2",
+    "dist/assets/rubik-hebrew-wght-normal-BIkpbuMU.woff2",
+    "dist/assets/rubik-latin-ext-wght-normal-OacczzuJ.woff2",
+    "dist/assets/rubik-latin-wght-normal-CnQIisVs.woff2"
+  ],
+  "componentSrcMap": {
+    "AnimatedErrorPage": null,
+    "ErrorPage": null,
+    "ErrorBoundary": null,
+    "NotFound": null
+  },
+  "overrides": {
+    "AlertDialog": { "cardMode": "single", "viewport": "640x400" }
+  },
+  "libOverrides": {
+    "source-kit.mjs": "synth-entry must honor componentSrcMap:null at file level (excluded error screens pull src/i18n.ts top-level await into the IIFE)"
+  }
+}
