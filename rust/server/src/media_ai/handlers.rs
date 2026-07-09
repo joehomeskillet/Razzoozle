@@ -318,41 +318,55 @@ pub(super) fn register_submit_upload_image(
                 }
 
                 // 5. transcode to WebP + persist to config/media/questions/ (category hardcoded)
-                match save_upload_image(&mime, &bytes, &filename) {
-                    Ok(saved) => {
-                        let uploaded_at = Utc::now();
-                        if let Err(e) = db::insert_media_asset(
-                            &db_pool,
-                            &saved.asset_id,
-                            &saved.filename,
-                            &saved.url,
-                            saved.size,
-                            "image",
-                            "questions",
-                            "upload",
-                            Some(saved.width),
-                            Some(saved.height),
-                            uploaded_at,
-                            &saved.bytes,
-                        )
-                        .await
-                        {
-                            warn!("SUBMIT_UPLOAD_IMAGE PG insert failed: {}", e);
-                            socket.emit(constants::manager::IMAGE_ERROR, &e).ok();
-                            return;
-                        }
-
-                        socket
-                            .emit(
-                                constants::manager::UPLOAD_IMAGE_SUCCESS,
-                                &serde_json::json!({ "url": saved.url }),
-                            )
-                            .ok();
+                // Wrap entire save (includes to_webp) in spawn_blocking to avoid starving tokio pool
+                let mime_for_block = mime.clone();
+                let bytes_for_block = bytes.clone();
+                let filename_for_block = filename.clone();
+                let save_result = tokio::task::spawn_blocking(move || {
+                    save_upload_image(&mime_for_block, &bytes_for_block, &filename_for_block)
+                })
+                .await;
+                
+                let save_outcome = match save_result {
+                    Ok(result) => result,
+                    Err(_) => {
+                        socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
+                        return;
                     }
-                    Err(e) => {
-                        warn!("SUBMIT_UPLOAD_IMAGE failed: {}", e);
+                };
+                
+                if let Ok(saved) = save_outcome {
+                    let uploaded_at = Utc::now();
+                    if let Err(e) = db::insert_media_asset(
+                        &db_pool,
+                        &saved.asset_id,
+                        &saved.filename,
+                        &saved.url,
+                        saved.size,
+                        "image",
+                        "questions",
+                        "upload",
+                        Some(saved.width),
+                        Some(saved.height),
+                        uploaded_at,
+                        &saved.bytes,
+                    )
+                    .await
+                    {
+                        warn!("SUBMIT_UPLOAD_IMAGE PG insert failed: {}", e);
                         socket.emit(constants::manager::IMAGE_ERROR, &e).ok();
+                        return;
                     }
+
+                    socket
+                        .emit(
+                            constants::manager::UPLOAD_IMAGE_SUCCESS,
+                            &serde_json::json!({ "url": saved.url }),
+                        )
+                        .ok();
+                } else {
+                    warn!("SUBMIT_UPLOAD_IMAGE failed: save_upload_image error");
+                    socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
                 }
             });
         },
@@ -469,6 +483,8 @@ fn save_upload_image(mime: &str, bytes: &[u8], filename: &str) -> Result<SavedUp
         return Err("errors:media.invalidDataUrl".to_string());
     }
 
+    // This function is called from within spawn_blocking in the handler,
+    // so we don't need to wrap to_webp again. Just call it directly.
     let (webp_bytes, width, height) = to_webp(bytes)?;
     let stem = normalize_stem(filename);
     let id: String = uuid::Uuid::new_v4().simple().to_string().chars().take(8).collect();

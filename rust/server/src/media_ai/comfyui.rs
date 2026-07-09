@@ -8,6 +8,7 @@
 //! the natural `errors:submission.imageGen*` error (no fake-success stub).
 
 use rand::Rng;
+use tracing::warn;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
@@ -260,7 +261,12 @@ async fn queue_and_collect(workflow: Value, save_node: &str) -> Result<String, S
 
         match fetch_and_save(&client, &base, &filename, &subfolder, &img_type).await {
             Ok(url) => return Ok(url),
-            Err(_) => continue, // transient fetch error after ready — keep polling
+            Err(Some(err)) => {
+                // TERMINAL error: transcode failed. Don't retry.
+                warn!("ComfyUI output transcode failed: {}", err);
+                return Err(FAILED.to_string());
+            }
+            Err(None) => continue, // transient fetch error after ready — keep polling
         }
     }
 
@@ -273,7 +279,7 @@ async fn fetch_and_save(
     filename: &str,
     subfolder: &str,
     img_type: &str,
-) -> Result<String, String> {
+) -> Result<String, Option<String>> {
     let resp = client
         .get(format!("{}/view", base))
         .query(&[
@@ -283,16 +289,38 @@ async fn fetch_and_save(
         ])
         .send()
         .await
-        .map_err(|_| FAILED.to_string())?;
+        .map_err(|_| None)?;
 
     if !resp.status().is_success() {
-        return Err(FAILED.to_string());
+        return Err(None);
     }
 
-    let bytes = resp.bytes().await.map_err(|_| FAILED.to_string())?;
-    let (webp_bytes, _width, _height) =
-        crate::socket::manager::media::to_webp(bytes.as_ref()).map_err(|_| FAILED.to_string())?;
+    let bytes = resp.bytes().await.map_err(|_| None)?;
+    
+    // Wrap transcode in spawn_blocking to avoid starving the tokio worker pool.
+    // Return Some(error_key) on TERMINAL errors (transcode failure),
+    // return None on transient fetch failures (retryable).
+    let bytes_owned = bytes.to_vec();
+    let transcode_result = tokio::task::spawn_blocking(move || {
+        crate::socket::manager::media::to_webp(&bytes_owned)
+    })
+    .await;
+    
+    let (webp_bytes, _width, _height) = match transcode_result {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => {
+            // Transcode failure is TERMINAL: image is malformed/undecodeable.
+            // Don't retry — return the actual error for logging.
+            return Err(Some(e));
+        }
+        Err(_) => {
+            // spawn_blocking panicked or was cancelled — treat as transient
+            return Err(None);
+        }
+    };
+    
     save_generated_image_bytes(&webp_bytes, &format!("gen-{}.webp", short_id()))
+        .map_err(|_| None)
 }
 
 /// Persist generated image bytes into config/media/generated/ and return the
