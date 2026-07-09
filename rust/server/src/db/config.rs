@@ -1,4 +1,6 @@
 use sqlx::PgPool;
+use std::fs;
+use std::path::Path;
 
 pub async fn create_pool() -> Option<PgPool> {
     match std::env::var("DATABASE_URL") {
@@ -70,7 +72,7 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 }
 
 /// Load installed plugins from the database.
-/// Returns a vector of serde_json objects with InstalledPlugin shape.
+/// Returns a vector of serde_json objects with InstalledPlugin shape (including files jsonb).
 /// Returns empty vec if pool is None or DB query fails.
 pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let pool = match pool {
@@ -78,9 +80,9 @@ pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, String, bool, serde_json::Value, Option<serde_json::Value>)> =
+    let rows: Vec<(String, String, String, bool, serde_json::Value, Option<serde_json::Value>, Option<serde_json::Value>)> =
         match sqlx::query_as(
-            "SELECT id, name, version, enabled, capabilities, config FROM installed_plugins ORDER BY id"
+            "SELECT id, name, version, enabled, capabilities, config, files FROM installed_plugins ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -93,7 +95,7 @@ pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         };
 
     let result = rows.into_iter()
-        .map(|(id, name, version, enabled, capabilities, config)| {
+        .map(|(id, name, version, enabled, capabilities, config, files)| {
             let mut obj = serde_json::json!({
                 "id": id,
                 "name": name,
@@ -103,6 +105,9 @@ pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
             });
             if let Some(cfg) = config {
                 obj["config"] = cfg;
+            }
+            if let Some(f) = files {
+                obj["files"] = f;
             }
             obj
         })
@@ -257,4 +262,62 @@ pub async fn update_achievements_config(
     }
 
     Ok(())
+}
+
+/// Upsert an installed plugin into the database with metadata and files jsonb.
+/// Performs INSERT ... ON CONFLICT (id) DO UPDATE to keep metadata and files in sync.
+/// The `files` parameter should be a JSON object mapping relative paths to base64-encoded content.
+pub async fn upsert_installed_plugin(
+    pool: &Option<PgPool>,
+    plugin: &razzoozle_protocol::manager::InstalledPlugin,
+    files: &serde_json::Value,
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let capabilities_json = serde_json::to_value(&plugin.capabilities)
+        .map_err(|e| format!("Failed to serialize capabilities: {}", e))?;
+
+    let config_json = serde_json::to_value(&plugin.config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+
+    sqlx::query(
+        "INSERT INTO installed_plugins (id, name, version, enabled, capabilities, config, files) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         ON CONFLICT (id) DO UPDATE SET \
+            name = EXCLUDED.name, \
+            version = EXCLUDED.version, \
+            enabled = EXCLUDED.enabled, \
+            capabilities = EXCLUDED.capabilities, \
+            config = EXCLUDED.config, \
+            files = EXCLUDED.files",
+    )
+    .bind(&plugin.id)
+    .bind(&plugin.name)
+    .bind(&plugin.version)
+    .bind(plugin.enabled)
+    .bind(capabilities_json)
+    .bind(config_json)
+    .bind(files)
+    .execute(pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}
+
+/// Delete an installed plugin from the database.
+pub async fn delete_installed_plugin(pool: &Option<PgPool>, id: &str) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    sqlx::query("DELETE FROM installed_plugins WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
