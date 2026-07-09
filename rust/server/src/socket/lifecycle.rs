@@ -301,6 +301,31 @@ async fn open_question(
         game.record_last_manager_status(&select_status);
     }
 
+    let (bot_manager, bots) = {
+        let game = game_ref.lock().unwrap();
+        let bots: Vec<_> = game
+            .players
+            .iter()
+            .filter(|p| p.is_bot == Some(true))
+            .cloned()
+            .collect();
+        (game.bot_manager.clone(), bots)
+    };
+    if let Some(bm) = bot_manager {
+        if !bots.is_empty() {
+            let bm_clone = bm.clone();
+            let game_arc = game_ref.clone();
+            let io_clone = io.clone();
+            let gid = game_id.to_string();
+            let question_clone = question.clone();
+            tokio::spawn(async move {
+                bm_clone
+                    .schedule_answers(gid, bots, question_clone, game_arc, io_clone)
+                    .await;
+            });
+        }
+    }
+
     true
 }
 
@@ -377,6 +402,13 @@ pub async fn run_game_lifecycle(
             },
         )
         .await;
+
+        {
+            let bm = game_ref.lock().unwrap().bot_manager.clone();
+            if let Some(bm) = bm {
+                bm.cancel_pending(None).await;
+            }
+        }
 
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,

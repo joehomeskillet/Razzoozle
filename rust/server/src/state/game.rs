@@ -1,3 +1,4 @@
+use crate::bot::BotManager;
 use razzoozle_engine::state::GameState;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
@@ -89,6 +90,8 @@ pub struct Game {
     pub temp_round_recap: Option<Vec<RoundRecapAward>>,
     // task resets to false after emitting.
     pub answer_count_push_pending: bool,
+    // Sim-mode bot answer scheduler (None until first bot is added).
+    pub bot_manager: Option<Arc<BotManager>>,
 }
 
 impl Game {
@@ -130,6 +133,7 @@ impl Game {
             pause_resume: Arc::new(tokio::sync::Notify::new()),
             last_show_result_data: HashMap::new(),
             answer_count_push_pending: false,
+            bot_manager: None,
         }
     }
 

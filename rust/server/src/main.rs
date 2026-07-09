@@ -1,3 +1,4 @@
+mod bot;
 mod socket;
 mod state;
 mod media_ai;
