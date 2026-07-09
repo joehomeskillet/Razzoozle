@@ -160,6 +160,30 @@ no `cargo update`.
 - **Note only:** collapsing the duplicate dep stacks (§4.3 / problem #9) needs `reqwest 0.11 → 0.12`; propose
   as a separate dependency PR — **not** part of this effort.
 
+## Phase 1 — implemented + measured (2026-07-09)
+
+Changes (build config only, zero behavior change):
+- **`rust/.cargo/config.toml`** — mold linker via `-C link-arg=-fuse-ld=mold` (gcc 15 driver).
+- **`rust/Cargo.toml`** — `[profile.dev] debug = "line-tables-only"`.
+
+**Cold fresh-worktree build (`cargo build -p razzoozle-server`, empty target dir, warm crate registry):**
+
+| Config | Wall | CPU | Notes |
+|--------|------|-----|-------|
+| **before** (no config, Phase 0) | 24.2 s | 744 % | control repro |
+| **mold only** (shipped) | **22.8 s** | 756 % | ~6 % faster, full parallelism, mold confirmed in binary `.comment` |
+| mold + sccache (default incremental) | 40.4 s | 98 % | **rejected** — 0 % Rust cache hits, serialized to 1 core, ~1.8× slower |
+| sccache + `CARGO_INCREMENTAL=0`, warm, **stable** target path | 16.7 s | 160 % | 100 % Rust hits — but only with a stable target-dir path (CI), and it disables the incremental inner loop |
+
+- **Incremental inner loop** (`touch server/src/main.rs` → rebuild) stays **1.5 s** (mold). Preserved.
+- **mold is confirmed active:** `readelf -p .comment target/debug/razzoozle-server` → `mold 2.40.4`.
+- **sccache decision:** its hit rate depends on a *stable* `CARGO_TARGET_DIR` path (dependency `--extern`
+  absolute paths are part of sccache's hash), so it 0 %-hits and *serializes* the build under cargo's default
+  incremental mode and across ephemeral per-worktree paths — a net regression locally. It is therefore **not**
+  wired into the global `.cargo/config.toml`; it is scoped to CI (Phase 2), where the runner path is stable,
+  `/ci-cache` persists it, and `CARGO_INCREMENTAL=0` is acceptable (no inner loop). `[profile.dev]` debuginfo
+  trim reduces DWARF emission + link size with panic line-info retained.
+
 ## 7. Constraints honored throughout
 Never `cargo clean`; never change dependency versions; touch `Cargo.lock` only if strictly required (then
 justify); no `cargo update`; one conventional-commit per phase; never delete anything not created here;
