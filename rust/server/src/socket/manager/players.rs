@@ -53,11 +53,12 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
-                            if let Some(pos) = game.players.iter().position(|p| p.client_id == player_id) {
+                            if let Some(pos) = game.players.iter().position(|p| p.id == player_id) {
+                                let client_id = game.players[pos].client_id.clone();
                                 game.players.remove(pos);
-                                game.engine.players.retain(|p| p.client_id != player_id);
-                                game.engine.current_answers.remove(&player_id);
-                                game.engine.answer_order.retain(|c| c != &player_id);
+                                game.engine.players.retain(|p| p.client_id != client_id);
+                                game.engine.current_answers.remove(&client_id);
+                                game.engine.answer_order.retain(|c| c != &client_id);
                                 Some(game.players.len())
                             } else {
                                 None
@@ -68,8 +69,18 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                     };
 
                     if let Some(total) = removed_count {
-                        ctx.io.to(game_id.clone()).emit(constants::game::TOTAL_PLAYERS, &(total as i32)).ok();
-                        ctx.io.to(game_id).emit(constants::manager::REMOVE_PLAYER, &player_id).ok();
+                        ctx.io
+                            .to(player_id.clone())
+                            .emit(constants::game::RESET, "errors:game.kickedByManager")
+                            .ok();
+                        ctx.io
+                            .to(socket.id)
+                            .emit(constants::manager::PLAYER_KICKED, &player_id)
+                            .ok();
+                        ctx.io
+                            .to(game_id)
+                            .emit(constants::game::TOTAL_PLAYERS, &(total as i32))
+                            .ok();
                     }
                 }
             });
@@ -77,6 +88,8 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
+// DEFERRED(parity): bot answer scheduling during SelectAnswer — requires delayed
+// engine.record_answer calls, bot timer tracking, and cancel-on-kick/window-close.
 fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::ADD_BOTS, {
         let ctx = ctx.clone();

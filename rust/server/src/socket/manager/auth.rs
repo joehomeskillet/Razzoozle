@@ -156,7 +156,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let Some(game_ref) = game_opt else {
                     socket
-                        .emit(constants::game::ERROR_MESSAGE, "errors:game.notFound")
+                        .emit(constants::game::RESET, "errors:game.expired")
                         .ok();
 
                     return;
@@ -186,7 +186,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if !is_owner {
                     socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .emit(constants::game::RESET, "errors:game.expired")
                         .ok();
 
                     return;
@@ -300,6 +300,9 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             "players": players,
                         }),
                     )
+                    .ok();
+                socket
+                    .emit(constants::game::TOTAL_PLAYERS, &(players.len() as i32))
                     .ok();
 
                 // NB: no PLAYER_RECONNECTED broadcast here (removed) — Node
