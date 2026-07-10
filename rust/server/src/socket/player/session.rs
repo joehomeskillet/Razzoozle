@@ -292,11 +292,8 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
                             }
 
-                            // Broadcast total players to the game room (Node game-reconnect.ts:138)
-                            io_handle
-                                .to(game_id_ret)
-                                .emit(constants::game::TOTAL_PLAYERS, &total_players)
-                                .ok();
+                            // Send total players to reconnecting socket only (Node game-reconnect.ts:138)
+                            socket.emit(constants::game::TOTAL_PLAYERS, &total_players).ok();
                         } else {
                             // #5: Emit GAME.RESET on reconnect failure (not ERROR_MESSAGE)
                             // This ensures the client navigates home instead of showing an error toast
