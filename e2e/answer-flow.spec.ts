@@ -410,6 +410,8 @@ test.describe("Answer flow — E2E All Types", () => {
         })
 
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
+          // Wait for responses-view to be ready (host transitioned from SELECT_ANSWER to SHOW_RESPONSES).
+          await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
           // ONE click: Responses (auto after answers end) → Leaderboard.
           await host.getByTestId("next-btn").click()
           // Wait for leaderboard row visible (strict: not "eventually visible", but actually there).
@@ -509,6 +511,8 @@ test.describe("Answer flow — E2E All Types", () => {
         })
         await player1AnswerPlan(quizFixture.questions[0]).run(p1)
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
+        // Wait for responses-view to be ready before advancing.
+        await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
         // ONE click: Responses → Leaderboard, then ONE click: Leaderboard → Q2.
         await host.getByTestId("next-btn").click()
         await expect(
