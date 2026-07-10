@@ -1,6 +1,7 @@
 use super::broadcast_player_update;
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::player::{PlayerSuccessReconnect, PlayerReconnectInfo, GameUpdateQuestion};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -154,7 +155,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let registry = registry.clone();
-            let _io_handle = io_handle.clone();
+            let io_handle = io_handle.clone();
             let socket_id = socket_id.clone();
             let client_id = client_id.clone();
 
@@ -206,6 +207,9 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             pos_opt.map(|pos| {
                                 let game_id_ret = game.game_id.clone();
                                 let old_socket_id = game.players[pos].id.clone();
+                                let manager_socket_id = game.manager_socket_id.clone();
+                                let player_client_id = game.players[pos].client_id.clone();
+
                                 game.players[pos].id = socket_id.clone();
                                 game.players[pos].connected = true;
 
@@ -215,19 +219,42 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     game.engine.players[engine_pos].connected = true;
                                 }
 
-                                // Read points/streak from engine.players (where scoring happens)
-                                let (username, points, streak) = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
-                                    let ep = &game.engine.players[engine_pos];
-                                    (ep.username.clone(), ep.points, ep.streak)
+                                // Read points from engine.players (where scoring happens)
+                                let username = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                    game.engine.players[engine_pos].username.clone()
                                 } else {
-                                    (game.players[pos].username.clone(), game.players[pos].points, game.players[pos].streak)
+                                    game.players[pos].username.clone()
+                                };
+                                let points = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                    game.engine.players[engine_pos].points
+                                } else {
+                                    game.players[pos].points
                                 };
 
-                                (game_id_ret, old_socket_id, username, points, streak)
+                                // Build currentQuestion (mirrors Node's round.getReconnectInfo())
+                                let current_question_index = game.engine.current_question_index as i32;
+                                let total_questions = game.engine.quiz.questions.len() as i32;
+
+                                // Get the game status (mirrors Node's playerStatus.get or lastBroadcastStatus)
+                                let (status_name, status_data) = game.manager_reconnect_status();
+                                let status = serde_json::json!({ "name": status_name, "data": status_data });
+
+                                // Check if player already answered current question (low-latency mode)
+                                let already_answered = if game.low_latency {
+                                    Some(game.engine.current_answers.contains_key(&player_client_id))
+                                } else {
+                                    None
+                                };
+
+                                let total_players = game.players.len() as i32;
+
+                                (game_id_ret, old_socket_id, manager_socket_id, username, points,
+                                 current_question_index, total_questions, status, already_answered, total_players)
                             })
                         };
 
-                        if let Some((game_id_ret, old_socket_id, username, points, streak)) = update_result {
+                        if let Some((game_id_ret, old_socket_id, manager_socket_id, username, points,
+                                    current_question_index, total_questions, status, already_answered, total_players)) = update_result {
                             // Keep the O(1) socket_id -> game_id index (state.rs)
                             // current: this player's socket_id just changed.
                             {
@@ -239,13 +266,37 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             // Join the room
                             socket.join(game_id_ret.clone());
 
-                            // Emit reconnect success with player state
-                            socket.emit(constants::player::SUCCESS_RECONNECT, &serde_json::json!({
-                                "playerId": socket_id,
-                                "username": username,
-                                "points": points,
-                                "streak": streak,
-                            })).ok();
+                            // Emit reconnect success with full player state (parity with Node)
+                            let reconnect_payload = PlayerSuccessReconnect {
+                                game_id: game_id_ret.clone(),
+                                status,
+                                player: PlayerReconnectInfo {
+                                    username,
+                                    points,
+                                },
+                                current_question: GameUpdateQuestion {
+                                    current: current_question_index + 1,
+                                    total: total_questions,
+                                },
+                                already_answered,
+                            };
+                            socket.emit(constants::player::SUCCESS_RECONNECT, &reconnect_payload).ok();
+
+                            // Notify manager of player reconnect (Node game-reconnect.ts:134)
+                            if let Ok(sid) = manager_socket_id.parse() {
+                                if let Some(mgr) = io_handle.get_socket(sid) {
+                                    mgr.emit(constants::manager::PLAYER_RECONNECTED, &serde_json::json!({
+                                        "id": socket_id,
+                                        "username": reconnect_payload.player.username,
+                                    })).ok();
+                                }
+                            }
+
+                            // Broadcast total players to the game room (Node game-reconnect.ts:138)
+                            io_handle
+                                .to(game_id_ret)
+                                .emit(constants::game::TOTAL_PLAYERS, &total_players)
+                                .ok();
                         } else {
                             // #5: Emit GAME.RESET on reconnect failure (not ERROR_MESSAGE)
                             // This ensures the client navigates home instead of showing an error toast
