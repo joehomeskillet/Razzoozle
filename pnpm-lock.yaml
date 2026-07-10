@@ -10,6 +10,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
     devDependencies:
       '@playwright/test':
         specifier: ^1.61.1
