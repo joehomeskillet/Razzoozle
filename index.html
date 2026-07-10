@@ -242,7 +242,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
 .logo-card:hover img,.logo-card:focus-within img{filter:none;opacity:1}
 .site{transition:box-shadow .25s ease,background-color .25s ease}
 .site.scrolled{box-shadow:0 1px 0 var(--hairline),0 10px 28px -18px rgba(14,17,32,.22)}
-.hero{position:relative;isolation:isolate}
+.hero{position:relative;isolation:isolate;overflow-x:clip}
 .hero::before{content:"";position:absolute;inset:-12% -10% auto -10%;height:55%;background:radial-gradient(55% 60% at 50% 0,rgba(124,58,237,.10),rgba(255,153,0,.05) 45%,transparent 72%);pointer-events:none;z-index:-1}
 @media (prefers-reduced-motion: reduce){html.js [data-reveal]{opacity:1!important;transform:none!important;transition:none}.logo-card img{transition:none}}
 .showcases{padding:clamp(56px,9vw,104px) 0}
