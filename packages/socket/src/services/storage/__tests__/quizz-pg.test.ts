@@ -100,16 +100,26 @@ describeRealDb("quizz-pg (real Postgres)", () => {
     expect(ours).not.toContain(id("invalid"))
   })
 
-  it("rowToQuizz: archived NULL coalesces to false; themeId never appears (no DB column)", async () => {
+  it("rowToQuizz: archived NULL coalesces to false; themeId persists when set", async () => {
     // updateQuizzPg always writes an explicit boolean (data.archived ?? false)
     // — a NULL archived column only happens via a raw INSERT, bypassing it.
     await rawPool.query(
-      `INSERT INTO quizzes (id, subject, questions, archived) VALUES ($1, $2, $3, NULL)`,
-      [id("archived-null"), "Null archived", JSON.stringify(validQuestions)],
+      `INSERT INTO quizzes (id, subject, questions, archived, theme_id) VALUES ($1, $2, $3, NULL, $4)`,
+      [id("archived-null"), "Null archived", JSON.stringify(validQuestions), "theme-abc"],
     )
 
     const quizz = await getQuizzByIdPg(id("archived-null"))
     expect(quizz.archived).toBe(false)
+    expect(quizz.themeId).toBe("theme-abc")
+  })
+
+  it("rowToQuizz: themeId omitted when NULL in DB", async () => {
+    await updateQuizzPg(id("no-theme"), {
+      subject: "No theme",
+      questions: validQuestions,
+    })
+
+    const quizz = await getQuizzByIdPg(id("no-theme"))
     expect(quizz).not.toHaveProperty("themeId")
   })
 
@@ -124,30 +134,34 @@ describeRealDb("quizz-pg (real Postgres)", () => {
     )
   })
 
-  it("updateQuizzPg: UPSERT on an existing id bumps version and persists the new data", async () => {
+  it("updateQuizzPg: UPSERT on an existing id bumps version and persists the new data (including theme_id)", async () => {
     await updateQuizzPg(id("upsert"), {
       subject: "First",
       questions: validQuestions,
+      themeId: "theme-v1",
     })
     const first = await rawPool.query(
-      `SELECT version, updated_at FROM quizzes WHERE id = $1`,
+      `SELECT version, updated_at, theme_id FROM quizzes WHERE id = $1`,
       [id("upsert")],
     )
     expect(first.rows[0].version).toBe(0)
+    expect(first.rows[0].theme_id).toBe("theme-v1")
 
     const secondQuestions = [{ ...validQuestions[0], question: "Q1 updated" }]
     await updateQuizzPg(id("upsert"), {
       subject: "Second",
       questions: secondQuestions,
       archived: true,
+      themeId: "theme-v2",
     })
     const second = await rawPool.query(
-      `SELECT version, updated_at, subject, questions, archived FROM quizzes WHERE id = $1`,
+      `SELECT version, updated_at, subject, questions, archived, theme_id FROM quizzes WHERE id = $1`,
       [id("upsert")],
     )
     expect(second.rows[0].version).toBe(1)
     expect(second.rows[0].subject).toBe("Second")
     expect(second.rows[0].archived).toBe(true)
+    expect(second.rows[0].theme_id).toBe("theme-v2")
     // Proves the query params bind correctly, including JSON.stringify(questions).
     expect(second.rows[0].questions).toEqual(secondQuestions)
     expect(new Date(second.rows[0].updated_at).getTime()).toBeGreaterThanOrEqual(

@@ -41,15 +41,15 @@ interface QuizzRow {
   subject: string | null
   questions: unknown
   archived: boolean | null
+  theme_id?: string | null
 }
 
-// themeId has no column in the `quizzes` table (matches rust db.rs, which
-// also always yields theme_id: None) — dropped on the DB round-trip.
 const rowToQuizz = (row: QuizzRow): QuizzWithId | null => {
   const candidate = {
     subject: row.subject ?? "",
     questions: row.questions ?? [],
     archived: !!row.archived,
+    ...(row.theme_id && { themeId: row.theme_id }),
   }
   const result = quizzValidator.safeParse(candidate)
 
@@ -66,7 +66,7 @@ const rowToQuizz = (row: QuizzRow): QuizzWithId | null => {
 export const getQuizzPg = async (): Promise<QuizzWithId[]> => {
   try {
     const result = await getPool().query(
-      `SELECT id, subject, questions, archived FROM quizzes ORDER BY id`,
+      `SELECT id, subject, questions, archived, theme_id FROM quizzes ORDER BY id`,
     )
     return result.rows
       .map((row: QuizzRow) => rowToQuizz(row))
@@ -91,7 +91,7 @@ export const getQuizzMetaPg = async (): Promise<QuizzMeta[]> => {
 
 export const getQuizzByIdPg = async (id: string): Promise<QuizzWithId> => {
   const result = await getPool().query(
-    `SELECT id, subject, questions, archived FROM quizzes WHERE id = $1`,
+    `SELECT id, subject, questions, archived, theme_id FROM quizzes WHERE id = $1`,
     [id],
   )
   if (result.rows.length === 0) {
@@ -107,19 +107,20 @@ export const getQuizzByIdPg = async (id: string): Promise<QuizzWithId> => {
 /** Upsert (create-or-update) a quizz by id. version += 1 on update, updated_at = NOW(). */
 export const updateQuizzPg = async (
   id: string,
-  data: { subject: string; questions: unknown; archived?: boolean },
+  data: { subject: string; questions: unknown; archived?: boolean; themeId?: string },
 ): Promise<{ id: string }> => {
   try {
     await getPool().query(
-      `INSERT INTO quizzes (id, subject, questions, archived)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO quizzes (id, subject, questions, archived, theme_id)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (id) DO UPDATE SET
          subject = EXCLUDED.subject,
          questions = EXCLUDED.questions,
          archived = EXCLUDED.archived,
+         theme_id = EXCLUDED.theme_id,
          version = quizzes.version + 1,
          updated_at = NOW()`,
-      [id, data.subject, JSON.stringify(data.questions), data.archived ?? false],
+      [id, data.subject, JSON.stringify(data.questions), data.archived ?? false, data.themeId ?? null],
     )
     return { id }
   } catch (error) {

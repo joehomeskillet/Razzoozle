@@ -89,11 +89,11 @@ export const listAllSubmissionsPg = async (): Promise<Submission[]> => {
     const submissions = result.rows
       .map((row: SubmissionRow) => rowToSubmission(row))
       .filter((s: Submission | null): s is Submission => s !== null)
-    
+
     if (result.rows.length > 0 && submissions.length === 0) {
       console.error(`submissions-pg: all ${result.rows.length} rows failed validation`)
     }
-    
+
     return submissions
   } catch (error) {
     console.error("submissions-pg.listAllSubmissionsPg failed", error)
@@ -120,13 +120,14 @@ export const countPendingSubmissionsPg = async (): Promise<number> => {
 export const upsertSubmissionPg = async (data: Submission): Promise<{ id: string }> => {
   try {
     await getPool().query(
-      `INSERT INTO submissions (id, submitted_by, submitted_at, status, question, category, rejection_reason)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO submissions (id, submitted_by, submitted_at, status, question, source, category, rejection_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (id) DO UPDATE SET
          submitted_by = EXCLUDED.submitted_by,
          submitted_at = EXCLUDED.submitted_at,
          status = EXCLUDED.status,
          question = EXCLUDED.question,
+         source = EXCLUDED.source,
          category = EXCLUDED.category,
          rejection_reason = EXCLUDED.rejection_reason,
          version = submissions.version + 1,
@@ -137,6 +138,7 @@ export const upsertSubmissionPg = async (data: Submission): Promise<{ id: string
         data.submittedAt,
         data.status,
         JSON.stringify(data.question),
+        'submission',
         data.category ?? null,
         data.rejectionReason ?? null,
       ],
