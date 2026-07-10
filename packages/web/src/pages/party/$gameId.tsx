@@ -18,13 +18,13 @@ import {
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const PlayerGamePage = () => {
   const navigate = useNavigate()
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const { gameId: gameIdParam } = useParams({ from: "/party/$gameId" })
   const { status, setPlayer, setGameId, setStatus, reset } = usePlayerStore()
   const { setQuestionStates, setDisplayOrder } = useQuestionStore()
@@ -39,6 +39,10 @@ const PlayerGamePage = () => {
   // server can detect a stale view. Defaults to undefined (normal mode / old
   // server simply ignores it). Held in a ref so updating it never re-renders.
   const lastServerSeqRef = useRef<number | undefined>(undefined)
+
+  // Timeout ID for reconnect attempt. If SUCCESS_RECONNECT doesn't arrive within
+  // a reasonable window (8s), the game is unavailable and we navigate home.
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // The host leaving (server emits the existing EVENTS.GAME.RESET via
   // notifyManagerGone) should land the player on the explanatory Ended
@@ -55,6 +59,14 @@ const PlayerGamePage = () => {
         playerToken: localStorage.getItem(`player_token:${gameIdParam}`) ?? undefined,
         lastServerSeq: lastServerSeqRef.current,
       })
+
+      // Start a timeout for reconnect response. If the server doesn't confirm
+      // the game exists within 8s, the game has been terminated and we should
+      // bounce the player home.
+      reconnectTimeoutRef.current = setTimeout(() => {
+        navigate({ to: "/" })
+        toast.error(t("errors:game.notFound", { defaultValue: "Spiel nicht gefunden" }))
+      }, 8000)
     }
   })
 
@@ -69,6 +81,12 @@ const PlayerGamePage = () => {
       // never wrongly lock a player out of answering.
       alreadyAnswered,
     }) => {
+      // Reconnect succeeded; clear the timeout.
+      if (reconnectTimeoutRef.current !== undefined) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = undefined
+      }
+
       setGameId(reconnectGameId)
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayer(player)
@@ -124,6 +142,11 @@ const PlayerGamePage = () => {
     // expected "host closed the room" case, so show the calm Ended view
     // instead of bouncing the player home with an error toast. Genuine error
     // resets (kicked / not-found / expired / duplicate host) still redirect.
+    if (reconnectTimeoutRef.current !== undefined) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = undefined
+    }
+
     reset()
     setQuestionStates(null)
 
@@ -135,6 +158,14 @@ const PlayerGamePage = () => {
     navigate({ to: "/" })
     toast.error(t(message))
   })
+
+  // Clean up reconnect timeout on disconnect to prevent stale timeouts.
+  useEffect(() => {
+    if (!isConnected && reconnectTimeoutRef.current !== undefined) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = undefined
+    }
+  }, [isConnected])
 
   if (!gameIdParam) {
     return null
