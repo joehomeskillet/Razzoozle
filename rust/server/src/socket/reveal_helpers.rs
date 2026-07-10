@@ -15,6 +15,10 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
+/// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
+const AUTO_RESULT_MS: i32 = 6000;
+
+
 /// Build the manager-only SHOW_RESPONSES payload from current engine state.
 pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let question = game.engine.current_question();
@@ -325,6 +329,12 @@ pub async fn perform_reveal_and_broadcast(
                     } else {
                         "game:wrong"
                     }).to_string();
+
+                    // FIX 9: When auto-mode is active at reveal time, carry autoAdvanceMs so the
+                    // client can render a local countdown for the result screen (mirrors Node logic).
+                    if game.auto_mode {
+                        show_result_data.auto_advance_ms = Some(AUTO_RESULT_MS);
+                    }
 
                     // ahead_of_me: rank-1 player from sorted_by_points
                     show_result_data.ahead_of_me = if rank > 1 {
