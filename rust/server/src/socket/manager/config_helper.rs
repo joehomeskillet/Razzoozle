@@ -20,8 +20,24 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     // source of truth; the installed_plugins DB table is never written by Node,
     // so db::get_plugins always returned [] — a live bug this fixes.
     let plugins = plugins::read_plugins_index();
-    let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode) =
+    let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config) =
         db::get_game_config(&ctx.db_pool).await;
+
+    // Construct lowLatencyMode by merging enabled flag with full config object
+    // (matching Node's shape: { enabled: bool, ...config_fields })
+    let low_latency_mode = {
+        let mut mode = serde_json::json!({
+            "enabled": low_latency_enabled.unwrap_or(false)
+        });
+        if let Some(config_obj) = low_latency_config {
+            if let Some(obj) = config_obj.as_object() {
+                for (k, v) in obj {
+                    mode[k.clone()] = v.clone();
+                }
+            }
+        }
+        mode
+    };
 
     let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
 
