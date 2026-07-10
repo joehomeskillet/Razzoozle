@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use tracing::warn;
 
 /// Load theme templates from the database.
 /// Returns a vector of serde_json objects with ThemeTemplateMeta shape (id, name).
@@ -129,15 +130,17 @@ pub async fn upsert_theme_template(
 }
 
 /// Delete a theme template from the database.
-/// Throws an error if the template is not found.
+/// Guards against deletion of the 'active' template to match Node's behavior.
+/// Returns Err if the template is not found or is the active theme.
 pub async fn delete_theme_template(pool: &Option<PgPool>, id: &str) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("errors:themeTemplate.notFound".to_string()),
     };
 
-    let result = sqlx::query("DELETE FROM themes WHERE id = $1")
+    let result = sqlx::query("DELETE FROM themes WHERE id = $1 AND id != $2")
         .bind(id)
+        .bind("active")
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;
@@ -145,7 +148,8 @@ pub async fn delete_theme_template(pool: &Option<PgPool>, id: &str) -> Result<()
     if result.rows_affected() > 0 {
         Ok(())
     } else {
-        Err("errors:themeTemplate.notFound".to_string())
+        warn!("Attempted to delete protected theme template: {}", id);
+        Err(format!("Theme template \"{}\" not found or is the active theme", id))
     }
 }
 
