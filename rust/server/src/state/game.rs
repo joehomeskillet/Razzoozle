@@ -39,8 +39,8 @@ pub struct Game {
     // round-trip on every clock:ping.
     pub low_latency: bool,
     // Full low-latency config JSON object (enabled, clockSync, preloadNextQuestion, etc.).
-    // Cached at create time and refreshed on every manager:setGameConfig write.
-    // Used by clock_ping to check clockSync sub-flag without a DB query.
+    // Read ONCE at game creation (Node parity: Game.lowLatency is a read-once snapshot;
+    // config changes only affect games created afterwards). Used by clock_ping — no DB query on the hot path.
     pub low_latency_config: serde_json::Value,
     // Monotonic per-game server sequence counter for SELECT_ANSWER emissions.
     // Incremented once per opened question when low_latency is true.

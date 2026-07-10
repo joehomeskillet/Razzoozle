@@ -6,7 +6,7 @@ pub async fn insert_catalog_entry(
     pool: &Option<PgPool>,
     question: &serde_json::Value,
     source: &str,
-    added_at: &str,
+    added_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<String, String> {
     insert_catalog_entry_with_tags(pool, question, source, &serde_json::json!([]), added_at).await
 }
@@ -18,7 +18,7 @@ pub async fn insert_catalog_entry_with_tags(
     question: &serde_json::Value,
     source: &str,
     tags: &serde_json::Value,
-    added_at: &str,
+    added_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
