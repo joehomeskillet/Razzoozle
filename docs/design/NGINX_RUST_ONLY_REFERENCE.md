@@ -21,7 +21,6 @@ This document describes a single-file swap strategy for Razzoozle's static proxy
 | /metrics | `=` | `:3001` | `:3020` | Backend swap |
 | /api/ | `/` | `:3001` | `:3020` | Backend swap |
 | /r/ | `~` regex | `:3001` | `:3020` | Backend swap |
-| /plugins/ | `^~` | `:3001` | `:3020` | Backend swap |
 | /_rust/ | `/` | strip prefix, proxy `:3020` | **REMOVED** | No longer needed |
 | /theme/ | `^~` | alias `/app/config/theme/` | **unchanged** | Static, backend-agnostic |
 | /media/ | `^~` | alias `/app/config/media/` | **unchanged** | Static, backend-agnostic |
@@ -31,7 +30,7 @@ This document describes a single-file swap strategy for Razzoozle's static proxy
 | *.{js,css,fonts,images} | regex | cache forever | **unchanged** | Static assets, backend-agnostic |
 | / (SPA fallback) | `/` | → index.html | **unchanged** | SPA shell, backend-agnostic |
 
-**Summary:** 6 locations change backend (`:3001` → `:3020`), 1 location removed (/_rust), 9 locations unchanged.
+**Summary:** 5 locations change backend (`:3001` → `:3020`), 1 location removed (/_rust), 9 locations unchanged.
 
 ## Deployment Checklist (W5)
 

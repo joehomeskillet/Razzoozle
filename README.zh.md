@@ -24,7 +24,7 @@
 
 ## 这是什么？
 
-Razzoozle 是一款自托管、实时的**测验游戏**，适用于教室、活动和游戏之夜。主持人在大屏幕上打开一局游戏，玩家用 PIN 码从手机加入，越快答对得分越高。它是 [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) 的友好分支，带有由管理员驱动的主题控制台、游戏化、团队与单人玩法、插件以及本地 AI 图像 —— 同时保留经典的彩色方块主持人 + 手机体验。
+Razzoozle 是一款自托管、实时的**测验游戏**，适用于教室、活动和游戏之夜。主持人在大屏幕上打开一局游戏，玩家用 PIN 码从手机加入，越快答对得分越高。它是 [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) 的友好分支，带有由管理员驱动的主题控制台、游戏化、团队与单人玩法，以及本地 AI 图像 —— 同时保留经典的彩色方块主持人 + 手机体验。
 
 > 独立开源项目。与 Kahoot!® 或任何其他商业测验平台无关联、未获认可，亦无连接。
 
@@ -81,9 +81,6 @@ docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3
 | 👥 | **团队模式** —— 红 / 蓝 / 绿 / 黄队伍，配有实时团队排行榜。 |
 | 📱 | **单人游戏** —— 通过分享链接单独练习任意测验，并拥有独立的得分历史。 |
 | ✍️ | **更多题型** —— 在经典单选之外，还有多选、输入答案和滑块。 |
-| 🔌 | **插件系统** —— 管理员可安装的 ZIP 插件，带有各自的"Plugins"标签页。 |
-| 🧩 | **管理员插件** —— 从管理员控制台上传、启用和配置 JavaScript 插件（专属标签页、能力徽章、持久化配置）；附带可复制粘贴的起始骨架（`examples/plugins/starter/`）及创作契约。 |
-| 📦 | **骨架主题 ZIP** —— 将整局主题作为 LLM 可读的 ZIP 下载/上传（"skeleton"：设计 token + CSS + JS + 一份 SKELETON.md 契约）。 |
 | 📳 | **移动触觉反馈** —— 玩家手机上可选的振动反馈（倒计时、答题），支持减弱动效。 |
 | 🔗 | **可分享的结果** —— 丰富的按结果链接预览（Open Graph 展开）、带"自己来玩 / 主持你自己的"行动号召的结果页，以及可下载的获胜者贴纸。 |
 | 🤝 | **社区题目** —— 带管理员审核队列的公开提交页面，以及可复用的题目目录和测验存档。 |
@@ -97,7 +94,7 @@ docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3
 
 ## 后端
 
-Razzoozle 提供**两个可互换的后端**，它们通过同一个共享的 Postgres 数据库使用相同的 socket.io 协议 —— 在管理员界面中按客户端切换，或通过 `VITE_DEFAULT_BACKEND` 切换。**Rust** 服务器（`axum` + `socketioxide`，内存安全且占用低）涵盖所有游戏、管理、玩家和显示流程。**Node.js** 服务器（`packages/socket`）功能完整，是 `compose.node.yml` 中的自包含默认后端。少数外围 HTTP 端点（Prometheus 指标、客户端遥测、社交分享预览、OpenAPI 文档）以及服务器端插件 JS 钩子仅在 Node 上可用。
+Razzoozle 提供**两个可互换的后端**，它们通过同一个共享的 Postgres 数据库使用相同的 socket.io 协议 —— 在管理员界面中按客户端切换，或通过 `VITE_DEFAULT_BACKEND` 切换。**Rust** 服务器（`axum` + `socketioxide`，内存安全且占用低）涵盖所有游戏、管理、玩家和显示流程。**Node.js** 服务器（`packages/socket`）功能完整，是 `compose.node.yml` 中的自包含默认后端。少数外围 HTTP 端点（Prometheus 指标、客户端遥测、社交分享预览、OpenAPI 文档）仅在 Node 上可用。
 
 **→ Rust 内部实现、构建与测试：[`rust/README.md`](rust/README.md)**
 

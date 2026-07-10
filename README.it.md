@@ -24,7 +24,7 @@
 
 ## Cos'è?
 
-Razzoozle è un **quiz game** in tempo reale e self-hosted per aule, eventi e serate di gioco. Un conduttore apre una partita sullo schermo grande, i giocatori si uniscono dai loro telefoni con un PIN e le risposte corrette più veloci ottengono più punti. È un fork amichevole di [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) con un cockpit dei temi gestito dal moderatore, gamification, gioco a squadre e in solitaria, plugin e immagini AI locali — mantenendo la classica esperienza di presentatore con caselle colorate + telefono.
+Razzoozle è un **quiz game** in tempo reale e self-hosted per aule, eventi e serate di gioco. Un conduttore apre una partita sullo schermo grande, i giocatori si uniscono dai loro telefoni con un PIN e le risposte corrette più veloci ottengono più punti. È un fork amichevole di [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) con un cockpit dei temi gestito dal moderatore, gamification, gioco a squadre e in solitaria, e immagini AI locali — mantenendo la classica esperienza di presentatore con caselle colorate + telefono.
 
 > Progetto open source indipendente. Non affiliato, approvato o connesso a Kahoot!® o a qualsiasi altra piattaforma commerciale di quiz.
 
@@ -81,9 +81,6 @@ Non vuoi un database? Imposta `DATABASE_MODE=file` per eseguire senza Postgres. 
 | 👥 | **Modalità squadre** — squadre rossa / blu / verde / gialla con una classifica di squadra live. |
 | 📱 | **Gioco in solitaria** — esercitati su qualsiasi quiz da solo tramite un link di condivisione, con la propria cronologia dei punteggi. |
 | ✍️ | **Più tipi di domande** — selezione multipla, digita-la-risposta e cursore, oltre alla classica scelta singola. |
-| 🔌 | **Sistema di plugin** — add-on ZIP installabili dal moderatore con una propria scheda "Plugins". |
-| 🧩 | **Addon del moderatore** — carica, abilita e configura addon JavaScript dalla console del moderatore (scheda dedicata, badge di capacità, configurazione persistita); include uno starter skeleton copia-incolla (`examples/plugins/starter/`) con un contratto di authoring. |
-| 📦 | **ZIP di tema skeleton** — scarica/carica un intero tema di gioco come uno ZIP leggibile da un LLM ("skeleton": token di design + CSS + JS + un contratto SKELETON.md). |
 | 📳 | **Feedback aptico mobile** — feedback di vibrazione opzionale sui telefoni dei giocatori (conto alla rovescia, risposte), attento al reduced-motion. |
 | 🔗 | **Risultati condivisibili** — anteprime di link ricche per risultato (Open Graph unfurl), una pagina di risultato con call-to-action "giocalo tu stesso / ospita la tua" e sticker del vincitore scaricabili. |
 | 🤝 | **Domande della community** — una pagina pubblica di invio con una coda di moderazione del moderatore, più un catalogo di domande riutilizzabile e un archivio di quiz. |
@@ -97,7 +94,7 @@ Supportato da **oltre 592 test automatizzati**, un pass di sicurezza path-traver
 
 ## Backend
 
-Razzoozle offre **due backend intercambiabili** che parlano lo stesso protocollo socket.io su un unico database Postgres condiviso — cambia per client nell'interfaccia del moderatore o con `VITE_DEFAULT_BACKEND`. Il server **Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) copre tutti i flussi di gioco, moderatore, giocatore e display. Il server **Node.js** (`packages/socket`) è completo ed è l'impostazione predefinita autonoma in `compose.node.yml`. Alcuni endpoint HTTP periferici (metriche Prometheus, telemetria client, anteprima di condivisione social, il documento OpenAPI) e gli hook JS dei plugin lato server sono solo Node.
+Razzoozle offre **due backend intercambiabili** che parlano lo stesso protocollo socket.io su un unico database Postgres condiviso — cambia per client nell'interfaccia del moderatore o con `VITE_DEFAULT_BACKEND`. Il server **Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) copre tutti i flussi di gioco, moderatore, giocatore e display. Il server **Node.js** (`packages/socket`) è completo ed è l'impostazione predefinita autonoma in `compose.node.yml`. Alcuni endpoint HTTP periferici (metriche Prometheus, telemetria client, anteprima di condivisione social, il documento OpenAPI) sono solo Node.
 
 **→ Dettagli interni Rust, build e test: [`rust/README.md`](rust/README.md)**
 

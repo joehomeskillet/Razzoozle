@@ -24,7 +24,7 @@
 
 ## ¿Qué es?
 
-Razzoozle es un **juego de cuestionarios** en tiempo real y autoalojado para aulas, eventos y noches de juegos. Un anfitrión abre una partida en la pantalla grande, los jugadores se unen desde sus móviles con un PIN y las respuestas correctas más rápidas puntúan más. Es un fork amistoso de [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) con una cabina de temas gestionada por el moderador, gamificación, juego por equipos e individual, plugins e imágenes de IA locales — manteniendo la experiencia clásica de presentador con fichas de colores + móvil.
+Razzoozle es un **juego de cuestionarios** en tiempo real y autoalojado para aulas, eventos y noches de juegos. Un anfitrión abre una partida en la pantalla grande, los jugadores se unen desde sus móviles con un PIN y las respuestas correctas más rápidas puntúan más. Es un fork amistoso de [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) con una cabina de temas gestionada por el moderador, gamificación, juego por equipos e individual, e imágenes de IA locales — manteniendo la experiencia clásica de presentador con fichas de colores + móvil.
 
 > Proyecto de código abierto independiente. No está afiliado, respaldado ni conectado con Kahoot!® ni con ninguna otra plataforma comercial de cuestionarios.
 
@@ -81,9 +81,6 @@ Cada archivo es autónomo (aplicación + su propia Postgres) e independiente, as
 | 👥 | **Modo equipos** — equipos rojo / azul / verde / amarillo con una clasificación de equipos en vivo. |
 | 📱 | **Juego individual** — practica cualquier cuestionario en solitario mediante un enlace compartido, con su propio historial de puntuaciones. |
 | ✍️ | **Más tipos de preguntas** — selección múltiple, escribe la respuesta y deslizador, además de la opción única clásica. |
-| 🔌 | **Sistema de plugins** — complementos ZIP instalables por el moderador con su propia pestaña "Plugins". |
-| 🧩 | **Addons del moderador** — sube, activa y configura addons de JavaScript desde la consola del moderador (pestaña propia, badges de capacidad, configuración persistida); incluye un starter skeleton de copiar y pegar (`examples/plugins/starter/`) con un contrato de autoría. |
-| 📦 | **ZIPs de tema skeleton** — descarga/sube un tema de partida completo como un ZIP legible por LLM ("skeleton": tokens de diseño + CSS + JS + un contrato SKELETON.md). |
 | 📳 | **Háptica móvil** — feedback de vibración opcional en los móviles de los jugadores (cuenta atrás, respuestas), consciente de reduced-motion. |
 | 🔗 | **Resultados compartibles** — vistas previas de enlace enriquecidas por resultado (Open Graph unfurl), una página de resultado con llamadas a la acción "juégalo tú mismo / organiza el tuyo" y pegatinas de ganador descargables. |
 | 🤝 | **Preguntas de la comunidad** — una página pública de envíos con una cola de moderación del moderador, más un catálogo de preguntas reutilizable y un archivo de cuestionarios. |
@@ -97,7 +94,7 @@ Respaldado por **592+ pruebas automatizadas**, un pase de seguridad de path-trav
 
 ## Backends
 
-Razzoozle incluye **dos backends intercambiables** que hablan el mismo protocolo socket.io sobre una única base de datos Postgres compartida — cambia por cliente en la interfaz del moderador o con `VITE_DEFAULT_BACKEND`. El servidor **Rust** (`axum` + `socketioxide`, seguro en memoria y de baja huella) cubre todos los flujos de juego, moderación, jugador y visualización. El servidor **Node.js** (`packages/socket`) está completo y es el valor por defecto autónomo en `compose.node.yml`. Algunos endpoints HTTP periféricos (métricas de Prometheus, telemetría de cliente, vista previa de enlaces compartidos, el documento OpenAPI) y los hooks JS de plugins del lado servidor son solo de Node.
+Razzoozle incluye **dos backends intercambiables** que hablan el mismo protocolo socket.io sobre una única base de datos Postgres compartida — cambia por cliente en la interfaz del moderador o con `VITE_DEFAULT_BACKEND`. El servidor **Rust** (`axum` + `socketioxide`, seguro en memoria y de baja huella) cubre todos los flujos de juego, moderación, jugador y visualización. El servidor **Node.js** (`packages/socket`) está completo y es el valor por defecto autónomo en `compose.node.yml`. Algunos endpoints HTTP periféricos (métricas de Prometheus, telemetría de cliente, vista previa de enlaces compartidos, el documento OpenAPI) son solo de Node.
 
 **→ Detalles internos de Rust, compilación y pruebas: [`rust/README.md`](rust/README.md)**
 
