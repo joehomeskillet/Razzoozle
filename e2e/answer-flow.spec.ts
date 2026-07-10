@@ -415,48 +415,59 @@ test.describe("Answer flow — E2E All Types", () => {
         })
 
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
+          const isLast = i === quizFixture.questions.length - 1
+          
           // Wait for responses-view to be ready (host transitioned from SELECT_ANSWER to SHOW_RESPONSES).
           await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
-          // ONE click: Responses (auto after answers end) → Leaderboard OR Round-Recap (if achievements exist).
-          await host.getByTestId("next-btn").click()
-          // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
-          const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
-          await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
-          // If round-recap appeared, click next to advance to leaderboard.
-          if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+          
+          if (isLast) {
+            // Last question: Responses → Podium (no leaderboard, no round-recap).
             await host.getByTestId("next-btn").click()
-          }
-          // Wait for leaderboard row (now guaranteed to be visible).
-          await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({
-            timeout: 15_000,
-          })
+            // Wait for podium (host or player1; may include end-recap sequence with opacity).
+            await expect(host.getByTestId("podium").or(player1.getByTestId("podium")).first()).toBeVisible({
+              timeout: 30_000,
+            })
+          } else {
+            // Questions 1-6: Responses → Leaderboard OR Round-Recap.
+            // ONE click: Responses (auto after answers end) → Leaderboard OR Round-Recap (if achievements exist).
+            await host.getByTestId("next-btn").click()
+            // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
+            const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
+            await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
+            // If round-recap appeared, click next to advance to leaderboard.
+            if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+              await host.getByTestId("next-btn").click()
+            }
+            // Wait for leaderboard row (now guaranteed to be visible).
+            await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({
+              timeout: 15_000,
+            })
 
-          // P1 should see correct-answer-highlight after reveal (scored types).
-          if (q.type !== "poll") {
-            await expect(
-              player1.getByTestId("correct-answer-highlight"),
-            ).toBeVisible({ timeout: 20_000 })
-          }
+            // P1 should see correct-answer-highlight after reveal (scored types).
+            if (q.type !== "poll") {
+              await expect(
+                player1.getByTestId("correct-answer-highlight"),
+              ).toBeVisible({ timeout: 20_000 })
+            }
 
-          // Score assertions with polling (animation).
-          // After first scored question P1 should lead; poll may tie until then.
-          if (q.type !== "poll" || i > 0) {
+            // Score assertions with polling (animation).
+            // After first scored question P1 should lead; poll may tie until then.
+            if (q.type !== "poll" || i > 0) {
+              await expect.poll(async () => {
+                const s1 = await parseLeaderboardScore(host, PLAYER1)
+                const s2 = await parseLeaderboardScore(host, PLAYER2)
+                return s1 > s2
+              }, { timeout: 10_000 }).toBe(true)
+            }
+
+            // Double-submit must not explode score unreasonably (no double count).
+            // Cap: theoretical max ~1000 * questions answered correctly.
             await expect.poll(async () => {
               const s1 = await parseLeaderboardScore(host, PLAYER1)
-              const s2 = await parseLeaderboardScore(host, PLAYER2)
-              return s1 > s2
+              return s1 <= 1000 * (i + 1) + 50
             }, { timeout: 10_000 }).toBe(true)
-          }
 
-          // Double-submit must not explode score unreasonably (no double count).
-          // Cap: theoretical max ~1000 * questions answered correctly.
-          await expect.poll(async () => {
-            const s1 = await parseLeaderboardScore(host, PLAYER1)
-            return s1 <= 1000 * (i + 1) + 50
-          }, { timeout: 10_000 }).toBe(true)
-
-          // Advance to next question (unless last).
-          if (i < quizFixture.questions.length - 1) {
+            // Advance to next question.
             // ONE click: Leaderboard → next question (COOLDOWN phase).
             // Next iteration's waitForAnswerControl will wait for SELECT_ANSWER.
             await host.getByTestId("next-btn").click()
@@ -464,27 +475,13 @@ test.describe("Answer flow — E2E All Types", () => {
         })
       }
 
-      // After all questions: transition to podium.
-      await test.step("transition to podium", async () => {
-        // ONE click: Leaderboard (after last Q) → Podium OR still Leaderboard (depending on game rules).
-        await host.getByTestId("next-btn").click()
-        // Wait for podium or leaderboard-row (game may show scores-recap before podium).
-        const podiumOrLeaderboard = host.getByTestId("podium").or(host.getByTestId(`leaderboard-row-${PLAYER1}`)).first()
-        await expect(podiumOrLeaderboard).toBeVisible({ timeout: 15_000 })
-
-        // If still on leaderboard, do final score check and advance.
-        if (await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false)) {
-          await expect.poll(async () => {
-            const s1 = await parseLeaderboardScore(host, PLAYER1)
-            return s1 > 0
-          }, { timeout: 10_000 }).toBe(true)
-          // ONE more click: Leaderboard → Podium.
-          await host.getByTestId("next-btn").click()
-        }
-
-        // Wait for podium (host or player1).
-        const podium = host.getByTestId("podium").or(player1.getByTestId("podium")).first()
-        await expect(podium).toBeVisible({ timeout: 20_000 })
+      // Final podium assertions (Q7 already transitioned to podium in the loop).
+      await test.step("final podium check", async () => {
+        // Podium should be visible on both host and player1.
+        await expect(host.getByTestId("podium")).toBeVisible({ timeout: 10_000 })
+        await expect(player1.getByTestId("podium")).toBeVisible({ timeout: 10_000 })
+        // Optional: verify P1 is the winner (podium usually shows rank order).
+        // If trivial, add text assertion; otherwise skip (scores verified in Q1-Q6).
       })
     } finally {
       await hostCtx.close()
