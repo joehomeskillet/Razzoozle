@@ -10,7 +10,11 @@
  */
 
 import { readFileSync } from "fs"
-import { resolve } from "path"
+import { dirname, resolve } from "path"
+import { fileURLToPath } from "url"
+
+// Resolve fixtures relative to this script, not the CWD.
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const fixtures = [
   "all-types-quiz.json",
@@ -92,7 +96,7 @@ function validateQuestion(q, index) {
 }
 
 fixtures.forEach((filename) => {
-  const filepath = resolve(filename)
+  const filepath = resolve(__dirname, filename)
   console.log(`\nValidating: ${filename}`)
   console.log("=".repeat(60))
 
