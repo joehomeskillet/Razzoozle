@@ -73,14 +73,14 @@ export const EASE = {
 } as const
 
 /** Stagger delays between children (seconds). */
-export const STAGGER = {
+const STAGGER = {
   fast: 0.04,
   base: 0.06,
   slow: 0.1,
 } as const
 
 /** Default rise distance (px) for fade-up reveals. */
-export const RISE = 16
+const RISE = 16
 
 /* ----- Variant factories (pure; pair with the `reduced` flag from useReveal) ----- */
 

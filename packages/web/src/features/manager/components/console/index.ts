@@ -1,11 +1,9 @@
 // Shared admin-console design primitives (2026 redesign — spec §4).
 // Generic + presentational; i18n strings are passed in by the wiring phase.
-export { default as ConsoleShell } from "@razzoozle/web/features/manager/components/console/ConsoleShell"
 export type {
   ConsoleNavItem,
   ConsoleShellProps,
 } from "@razzoozle/web/features/manager/components/console/ConsoleShell"
-export { default as NavItem } from "@razzoozle/web/features/manager/components/console/NavItem"
 export type { NavItemProps } from "@razzoozle/web/features/manager/components/console/NavItem"
 export { default as SelectableRow } from "@razzoozle/web/features/manager/components/console/SelectableRow"
 export type { SelectableRowProps } from "@razzoozle/web/features/manager/components/console/SelectableRow"
