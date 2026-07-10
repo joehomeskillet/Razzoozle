@@ -164,6 +164,9 @@ export function showLeaderboard(ctx: ShowLeaderboardCtx): void {
       ctx.leaderboard.filter((p) => p.isBot).map((p) => p.username),
     )
 
+    // Extract quiz ID from the quizz object (which is a QuizzWithId at runtime).
+    const quizId = (ctx.quizz as any).id
+
     ctx.onGameFinished({
       id: `${Date.now()}-${nanoid(8)}`,
       subject: ctx.quizz.subject,
@@ -186,6 +189,8 @@ export function showLeaderboard(ctx: ShowLeaderboardCtx): void {
       ...(managerRecap && managerRecap.superlatives.length > 0
         ? { recap: managerRecap }
         : {}),
+      // Include quiz ID so result-detail views can link back to the source quiz.
+      ...(quizId ? { quizId } : {}),
     })
 
     // Team mode: final team standings (undefined when team mode is off, so the
