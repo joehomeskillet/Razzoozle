@@ -412,9 +412,16 @@ test.describe("Answer flow — E2E All Types", () => {
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
           // Wait for responses-view to be ready (host transitioned from SELECT_ANSWER to SHOW_RESPONSES).
           await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
-          // ONE click: Responses (auto after answers end) → Leaderboard.
+          // ONE click: Responses (auto after answers end) → Leaderboard OR Round-Recap (if achievements exist).
           await host.getByTestId("next-btn").click()
-          // Wait for leaderboard row visible (strict: not "eventually visible", but actually there).
+          // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
+          const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
+          await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
+          // If round-recap appeared, click next to advance to leaderboard.
+          if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+            await host.getByTestId("next-btn").click()
+          }
+          // Wait for leaderboard row (now guaranteed to be visible).
           await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({
             timeout: 15_000,
           })
@@ -513,11 +520,18 @@ test.describe("Answer flow — E2E All Types", () => {
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
         // Wait for responses-view to be ready before advancing.
         await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
-        // ONE click: Responses → Leaderboard, then ONE click: Leaderboard → Q2.
+        // ONE click: Responses → Leaderboard OR Round-Recap (if achievements exist).
         await host.getByTestId("next-btn").click()
-        await expect(
-          host.getByTestId(`leaderboard-row-${PLAYER1}`),
-        ).toBeVisible({ timeout: 15_000 })
+        // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
+        const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
+        await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
+        // If round-recap appeared, click next to advance to leaderboard.
+        if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+          await host.getByTestId("next-btn").click()
+        }
+        // Wait for leaderboard (now guaranteed to be visible).
+        await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({ timeout: 15_000 })
+        // ONE click: Leaderboard → Q2.
         await host.getByTestId("next-btn").click()
         // Q2 boolean deadline race
         await expect(p1.getByTestId("question-text")).toBeVisible({
