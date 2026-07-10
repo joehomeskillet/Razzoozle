@@ -615,17 +615,38 @@ pub async fn run_game_lifecycle(
         }
 
         // Emit SHOW_LEADERBOARD to manager socket only
+        // Augment payload with auto_advance_ms and round_recap from Game state
+        let (auto_advance_ms, round_recap_opt) = {
+            let game = game_ref.lock().unwrap();
+            let auto_ms = if game.auto_mode {
+                Some((LEADERBOARD_DWELL_SECS as i32) * 1000)
+            } else {
+                None
+            };
+            let recap = game.temp_round_recap.clone();
+            (auto_ms, recap)
+        };
+
+        let augmented_leaderboard_data = razzoozle_protocol::status::ShowLeaderboardData {
+            old_leaderboard: leaderboard_data.old_leaderboard,
+            leaderboard: leaderboard_data.leaderboard,
+            team_standings: leaderboard_data.team_standings,
+            auto_advance_ms,
+            round_recap: round_recap_opt,
+        };
+
         let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
         if let Ok(sid) = manager_socket_id.parse() {
             if let Some(sock) = io.get_socket(sid) {
                 send_status_to_manager(
                     &sock,
                     &game_ref,
-                    &GameStatus::ShowLeaderboard(leaderboard_data),
+                    &GameStatus::ShowLeaderboard(augmented_leaderboard_data),
                 );
             }
         }
         emit_plugin_lifecycle(&io, &game_id, "onLeaderboard", "SHOW_LEADERBOARD");
+
 
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
         // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
