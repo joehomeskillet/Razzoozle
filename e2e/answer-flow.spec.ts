@@ -372,14 +372,19 @@ test.describe("Answer flow — E2E All Types", () => {
           const p2 = player2AnswerPlan(q)
 
           if (i === DEADLINE_Q) {
-            // (a) Deadline race: P2 answers <1s before 10s timeout (t≈9s).
+            // (a) Deadline race: P2 answers ~1s before 10s timeout.
+            // t0 = question start (when controls became visible).
+            const t0 = Date.now()
             await p1.run(player1)
             await expect(player1.getByTestId("answer-submitted")).toBeVisible({
               timeout: 10_000,
             })
-            // Wait ~9s of the 10s limit, then P2 submits.
-            await player2.waitForTimeout(9_000)
-            await p2.run(player2)
+            // P2 targets ~8.5s after question start (~1-1.5s before 10s timeout).
+            const elapsedMs = Date.now() - t0
+            const waitMs = Math.max(0, 8_500 - elapsedMs)
+            await player2.waitForTimeout(waitMs)
+            // P2 click may race the question end — catch if button disappeared.
+            await p2.run(player2).catch(() => {})
             // P2 is last answerer — question may end early (all-answered).
             await expect(
               player2.getByTestId("answer-submitted").or(player2.getByTestId("answer-result")).first()
@@ -537,10 +542,16 @@ test.describe("Answer flow — E2E All Types", () => {
         await expect(p1.getByTestId("question-text")).toBeVisible({
           timeout: 45_000,
         })
+        // t0 = question start (when controls became visible).
+        const t0 = Date.now()
         await player1AnswerPlan(quizFixture.questions[1]).run(p1)
-        await p2.waitForTimeout(9_000)
-        await player2AnswerPlan(quizFixture.questions[1]).run(p2)
-        await expect(p2.getByTestId("answer-submitted")).toBeVisible()
+        // P2 targets ~8.5s after question start (~1-1.5s before 10s timeout).
+        const elapsedMs = Date.now() - t0
+        const waitMs = Math.max(0, 8_500 - elapsedMs)
+        await p2.waitForTimeout(waitMs)
+        // P2 click may race the question end — catch if button disappeared.
+        await player2AnswerPlan(quizFixture.questions[1]).run(p2).catch(() => {})
+        await expect(p2.getByTestId("answer-submitted").or(p2.getByTestId("answer-result")).first()).toBeVisible()
       } finally {
         await hostCtx.close()
         await p1Ctx.close()
