@@ -5,9 +5,9 @@
 // Per-type answer strategies:
 //   - choice/boolean/poll: answerKey (number index)
 //   - slider: answerKey (number value)
-//   - multiple-select: answerKeys (number[] of indices)
-//   - type-answer: answerText (string; ignores answerKey)
-//   - sentence-builder: answerKeys (number[] of chunk indices)
+//   - multiple-select: answerKey=-1, answerKeys (number[] of indices)
+//   - type-answer: answerKey=-1, answerText (string)
+//   - sentence-builder: answerKey=-1, answerText (space-separated chunk text)
 //
 // Player1 = correct/fixture-based answers; Player2 = different/wrong answers.
 // Deterministic: same run yields same event stream (same RNG seed if applicable).
@@ -154,17 +154,25 @@ function getP1Answer(question) {
       return { answerKey: 0 }
 
     case "multiple-select":
-      // Use all solutions
-      return { answerKeys: solutions && solutions.length ? solutions : [0] }
+      // Use all solutions; sent as answerKeys array with sentinel answerKey=-1
+      return {
+        answerKey: -1,
+        answerKeys: solutions && solutions.length ? solutions : [0],
+      }
 
     case "type-answer":
-      // Use first accepted answer
-      return { answerText: acceptedAnswers && acceptedAnswers.length ? acceptedAnswers[0] : "answer" }
+      // Send first accepted answer as answerText with sentinel answerKey=-1
+      return {
+        answerKey: -1,
+        answerText: acceptedAnswers && acceptedAnswers.length ? acceptedAnswers[0] : "answer",
+      }
 
     case "sentence-builder":
-      // Use chunks in order (indices 0,1,2,...)
-      const chunkCount = chunks && Array.isArray(chunks) ? chunks.length : 0
-      return { answerKeys: Array.from({ length: chunkCount }, (_, i) => i) }
+      // Send chunks in correct order as space-separated text with sentinel answerKey=-1
+      if (chunks && Array.isArray(chunks)) {
+        return { answerKey: -1, answerText: chunks.join(" ") }
+      }
+      return { answerKey: -1, answerText: "" }
 
     default:
       return { answerKey: 0 }
@@ -202,17 +210,19 @@ function getP2Answer(question) {
           wrongSet.push(i)
         }
       }
-      return { answerKeys: wrongSet.length > 0 ? wrongSet : [0] }
+      return { answerKey: -1, answerKeys: wrongSet.length > 0 ? wrongSet : [0] }
 
     case "type-answer":
-      // Different text
-      return { answerText: "London" }
+      // Different text; sent as answerText with sentinel answerKey=-1
+      return { answerKey: -1, answerText: "London" }
 
     case "sentence-builder":
-      // Reverse chunk order
-      const chunkCount = chunks && Array.isArray(chunks) ? chunks.length : 0
-      const reversed = Array.from({ length: chunkCount }, (_, i) => chunkCount - 1 - i)
-      return { answerKeys: reversed }
+      // Send chunks reversed as space-separated text with sentinel answerKey=-1
+      if (chunks && Array.isArray(chunks)) {
+        const reversed = [...chunks].reverse()
+        return { answerKey: -1, answerText: reversed.join(" ") }
+      }
+      return { answerKey: -1, answerText: "" }
 
     default:
       return { answerKey: 0 }
