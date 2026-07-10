@@ -26,7 +26,7 @@ const FinishedScreen = ({
   const reduced = useReducedMotion() ?? false
 
   return (
-    <section className="relative flex min-h-dvh flex-col">
+    <section className="relative flex min-h-dvh flex-col" style={{ "--game-fg": "#0E1120" } as React.CSSProperties}>
       <div className="relative z-10 flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto px-4 py-10">
         <motion.div
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
