@@ -28,6 +28,20 @@ pnpm build && pnpm start   # or: pnpm dev (web + socket, hot reload)
 ```
 Requires Node 22+ and pnpm 11+.
 
+## Migrations
+Back up PostgreSQL before migrating. Run migrations before the first
+Postgres-backed deployment and after updating to a release that includes
+migrations.
+
+```bash
+export DATABASE_URL='postgresql://user:password@host:5432/razzoozle'
+./scripts/migrate-apply.sh --dry-run  # preview only; makes no database changes
+./scripts/migrate-apply.sh
+```
+
+Always run `--dry-run` before the actual apply. Numbered migrations execute in
+order, and schema DDL is idempotent and safe to re-run.
+
 ## Beamer / kiosk
 - `/display` renders the host presentation fullscreen for a projector/TV (vh-scaled type), pairable from a phone.
 - `/satellite/<gameId>?satellite=true&token=<token>` is a control-free kiosk view (token auth, no manager password). An optional Raspberry-Pi satellite image is included.
