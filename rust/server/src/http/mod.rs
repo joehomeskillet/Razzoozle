@@ -107,6 +107,28 @@ pub async fn authorize_manager_request(
     false
 }
 
+/// Dev-route auth for `/metrics` (and similar): fail-closed on missing
+/// `DEV_API_KEY`. When the key is set, require constant-time match on
+/// `X-Manager-Token`. Registry is accepted for call-site parity with
+/// `authorize_manager_request` (not used for session lookup here).
+pub async fn authorize_dev_request(
+    headers: &HeaderMap,
+    _registry: Arc<RwLock<GameRegistry>>,
+) -> bool {
+    let Some(key) = dev_api_key().filter(|k| !k.is_empty()) else {
+        // No key configured → reject (fail closed; never serve metrics open).
+        return false;
+    };
+    let token = headers
+        .get("x-manager-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if token.is_empty() {
+        return false;
+    }
+    constant_time_eq(token.as_bytes(), key.as_bytes())
+}
+
 // ── HTTP handlers ────────────────────────────────────────────────────────────
 
 lazy_static! {
@@ -181,5 +203,6 @@ pub fn router(state: AppState) -> Router {
         .route("/sounds/*path", get(assets::handle_sounds_asset))
         .route("/r/:id", get(result_og::handle_result_og))
         .route("/metrics", get(metrics::handle_metrics))
+        .layer(axum::middleware::from_fn(metrics::track_metrics))
         .with_state(state)
 }

@@ -1,11 +1,15 @@
-/// Prometheus metrics endpoint — same metric names and labels as Node for dashboard/alerting compatibility
-/// localhost-only gating is handled by nginx; this handler just renders the metrics.
+/// Prometheus metrics endpoint — same metric names and labels as Node for dashboard/alerting compatibility.
+/// Auth: DEV_API_KEY via X-Manager-Token (fail-closed). Localhost-only is nginx's job.
 
-use axum::http::StatusCode;
+use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use lazy_static::lazy_static;
-use prometheus::{Counter, CounterVec, Encoder, Gauge, GaugeVec, Histogram, HistogramVec, IntCounter, IntCounterVec, IntGaugeVec, Registry, TextEncoder};
-use std::sync::Mutex;
+use prometheus::{Encoder, IntCounterVec, IntGaugeVec, HistogramVec, Registry, TextEncoder};
+
+use super::{authorize_dev_request, AppState};
+use axum::middleware;
+use axum::extract::Request;
 
 lazy_static! {
     /// Global Prometheus registry for all metrics
@@ -95,9 +99,38 @@ lazy_static! {
     };
 }
 
-/// GET /metrics — Prometheus text-exposition format
-/// Localhost-only access is enforced by nginx (DEV-gated, never in prod)
-pub async fn handle_metrics() -> impl IntoResponse {
+/// Per-route HTTP request counter middleware (Node parity: prom.ts instrumentation).
+/// Tracks route + status code, increments http_requests_total on every response.
+pub async fn track_metrics(req: Request, next: middleware::Next) -> axum::response::Response {
+    let route = req.extensions()
+        .get::<axum::extract::MatchedPath>()
+        .map(|p| p.as_str().to_string())
+        .unwrap_or_else(|| "unmatched".into());
+    
+    let resp = next.run(req).await;
+    
+    // Increment counter with [route, status_code] labels (Node parity)
+    HTTP_REQUESTS_TOTAL.with_label_values(&[&route, resp.status().as_str()]).inc();
+    
+    resp
+}
+
+/// GET /metrics — Prometheus text-exposition format.
+/// Requires `X-Manager-Token` matching `DEV_API_KEY` (401 if missing/wrong/unset).
+/// Tracks http_requests_total per route and status code via middleware layer.
+pub async fn handle_metrics(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if !authorize_dev_request(&headers, state.registry.clone()).await {
+        return (
+            StatusCode::UNAUTHORIZED,
+            [("Content-Type", "text/plain; charset=utf-8")],
+            "unauthorized".to_string(),
+        )
+            .into_response();
+    }
+
     let metrics = REGISTRY.gather();
     let mut buffer = vec![];
     TextEncoder.encode(&metrics, &mut buffer).ok();
@@ -107,4 +140,5 @@ pub async fn handle_metrics() -> impl IntoResponse {
         [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")],
         String::from_utf8(buffer).unwrap_or_default(),
     )
+        .into_response()
 }

@@ -25,27 +25,31 @@ fn esc_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-/// Inject OG meta tags and title into HTML
-/// Uses simple string replacement (same as Node's approach)
+/// Inject OG meta tags and title into HTML.
+/// Uses `regex::NoExpand` so user-authored subjects with `$…` sequences are
+/// treated as literals (not regex backreferences).
 fn inject_og(html: &str, title: &str, desc: &str) -> String {
     let title_esc = esc_html(title);
     let desc_esc = esc_html(desc);
 
     let mut result = html.to_string();
 
-    // Replace og:title content attribute
-    if let Ok(re) = regex::Regex::new(r#"(<meta property="og:title" content=")[^"]*(")"#) {
-        result = re.replace(&result, format!(r#"$1{}$2"#, title_esc)).to_string();
+    // Replace og:title content attribute (full-match replace, no $1/$2)
+    if let Ok(re) = regex::Regex::new(r#"<meta property="og:title" content="[^"]*""#) {
+        let repl = format!(r#"<meta property="og:title" content="{}""#, title_esc);
+        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
     }
 
     // Replace og:description content attribute
-    if let Ok(re) = regex::Regex::new(r#"(<meta property="og:description" content=")[^"]*(")"#) {
-        result = re.replace(&result, format!(r#"$1{}$2"#, desc_esc)).to_string();
+    if let Ok(re) = regex::Regex::new(r#"<meta property="og:description" content="[^"]*""#) {
+        let repl = format!(r#"<meta property="og:description" content="{}""#, desc_esc);
+        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
     }
 
     // Replace title element
-    if let Ok(re) = regex::Regex::new(r"(<title>)[^<]*(<\/title>)") {
-        result = re.replace(&result, format!(r"$1{}$2", title_esc)).to_string();
+    if let Ok(re) = regex::Regex::new(r"<title>[^<]*</title>") {
+        let repl = format!("<title>{}</title>", title_esc);
+        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
     }
 
     result
