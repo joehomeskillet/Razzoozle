@@ -219,50 +219,17 @@ button:not(:disabled),
   animation: show 0.5s ease-out;
 }
 
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.4) rotate(-6deg);
-  }
-  60% {
-    transform: scale(0.8) rotate(6deg);
-  }
-  80% {
-    transform: scale(1);
-  }
-}
-
-@keyframes quizz {
-  0% {
-    transform: scale(0) perspective(1200px) rotateY(-60deg) rotateX(60deg)
-      translateZ(100px);
-  }
-  60% {
-    transform: scale(1) perspective(1200px) rotateY(-15deg) rotateX(15deg)
-      translateZ(100px);
-  }
-  80% {
-    transform: scale(0.8) perspective(1200px) rotateY(-15deg) rotateX(15deg)
-      translateZ(100px);
-  }
-  100% {
-    transform: scale(1) perspective(1200px) rotateY(-15deg) rotateX(15deg)
-      translateZ(100px);
-  }
-}
-
-@keyframes quizzButton {
+@keyframes show {
   0% {
     transform: scale(0);
   }
-  60% {
-    transform: scale(1);
+  30% {
+    transform: scale(0.9);
   }
-  80% {
+  60% {
     transform: scale(0.8);
   }
-  100% {
+  80% {
     transform: scale(1);
   }
 }
