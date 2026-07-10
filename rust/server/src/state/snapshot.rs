@@ -22,8 +22,10 @@ pub fn snapshot_dir() -> PathBuf {
 }
 
 /// Get the snapshot file path.
+/// Separate file from Node's registry.json: both twins share the config mount;
+/// a shared file would let each backend's 5s task clobber the other's crash-recovery state.
 pub fn snapshot_file() -> PathBuf {
-    snapshot_dir().join("registry.json")
+    snapshot_dir().join("registry-rust.json")
 }
 
 /// Serialize a single game to a JSON-compatible snapshot value.
