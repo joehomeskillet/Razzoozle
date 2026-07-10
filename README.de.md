@@ -24,7 +24,7 @@
 
 ## Was ist es?
 
-Razzoozle ist eine selbstgehostete, echtzeitfähige **Quiz-Plattform** für Klassenzimmer, Events und Spieleabende. Ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, Spieler treten von ihren Handys mit einer PIN bei, und schnellere richtige Antworten erzielen mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) mit Manager-gesteuertem Theme-Cockpit, Gamification, Team- und Einzelspiel, Plugins und lokalen KI-Bildern — unter Beibehaltung des klassischen Farbkachel-Präsentators und der Handy-Erfahrung.
+Razzoozle ist eine selbstgehostete, echtzeitfähige **Quiz-Plattform** für Klassenzimmer, Events und Spieleabende. Ein Gastgeber öffnet ein Spiel auf dem großen Bildschirm, Spieler treten von ihren Handys mit einer PIN bei, und schnellere richtige Antworten erzielen mehr Punkte. Es ist ein freundlicher Fork von [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) mit Manager-gesteuertem Theme-Cockpit, Gamification, Team- und Einzelspiel, und lokalen KI-Bildern — unter Beibehaltung des klassischen Farbkachel-Präsentators und der Handy-Erfahrung.
 
 > Unabhängiges Open-Source-Projekt. Nicht mit Kahoot!® oder einer anderen kommerziellen Quiz-Plattform verbunden, von diesen nicht befürwortet und nicht daran angeschlossen.
 
@@ -81,9 +81,6 @@ Keine Datenbank gewünscht? `DATABASE_MODE=file` setzen, um ohne Postgres zu lau
 | 👥 | **Team-Modus** — Teams in Rot / Blau / Grün / Gelb mit einer Live-Team-Rangliste. |
 | 📱 | **Einzelspiel** — jedes Quiz allein über einen Freigabelink üben, mit eigener Punkte-Historie. |
 | ✍️ | **Mehr Fragetypen** — Mehrfachauswahl, Textantwort und Schieberegler, zusätzlich zur klassischen Einfachauswahl. |
-| 🔌 | **Plugin-System** — vom Manager installierbare ZIP-Add-ons mit eigenem „Plugins"-Tab. |
-| 🧩 | **Manager-Addons** — JavaScript-Addons aus der Manager-Konsole hochladen, aktivieren und konfigurieren (eigener Tab, Capability-Badges, persistierte Konfiguration); liefert ein Copy-Paste-Starter-Skeleton (`examples/plugins/starter/`) mit einem Authoring-Vertrag. |
-| 📦 | **Skeleton-Theme-ZIPs** — ein ganzes Spiel-Theme als LLM-lesbares ZIP herunter-/hochladen („Skeleton": Design-Tokens + CSS + JS + ein SKELETON.md-Vertrag). |
 | 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
 | 🔗 | **Teilbare Ergebnisse** — reichhaltige Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „selbst spielen / eigenes hosten"-Calls-to-Action und herunterladbare Gewinner-Sticker. |
 | 🤝 | **Community-Fragen** — eine öffentliche Einreichungsseite mit einer Manager-Moderationswarteschlange, plus ein wiederverwendbarer Fragenkatalog und ein Quiz-Archiv. |
@@ -97,7 +94,7 @@ Unterstützt von **592+ automatisierten Tests**, einem Path-Traversal- + `ws`-CV
 
 ## Backends
 
-Razzoozle liefert **zwei austauschbare Backends**, die dasselbe socket.io-Protokoll über eine gemeinsame Postgres-Datenbank sprechen — Wechsel pro Client im Manager-UI oder über `VITE_DEFAULT_BACKEND`. Der **Rust**-Server (`axum` + `socketioxide`, speichersicher und ressourcenschonend) deckt alle Gameplay-, Manager-, Spieler- und Display-Flows ab. Der **Node.js**-Server (`packages/socket`) ist voll ausgestattet und der eigenständige Standard in `compose.node.yml`. Einige periphere HTTP-Endpunkte (Prometheus-Metriken, Client-Telemetrie, Social-Share-Unfurl, das OpenAPI-Dokument) und serverseitige Plugin-JS-Hooks sind nur unter Node verfügbar.
+Razzoozle liefert **zwei austauschbare Backends**, die dasselbe socket.io-Protokoll über eine gemeinsame Postgres-Datenbank sprechen — Wechsel pro Client im Manager-UI oder über `VITE_DEFAULT_BACKEND`. Der **Rust**-Server (`axum` + `socketioxide`, speichersicher und ressourcenschonend) deckt alle Gameplay-, Manager-, Spieler- und Display-Flows ab. Der **Node.js**-Server (`packages/socket`) ist voll ausgestattet und der eigenständige Standard in `compose.node.yml`. Einige periphere HTTP-Endpunkte (Prometheus-Metriken, Client-Telemetrie, Social-Share-Unfurl, das OpenAPI-Dokument) sind nur unter Node verfügbar.
 
 **→ Rust-Interna, Build & Tests: [`rust/README.md`](rust/README.md)**
 

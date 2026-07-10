@@ -24,7 +24,7 @@
 
 ## Qu'est-ce que c'est ?
 
-Razzoozle est un **jeu de quiz** en temps réel et auto-hébergé pour les salles de classe, les événements et les soirées jeux. Un hôte ouvre une partie sur le grand écran, les joueurs rejoignent depuis leur téléphone avec un code PIN, et les bonnes réponses les plus rapides marquent davantage de points. C'est un fork convivial de [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) doté d'un cockpit de thème piloté par le manager, de gamification, de jeu en équipe et en solo, de plugins et d'images générées localement par IA — tout en conservant l'expérience classique du présentateur à tuiles colorées et du jeu sur téléphone.
+Razzoozle est un **jeu de quiz** en temps réel et auto-hébergé pour les salles de classe, les événements et les soirées jeux. Un hôte ouvre une partie sur le grand écran, les joueurs rejoignent depuis leur téléphone avec un code PIN, et les bonnes réponses les plus rapides marquent davantage de points. C'est un fork convivial de [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) doté d'un cockpit de thème piloté par le manager, de gamification, de jeu en équipe et en solo, et d'images générées localement par IA — tout en conservant l'expérience classique du présentateur à tuiles colorées et du jeu sur téléphone.
 
 > Projet open source indépendant. Non affilié à, ni approuvé par, ni lié à Kahoot!® ou à toute autre plateforme de quiz commerciale.
 
@@ -81,9 +81,6 @@ Pas besoin de base de données ? Définissez `DATABASE_MODE=file` pour fonctionn
 | 👥 | **Mode équipe** — équipes rouge / bleue / verte / jaune avec un classement d'équipe en direct. |
 | 📱 | **Jeu en solo** — entraînez-vous seul sur n'importe quel quiz via un lien de partage, avec son propre historique de scores. |
 | ✍️ | **Plus de types de questions** — choix multiple, réponse à saisir et curseur, en plus du choix unique classique. |
-| 🔌 | **Système de plugins** — des modules complémentaires ZIP installables par le manager avec leur propre onglet « Plugins ». |
-| 🧩 | **Modules complémentaires du manager** — importez, activez et configurez des modules JavaScript depuis la console du manager (onglet dédié, badges de capacités, config persistée) ; livré avec un squelette de démarrage à copier-coller (`examples/plugins/starter/`) doté d'un contrat de création. |
-| 📦 | **ZIP de thème squelette** — téléchargez/importez un thème de jeu complet sous forme de ZIP lisible par un LLM (« skeleton » : jetons de design + CSS + JS + un contrat SKELETON.md). |
 | 📳 | **Retour haptique mobile** — retour de vibration optionnel sur les téléphones des joueurs (compte à rebours, réponses), respectant le mode mouvement réduit. |
 | 🔗 | **Résultats partageables** — des aperçus de liens riches par résultat (dépliage Open Graph), une page de résultat avec des appels à l'action « jouez vous-même / organisez la vôtre », et des autocollants de gagnant téléchargeables. |
 | 🤝 | **Questions communautaires** — une page de soumission publique avec une file de modération pour le manager, ainsi qu'un catalogue de questions réutilisable et une archive de quiz. |
@@ -97,7 +94,7 @@ Soutenu par **plus de 592 tests automatisés**, un audit de sécurité path-trav
 
 ## Backends
 
-Razzoozle propose **deux backends interchangeables** parlant le même protocole socket.io sur une base de données Postgres partagée — commutez par client dans l'interface du manager ou avec `VITE_DEFAULT_BACKEND`. Le serveur **Rust** (`axum` + `socketioxide`, sûr en mémoire et à faible empreinte) couvre tous les flux de jeu, de manager, de joueur et d'affichage. Le serveur **Node.js** (`packages/socket`) est complet et constitue le défaut autonome dans `compose.node.yml`. Quelques points de terminaison HTTP périphériques (métriques Prometheus, télémétrie client, dépliage de partage social, la documentation OpenAPI) et les hooks JS de plugins côté serveur sont réservés à Node.
+Razzoozle propose **deux backends interchangeables** parlant le même protocole socket.io sur une base de données Postgres partagée — commutez par client dans l'interface du manager ou avec `VITE_DEFAULT_BACKEND`. Le serveur **Rust** (`axum` + `socketioxide`, sûr en mémoire et à faible empreinte) couvre tous les flux de jeu, de manager, de joueur et d'affichage. Le serveur **Node.js** (`packages/socket`) est complet et constitue le défaut autonome dans `compose.node.yml`. Quelques points de terminaison HTTP périphériques (métriques Prometheus, télémétrie client, dépliage de partage social, la documentation OpenAPI) sont réservés à Node.
 
 **→ Internes, build et tests Rust : [`rust/README.md`](rust/README.md)**
 

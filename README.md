@@ -24,7 +24,7 @@
 
 ## What is it?
 
-Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and faster correct answers score more. It's a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) with a manager-driven theme cockpit, gamification, team & solo play, plugins and local AI images — keeping the classic colored-tile presenter + phone experience.
+Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and faster correct answers score more. It's a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) with a manager-driven theme cockpit, gamification, team & solo play, and local AI images — keeping the classic colored-tile presenter + phone experience.
 
 > Independent open-source project. Not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
 
@@ -81,9 +81,6 @@ No database wanted? Set `DATABASE_MODE=file` to run without Postgres. Without Do
 | 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
 | ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
-| 🔌 | **Plugin system** — manager-installable ZIP add-ons with their own "Plugins" tab. |
-| 🧩 | **Manager addons** — upload, enable, and configure JavaScript addons from the manager console (own tab, capability badges, persisted config); ships a copy-paste starter skeleton (`examples/plugins/starter/`) with an authoring contract. |
-| 📦 | **Skeleton theme ZIPs** — download/upload a whole-game theme as an LLM-readable ZIP ("skeleton": design tokens + CSS + JS + a SKELETON.md contract). |
 | 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
 | 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
 | 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
@@ -97,7 +94,7 @@ Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a
 
 ## Backends
 
-Razzoozle ships **two interchangeable backends** speaking the same socket.io protocol over one shared Postgres database — switch per client in the manager UI or with `VITE_DEFAULT_BACKEND`. The **Rust** server (`axum` + `socketioxide`, memory-safe and low-footprint) covers all gameplay, manager, player and display flows. The **Node.js** server (`packages/socket`) is fully featured and the self-contained default in `compose.node.yml`. A few peripheral HTTP endpoints (Prometheus metrics, client telemetry, social-share unfurl, the OpenAPI doc) and server-side plugin JS hooks are Node-only.
+Razzoozle ships **two interchangeable backends** speaking the same socket.io protocol over one shared Postgres database — switch per client in the manager UI or with `VITE_DEFAULT_BACKEND`. The **Rust** server (`axum` + `socketioxide`, memory-safe and low-footprint) covers all gameplay, manager, player and display flows. The **Node.js** server (`packages/socket`) is fully featured and the self-contained default in `compose.node.yml`. A few peripheral HTTP endpoints (Prometheus metrics, client telemetry, social-share unfurl, the OpenAPI doc) are Node-only.
 
 **→ Rust internals, build & tests: [`rust/README.md`](rust/README.md)**
 
