@@ -147,22 +147,59 @@ const Medal = ({ rank }: { rank: number }) => {
 }
 
 // ─── Achievement medal row (per podium block) ─────────────────────────────────
-// Renders up to 3 of the player's full-game achievement badges beneath their
-// podium block. Skips ids absent from the static meta catalog.
+// Carousel of player's achievements. When autoMode is on and player has >3 badges,
+// cycles through all achievements every 3 seconds. Otherwise shows first 3 static.
+// Skips ids absent from the static meta catalog.
 
-const PodiumMedals = ({ achievements }: { achievements?: string[] }) => {
-  const shown = (achievements ?? [])
+const PodiumMedals = ({ 
+  achievements, 
+  autoMode = false, 
+  isRevealed = false 
+}: { 
+  achievements?: string[]
+  autoMode?: boolean
+  isRevealed?: boolean
+}) => {
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  
+  const shown = useMemo(() => (achievements ?? [])
     .map((id) => ({ id, meta: ACHIEVEMENT_META[id] }))
     .filter((x): x is { id: string; meta: (typeof ACHIEVEMENT_META)[string] } =>
       Boolean(x.meta),
-    )
-    .slice(0, 3)
+    ), [achievements])
 
   if (shown.length === 0) return null
 
+  // Set up carousel auto-advance when autoMode is on and podium is revealed
+  useEffect(() => {
+    if (!autoMode || shown.length <= 3 || !isRevealed) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % shown.length)
+    }, 3000) // Rotate every 3 seconds
+
+    return () => clearInterval(interval)
+  }, [autoMode, shown.length, isRevealed])
+
+  // Reset carousel when auto mode turns off
+  useEffect(() => {
+    if (!autoMode) {
+      setCarouselIndex(0)
+    }
+  }, [autoMode, shown.length])
+
+  // Determine which achievements to show (carousel or static)
+  const displayed = autoMode && shown.length > 3
+    ? [shown[(carouselIndex) % shown.length], 
+       shown[(carouselIndex + 1) % shown.length], 
+       shown[(carouselIndex + 2) % shown.length]]
+    : shown.slice(0, 3)
+
   return (
     <div className="flex items-center justify-center gap-2 pt-3">
-      {shown.map(({ id, meta }) => (
+      {displayed.map(({ id, meta }) => (
         <AchievementMedal key={id} id={id} tier={meta.tier} size="sm" />
       ))}
     </div>
@@ -375,7 +412,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[1].points}
                 </p>
-                <PodiumMedals achievements={top[1].achievements} />
+                <PodiumMedals achievements={top[1].achievements} autoMode={autoMode} isRevealed={apparition >= 2} />
                 {apparition >= 4 && (
                   <PodiumStickerButton
                     rank={rankOf[1]}
@@ -427,7 +464,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
               <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                 {top[0].points}
               </p>
-              <PodiumMedals achievements={top[0].achievements} />
+              <PodiumMedals achievements={top[0].achievements} autoMode={autoMode} isRevealed={apparition >= 3} />
               {apparition >= 4 && (
                 <PodiumStickerButton
                   rank={rankOf[0]}
@@ -477,7 +514,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
                 <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                   {top[2].points}
                 </p>
-                <PodiumMedals achievements={top[2].achievements} />
+                <PodiumMedals achievements={top[2].achievements} autoMode={autoMode} isRevealed={apparition >= 1} />
                 {apparition >= 4 && (
                   <PodiumStickerButton
                     rank={rankOf[2]}
