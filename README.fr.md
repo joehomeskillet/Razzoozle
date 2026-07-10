@@ -103,6 +103,25 @@ Razzoozle propose **deux backends interchangeables** parlant le même protocole 
 
 ---
 
+## Développement agentique
+
+Razzoozle est développé presque entièrement par des agents de codage IA, orchestrés par une supervision humaine. Une équipe diversifiée de modèles et d'outils spécialisés collabore pour construire, tester, examiner et déployer des fonctionnalités.
+
+| Agent | Role |
+| --- | --- |
+| Claude | Orchestration et révision |
+| Codex (GPT-5.6) | Implémentation full-stack |
+| Cursor (GPT-5.6) | Raffinage et correction du code |
+| Grok (xAI) | Implémentation du backend Rust |
+| Gemini (Google) | Examen et jugement à long contexte |
+| Modèles ouverts | Qwen, DeepSeek, Nemotron |
+| Inférence locale | OpenVINO sur Intel Arc |
+| Browser QA (Playwright) | Tests de jeu end-to-end |
+
+Les humains examinent et fusionnent chaque commit. L'IA améliore la vitesse et la qualité, n'abroge pas le jugement.
+
+---
+
 ## Configuration et documentation
 
 Les données d'exécution résident dans le volume `config`, initialisées au premier démarrage. Les paramètres de jeu se trouvent dans `config/game.json` ; les quiz sont créés dans l'éditeur du manager ou en tant que `config/quizz/*.json`. Voir **[docs/](docs/)** : [Auto-hébergement](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Thématisation](docs/Theming.md) · [Mode faible latence](docs/LOW-LATENCY-MODE.md).

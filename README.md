@@ -103,6 +103,25 @@ Razzoozle ships **two interchangeable backends** speaking the same socket.io pro
 
 ---
 
+## Agentically developed
+
+Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.
+
+| Agent | Role |
+| --- | --- |
+| Claude | Orchestration & review |
+| Codex (GPT-5.6) | Full-stack implementation |
+| Cursor (GPT-5.6) | Code refinement & fix |
+| Grok (xAI) | Rust backend implementation |
+| Gemini (Google) | Long-context review & judging |
+| Open models | Qwen, DeepSeek, Nemotron |
+| Local inference | OpenVINO on Intel Arc |
+| Browser QA (Playwright) | End-to-end game testing |
+
+Humans review and merge every commit. AI augments speed and quality, not replaces judgment.
+
+---
+
 ## Configuration & docs
 
 Runtime data lives in the `config` volume, seeded on first boot. Game settings are in `config/game.json`; quizzes are authored in the manager editor or as `config/quizz/*.json`. See **[docs/](docs/)**: [Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md).

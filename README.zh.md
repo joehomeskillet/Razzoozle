@@ -103,6 +103,25 @@ Razzoozle 提供**两个可互换的后端**，它们通过同一个共享的 Po
 
 ---
 
+## 智能体开发
+
+Razzoozle 几乎完全由 AI 编码智能体开发，由人类监督协调。由多个专业模型和工具组成的多元团队共同合作，构建、测试、审查和部署功能。
+
+| Agent | Role |
+| --- | --- |
+| Claude | 协调与审查 |
+| Codex (GPT-5.6) | 全栈实现 |
+| Cursor (GPT-5.6) | 代码细化与修复 |
+| Grok (xAI) | Rust 后端实现 |
+| Gemini (Google) | 长上下文审查与评判 |
+| 开放模型 | Qwen、DeepSeek、Nemotron |
+| 本地推理 | Intel Arc 上的 OpenVINO |
+| Browser QA (Playwright) | 端到端游戏测试 |
+
+人类审查并合并每个提交。AI 增强速度和质量，而不是替代判断。
+
+---
+
 ## 配置与文档
 
 运行时数据位于 `config` 卷中，在首次启动时初始化。游戏设置在 `config/game.json` 中；测验在管理员编辑器中编写，或作为 `config/quizz/*.json`。参见 **[docs/](docs/)**：[Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md)。
