@@ -176,10 +176,13 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 if to_catalog {
                     // Save to catalog
                     let question = submission.get("question").cloned().unwrap_or(serde_json::json!({}));
+                    // Timestamp at handler level (Node parity: Date.now() in the handler)
+                    let added_at = chrono::Utc::now();
                     match db::insert_catalog_entry(
                         &ctx.db_pool,
                         &question,
                         "submission",
+                        added_at,
                     ).await {
                         Ok(_) => {
                             // Update submission status to "approved"

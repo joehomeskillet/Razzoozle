@@ -29,17 +29,20 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Gate 2: Check if this game has low-latency enabled.
-                let low_latency_enabled = match game_ref.lock() {
-                    Ok(game) => game.low_latency,
+                let (low_latency_enabled, clock_sync_enabled) = match game_ref.lock() {
+                    Ok(game) => {
+                        let clock_sync = game.low_latency_config
+                            .get("clockSync")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(true); // Default to true when absent (Node parity)
+                        (game.low_latency, clock_sync)
+                    },
                     Err(_) => return, // Lock failed, drop silently
                 };
 
-                if !low_latency_enabled {
-                    return; // low_latency not enabled, no PONG
+                if !low_latency_enabled || !clock_sync_enabled {
+                    return; // low_latency or clockSync not enabled, no PONG
                 }
-
-                // TODO(parity): also gate on lowLatency.clockSync once cached in-memory
-                // (Node's handleClockPing checks both enabled AND clockSync before sending PONG).
 
                 let server_now_ms = SystemTime::now()
                     .duration_since(UNIX_EPOCH)

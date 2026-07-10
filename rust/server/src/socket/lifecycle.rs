@@ -761,7 +761,8 @@ mod tests {
                 Some("test-quiz".to_string()),
                 "manager-client-1".to_string(),
                 false,
-            )
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
             .unwrap();
 
         let game_ref = registry.get_game_by_id(&game_id).unwrap();

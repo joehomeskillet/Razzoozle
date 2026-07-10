@@ -142,8 +142,11 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Timestamp at handler level (Node parity: Date.now() in the handler)
+                let added_at = chrono::Utc::now();
+
                 // Persist to DB
-                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags)
+                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, added_at)
                     .await
                 {
                     Ok(_id) => {
