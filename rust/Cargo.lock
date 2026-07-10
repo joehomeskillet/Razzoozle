@@ -1552,6 +1552,7 @@ dependencies = [
  "serde_json",
  "socketioxide",
  "sqlx",
+ "subtle",
  "tokio",
  "tracing",
  "tracing-subscriber",
