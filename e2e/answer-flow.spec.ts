@@ -502,11 +502,13 @@ test.describe("Answer flow — E2E All Types", () => {
 
       // Final podium assertions (Q7 already transitioned to podium in the loop).
       await test.step("final podium check", async () => {
-        // Podium should be visible on both host and player1.
+        // Podium is a HOST screen; players render PlayerFinished instead —
+        // player-side end state is covered by the per-question asserts (Q1-Q7).
         await expect(host.getByTestId("podium")).toBeVisible({ timeout: 10_000 })
-        await expect(player1.getByTestId("podium")).toBeVisible({ timeout: 10_000 })
-        // Optional: verify P1 is the winner (podium usually shows rank order).
-        // If trivial, add text assertion; otherwise skip (scores verified in Q1-Q6).
+        // P1 is the winner: their name must appear on the host podium.
+        await expect(host.getByTestId("podium")).toContainText(PLAYER1, {
+          timeout: 10_000,
+        })
       })
     } finally {
       await hostCtx.close()
