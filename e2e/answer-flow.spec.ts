@@ -257,13 +257,13 @@ async function hostAdvanceAfterAnswers(host: Page) {
 
 async function assertQuestionTextAligned(pages: RolePages, expected: string) {
   for (const role of ["host", "player1", "player2"] as const) {
-    const el = pages[role].getByTestId("question-text")
+    const el = pages[role].getByTestId("question-text").first()
     await expect(el).toBeVisible({ timeout: 30_000 })
     await expect(el).toContainText(expected)
   }
-  const t1 = await pages.host.getByTestId("question-text").innerText()
-  const t2 = await pages.player1.getByTestId("question-text").innerText()
-  const t3 = await pages.player2.getByTestId("question-text").innerText()
+  const t1 = await pages.host.getByTestId("question-text").first().innerText()
+  const t2 = await pages.player1.getByTestId("question-text").first().innerText()
+  const t3 = await pages.player2.getByTestId("question-text").first().innerText()
   expect(t1.trim()).toBe(t2.trim())
   expect(t1.trim()).toBe(t3.trim())
 }
@@ -281,6 +281,29 @@ async function parseLeaderboardScore(
     return 0
   }
   return Number(nums[nums.length - 1])
+}
+
+/** Wait for type-specific answer control to be visible in SELECT_ANSWER phase. */
+async function waitForAnswerControl(page: Page, questionType: string) {
+  switch (questionType) {
+    case "choice":
+    case "boolean":
+    case "poll":
+    case "multiple-select":
+      await expect(page.getByTestId("answer-btn-0")).toBeVisible({ timeout: 45_000 })
+      break
+    case "slider":
+      await expect(page.getByTestId("slider-input")).toBeVisible({ timeout: 45_000 })
+      break
+    case "type-answer":
+      await expect(page.getByTestId("type-answer-input")).toBeVisible({ timeout: 45_000 })
+      break
+    case "sentence-builder":
+      await expect(page.getByTestId("sentence-chunk-0")).toBeVisible({ timeout: 45_000 })
+      break
+    default:
+      throw new Error(`Unknown question type: ${questionType}`)
+  }
 }
 
 // ── Main suite ────────────────────────────────────────────────────────────────
@@ -341,8 +364,10 @@ test.describe("Answer flow — E2E All Types", () => {
         const q = quizFixture.questions[i]
 
         await test.step(`Q${i + 1} ${q.type}: align question-text`, async () => {
-          // SHOW_QUESTION / cooldown may precede SELECT_ANSWER; wait for answers UI.
-          await expect(player1.getByTestId("question-text")).toBeVisible({
+          // Wait for type-specific answer control (ensures SELECT_ANSWER phase, not SHOW_QUESTION).
+          await waitForAnswerControl(player1, q.type)
+          // Now assert question text is visible and aligned across all roles.
+          await expect(player1.getByTestId("question-text").first()).toBeVisible({
             timeout: 45_000,
           })
           await assertQuestionTextAligned(pages, q.question)
