@@ -127,6 +127,8 @@ async function hydrateCatalog(stats: HydrationStats): Promise<void> {
 /**
  * Hydrate config/results/<id>.json from DB game_results.
  * Zombie-cleanup: delete result files whose ids are not in the DB list.
+ * Guard: skip writing a DB result if the existing file has questions/recap
+ * that the DB row lacks (stale row from older lossy INSERT). Log and skip.
  */
 async function hydrateResults(stats: HydrationStats): Promise<void> {
   try {
@@ -137,10 +139,35 @@ async function hydrateResults(stats: HydrationStats): Promise<void> {
       fs.mkdirSync(resultsDir, { recursive: true })
     }
 
-    // Write each result from DB
+    // Write each result from DB, with guard against clobbering.
     for (const result of results) {
       const filePath = getPath(`results/${result.id}.json`)
-      fs.writeFileSync(filePath, JSON.stringify(stripId(result), null, 2))
+      const strippedResult = stripId(result)
+
+      // Guard: if file exists on disk with questions/recap, but DB row
+      // lacks them (has empty questions/recap), skip and warn.
+      if (fs.existsSync(filePath)) {
+        try {
+          const fileContent = fs.readFileSync(filePath, "utf-8")
+          const fileData = JSON.parse(fileContent)
+          const hasFileQuestions = Array.isArray(fileData.questions) && fileData.questions.length > 0
+          const hasFileRecap = !!fileData.recap
+          const hasDbQuestions = Array.isArray(result.questions) && result.questions.length > 0
+          const hasDbRecap = !!result.recap
+
+          if ((hasFileQuestions || hasFileRecap) && (!hasDbQuestions && !hasDbRecap)) {
+            console.warn(
+              `pg-hydration: skipping result "${result.id}" to preserve file-based questions/recap (DB row is stale/lossy)`,
+            )
+            continue
+          }
+        } catch {
+          // If the file is malformed, continue with the DB write (overwrite).
+          // This is a rare error path and shouldn't silence the hydrate.
+        }
+      }
+
+      fs.writeFileSync(filePath, JSON.stringify(strippedResult, null, 2))
     }
 
     // Zombie cleanup
