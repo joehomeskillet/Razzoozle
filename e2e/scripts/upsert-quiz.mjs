@@ -38,7 +38,10 @@ import { createRequire } from "module"
 import { readFileSync, existsSync } from "fs"
 import { resolve } from "path"
 
-const require = createRequire(import.meta.url)
+// pnpm strict: socket.io-client is only linked under packages/web — resolve from there.
+const require = createRequire(
+  new URL("../../packages/web/package.json", import.meta.url),
+)
 const { io } = require("socket.io-client")
 
 const baseUrl = process.env.E2E_URL || "http://localhost:3011"
