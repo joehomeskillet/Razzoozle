@@ -3,13 +3,16 @@
  * e2e/scripts/upsert-quiz.mjs
  *
  * Idempotent quiz author script: connects via EDITOR socket path with manager auth,
- * reads a quiz fixture, and saves it via socket.io.
+ * reads a quiz fixture, and saves or updates it via socket.io.
  *
- * ARCHITECTURE:
- * - manager:auth emits password (NO callback); success = manager:config broadcast
- * - quizz:save is always used; derived id = normalizeFilename(subject) + random-8
- * - For EXISTING quizzes (python-basics), subject matches and file gets overwritten (natural upsert)
- * - Validator strips question ids on save (system behavior, same as Editor)
+ * ARCHITECTURE (True Upsert via manager:config Quiz Metadata Lookup):
+ * - manager:auth emits password (no callback); success = manager:config event
+ * - manager:config payload includes quizz metadata array: { id, subject, archived, questionCount }
+ * - On first manager:config: search for existing quiz by fixture.subject
+ * - If found: quizz:update with existing id (id-preserving) → quizz:updateSuccess
+ * - If not found: quizz:save (creates new with normalizeFilename+random id) → quizz:saveSuccess
+ * - Idempotent: re-run same fixture updates same id, no duplication
+ * - Note: manager:config re-broadcasts after save/update; writeTriggered guard prevents re-trigger
  *
  * USAGE:
  *   E2E_URL=http://localhost:3011 E2E_PW=password E2E_PATH=/socket.io/ node e2e/scripts/upsert-quiz.mjs e2e/fixtures/all-types-quiz.json
@@ -21,13 +24,14 @@
  *
  * Events:
  *   manager:auth            - send password (no callback)
- *   manager:config          - receive after successful auth (indicates login + config broadcast)
+ *   manager:config          - receive after successful auth; payload.quizz = metadata array
  *   manager:errorMessage    - receive on auth failure or config read error
  *   manager:unauthorized    - receive if withAuth-protected events run before login
- *   ai:settings             - receive AI config after successful auth
- *   quizz:save              - send quiz (full fixture)
- *   quizz:saveSuccess       - receive confirmation with { id }
- *   quizz:error             - receive on validation or save failure
+ *   quizz:save              - send new quiz (full fixture)
+ *   quizz:saveSuccess       - receive confirmation with { id } (CREATE case)
+ *   quizz:update            - send quiz update with { id, subject, questions, ... }
+ *   quizz:updateSuccess     - receive confirmation with { id } (EXISTING case)
+ *   quizz:error             - receive on validation or save/update failure
  */
 
 import { createRequire } from "module"
@@ -71,10 +75,11 @@ const socket = io(baseUrl, {
 let succeeded = false
 let isConnected = false
 let isAuthenticated = false
+let writeTriggered = false
 
 // Global watchdog: 15 seconds total, never cleared before success
 const globalWatchdog = setTimeout(() => {
-  console.error("Error: Operation timeout after 15 seconds (not authenticated or save failed)")
+  console.error("Error: Operation timeout after 15 seconds (not authenticated or save/update failed)")
   socket.disconnect()
   process.exit(1)
 }, 15000)
@@ -89,21 +94,38 @@ socket.on("connect", () => {
 })
 
 // Success signal: manager:config is emitted after successful login + emitConfig
-socket.on("manager:config", () => {
+// Payload includes quizz metadata array, which we use to decide save vs update
+socket.on("manager:config", (payload) => {
   if (!isAuthenticated) {
     console.log("✓ Authenticated (manager:config received)")
     isAuthenticated = true
+  }
 
-    // Now that we're authenticated, send quizz:save
-    console.log(`Saving quiz: "${fixture.subject}"`)
+  // Only trigger save/update once (manager:config re-broadcasts after each write)
+  if (writeTriggered) {
+    return
+  }
+  writeTriggered = true
+
+  // Look up existing quiz by subject in the metadata array
+  const quizzList = payload?.quizz || []
+  const existing = quizzList.find((q) => q.subject === fixture.subject)
+
+  if (existing) {
+    // UPDATE existing quiz (preserves id)
+    console.log(`Updating existing quiz: id="${existing.id}", subject="${existing.subject}"`)
+    socket.emit("quizz:update", { id: existing.id, ...fixture })
+  } else {
+    // SAVE new quiz (server derives id via normalizeFilename + nanoid)
+    console.log(`Saving new quiz: "${fixture.subject}"`)
     socket.emit("quizz:save", fixture)
   }
 })
 
-// Success: quiz saved
+// Success: quiz created (save case)
 socket.on("quizz:saveSuccess", (ack) => {
-  console.log(`✓ Quiz saved successfully`)
-  console.log(`  Derived ID: ${ack.id}`)
+  console.log(`✓ Quiz created successfully`)
+  console.log(`  ID: ${ack.id}`)
   console.log(`  Subject: "${fixture.subject}"`)
   console.log(`  Questions: ${fixture.questions.length}`)
 
@@ -112,9 +134,21 @@ socket.on("quizz:saveSuccess", (ack) => {
   socket.disconnect()
 })
 
-// Error: validation or save failed
+// Success: quiz updated (update case)
+socket.on("quizz:updateSuccess", (ack) => {
+  console.log(`✓ Quiz updated successfully`)
+  console.log(`  ID: ${ack.id}`)
+  console.log(`  Subject: "${fixture.subject}"`)
+  console.log(`  Questions: ${fixture.questions.length}`)
+
+  succeeded = true
+  clearTimeout(globalWatchdog)
+  socket.disconnect()
+})
+
+// Error: validation or save/update failed
 socket.on("quizz:error", (error) => {
-  console.error(`✗ Quiz save error: ${error}`)
+  console.error(`✗ Quiz error: ${error}`)
   clearTimeout(globalWatchdog)
   socket.disconnect()
   process.exit(1)
@@ -125,7 +159,7 @@ socket.on("manager:errorMessage", (error) => {
   if (!isAuthenticated) {
     console.error(`✗ Authentication failed: ${error}`)
   } else {
-    // After auth succeeded, errorMessage could be from a quizz:save validation error
+    // After auth succeeded, errorMessage could be from a quiz operation
     console.error(`✗ Error: ${error}`)
   }
   clearTimeout(globalWatchdog)
