@@ -2,6 +2,7 @@ mod achievements;
 mod assignments;
 pub mod assets;
 pub mod logs;
+mod metrics;
 mod observability;
 pub mod skeleton;
 pub mod solo;
@@ -128,5 +129,6 @@ pub fn router(state: AppState) -> Router {
         .route("/theme/*path", get(assets::handle_theme_asset))
         .route("/plugins/:id/*path", get(assets::handle_plugin_asset))
         .route("/sounds/*path", get(assets::handle_sounds_asset))
+        .route("/metrics", get(metrics::handle_metrics))
         .with_state(state)
 }
