@@ -107,7 +107,12 @@
   .gh-mini { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; font-size: .86rem; text-decoration: none; color: var(--ink); padding: .42rem .8rem; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); transition: box-shadow .16s ease, transform .16s ease; }
   .gh-mini:hover { box-shadow: var(--shadow-flat); transform: translateY(-1px); }
   .gh-mini svg { width: 16px; height: 16px; }
-  @media (max-width: 600px) { .gh-mini .gh-label { display: none; } .gh-mini { padding: .42rem .55rem; } }
+  @media (max-width: 600px) { 
+    .gh-mini .gh-label { display: none; } 
+    .gh-mini { padding: .42rem .55rem; }
+    .lang-switch { gap: 4px; padding: 4px; flex-wrap: nowrap; overflow-x: auto; }
+    .lang-switch button { padding: .4rem .6rem; font-size: .78rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  }
 
   /* ===== Buttons ===== */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; font: inherit; font-weight: 700; font-size: 1rem; text-decoration: none; border-radius: 999px; padding: .82rem 1.45rem; cursor: pointer; border: 1px solid transparent; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
@@ -260,6 +265,19 @@ html.js [data-reveal].in{opacity:1;transform:none}
 @media (max-width:760px){.modes-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){.modes-grid{grid-template-columns:1fr}}
 @media (prefers-reduced-motion: reduce){.mode-card:hover{transform:none}}
+
+  /* ===== Agents section ===== */
+  .agents-band { background: color-mix(in srgb, var(--accent) 8%, white); border-block: 1px solid var(--hairline); }
+  .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
+  .agent-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 1.4rem; display: flex; gap: 1rem; box-shadow: var(--shadow-flat); transition: transform .16s ease, box-shadow .16s ease; }
+  .agent-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+  .agent-icon { width: 44px; height: 44px; flex: 0 0 44px; color: var(--primary-deep); }
+  .agent-card-text h3 { font-size: .95rem; font-weight: 700; margin: 0 0 .3rem; color: var(--ink); }
+  .agent-card-text p { font-size: .85rem; color: var(--ink-soft); margin: 0; }
+  .agents-note { text-align: center; color: var(--ink-soft); font-size: .9rem; margin-top: 2rem; max-width: 58ch; margin-inline: auto; }
+  @media (max-width: 760px) { .agents-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .agents-grid { grid-template-columns: 1fr; } .agent-card { flex-direction: column; align-items: center; text-align: center; } }
+
 </style>
 </head>
 <body>
@@ -416,6 +434,80 @@ html.js [data-reveal].in{opacity:1;transform:none}
       </div>
     </div>
   </section>
+
+
+  <!-- ===== Agentically developed section ===== -->
+  <div class="agents-band">
+    <section aria-labelledby="agents-title">
+      <div class="wrap">
+        <div class="section-head center">
+          <p class="kicker" data-i18n="agents.kicker">Built by AI</p>
+          <h2 id="agents-title" data-i18n="agents.title">Agentically developed</h2>
+          <p data-i18n="agents.sub">Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.</p>
+        </div>
+
+        <div class="agents-grid">
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.claude.name">Claude</h3>
+              <p data-i18n="agents.claude.role">Orchestration & review</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3zm10 0h8v8h-8zm0 10h8v8h-8zM3 13h8v8H3z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.codex.name">Codex (GPT-5.6)</h3>
+              <p data-i18n="agents.codex.role">Full-stack implementation</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 3l9 9-9 9M3 12h17"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.cursor.name">Cursor (GPT-5.6)</h3>
+              <p data-i18n="agents.cursor.role">Code refinement & fix</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.grok.name">Grok (xAI)</h3>
+              <p data-i18n="agents.grok.role">Image & creative assets</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.gemini.name">Gemini (Google)</h3>
+              <p data-i18n="agents.gemini.role">Architecture & design</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.openmodels.name">Open models</h3>
+              <p data-i18n="agents.openmodels.role">Qwen, DeepSeek, Nemotron</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L3 14h7v7h6v-7h7L13 3z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.local.name">Local inference</h3>
+              <p data-i18n="agents.local.role">OpenVINO on Intel Arc</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="agents-note" data-i18n="agents.note">Humans review and merge every commit. AI augments speed and quality, not replaces judgment.</p>
+      </div>
+    </section>
+  </div>
 
   <!-- ===== Rust backend section ===== -->
   <div class="rust-band">
@@ -812,6 +904,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "A live theme cockpit",
       "show.r7.p": "Recolour the whole game from the manager Design tab — colours, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.",
       "show.r7.alt": "The manager Design tab — a live theme cockpit",
+      "agents.kicker": "Built by AI",
+      "agents.title": "Agentically developed",
+      "agents.sub": "Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestration & review",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Full-stack implementation",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Code refinement & fix",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Image & creative assets",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Architecture & design",
+      "agents.openmodels.name": "Open models",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Local inference",
+      "agents.local.role": "OpenVINO on Intel Arc",
+      "agents.note": "Humans review and merge every commit. AI augments speed and quality, not replaces judgment.",
       "footer.note": "Free and open source under the MIT License. Self-host it — the live instance is local-only. A friendly fork of <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Not affiliated with Kahoot!®"
     },
     de: {
@@ -919,6 +1029,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Ein Live-Theme-Cockpit",
       "show.r7.p": "Färbe das ganze Spiel im „Design"-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
       "show.r7.alt": "Der „Design"-Tab im Manager — ein Live-Theme-Cockpit",
+      "agents.kicker": "Von KI entwickelt",
+      "agents.title": "Agentisch entwickelt",
+      "agents.sub": "Razzoozle wird fast vollständig von KI-Coding-Agenten entwickelt, orchestriert von menschlicher Aufsicht. Ein vielfältiges Team spezialisierter Modelle und Tools arbeitet zusammen, um Features zu bauen, zu testen, zu reviewen und zu deployen.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestrierung & Review",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Full-Stack-Implementierung",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Code-Verfeinerung & Fixes",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Bild & kreative Assets",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Architektur & Design",
+      "agents.openmodels.name": "Open Models",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Lokale Inferenz",
+      "agents.local.role": "OpenVINO auf Intel Arc",
+      "agents.note": "Menschen reviewen und mergen jeden Commit. KI verbessert Geschwindigkeit und Qualität, ersetzt aber nicht das Urteil.",
       "footer.note": "Frei und quelloffen unter der MIT-Lizenz. Selbst hosten — die Live-Instanz ist nur lokal erreichbar. Ein freundlicher Fork von <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Steht in keiner Verbindung zu Kahoot!®"
     },
     zh: {
@@ -1026,6 +1154,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "实时主题驾驶舱",
       "show.r7.p": "在管理员"设计"标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
       "show.r7.alt": "管理员"设计"标签——实时主题驾驶舱",
+      "agents.kicker": "由人工智能驱动",
+      "agents.title": "智能体开发",
+      "agents.sub": "Razzoozle 几乎完全由 AI 编码智能体开发，由人类监督协调。由多个专业模型和工具组成的多元团队共同合作，构建、测试、审查和部署功能。",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "协调与审查",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "全栈实现",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "代码细化与修复",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "图像与创意资产",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "架构与设计",
+      "agents.openmodels.name": "开放模型",
+      "agents.openmodels.role": "Qwen、DeepSeek、Nemotron",
+      "agents.local.name": "本地推理",
+      "agents.local.role": "Intel Arc 上的 OpenVINO",
+      "agents.note": "人类审查并合并每个提交。AI 增强速度和质量，而不是替代判断。",
       "footer.note": "基于 MIT 许可证免费开源。请自行托管 —— 在线实例仅限本地访问。它是 <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a> 的一个友好分支。与 Kahoot!® 无任何关联。"
     },
     es: {
@@ -1133,6 +1279,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Una cabina de temas en vivo",
       "show.r7.p": "Recolorea todo el juego desde la pestaña Diseño del gestor — colores, fondos por vista, logo, radio — o suelta un tema ZIP de esqueleto descargable. Crema plano por defecto, violeta glass opcional.",
       "show.r7.alt": "La pestaña Diseño del gestor — una cabina de temas en vivo",
+      "agents.kicker": "Construido por IA",
+      "agents.title": "Desarrollo agencial",
+      "agents.sub": "Razzoozle se desarrolla casi enteramente con agentes de IA, orquestados por supervisión humana. Un equipo diverso de modelos y herramientas especializadas trabaja junto para construir características, probar, revisar e implementar.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orquestación y revisión",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implementación full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Refinamiento y corrección de código",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Imágenes y activos creativos",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Arquitectura y diseño",
+      "agents.openmodels.name": "Modelos abiertos",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inferencia local",
+      "agents.local.role": "OpenVINO en Intel Arc",
+      "agents.note": "Los humanos revisan e integran cada commit. La IA mejora la velocidad y la calidad, no reemplaza el juicio.",
       "footer.note": "Gratis y de código abierto bajo la Licencia MIT. Autoalójalo — la instancia en vivo es solo local. Un fork amistoso de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sin relación con Kahoot!®"
     },
     fr: {
@@ -1240,6 +1404,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Un cockpit de thèmes en direct",
       "show.r7.p": "Recolorez tout le jeu depuis l'onglet Design du manager — couleurs, arrière-plans par vue, logo, rayon — ou déposez un thème ZIP « skeleton » téléchargeable. Crème plat par défaut, violet glass en option.",
       "show.r7.alt": "L'onglet Design du manager — un cockpit de thèmes en direct",
+      "agents.kicker": "Construit par l'IA",
+      "agents.title": "Développement agentique",
+      "agents.sub": "Razzoozle est développé presque entièrement par des agents de codage IA, orchestrés par la supervision humaine. Une équipe diversifiée de modèles et d'outils spécialisés travaille ensemble pour construire, tester, examiner et déployer des fonctionnalités.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestration et révision",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implémentation full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Raffinage et correction du code",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Images et actifs créatifs",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Architecture et conception",
+      "agents.openmodels.name": "Modèles ouverts",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inférence locale",
+      "agents.local.role": "OpenVINO sur Intel Arc",
+      "agents.note": "Les humains examinent et fusionnent chaque commit. L'IA améliore la vitesse et la qualité, elle ne remplace pas le jugement.",
       "footer.note": "Gratuit et open-source sous la Licence MIT. Auto-hébergez-le — l'instance en direct est uniquement locale. Un fork amical de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sans aucun lien avec Kahoot!®"
     },
     it: {
@@ -1347,6 +1529,24 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Una cabina di regia dei temi dal vivo",
       "show.r7.p": "Ricolora l'intero gioco dalla scheda Design del manager — colori, sfondi per vista, logo, raggio — o carica un tema ZIP « skeleton » scaricabile. Crema piatto di default, viola glass opzionale.",
       "show.r7.alt": "La scheda Design del manager — una cabina di regia dei temi dal vivo",
+      "agents.kicker": "Costruito dall'IA",
+      "agents.title": "Sviluppo agentico",
+      "agents.sub": "Razzoozle è sviluppato quasi interamente da agenti di codifica IA, orchestrati dalla supervisione umana. Un team diversificato di modelli e strumenti specializzati lavora insieme per costruire, testare, revisionare e implementare funzionalità.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestrazione e revisione",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implementazione full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Raffinamento e correzione del codice",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Immagini e risorse creative",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Architettura e progettazione",
+      "agents.openmodels.name": "Modelli aperti",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inferenza locale",
+      "agents.local.role": "OpenVINO su Intel Arc",
+      "agents.note": "Gli umani revisionano e uniscono ogni commit. L'IA migliora la velocità e la qualità, non sostituisce il giudizio.",
       "footer.note": "Gratuito e open-source sotto la Licenza MIT. Fai self-hosting — l'istanza dal vivo è solo locale. Un fork amichevole di <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Senza alcun legame con Kahoot!®"
     }
   };
@@ -1402,7 +1602,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
     try {
       var url = new URL(window.location.href);
       url.searchParams.set("lang", lang);
-      history.replaceState(null, "", url);
+      history.replaceState(null, "", url.href);
     } catch (e) {}
   });
 
