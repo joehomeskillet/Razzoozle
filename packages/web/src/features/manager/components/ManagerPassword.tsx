@@ -54,6 +54,7 @@ const ManagerPassword = ({ onSubmit }: Props) => {
             {t("manager:aria.passwordLabel")}
           </label>
           <Input
+            data-testid="login-password"
             id="manager-password"
             name="password"
             type="password"
@@ -63,7 +64,7 @@ const ManagerPassword = ({ onSubmit }: Props) => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t("manager:passwordPlaceholder")}
           />
-          <Button className="mt-4 w-full" type="submit">
+          <Button data-testid="login-submit" className="mt-4 w-full" type="submit">
             {t("common:submit")}
           </Button>
         </form>

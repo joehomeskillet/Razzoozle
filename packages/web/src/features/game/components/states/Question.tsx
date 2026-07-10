@@ -67,6 +67,7 @@ const Question = ({
         animate="visible"
       >
         <motion.h2
+          data-testid="question-text"
           className="text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]"
           variants={reveal.item()}
           transition={reveal.spring}

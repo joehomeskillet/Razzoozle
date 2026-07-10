@@ -385,7 +385,7 @@ const Leaderboard = ({
         <TeamLeaderboard standings={teamStandings} />
       )}
 
-      <div className="flex w-full flex-col gap-2 overflow-y-auto min-h-0 touch-pan-y overscroll-contain">
+      <div data-testid="leaderboard-table" className="flex w-full flex-col gap-2 overflow-y-auto min-h-0 touch-pan-y overscroll-contain">
         <AnimatePresence mode="popLayout">
           {displayedLeaderboard.map(
             ({ id, username, points, streak, avatar, achievements }) => {
@@ -397,6 +397,7 @@ const Leaderboard = ({
 
               return (
                 <motion.div
+                  data-testid={`leaderboard-row-${username}`}
                   key={id}
                   layout={!reveal.reduced}
                   initial={{ opacity: 0, y: 50 }}

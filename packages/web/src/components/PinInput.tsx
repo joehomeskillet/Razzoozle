@@ -12,9 +12,16 @@ interface Props {
   onChange: (_value: string) => void
   length?: number
   className?: string
+  "data-testid"?: string
 }
 
-const PinInput = ({ value, onChange, length = 6, className }: Props) => {
+const PinInput = ({
+  value,
+  onChange,
+  length = 6,
+  className,
+  "data-testid": dataTestId,
+}: Props) => {
   const refs = useRef<Array<HTMLInputElement | null>>([])
   const { t } = useTranslation()
 
@@ -79,9 +86,10 @@ const PinInput = ({ value, onChange, length = 6, className }: Props) => {
   }
 
   return (
-    <div className={clsx("flex gap-2", className)}>
+    <div className={clsx("flex gap-2", className)} data-testid={dataTestId}>
       {digits.map((digit, i) => (
         <input
+          data-testid={dataTestId ? `${dataTestId}-digit-${i}` : undefined}
           key={i}
           ref={(el) => {
             refs.current[i] = el

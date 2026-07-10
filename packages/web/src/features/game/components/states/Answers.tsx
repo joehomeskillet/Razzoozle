@@ -515,6 +515,7 @@ const Answers = ({
             animate="visible"
             transition={reveal.spring}
             role="status"
+            data-testid="answer-submitted"
             aria-live="polite"
             className="mx-auto mb-2 flex w-full max-w-7xl items-center justify-center px-2 lg:max-w-[85vw]"
           >
@@ -545,6 +546,7 @@ const Answers = ({
         {isTypeAnswer ? (
           <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
             <input
+              data-testid="type-answer-input"
               type="text"
               maxLength={200}
               value={textAnswer}
@@ -563,6 +565,7 @@ const Answers = ({
               className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             />
             <button
+              data-testid="type-answer-submit"
               type="button"
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
@@ -630,6 +633,7 @@ const Answers = ({
 
                   return (
                     <button
+                      data-testid={`sentence-chunk-${chip.originalIndex}`}
                       key={`${chip.text}-${chip.originalIndex}`}
                       type="button"
                       onClick={() => {
@@ -666,6 +670,7 @@ const Answers = ({
             </div>
 
             <button
+              data-testid="sentence-submit"
               type="button"
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChunks.length !== bankChips.length}
@@ -687,6 +692,7 @@ const Answers = ({
                 const answer = answers?.[key]
                 return (
                   <AnswerButton
+                    data-testid={`answer-btn-${key}`}
                     key={key}
                     className={clsx(
                       ANSWERS_COLORS[key],
@@ -704,6 +710,7 @@ const Answers = ({
               })}
             </div>
             <button
+              data-testid="multi-select-submit"
               type="button"
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
@@ -722,6 +729,7 @@ const Answers = ({
               {unit ? ` ${unit}` : ""}
             </div>
             <input
+              data-testid="slider-input"
               type="range"
               min={min}
               max={max}
@@ -746,6 +754,7 @@ const Answers = ({
               </span>
             </div>
             <button
+              data-testid="slider-submit"
               onClick={submitSlider}
               disabled={submitted}
               className={clsx(
@@ -762,6 +771,7 @@ const Answers = ({
               const answer = answers?.[key]
               return (
                 <AnswerButton
+                  data-testid={`answer-btn-${key}`}
                   key={key}
                   className={clsx(
                     ANSWERS_COLORS[key],

@@ -98,8 +98,13 @@ const Room = () => {
       <h2 className="mb-3 text-xl font-bold text-[color:var(--color-field-ink)]">
         {t("game:pinLabel")}
       </h2>
-      <PinInput value={invitation} onChange={setInvitation} />
+      <PinInput
+        data-testid="pin-input"
+        value={invitation}
+        onChange={setInvitation}
+      />
       <Button
+        data-testid="join-submit"
         className="mt-4 w-full"
         onClick={handleJoin}
         disabled={!canJoin}
