@@ -170,6 +170,53 @@ pub(super) fn write_plugins_index(plugins: &[InstalledPlugin]) -> std::io::Resul
     fs::write(plugin_index_file(), json)
 }
 
+/// Recursively walk plugin_dir and collect files with relative paths.
+/// Skips symlinks, returns Vec<(relative_path, bytes)> deterministically sorted.
+fn walk_plugin_files(dir: &Path) -> std::io::Result<Vec<(String, Vec<u8>)>> {
+    let mut all_files = Vec::new();
+
+    fn traverse(
+        base: &Path,
+        current: &Path,
+        out: &mut Vec<(String, Vec<u8>)>,
+    ) -> std::io::Result<()> {
+        let entries = fs::read_dir(current)?;
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+            let meta = fs::symlink_metadata(&path)?;
+
+            if meta.is_symlink() {
+                continue;
+            }
+
+            if meta.is_dir() {
+                traverse(base, &path, out)?;
+                continue;
+            }
+
+            if meta.is_file() {
+                let bytes = fs::read(&path)?;
+                let relative = path
+                    .strip_prefix(base)
+                    .ok()
+                    .and_then(|p| p.to_str())
+                    .map(|p| p.to_string().replace('\\', "/"))
+                    .ok_or_else(|| std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "path not under base",
+                    ))?;
+                out.push((relative, bytes));
+            }
+        }
+        Ok(())
+    }
+
+    traverse(dir, dir, &mut all_files)?;
+    all_files.sort_by(|a, b| a.0.cmp(&b.0));
+    Ok(all_files)
+}
+
 /// Snapshot the current index.json into the rolling revisions ring BEFORE any
 /// mutation (Node savePluginRevision): newest-first, capped at 10.
 pub(super) fn save_plugin_revision() -> std::io::Result<()> {
@@ -327,22 +374,25 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                         let db_pool = ctx.db_pool.clone();
                         let plugin_id = installed.id.clone();
                         tokio::spawn(async move {
-                            // Build files JSON map by walking plugin_dir
-                            let mut files_map = serde_json::json!({});
                             let dir = plugin_dir(&plugin_id);
-                            if let Ok(entries) = std::fs::read_dir(&dir) {
-                                for entry in entries.flatten() {
-                                    let path = entry.path();
-                                    if path.is_file() && !path.is_symlink() {
-                                        if let Ok(bytes) = std::fs::read(&path) {
-                                            let b64 = encode_base64(&bytes);
-                                            if let Some(relative) = path.strip_prefix(&dir).ok().and_then(|p| p.to_str()) {
-                                                files_map[relative] = serde_json::json!(b64);
-                                            }
-                                        }
-                                    }
+                            let files_vec = match tokio::task::spawn_blocking(move || walk_plugin_files(&dir)).await {
+                                Ok(Ok(f)) => f,
+                                Ok(Err(e)) => {
+                                    tracing::error!("failed to walk plugin files for DB mirror: {}", e);
+                                    Vec::new()
                                 }
+                                Err(e) => {
+                                    tracing::error!("join error walking plugin files: {}", e);
+                                    Vec::new()
+                                }
+                            };
+
+                            let mut files_map = serde_json::json!({});
+                            for (relpath, bytes) in files_vec {
+                                let b64 = encode_base64(&bytes);
+                                files_map[relpath] = serde_json::json!(b64);
                             }
+
                             if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &installed, &files_map).await {
                                 tracing::error!(error = %e, "failed to mirror plugin to DB");
                             }
@@ -475,22 +525,25 @@ fn register_plugin_set_config(socket: &SocketRef, ctx: HandlerCtx) {
                         let db_pool = ctx.db_pool.clone();
                         tokio::spawn(async move {
                             if let Some(plugin) = read_plugins_index().into_iter().find(|p| p.id == id_for_pg) {
-                                // Build files JSON map by walking plugin_dir
-                                let mut files_map = serde_json::json!({});
                                 let dir = plugin_dir(&id_for_pg);
-                                if let Ok(entries) = std::fs::read_dir(&dir) {
-                                    for entry in entries.flatten() {
-                                        let path = entry.path();
-                                        if path.is_file() && !path.is_symlink() {
-                                            if let Ok(bytes) = std::fs::read(&path) {
-                                                let b64 = encode_base64(&bytes);
-                                                if let Some(relative) = path.strip_prefix(&dir).ok().and_then(|p| p.to_str()) {
-                                                    files_map[relative] = serde_json::json!(b64);
-                                                }
-                                            }
-                                        }
+                                let files_vec = match tokio::task::spawn_blocking(move || walk_plugin_files(&dir)).await {
+                                    Ok(Ok(f)) => f,
+                                    Ok(Err(e)) => {
+                                        tracing::error!("failed to walk plugin files for config DB mirror: {}", e);
+                                        Vec::new()
                                     }
+                                    Err(e) => {
+                                        tracing::error!("join error walking plugin files for config: {}", e);
+                                        Vec::new()
+                                    }
+                                };
+
+                                let mut files_map = serde_json::json!({});
+                                for (relpath, bytes) in files_vec {
+                                    let b64 = encode_base64(&bytes);
+                                    files_map[relpath] = serde_json::json!(b64);
                                 }
+
                                 if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &plugin, &files_map).await {
                                     tracing::error!(error = %e, "failed to mirror plugin config to DB");
                                 }
