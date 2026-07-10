@@ -109,6 +109,9 @@ export interface GameResult {
   // with the result so the public share page can replay it. Optional + additive:
   // older saved results without it keep working unchanged.
   recap?: ManagerRecap
+  // Quiz ID linking the result back to its source quiz. Optional for back-compat:
+  // older results without it remain queryable by other fields.
+  quizId?: string
 }
 
 // Solo play / team mode contracts.

@@ -57,6 +57,7 @@ const validResult: GameResult = {
   players: [validPlayer],
   questions: [validQuestion],
   recap: validRecap,
+  quizId: "quiz-123",
 }
 
 // Nothing is listening on 127.0.0.1:1 — pg fails fast with ECONNREFUSED.
@@ -101,6 +102,7 @@ describeRealDb("results-pg (real Postgres)", () => {
     expect(loaded.players).toEqual(validResult.players)
     expect(loaded.questions).toEqual(validResult.questions)
     expect(loaded.recap).toEqual(validResult.recap)
+    expect(loaded.quizId).toBe(validResult.quizId)
   })
 
   it("persist result without recap, read back without recap", async () => {
@@ -116,6 +118,32 @@ describeRealDb("results-pg (real Postgres)", () => {
     expect(loaded.recap).toBeUndefined()
   })
 
+  it("persist result with quiz_id, read back with quiz_id", async () => {
+    const resultWithQuizId: GameResult = {
+      ...validResult,
+      id: id("with-quiz-id"),
+      quizId: "quiz-456",
+    }
+    await updateResultPg(resultWithQuizId)
+    const loaded = await getResultByIdPg(resultWithQuizId.id)
+
+    expect(loaded.quizId).toBe("quiz-456")
+    expect(loaded.subject).toBe(validResult.subject)
+    expect(loaded.questions).toEqual(validResult.questions)
+  })
+
+  it("persist result without quiz_id, read back without quiz_id", async () => {
+    const resultNoQuizId: GameResult = {
+      ...validResult,
+      id: id("no-quiz-id"),
+      quizId: undefined,
+    }
+    await updateResultPg(resultNoQuizId)
+    const loaded = await getResultByIdPg(resultNoQuizId.id)
+
+    expect(loaded.quizId).toBeUndefined()
+  })
+
   it("listAllResultsPg deserializes all fields correctly", async () => {
     await updateResultPg(validResult)
     const all = await listAllResultsPg()
@@ -124,6 +152,7 @@ describeRealDb("results-pg (real Postgres)", () => {
     expect(found).toBeDefined()
     expect(found!.questions).toEqual(validResult.questions)
     expect(found!.recap).toEqual(validResult.recap)
+    expect(found!.quizId).toBe(validResult.quizId)
   })
 
   it("updateResultPg UPSERT bumps version on existing id", async () => {
@@ -144,6 +173,32 @@ describeRealDb("results-pg (real Postgres)", () => {
     )
     expect(second.rows[0].version).toBe(1)
     expect(second.rows[0].subject).toBe("Updated Subject")
+  })
+
+  it("updateResultPg UPSERT preserves quiz_id on update", async () => {
+    const id1 = id("upsert-quiz-id")
+    const resultWithQuizId: GameResult = {
+      ...validResult,
+      id: id1,
+      quizId: "quiz-original",
+    }
+    await updateResultPg(resultWithQuizId)
+
+    // Update without providing quiz_id — should preserve existing.
+    const resultUpdate: GameResult = {
+      ...validResult,
+      id: id1,
+      subject: "Updated Subject",
+      quizId: undefined,
+    }
+    await updateResultPg(resultUpdate)
+
+    const updated = await rawPool.query(
+      `SELECT quiz_id, subject FROM game_results WHERE id = $1`,
+      [id1],
+    )
+    expect(updated.rows[0].quiz_id).toBe("quiz-original")
+    expect(updated.rows[0].subject).toBe("Updated Subject")
   })
 
   it("getResultByIdPg throws on missing id", async () => {

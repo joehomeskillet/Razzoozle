@@ -68,6 +68,10 @@ const rowToResult = (row: ResultRow): GameResult | null => {
   if (row.recap) {
     candidate.recap = row.recap
   }
+  // Include quiz_id if present (optional field).
+  if (row.quiz_id) {
+    candidate.quizId = row.quiz_id
+  }
   const result = gameResultValidator.safeParse(candidate)
 
   if (!result.success) {
@@ -111,9 +115,10 @@ export const updateResultPg = async (data: GameResult): Promise<{ id: string }> 
     const questionsJson = JSON.stringify(data.questions ?? [])
     const recapJson = data.recap ? JSON.stringify(data.recap) : null
     await getPool().query(
-      `INSERT INTO game_results (id, subject, date, players, questions, recap)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO game_results (id, quiz_id, subject, date, players, questions, recap)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (id) DO UPDATE SET
+         quiz_id = COALESCE(EXCLUDED.quiz_id, game_results.quiz_id),
          subject = EXCLUDED.subject,
          date = EXCLUDED.date,
          players = EXCLUDED.players,
@@ -121,7 +126,7 @@ export const updateResultPg = async (data: GameResult): Promise<{ id: string }> 
          recap = EXCLUDED.recap,
          version = game_results.version + 1,
          updated_at = NOW()`,
-      [data.id, data.subject, data.date, JSON.stringify(playersArray), questionsJson, recapJson],
+      [data.id, data.quizId ?? null, data.subject, data.date, JSON.stringify(playersArray), questionsJson, recapJson],
     )
     return { id: data.id }
   } catch (error) {

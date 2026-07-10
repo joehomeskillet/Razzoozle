@@ -62,4 +62,5 @@ export const gameResultValidator = z.object({
   players: z.array(gameResultPlayerValidator),
   questions: z.array(z.unknown()),
   recap: managerRecapValidator.optional(),
+  quizId: z.string().optional(),
 })
