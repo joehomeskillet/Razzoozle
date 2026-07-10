@@ -50,6 +50,47 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
     result
 }
 
+/// Load quiz metadata from the database (id, subject, archived, questionCount).
+/// Efficiently computes question count using jsonb_array_length without deserializing.
+/// Returns a vector of JSON objects with keys: id, subject, archived, questionCount.
+/// Results are sorted by id (deterministic ordering, required for consistency).
+/// Returns empty vec if pool is None or DB query fails.
+pub async fn get_quizzes_meta(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, String, Option<bool>, i32)> =
+        match sqlx::query_as(
+            "SELECT id, subject, archived, jsonb_array_length(COALESCE(questions, '[]')) as question_count \
+             FROM quizzes ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch quiz metadata from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    let mut result = Vec::new();
+    for (id, subject, archived, question_count) in rows {
+        let quizz_obj = serde_json::json!({
+            "id": id,
+            "subject": subject,
+            "archived": archived.unwrap_or(false),
+            "questionCount": question_count,
+        });
+        result.push(quizz_obj);
+    }
+
+    result
+}
+
+
 /// Upsert a quiz (create or update by id). Takes subject and questions as JSON.
 /// Returns Ok(id) on success, or Err with a descriptive message.
 pub async fn upsert_quiz(

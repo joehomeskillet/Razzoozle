@@ -58,28 +58,9 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     socket.emit(constants::manager::CONFIG, &payload).ok();
 }
 
-/// Build QuizzMeta array from registry: {id, subject, archived, questionCount}
+/// Build QuizzMeta array from Postgres: {id, subject, archived, questionCount}
 /// (NOT the full questions array — matches Node's getQuizzMeta behavior)
+/// Reads LIVE from database on every call (post-auth and post-write).
 async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
-    let registry = ctx.registry.read().await;
-    let mut quiz_ids = registry.list_quiz_ids();
-    quiz_ids.sort();
-    drop(registry);
-
-    let mut quizz = Vec::new();
-    for id in quiz_ids {
-        let registry = ctx.registry.read().await;
-        if let Some(quiz) = registry.get_quiz_by_id(&id) {
-            let question_count = quiz.questions.len();
-            let quizz_obj = serde_json::json!({
-                "id": id,
-                "subject": quiz.subject,
-                "archived": quiz.archived,
-                "questionCount": question_count,
-            });
-            quizz.push(quizz_obj);
-        }
-    }
-
-    quizz
+    db::get_quizzes_meta(&ctx.db_pool).await
 }
