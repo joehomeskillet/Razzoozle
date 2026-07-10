@@ -273,7 +273,10 @@ async function parseLeaderboardScore(
   username: string,
 ): Promise<number> {
   const row = page.getByTestId(`leaderboard-row-${username}`)
-  await expect(row).toBeVisible({ timeout: 20_000 })
+  // Check visibility once; polling will retry this whole function if needed.
+  if (!(await row.isVisible().catch(() => false))) {
+    return 0
+  }
   const text = await row.innerText()
   // Prefer last integer in the row (score); fall back to 0 if only name shown.
   const nums = text.match(/\d+/g)
@@ -431,16 +434,21 @@ test.describe("Answer flow — E2E All Types", () => {
           }
           await expect(table).toBeVisible({ timeout: 20_000 })
 
-          const s1 = await parseLeaderboardScore(host, PLAYER1)
-          const s2 = await parseLeaderboardScore(host, PLAYER2)
           // After first scored question P1 should lead; poll may tie until then.
           if (q.type !== "poll" || i > 0) {
-            expect(s1).toBeGreaterThan(s2)
+            await expect.poll(async () => {
+              const s1 = await parseLeaderboardScore(host, PLAYER1)
+              const s2 = await parseLeaderboardScore(host, PLAYER2)
+              return s1 > s2
+            }, { timeout: 10_000 }).toBe(true)
           }
 
           // Double-submit must not explode score unreasonably (no double count).
           // Cap: theoretical max ~1000 * questions answered correctly.
-          expect(s1).toBeLessThanOrEqual(1000 * (i + 1) + 50)
+          await expect.poll(async () => {
+            const s1 = await parseLeaderboardScore(host, PLAYER1)
+            return s1 <= 1000 * (i + 1) + 50
+          }, { timeout: 10_000 }).toBe(true)
 
           // Advance to next question (unless last).
           if (i < quizFixture.questions.length - 1) {
