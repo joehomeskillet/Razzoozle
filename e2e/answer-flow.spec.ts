@@ -233,18 +233,7 @@ async function playerJoin(page: Page, pin: string, username: string) {
 }
 
 
-/** Click next-btn until predicate is true (state-driven advancement). */
-async function hostNextUntil(host: Page, predicate: () => Promise<boolean>, label: string, maxClicks = 6) {
-  for (let c = 0; c < maxClicks; c++) {
-    if (await predicate()) return
-    const next = host.getByTestId("next-btn")
-    if (await next.isVisible().catch(() => false)) {
-      await next.click().catch(() => {})
-    }
-    await host.waitForTimeout(1200)
-  }
-  if (!(await predicate())) throw new Error(`hostNextUntil(${label}): target not reached after ${maxClicks} clicks`)
-}
+
 
 async function assertQuestionTextAligned(pages: RolePages, expected: string) {
   for (const role of ["host", "player1", "player2"] as const) {
@@ -306,7 +295,7 @@ test.describe("Answer flow — E2E All Types", () => {
   test("host + 2 players: all 7 types, P1 correct > P2", async ({
     browser,
   }) => {
-    test.setTimeout(300_000)
+    test.setTimeout(420_000)
 
     const hostCtx = await browser.newContext()
     const player1Ctx = await browser.newContext()
@@ -347,6 +336,7 @@ test.describe("Answer flow — E2E All Types", () => {
         )
         await expect(startOrNext.first()).toBeVisible({ timeout: 15_000 })
         await startOrNext.first().click()
+        // Transition: Lobby → Q1 (COOLDOWN). Loop will wait for SELECT_ANSWER via waitForAnswerControl.
       })
 
       // Race flags: one deadline race (P2 late), one double-submit (P1).
@@ -357,18 +347,9 @@ test.describe("Answer flow — E2E All Types", () => {
       for (let i = 0; i < quizFixture.questions.length; i++) {
         const q = quizFixture.questions[i]
 
-        if (i > 0) {
-          // Host advances from previous question to this one (state-driven).
-          await hostNextUntil(
-            host,
-            async () => (await player1.getByTestId("question-text").first().isVisible().catch(() => false)) ||
-                        (await waitForAnswerControl(player1, q.type).catch(() => false)),
-            `Q${i + 1}`,
-          )
-        }
-
-        await test.step(`Q${i + 1} ${q.type}: align question-text`, async () => {
-          // Wait for type-specific answer control (ensures SELECT_ANSWER phase, not SHOW_QUESTION).
+        await test.step(`Q${i + 1} ${q.type}: wait for controls + align question-text`, async () => {
+          // Wait for type-specific answer control (covers COOLDOWN ~5s, then SELECT_ANSWER phase).
+          // Timeout 45s ensures we reach SELECT_ANSWER even if HOST is slow advancing.
           await waitForAnswerControl(player1, q.type)
           // Now assert question text is visible and aligned across all roles.
           await expect(player1.getByTestId("question-text").first()).toBeVisible({
@@ -429,8 +410,12 @@ test.describe("Answer flow — E2E All Types", () => {
         })
 
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
-          // Host advances to leaderboard (state-driven).
-          await hostNextUntil(host, async () => await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false), `leaderboard Q${i + 1}`)
+          // ONE click: Responses (auto after answers end) → Leaderboard.
+          await host.getByTestId("next-btn").click()
+          // Wait for leaderboard row visible (strict: not "eventually visible", but actually there).
+          await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({
+            timeout: 15_000,
+          })
 
           // P1 should see correct-answer-highlight after reveal (scored types).
           if (q.type !== "poll") {
@@ -439,16 +424,7 @@ test.describe("Answer flow — E2E All Types", () => {
             ).toBeVisible({ timeout: 20_000 })
           }
 
-          // Ensure leaderboard is showing (may need extra next).
-          const table = host.getByTestId("leaderboard-table")
-          if (!(await table.isVisible().catch(() => false))) {
-            const next = host.getByTestId("next-btn")
-            if (await next.isVisible().catch(() => false)) {
-              await next.click()
-            }
-          }
-          await expect(table).toBeVisible({ timeout: 20_000 })
-
+          // Score assertions with polling (animation).
           // After first scored question P1 should lead; poll may tie until then.
           if (q.type !== "poll" || i > 0) {
             await expect.poll(async () => {
@@ -467,26 +443,34 @@ test.describe("Answer flow — E2E All Types", () => {
 
           // Advance to next question (unless last).
           if (i < quizFixture.questions.length - 1) {
-            const next = host.getByTestId("next-btn")
-            if (await next.isVisible().catch(() => false)) {
-              await next.click()
-            }
+            // ONE click: Leaderboard → next question (COOLDOWN phase).
+            // Next iteration's waitForAnswerControl will wait for SELECT_ANSWER.
+            await host.getByTestId("next-btn").click()
           }
         })
       }
 
-      // After all questions, host advances to podium (state-driven).
-      const podiumVisible = async () =>
-        (await host.getByTestId("podium").isVisible().catch(() => false)) ||
-        (await player1.getByTestId("podium").isVisible().catch(() => false))
-      await hostNextUntil(host, podiumVisible, "podium", 6)
+      // After all questions: transition to podium.
+      await test.step("transition to podium", async () => {
+        // ONE click: Leaderboard (after last Q) → Podium OR still Leaderboard (depending on game rules).
+        await host.getByTestId("next-btn").click()
+        // Wait for podium or leaderboard-row (game may show scores-recap before podium).
+        const podiumOrLeaderboard = host.getByTestId("podium").or(host.getByTestId(`leaderboard-row-${PLAYER1}`)).first()
+        await expect(podiumOrLeaderboard).toBeVisible({ timeout: 15_000 })
 
-      await test.step("optional podium visible at end", async () => {
-        const podium = host.getByTestId("podium")
-        // Podium is optional in intermediate screens — soft check.
-        if (await podium.isVisible().catch(() => false)) {
-          await expect(podium).toBeVisible()
+        // If still on leaderboard, do final score check and advance.
+        if (await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false)) {
+          await expect.poll(async () => {
+            const s1 = await parseLeaderboardScore(host, PLAYER1)
+            return s1 > 0
+          }, { timeout: 10_000 }).toBe(true)
+          // ONE more click: Leaderboard → Podium.
+          await host.getByTestId("next-btn").click()
         }
+
+        // Wait for podium (host or player1).
+        const podium = host.getByTestId("podium").or(player1.getByTestId("podium")).first()
+        await expect(podium).toBeVisible({ timeout: 20_000 })
       })
     } finally {
       await hostCtx.close()
@@ -525,15 +509,11 @@ test.describe("Answer flow — E2E All Types", () => {
         })
         await player1AnswerPlan(quizFixture.questions[0]).run(p1)
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
-        await hostNextUntil(
-          host,
-          async () =>
-            await host
-              .getByTestId(`leaderboard-row-${PLAYER1}`)
-              .isVisible()
-              .catch(() => false),
-          "standalone race: leaderboard Q1",
-        )
+        // ONE click: Responses → Leaderboard, then ONE click: Leaderboard → Q2.
+        await host.getByTestId("next-btn").click()
+        await expect(
+          host.getByTestId(`leaderboard-row-${PLAYER1}`),
+        ).toBeVisible({ timeout: 15_000 })
         await host.getByTestId("next-btn").click()
         // Q2 boolean deadline race
         await expect(p1.getByTestId("question-text")).toBeVisible({
