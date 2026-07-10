@@ -39,3 +39,54 @@ impl RoundResult {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_player(client_id: &str, username: &str) -> Player {
+        Player {
+            id: format!("socket-{client_id}"),
+            client_id: client_id.to_string(),
+            connected: true,
+            username: username.to_string(),
+            points: 100,
+            streak: 0,
+            player_token: None,
+            is_bot: None,
+            avatar: None,
+            achievements: None,
+            team_id: None,
+            identifier_hash: None,
+        }
+    }
+
+    #[test]
+    fn to_show_result_data_initializes_auto_advance_ms_as_none() {
+        let player = make_player("player1", "Alice");
+        let result = RoundResult {
+            client_id: "player1".to_string(),
+            correct: true,
+            points: 50,
+            streak: 1,
+            first_correct: true,
+            response_time_ms: 1000,
+            answered: true,
+            achievements: vec![],
+            bonus_points: 0,
+        };
+
+        let data = result.to_show_result_data(&player, 2);
+        
+        // Verify auto_advance_ms is None in the base method
+        // (it will be set in reveal_helpers if auto_mode is active)
+        assert_eq!(data.auto_advance_ms, None);
+        
+        // Verify other fields are set correctly
+        assert!(data.correct);
+        assert_eq!(data.points, 50);
+        assert_eq!(data.streak, Some(1));
+        assert_eq!(data.player_count, Some(2));
+        assert_eq!(data.first_correct, Some(true));
+    }
+}
