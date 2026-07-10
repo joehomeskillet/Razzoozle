@@ -399,20 +399,33 @@ test.describe("Answer flow — E2E All Types", () => {
             // Wait ~9s of the 10s limit, then P2 submits.
             await player2.waitForTimeout(9_000)
             await p2.run(player2)
+            // P2 is last answerer — question may end early (all-answered).
+            await expect(
+              player2.getByTestId("answer-submitted").or(player2.getByTestId("answer-result")).first()
+            ).toBeVisible({ timeout: 10_000 })
           } else if (i === DOUBLE_SUBMIT_Q) {
             // (b) Double-submit: P1 clicks submit twice rapidly.
             await p1.run(player1, { doubleSubmit: true })
+            await expect(player1.getByTestId("answer-submitted")).toBeVisible({
+              timeout: 10_000,
+            })
             await p2.run(player2)
+            // P2 is last answerer — question may end early (all-answered).
+            await expect(
+              player2.getByTestId("answer-submitted").or(player2.getByTestId("answer-result")).first()
+            ).toBeVisible({ timeout: 10_000 })
           } else {
-            await Promise.all([p1.run(player1), p2.run(player2)])
+            // Sequential: P1 answers first, then P2.
+            await p1.run(player1)
+            await expect(player1.getByTestId("answer-submitted")).toBeVisible({
+              timeout: 10_000,
+            })
+            await p2.run(player2)
+            // P2 is last answerer — question may end early (all-answered).
+            await expect(
+              player2.getByTestId("answer-submitted").or(player2.getByTestId("answer-result")).first()
+            ).toBeVisible({ timeout: 10_000 })
           }
-
-          await expect(player1.getByTestId("answer-submitted")).toBeVisible({
-            timeout: 10_000,
-          })
-          await expect(player2.getByTestId("answer-submitted")).toBeVisible({
-            timeout: 10_000,
-          })
         })
 
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
