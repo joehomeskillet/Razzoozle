@@ -84,7 +84,7 @@ const Responses = ({
   }, [playMusic, stopMusic])
 
   return (
-    <div className="flex h-full flex-1 flex-col justify-between">
+    <div data-testid="responses-view" className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           <Markdown>{question}</Markdown>
