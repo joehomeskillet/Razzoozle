@@ -140,6 +140,8 @@ async fn main() {
     if db_pool.is_some() {
         let config_base = http::get_config_path();
         crate::db::hydrate_media_from_pg(&db_pool, &config_base).await;
+        // P2 plugin boot-hydrate: restore plugin files from Postgres to disk (idempotent + empty-guard)
+        crate::db::hydrate_plugins_from_pg(&db_pool, &config_base).await;
     }
 
     // Load fixture quiz

@@ -1,6 +1,8 @@
 use sqlx::PgPool;
 use std::fs;
 use std::path::Path;
+use crate::socket::manager::theme::decode_base64;
+use crate::socket::manager::plugins::is_generic_safe_id;
 
 pub async fn create_pool() -> Option<PgPool> {
     match std::env::var("DATABASE_URL") {
@@ -114,6 +116,162 @@ pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         .collect();
 
     result
+}
+
+/// Get plugins for hydration (id, files map) from Postgres.
+/// Returns empty vec if pool is None or DB query fails.
+async fn get_plugins_for_hydrate(pool: &Option<PgPool>) -> Vec<(String, Option<serde_json::Value>)> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    let rows: Vec<(String, Option<serde_json::Value>)> =
+        match sqlx::query_as(
+            "SELECT id, files FROM installed_plugins WHERE files IS NOT NULL ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch installed_plugins for hydration from database: {}", e);
+                return Vec::new();
+            }
+        };
+
+    rows
+}
+
+
+/// Boot-hydrate plugins from Postgres to disk.
+/// Mirrors Node's hydratePluginsFromPg semantics:
+/// - Reads installed_plugins from PG (id, files jsonb)
+/// - Writes plugin files to config/plugins/<id>/ (only if missing, idempotent)
+/// - Empty-guard: if PG has 0 plugins, do nothing
+/// - Path traversal safety: validates relative paths before writing
+/// Non-fatal: logs errors but doesn't panic.
+pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &str) {
+    let all_plugins = get_plugins_for_hydrate(pool).await;
+
+    // Empty-guard: if PG has 0 plugins, do nothing (never nuke existing plugin dirs)
+    if all_plugins.is_empty() {
+        return;
+    }
+
+    let plugins_root = format!("{}/plugins", config_base);
+
+    // Ensure plugins root directory exists
+    if let Err(e) = fs::create_dir_all(&plugins_root) {
+        eprintln!("Failed to create plugins directory '{}': {}", plugins_root, e);
+        return;
+    }
+
+    let mut total_plugins = 0;
+    let mut total_files = 0;
+
+    // For each plugin, restore files to disk
+    for (plugin_id, files_opt) in all_plugins {
+        total_plugins += 1;
+
+        let files_map = match files_opt {
+            Some(files_val) => {
+                if !files_val.is_object() {
+                    eprintln!("plugins-pg hydrate: skipping plugin {} — files is not a JSON object", plugin_id);
+                    continue;
+                }
+                files_val
+            }
+            None => {
+                // Plugin has no files (shouldn't happen due to WHERE files IS NOT NULL, but be safe)
+                continue;
+            }
+        };
+
+        // Sanitize plugin_id to prevent directory traversal
+        if !is_generic_safe_id(&plugin_id) {
+            eprintln!("plugins-pg hydrate: skipping plugin with unsafe id: {}", plugin_id);
+            continue;
+        }
+
+        let plugin_dir = format!("{}/{}", plugins_root, plugin_id);
+
+        // Ensure plugin directory exists
+        if let Err(e) = fs::create_dir_all(&plugin_dir) {
+            eprintln!("Failed to create plugin directory '{}': {}", plugin_dir, e);
+            continue;
+        }
+
+        // Restore each file from base64
+        if let Some(obj) = files_map.as_object() {
+            for (relpath, base64_val) in obj {
+                // Guard against traversal attacks (match Node's exact checks)
+                if relpath.starts_with("/")
+                    || relpath.starts_with("\\")
+                    || relpath.contains("..")
+                    || relpath.contains("\0")
+                {
+                    eprintln!(
+                        "plugins-pg hydrate: skipping unsafe relpath in plugin {}: {}",
+                        plugin_id, relpath
+                    );
+                    continue;
+                }
+
+                let file_path = format!("{}/{}", plugin_dir, relpath);
+
+                // Only write if missing (idempotent, preserves any on-disk changes)
+                if Path::new(&file_path).exists() {
+                    continue;
+                }
+
+                let base64_str = match base64_val.as_str() {
+                    Some(s) => s,
+                    None => {
+                        eprintln!(
+                            "plugins-pg hydrate: skipping file {} in plugin {} — value is not a string",
+                            relpath, plugin_id
+                        );
+                        continue;
+                    }
+                };
+
+                // Ensure parent directory exists
+                if let Some(parent) = Path::new(&file_path).parent() {
+                    if let Err(e) = fs::create_dir_all(parent) {
+                        eprintln!("Failed to create parent directory for '{}': {}", file_path, e);
+                        continue;
+                    }
+                }
+
+                // Decode base64 and write
+                match decode_base64(base64_str) {
+                    Ok(bytes) => {
+                        match fs::write(&file_path, &bytes) {
+                            Ok(_) => total_files += 1,
+                            Err(e) => {
+                                eprintln!(
+                                    "plugins-pg hydrate: failed to write file {} in plugin {}: {}",
+                                    relpath, plugin_id, e
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "plugins-pg hydrate: failed to decode base64 for file {} in plugin {}: {}",
+                            relpath, plugin_id, e
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    eprintln!(
+        "plugins-pg hydrate: {} plugins, {} files written",
+        total_plugins, total_files
+    );
 }
 
 /// Load game configuration from the database.

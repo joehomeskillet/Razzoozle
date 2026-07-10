@@ -89,7 +89,7 @@ fn plugin_revisions_file() -> PathBuf {
 /// ("constructor"/"prototype" pass the plugin-id regex, so this re-assertion
 /// is not redundant). On violation Node throws Error("Invalid id") — that
 /// plain message is what reaches the client via manager:errorMessage.
-pub(super) fn is_generic_safe_id(id: &str) -> bool {
+pub(crate) fn is_generic_safe_id(id: &str) -> bool {
     !id.is_empty()
         && id
             .bytes()
