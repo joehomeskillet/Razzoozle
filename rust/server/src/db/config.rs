@@ -73,51 +73,6 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     result
 }
 
-/// Load installed plugins from the database.
-/// Returns a vector of serde_json objects with InstalledPlugin shape (including files jsonb).
-/// Returns empty vec if pool is None or DB query fails.
-pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
-    let pool = match pool {
-        Some(p) => p,
-        None => return Vec::new(),
-    };
-
-    let rows: Vec<(String, String, String, bool, serde_json::Value, Option<serde_json::Value>, Option<serde_json::Value>)> =
-        match sqlx::query_as(
-            "SELECT id, name, version, enabled, capabilities, config, files FROM installed_plugins ORDER BY id"
-        )
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch installed_plugins from database: {}", e);
-                return Vec::new();
-            }
-        };
-
-    let result = rows.into_iter()
-        .map(|(id, name, version, enabled, capabilities, config, files)| {
-            let mut obj = serde_json::json!({
-                "id": id,
-                "name": name,
-                "version": version,
-                "enabled": enabled,
-                "capabilities": capabilities,
-            });
-            if let Some(cfg) = config {
-                obj["config"] = cfg;
-            }
-            if let Some(f) = files {
-                obj["files"] = f;
-            }
-            obj
-        })
-        .collect();
-
-    result
-}
-
 /// Get plugins for hydration (id, files map) from Postgres.
 /// Returns empty vec if pool is None or DB query fails.
 async fn get_plugins_for_hydrate(pool: &Option<PgPool>) -> Vec<(String, Option<serde_json::Value>)> {

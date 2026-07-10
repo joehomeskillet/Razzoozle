@@ -72,14 +72,4 @@ impl GameRegistry {
         self.empty_games.iter().any(|e| e.game_id == game_id)
     }
 
-    /// Backdate an empty-grace mark so cleanup can be tested without wall-clock sleeps.
-    pub fn backdate_empty_game_mark(&mut self, game_id: &str, age_ms: u64) {
-        let now = get_now_ms();
-        for entry in &mut self.empty_games {
-            if entry.game_id == game_id {
-                entry.marked_at_ms = now.saturating_sub(age_ms);
-                return;
-            }
-        }
-    }
 }

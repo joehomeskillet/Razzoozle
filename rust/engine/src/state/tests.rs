@@ -433,7 +433,7 @@ mod tests {
             .any(|s| s.key == razzoozle_protocol::results_display::SuperlativeKey::MostAchievements);
         assert!(has_most_achievements, 
                 "recap should include MostAchievements superlative when achievements are unlocked");
-    
+    }
     #[test]
     fn display_order_permutation_and_reconnect_stability() {
         // Test that randomize_answers generates a Fisher-Yates permutation
@@ -479,6 +479,5 @@ mod tests {
         assert_eq!(q1_disabled.display_order, None, "display_order should be None when randomize_answers is disabled");
     }
 
-}
 }
 
