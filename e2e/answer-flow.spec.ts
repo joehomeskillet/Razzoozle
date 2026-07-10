@@ -267,6 +267,29 @@ async function parseLeaderboardScore(
 }
 
 /** Wait for type-specific answer control to be visible in SELECT_ANSWER phase. */
+/** Effect-verified click from leaderboard to next question.
+   Retries only while leaderboard-row is visible (proof that the click didn't work).
+   Once controls appear, returns immediately. */
+async function advanceToNextQuestion(host: Page, player1: Page, nextQType: string, maxSteps = 6) {
+  // Determine which control ID to watch for (varies by question type).
+  const controlId = nextQType === "slider" ? "slider-input"
+    : nextQType === "type-answer" ? "type-answer-input"
+    : nextQType === "sentence-builder" ? "sentence-chunk-0"
+    : "answer-btn-0"
+  
+  for (let s = 0; s < maxSteps; s++) {
+    // Target control visible = we've already advanced successfully.
+    if (await player1.getByTestId(controlId).isVisible().catch(() => false)) return
+    // Leaderboard still visible = click didn't work; re-click only then.
+    if (await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false)) {
+      await host.getByTestId("next-btn").click().catch(() => {})
+    }
+    // Let state settle between retries.
+    await host.waitForTimeout(2_000)
+  }
+  // Loop exhausted; fall through to waitForAnswerControl (45s, definitive verification).
+}
+
 /** Advance to target state by clicking only on recognized safe states (responses/recap).
    Handles auto-jumps and reconnections gracefully without risk of ABORT/SKIP. */
 async function advanceToState(host: Page, target: "leaderboard" | "podium", player1: Page, maxSteps = 5) {
@@ -470,10 +493,9 @@ test.describe("Answer flow — E2E All Types", () => {
               return s1 <= 1000 * (i + 1) + 50
             }, { timeout: 10_000 }).toBe(true)
 
-            // Advance to next question.
-            // ONE click: Leaderboard → next question (COOLDOWN phase).
-            // Next iteration's waitForAnswerControl will wait for SELECT_ANSWER.
-            await host.getByTestId("next-btn").click()
+            // Advance to next question (effect-verified: re-click only if leaderboard still visible).
+            // After this, waitForAnswerControl will verify we reached SELECT_ANSWER.
+            await advanceToNextQuestion(host, player1, quizFixture.questions[i + 1].type)
           }
         })
       }
