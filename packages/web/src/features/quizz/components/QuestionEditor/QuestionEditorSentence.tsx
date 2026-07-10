@@ -111,33 +111,31 @@ const QuestionEditorSentence = () => {
           </button>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {chunks.map((chunk, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => moveChunkUp(i)}
-                  disabled={i === 0}
-                  aria-label={t("quizz:sentenceBuilder.moveUp", {
-                    defaultValue: "Move up",
-                  })}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
-                >
-                  <ArrowUp className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveChunkDown(i)}
-                  disabled={i === chunks.length - 1}
-                  aria-label={t("quizz:sentenceBuilder.moveDown", {
-                    defaultValue: "Move down",
-                  })}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
-                >
-                  <ArrowDown className="size-4" />
-                </button>
-              </div>
+            <div key={i} className="flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => moveChunkUp(i)}
+                disabled={i === 0}
+                aria-label={t("quizz:sentenceBuilder.moveUp", {
+                  defaultValue: "Move up",
+                })}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+              >
+                <ArrowUp className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveChunkDown(i)}
+                disabled={i === chunks.length - 1}
+                aria-label={t("quizz:sentenceBuilder.moveDown", {
+                  defaultValue: "Move down",
+                })}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+              >
+                <ArrowDown className="size-4" />
+              </button>
               <input
                 className="flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
                 placeholder={t("quizz:sentenceBuilder.chunkPlaceholder", {
@@ -153,7 +151,7 @@ const QuestionEditorSentence = () => {
                 aria-label={t("quizz:sentenceBuilder.removeChunk", {
                   defaultValue: "Remove chunk",
                 })}
-                className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
               >
                 <Minus className="size-5" />
               </button>

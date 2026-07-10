@@ -100,5 +100,18 @@
   "themePicker": {
     "label": "Design",
     "global": "Global design"
+  },
+  "sentenceBuilder": {
+    "sentenceLabel": "Correct sentence",
+    "sentencePlaceholder": "Type the correct sentence...",
+    "autoGenerate": "Auto-generate",
+    "chunksLabel": "Chunks",
+    "addChunk": "Add chunk",
+    "chunkPlaceholder": "Chunk",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeChunk": "Remove chunk {{index}}",
+    "preview": "Players will see these chips shuffled",
+    "minChunksRequired": "At least 2 chunks required"
   }
 }
