@@ -29,7 +29,7 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         let result_obj = serde_json::json!({
             "id": id,
             "subject": subject,
-            "date": date.to_rfc3339(),
+            "date": date.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             "playerCount": player_count,
         });
         result.push(result_obj);
@@ -59,7 +59,7 @@ pub async fn get_result_by_id(pool: &Option<PgPool>, id: &str) -> Option<serde_j
         let mut obj = serde_json::json!({
             "id": id,
             "subject": subject,
-            "date": date.to_rfc3339(),
+            "date": date.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             "players": players,
             "questions": questions.unwrap_or_else(|| serde_json::json!([])),
         });
@@ -117,5 +117,29 @@ pub async fn delete_result(pool: &Option<PgPool>, id: &str) -> bool {
     {
         Ok(result) => result.rows_affected() > 0,
         Err(_) => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_timestamp_wire_format() {
+        // Verify that timestamps are formatted correctly:
+        // - Exactly 24 characters (ISO 8601 with millis + Z)
+        // - Ends with Z
+        // - Contains 3 digits for milliseconds before Z
+        let now = chrono::Utc::now();
+        let formatted = now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        
+        assert_eq!(formatted.len(), 24, "Timestamp should be exactly 24 chars: {}", formatted);
+        assert!(formatted.ends_with('Z'), "Timestamp should end with Z: {}", formatted);
+        
+        // Verify format: YYYY-MM-DDTHH:MM:SS.sssZ
+        // Position 19 should be '.', position 23 should be 'Z'
+        let chars: Vec<char> = formatted.chars().collect();
+        assert_eq!(chars[19], '.', "Char at position 19 should be '.': {}", formatted);
+        assert_eq!(chars[23], 'Z', "Char at position 23 should be 'Z': {}", formatted);
     }
 }

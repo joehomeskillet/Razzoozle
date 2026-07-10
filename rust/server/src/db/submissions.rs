@@ -29,7 +29,7 @@ pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Valu
             let mut obj = serde_json::json!({
                 "id": id,
                 "submittedBy": submitted_by,
-                "submittedAt": submitted_at.to_rfc3339(),
+                "submittedAt": submitted_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                 "status": status,
                 "question": question,
             });
@@ -81,7 +81,7 @@ pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         let submission_obj = serde_json::json!({
             "id": id,
             "submittedBy": submitted_by,
-            "submittedAt": submitted_at.to_rfc3339(),
+            "submittedAt": submitted_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             "status": status,
             "question": question_text,
         });
@@ -238,7 +238,7 @@ pub async fn get_submission_by_id(
         let mut obj = serde_json::json!({
             "id": id,
             "submittedBy": submitted_by,
-            "submittedAt": submitted_at.to_rfc3339(),
+            "submittedAt": submitted_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             "status": status,
             "question": question,
         });
