@@ -4,6 +4,7 @@ pub mod assets;
 pub mod logs;
 mod observability;
 pub mod skeleton;
+mod client_events;
 pub mod solo;
 
 use axum::{
@@ -121,6 +122,7 @@ pub fn router(state: AppState) -> Router {
             post(skeleton::handle_skeleton_import)
                 .layer(axum::extract::DefaultBodyLimit::disable()),
         )
+        .route("/api/v1/client-events", post(client_events::handle_client_events))
         .route("/api/v1/observability/events", get(observability::handle_observability_events))
         .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
         .route("/api/v1/observability/logs/server", get(logs::handle_logs_server))
