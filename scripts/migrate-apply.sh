@@ -64,7 +64,11 @@ if ((${#migrations[@]} == 0)); then
 fi
 
 if [[ "$dry_run" == true ]]; then
-  printf '%s\n' "${migrations[@]##*/}"
+  printf '[migrate] dry run: previewing %d migration(s)\n' "${#migrations[@]}"
+  for migration in "${migrations[@]}"; do
+    printf '[migrate] would apply %s\n' "${migration##*/}"
+  done
+  printf '[migrate] dry run complete: no migrations were applied\n'
   exit 0
 fi
 
@@ -74,6 +78,7 @@ if ! command -v psql >/dev/null 2>&1; then
 fi
 
 for migration in "${migrations[@]}"; do
-  printf 'Applying %s\n' "${migration##*/}"
+  printf '[migrate] applying %s\n' "${migration##*/}"
   psql --set=ON_ERROR_STOP=1 --dbname="$DATABASE_URL" --file="$migration"
 done
+printf '[migrate] applied %d migration(s)\n' "${#migrations[@]}"

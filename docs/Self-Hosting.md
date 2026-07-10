@@ -40,7 +40,8 @@ export DATABASE_URL='postgresql://user:password@host:5432/razzoozle'
 ```
 
 Always run `--dry-run` before the actual apply. Numbered migrations execute in
-order, and schema DDL is idempotent and safe to re-run.
+order. In the initial migration, table and index creation uses `IF NOT EXISTS`,
+so existing table and index objects are not recreated.
 
 ## Beamer / kiosk
 - `/display` renders the host presentation fullscreen for a projector/TV (vh-scaled type), pairable from a phone.
