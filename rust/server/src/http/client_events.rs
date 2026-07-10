@@ -6,10 +6,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+// ── Input caps (from packages/common/src/validators/client-events.ts:14-15) ──
+const CAP_SHORT: usize = 200; // clientId, name, url, pin, reason
+const CAP_TEXT: usize = 2000; // message, context
 
 // ── Event types (from packages/common/src/validators/client-events.ts) ──
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -67,6 +71,73 @@ impl ClientEvent {
             | ClientEvent::AnswerLatency { clientId, .. } => clientId,
         }
     }
+
+    /// Validate input caps (Node Zod validators parity).
+    /// Returns first Zod-like error message on violation.
+    fn validate(&self) -> Result<(), &'static str> {
+        match self {
+            ClientEvent::ClientError {
+                clientId,
+                message,
+                context,
+                ..
+            } => {
+                if clientId.is_empty() || clientId.len() > CAP_SHORT {
+                    return Err("String must contain at most 200 character(s)");
+                }
+                if message.len() > CAP_TEXT {
+                    return Err("String must contain at most 2000 character(s)");
+                }
+                if let Some(ctx) = context {
+                    if ctx.len() > CAP_TEXT {
+                        return Err("String must contain at most 2000 character(s)");
+                    }
+                }
+                Ok(())
+            }
+            ClientEvent::JoinFailure {
+                clientId,
+                pin,
+                reason,
+                ..
+            } => {
+                if clientId.is_empty() || clientId.len() > CAP_SHORT {
+                    return Err("String must contain at most 200 character(s)");
+                }
+                if let Some(p) = pin {
+                    if p.len() > CAP_SHORT {
+                        return Err("String must contain at most 200 character(s)");
+                    }
+                }
+                if reason.len() > CAP_SHORT {
+                    return Err("String must contain at most 200 character(s)");
+                }
+                Ok(())
+            }
+            ClientEvent::SocketReconnect { clientId, attempts, .. } => {
+                if clientId.is_empty() || clientId.len() > CAP_SHORT {
+                    return Err("String must contain at most 200 character(s)");
+                }
+                if *attempts < 0 || *attempts > 100000 {
+                    return Err("Number must be greater than or equal to 0");
+                }
+                Ok(())
+            }
+            ClientEvent::AnswerLatency {
+                clientId,
+                latencyMs,
+                ..
+            } => {
+                if clientId.is_empty() || clientId.len() > CAP_SHORT {
+                    return Err("String must contain at most 200 character(s)");
+                }
+                if *latencyMs < 0 || *latencyMs > 600000 {
+                    return Err("Number must be greater than or equal to 0");
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 // Always keep these event types (never sampled away)
@@ -75,7 +146,7 @@ fn always_keep(event_type: &str) -> bool {
     matches!(event_type, "client-error" | "join-failure")
 }
 
-// ── Rate limiting: per-clientId token bucket ──────────────────────────────
+// ── Rate limiting: per-clientId token bucket with LRU eviction ──────────────
 // Constants from packages/socket/src/services/http/client-events.ts:22-25
 const RATE_WINDOW_MS: u64 = 60_000;
 const RATE_MAX: u32 = 20;
@@ -87,8 +158,18 @@ struct Bucket {
     reset_at: u64,
 }
 
+/// Insertion-order queue for LRU eviction (Node parity: client-events.ts:40-50).
+/// When BUCKET_MAX is reached, evict the oldest (first-inserted) key.
+struct RateLimiterState {
+    buckets: HashMap<String, Bucket>,
+    insertion_order: VecDeque<String>,
+}
+
 lazy_static::lazy_static! {
-    static ref BUCKETS: Arc<Mutex<HashMap<String, Bucket>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref RATE_LIMITER_STATE: Arc<Mutex<RateLimiterState>> = Arc::new(Mutex::new(RateLimiterState {
+        buckets: HashMap::new(),
+        insertion_order: VecDeque::new(),
+    }));
 }
 
 fn now_ms() -> u64 {
@@ -99,9 +180,9 @@ fn now_ms() -> u64 {
 }
 
 fn within_rate(client_id: &str, now: u64) -> bool {
-    let mut buckets = BUCKETS.lock().unwrap();
+    let mut state = RATE_LIMITER_STATE.lock().unwrap();
 
-    let bucket = if let Some(b) = buckets.get_mut(client_id) {
+    let bucket = if let Some(b) = state.buckets.get_mut(client_id) {
         if now >= b.reset_at {
             // Reset the bucket
             *b = Bucket {
@@ -111,21 +192,22 @@ fn within_rate(client_id: &str, now: u64) -> bool {
         }
         b
     } else {
-        // Add new bucket if under cap, otherwise evict oldest
-        if buckets.len() >= BUCKET_MAX {
-            // Evict first entry (oldest insertion)
-            if let Some(key) = buckets.keys().next().cloned() {
-                buckets.remove(&key);
+        // Add new bucket if under cap, otherwise evict oldest (LRU)
+        if state.buckets.len() >= BUCKET_MAX {
+            // Evict oldest entry (first in insertion order)
+            if let Some(oldest_key) = state.insertion_order.pop_front() {
+                state.buckets.remove(&oldest_key);
             }
         }
-        buckets.insert(
+        state.buckets.insert(
             client_id.to_string(),
             Bucket {
                 count: 0,
                 reset_at: now + RATE_WINDOW_MS,
             },
         );
-        buckets.get_mut(client_id).unwrap()
+        state.insertion_order.push_back(client_id.to_string());
+        state.buckets.get_mut(client_id).unwrap()
     };
 
     if bucket.count >= RATE_MAX {
@@ -162,6 +244,15 @@ pub async fn handle_client_events(
         }
     };
 
+    // Input validation: enforce caps (Node Zod parity)
+    if let Err(cap_error) = event.validate() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": cap_error })),
+        )
+            .into_response();
+    }
+
     // Rate limit check (per-clientId)
     if !within_rate(event.client_id(), now) {
         return StatusCode::NO_CONTENT.into_response();
@@ -176,6 +267,7 @@ pub async fn handle_client_events(
     }
 
     // Log the event (in production, this goes to the client event ring via logger)
+    // TODO(W2): feed client-event ring once Rust log-ring exists (Node: pushClientLog via redacting logger)
     tracing::info!(event = ?event, "client-event");
 
     StatusCode::NO_CONTENT.into_response()
@@ -195,7 +287,10 @@ mod tests {
     #[test]
     fn test_within_rate() {
         // Clear state
-        BUCKETS.lock().unwrap().clear();
+        let mut state = RATE_LIMITER_STATE.lock().unwrap();
+        state.buckets.clear();
+        state.insertion_order.clear();
+        drop(state);
 
         let now = now_ms();
         assert!(within_rate("client-1", now));
@@ -217,5 +312,80 @@ mod tests {
         assert!(always_keep("join-failure"));
         assert!(!always_keep("answer-latency"));
         assert!(!always_keep("socket-reconnect"));
+    }
+
+    #[test]
+    fn test_input_caps_clientId_too_long() {
+        let event = ClientEvent::ClientError {
+            clientId: "x".repeat(201),
+            message: "error".to_string(),
+            context: None,
+            ts: None,
+        };
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn test_input_caps_message_too_long() {
+        let event = ClientEvent::ClientError {
+            clientId: "client-1".to_string(),
+            message: "x".repeat(2001),
+            context: None,
+            ts: None,
+        };
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn test_input_caps_context_too_long() {
+        let event = ClientEvent::ClientError {
+            clientId: "client-1".to_string(),
+            message: "error".to_string(),
+            context: Some("x".repeat(2001)),
+            ts: None,
+        };
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn test_input_caps_latency_too_high() {
+        let event = ClientEvent::AnswerLatency {
+            clientId: "client-1".to_string(),
+            latencyMs: 600001,
+            ts: None,
+        };
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn test_input_caps_attempts_range() {
+        let event = ClientEvent::SocketReconnect {
+            clientId: "client-1".to_string(),
+            attempts: 100001,
+            ts: None,
+        };
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn test_lru_eviction_order() {
+        // Clear state
+        let mut state = RATE_LIMITER_STATE.lock().unwrap();
+        state.buckets.clear();
+        state.insertion_order.clear();
+        drop(state);
+
+        let now = now_ms();
+
+        // Add 3 clients
+        within_rate("client-a", now);
+        within_rate("client-b", now);
+        within_rate("client-c", now);
+
+        let state = RATE_LIMITER_STATE.lock().unwrap();
+        assert_eq!(state.insertion_order.len(), 3);
+        assert_eq!(state.insertion_order[0], "client-a");
+        assert_eq!(state.insertion_order[1], "client-b");
+        assert_eq!(state.insertion_order[2], "client-c");
     }
 }
