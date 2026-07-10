@@ -1,0 +1,62 @@
+{
+  "subject": "Python Basics",
+  "questions": [
+    {
+      "id": "019f3544-2b68-7192-a0b6-8655df9d1b3c",
+      "type": "choice",
+      "question": "What is the correct file extension for a Python source file???",
+      "answers": ["pyth", "pt", "py", "python"],
+      "solutions": [2],
+      "time": 20,
+      "cooldown": 5,
+      "media": {
+        "type": "image",
+        "url": "/media/generated/gen-GTgo3FZ4.webp"
+      }
+    },
+    {
+      "id": "019f3544-2b69-7174-a6ce-1381a2a9f187",
+      "type": "choice",
+      "question": "Which keyword defines a function in Python?",
+      "answers": ["func", "def", "function", "fun"],
+      "solutions": [1],
+      "time": 20,
+      "cooldown": 5
+    },
+    {
+      "id": "019f3544-2b69-7174-a6ce-14d835a307cc",
+      "type": "choice",
+      "question": "What does the len() function return for a list?",
+      "answers": ["The last item", "The number of items", "The data type", "A sorted copy"],
+      "solutions": [1],
+      "time": 20,
+      "cooldown": 5
+    },
+    {
+      "id": "019f3544-2b69-7174-a6ce-19383812c8c3",
+      "type": "choice",
+      "question": "How do you start a single-line comment in Python?",
+      "answers": ["// comment", "<!-- comment -->", "# comment", "/* comment */"],
+      "solutions": [2],
+      "time": 20,
+      "cooldown": 5
+    },
+    {
+      "id": "019f3544-2b69-7174-a6ce-1cd7cb301b4e",
+      "type": "choice",
+      "question": "Which built-in type stores key-value pairs in Python?",
+      "answers": ["list", "tuple", "set", "dict"],
+      "solutions": [3],
+      "time": 20,
+      "cooldown": 5
+    },
+    {
+      "type": "boolean",
+      "question": "Python uses indentation to define code blocks.",
+      "answers": ["Wahr", "Falsch"],
+      "solutions": [0],
+      "time": 20,
+      "cooldown": 5
+    }
+  ]
+}

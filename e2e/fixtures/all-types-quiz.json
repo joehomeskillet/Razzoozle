@@ -1,0 +1,61 @@
+{
+  "subject": "E2E All Types",
+  "questions": [
+    {
+      "type": "choice",
+      "question": "Which planet is known as the Red Planet?",
+      "answers": ["Venus", "Mars", "Jupiter", "Mercury"],
+      "solutions": [1],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "boolean",
+      "question": "Water boils at 100 °C at sea level.",
+      "answers": ["Wahr", "Falsch"],
+      "solutions": [0],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "slider",
+      "question": "How many continents are there?",
+      "min": 1,
+      "max": 10,
+      "correct": 7,
+      "step": 1,
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "poll",
+      "question": "Which season do you like most?",
+      "answers": ["Spring", "Summer", "Autumn", "Winter"],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "multiple-select",
+      "question": "Which of these are prime numbers?",
+      "answers": ["2", "3", "4", "6"],
+      "solutions": [0, 1],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "type-answer",
+      "question": "What is the capital of France?",
+      "acceptedAnswers": ["Paris"],
+      "matchMode": "normalized",
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "sentence-builder",
+      "question": "Order the words to form: 'the quick brown fox'",
+      "chunks": ["the", "quick", "brown", "fox"],
+      "time": 10,
+      "cooldown": 5
+    }
+  ]
+}
