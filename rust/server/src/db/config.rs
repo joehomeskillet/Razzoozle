@@ -117,17 +117,18 @@ pub async fn get_plugins(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 }
 
 /// Load game configuration from the database.
-/// Returns team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode.
-/// Returns None for all fields if pool is None or DB query fails.
-pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>) {
+/// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config).
+/// low_latency_config is the full jsonb object that should be merged with low_latency_enabled into lowLatencyMode.
+/// Returns Nones if pool is None or DB query fails.
+pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>) {
     let pool = match pool {
         Some(p) => p,
-        None => return (None, None, None, None, None),
+        None => return (None, None, None, None, None, None),
     };
 
-    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>)> =
+    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>)> =
         sqlx::query_as(
-            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode \
+            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config \
              FROM games_config WHERE id = 1"
         )
         .fetch_optional(pool)
@@ -135,12 +136,14 @@ pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<boo
         .ok()
         .flatten();
 
-    row.unwrap_or((None, None, None, None, None))
+    row.unwrap_or((None, None, None, None, None, None))
 }
 
 /// Update game config with a partial patch. Deep-merges into existing row.
-/// Fields: team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode.
-/// Only updates fields that are Some; omitted fields (None) are left unchanged.
+/// Fields: team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode,
+/// managerPassword, lowLatencyMode.
+/// Only updates fields that are present in the patch; omitted fields are left unchanged.
+/// Always bumps version = version + 1 and updated_at = now().
 pub async fn update_game_config(
     pool: &Option<PgPool>,
     patch: &serde_json::Value,
@@ -156,6 +159,14 @@ pub async fn update_game_config(
     let join_locked = patch.get("joinLocked").and_then(|v| v.as_bool());
     let randomize_answers = patch.get("randomizeAnswers").and_then(|v| v.as_bool());
     let scoring_mode = patch.get("scoringMode").and_then(|v| v.as_str());
+    let manager_password = patch.get("managerPassword").and_then(|v| v.as_str());
+    let low_latency_mode = patch.get("lowLatencyMode").and_then(|v| {
+        if v.is_object() {
+            Some(v.clone())
+        } else {
+            None
+        }
+    });
 
     // Build the UPDATE statement dynamically — only touch fields that are present
     let mut query_str = "UPDATE games_config SET ".to_string();
@@ -182,13 +193,25 @@ pub async fn update_game_config(
         updates.push(format!("scoring_mode = ${}", idx));
         idx += 1;
     }
+    if low_latency_mode.is_some() {
+        updates.push(format!("low_latency_config = ${}", idx));
+        idx += 1;
+    }
+    if manager_password.is_some() {
+        updates.push(format!("manager_password = COALESCE(${}, manager_password)", idx));
+        idx += 1;
+    }
 
-    if updates.is_empty() {
-        // No fields to update — silent no-op (consistent with Node)
+    // Always bump version and update timestamp
+    updates.push("version = version + 1".to_string());
+    updates.push("updated_at = now()".to_string());
+
+    // If no mutable fields, still bump version and timestamp
+    if updates.len() == 2 {
+        // Only version and updated_at, no user-facing changes — silent no-op (consistent with Node)
         return Ok(());
     }
 
-    updates.push(format!("updated_at = now()"));
     query_str.push_str(&updates.join(", "));
     query_str.push_str(" WHERE id = 1");
 
@@ -208,6 +231,12 @@ pub async fn update_game_config(
     }
     if let Some(sm) = scoring_mode {
         query = query.bind(sm);
+    }
+    if let Some(llm) = low_latency_mode {
+        query = query.bind(llm);
+    }
+    if let Some(mp) = manager_password {
+        query = query.bind(mp);
     }
 
     query

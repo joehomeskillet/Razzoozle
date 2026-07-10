@@ -1,6 +1,6 @@
 //! MANAGER CONFIG WRITES — game config and achievements config handlers
 //!
-//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, joinLocked, randomizeAnswers, scoringMode)
+//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, lowLatencyMode, joinLocked, randomizeAnswers, scoringMode, managerPassword)
 //! manager:setAchievementsConfig — PATCH achievements config (per-achievement deep-merge by id)
 
 use super::super::HandlerCtx;
@@ -66,7 +66,7 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Validate and filter the payload: only accept boolean fields and valid enum
+                // Validate and filter the payload: accept specific fields
                 let mut patch = serde_json::json!({});
 
                 if let Some(team_mode) = payload.get("teamMode").and_then(|v| v.as_bool()) {
@@ -75,6 +75,13 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if let Some(low_latency_enabled) = payload.get("lowLatencyEnabled").and_then(|v| v.as_bool()) {
                     patch["lowLatencyEnabled"] = serde_json::json!(low_latency_enabled);
+                }
+
+                // Pass through lowLatencyMode object as-is (deep merge happens in DB)
+                if let Some(low_latency_mode) = payload.get("lowLatencyMode") {
+                    if low_latency_mode.is_object() {
+                        patch["lowLatencyMode"] = low_latency_mode.clone();
+                    }
                 }
 
                 if let Some(join_locked) = payload.get("joinLocked").and_then(|v| v.as_bool()) {
@@ -89,6 +96,11 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     if scoring_mode == "speed" || scoring_mode == "accuracy" {
                         patch["scoringMode"] = serde_json::json!(scoring_mode);
                     }
+                }
+
+                // Pass through managerPassword if provided (COALESCE prevents null-out)
+                if let Some(manager_password) = payload.get("managerPassword").and_then(|v| v.as_str()) {
+                    patch["managerPassword"] = serde_json::json!(manager_password);
                 }
 
                 // If no recognized fields, silent no-op (consistent with Node)

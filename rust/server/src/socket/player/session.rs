@@ -78,7 +78,7 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
                 // the join_locked read in register_login — a live config read
                 // per pick is the cheapest correct source (picks are
                 // infrequent: once per player, in the lobby).
-                let (team_mode_opt, _, _, _, _) = crate::db::get_game_config(&db_pool).await;
+                let (team_mode_opt, _, _, _, _, _) = crate::db::get_game_config(&db_pool).await;
                 if !team_mode_opt.unwrap_or(false) || !crate::state::TEAMS.contains(&team_id.as_str()) {
                     return;
                 }
