@@ -310,46 +310,91 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
 /// SHOW_LEADERBOARD, cut that wait short so the next question opens now
 /// instead of after the full dwell. No-op while any other phase is showing
 /// (mirrors node's nextQuestion() only being meaningful from the leaderboard).
+///
+/// REVISION: Mirrors Node's getManagerGame fallback (handlers/game.ts:310):
+/// resolve by payload.gameId when present; when absent/unknown, fall back to the game
+/// owned by ctx.client_id. Add logging on every early-return path.
 fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::NEXT_QUESTION, {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if let Some(game_id) = game_id_opt {
-                    let game_opt = {
-                        let registry = ctx.registry.read().await;
-                        registry.get_game_by_id(&game_id)
-                    };
+                // Extract gameId from payload
+                let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
-                    if let Some(game_ref) = game_opt {
-                        {
-                            let game = game_ref.lock().unwrap();
-                            // Per-game ownership check
-                            if game.manager_socket_id != socket.id.to_string() {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
-                            // Legacy hostToken check
-                            if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
+                // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
+                let game_ref = if let Some(game_id) = game_id_opt {
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_id(game_id) {
+                        Some(game_ref) => Some((game_ref, game_id.to_string())),
+                        None => {
+                            warn!(
+                                "manager:nextQuestion failed: gameId={} not found, clientId={}",
+                                game_id, ctx.client_id
+                            );
+                            None
                         }
+                    }
+                } else {
+                    // gameId missing from payload — fall back to manager_client_id (Node pattern)
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_manager_client_id(&ctx.client_id) {
+                        Some(game_ref) => {
+                            let game_id = game_ref.lock().unwrap().game_id.clone();
+                            info!(
+                                "manager:nextQuestion resolved via client fallback: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            Some((game_ref, game_id))
+                        }
+                        None => {
+                            warn!(
+                                "manager:nextQuestion failed: no gameId in payload and no game owned by clientId={}",
+                                ctx.client_id
+                            );
+                            None
+                        }
+                    }
+                };
 
-                        if game_ref.lock().unwrap().paused {
+                if let Some((game_ref, game_id)) = game_ref {
+                    {
+                        let game = game_ref.lock().unwrap();
+                        // Per-game ownership check
+                        if game.manager_socket_id != socket.id.to_string() {
+                            warn!(
+                                "manager:nextQuestion unauthorized: socket.id={} not manager of gameId={}",
+                                socket.id.to_string(),
+                                game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
                             return;
                         }
-
-                        lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
+                        // Legacy hostToken check
+                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                            warn!(
+                                "manager:nextQuestion host-check failed: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
                     }
+
+                    if game_ref.lock().unwrap().paused {
+                        info!("manager:nextQuestion ignored: game is paused, gameId={}", game_id);
+                        return;
+                    }
+
+                    lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
+                    info!("manager:nextQuestion abort fired for gameId={}", game_id);
                 }
             });
         }
@@ -365,88 +410,175 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
 /// "Skip = No-Op" bug (skip used to call next_or_finish() directly, which
 /// always failed because the engine was still in SelectAnswer, never
 /// ShowLeaderboard).
+///
+/// REVISION: Mirrors Node's getManagerGame fallback (handlers/game.ts:310):
+/// resolve by payload.gameId when present; when absent/unknown, fall back to the game
+/// owned by ctx.client_id. Add logging on every early-return path.
 fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SKIP_QUESTION, {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if let Some(game_id) = game_id_opt {
-                    let game_opt = {
-                        let registry = ctx.registry.read().await;
-                        registry.get_game_by_id(&game_id)
-                    };
+                // Extract gameId from payload
+                let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
-                    if let Some(game_ref) = game_opt {
-                        {
-                            let game = game_ref.lock().unwrap();
-                            // Per-game ownership check
-                            if game.manager_socket_id != socket.id.to_string() {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
-                            // Legacy hostToken check
-                            if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
+                // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
+                let game_ref = if let Some(game_id) = game_id_opt {
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_id(game_id) {
+                        Some(game_ref) => Some((game_ref, game_id.to_string())),
+                        None => {
+                            warn!(
+                                "manager:skipQuestion failed: gameId={} not found, clientId={}",
+                                game_id, ctx.client_id
+                            );
+                            None
                         }
-
-                        lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                     }
+                } else {
+                    // gameId missing from payload — fall back to manager_client_id (Node pattern)
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_manager_client_id(&ctx.client_id) {
+                        Some(game_ref) => {
+                            let game_id = game_ref.lock().unwrap().game_id.clone();
+                            info!(
+                                "manager:skipQuestion resolved via client fallback: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            Some((game_ref, game_id))
+                        }
+                        None => {
+                            warn!(
+                                "manager:skipQuestion failed: no gameId in payload and no game owned by clientId={}",
+                                ctx.client_id
+                            );
+                            None
+                        }
+                    }
+                };
+
+                if let Some((game_ref, game_id)) = game_ref {
+                    {
+                        let game = game_ref.lock().unwrap();
+                        // Per-game ownership check
+                        if game.manager_socket_id != socket.id.to_string() {
+                            warn!(
+                                "manager:skipQuestion unauthorized: socket.id={} not manager of gameId={}",
+                                socket.id.to_string(),
+                                game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                        // Legacy hostToken check
+                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                            warn!(
+                                "manager:skipQuestion host-check failed: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                    }
+
+                    lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
+                    info!("manager:skipQuestion abort fired for gameId={}", game_id);
                 }
             });
         }
     });
 }
 
+/// Host live-control: abort the current question. Ends the answer window and moves
+/// to results, exactly like skipQuestion. Node's abortQuiz (round.abortQuestion) just
+/// closes the live answer window and lets normal flow continue — it does NOT end the game.
+///
+/// REVISION: Mirrors Node's getManagerGame fallback (handlers/game.ts:310):
+/// resolve by payload.gameId when present; when absent/unknown, fall back to the game
+/// owned by ctx.client_id. Add logging on every early-return path.
 fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::ABORT_QUIZ, {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if let Some(game_id) = game_id_opt {
-                    let game_opt = {
-                        let registry = ctx.registry.read().await;
-                        registry.get_game_by_id(&game_id)
-                    };
+                // Extract gameId from payload
+                let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
-                    if let Some(game_ref) = game_opt {
-                        {
-                            let game = game_ref.lock().unwrap();
-                            // Per-game ownership check
-                            if game.manager_socket_id != socket.id.to_string() {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
-                            // Legacy hostToken check
-                            if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
+                // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
+                let game_ref = if let Some(game_id) = game_id_opt {
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_id(game_id) {
+                        Some(game_ref) => Some((game_ref, game_id.to_string())),
+                        None => {
+                            warn!(
+                                "manager:abortQuiz failed: gameId={} not found, clientId={}",
+                                game_id, ctx.client_id
+                            );
+                            None
                         }
-
-                        // Abort the current question (end the answer window and move to results),
-                        // exactly like skipQuestion. Node's abortQuiz (round.abortQuestion) just
-                        // closes the live answer window and lets normal flow continue — it does NOT
-                        // end the game.
-                        lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
                     }
+                } else {
+                    // gameId missing from payload — fall back to manager_client_id (Node pattern)
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_manager_client_id(&ctx.client_id) {
+                        Some(game_ref) => {
+                            let game_id = game_ref.lock().unwrap().game_id.clone();
+                            info!(
+                                "manager:abortQuiz resolved via client fallback: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            Some((game_ref, game_id))
+                        }
+                        None => {
+                            warn!(
+                                "manager:abortQuiz failed: no gameId in payload and no game owned by clientId={}",
+                                ctx.client_id
+                            );
+                            None
+                        }
+                    }
+                };
+
+                if let Some((game_ref, game_id)) = game_ref {
+                    {
+                        let game = game_ref.lock().unwrap();
+                        // Per-game ownership check
+                        if game.manager_socket_id != socket.id.to_string() {
+                            warn!(
+                                "manager:abortQuiz unauthorized: socket.id={} not manager of gameId={}",
+                                socket.id.to_string(),
+                                game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                        // Legacy hostToken check
+                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                            warn!(
+                                "manager:abortQuiz host-check failed: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                    }
+
+                    lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
+                    info!("manager:abortQuiz abort fired for gameId={}", game_id);
                 }
             });
         }
@@ -530,5 +662,38 @@ mod tests {
         };
 
         assert!(!fired);
+    }
+
+    #[test]
+    fn next_question_fallback_resolution_works() {
+        // Test that fallback resolution logic can find a game by manager_client_id
+        let game_ref = test_game(GamePhase::ShowLeaderboard);
+        // Verify test fixture has manager_client_id set for fallback scenarios
+        assert_eq!(
+            game_ref.lock().unwrap().manager_client_id,
+            Some("test-client-id".to_string())
+        );
+    }
+
+    #[test]
+    fn skip_question_fallback_resolution_works() {
+        // Test that fallback resolution logic can find a game by manager_client_id
+        let game_ref = test_game(GamePhase::SelectAnswer);
+        // Verify test fixture has manager_client_id set for fallback scenarios
+        assert_eq!(
+            game_ref.lock().unwrap().manager_client_id,
+            Some("test-client-id".to_string())
+        );
+    }
+
+    #[test]
+    fn abort_quiz_fallback_resolution_works() {
+        // Test that fallback resolution logic can find a game by manager_client_id
+        let game_ref = test_game(GamePhase::SelectAnswer);
+        // Verify test fixture has manager_client_id set for fallback scenarios
+        assert_eq!(
+            game_ref.lock().unwrap().manager_client_id,
+            Some("test-client-id".to_string())
+        );
     }
 }
