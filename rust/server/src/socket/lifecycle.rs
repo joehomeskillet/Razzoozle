@@ -55,6 +55,32 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
+/// Shuffles chunks using Fisher-Yates, retrying up to 10 times
+/// to ensure the result differs from the input order.
+fn shuffle_chunks_with_guard(chunks: Vec<String>) -> Vec<String> {
+    use rand::seq::SliceRandom;
+    use rand::thread_rng;
+    
+    let is_equal = |a: &[String], b: &[String]| -> bool {
+        if a.len() != b.len() {
+            return false;
+        }
+        a.iter().zip(b.iter()).all(|(x, y)| x == y)
+    };
+    
+    let mut rng = thread_rng();
+    let mut shuffled = chunks.clone();
+    let mut attempts = 0;
+    
+    while attempts < 10 && is_equal(&shuffled, &chunks) {
+        shuffled.shuffle(&mut rng);
+        attempts += 1;
+    }
+    
+    shuffled
+}
+
+
 /// Host live-control: interrupt whatever abortable wait the lifecycle loop is
 /// currently in, but ONLY when the game is actually in `expected_phase` — e.g.
 /// skip/revealAnswer only act during a live SELECT_ANSWER window, matching
@@ -123,6 +149,8 @@ pub(crate) fn build_select_answer_data(
     question_start_at_server_ms: i64,
     deadline_ms: i64,
     server_seq: Option<i32>,
+
+    shuffled_chunks: Option<Vec<String>>,
 ) -> SelectAnswerData {
     SelectAnswerData {
         question: question.question.clone(),
@@ -138,7 +166,7 @@ pub(crate) fn build_select_answer_data(
         max: question.max.map(|v| v as i32),
         step: question.step.map(|v| v as i32),
         unit: question.unit.clone(),
-        shuffled_chunks: None,
+        shuffled_chunks,
         server_seq,
         server_now_ms: Some(server_now_ms),
         question_start_at_server_ms: Some(question_start_at_server_ms),
@@ -247,7 +275,7 @@ async fn open_question(
     let show_question_status = GameStatus::ShowQuestion(show_data);
     broadcast_status(io, game_ref, game_id, &show_question_status);
 
-    let (question, total_players, server_now_ms, deadline_ms, server_seq) = {
+    let (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled_chunks) = {
         let mut game = game_ref.lock().unwrap();
         let server_now_ms = now_ms();
         game.engine.set_clock_ms(server_now_ms);
@@ -270,7 +298,20 @@ async fn open_question(
         } else {
             None
         };
-        (question, total_players, server_now_ms, deadline_ms, server_seq)
+        // Shuffle chunks for sentence-builder questions
+        let shuffled = if question.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sentence-builder") {
+            if let Some(chunks) = &question.chunks {
+                let shuffled = shuffle_chunks_with_guard(chunks.clone());
+                game.shuffled_chunks = Some(shuffled.clone());
+                Some(shuffled)
+            } else {
+                None
+            }
+        } else {
+            game.shuffled_chunks = None;
+            None
+        };
+        (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled)
     };
 
     let select_data = build_select_answer_data(
@@ -280,6 +321,7 @@ async fn open_question(
         server_now_ms,
         deadline_ms,
         server_seq,
+        shuffled_chunks,
     );
     let select_status = GameStatus::SelectAnswer(select_data);
     broadcast_status(io, game_ref, game_id, &select_status);

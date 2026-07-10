@@ -90,6 +90,8 @@ pub struct Game {
     // emits within the throttle window (100ms). Leading-edge sets true, trailing
     // Per-round recap awards to be emitted via SHOW_ROUND_RECAP phase
     pub temp_round_recap: Option<Vec<RoundRecapAward>>,
+    // Per-question shuffled chunks (sentence-builder only)
+    pub shuffled_chunks: Option<Vec<String>>,
     // task resets to false after emitting.
     pub answer_count_push_pending: bool,
     // Sim-mode bot answer scheduler (None until first bot is added).
@@ -130,6 +132,7 @@ impl Game {
             server_seq: 0,
             auto_mode: false,
             temp_round_recap: None,
+            shuffled_chunks: None,
             cooldown_abort: None,
             paused: false,
             paused_state: None,
