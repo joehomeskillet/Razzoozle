@@ -372,10 +372,11 @@ impl GameRegistry {
 
         for game in games {
             let game_id = game.game_id.clone();
+            let invite_code = game.invite_code.clone();
             let game = Arc::new(Mutex::new(game));
 
             self.games_by_code
-                .insert(game_id.clone(), Arc::clone(&game));
+                .insert(invite_code, Arc::clone(&game));
             self.games_by_id.insert(game_id.clone(), game);
 
             // Mark as empty so it's cleaned up if nobody reconnects within the grace window

@@ -534,3 +534,56 @@ async fn test_bot_manager_schedule_answers() {
 
     bot_manager.cancel_pending(Some(bot_client_id)).await;
 }
+
+
+#[tokio::test]
+async fn test_load_snapshot_restores_games_by_invite_code() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    // Create a game with a known invite_code
+    let (game_id, invite_code, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    // Add a player so the game gets saved to snapshot (empty games are filtered out)
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    // Verify the game is findable by both code and ID before snapshot
+    assert!(registry.get_game_by_code(&invite_code).is_some());
+    assert!(registry.get_game_by_id(&game_id).is_some());
+
+    // Save the snapshot
+    registry.save_snapshot().await;
+
+    // Create a fresh registry and load the snapshot
+    let mut fresh_registry = GameRegistry::new(&None, test_quiz()).await;
+    fresh_registry.load_snapshot().await;
+
+    // Verify the game is restored and findable by BOTH invite_code and game_id
+    assert!(
+        fresh_registry.get_game_by_code(&invite_code).is_some(),
+        "Restored game should be findable by invite_code"
+    );
+    assert!(
+        fresh_registry.get_game_by_id(&game_id).is_some(),
+        "Restored game should be findable by game_id"
+    );
+}
