@@ -139,7 +139,7 @@
     "running": "Laufende Spiele",
     "dev": "Dev"
   },
-  "plugins":   {
+  "plugins": {
     "title": "Plugins",
     "install": "Plugin installieren",
     "installHint": "Lade ein Plugin als ZIP-Archiv hoch.",
@@ -163,7 +163,8 @@
       "server": "Server-Hook",
       "config": "Einstellungen",
       "i18n": "Übersetzungen"
-    }
+    },
+    "serverHandlerWarning": "Dieses Plugin nutzt Server-Hooks, die das Rust-Backend noch nicht ausführt — es bleibt hier wirkungslos."
   },
   "dev": {
     "redactionNotice": "Passwörter, API-Tokens und Antwortlösungen werden nie protokolliert.",

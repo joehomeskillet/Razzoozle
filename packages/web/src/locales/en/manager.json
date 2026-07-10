@@ -163,7 +163,8 @@
       "server": "Server hook",
       "config": "Settings",
       "i18n": "Translations"
-    }
+    },
+    "serverHandlerWarning": "This plugin uses server hooks that the Rust backend does not yet support — it will have no effect."
   },
   "dev": {
     "redactionNotice": "Passwords, API tokens and answer solutions are never logged.",

@@ -6,6 +6,7 @@ import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import {
   useEvent,
   useSocket,
+  getGameBackend,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -27,6 +28,9 @@ import { useTranslation } from "react-i18next"
 // Match the server's import path (importPluginZip takes a raw base64 ZIP). We do
 // not hard-cap here — the server validates size/shape — but only accept .zip.
 const ACCEPT_ZIP = "application/zip,.zip"
+
+// The capability badge a plugin must declare for its server hook to be loaded.
+const SERVER_HANDLER_CAPABILITY = "SERVER_HANDLER"
 
 // Strip the "data:...;base64," prefix a FileReader.readAsDataURL produces so the
 // wire payload is the raw base64 the server's Buffer.from(zipBase64, "base64")
@@ -60,6 +64,7 @@ const ConfigPlugins = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const installed: InstalledPlugin[] = plugins ?? []
+  const currentBackend = getGameBackend()
 
   // Server broadcasts the fresh InstalledPlugin[] after a successful install /
   // remove / config change — to ALL managers. Only treat it as OUR install's
@@ -173,6 +178,14 @@ const ConfigPlugins = () => {
   const pendingRemoveName =
     installed.find((p) => p.id === pendingRemoveId)?.name ?? ""
 
+  // Check if a plugin has SERVER_HANDLER capability and Rust backend is active.
+  const hasServerHandlerWarning = (plugin: InstalledPlugin): boolean => {
+    return (
+      currentBackend === "rust" &&
+      plugin.capabilities.includes(SERVER_HANDLER_CAPABILITY)
+    )
+  }
+
   return (
     <>
       <motion.div
@@ -274,7 +287,7 @@ const ConfigPlugins = () => {
                     key={plugin.id}
                     className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-2">
                         <p className="truncate text-sm font-semibold text-gray-700">
                           {plugin.name}
@@ -296,6 +309,17 @@ const ConfigPlugins = () => {
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {hasServerHandlerWarning(plugin) && (
+                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-orange-50 p-2 text-orange-800">
+                          <AlertTriangle
+                            className="mt-0.5 size-4 shrink-0 text-orange-600"
+                            aria-hidden
+                          />
+                          <p className="text-xs">
+                            {t("manager:plugins.serverHandlerWarning")}
+                          </p>
+                        </div>
                       )}
                     </div>
 
