@@ -41,6 +41,8 @@ interface ResultRow {
   subject: string | null
   date: string | null
   players: unknown
+  questions: unknown
+  recap: unknown
 }
 
 // Normalize Date to ISO string (node-postgres parses timestamptz as Date).
@@ -55,12 +57,16 @@ const toIsoString = (value: unknown): string => {
 }
 
 const rowToResult = (row: ResultRow): GameResult | null => {
-  const candidate = {
+  const candidate: any = {
     id: row.id,
     subject: row.subject ?? "",
     date: toIsoString(row.date),
     players: Array.isArray(row.players) ? row.players : [],
-    questions: [],
+    questions: Array.isArray(row.questions) ? row.questions : [],
+  }
+  // Deserialize recap if present (optional field).
+  if (row.recap) {
+    candidate.recap = row.recap
   }
   const result = gameResultValidator.safeParse(candidate)
 
@@ -76,7 +82,7 @@ const rowToResult = (row: ResultRow): GameResult | null => {
 export const listAllResultsPg = async (): Promise<GameResult[]> => {
   try {
     const result = await getPool().query(
-      `SELECT id, quiz_id, subject, date, players FROM game_results ORDER BY date DESC`,
+      `SELECT id, quiz_id, subject, date, players, questions, recap FROM game_results ORDER BY date DESC`,
     )
     return result.rows
       .map((row: ResultRow) => rowToResult(row))
@@ -102,16 +108,20 @@ export const getResultByIdPg = async (id: string): Promise<GameResult> => {
 export const updateResultPg = async (data: GameResult): Promise<{ id: string }> => {
   try {
     const playersArray = (data.players ?? []) as GameResultPlayer[]
+    const questionsJson = JSON.stringify(data.questions ?? [])
+    const recapJson = data.recap ? JSON.stringify(data.recap) : null
     await getPool().query(
-      `INSERT INTO game_results (id, subject, date, players)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO game_results (id, subject, date, players, questions, recap)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (id) DO UPDATE SET
          subject = EXCLUDED.subject,
          date = EXCLUDED.date,
          players = EXCLUDED.players,
+         questions = EXCLUDED.questions,
+         recap = EXCLUDED.recap,
          version = game_results.version + 1,
          updated_at = NOW()`,
-      [data.id, data.subject, data.date, JSON.stringify(playersArray)],
+      [data.id, data.subject, data.date, JSON.stringify(playersArray), questionsJson, recapJson],
     )
     return { id: data.id }
   } catch (error) {
