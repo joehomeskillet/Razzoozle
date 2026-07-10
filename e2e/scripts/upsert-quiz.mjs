@@ -3,28 +3,31 @@
  * e2e/scripts/upsert-quiz.mjs
  *
  * Idempotent quiz author script: connects via EDITOR socket path with manager auth,
- * reads a quiz fixture, and saves or updates it via socket.io.
+ * reads a quiz fixture, and saves it via socket.io.
+ *
+ * ARCHITECTURE:
+ * - manager:auth emits password (NO callback); success = manager:config broadcast
+ * - quizz:save is always used; derived id = normalizeFilename(subject) + random-8
+ * - For EXISTING quizzes (python-basics), subject matches and file gets overwritten (natural upsert)
+ * - Validator strips question ids on save (system behavior, same as Editor)
  *
  * USAGE:
  *   E2E_URL=http://localhost:3011 E2E_PW=password E2E_PATH=/socket.io/ node e2e/scripts/upsert-quiz.mjs e2e/fixtures/all-types-quiz.json
- *   E2E_URL=http://localhost:3011 E2E_PW=password node e2e/scripts/upsert-quiz.mjs e2e/fixtures/python-basics-q6-fix.json
  *
  * Environment:
  *   E2E_URL     - socket server base URL (default: http://localhost:3011)
- *   E2E_PW      - manager password (NO DEFAULT; set at runtime)
+ *   E2E_PW      - manager password (required; no default)
  *   E2E_PATH    - socket.io path (default: /socket.io/)
  *
  * Events:
- *   quizz:save       - send new quiz
- *   quizz:saveSuccess - receive confirmation with { id }
- *   quizz:update     - send quiz update with { id, ...data }
- *   quizz:updateSuccess - receive confirmation with { id }
- *   quizz:error      - receive error message
- *   manager:config   - receive updated quiz list (broadcast)
- *
- * NOTE: The fixture may include an 'id' field; if absent, the server derives it from 'subject'.
- *       For python-basics-q6-fix, the fixture does NOT include 'id' at the top level; the server
- *       will match by subject and perform an update (read-modify-write the questions array).
+ *   manager:auth            - send password (no callback)
+ *   manager:config          - receive after successful auth (indicates login + config broadcast)
+ *   manager:errorMessage    - receive on auth failure or config read error
+ *   manager:unauthorized    - receive if withAuth-protected events run before login
+ *   ai:settings             - receive AI config after successful auth
+ *   quizz:save              - send quiz (full fixture)
+ *   quizz:saveSuccess       - receive confirmation with { id }
+ *   quizz:error             - receive on validation or save failure
  */
 
 import { createRequire } from "module"
@@ -67,97 +70,92 @@ const socket = io(baseUrl, {
 
 let succeeded = false
 let isConnected = false
+let isAuthenticated = false
 
-const timeout = setTimeout(() => {
-  console.error("Error: Connection timeout after 10 seconds")
+// Global watchdog: 15 seconds total, never cleared before success
+const globalWatchdog = setTimeout(() => {
+  console.error("Error: Operation timeout after 15 seconds (not authenticated or save failed)")
   socket.disconnect()
   process.exit(1)
-}, 10000)
+}, 15000)
 
 socket.on("connect", () => {
   console.log(`Connected to ${baseUrl}${socketPath}`)
   isConnected = true
-  clearTimeout(timeout)
 
-  // Authenticate as manager
-  socket.emit("manager:auth", password, (ack) => {
-    if (ack?.error) {
-      console.error("Authentication failed:", ack.error)
-      socket.disconnect()
-      process.exit(1)
-    }
-    console.log("Authenticated as manager")
-
-    // Determine if this is a save (new) or update (existing)
-    // Check if fixture has 'id' at top level or if 'subject' suggests an update
-    const quizId = fixture.id || getIdFromSubject(fixture.subject)
-
-    // For simplicity: always attempt to read first; if it exists, update; if not, save.
-    // Since we can't easily query, we try update first, and if it fails, save.
-    // Actually, simpler approach: send based on fixture structure.
-    // If fixture.id exists, it's an update. Otherwise, it's a save (new).
-
-    if (fixture.id) {
-      // Update existing quiz
-      console.log(`Updating quiz: ${fixture.id}`)
-      socket.emit("quizz:update", { id: fixture.id, ...fixture })
-    } else {
-      // Save new quiz
-      console.log(`Saving new quiz: ${fixture.subject}`)
-      socket.emit("quizz:save", fixture)
-    }
-  })
+  // Send manager:auth (NO callback — success is manager:config event)
+  console.log("Authenticating as manager...")
+  socket.emit("manager:auth", password)
 })
 
+// Success signal: manager:config is emitted after successful login + emitConfig
+socket.on("manager:config", () => {
+  if (!isAuthenticated) {
+    console.log("✓ Authenticated (manager:config received)")
+    isAuthenticated = true
+
+    // Now that we're authenticated, send quizz:save
+    console.log(`Saving quiz: "${fixture.subject}"`)
+    socket.emit("quizz:save", fixture)
+  }
+})
+
+// Success: quiz saved
 socket.on("quizz:saveSuccess", (ack) => {
-  console.log(`Quiz saved successfully with id: ${ack.id}`)
+  console.log(`✓ Quiz saved successfully`)
+  console.log(`  Derived ID: ${ack.id}`)
+  console.log(`  Subject: "${fixture.subject}"`)
+  console.log(`  Questions: ${fixture.questions.length}`)
+
   succeeded = true
+  clearTimeout(globalWatchdog)
   socket.disconnect()
 })
 
-socket.on("quizz:updateSuccess", (ack) => {
-  console.log(`Quiz updated successfully with id: ${ack.id}`)
-  succeeded = true
-  socket.disconnect()
-})
-
+// Error: validation or save failed
 socket.on("quizz:error", (error) => {
-  console.error(`Quiz error: ${error}`)
+  console.error(`✗ Quiz save error: ${error}`)
+  clearTimeout(globalWatchdog)
   socket.disconnect()
   process.exit(1)
 })
 
-socket.on("manager:config", () => {
-  // Config broadcast received (indicates the server processed the request)
-  console.log("Config updated (broadcast received)")
+// Error: auth failed (invalid password, config read error, etc.)
+socket.on("manager:errorMessage", (error) => {
+  if (!isAuthenticated) {
+    console.error(`✗ Authentication failed: ${error}`)
+  } else {
+    // After auth succeeded, errorMessage could be from a quizz:save validation error
+    console.error(`✗ Error: ${error}`)
+  }
+  clearTimeout(globalWatchdog)
+  socket.disconnect()
+  process.exit(1)
+})
+
+// Error: unauthorized (tried to use withAuth-protected event before login)
+socket.on("manager:unauthorized", () => {
+  console.error("✗ Unauthorized (attempted withAuth-protected event before login)")
+  clearTimeout(globalWatchdog)
+  socket.disconnect()
+  process.exit(1)
 })
 
 socket.on("disconnect", () => {
   if (!isConnected) {
-    console.error("Error: Failed to connect")
+    console.error("Error: Failed to connect to server")
+    clearTimeout(globalWatchdog)
     process.exit(1)
   }
   if (succeeded) {
     console.log("Done. Disconnected.")
     process.exit(0)
-  } else {
-    console.error("Error: Disconnected without success")
-    process.exit(1)
   }
+  // If we get here without succeeded=true, the watchdog will have already fired
 })
 
 socket.on("connect_error", (error) => {
-  console.error("Connection error:", error.message)
+  console.error(`Connection error: ${error.message}`)
+  clearTimeout(globalWatchdog)
   process.exit(1)
 })
-
-/**
- * Derive quiz id from subject by normalizing to a safe filename.
- * Matches the server-side logic in saveQuizz.
- */
-function getIdFromSubject(subject) {
-  return subject
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-}
