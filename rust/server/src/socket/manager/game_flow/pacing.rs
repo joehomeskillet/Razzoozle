@@ -28,7 +28,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let delta_seconds = payload
                 .get("deltaSeconds")
                 .and_then(|v| v.as_i64())
@@ -39,7 +39,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
-                    match registry.get_game_by_id(game_id) {
+                    match registry.get_game_by_id(&game_id) {
                         Some(game_ref) => Some((game_ref, game_id.to_string())),
                         None => {
                             warn!(
@@ -167,14 +167,14 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
-                    match registry.get_game_by_id(game_id) {
+                    match registry.get_game_by_id(&game_id) {
                         Some(game_ref) => Some((game_ref, game_id.to_string())),
                         None => {
                             warn!(
@@ -321,14 +321,14 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
         let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+            let game_id_opt = payload.get("gameId").and_then(|v| v.as_str()).map(|s| s.to_string());
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
-                    match registry.get_game_by_id(game_id) {
+                    match registry.get_game_by_id(&game_id) {
                         Some(game_ref) => Some((game_ref, game_id.to_string())),
                         None => {
                             warn!(
