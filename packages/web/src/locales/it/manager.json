@@ -30,8 +30,6 @@
     "export": "Esporta «{{name}}» come JSON",
     "exported": "Quiz esportato come JSON",
     "import": "Importa quiz da JSON",
-    "export": "Esporta «{{name}}» come JSON",
-    "exported": "Quiz esportato come JSON",
     "none": "Nessun quiz creato ancora",
     "notFound": "Nessun quiz trovato",
     "pleaseCreate": "Per favore crea prima un quiz",
@@ -132,7 +130,7 @@
     "running": "Partite in corso",
     "dev": "Dev"
   },
-  "plugins":   {
+  "plugins": {
     "title": "Plugin",
     "install": "Installa plugin",
     "installHint": "Carica un plugin come archivio ZIP.",
@@ -156,7 +154,8 @@
       "server": "Hook del server",
       "config": "Impostazioni",
       "i18n": "Traduzioni"
-    }
+    },
+    "serverHandlerWarning": "Questo plugin utilizza hook server che il backend Rust non supporta ancora — non avrà alcun effetto."
   },
   "dev": {
     "redactionNotice": "Password, token API e soluzioni delle risposte non vengono mai registrati.",

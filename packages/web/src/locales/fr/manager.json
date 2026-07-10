@@ -40,8 +40,6 @@
     "exported": "Quiz exporté en JSON",
     "edit": "Modifier « {{name}} »",
     "import": "Importer un quizz (JSON)",
-    "export": "Exporter « {{name}} » au format JSON",
-    "exported": "Quiz exporté en JSON",
     "invalidJson": "Fichier JSON invalide ou incomplet",
     "none": "Aucun quizz créé",
     "notFound": "Aucun quizz trouvé",
@@ -141,7 +139,7 @@
     "running": "Parties en cours",
     "dev": "Dev"
   },
-  "plugins":   {
+  "plugins": {
     "title": "Extensions",
     "install": "Installer une extension",
     "installHint": "Téléverse une extension sous forme d'archive ZIP.",
@@ -165,7 +163,8 @@
       "server": "Hook serveur",
       "config": "Réglages",
       "i18n": "Traductions"
-    }
+    },
+    "serverHandlerWarning": "Ce plugin utilise des hooks serveur que le backend Rust ne supporte pas encore — il n'aura aucun effet."
   },
   "dev": {
     "redactionNotice": "Les mots de passe, jetons d'API et solutions de réponse ne sont jamais journalisés.",

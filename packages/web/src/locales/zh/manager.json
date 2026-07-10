@@ -39,8 +39,6 @@
     "export": "将“{{name}}”导出为 JSON",
     "exported": "测验已导出为 JSON",
     "import": "从 JSON 导入测验",
-    "export": "将“{{name}}”导出为 JSON",
-    "exported": "测验已导出为 JSON",
     "none": "尚未创建测验",
     "notFound": "未找到测验",
     "pleaseCreate": "请先创建一个测验",
@@ -141,7 +139,7 @@
     "running": "进行中的游戏",
     "dev": "开发"
   },
-  "plugins":   {
+  "plugins": {
     "title": "插件",
     "install": "安装插件",
     "installHint": "以 ZIP 压缩包上传插件。",
@@ -165,7 +163,8 @@
       "server": "服务器钩子",
       "config": "设置",
       "i18n": "翻译"
-    }
+    },
+    "serverHandlerWarning": "此插件使用了 Rust 后端尚不支持的服务器钩子——它将不会生效。"
   },
   "dev": {
     "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",

@@ -40,8 +40,6 @@
     "exported": "Cuestionario exportado como JSON",
     "edit": "Editar «{{name}}»",
     "import": "Importar cuestionario desde JSON",
-    "export": "Exportar «{{name}}» como JSON",
-    "exported": "Cuestionario exportado como JSON",
     "invalidJson": "Archivo JSON inválido o incompleto",
     "none": "Aún no se ha creado ningún cuestionario",
     "notFound": "No se encontró ningún cuestionario",
@@ -141,7 +139,7 @@
     "running": "Partidas en curso",
     "dev": "Dev"
   },
-  "plugins":   {
+  "plugins": {
     "title": "Complementos",
     "install": "Instalar complemento",
     "installHint": "Sube un complemento como archivo ZIP.",
@@ -165,7 +163,8 @@
       "server": "Hook de servidor",
       "config": "Ajustes",
       "i18n": "Traducciones"
-    }
+    },
+    "serverHandlerWarning": "Este complemento utiliza hooks del servidor que el backend de Rust aún no soporta — no tendrá efecto."
   },
   "dev": {
     "redactionNotice": "Las contraseñas, los tokens de API y las soluciones de respuestas nunca se registran.",
