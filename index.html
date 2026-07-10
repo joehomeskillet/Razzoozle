@@ -280,6 +280,57 @@ html.js [data-reveal].in{opacity:1;transform:none}
   @media (max-width: 760px) { .agents-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 480px) { .agents-grid { grid-template-columns: 1fr; } .agent-card { flex-direction: column; align-items: center; text-align: center; } }
 
+
+  /* ===== Interactive game demo section ===== */
+  .demo-section { padding: clamp(3rem, 7vw, 5rem) 0; }
+  .demo-container { display: flex; gap: clamp(1.5rem, 4vw, 3rem); align-items: center; justify-content: center; margin-top: clamp(1.5rem, 4vw, 2.5rem); flex-wrap: wrap; }
+  @media (max-width: 760px) { .demo-container { flex-direction: column; gap: 2rem; } }
+
+  .demo-mockup { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; box-shadow: var(--shadow-lift); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform .2s ease; }
+  .demo-mockup:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -20px rgba(14,17,32,.35); }
+  @media (prefers-reduced-motion: reduce) { .demo-mockup:hover { transform: none; } }
+
+  .demo-presenter { max-width: 520px; width: 100%; padding: 1.8rem; aspect-ratio: 16/9; }
+  .demo-presenter-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.4rem; }
+  .demo-progress { font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+  .demo-timer-badge { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--primary) 0deg, var(--primary) calc(var(--timer-percent, 100) * 3.6deg), var(--hairline) calc(var(--timer-percent, 100) * 3.6deg)); display: flex; align-items: center; justify-content: center; flex-direction: column; box-shadow: 0 4px 12px rgba(124,58,237,.15); }
+  .demo-timer-badge .value { font-size: 1.6rem; font-weight: 800; color: var(--ink); line-height: 1; }
+  .demo-timer-badge .label { font-size: .65rem; color: var(--ink-soft); margin-top: .25rem; }
+  .demo-question { font-size: 1.1rem; font-weight: 600; color: var(--ink); margin-bottom: 1rem; line-height: 1.35; }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .demo-tile { padding: 1rem .9rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 700; color: white; font-size: .95rem; cursor: default; transition: all .2s ease; position: relative; }
+  .demo-tile svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .demo-tile.t1 { background: #e69f00; }
+  .demo-tile.t2 { background: #56b4e9; }
+  .demo-tile.t3 { background: #3dbfa0; }
+  .demo-tile.t4 { background: #cc79a7; }
+
+  .demo-tile.revealed-correct { background: #22c55e; border: 2px solid white; }
+  .demo-tile.revealed-correct::after { content: "✓"; position: absolute; right: .55rem; font-size: 1.3rem; font-weight: 800; }
+  .demo-tile.revealed-wrong { opacity: .35; }
+
+  .demo-phone { max-width: 280px; width: 100%; background: var(--surface); border: 1px solid var(--hairline); border-radius: 32px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.6); position: relative; }
+  .demo-phone::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 26px; background: var(--ink); border-radius: 0 0 24px 24px; z-index: 10; }
+  .demo-phone-screen { background: var(--cream-page); border-radius: 26px; overflow: hidden; display: flex; flex-direction: column; }
+  .demo-phone-header { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 16%, white), color-mix(in srgb, var(--accent) 12%, white)); padding: 1.2rem .9rem; text-align: center; }
+  .demo-phone-header .player-name { font-size: .9rem; font-weight: 700; color: var(--ink); margin-bottom: .3rem; }
+  .demo-phone-header .player-score { font-size: .75rem; color: var(--ink-soft); }
+  .demo-phone-answers { display: flex; flex-direction: column; gap: .7rem; padding: 1.2rem .9rem; flex: 1; justify-content: center; }
+  .demo-answer-btn { padding: 1rem; border-radius: 11px; border: none; font-weight: 700; color: white; font-size: .88rem; cursor: default; display: flex; align-items: center; justify-content: center; gap: .4rem; transition: all .2s ease; position: relative; }
+  .demo-answer-btn svg { width: 18px; height: 18px; }
+  .demo-answer-btn.a1 { background: #e69f00; }
+  .demo-answer-btn.a2 { background: #56b4e9; }
+  .demo-answer-btn.a3 { background: #3dbfa0; }
+  .demo-answer-btn.a4 { background: #cc79a7; }
+
+  .demo-answer-btn.locked-in { background: #22c55e; transform: scale(.96); }
+  .demo-answer-btn.locked-in::after { content: "locked"; position: absolute; right: .5rem; font-size: .6rem; font-weight: 600; opacity: .8; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .demo-timer-badge, .demo-tile, .demo-answer-btn { transition: none; }
+    .demo-tile.revealed-wrong { opacity: .35 !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -351,6 +402,54 @@ html.js [data-reveal].in{opacity:1;transform:none}
           <div class="mock-foot">
             <span class="live-dot"><i></i><span data-i18n="hero.mockLive">12 joined</span></span>
             <span data-i18n="hero.mockTimer">00:18</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== Interactive game demo ===== -->
+  <section class="demo-section" aria-labelledby="demo-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker" data-i18n="demo.kicker">Try it now</p>
+        <h2 id="demo-title" data-i18n="demo.title">See how it plays</h2>
+        <p data-i18n="demo.desc">Hover over the demo to start the countdown timer — watch the presenter screen reveal the answer on the big display while the phone locks in the player's response.</p>
+      </div>
+
+      <div class="demo-container" tabindex="0" role="region" aria-label="Interactive game demo" data-i18n="demo.alt" data-i18n-attr="aria-label">
+        <!-- Presenter mockup -->
+        <div class="demo-mockup demo-presenter">
+          <div class="demo-presenter-top">
+            <div class="demo-progress" data-i18n="demo.progress">Question 1 of 6</div>
+            <div class="demo-timer-badge" style="--timer-percent: 100">
+              <div class="value">15</div>
+              <div class="label">s</div>
+            </div>
+          </div>
+          <div class="demo-question" data-i18n="demo.question">Which planet is the largest in our solar system?</div>
+          <div class="demo-grid">
+            <div class="demo-tile t1" data-answer="1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 20H2z"/></svg> Jupiter</div>
+            <div class="demo-tile t2" data-answer="2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 12 12 22 2 12z"/></svg> Mars</div>
+            <div class="demo-tile t3" data-answer="3" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Venus</div>
+            <div class="demo-tile t4" data-answer="4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Mercury</div>
+          </div>
+        </div>
+
+        <!-- Phone mockup -->
+        <div class="demo-mockup demo-phone">
+          <div class="demo-phone-screen">
+            <div class="demo-phone-header">
+              <div class="player-name">Ana</div>
+              <div class="player-score" data-i18n="demo.points">420 points</div>
+            </div>
+            <div class="demo-phone-answers">
+              <button class="demo-answer-btn a1" data-answer="1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 20H2z"/></svg> Jupiter</button>
+              <button class="demo-answer-btn a2" data-answer="2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 12 12 22 2 12z"/></svg> Mars</button>
+              <button class="demo-answer-btn a3" data-answer="3" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Venus</button>
+              <button class="demo-answer-btn a4" data-answer="4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Mercury</button>
+            </div>
           </div>
         </div>
       </div>
@@ -935,6 +1034,48 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "agents.playwright.name": "Browser QA (Playwright)",
       "agents.playwright.role": "End-to-end game testing",
       "agents.note": "Humans review and merge every commit. AI augments speed and quality, not replaces judgment.",
+      "demo.kicker": "Try it now",
+      "demo.title": "See how it plays",
+      "demo.desc": "Hover over the demo to start the countdown timer — watch the presenter screen reveal the answer on the big display while the phone locks in the player's response.",
+      "demo.alt": "Interactive game demo showing presenter screen and player phone side by side with answer countdown",
+      "demo.progress": "Question 1 of 6",
+      "demo.question": "Which planet is the largest in our solar system?",
+      "demo.points": "420 points",
+      "demo.kicker": "Probier es jetzt",
+      "demo.title": "So wird gespielt",
+      "demo.desc": "Fahre mit der Maus über die Demo, um den Countdown-Timer zu starten — beobachte, wie der Presenter-Screen die Antwort auf dem großen Bildschirm enthüllt, während das Handy die Antwort des Spielers sperrt.",
+      "demo.alt": "Interaktive Spiel-Demo mit Presenter-Screen und Spieler-Handy nebeneinander mit Antwort-Countdown",
+      "demo.progress": "Frage 1 von 6",
+      "demo.question": "Welcher Planet ist der größte in unserem Sonnensystem?",
+      "demo.points": "420 Punkte",
+      "demo.kicker": "现在尝试",
+      "demo.title": "看看游戏如何进行",
+      "demo.desc": "将鼠标悬停在演示上以启动倒计时——观看演示屏幕在大屏幕上揭示答案，同时手机锁定玩家的响应。",
+      "demo.alt": "交互式游戏演示，展示演示屏幕和玩家手机并排显示，有答案倒计时",
+      "demo.progress": "问题 1/6",
+      "demo.question": "我们太阳系中哪个行星最大?",
+      "demo.points": "420 分",
+      "demo.kicker": "Pruébalo ahora",
+      "demo.title": "Mira cómo se juega",
+      "demo.desc": "Pasa el ratón sobre la demostración para iniciar la cuenta atrás — mira cómo la pantalla del presentador revela la respuesta en la pantalla grande mientras el teléfono bloquea la respuesta del jugador.",
+      "demo.alt": "Demo de juego interactivo que muestra la pantalla del presentador y el teléfono del jugador lado a lado con cuenta atrás de respuesta",
+      "demo.progress": "Pregunta 1 de 6",
+      "demo.question": "¿Cuál es el planeta más grande de nuestro sistema solar?",
+      "demo.points": "420 puntos",
+      "demo.kicker": "Essayez maintenant",
+      "demo.title": "Voyez comment on joue",
+      "demo.desc": "Survolez la démo pour démarrer le compte à rebours — regardez l'écran du présentateur révéler la réponse sur l'écran géant tandis que le téléphone verrouille la réponse du joueur.",
+      "demo.alt": "Démo de jeu interactive montrant l'écran du présentateur et le téléphone du joueur côte à côte avec compte à rebours de réponse",
+      "demo.progress": "Question 1 sur 6",
+      "demo.question": "Quelle est la plus grande planète de notre système solaire?",
+      "demo.points": "420 points",
+      "demo.kicker": "Provalo ora",
+      "demo.title": "Guarda come si gioca",
+      "demo.desc": "Passa il mouse sulla demo per avviare il timer del conto alla rovescia — guarda lo schermo del presentatore rivelare la risposta sul grande display mentre il telefono blocca la risposta del giocatore.",
+      "demo.alt": "Demo di gioco interattiva che mostra lo schermo del presentatore e il telefono del giocatore fianco a fianco con conto alla rovescia della risposta",
+      "demo.progress": "Domanda 1 di 6",
+      "demo.question": "Quale pianeta è il più grande del nostro sistema solare?",
+      "demo.points": "420 punti",
       "footer.note": "Free and open source under the MIT License. Self-host it — the live instance is local-only. A friendly fork of <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Not affiliated with Kahoot!®"
     },
     de: {
@@ -1647,6 +1788,99 @@ html.js [data-reveal].in{opacity:1;transform:none}
   }
   var site = d.querySelector('.site');
   if (site){ var onScroll=function(){ site.classList.toggle('scrolled',(window.scrollY||window.pageYOffset)>8); }; addEventListener('scroll',onScroll,{passive:true}); onScroll(); }
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+  var demoContainer = document.querySelector('.demo-container');
+  var timerBadge = document.querySelector('.demo-timer-badge .value');
+  var timerLabel = document.querySelector('.demo-timer-badge .label');
+  var tiles = document.querySelectorAll('.demo-tile');
+  var answerBtns = document.querySelectorAll('.demo-answer-btn');
+  var isReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var state = { active: false, elapsed: 0, intervalId: null };
+
+  function resetDemo() {
+    state.active = false;
+    state.elapsed = 0;
+    if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = null; }
+    
+    timerBadge.textContent = '15';
+    timerLabel.textContent = 's';
+    document.querySelector('.demo-timer-badge').style.setProperty('--timer-percent', '100');
+    
+    tiles.forEach(function(t) { t.classList.remove('revealed-correct', 'revealed-wrong'); });
+    answerBtns.forEach(function(b) { b.classList.remove('locked-in'); });
+  }
+
+  function startDemo() {
+    if (state.active) return;
+    state.active = true;
+    state.elapsed = 0;
+    
+    resetDemo();
+    
+    if (isReducedMotion) {
+      state.elapsed = 15;
+      updateUI();
+      revealAnswer();
+      return;
+    }
+
+    state.intervalId = setInterval(function() {
+      state.elapsed++;
+      updateUI();
+      
+      if (state.elapsed === 8) { showLockedIn(); }
+      if (state.elapsed >= 15) {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        revealAnswer();
+      }
+    }, 1000);
+  }
+
+  function updateUI() {
+    var remaining = Math.max(0, 15 - state.elapsed);
+    timerBadge.textContent = remaining.toString();
+    var percent = (remaining / 15) * 100;
+    document.querySelector('.demo-timer-badge').style.setProperty('--timer-percent', percent.toString());
+  }
+
+  function showLockedIn() {
+    // Jupiter is answer 1 (first tile/button)
+    answerBtns[0].classList.add('locked-in');
+  }
+
+  function revealAnswer() {
+    // Reveal on presenter: Jupiter (answer 1) is correct, others dim
+    tiles[0].classList.add('revealed-correct');
+    tiles[1].classList.add('revealed-wrong');
+    tiles[2].classList.add('revealed-wrong');
+    tiles[3].classList.add('revealed-wrong');
+    
+    // Update phone: show points popup (in this case just the locked-in state)
+    answerBtns[0].classList.add('locked-in');
+  }
+
+  demoContainer.addEventListener('mouseenter', function() { startDemo(); });
+  demoContainer.addEventListener('mouseleave', function() { resetDemo(); });
+  demoContainer.addEventListener('focus', function() { startDemo(); });
+  demoContainer.addEventListener('blur', function() { resetDemo(); });
+
+  // Touch support
+  var touchStarted = false;
+  demoContainer.addEventListener('touchstart', function() {
+    if (!touchStarted) {
+      touchStarted = true;
+      startDemo();
+      setTimeout(function() { touchStarted = false; }, 300);
+    }
+  }, {passive: true});
 })();
 </script>
 
