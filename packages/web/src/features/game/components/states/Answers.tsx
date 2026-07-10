@@ -483,7 +483,7 @@ const Answers = ({
   return (
     <div className="flex min-h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
-        <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
+        <h2 data-testid="question-text" className="text-center text-2xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
           <Markdown>{question}</Markdown>
         </h2>
 
