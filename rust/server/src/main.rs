@@ -278,6 +278,19 @@ async fn main() {
         });
     }
 
+    // W2i + W2j — Display/Pairing hygiene sweep: periodically prune stale pairing codes
+    // and remove display records that haven't pinged within the staleness window (30s).
+    // Matches Node's registry.startCleanupTask() (packages/socket/src/services/registry/registry.ts:331–339).
+    {
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                socket::display::sweep_pairing_and_displays();
+            }
+        });
+    }
+
     // Axum router with socketioxide middleware and HTTP routes
     let app = http::router(http::AppState {
         registry: Arc::clone(&registry),

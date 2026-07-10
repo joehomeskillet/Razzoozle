@@ -14,6 +14,8 @@ const CODE_TTL_MS: u64 = 600_000; // 10 minutes
 const DISPLAY_DEFAULT_NAME: &str = "Beamer";
 const DISPLAY_NAME_MAX_LEN: usize = 50;
 const DEFAULT_MANAGER_PASSWORD: &str = "PASSWORD";
+// W2i — display staleness threshold (matches Node's DISPLAY_STALE_MS from packages/common/src/constants.ts)
+const DISPLAY_STALE_MS: u64 = 30_000; // 30 seconds
 
 fn get_now_ms() -> u64 {
     SystemTime::now()
@@ -144,10 +146,50 @@ impl PairingRegistry {
             .cloned()
             .collect()
     }
+
+    // W2i — sweep stale displays: remove displays that haven't pinged within DISPLAY_STALE_MS
+    fn sweep_stale_displays(&mut self) {
+        let now = get_now_ms();
+        let stale_ms = DISPLAY_STALE_MS;
+        let mut removed = 0;
+
+        self.displays.retain(|_, display| {
+            if now.saturating_sub(display.last_ping_at) > stale_ms {
+                removed += 1;
+                false
+            } else {
+                true
+            }
+        });
+
+        if removed > 0 {
+            tracing::info!(
+                "Removed {} stale display(s). Remaining: {}",
+                removed,
+                self.displays.len()
+            );
+        }
+    }
+
+    // W2j — prune stale pairing codes (can be called from periodic sweep)
+    fn sweep_stale_codes(&mut self) {
+        let now = get_now_ms();
+        self.prune_stale_codes(now);
+    }
 }
 
 lazy_static! {
     static ref PAIRING_REGISTRY: Mutex<PairingRegistry> = Mutex::new(PairingRegistry::new());
+}
+
+// W2i + W2j — public entry point for the 60s background sweep task
+pub fn sweep_pairing_and_displays() {
+    if let Ok(mut registry) = PAIRING_REGISTRY.lock() {
+        registry.sweep_stale_codes();
+        registry.sweep_stale_displays();
+    } else {
+        tracing::error!("Failed to acquire PAIRING_REGISTRY lock for sweep");
+    }
 }
 
 fn broadcast_status(io: socketioxide::SocketIo, registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>, game_id: String, db_pool: Option<sqlx::PgPool>) {
