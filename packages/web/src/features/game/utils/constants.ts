@@ -21,8 +21,6 @@ import { STATUS } from "@razzoozle/common/types/game/status"
 export {
   ANSWERS_COLORS,
   ANSWERS_LABELS,
-  answerColor,
-  answerLabel,
 } from "./answers"
 
 export const GAME_STATE_COMPONENTS = {

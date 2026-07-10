@@ -223,7 +223,7 @@ async function rasterize(
   })
 }
 
-export function useStickerExport(): UseStickerExportApi {
+function useStickerExport(): UseStickerExportApi {
   const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [hasGenerated, setHasGenerated] = useState(false)

@@ -15,8 +15,7 @@
  *      pre-computed to hex/rgba in JS below.
  *   3. System font stack only — the app's Rubik webfont may not have loaded at
  *      capture time, which would shift the layout.
- *   4. Fixed px dimensions on the capture root (540×540 logical for square,
- *      540×960 for story; pixelRatio 2 → 1080² / 1080×1920 emitted).
+ *   4. Fixed px dimensions on the capture root (540×540 logical; pixelRatio 2 → 1080²).
  *
  * Reads the active theme via useThemeStore but RESOLVES every token to inline
  * hex/rgb with the spec's fallbacks. Visible text labels (honorific, points
@@ -34,20 +33,6 @@ import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import { useTranslation } from "react-i18next"
 import AchievementBadge from "@razzoozle/web/features/game/achievements/AchievementBadge"
 
-// ─── Format presets (logical px; pixelRatio 2 emits double) ───────────────────
-
-export type StickerFormat = "square" | "story"
-
-interface FormatSpec {
-  width: number
-  height: number
-}
-
-const FORMATS: Record<StickerFormat, FormatSpec> = {
-  square: { width: 540, height: 540 },
-  story: { width: 540, height: 960 },
-}
-
 // ─── Props (contract) ─────────────────────────────────────────────────────────
 
 export interface TrophyStickerProps {
@@ -56,7 +41,6 @@ export interface TrophyStickerProps {
   points: number
   subject: string
   achievements?: string[]
-  format?: StickerFormat
 }
 
 // ─── Fallback hex (spec §3) ───────────────────────────────────────────────────
@@ -188,12 +172,11 @@ const TrophySticker = ({
   points,
   subject,
   achievements,
-  format = "square",
 }: TrophyStickerProps) => {
   const { t } = useTranslation()
   const theme = useThemeStore((s) => s.theme)
-  const { width, height } = FORMATS[format]
-  const isStory = format === "story"
+  const width = 540
+  const height = 540
 
   // Localized visible labels (resolved synchronously — bundle is loaded by
   // capture time). Honorific falls back to the rank's own key per locale.
@@ -238,12 +221,11 @@ const TrophySticker = ({
     )
     .slice(0, 3)
 
-  // Size tokens scale modestly for the taller story frame.
-  const discSize = isStory ? 210 : 150
-  const numeralSize = isStory ? 92 : 70
-  const nameSize = isStory ? 40 : 34
-  const pointsSize = isStory ? 50 : 44
-  const miniSize = isStory ? 50 : 42
+  const discSize = 150
+  const numeralSize = 70
+  const nameSize = 34
+  const pointsSize = 44
+  const miniSize = 42
 
   return (
     <div
@@ -334,7 +316,7 @@ const TrophySticker = ({
           justifyContent: "center",
           textAlign: "center",
           padding: "0 32px",
-          gap: isStory ? "16px" : "10px",
+          gap: "10px",
         }}
       >
         <span
@@ -477,7 +459,7 @@ const TrophySticker = ({
               alignItems: "center",
               justifyContent: "center",
               gap: "12px",
-              marginTop: isStory ? "8px" : "2px",
+              marginTop: "2px",
             }}
           >
             {shownAchievements.map((a) => (

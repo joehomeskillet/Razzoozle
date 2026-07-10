@@ -12,7 +12,6 @@ export const ACHIEVEMENT_GLYPH: Record<string, IconName> = {
   climber: "trending_up",
   first_responder: "military_tech",
   streak_5: "local_fire_department",
-  underdog: "rocket_launch",
   perfect_round: "verified",
   streak_10: "local_fire_department",
   speedy_gonzales: "speed",

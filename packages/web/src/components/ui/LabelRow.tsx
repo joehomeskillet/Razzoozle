@@ -6,8 +6,6 @@ export interface LabelRowProps {
   label: string
   /** When provided, renders as `<label htmlFor>` for a11y. */
   htmlFor?: string
-  /** Optional unit suffix rendered after the control (e.g. "Punkte", "ms"). */
-  suffix?: string
   /** Optional help text shown in a muted line below the row. */
   description?: string
   /** The form control (input, select, …). */
@@ -19,14 +17,12 @@ export interface LabelRowProps {
  * A label + control row with a `min-h-11` (44px) hit area.
  *
  * Layout: label text left, control (children) right, `gap-4` (16px).
- * An optional `suffix` appears directly after the control.
  * An optional `description` appears in a muted line below the full row.
  * Stacks (label above control) below `sm`.
  */
 const LabelRow = ({
   label,
   htmlFor,
-  suffix,
   description,
   children,
   className,
@@ -49,9 +45,6 @@ const LabelRow = ({
 
         <div className="flex min-h-11 flex-1 items-center gap-2">
           <div className="flex-1">{children}</div>
-          {suffix && (
-            <span className="shrink-0 text-sm text-gray-500">{suffix}</span>
-          )}
         </div>
       </div>
 

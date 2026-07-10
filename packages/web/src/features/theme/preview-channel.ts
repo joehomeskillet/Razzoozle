@@ -12,7 +12,7 @@
 import type { Theme } from "@razzoozle/common/types/theme"
 
 /** BroadcastChannel name (same-origin). */
-export const THEME_PREVIEW_CHANNEL = "theme-preview"
+const THEME_PREVIEW_CHANNEL = "theme-preview"
 
 /** window.open target name + features for the preview popup. */
 export const THEME_PREVIEW_WINDOW_NAME = "razzoozle-theme-preview"
