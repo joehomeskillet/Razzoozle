@@ -512,7 +512,15 @@ test.describe("Answer flow — E2E All Types", () => {
         })
         await player1AnswerPlan(quizFixture.questions[0]).run(p1)
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
-        await hostAdvanceAfterAnswers(host)
+        await hostNextUntil(
+          host,
+          async () =>
+            await host
+              .getByTestId(`leaderboard-row-${PLAYER1}`)
+              .isVisible()
+              .catch(() => false),
+          "standalone race: leaderboard Q1",
+        )
         await host.getByTestId("next-btn").click()
         // Q2 boolean deadline race
         await expect(p1.getByTestId("question-text")).toBeVisible({
