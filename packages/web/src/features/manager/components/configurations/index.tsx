@@ -11,12 +11,10 @@ import ConfigDisplay from "@razzoozle/web/features/manager/components/configurat
 import ConfigGameMode from "@razzoozle/web/features/manager/components/configurations/ConfigGameMode"
 import ConfigManageQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigMedia from "@razzoozle/web/features/manager/components/configurations/ConfigMedia"
-import ConfigPlugins from "@razzoozle/web/features/manager/components/configurations/ConfigPlugins"
 import ConfigResults from "@razzoozle/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
-import PluginTabHost from "@razzoozle/web/features/manager/components/console/PluginTabHost"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
@@ -25,17 +23,10 @@ import {
   ConfigProvider,
   useConfig,
 } from "@razzoozle/web/features/manager/contexts/config-context"
-import {
-  getRegisteredPluginTabs,
-  getRegistryVersion,
-  subscribeRegistry,
-  type PluginTabRegistration,
-} from "@razzoozle/web/features/manager/plugins/host"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import defaultLogo from "@razzoozle/web/assets/logo.svg"
 import {
   Award,
-  Blocks,
   ClipboardList,
   Images,
   Library,
@@ -56,7 +47,6 @@ import {
 import {
   type ComponentType,
   useState,
-  useSyncExternalStore,
 } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -66,8 +56,8 @@ interface TabDef {
   icon: LucideIcon
   component: ComponentType
   /**
-   * Visibility gate. Builtins encode it directly here; plugin tabs carry their
-   * manifest `gated` flag. `isTabAllowed` interprets it against {devMode}.
+   * Visibility gate. Builtins encode it directly here. `isTabAllowed`
+   * interprets it against {devMode}.
    *  - undefined → always visible
    *  - "devMode" → only when RAZZOOLE_DEV is on
    */
@@ -75,9 +65,7 @@ interface TabDef {
 }
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
-// the matching component renders in the console panel. Internals are unchanged
-// (separate track) — this file only wires them into <ConsoleShell>. Plugin tabs
-// are appended at runtime from the host registry (see `usePluginTabs`).
+// the matching component renders in the console panel.
 const BUILTIN_TABS: TabDef[] = [
   {
     key: "play",
@@ -140,12 +128,6 @@ const BUILTIN_TABS: TabDef[] = [
     component: ConfigTheme,
   },
   {
-    key: "plugins",
-    nameKey: "manager:tabs.plugins",
-    icon: Blocks,
-    component: ConfigPlugins,
-  },
-  {
     key: "satellite",
     nameKey: "manager:tabs.satellite",
     icon: Monitor,
@@ -177,47 +159,12 @@ const resolveIcon = (name: string): LucideIcon => {
 }
 
 /**
- * Generalised visibility gate (was the inline `tab.key !== "dev" || devMode`
- * filter). Builtins keep their exact prior behaviour via the `gated` field
- * ("dev" → "devMode"); plugin tabs honour their manifest `gated` flag, else are
- * always visible.
+ * Visibility gate for builtins. Builtins keep their exact prior behaviour via
+ * the `gated` field ("dev" → "devMode").
  */
 const isTabAllowed = (tab: TabDef, opts: { devMode: boolean }): boolean => {
   if (tab.gated === "devMode") return opts.devMode
   return true
-}
-
-// Map a plugin host registration to a TabDef whose component is a PluginTabHost
-// bound to that plugin key. The version hash keys the host's mount effect so a
-// re-injected ui.js re-renders. We lead it with the installed plugin VERSION
-// (parsed `plugin:<id>` → matched in ManagerConfig.plugins) so a version-busted
-// re-inject that changes only render()'s body — same nameKey/icon — still
-// re-runs render() instead of going stale on an already-mounted tab.
-const toPluginTab = (
-  reg: PluginTabRegistration,
-  plugins: ManagerConfig["plugins"],
-): TabDef => {
-  const id = reg.key.slice("plugin:".length)
-  const version = plugins?.find((p) => p.id === id)?.version ?? ""
-  const versionHash = `${version}|${reg.nameKey}|${reg.icon}`
-  const Host = () => (
-    <PluginTabHost pluginKey={reg.key} versionHash={versionHash} />
-  )
-  return {
-    key: reg.key,
-    nameKey: reg.nameKey,
-    icon: resolveIcon(reg.icon),
-    gated: reg.gated,
-    component: Host,
-  }
-}
-
-// Subscribe to the host registry and return the current plugin TabDefs. Uses
-// useSyncExternalStore so a plugin ui.js calling registerTab after load makes
-// the nav update without a manual refresh.
-const usePluginTabs = (plugins: ManagerConfig["plugins"]): TabDef[] => {
-  useSyncExternalStore(subscribeRegistry, getRegistryVersion, () => 0)
-  return getRegisteredPluginTabs().map((reg) => toPluginTab(reg, plugins))
 }
 
 /**
@@ -257,11 +204,9 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
   const { reset } = useManagerStore()
   const { socket } = useSocket()
   const { t } = useTranslation()
-  const { submissions, devMode, plugins } = useConfig()
+  const { submissions, devMode } = useConfig()
 
-  const pluginTabs = usePluginTabs(plugins)
-  const tabs = BUILTIN_TABS.concat(pluginTabs)
-
+  const tabs = BUILTIN_TABS
   const pendingCount = submissions.filter((s) => s.status === "pending").length
 
   const handleLogout = () => {
@@ -314,8 +259,7 @@ interface Props {
 
 // Persist the open section across reloads so a refresh doesn't dump the manager
 // back on the first tab. Client-only; falls back to the first tab when the
-// stored key is missing or renamed (incl. an uninstalled plugin tab key — the
-// `tabs.find ?? tabs[0]` in ConsoleBody also tolerates a stale active key).
+// stored key is missing or renamed.
 const TAB_STORAGE_KEY = "rahoot_manager_tab"
 
 const Configurations = ({ data }: Props) => {
