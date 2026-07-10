@@ -24,6 +24,7 @@ sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chron
 # Plugin ZIP import (spec_plugins.md ruling 3 — orchestrator-approved).
 # deflate-flate2-zlib-rs is the minimal pure-Rust deflate backend (the plain
 # "deflate" meta-feature would additionally pull the zopfli encoder).
+prometheus = "0.13"
 zip = { version = "8.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 # WP3 — WebP transcode for media uploads + AI-generated images (parity with Node toWebp).
 image = { version = "0.24", default-features = false, features = ["png", "jpeg", "jpeg_rayon", "webp"] }
