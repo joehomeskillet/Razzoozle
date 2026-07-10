@@ -5,6 +5,7 @@ use crate::state::Game;
 use crate::socket::status_emit::send_status_to_manager;
 use crate::socket::status_emit::emit_plugin_lifecycle;
 use crate::{match_mode_from_str, question_type_wire};
+use razzoozle_engine::eval::normalize_text;
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::QuestionType;
@@ -45,10 +46,10 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
 
         if collects_text {
             if let Some(answer_text) = &answer.answer_input.answer_text {
-                let answer_text = answer_text.trim();
+                let normalized_text = normalize_text(answer_text);
 
-                if !answer_text.is_empty() {
-                    *text_responses.entry(answer_text.to_string()).or_insert(0) += 1;
+                if !normalized_text.is_empty() {
+                    *text_responses.entry(normalized_text).or_insert(0) += 1;
                 }
             }
         }

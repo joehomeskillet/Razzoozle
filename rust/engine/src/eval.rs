@@ -23,7 +23,7 @@ pub struct EvalResult {
 
 /// Normalize text: trim, lowercase, NFD decompose, then remove combining marks
 /// Matches Node.js normalizeText() behavior: "Café" → "cafe"
-fn normalize_text(s: &str) -> String {
+pub fn normalize_text(s: &str) -> String {
     s.trim()
         .to_lowercase()
         .nfd()
@@ -372,5 +372,20 @@ mod tests {
         };
         let result = evaluate_answer(&q, &ans);
         assert!(result.correct, "cafe should match Café in normalized mode");
+    }
+
+    #[test]
+    fn histogram_text_normalization() {
+        // Test that normalize_text is correctly applied for histogram key collapsing
+        // Multiple variations of the same answer should produce the same normalized key
+        assert_eq!(normalize_text("London"), "london");
+        assert_eq!(normalize_text("LONDON"), "london");
+        assert_eq!(normalize_text("LONDON "), "london");
+        assert_eq!(normalize_text("  london  "), "london");
+        assert_eq!(normalize_text("Lóndon"), "london");  // with accent
+        
+        // Empty/whitespace-only strings should become empty
+        assert_eq!(normalize_text("   "), "");
+        assert_eq!(normalize_text(""), "");
     }
 }
