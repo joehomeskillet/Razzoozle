@@ -142,8 +142,16 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
+                // Generate timestamp (matching Node's handler-level Date.now())
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis())
+                    .unwrap_or(0);
+                let added_at = chrono::DateTime::<chrono::Utc>::from(std::time::UNIX_EPOCH + std::time::Duration::from_millis(now as u64))
+                    .to_rfc3339();
+
                 // Persist to DB
-                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags)
+                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, &added_at)
                     .await
                 {
                     Ok(_id) => {

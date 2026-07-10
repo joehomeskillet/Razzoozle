@@ -176,10 +176,18 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 if to_catalog {
                     // Save to catalog
                     let question = submission.get("question").cloned().unwrap_or(serde_json::json!({}));
+                    // Generate timestamp (matching Node's handler-level Date.now())
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_millis())
+                        .unwrap_or(0);
+                    let added_at = chrono::DateTime::<chrono::Utc>::from(std::time::UNIX_EPOCH + std::time::Duration::from_millis(now as u64))
+                        .to_rfc3339();
                     match db::insert_catalog_entry(
                         &ctx.db_pool,
                         &question,
                         "submission",
+                        &added_at,
                     ).await {
                         Ok(_) => {
                             // Update submission status to "approved"

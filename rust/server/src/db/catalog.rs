@@ -6,8 +6,9 @@ pub async fn insert_catalog_entry(
     pool: &Option<PgPool>,
     question: &serde_json::Value,
     source: &str,
+    added_at: &str,
 ) -> Result<String, String> {
-    insert_catalog_entry_with_tags(pool, question, source, &serde_json::json!([])).await
+    insert_catalog_entry_with_tags(pool, question, source, &serde_json::json!([]), added_at).await
 }
 
 /// Same as `insert_catalog_entry` but also persists `tags` (defaults to `[]`
@@ -17,6 +18,7 @@ pub async fn insert_catalog_entry_with_tags(
     question: &serde_json::Value,
     source: &str,
     tags: &serde_json::Value,
+    added_at: &str,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -62,12 +64,13 @@ pub async fn insert_catalog_entry_with_tags(
 
     // Insert the catalog entry
     sqlx::query(
-        "INSERT INTO catalog_entries (id, question, tags, source, added_at) VALUES ($1, $2, $3, $4, now())"
+        "INSERT INTO catalog_entries (id, question, tags, source, added_at) VALUES ($1, $2, $3, $4, $5)"
     )
     .bind(&id)
     .bind(question)
     .bind(tags)
     .bind(source)
+    .bind(added_at)
     .execute(pool)
     .await
     .map(|_| id)
