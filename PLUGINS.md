@@ -12,8 +12,11 @@ alongside this doc.
 
 > **Trust warning.** Plugins run with **full manager access**. A plugin's `ui.js`
 > executes in the manager console with the manager's authenticated socket and a
-> read-only view of the live config. Only install plugins you trust. `server.js`
-> is **reserved and NOT executed** in v1 (it is stored but never required/run).
+> read-only view of the live config. On the **Node backend**, a plugin that
+> declares the `SERVER_HANDLER` capability additionally gets its `server.js`
+> executed **in-process on the server** (crash-isolated, but with server-level
+> trust). Only install plugins you trust. The **Rust backend does not execute
+> `server.js`** — see the backend support matrix below.
 
 ---
 
@@ -24,7 +27,8 @@ A plugin ZIP is flat at the root:
 ```
 plugin.json        (required) the manifest
 ui.js              (required) client entry — runs in the manager
-server.js          (optional) server hook — RESERVED, stored but NOT executed yet
+server.js          (optional) server hook — executed on the Node backend only
+                   (requires the SERVER_HANDLER capability); inert on Rust
 assets/**          (optional) static assets served publicly
 ```
 
@@ -45,12 +49,12 @@ Validated by `pluginManifestValidator` in `@razzoozle/common`. Fields:
 | `id`             | safe-id string (required)    | `^[a-z0-9][a-z0-9-]{0,63}$`. Becomes the on-disk dir name.            |
 | `version`        | string (required)            | Semver-ish; used to version-bust the injected `ui.js`.                |
 | `name`           | string (required, ≤80)       | Human label.                                                          |
-| `capabilities`   | string[] (default `[]`)      | Informational badges only — **never enforced** in v1.                 |
+| `capabilities`   | string[] (default `[]`)      | Badges in the manager UI. `SERVER_HANDLER` is enforced: it gates whether the Node runtime loads `server.js`, and triggers a manager warning when the client is on the Rust backend. |
 | `tab.nameKey`    | string (required)            | i18n key OR a literal label (plugins ship their own strings).         |
 | `tab.icon`       | string (required)            | Lucide icon name, PascalCase (e.g. `"Settings"`).                     |
 | `tab.gated`      | `"always"` \| `"devMode"`    | `"always"` shows for every manager; `"devMode"` only when RAZZOOLE_DEV.|
 | `hooks.client`   | string (default `"ui.js"`)   | Client entry filename. The public route only ever serves `ui.js`.    |
-| `hooks.server`   | string (optional)            | Server hook filename — RESERVED, not executed.                        |
+| `hooks.server`   | string (optional)            | Server hook filename. Executed in-process by the **Node** backend when `SERVER_HANDLER` is declared; **not executed on Rust** (sandboxed sidecar designed but deferred — `docs/design/plugin-runtime-rust.md`). |
 | `config`         | object (default `{}`)        | Free-form default config bag, owned/validated by the plugin itself.   |
 | `i18n`           | `{ lang: { key: string } }`  | Optional. Or just use literal labels — keep it simple.                |
 | `sandbox`        | `"none"` \| `"iframe"`       | v1 only honors `"none"` (in-process). `"iframe"` is reserved.         |
@@ -168,6 +172,52 @@ public files in `assets/` and your client entry in `ui.js`.
 
 Installs reject duplicate ids and unsafe ids; a prior `index.json` is snapshotted
 to a rolling revision ring before each mutation.
+
+---
+
+## 7. Backend support matrix
+
+Razzoozle runs as twin backends (Node and Rust) during the porting phase. What a
+plugin can rely on per backend:
+
+| Capability                                             | Node | Rust |
+| ------------------------------------------------------ | ---- | ---- |
+| Install / uninstall / enable / disable (ZIP upload)     | ✅   | ✅   |
+| Plugin files persisted + mirrored to Postgres           | ✅   | ✅ (recursive, incl. `assets/**`) |
+| Public asset serving (`/plugins/:id/...`)               | ✅   | ✅   |
+| ZIP import/export over HTTP                             | ✅   | ✅   |
+| `ui.js` client injection (`window.razzoozle`)           | ✅   | ✅   |
+| Config persistence (`manager:pluginSetConfig`)          | ✅   | ✅   |
+| Lifecycle events to clients (see below)                 | ✅   | ✅   |
+| `server.js` execution (`SERVER_HANDLER`)                | ✅ in-process | ❌ inert (manager UI shows a warning) |
+
+**Consequence for authors:** client-only plugins (`ui.js` + `assets/**`) are
+fully portable across both backends. Plugins that rely on `server.js` currently
+require the Node backend; a sandboxed server-hook runtime for Rust is designed
+but deferred (`docs/design/plugin-runtime-rust.md`).
+
+### Lifecycle events (client-side, both backends)
+
+Both backends emit `plugin:<id>:lifecycle:<hook>` to **all connected sockets**
+at these game transitions, with payload `{ gameId, status, data }`:
+
+| Hook              | Emitted at          | `status`          |
+| ----------------- | ------------------- | ----------------- |
+| `onQuestionShown` | question opens      | `SHOW_QUESTION`   |
+| `onResult`        | answers revealed    | `SHOW_RESULT`     |
+| `onLeaderboard`   | leaderboard shown   | `SHOW_LEADERBOARD`|
+| `onGameEnd`       | game finished       | `FINISHED`        |
+
+Subscribe from `ui.js` via the manager socket:
+
+```js
+window.razzoozle.api.socket.on(
+  "plugin:config-editor:lifecycle:onGameEnd",
+  function (payload) {
+    // payload = { gameId, status, data }
+  },
+)
+```
 
 ## AI provider base URL — server-side request within the manager-trust boundary
 
