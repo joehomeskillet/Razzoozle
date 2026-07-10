@@ -233,26 +233,17 @@ async function playerJoin(page: Page, pin: string, username: string) {
 }
 
 
-/** Advance host past answer phase → reveal → leaderboard → next question. */
-async function hostAdvanceAfterAnswers(host: Page) {
-  // SELECT_ANSWER → ABORT_QUIZ (skip ends the question / moves to results).
-  // Contract: next-btn is the main progression control; reveal-btn is optional.
-  const next = host.getByTestId("next-btn")
-  const reveal = host.getByTestId("reveal-btn")
-
-  if (await reveal.isVisible().catch(() => false)) {
-    await reveal.click()
-  } else if (await next.isVisible().catch(() => false)) {
-    await next.click()
+/** Click next-btn until predicate is true (state-driven advancement). */
+async function hostNextUntil(host: Page, predicate: () => Promise<boolean>, label: string, maxClicks = 6) {
+  for (let c = 0; c < maxClicks; c++) {
+    if (await predicate()) return
+    const next = host.getByTestId("next-btn")
+    if (await next.isVisible().catch(() => false)) {
+      await next.click().catch(() => {})
+    }
+    await host.waitForTimeout(1200)
   }
-
-  // Allow result / responses screen to settle, then push to leaderboard if needed.
-  await host.waitForTimeout(500)
-  if (await next.isVisible().catch(() => false)) {
-    // May need 1–2 next clicks: responses → leaderboard → next question
-    await next.click()
-    await host.waitForTimeout(300)
-  }
+  if (!(await predicate())) throw new Error(`hostNextUntil(${label}): target not reached after ${maxClicks} clicks`)
 }
 
 async function assertQuestionTextAligned(pages: RolePages, expected: string) {
@@ -366,6 +357,16 @@ test.describe("Answer flow — E2E All Types", () => {
       for (let i = 0; i < quizFixture.questions.length; i++) {
         const q = quizFixture.questions[i]
 
+        if (i > 0) {
+          // Host advances from previous question to this one (state-driven).
+          await hostNextUntil(
+            host,
+            async () => (await player1.getByTestId("question-text").first().isVisible().catch(() => false)) ||
+                        (await waitForAnswerControl(player1, q.type).catch(() => false)),
+            `Q${i + 1}`,
+          )
+        }
+
         await test.step(`Q${i + 1} ${q.type}: align question-text`, async () => {
           // Wait for type-specific answer control (ensures SELECT_ANSWER phase, not SHOW_QUESTION).
           await waitForAnswerControl(player1, q.type)
@@ -415,7 +416,8 @@ test.describe("Answer flow — E2E All Types", () => {
         })
 
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
-          await hostAdvanceAfterAnswers(host)
+          // Host advances to leaderboard (state-driven).
+          await hostNextUntil(host, async () => await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false), `leaderboard Q${i + 1}`)
 
           // P1 should see correct-answer-highlight after reveal (scored types).
           if (q.type !== "poll") {
@@ -460,13 +462,14 @@ test.describe("Answer flow — E2E All Types", () => {
         })
       }
 
+      // After all questions, host advances to podium (state-driven).
+      const podiumVisible = async () =>
+        (await host.getByTestId("podium").isVisible().catch(() => false)) ||
+        (await player1.getByTestId("podium").isVisible().catch(() => false))
+      await hostNextUntil(host, podiumVisible, "podium", 6)
+
       await test.step("optional podium visible at end", async () => {
         const podium = host.getByTestId("podium")
-        // Host may still be on leaderboard; one more next → finished/podium.
-        const next = host.getByTestId("next-btn")
-        if (await next.isVisible().catch(() => false)) {
-          await next.click()
-        }
         // Podium is optional in intermediate screens — soft check.
         if (await podium.isVisible().catch(() => false)) {
           await expect(podium).toBeVisible()
@@ -509,7 +512,15 @@ test.describe("Answer flow — E2E All Types", () => {
         })
         await player1AnswerPlan(quizFixture.questions[0]).run(p1)
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
-        await hostAdvanceAfterAnswers(host)
+        await hostNextUntil(
+          host,
+          async () =>
+            await host
+              .getByTestId(`leaderboard-row-${PLAYER1}`)
+              .isVisible()
+              .catch(() => false),
+          "standalone race: leaderboard Q1",
+        )
         await host.getByTestId("next-btn").click()
         // Q2 boolean deadline race
         await expect(p1.getByTestId("question-text")).toBeVisible({
