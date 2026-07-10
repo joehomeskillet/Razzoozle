@@ -80,6 +80,15 @@ export async function resolvePackage(ctx) {
         // fork: componentSrcMap:null excludes the file from the synth entry too
         srcMap[basename(p).replace(/\.(tsx|jsx)$/, '')] !== null,
     );
+    // fork: componentSrcMap PATH pins outside srcDir join the synth entry too
+    // (game/presenter/achievement components live under src/features/, not
+    // src/components/ — without this they'd be named but never exported).
+    for (const rel of Object.values(srcMap)) {
+      if (typeof rel === 'string') {
+        const abs = resolve(PKG_DIR, rel);
+        if (existsSync(abs) && !comps.includes(abs)) comps.push(abs);
+      }
+    }
     entry = join(OUT, '.pkg-entry.mjs');
     // fork: components here are `export default` — `export *` skips defaults,
     // leaving window.<GLOBAL> empty. Re-export the default under the file's
@@ -117,8 +126,13 @@ export async function resolvePackage(ctx) {
     names.add(k);
   }
   let components = [...names].sort().map((name) => ({ name, group: 'general' }));
-  if (!components.length && synthEntry) {
-    components = deriveComponentsFromSrc(srcFiles).filter((c) => srcMap[c.name] !== null);
+  if (synthEntry) {
+    // fork: UNION the src-derived set with pinned names — stock only falls back
+    // when no pins exist, so adding one pin silently dropped every scanned
+    // component (pins are additions here, not replacements).
+    const derived = deriveComponentsFromSrc(srcFiles).filter((c) => srcMap[c.name] !== null);
+    const have = new Set(components.map((c) => c.name));
+    for (const d of derived) if (!have.has(d.name)) components.push(d);
   }
   if (!components.length) {
     if (cfg.cssEntry || existsSync(join(PKG_DIR, 'styles.css'))) {

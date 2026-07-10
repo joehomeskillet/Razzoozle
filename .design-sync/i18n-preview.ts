@@ -13,20 +13,39 @@ import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
 
 import common from "../packages/web/src/locales/en/common.json"
+import game from "../packages/web/src/locales/en/game.json"
 import manager from "../packages/web/src/locales/en/manager.json"
+import results from "../packages/web/src/locales/en/results.json"
 
 ;(globalThis as unknown as Record<string, unknown>).__APP_VERSION__ ??= "design-preview"
+
+// Apply the canonical runtime theme defaults (amber accent etc.) exactly like
+// the app boot does — the static @theme seeds in the compiled CSS are NOT the
+// live values (e.g. accent seed is pink #FF2D6E, canonical is amber #ff9900).
+import { applyTheme } from "../packages/web/src/features/theme/apply"
+import { DEFAULT_THEME } from "../packages/common/src/types/theme"
+if (typeof document !== "undefined") {
+  try {
+    applyTheme(DEFAULT_THEME)
+  } catch {
+    // never let theme seeding break the bundle load
+  }
+}
 
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
     lng: "en",
     fallbackLng: "en",
     defaultNS: "common",
-    ns: ["common", "manager"],
-    resources: { en: { common, manager } },
+    ns: ["common", "manager", "game", "results"],
+    resources: { en: { common, manager, game, results } },
     interpolation: { escapeValue: false },
   })
 }
 
 export { toast } from "react-hot-toast"
+// MotionConfig from the SAME motion instance as the bundled components —
+// previews wrap in <MotionConfig reducedMotion="always"> so frozen-clock
+// captures see final animation states instead of opacity-0 staggers.
+export { MotionConfig } from "motion/react"
 export const dsI18nReady = true

@@ -20,10 +20,40 @@
     "AnimatedErrorPage": null,
     "ErrorPage": null,
     "ErrorBoundary": null,
-    "NotFound": null
+    "NotFound": null,
+    "AnswerButton": "src/features/game/components/AnswerButton.tsx",
+    "CircularTimer": "src/features/game/components/CircularTimer.tsx",
+    "AnimatedPoints": "src/features/game/components/AnimatedPoints.tsx",
+    "Question": "src/features/game/components/states/Question.tsx",
+    "Prepared": "src/features/game/components/states/Prepared.tsx",
+    "Podium": "src/features/game/components/states/Podium.tsx",
+    "Leaderboard": "src/features/game/components/states/Leaderboard.tsx",
+    "TeamLeaderboard": "src/features/game/components/TeamLeaderboard.tsx",
+    "SoloLeaderboard": "src/features/game/components/SoloLeaderboard.tsx",
+    "AchievementBadge": "src/features/game/achievements/AchievementBadge.tsx",
+    "AchievementMedal": "src/features/game/components/AchievementMedal.tsx",
+    "TrophySticker": "src/features/game/components/TrophySticker.tsx",
+    "TrophyGallery": "src/features/game/components/TrophyGallery.tsx",
+    "RewardRow": "src/features/game/components/RewardRow.tsx",
+    "RewardStack": "src/features/game/components/RewardStack.tsx",
+    "ScoreToast": "src/features/game/components/ScoreToast.tsx",
+    "RoundRecapCard": "src/features/game/recap/RoundRecapCard.tsx",
+    "RoundRecapStrip": "src/features/game/recap/RoundRecapStrip.tsx",
+    "RecapSequence": "src/features/game/components/RecapSequence.tsx"
   },
   "overrides": {
-    "AlertDialog": { "cardMode": "single", "viewport": "640x400" }
+    "AlertDialog": { "cardMode": "single", "viewport": "640x400" },
+    "ActionFooter": { "cardMode": "column" },
+    "Background": { "cardMode": "column" },
+    "FormSection": { "cardMode": "column" },
+    "LabelRow": { "cardMode": "column" },
+    "CreamBackdrop": { "cardMode": "single", "primaryStory": "Default" },
+    "Toaster": { "cardMode": "single", "primaryStory": "Success" },
+    "AnswerButton": { "cardMode": "column" },
+    "RecapSequence": { "cardMode": "column" },
+    "Leaderboard": { "cardMode": "column" },
+    "ScoreToast": { "cardMode": "single", "primaryStory": "Correct" },
+    "Podium": { "cardMode": "single", "primaryStory": "TwoPlayerFinal" }
   },
   "libOverrides": {
     "source-kit.mjs": "synth-entry must honor componentSrcMap:null at file level (excluded error screens pull src/i18n.ts top-level await into the IIFE)"
