@@ -107,7 +107,7 @@ Razzoozle incluye **dos backends intercambiables** que hablan el mismo protocolo
 
 Razzoozle se desarrolla casi enteramente con agentes de IA, orquestados por supervisión humana. Un equipo diverso de modelos y herramientas especializados trabaja en conjunto para construir, probar, revisar e implementar funcionalidades.
 
-| Agent | Role |
+| Agente | Rol |
 | --- | --- |
 | Claude | Orquestación y revisión |
 | Codex (GPT-5.6) | Implementación full-stack |

@@ -107,7 +107,7 @@ Razzoozle propose **deux backends interchangeables** parlant le même protocole 
 
 Razzoozle est développé presque entièrement par des agents de codage IA, orchestrés par une supervision humaine. Une équipe diversifiée de modèles et d'outils spécialisés collabore pour construire, tester, examiner et déployer des fonctionnalités.
 
-| Agent | Role |
+| Agent | Rôle |
 | --- | --- |
 | Claude | Orchestration et révision |
 | Codex (GPT-5.6) | Implémentation full-stack |

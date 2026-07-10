@@ -107,7 +107,7 @@ Razzoozle liefert **zwei austauschbare Backends**, die dasselbe socket.io-Protok
 
 Razzoozle wird fast vollständig von KI-Coding-Agenten entwickelt, orchestriert von menschlicher Aufsicht. Ein vielfältiges Team spezialisierter Modelle und Tools arbeitet zusammen, um Features zu bauen, zu testen, zu reviewen und zu deployen.
 
-| Agent | Role |
+| Agent | Rolle |
 | --- | --- |
 | Claude | Orchestrierung & Review |
 | Codex (GPT-5.6) | Full-Stack-Implementierung |
