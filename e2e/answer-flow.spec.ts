@@ -219,15 +219,19 @@ async function startAllTypesQuiz(host: Page): Promise<string> {
 
 async function playerJoin(page: Page, pin: string, username: string) {
   await page.goto("/")
-  // PIN input is segmented (6 digits): click first field, then type (auto-advances).
+  // 2-step join wizard: PIN screen (Room.tsx) → Username screen (Username.tsx).
+  // Step 1: PIN submission
   await page.getByTestId("pin-input-digit-0").click()
   await page.keyboard.type(pin)
+  await page.getByTestId("join-submit").click() // Submits PIN, unmounts Room
+  // Step 2: Username submission (auto-waits for Username screen)
   await page.getByTestId("username-input").fill(username)
-  await page.getByTestId("join-submit").click()
+  await page.getByTestId("join-submit").click() // Submits username, emits player:login
   await expect(page.getByTestId("waiting-room")).toBeVisible({
     timeout: 30_000,
   })
 }
+
 
 /** Advance host past answer phase → reveal → leaderboard → next question. */
 async function hostAdvanceAfterAnswers(host: Page) {
