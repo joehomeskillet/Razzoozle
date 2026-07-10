@@ -218,6 +218,22 @@ impl GameRegistry {
         self.games_by_id.get(game_id).cloned()
     }
 
+    /// Find a game by manager client ID (fallback resolution for manager handlers
+    /// when gameId is missing; mirrors Node getManagerGame logic). Scans active
+    /// games for a match on manager_client_id. Used as a fallback in SET_AUTO and
+    /// other manager handlers when the payload gameId is absent/unknown.
+    pub fn get_game_by_manager_client_id(&self, manager_client_id: &str) -> Option<Arc<Mutex<Game>>> {
+        self.games_by_id
+            .values()
+            .find(|game_ref| {
+                if let Ok(game) = game_ref.lock() {
+                    game.manager_client_id.as_deref() == Some(manager_client_id)
+                } else {
+                    false
+                }
+            })
+            .cloned()
+    }
 
     /// Resolve a game by socket ID (clock_ping gate): uses the O(1) socket_to_game
     /// index, with fallback to a full scan if the index misses (graceful degradation).

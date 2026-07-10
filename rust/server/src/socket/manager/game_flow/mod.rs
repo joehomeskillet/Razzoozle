@@ -18,7 +18,7 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::status::GameStatus;
 use socketioxide::extract::{Data, SocketRef};
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, warn};
 
 /// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
 const AUTO_RESULT_MS: i32 = 6000;
@@ -136,6 +136,11 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
 /// FIX 8 (immediacy): when setAuto(true) arrives during SHOW_RESULT, arm the
 /// same auto-advance that would have fired had auto-mode been on at reveal time
 /// (delay = AUTO_RESULT_MS). Mirrors Node auto-mode.ts applyAutoMode / scheduleAuto.
+///
+/// REVISION (smoke-fail): Mirrors Node's getManagerGame fallback (handlers/game.ts:310):
+/// resolve by payload.gameId when present; when absent/unknown, fall back to the game
+/// owned by ctx.client_id. Add logging on every early-return path (previously silent
+/// failures made this undiagnosable). See GameWrapper.tsx:66 (client may omit gameId).
 fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SET_AUTO, {
         let ctx = ctx.clone();
@@ -144,114 +149,156 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                // Extract gameId from payload; silent no-op if missing or not a string
+                // Extract gameId and auto flag from payload
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
+                let auto_flag = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
 
-                if let Some(game_id) = game_id_opt {
-                    let game_opt = {
-                        let registry = ctx.registry.read().await;
-                        registry.get_game_by_id(game_id)
-                    };
-
-                    if let Some(game_ref) = game_opt {
-                        {
-                            let game = game_ref.lock().unwrap();
-                            // Per-game ownership check: only the socket that created this game can set auto
-                            if game.manager_socket_id != socket.id.to_string() {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
-                            // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
-                            if !is_game_host(&game, &payload, &ctx.client_id) {
-                                socket
-                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                    .ok();
-                                return;
-                            }
+                // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
+                let game_ref = if let Some(game_id) = game_id_opt {
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_id(game_id) {
+                        Some(game_ref) => Some((game_ref, game_id.to_string())),
+                        None => {
+                            warn!(
+                                "manager:setAuto failed: gameId={} not found, clientId={}",
+                                game_id, ctx.client_id
+                            );
+                            None
                         }
+                    }
+                } else {
+                    // gameId missing from payload — fall back to manager_client_id (Node pattern)
+                    let registry = ctx.registry.read().await;
+                    match registry.get_game_by_manager_client_id(&ctx.client_id) {
+                        Some(game_ref) => {
+                            let game_id = game_ref.lock().unwrap().game_id.clone();
+                            info!(
+                                "manager:setAuto resolved via client fallback: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            Some((game_ref, game_id))
+                        }
+                        None => {
+                            warn!(
+                                "manager:setAuto failed: no gameId in payload and no game owned by clientId={}",
+                                ctx.client_id
+                            );
+                            None
+                        }
+                    }
+                };
 
-                        let mut game = game_ref.lock().unwrap();
-                        let was_auto = game.auto_mode;
-                        game.auto_mode = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
-                        info!("auto_mode set to {} for game {}", game.auto_mode, game_id);
+                if let Some((game_ref, game_id)) = game_ref {
+                    {
+                        let game = game_ref.lock().unwrap();
+                        // Per-game ownership check: only the socket that created this game can set auto
+                        if game.manager_socket_id != socket.id.to_string() {
+                            warn!(
+                                "manager:setAuto unauthorized: socket.id={} not manager of gameId={}",
+                                socket.id.to_string(),
+                                game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                        // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
+                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                            warn!(
+                                "manager:setAuto host-check failed: clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            socket
+                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                .ok();
+                            return;
+                        }
+                    }
 
-                        if !was_auto && game.auto_mode {
-                            let current_phase = game.engine.phase;
+                    let mut game = game_ref.lock().unwrap();
+                    let was_auto = game.auto_mode;
+                    game.auto_mode = auto_flag;
+                    info!("auto_mode set to {} for game {}", game.auto_mode, game_id);
 
-                            match current_phase {
-                                GamePhase::ShowResult => {
-                                    // Re-send cached SHOW_RESULT with autoAdvanceMs so clients
-                                    // already on the result screen get a countdown (FIX 9).
-                                    let payloads = game.last_show_result_data.clone();
+                    if !was_auto && game.auto_mode {
+                        let current_phase = game.engine.phase;
 
-                                    // FIX 8 (immediacy): arm auto-advance for THIS screen now.
-                                    // Guard: only arm if no timer is pending (prevents duplicate timers).
-                                    // Mirrors Node's guard at auto-mode.ts:172 (ctx.autoTimer === null).
-                                    if game.auto_advance_task.is_none() {
-                                        let game_ref_clone = game_ref.clone();
-                                        let pause_resume = game.pause_resume.clone();
-                                        let game_id_clone = game_id.to_string();
+                        match current_phase {
+                            GamePhase::ShowResult => {
+                                // Re-send cached SHOW_RESULT with autoAdvanceMs so clients
+                                // already on the result screen get a countdown (FIX 9).
+                                let payloads = game.last_show_result_data.clone();
 
-                                        let task = tokio::spawn(async move {
-                                            // CRITICAL: honour pause loops first (mirrors Node scheduleAuto line 86-98).
-                                            // Read paused and pause_notify under ONE lock to avoid lost wakeup.
-                                            loop {
-                                                let (paused, pause_notify) = {
-                                                    let game = game_ref_clone.lock().unwrap();
-                                                    (game.paused, game.pause_resume.clone())
-                                                };
-                                                if !paused {
-                                                    break;
-                                                }
-                                                pause_notify.notified().await;
-                                            }
+                                // FIX 8 (immediacy): arm auto-advance for THIS screen now.
+                                // Guard: only arm if no timer is pending (prevents duplicate timers).
+                                // Mirrors Node's guard at auto-mode.ts:172 (ctx.autoTimer === null).
+                                if game.auto_advance_task.is_none() {
+                                    let game_ref_clone = game_ref.clone();
+                                    let game_id_clone = game_id.clone();
 
-                                            // Wait AUTO_RESULT_MS before firing the advance
-                                            tokio::time::sleep(Duration::from_millis(AUTO_RESULT_MS as u64)).await;
-
-                                            // Guard against races: check that auto-mode is still enabled
-                                            // and phase is still SHOW_RESULT before firing (mirrors Node line 115).
-                                            {
+                                    let task = tokio::spawn(async move {
+                                        // CRITICAL: honour pause loops first (mirrors Node scheduleAuto line 86-98).
+                                        // Read paused and pause_notify under ONE lock to avoid lost wakeup.
+                                        loop {
+                                            let (paused, pause_notify) = {
                                                 let game = game_ref_clone.lock().unwrap();
-                                                if !game.auto_mode || game.engine.phase != GamePhase::ShowResult {
-                                                    return;
-                                                }
+                                                (game.paused, game.pause_resume.clone())
+                                            };
+                                            if !paused {
+                                                break;
                                             }
+                                            pause_notify.notified().await;
+                                        }
 
-                                            // Fire the advance by aborting the SHOW_RESULT dwell.
-                                            // request_abort returns false if phase doesn't match (already advanced),
-                                            // which is safe (the lifecycle loop will proceed normally).
-                                            lifecycle::request_abort(&game_ref_clone, GamePhase::ShowResult);
-                                        });
+                                        // Wait AUTO_RESULT_MS before firing the advance
+                                        tokio::time::sleep(Duration::from_millis(AUTO_RESULT_MS as u64)).await;
 
-                                        game.auto_advance_task = Some(task);
-                                    }
-
-                                    drop(game);
-
-                                    // Per-player SHOW_RESULT stays raw (personalized — not manager status).
-                                    for (socket_id, mut show_result_data) in payloads {
-                                        show_result_data.auto_advance_ms = Some(AUTO_RESULT_MS);
-                                        let status = GameStatus::ShowResult(show_result_data);
-                                        if let Ok(sid) = socket_id.parse() {
-                                            if let Some(sock) = ctx.io.get_socket(sid) {
-                                                sock.emit(constants::game::STATUS, &status).ok();
+                                        // Guard against races: check that auto-mode is still enabled
+                                        // and phase is still SHOW_RESULT before firing (mirrors Node line 115).
+                                        {
+                                            let game = game_ref_clone.lock().unwrap();
+                                            if !game.auto_mode || game.engine.phase != GamePhase::ShowResult {
+                                                return;
                                             }
+                                        }
+
+                                        // Fire the advance by aborting the SHOW_RESULT dwell.
+                                        // request_abort returns false if phase doesn't match (already advanced),
+                                        // which is safe (the lifecycle loop will proceed normally).
+                                        lifecycle::request_abort(&game_ref_clone, GamePhase::ShowResult);
+                                    });
+
+                                    game.auto_advance_task = Some(task);
+                                    info!(
+                                        "auto-advance task armed for gameId={}, will fire in {}ms",
+                                        game_id_clone, AUTO_RESULT_MS
+                                    );
+                                }
+
+                                drop(game);
+
+                                // Per-player SHOW_RESULT stays raw (personalized — not manager status).
+                                for (socket_id, mut show_result_data) in payloads {
+                                    show_result_data.auto_advance_ms = Some(AUTO_RESULT_MS);
+                                    let status = GameStatus::ShowResult(show_result_data);
+                                    if let Ok(sid) = socket_id.parse() {
+                                        if let Some(sock) = ctx.io.get_socket(sid) {
+                                            sock.emit(constants::game::STATUS, &status).ok();
                                         }
                                     }
                                 }
-                                GamePhase::ShowLeaderboard => {
-                                    drop(game);
-                                    lifecycle::request_abort(&game_ref, current_phase);
-                                }
-                                _ => {}
                             }
-                        } else if was_auto && !game.auto_mode {
-                            // setAuto(false): cancel any pending auto-advance timer (mirrors Node clearAuto)
-                            game.clear_auto_advance();
+                            GamePhase::ShowLeaderboard => {
+                                drop(game);
+                                lifecycle::request_abort(&game_ref, current_phase);
+                            }
+                            _ => {}
                         }
+                    } else if was_auto && !game.auto_mode {
+                        // setAuto(false): cancel any pending auto-advance timer (mirrors Node clearAuto)
+                        game.clear_auto_advance();
+                        info!("auto-advance task cancelled for gameId={}", game_id);
                     }
                 }
             });
@@ -422,6 +469,7 @@ mod tests {
             quiz.clone(),
         );
         game.engine.phase = phase;
+        game.manager_client_id = Some("test-client-id".to_string());
         game.last_show_result_data.insert(
             "player-socket".to_string(),
             ShowResultData {
