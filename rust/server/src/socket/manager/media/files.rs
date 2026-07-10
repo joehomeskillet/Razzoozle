@@ -104,7 +104,7 @@ pub(super) async fn get_media_asset_by_id(
     .await
     {
         Ok(Some((id, filename, url, size, media_type, category, source, width, height, uploaded_at))) => {
-            let uploaded_at_rfc3339 = uploaded_at.to_rfc3339();
+            let uploaded_at_rfc3339 = uploaded_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
             let mut obj = serde_json::json!({
                 "id": id,
                 "filename": filename,

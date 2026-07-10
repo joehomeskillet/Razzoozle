@@ -99,7 +99,7 @@ pub async fn get_catalog(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
                 "question": question,
                 "tags": tags,
                 "source": source,
-                "addedAt": added_at.map(|t| t.to_rfc3339()),
+                "addedAt": added_at.map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)),
             })
         })
         .collect()
