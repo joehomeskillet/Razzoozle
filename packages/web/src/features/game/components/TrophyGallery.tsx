@@ -85,8 +85,8 @@ const TierSection = ({ tier, metas, counts, mergedList }: TierSectionProps) => {
           const unlocked = count > 0
           const merged = mergedList.find((m) => m.id === meta.id)
           const display = getAchievementDisplay(meta.id, merged, {
-            name: t(`game:achievements.${meta.id}.name`, meta.id),
-            desc: t(`game:achievements.${meta.id}.desc`, ""),
+            name: t(`game:achievements.${meta.id}.name`, { defaultValue: meta.id }),
+            desc: t(`game:achievements.${meta.id}.desc`, { defaultValue: "" }),
           })
 
           return (

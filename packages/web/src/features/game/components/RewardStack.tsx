@@ -94,8 +94,8 @@ const RewardStack = ({
     for (const meta of metas) {
       const merged = mergedList.find((m) => m.id === meta.id)
       const display = getAchievementDisplay(meta.id, merged, {
-        name: t(`${meta.i18nKey}.name`, meta.id),
-        desc: t(`${meta.i18nKey}.desc`, ""),
+        name: t(`${meta.i18nKey}.name`, { defaultValue: meta.id }),
+        desc: t(`${meta.i18nKey}.desc`, { defaultValue: "" }),
       })
       result.push({
         id: meta.id,
