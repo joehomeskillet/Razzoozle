@@ -10,12 +10,10 @@
 // to one JSON line, redacted (same key DENY-list as the Node pino redact
 // config in services/logger.ts), then pushed here.
 //
-// The CLIENT ring exists so the /logs/client download has the exact Node
-// response shape, but it is NEVER populated yet: the Node feeder is the
-// POST /api/v1/client-events ingest route (http-routes.ts handleClientEvents →
-// pushClientLog), which has NOT been ported to Rust (grep of src/http/ finds
-// no client-events route). Until that WP lands, the download honestly serves
-// an empty body — same as a freshly started Node process.
+// The CLIENT ring now populated by the POST /api/v1/client-events handler
+// (http/client_events.rs), which pushes accepted/sampled events as redacted
+// JSON lines for the DEV-gated download endpoint (Node parity: log-buffer.ts
+// pushClientLog).
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
@@ -70,6 +68,12 @@ fn lines(ring: &Mutex<VecDeque<String>>) -> Vec<String> {
         .collect()
 }
 
+/// Push a redacted client-event log line to the CLIENT ring.
+/// Used by POST /api/v1/client-events handler to surface accepted events in DEV downloads.
+pub fn push_client_log(line: &str) {
+    push(&CLIENT_RING, line);
+}
+
 // ── Redaction (parity: REDACT_PATHS in services/logger.ts) ──────────────────
 
 /// Key DENY-list, verbatim from the Node pino redact config. Node lists each
@@ -94,7 +98,7 @@ const REDACT_KEYS: &[&str] = &[
 
 const REDACTED: &str = "[REDACTED]";
 
-fn redact_value(value: &mut Value) {
+pub(super) fn redact_value(value: &mut Value) {
     if let Value::Object(map) = value {
         for (k, v) in map.iter_mut() {
             if REDACT_KEYS.contains(&k.as_str()) {

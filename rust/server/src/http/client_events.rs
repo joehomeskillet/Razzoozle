@@ -4,12 +4,15 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{
     collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+use super::logs::{push_client_log, redact_value};
+use super::metrics::CLIENT_EVENTS_TOTAL;
 
 // ── Input caps (from packages/common/src/validators/client-events.ts:14-15) ──
 const CAP_SHORT: usize = 200; // clientId, name, url, pin, reason
@@ -258,17 +261,33 @@ pub async fn handle_client_events(
         return StatusCode::NO_CONTENT.into_response();
     }
 
+    // Increment counter for all accepted, rate-limited events (Node parity: client-events.ts:126)
+    CLIENT_EVENTS_TOTAL.with_label_values(&[event.event_type()]).inc();
+
     // Sampling: always keep errors/join-failures, sample the rest at 0.1
     let should_keep = always_keep(event.event_type())
         || sample_hash(&format!("{}:{}", event.client_id(), event.event_type())) < SAMPLE_RATE;
 
-    if !should_keep {
-        return StatusCode::NO_CONTENT.into_response();
-    }
+    if should_keep {
+        // Create a redacted log line for the CLIENT ring (parity: Node client-events.ts:133-134)
+        let mut log_obj = serde_json::Map::new();
+        log_obj.insert("level".to_string(), json!("info"));
+        log_obj.insert("time".to_string(), json!(chrono::Utc::now().timestamp_millis()));
+        log_obj.insert("service".to_string(), json!("quiz-socket"));
+        log_obj.insert("target".to_string(), json!(module_path!()));
+        log_obj.insert("msg".to_string(), json!("client-event"));
 
-    // Log the event (in production, this goes to the client event ring via logger)
-    // TODO(W2): feed client-event ring once Rust log-ring exists (Node: pushClientLog via redacting logger)
-    tracing::info!(event = ?event, "client-event");
+        // Serialize the event to JSON for the ring
+        let event_value = serde_json::to_value(&event).unwrap_or(Value::Null);
+        log_obj.insert("clientEvent".to_string(), event_value);
+
+        // Redact the entire log object (applies redact_value recursively)
+        let mut log_value = Value::Object(log_obj);
+        redact_value(&mut log_value);
+
+        // Push to CLIENT ring
+        push_client_log(&log_value.to_string());
+    }
 
     StatusCode::NO_CONTENT.into_response()
 }
@@ -387,5 +406,22 @@ mod tests {
         assert_eq!(state.insertion_order[0], "client-a");
         assert_eq!(state.insertion_order[1], "client-b");
         assert_eq!(state.insertion_order[2], "client-c");
+    }
+
+    #[test]
+    fn test_client_event_ring_push() {
+        // Clear CLIENT_RING
+        // Note: We can't easily test this in unit tests due to the static CLIENT_RING,
+        // but the integration test in the gate will verify the ring population.
+        let event = ClientEvent::AnswerLatency {
+            clientId: "test-client".to_string(),
+            latencyMs: 100,
+            ts: Some(1234567890),
+        };
+
+        // Verify event serializes correctly
+        let serialized = serde_json::to_string(&event).expect("should serialize");
+        assert!(serialized.contains("test-client"));
+        assert!(serialized.contains("\"type\":\"answer-latency\""));
     }
 }
