@@ -293,11 +293,14 @@ async function advanceToNextQuestion(host: Page, player1: Page, nextQType: strin
 /** Advance to target state by clicking only on recognized safe states (responses/recap).
    Handles auto-jumps and reconnections gracefully without risk of ABORT/SKIP. */
 async function advanceToState(host: Page, target: "leaderboard" | "podium", player1: Page, maxSteps = 5) {
+  // NB: .or() cannot join locators from different pages — check each page separately.
+  const targetVisible = async () =>
+    target === "leaderboard"
+      ? await host.getByTestId(`leaderboard-row-${PLAYER1}`).isVisible().catch(() => false)
+      : (await host.getByTestId("podium").isVisible().catch(() => false)) ||
+        (await player1.getByTestId("podium").isVisible().catch(() => false))
   for (let s = 0; s < maxSteps; s++) {
-    const targetLoc = target === "leaderboard"
-      ? host.getByTestId(`leaderboard-row-${PLAYER1}`)
-      : host.getByTestId("podium").or(player1.getByTestId("podium")).first()
-    if (await targetLoc.isVisible().catch(() => false)) return
+    if (await targetVisible()) return
     // Only click on RECOGNIZED safe states (responses-view or round-recap).
     if (await host.getByTestId("responses-view").isVisible().catch(() => false)
       || await host.getByTestId("round-recap").isVisible().catch(() => false)) {
@@ -306,10 +309,7 @@ async function advanceToState(host: Page, target: "leaderboard" | "podium", play
     // Let state settle; do not click blindly.
     await host.waitForTimeout(1_500)
   }
-  const finalLoc = target === "leaderboard"
-    ? host.getByTestId(`leaderboard-row-${PLAYER1}`)
-    : host.getByTestId("podium").or(player1.getByTestId("podium")).first()
-  await expect(finalLoc).toBeVisible({ timeout: 30_000 })
+  await expect.poll(targetVisible, { timeout: 30_000 }).toBe(true)
 }
 
 async function waitForAnswerControl(page: Page, questionType: string) {
