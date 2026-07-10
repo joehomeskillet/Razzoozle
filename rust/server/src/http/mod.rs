@@ -4,6 +4,7 @@ pub mod assets;
 pub mod logs;
 mod metrics;
 mod observability;
+mod plugins;
 pub mod skeleton;
 mod client_events;
 mod result_og;
@@ -11,7 +12,7 @@ pub mod solo;
 
 use axum::{
     extract::Path,
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::{get, post},
     Json, Router,
 };
@@ -67,6 +68,43 @@ pub(crate) fn is_dev_mode() -> bool {
 
 pub(crate) fn dev_api_key() -> Option<String> {
     std::env::var("DEV_API_KEY").ok()
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// Node `authorizeManagerRequest` parity: `X-Manager-Token` is a logged-in
+/// manager clientId (registry), or in dev mode the DEV_API_KEY (constant-time).
+pub async fn authorize_manager_request(
+    headers: &HeaderMap,
+    registry: Arc<RwLock<GameRegistry>>,
+) -> bool {
+    let token = headers
+        .get("x-manager-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if token.is_empty() {
+        return false;
+    }
+    if registry.read().await.is_logged(token) {
+        return true;
+    }
+    if is_dev_mode() {
+        if let Some(key) = dev_api_key() {
+            if constant_time_eq(token.as_bytes(), key.as_bytes()) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 // ── HTTP handlers ────────────────────────────────────────────────────────────
@@ -125,6 +163,15 @@ pub fn router(state: AppState) -> Router {
                 .layer(axum::extract::DefaultBodyLimit::disable()),
         )
         .route("/api/v1/client-events", post(client_events::handle_client_events))
+        .route(
+            "/api/plugins/import",
+            post(plugins::handle_plugin_import)
+                .layer(axum::extract::DefaultBodyLimit::disable()),
+        )
+        .route(
+            "/api/plugins/:id/export",
+            get(plugins::handle_plugin_export),
+        )
         .route("/api/v1/observability/events", get(observability::handle_observability_events))
         .route("/api/v1/observability/schema", get(observability::handle_observability_schema))
         .route("/api/v1/observability/logs/server", get(logs::handle_logs_server))

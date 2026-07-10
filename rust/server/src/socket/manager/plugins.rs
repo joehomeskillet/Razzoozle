@@ -71,7 +71,7 @@ fn plugins_root() -> PathBuf {
     Path::new(&crate::http::get_config_path()).join("plugins")
 }
 
-pub(super) fn plugin_dir(id: &str) -> PathBuf {
+pub(crate) fn plugin_dir(id: &str) -> PathBuf {
     plugins_root().join(id)
 }
 
@@ -141,7 +141,7 @@ fn parse_installed_plugin(v: &Value) -> Option<InstalledPlugin> {
 
 /// Read config/plugins/index.json → Vec<InstalledPlugin>. A missing, corrupt
 /// or non-array file yields [] (Node readPlugins never throws).
-pub(super) fn read_plugins_index() -> Vec<InstalledPlugin> {
+pub(crate) fn read_plugins_index() -> Vec<InstalledPlugin> {
     let Ok(raw) = fs::read_to_string(plugin_index_file()) else {
         return Vec::new();
     };
