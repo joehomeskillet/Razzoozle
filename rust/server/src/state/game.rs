@@ -6,6 +6,7 @@ use razzoozle_protocol::status::{GameStatus, RoundRecapAward, ShowResultData, St
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::task::JoinHandle;
 use uuid::Uuid;
 use rand::Rng;
 use tracing::warn;
@@ -93,6 +94,11 @@ pub struct Game {
     pub answer_count_push_pending: bool,
     // Sim-mode bot answer scheduler (None until first bot is added).
     pub bot_manager: Option<Arc<BotManager>>,
+    // Pending auto-advance task spawned when setAuto(true) is called during
+    // SHOW_RESULT. The task sleeps for AUTO_RESULT_MS then calls request_abort
+    // to wake the lifecycle loop. None while no auto-advance is armed (mirrors
+    // Node's autoTimer). Cancelled on setAuto(false) or when phase changes.
+    pub auto_advance_task: Option<JoinHandle<()>>,
 }
 
 impl Game {
@@ -135,6 +141,7 @@ impl Game {
             last_show_result_data: HashMap::new(),
             answer_count_push_pending: false,
             bot_manager: None,
+            auto_advance_task: None,
         }
     }
 
@@ -144,12 +151,12 @@ impl Game {
             warn!("record_last_manager_status: failed to serialize status, reconnect replay will be stale");
             return;
         };
-        
+
         let (Some(name_val), Some(data)) = (val.get("name"), val.get("data")) else {
             warn!("record_last_manager_status: missing 'name' or 'data' field, reconnect replay will be stale");
             return;
         };
-        
+
         match serde_json::from_value::<Status>(name_val.clone()) {
             Ok(s) => {
                 self.last_manager_status = Some((s, data.clone()));
@@ -260,6 +267,13 @@ impl Game {
     /// Check if this game has exceeded its TTL (for eviction)
     pub fn is_stale(&self, now_ms: u64) -> bool {
         now_ms.saturating_sub(self.last_activity_ms) > GAME_EVICTION_TTL_MS
+    }
+
+    /// Cancel any pending auto-advance task (mirrors Node's clearAuto).
+    pub fn clear_auto_advance(&mut self) {
+        if let Some(task) = self.auto_advance_task.take() {
+            task.abort();
+        }
     }
 
     /// Add a player to the game and return their player data.

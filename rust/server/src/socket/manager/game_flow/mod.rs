@@ -132,6 +132,10 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
 /// Host-only: toggle auto-advance mode. Routed via withAuth + getManagerGame
 /// (same ownership gate as START_GAME / PAUSE_GAME). A non-host emit is
 /// silently ignored (no state change, no emit).
+///
+/// FIX 8 (immediacy): when setAuto(true) arrives during SHOW_RESULT, arm the
+/// same auto-advance that would have fired had auto-mode been on at reveal time
+/// (delay = AUTO_RESULT_MS). Mirrors Node auto-mode.ts applyAutoMode / scheduleAuto.
 fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::SET_AUTO, {
         let ctx = ctx.clone();
@@ -181,6 +185,50 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                                     // Re-send cached SHOW_RESULT with autoAdvanceMs so clients
                                     // already on the result screen get a countdown (FIX 9).
                                     let payloads = game.last_show_result_data.clone();
+
+                                    // FIX 8 (immediacy): arm auto-advance for THIS screen now.
+                                    // Guard: only arm if no timer is pending (prevents duplicate timers).
+                                    // Mirrors Node's guard at auto-mode.ts:172 (ctx.autoTimer === null).
+                                    if game.auto_advance_task.is_none() {
+                                        let game_ref_clone = game_ref.clone();
+                                        let pause_resume = game.pause_resume.clone();
+                                        let game_id_clone = game_id.to_string();
+
+                                        let task = tokio::spawn(async move {
+                                            // CRITICAL: honour pause loops first (mirrors Node scheduleAuto line 86-98).
+                                            // Read paused and pause_notify under ONE lock to avoid lost wakeup.
+                                            loop {
+                                                let (paused, pause_notify) = {
+                                                    let game = game_ref_clone.lock().unwrap();
+                                                    (game.paused, game.pause_resume.clone())
+                                                };
+                                                if !paused {
+                                                    break;
+                                                }
+                                                pause_notify.notified().await;
+                                            }
+
+                                            // Wait AUTO_RESULT_MS before firing the advance
+                                            tokio::time::sleep(Duration::from_millis(AUTO_RESULT_MS as u64)).await;
+
+                                            // Guard against races: check that auto-mode is still enabled
+                                            // and phase is still SHOW_RESULT before firing (mirrors Node line 115).
+                                            {
+                                                let game = game_ref_clone.lock().unwrap();
+                                                if !game.auto_mode || game.engine.phase != GamePhase::ShowResult {
+                                                    return;
+                                                }
+                                            }
+
+                                            // Fire the advance by aborting the SHOW_RESULT dwell.
+                                            // request_abort returns false if phase doesn't match (already advanced),
+                                            // which is safe (the lifecycle loop will proceed normally).
+                                            lifecycle::request_abort(&game_ref_clone, GamePhase::ShowResult);
+                                        });
+
+                                        game.auto_advance_task = Some(task);
+                                    }
+
                                     drop(game);
 
                                     // Per-player SHOW_RESULT stays raw (personalized — not manager status).
@@ -200,6 +248,9 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
                                 _ => {}
                             }
+                        } else if was_auto && !game.auto_mode {
+                            // setAuto(false): cancel any pending auto-advance timer (mirrors Node clearAuto)
+                            game.clear_auto_advance();
                         }
                     }
                 }
