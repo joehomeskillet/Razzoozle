@@ -219,7 +219,9 @@ async function startAllTypesQuiz(host: Page): Promise<string> {
 
 async function playerJoin(page: Page, pin: string, username: string) {
   await page.goto("/")
-  await page.getByTestId("pin-input").fill(pin)
+  // PIN input is segmented (6 digits): click first field, then type (auto-advances).
+  await page.getByTestId("pin-input-digit-0").click()
+  await page.keyboard.type(pin)
   await page.getByTestId("username-input").fill(username)
   await page.getByTestId("join-submit").click()
   await expect(page.getByTestId("waiting-room")).toBeVisible({
