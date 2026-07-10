@@ -171,24 +171,6 @@ export const deleteMediaAssetPg = async (id: string): Promise<void> => {
 }
 
 /** Delete media assets by slot and source (theme slot cleanup). */
-export const deleteMediaAssetsBySlotPg = async (
-  slot: string,
-  source: string,
-): Promise<void> => {
-  try {
-    const pattern = `${slot}-%`
-    await getPool().query(
-      `DELETE FROM media_assets WHERE filename LIKE $1 AND source = $2`,
-      [pattern, source],
-    )
-  } catch (error) {
-    logger.error(
-      { err: error },
-      `media-pg.deleteMediaAssetsBySlotPg(${slot}, ${source}) failed`,
-    )
-    throw error
-  }
-}
 
 interface HydrationStats {
   media?: number

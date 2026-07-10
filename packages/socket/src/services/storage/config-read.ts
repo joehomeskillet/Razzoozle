@@ -103,8 +103,6 @@ export const readQuizz = async (): Promise<QuizzWithId[]> =>
 export const readCatalog = async (): Promise<CatalogEntry[]> =>
   dbReadMode() ? listAllCatalogEntriesPg() : getCatalog()
 
-export const readCatalogById = async (id: string): Promise<CatalogEntry | null> =>
-  dbReadMode() ? getCatalogEntryByIdPg(id) : getCatalogById(id)
 
 // ---- results -------------------------------------------------------------------
 
@@ -161,8 +159,6 @@ export const readSubmissionById = async (id: string): Promise<Submission | null>
 
 // ---- achievements --------------------------------------------------------------
 
-export const readAchievementsConfig = async (): Promise<AchievementsConfig> =>
-  dbReadMode() ? listAllAchievementsPg() : getAchievementsConfig()
 
 export const readMergedAchievements = async (): Promise<MergedAchievement[]> =>
   dbReadMode() ? getMergedAchievementsPg() : getMergedAchievements()
@@ -213,8 +209,6 @@ export const readSoloResults = async (quiz: string): Promise<SoloScoreEntry[]> =
 export const readAssignment = async (id: string): Promise<Assignment | null> =>
   dbReadMode() ? getAssignmentByIdPg(id) : getAssignment(id)
 
-export const listAssignments = async (): Promise<Assignment[]> =>
-  dbReadMode() ? listAllAssignmentsPg() : listAssignmentsFile()
 
 // ---- theme revisions ----------------------------------------------------------------
 

@@ -1,25 +1,26 @@
-import { SUBMISSION_CATEGORIES } from "@razzoozle/common/constants"
 import { z } from "zod"
-import { usernameValidator } from "./auth"
-import { questionValidator } from "./quizz"
+import { SUBMISSION_CATEGORIES } from "@razzoozle/common/constants"
 
-// Used on both socket server (input guard) and web client (pre-submit validation)
+// A pending question submission (public user via /submit). No auth gate.
 export const submissionValidator = z.object({
-  submittedBy: usernameValidator,
-  question: questionValidator,
-  // WP-17 — INPUT: enforce a known category, but optional (old clients send none).
-  category: z.enum(SUBMISSION_CATEGORIES).optional(),
+  subject: z.string().min(1).max(200),
+  answers: z.array(z.string().min(1).max(200)).min(2).max(4),
+  correct: z.number().int().min(0),
+  category: z.enum(SUBMISSION_CATEGORIES),
+  language: z.string().min(2).max(8).optional(),
+  sources: z.array(z.string().url()).optional(),
 })
 
-export type SubmissionInput = z.infer<typeof submissionValidator>
+export type Submission = z.infer<typeof submissionValidator>
 
-// Server-side full-record validator (used when reading back from disk)
+// Stored submission record (persisted in config/submissions.json or DB).
+// Extends the client submission with approval metadata + timestamps.
 export const submissionRecordValidator = submissionValidator.extend({
-  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-  submittedAt: z.string().datetime(),
-  status: z.enum(["pending", "approved", "rejected"]),
-  // WP-17 — ON DISK: drop-safe. category is a free string here (NOT z.enum) so a
-  // future enum rename never silently drops a persisted record on read.
-  rejectionReason: z.string().max(500).optional(),
-  category: z.string().max(40).optional(),
+  id: z.string().min(1),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+  approvedAt: z.string().datetime().optional(),
+  rejectionReason: z.string().optional(),
+  createdAt: z.string().datetime(),
 })
+
+export type SubmissionRecord = z.infer<typeof submissionRecordValidator>

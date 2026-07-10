@@ -8,7 +8,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 // from the event-name suffix (the wire names are stable string constants, so a
 // simple suffix rule is enough for a docs surface — never a control path).
 
-export interface EventCatalogEntry {
+interface EventCatalogEntry {
   name: string // wire event string, e.g. "manager:auth"
   role: string // EVENTS namespace key, e.g. "MANAGER"
   key: string // the constant key, e.g. "AUTH"

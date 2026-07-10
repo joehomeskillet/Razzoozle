@@ -13,11 +13,3 @@ export interface CatalogEntry {
 
 // Lightweight list shape for the picker/management grid (no full question body
 // beyond the prompt text + type, so the LIST payload stays small).
-export interface CatalogMeta {
-  id: string
-  question: string
-  type?: Question["type"]
-  tags?: string[]
-  source?: CatalogSource
-  addedAt: string
-}

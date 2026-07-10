@@ -57,7 +57,8 @@ export const clientEventValidator = z.discriminatedUnion("type", [
 ])
 
 export type ClientEvent = z.infer<typeof clientEventValidator>
-export type ClientEventType = ClientEvent["type"]
+
+type ClientEventType = ClientEvent["type"]
 
 // Events we ALWAYS keep (never sampled away): operator needs every error and
 // every join failure. The other two types are sampled at 0.1.

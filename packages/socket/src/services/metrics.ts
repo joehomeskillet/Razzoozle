@@ -130,4 +130,3 @@ export const metrics = {
   },
 }
 
-export type MetricsSnapshot = ReturnType<typeof metrics.snapshot>

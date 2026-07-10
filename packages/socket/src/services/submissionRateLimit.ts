@@ -129,7 +129,7 @@ export const checkImageGenHourlyLimit = (key: string): boolean => {
 // A coarse server-wide ceiling for the public solo endpoints so no single actor
 // (or botnet of distinct identities) can hammer the solo API in aggregate.
 // Fixed-window counter; resets every GLOBAL_WINDOW_MS (reuses the 60 s window).
-export const GLOBAL_SOLO_MAX = 120 // max 120 solo calls/min server-wide
+const GLOBAL_SOLO_MAX = 120 // max 120 solo calls/min server-wide
 
 const soloGlobalState: RateState = { count: 0, windowStart: 0 }
 
@@ -157,7 +157,7 @@ export const checkGlobalSoloRate = (): boolean => {
 // brute-force credentials/tokens. Fixed-window counter; resets every
 // GLOBAL_WINDOW_MS. recordAuthFailure() counts a failure; isAuthThrottled()
 // reports whether the current window has crossed MAX_AUTH_FAILURES.
-export const MAX_AUTH_FAILURES = 10 // max 10 failed auths/min server-wide
+const MAX_AUTH_FAILURES = 10 // max 10 failed auths/min server-wide
 
 const authFailState: RateState = { count: 0, windowStart: 0 }
 

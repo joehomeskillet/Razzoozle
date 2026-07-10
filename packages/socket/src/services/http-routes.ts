@@ -25,54 +25,6 @@ import {
   serverLogLines,
 } from "@razzoozle/socket/services/log-buffer"
 
-// ── Re-exports from extracted modules ──────────────────────────────────────
-export { jsonOk, jsonError, textAttachment } from "./http/respond"
-export {
-  readBody,
-  readRawBody,
-  statusFrom413,
-  SKELETON_IMPORT_MAX,
-} from "./http/body"
-export {
-  RATE_MAX,
-  BUCKET_MAX,
-  SAMPLE_RATE,
-  withinRate,
-  sampleHash,
-  __resetClientEventBuckets,
-  __bucketSize,
-  handleClientEvents,
-} from "./http/client-events"
-export {
-  handleSoloGet,
-  handleCheckAnswer,
-  handleSoloScore,
-} from "./http/solo"
-import {
-  soloCheckAnswerRequestValidator,
-  soloScoreSubmitValidator,
-} from "@razzoozle/common/validators/solo"
-export {
-  registerThemeBroadcaster,
-  registerPluginBroadcaster,
-  handleSkeletonExport,
-  handleSkeletonImport,
-  handlePluginImport,
-  handlePluginExport,
-  handlePluginAsset,
-} from "./http/skeleton-plugin-io"
-export { handleResultOg } from "./http/result-og"
-export {
-  handleCreateAssignment,
-  handleGetAssignment,
-  handleGetAssignmentResults,
-  checkAssignmentDeadline,
-} from "./http/assignments"
-export {
-  authorizeManagerRequest,
-  authorizeDevRequest,
-} from "./http/broadcasters/manager-auth"
-
 // ── Imports for route table ────────────────────────────────────────────────
 
 import { getMergedAchievements } from "@razzoozle/socket/services/config"

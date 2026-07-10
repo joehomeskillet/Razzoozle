@@ -1,4 +1,4 @@
-export interface ThemeTokenDef {
+interface ThemeTokenDef {
   cssVar: string // CSS custom property name, e.g. "--state-correct"
   path: string // dot-path into Theme, e.g. "stateColors.correct"
   label: string // human label for the editor / doc

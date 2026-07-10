@@ -8,10 +8,6 @@ export const soloCheckAnswerRequestValidator = z.object({
   answerText: z.string().optional(),
 })
 
-export type SoloCheckAnswerInput = z.infer<
-  typeof soloCheckAnswerRequestValidator
->
-
 // Solo score submission (POST /api/quizz/:id/solo-score)
 export const soloScoreSubmitValidator = z.object({
   // Trim + enforce a max so long names don't bloat the persisted JSON.
@@ -30,5 +26,3 @@ export const soloScoreSubmitValidator = z.object({
     .optional(),
   assignmentId: z.string().optional(),
 })
-
-export type SoloScoreSubmitInput = z.infer<typeof soloScoreSubmitValidator>

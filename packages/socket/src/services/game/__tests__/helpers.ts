@@ -238,4 +238,3 @@ export const openQuestion = (
   }
 }
 
-export { vi }

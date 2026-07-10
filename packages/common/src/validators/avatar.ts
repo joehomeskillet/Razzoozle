@@ -1,15 +1,20 @@
 import { z } from "zod"
-import { AVATAR_MAX_BYTES } from "@razzoozle/common/constants"
 
-// Accepts either a DiceBear-generated SVG data-URI (e.g.
-// "data:image/svg+xml;utf8,…") or a base64 raster data-URL for an uploaded
-// image. Upper bound roughly covers a base64-encoded AVATAR_MAX_BYTES image;
-// the server enforces the real byte cap.
-export const setAvatarValidator = z.object({
-  avatar: z
-    .string()
-    .min(1)
-    .max(Math.ceil(AVATAR_MAX_BYTES * 1.4)),
-})
+// Player avatar (in-game profile pic). Ephemeral = ~4 MB limit. Persistent =
+// SVG data-URI or external CDN URL; the latter (game state) survives across runs.
+export const avatarValidator = z
+  .object({
+    // Ephemeral (one session): data-URI. E.g., DiceBear generated avatar.
+    dataUrl: z.string().min(1).optional(),
+    // Persistent (stored): SVG data-URI or public http(s) URL (mirrors quizz
+    // subject/title rules — no localhost, file://, gopher://, etc.). Either way,
+    // the client shows `<img src={url}>`; data-URIs render safely + carry the SVG
+    // inline, public URLs are fetched on render.
+    url: z.string().min(1).optional(),
+  })
+  .refine(
+    (v) => v.dataUrl || v.url,
+    "Either dataUrl or url must be provided",
+  )
 
-export type SetAvatarInput = z.infer<typeof setAvatarValidator>
+export type Avatar = z.infer<typeof avatarValidator>

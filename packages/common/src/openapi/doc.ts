@@ -200,4 +200,3 @@ export const buildOpenApiDoc = (routes: readonly RouteDoc[]) => {
   } as const
 }
 
-export type OpenApiDoc = ReturnType<typeof buildOpenApiDoc>

@@ -24,7 +24,6 @@ import {
 } from "./helpers"
 
 const QUESTION_START = 1_000_000_000_000
-const MANAGER_ID = "manager-socket"
 
 beforeEach(() => {
   vi.useFakeTimers()

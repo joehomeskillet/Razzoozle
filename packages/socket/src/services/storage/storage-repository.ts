@@ -31,15 +31,4 @@ export interface StorageRepository {
   getManagerPassword(): Promise<string>
 
   // ──────────────────────────────────────────────────────────────────────────
-  // PHASE 2+ TODO: additional methods to be implemented in a future wave
-  // getQuizzById / getQuizz / updateQuizz / setQuizzArchived / deleteQuizz
-  // saveResult / getResultsMeta / getResultById / deleteResult
-  // saveSubmission / getSubmissions / countPendingSubmissions / getSubmissionById / updateSubmission / deleteSubmission
-  // getCatalog / getCatalogById / saveCatalogEntry / updateCatalogEntry / deleteCatalogEntry
-  // getThemeTemplates / getThemeTemplateById / saveThemeTemplate / deleteThemeTemplate
-  // getMediaList / saveMediaFile / getMediaById
-  // getAISettings / setAISettings
-  // getAchievementsConfig / saveAchievementsConfig
-  // readPlugins / writePlugins
-  // ──────────────────────────────────────────────────────────────────────────
 }

@@ -59,22 +59,6 @@ const rowToInstalledPlugin = (row: InstalledPluginRow): InstalledPlugin => ({
  * List all installed plugins from Postgres.
  * Returns an empty array if the query fails.
  */
-export const listInstalledPluginsPg = async (): Promise<InstalledPlugin[]> => {
-  try {
-    const result = await getPool().query(
-      `SELECT id, name, version, enabled, capabilities, config, files
-       FROM installed_plugins
-       ORDER BY id ASC`,
-    )
-
-    return result.rows.map((row: InstalledPluginRow) =>
-      rowToInstalledPlugin(row),
-    )
-  } catch (error) {
-    console.error("plugins-pg.listInstalledPluginsPg failed", error)
-    return []
-  }
-}
 
 /**
  * Read all installed plugins from Postgres INCLUDING the files jsonb.

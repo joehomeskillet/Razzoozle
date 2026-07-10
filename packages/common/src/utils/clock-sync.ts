@@ -17,7 +17,9 @@ export interface ClockSample {
   serverNowMs: number
 }
 
-export interface ClockSyncResult {
+// Estimated (serverWallClock - clientMonoClock) in ms. Add to a
+// performance.now() reading to convert it to "server-now" wall-clock ms.
+type ClockSyncResult = {
   // Estimated (serverWallClock - clientMonoClock) in ms. Add to a
   // performance.now() reading to convert it to "server-now" wall-clock ms.
   offsetMs: number
