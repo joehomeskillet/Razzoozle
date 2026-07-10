@@ -45,14 +45,6 @@ create → join → login → startGame
   Q2: … → SHOW_LEADERBOARD → FINISHED            ✅ full game, 100 players + reconnect
 ```
 
-**Run the deployed preview:**
-```bash
-docker build -f rust/Dockerfile -t razzoozle-rust:latest .   # quizzes are bundled in the image
-docker run -d --name razzoozle-rust -p 127.0.0.1:3012:3020 -e PORT=3020 razzoozle-rust:latest
-# GET http://127.0.0.1:3012/health ⇒ 200 ; GET /api/quizzes ⇒ 469 ids (no volume mount needed)
-# SMOKE_URL=http://127.0.0.1:3012 node spikes/golden-frames/smoke-fullgame.cjs ⇒ FINISHED
-```
-
 ---
 
 ## Crates (Cargo workspace)
@@ -81,20 +73,6 @@ cargo test             # 197+ tests across protocol/engine/server
 # NOTE: ports 3001/3011/3030/3310 are taken by docker on the dev host — pick a free one.
 PORT=3478 RUST_LOG=info ./target/debug/razzoozle-server
 # → GET http://127.0.0.1:3478/health  ⇒ 200
-```
-
-**End-to-end smoke** (real socket.io client drives a full game):
-
-```bash
-node ../spikes/golden-frames/smoke-startgame.cjs   # expects the server on :3478
-# → GAME FLOW OK  (SHOW_START → SHOW_QUESTION)
-```
-
-**Real-game CI gate** (what runs on every deploy):
-
-```bash
-node ../spikes/golden-frames/smoke-fullgame.cjs --players=100 --reconnect
-# → 100 players, full multi-question game, reconnect mid-round ⇒ FINISHED
 ```
 
 ---
