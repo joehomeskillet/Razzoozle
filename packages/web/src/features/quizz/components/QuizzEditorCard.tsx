@@ -85,7 +85,7 @@ const QuizzEditorCard = ({
       onKeyDown={handleKeyDown}
       className={twMerge(
         clsx(
-          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 overflow-hidden rounded-xl border-2 border-gray-200 bg-white px-6 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+          "group relative flex h-36 cursor-pointer flex-col justify-between gap-1 overflow-hidden rounded-xl border-2 border-gray-200 bg-gray-50 px-6 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           {
             "border-primary": isActive,
             "border-primary ring-primary ring-2 ring-offset-1": selected,
@@ -150,6 +150,30 @@ const QuizzEditorCard = ({
       ) : question.type === "type-answer" ? (
         <div className="relative z-10 flex h-4 items-center justify-center rounded-md border border-gray-300 text-[10px] font-semibold text-gray-500">
           Aa
+        </div>
+      ) : question.type === "sentence-builder" ? (
+        <div className="relative z-10 flex gap-1">
+          {(question.chunks ?? []).slice(0, 3).map((_, i) => (
+            <div
+              key={i}
+              className="h-3 flex-1 rounded-full bg-gray-300"
+            />
+          ))}
+        </div>
+      ) : question.type === "poll" ? (
+        <div className="relative z-10 flex flex-col gap-1">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-3 w-full rounded-md border border-gray-300" />
+          ))}
+        </div>
+      ) : question.type === "boolean" ? (
+        <div className="relative z-10 grid grid-cols-2 gap-1">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="h-4 rounded-md border border-gray-300"
+            />
+          ))}
         </div>
       ) : (
         <div className="relative z-10 grid grid-cols-2 gap-1">
