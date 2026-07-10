@@ -310,4 +310,83 @@ impl GameRegistry {
             None => self.games_by_id.values().cloned().collect(),
         }
     }
+
+    /// Clean up avatar directories for games that no longer exist.
+    /// Mirrors Node's cleanupStaleAvatars: deletes avatar dirs that are NOT in the active game set.
+    /// Generic directory is always preserved.
+    pub fn cleanup_stale_avatars(&self) {
+        use std::fs;
+        use std::path::Path;
+
+        let active_game_ids: std::collections::HashSet<_> = self.games_by_id.keys().cloned().collect();
+        let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config".to_string());
+        let avatar_root = Path::new(&config_path).join("media/avatars");
+
+        if !avatar_root.exists() {
+            return;
+        }
+
+        let entries = match fs::read_dir(&avatar_root) {
+            Ok(e) => e,
+            Err(_) => return,
+        };
+
+        let mut removed = 0;
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = match entry.file_name().into_string() {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+
+            // Skip non-directories and the "generic" directory
+            if !path.is_dir() || name == "generic" {
+                continue;
+            }
+
+            // Delete if game ID is not active
+            if !active_game_ids.contains(&name) {
+                if let Err(e) = fs::remove_dir_all(&path) {
+                    tracing::warn!("Failed to remove stale avatar directory {}: {}", name, e);
+                } else {
+                    removed += 1;
+                }
+            }
+        }
+
+        if removed > 0 {
+            tracing::info!("Removed {} stale avatar director(ies)", removed);
+        }
+    }
+
+    /// Restore games from the snapshot, marking them as empty (for reconnect grace window).
+    /// Crash-guarded: a snapshot load failure logs a warning but returns empty Vec (never panics).
+    pub async fn load_snapshot(&mut self) {
+        let games = crate::state::snapshot::load_snapshot().await;
+
+        for game in games {
+            let game_id = game.game_id.clone();
+            let game = Arc::new(Mutex::new(game));
+
+            self.games_by_code
+                .insert(game_id.clone(), Arc::clone(&game));
+            self.games_by_id.insert(game_id.clone(), game);
+
+            // Mark as empty so it's cleaned up if nobody reconnects within the grace window
+            self.empty_games.push(EmptyGame {
+                game_id,
+                marked_at_ms: crate::state::get_now_ms(),
+            });
+        }
+    }
+
+    /// Save all in-flight games to disk. Crash-guarded: a write failure logs a warning but never throws.
+    pub async fn save_snapshot(&self) {
+        let games: Vec<_> = self.games_by_id.values().cloned().collect();
+
+        if let Err(e) = crate::state::snapshot::save_snapshot(games).await {
+            tracing::warn!("Failed to save snapshot: {}", e);
+        }
+    }
 }

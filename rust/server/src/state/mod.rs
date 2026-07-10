@@ -11,6 +11,7 @@ mod eviction;
 mod game;
 mod rate_limit;
 mod registry;
+pub mod snapshot;
 #[cfg(test)]
 mod tests;
 

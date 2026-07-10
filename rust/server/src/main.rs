@@ -150,6 +150,40 @@ async fn main() {
     // Initialize registry with pool (prefers DB quizzes when available, falls back to files)
     let registry = Arc::new(RwLock::new(GameRegistry::new(&db_pool, quiz_fixture).await));
 
+
+    // W2h — Crash-recovery snapshot: restore any games from the last shutdown, then start the periodic save task.
+    // Mirrors Node's boot order: loadSnapshot (if present) → cleanupStaleAvatars → startSnapshotTask.
+    // All steps are fully crash-guarded: a missing/corrupt snapshot is a no-op and never blocks boot.
+    {
+        let registry_clone = Arc::clone(&registry);
+        tokio::spawn(async move {
+            // Load snapshot (if present) and restore games as detached
+            {
+                let mut reg = registry_clone.write().await;
+                reg.load_snapshot().await;
+            }
+
+            // Clean up stale avatar directories for games that no longer exist (one-shot, after restore)
+            {
+                let reg = registry_clone.read().await;
+                reg.cleanup_stale_avatars();
+            }
+
+            // Start the periodic snapshot task (5s interval, matching Node)
+            let snapshot_registry = Arc::clone(&registry_clone);
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(Duration::from_secs(5));
+                loop {
+                    interval.tick().await;
+                    let reg = snapshot_registry.read().await;
+                    reg.save_snapshot().await;
+                }
+            });
+
+            info!("Snapshot task started");
+        });
+    }
+
     // Node parity: WS_MAX_HTTP_BUFFER_BYTES = ceil(8_000_000 * 4 / 3) + 256_000
     // (packages/socket/src/index.ts:48-52) — covers base64-inflated avatar/media
     // uploads (up to 8MB raw) sent over the socket transport.
@@ -259,6 +293,30 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 
     info!("Server listening on http://{}", addr);
+
+
+    // Graceful shutdown: save snapshot on SIGINT/SIGTERM before exiting.
+    // Mirrors Node's signal handlers (packages/socket/src/index.ts:204-214).
+    let registry_sig = Arc::clone(&registry);
+    tokio::spawn(async move {
+        let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+            .expect("Failed to install SIGINT handler");
+        let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("Failed to install SIGTERM handler");
+
+        tokio::select! {
+            _ = sigint.recv() => {
+                info!("SIGINT received, saving snapshot and shutting down");
+                registry_sig.read().await.save_snapshot().await;
+                std::process::exit(0);
+            }
+            _ = sigterm.recv() => {
+                info!("SIGTERM received, saving snapshot and shutting down");
+                registry_sig.read().await.save_snapshot().await;
+                std::process::exit(0);
+            }
+        }
+    });
 
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
