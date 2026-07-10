@@ -37,6 +37,7 @@ use tracing::{info, warn};
 use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
 use super::status_emit::{broadcast_status, send_status_to_manager};
+use super::status_emit::emit_plugin_lifecycle;
 
 /// 3-2-1 intro before Q1 (node: `io.emit(START_COOLDOWN)` + `cooldown.start(3)`).
 const INTRO_COOLDOWN_SECS: i32 = 3;
@@ -274,6 +275,7 @@ async fn open_question(
 
     let show_question_status = GameStatus::ShowQuestion(show_data);
     broadcast_status(io, game_ref, game_id, &show_question_status);
+    emit_plugin_lifecycle(&io, &game_id, "onQuestionShown", "SHOW_QUESTION");
 
     let (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled_chunks) = {
         let mut game = game_ref.lock().unwrap();
@@ -608,6 +610,7 @@ pub async fn run_game_lifecycle(
                     }
                 }
             }
+            emit_plugin_lifecycle(&io, &game_id, "onGameEnd", "FINISHED");
             return;
         }
 
@@ -622,6 +625,7 @@ pub async fn run_game_lifecycle(
                 );
             }
         }
+        emit_plugin_lifecycle(&io, &game_id, "onLeaderboard", "SHOW_LEADERBOARD");
 
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
         // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
@@ -715,6 +719,7 @@ pub async fn run_game_lifecycle(
                         }
                     }
                 }
+                emit_plugin_lifecycle(&io, &game_id, "onGameEnd", "FINISHED");
                 return;
             }
             Ok(GamePhase::ShowQuestion) => {

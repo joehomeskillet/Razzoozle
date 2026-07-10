@@ -3,6 +3,7 @@
 
 use crate::state::Game;
 use crate::socket::status_emit::send_status_to_manager;
+use crate::socket::status_emit::emit_plugin_lifecycle;
 use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
@@ -356,6 +357,7 @@ pub async fn perform_reveal_and_broadcast(
             // Stash the round recap for the lifecycle loop to emit via SHOW_ROUND_RECAP phase
             game.temp_round_recap = round_recap_opt.clone();
         }
+        emit_plugin_lifecycle(&io_handle, &game_id, "onResult", "SHOW_RESULT");
 
         let manager_responses = {
             let game = game_ref.lock().unwrap();
