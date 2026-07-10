@@ -8,7 +8,6 @@ This directory contains all database schema migrations for Razzoozle's shared Po
 
 - **Primary database**: PostgreSQL 16 (alpine container)
 - **Schema location**: `db/migrations/`
-- **Docker compose**: `docker-compose.postgres.yml` (available at project root)
 - **Connection pool**: 10 connections per backend (Node + Rust), 5s acquire timeout
 - **SSOT**: All game state, quizzes, results, themes, etc. centralize in this database
 
@@ -38,30 +37,16 @@ DATABASE_URL=postgresql://razzoozle:aB3xY9kL2mN5pQrStUvWxYz0abc1dEfGhIjKlMnOpQrS
 MANAGER_PASSWORD=YourTestPassword123
 ```
 
-### 3. Start Postgres Container
-
-```bash
-# Start Postgres container with docker-compose
-docker-compose -f docker-compose.postgres.yml up -d
-
-# Verify the container is healthy
-docker-compose -f docker-compose.postgres.yml ps
-# Output should show postgres service as "healthy"
-```
-
-### 4. Apply Migrations
+### 3. Apply Migrations
 
 Apply the initial schema migration:
 
 ```bash
-# Option A: Using psql directly
+# Using psql directly
 psql ${DATABASE_URL} < db/migrations/001_initial_schema.sql
-
-# Option B: Using docker exec (if container is running)
-docker exec razzoozle_postgres psql -U razzoozle -d razzoozle < db/migrations/001_initial_schema.sql
 ```
 
-### 5. Verify Schema
+### 4. Verify Schema
 
 ```bash
 # Connect to database and verify tables exist
@@ -178,20 +163,11 @@ DATABASE_MODE=pg-only       # Phase 3: DB only
 # Manager password (stored in DB, env var is fallback during Phase 1)
 MANAGER_PASSWORD=YourPassword
 
-# Postgres container environment (docker-compose)
+# Postgres container environment
 POSTGRES_PASSWORD=...       # Operator-set, from .env
 ```
 
 ## Troubleshooting
-
-### Container won't start
-```bash
-# Check logs
-docker-compose -f docker-compose.postgres.yml logs postgres
-
-# Verify port 5432 is not already in use
-lsof -i :5432
-```
 
 ### Schema application fails
 ```bash
@@ -220,9 +196,6 @@ psql ${DATABASE_URL} < db/migrations/001_initial_schema.sql
 ### Connection refused
 
 ```bash
-# Ensure container is running and healthy
-docker-compose -f docker-compose.postgres.yml ps
-
 # Test connection manually
 psql postgresql://razzoozle:PASSWORD@127.0.0.1:5432/razzoozle
 ```
