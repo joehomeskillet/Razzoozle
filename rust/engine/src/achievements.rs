@@ -2,7 +2,7 @@
 // Verbatim port of packages/common/src/achievements.ts + http/achievements.rs
 // BONUS_MAX=5000, default bonus=0 ensures byte-identical scoring without overrides.
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -139,6 +139,7 @@ pub fn rows_to_overrides(rows: &[Value]) -> Map<String, Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_default_config_all_14_achievements() {

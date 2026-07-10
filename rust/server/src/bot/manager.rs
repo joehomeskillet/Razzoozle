@@ -287,17 +287,6 @@ async fn submit_bot_answer(
     }
 }
 
-#[cfg(test)]
-impl BotManager {
-    pub fn pending_count(&self) -> usize {
-        self.pending.lock().unwrap().len()
-    }
-
-    pub fn set_bot_speed(&self, client_id: &str, speed: f32) {
-        self.speed.lock().unwrap().insert(client_id.to_string(), speed);
-    }
-}
-
 impl Default for BotManager {
     fn default() -> Self {
         Self::new()

@@ -268,16 +268,6 @@ impl GameRegistry {
         self.quizzes = quizzes;
     }
 
-    /// Find the manager socket ID for a game.
-    pub fn get_manager_socket_id(&self, game_id: &str) -> Option<String> {
-        self.games_by_id
-            .get(game_id)
-            .and_then(|game| {
-                let g = game.lock().unwrap();
-                Some(g.manager_socket_id.clone())
-            })
-    }
-
     /// Get the number of active games
     pub fn game_count(&self) -> usize {
         self.games_by_id.len()

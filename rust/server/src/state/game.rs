@@ -255,15 +255,6 @@ impl Game {
         }
     }
 
-    /// Update last activity timestamp to now
-    pub fn touch_activity(&mut self) {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
-        self.last_activity_ms = now;
-    }
-
     /// Check if this game has exceeded its TTL (for eviction)
     pub fn is_stale(&self, now_ms: u64) -> bool {
         now_ms.saturating_sub(self.last_activity_ms) > GAME_EVICTION_TTL_MS

@@ -695,9 +695,6 @@ impl GameState {
             .find(|result| result.client_id == client_id)
     }
 
-    pub fn player_by_client_id(&self, client_id: &str) -> Option<&Player> {
-        self.players.iter().find(|p| p.client_id == *client_id)
-    }
 
     fn sorted_leaderboard(&self) -> Vec<Player> {
         let mut ranked = self.players.clone();
