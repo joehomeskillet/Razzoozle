@@ -108,10 +108,12 @@
   .gh-mini:hover { box-shadow: var(--shadow-flat); transform: translateY(-1px); }
   .gh-mini svg { width: 16px; height: 16px; }
   @media (max-width: 600px) { 
-    .gh-mini .gh-label { display: none; } 
-    .gh-mini { padding: .42rem .55rem; }
-    .lang-switch { gap: 4px; padding: 4px; flex-wrap: nowrap; overflow-x: auto; }
-    .lang-switch button { padding: .4rem .6rem; font-size: .78rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .gh-mini .gh-label { display: none; }
+    .gh-mini { padding: .42rem .55rem; margin-left: auto; }
+    .header-row { flex-wrap: wrap; row-gap: 4px; padding-block: 8px; min-height: 0; }
+    .header-spacer { display: none; }
+    .lang-switch { order: 3; width: 100%; gap: 2px; padding: 3px; flex-wrap: nowrap; overflow-x: auto; justify-content: space-between; }
+    .lang-switch button { padding: .4rem .5rem; font-size: .78rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; flex: 1 0 auto; }
   }
 
   /* ===== Buttons ===== */
@@ -475,7 +477,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
             <div class="agent-card-text">
               <h3 data-i18n="agents.grok.name">Grok (xAI)</h3>
-              <p data-i18n="agents.grok.role">Image & creative assets</p>
+              <p data-i18n="agents.grok.role">Rust backend implementation</p>
             </div>
           </div>
 
@@ -483,7 +485,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
             <div class="agent-card-text">
               <h3 data-i18n="agents.gemini.name">Gemini (Google)</h3>
-              <p data-i18n="agents.gemini.role">Architecture & design</p>
+              <p data-i18n="agents.gemini.role">Long-context review &amp; judging</p>
             </div>
           </div>
 
@@ -500,6 +502,14 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <div class="agent-card-text">
               <h3 data-i18n="agents.local.name">Local inference</h3>
               <p data-i18n="agents.local.role">OpenVINO on Intel Arc</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M6 9l3 3-3 3"/><path d="M13 15h5"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.playwright.name">Browser QA (Playwright)</h3>
+              <p data-i18n="agents.playwright.role">End-to-end game testing</p>
             </div>
           </div>
         </div>
