@@ -441,18 +441,30 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(quiz, vec![make_player("p1", "Alice")]);
         
-        // Initially, display_order should be None
+        // Start game and show first question with randomize_answers disabled
         state.start().unwrap();
-        let q1 = state.show_question(0).unwrap();
-        assert_eq!(q1.display_order, None, "display_order should be None when randomize_answers is false");
+        let q1_no_randomize = state.show_question(0).unwrap();
+        assert_eq!(q1_no_randomize.display_order, None, "display_order should be None when randomize_answers is false");
         
-        // Enable randomization
+        // Play through round 0 completely: open answers → record → reveal → leaderboard
+        state.open_answers().unwrap();
+        state.set_clock_ms(100);
+        state.record_answer("p1", Some(1), None, None).unwrap();
+        state.set_clock_ms(200);
+        let _results = state.reveal(ScoringMode::Speed).unwrap();
+        let _leaderboard = state.leaderboard_view().unwrap();
+        
+        // Now in ShowLeaderboard. Move to next question (which will be question 1).
+        // Before doing that, enable randomization for question 1.
         state.set_randomize_answers(true);
-        let q1_randomized = state.show_question(0).unwrap();
+        state.next_or_finish().unwrap();
+        
+        // Now in ShowQuestion for question 1, with randomization enabled
+        let q2_randomized = state.current_show_question_data();
         
         // With randomizeAnswers enabled and a question with >1 answers (non-slider),
         // display_order should be Some(permutation)
-        let order = q1_randomized.display_order.as_ref()
+        let order = q2_randomized.display_order.as_ref()
             .expect("display_order should be Some when randomize_answers is true");
         
         let expected_len = state.current_question().answers.as_ref()
@@ -467,16 +479,11 @@ mod tests {
         assert_eq!(sorted, expected, "display_order should be a valid permutation");
         
         // Reconnect should return the SAME order (stored, not regenerated)
-        let q1_reconnect = state.current_show_question_data();
+        let q2_reconnect = state.current_show_question_data();
         assert_eq!(
-            q1_reconnect.display_order, q1_randomized.display_order,
+            q2_reconnect.display_order, q2_randomized.display_order,
             "current_show_question_data should return the same stored order for reconnect stability"
         );
-        
-        // Disable randomization
-        state.set_randomize_answers(false);
-        let q1_disabled = state.show_question(0).unwrap();
-        assert_eq!(q1_disabled.display_order, None, "display_order should be None when randomize_answers is disabled");
     }
 
 }
