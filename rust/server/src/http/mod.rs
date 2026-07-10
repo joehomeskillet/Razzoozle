@@ -5,6 +5,7 @@ pub mod logs;
 mod observability;
 pub mod skeleton;
 mod client_events;
+mod result_og;
 pub mod solo;
 
 use axum::{
@@ -130,5 +131,6 @@ pub fn router(state: AppState) -> Router {
         .route("/theme/*path", get(assets::handle_theme_asset))
         .route("/plugins/:id/*path", get(assets::handle_plugin_asset))
         .route("/sounds/*path", get(assets::handle_sounds_asset))
+        .route("/r/:id", get(result_og::handle_result_og))
         .with_state(state)
 }
