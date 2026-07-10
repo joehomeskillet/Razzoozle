@@ -89,6 +89,7 @@ const Username = () => {
         {t("game:usernameLabel")}
       </label>
       <Input
+        data-testid="username-input"
         id="username"
         ref={inputRef}
         className="text-center"
@@ -135,7 +136,7 @@ const Username = () => {
           </p>
         </>
       )}
-      <Button className="mt-4" onClick={handleLogin}>
+      <Button data-testid="join-submit" className="mt-4" onClick={handleLogin}>
         {t("common:submit")}
       </Button>
     </Card>

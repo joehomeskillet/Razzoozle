@@ -144,6 +144,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
             <div>
               <p className="text-2xl font-bold">{t("game:gamePinLabel")}</p>
               <p
+                data-testid="game-pin"
                 data-invite-code={inviteCode}
                 data-join-url={buildJoinUrl(inviteCode, webUrl)}
                 className="text-6xl font-extrabold tabular-nums lg:text-[clamp(3.75rem,12vh,9rem)]"

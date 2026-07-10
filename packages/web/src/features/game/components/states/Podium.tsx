@@ -321,6 +321,7 @@ const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Prop
         </div>
       )}
       <section
+        data-testid="podium"
         className={clsx(
           "relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-between transition-opacity",
           { "opacity-0": hasRecap && !recapDone },

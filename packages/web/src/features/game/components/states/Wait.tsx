@@ -77,7 +77,10 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
   }
 
   return (
-    <section className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center">
+    <section
+      data-testid={isLobby ? "waiting-room" : undefined}
+      className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center"
+    >
       <motion.div
         animate={loaderPulse}
         transition={breatheTransition}

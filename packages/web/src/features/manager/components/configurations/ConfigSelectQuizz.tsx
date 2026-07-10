@@ -103,6 +103,7 @@ const ConfigSelectQuizz = () => {
             }
           >
             <SelectableRow
+              data-testid={`quizz-row-${quizz.id}`}
               title={quizz.subject}
               meta={
                 quizz.questionCount != null
@@ -121,6 +122,7 @@ const ConfigSelectQuizz = () => {
 
       <div className="shrink-0 space-y-2 pt-4">
         <Button
+          data-testid="quizz-start-btn"
           variant="primary"
           size="lg"
           className="w-full rounded-xl"

@@ -170,6 +170,7 @@ const Result = ({
         // Moment of truth: the verdict icon pops in (overshoot scale) so the
         // correct/wrong reveal lands as a beat. Opacity-only when reduced.
         <motion.div
+          data-testid={correct ? "correct-answer-highlight" : undefined}
           key={correct ? "correct" : "wrong"}
           className="w-full"
           variants={reveal.pop()}

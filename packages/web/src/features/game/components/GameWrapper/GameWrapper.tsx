@@ -246,6 +246,7 @@ const GameWrapper = ({
                 )}
                 {manager && next && (
                   <Button
+                    data-testid="next-btn"
                     variant="primary"
                     size="sm"
                     className={clsx("min-h-11 px-5", {
