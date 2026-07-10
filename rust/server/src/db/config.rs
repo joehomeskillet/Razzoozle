@@ -1,6 +1,8 @@
 use sqlx::PgPool;
 use std::fs;
 use std::path::Path;
+use crate::socket::manager::theme::decode_base64;
+use crate::socket::manager::plugins::is_generic_safe_id;
 
 pub async fn create_pool() -> Option<PgPool> {
     match std::env::var("DATABASE_URL") {
@@ -141,35 +143,6 @@ async fn get_plugins_for_hydrate(pool: &Option<PgPool>) -> Vec<(String, Option<s
     rows
 }
 
-/// Simple base64 decoder (inline, no external dependency)
-fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
-    const BASE64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut result = Vec::new();
-    let mut buf = 0u32;
-    let mut bits = 0;
-
-    for &byte in s.as_bytes() {
-        let val = if byte == b'=' {
-            break;
-        } else if let Some(pos) = BASE64_CHARS.iter().position(|&b| b == byte) {
-            pos as u32
-        } else if byte.is_ascii_whitespace() {
-            continue;
-        } else {
-            return Err("Invalid base64 character".to_string());
-        };
-
-        buf = (buf << 6) | val;
-        bits += 6;
-
-        if bits >= 8 {
-            bits -= 8;
-            result.push(((buf >> bits) & 0xff) as u8);
-        }
-    }
-
-    Ok(result)
-}
 
 /// Boot-hydrate plugins from Postgres to disk.
 /// Mirrors Node's hydratePluginsFromPg semantics:
@@ -214,6 +187,12 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
                 continue;
             }
         };
+
+        // Sanitize plugin_id to prevent directory traversal
+        if !is_generic_safe_id(&plugin_id) {
+            eprintln!("plugins-pg hydrate: skipping plugin with unsafe id: {}", plugin_id);
+            continue;
+        }
 
         let plugin_dir = format!("{}/{}", plugins_root, plugin_id);
 
