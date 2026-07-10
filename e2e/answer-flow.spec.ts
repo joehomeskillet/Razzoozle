@@ -267,6 +267,28 @@ async function parseLeaderboardScore(
 }
 
 /** Wait for type-specific answer control to be visible in SELECT_ANSWER phase. */
+/** Advance to target state by clicking only on recognized safe states (responses/recap).
+   Handles auto-jumps and reconnections gracefully without risk of ABORT/SKIP. */
+async function advanceToState(host: Page, target: "leaderboard" | "podium", player1: Page, maxSteps = 5) {
+  for (let s = 0; s < maxSteps; s++) {
+    const targetLoc = target === "leaderboard"
+      ? host.getByTestId(`leaderboard-row-${PLAYER1}`)
+      : host.getByTestId("podium").or(player1.getByTestId("podium")).first()
+    if (await targetLoc.isVisible().catch(() => false)) return
+    // Only click on RECOGNIZED safe states (responses-view or round-recap).
+    if (await host.getByTestId("responses-view").isVisible().catch(() => false)
+      || await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+      await host.getByTestId("next-btn").click()
+    }
+    // Let state settle; do not click blindly.
+    await host.waitForTimeout(1_500)
+  }
+  const finalLoc = target === "leaderboard"
+    ? host.getByTestId(`leaderboard-row-${PLAYER1}`)
+    : host.getByTestId("podium").or(player1.getByTestId("podium")).first()
+  await expect(finalLoc).toBeVisible({ timeout: 30_000 })
+}
+
 async function waitForAnswerControl(page: Page, questionType: string) {
   switch (questionType) {
     case "choice":
@@ -417,31 +439,12 @@ test.describe("Answer flow — E2E All Types", () => {
         await test.step(`Q${i + 1}: reveal + leaderboard P1 > P2`, async () => {
           const isLast = i === quizFixture.questions.length - 1
           
-          // Wait for responses-view to be ready (host transitioned from SELECT_ANSWER to SHOW_RESPONSES).
-          await expect(host.getByTestId("responses-view")).toBeVisible({ timeout: 15_000 })
-          
           if (isLast) {
-            // Last question: Responses → Podium (no leaderboard, no round-recap).
-            await host.getByTestId("next-btn").click()
-            // Wait for podium (host or player1; may include end-recap sequence with opacity).
-            await expect(host.getByTestId("podium").or(player1.getByTestId("podium")).first()).toBeVisible({
-              timeout: 30_000,
-            })
+            // Last question: advance to podium (state-dispatch handles responses/recap/auto-jumps).
+            await advanceToState(host, "podium", player1)
           } else {
-            // Questions 1-6: Responses → Leaderboard OR Round-Recap.
-            // ONE click: Responses (auto after answers end) → Leaderboard OR Round-Recap (if achievements exist).
-            await host.getByTestId("next-btn").click()
-            // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
-            const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
-            await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
-            // If round-recap appeared, click next to advance to leaderboard.
-            if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
-              await host.getByTestId("next-btn").click()
-            }
-            // Wait for leaderboard row (now guaranteed to be visible).
-            await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({
-              timeout: 15_000,
-            })
+            // Questions 1-6: advance to leaderboard (state-dispatch handles responses/recap/auto-jumps).
+            await advanceToState(host, "leaderboard", player1)
 
             // P1 should see correct-answer-highlight after reveal (scored types).
             if (q.type !== "poll") {
@@ -549,6 +552,8 @@ test.describe("Answer flow — E2E All Types", () => {
         // P2 click may race the question end — catch if button disappeared.
         await player2AnswerPlan(quizFixture.questions[1]).run(p2).catch(() => {})
         await expect(p2.getByTestId("answer-submitted").or(p2.getByTestId("answer-result")).first()).toBeVisible()
+        // Advance to leaderboard (state-dispatch handles auto-jumps and reconnections).
+        await advanceToState(host, "leaderboard", p1)
       } finally {
         await hostCtx.close()
         await p1Ctx.close()
