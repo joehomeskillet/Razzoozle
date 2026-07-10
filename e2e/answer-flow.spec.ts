@@ -472,19 +472,6 @@ test.describe("Answer flow — E2E All Types", () => {
         const podium = host.getByTestId("podium").or(player1.getByTestId("podium")).first()
         await expect(podium).toBeVisible({ timeout: 20_000 })
       })
-
-
-      const podiumVisible = async () =>
-        (await host.getByTestId("podium").isVisible().catch(() => false)) ||
-        (await player1.getByTestId("podium").isVisible().catch(() => false))
-      await hostNextUntil(host, podiumVisible, "podium", 6)
-
-        const podium = host.getByTestId("podium")
-        // Podium is optional in intermediate screens — soft check.
-        if (await podium.isVisible().catch(() => false)) {
-          await expect(podium).toBeVisible()
-        }
-      })
     } finally {
       await hostCtx.close()
       await player1Ctx.close()
@@ -522,15 +509,11 @@ test.describe("Answer flow — E2E All Types", () => {
         })
         await player1AnswerPlan(quizFixture.questions[0]).run(p1)
         await player2AnswerPlan(quizFixture.questions[0]).run(p2)
-        await hostNextUntil(
-          host,
-          async () =>
-            await host
-              .getByTestId(`leaderboard-row-${PLAYER1}`)
-              .isVisible()
-              .catch(() => false),
-          "standalone race: leaderboard Q1",
-        )
+        // ONE click: Responses → Leaderboard, then ONE click: Leaderboard → Q2.
+        await host.getByTestId("next-btn").click()
+        await expect(
+          host.getByTestId(`leaderboard-row-${PLAYER1}`),
+        ).toBeVisible({ timeout: 15_000 })
         await host.getByTestId("next-btn").click()
         // Q2 boolean deadline race
         await expect(p1.getByTestId("question-text")).toBeVisible({
