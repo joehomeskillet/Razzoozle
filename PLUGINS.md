@@ -188,7 +188,7 @@ plugin can rely on per backend:
 | ZIP import/export over HTTP                             | ✅   | ✅   |
 | `ui.js` client injection (`window.razzoozle`)           | ✅   | ✅   |
 | Config persistence (`manager:pluginSetConfig`)          | ✅   | ✅   |
-| Lifecycle events to clients (see below)                 | ✅   | ✅   |
+| Lifecycle events to clients (`SERVER_HANDLER` only, see below) | ✅ | ✅ |
 | `server.js` execution (`SERVER_HANDLER`)                | ✅ in-process | ❌ inert (manager UI shows a warning) |
 
 **Consequence for authors:** client-only plugins (`ui.js` + `assets/**`) are
@@ -199,7 +199,10 @@ but deferred (`docs/design/plugin-runtime-rust.md`).
 ### Lifecycle events (client-side, both backends)
 
 Both backends emit `plugin:<id>:lifecycle:<hook>` to **all connected sockets**
-at these game transitions, with payload `{ gameId, status, data }`:
+— but **only for enabled plugins that declare the `SERVER_HANDLER` capability**
+(Node ties these emits to its loaded-plugin registry, which is gated the same
+way; UI-only plugins receive no lifecycle events on either backend). Emitted at
+these game transitions, with payload `{ gameId, status, data }`:
 
 | Hook              | Emitted at          | `status`          |
 | ----------------- | ------------------- | ----------------- |

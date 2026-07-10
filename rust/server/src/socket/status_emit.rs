@@ -40,9 +40,11 @@ pub fn send_status_to_manager(
     sock.emit(constants::game::STATUS, status).ok();
 }
 
-/// Emit lifecycle events to all registered plugins for a game state transition.
-/// Iterates installed_plugins and emits `plugin:<id>:lifecycle:<hook>` event for
-/// each plugin to ALL sockets in the game room, with payload {gameId, status, data}.
+/// Emit lifecycle events for a game state transition — Node parity:
+/// Node's emitLifecycle iterates only LOADED plugins, and loadPlugin gates on the
+/// SERVER_HANDLER capability (plugin-runtime.ts:271) — UI-only plugins get NO
+/// lifecycle events. Emits `plugin:<id>:lifecycle:<hook>` GLOBALLY (io.emit, all
+/// sockets — Node uses ioRef.emit, not a room) with payload {gameId, status, data}.
 /// Non-fatal: errors are logged but never break the game round (crash-guarded).
 pub fn emit_plugin_lifecycle(
     io: &SocketIo,
@@ -53,13 +55,12 @@ pub fn emit_plugin_lifecycle(
     let plugins = crate::socket::manager::plugins::read_plugins_index();
     
     for plugin in plugins {
-        // Check if plugin is enabled and declares this lifecycle hook
-        if !plugin.enabled {
+        // Node parity gate: enabled AND SERVER_HANDLER capability (= would be
+        // loaded by Node's runtime). UI-only plugins are skipped like on Node.
+        if !plugin.enabled || !plugin.capabilities.iter().any(|c| c == "SERVER_HANDLER") {
             continue;
         }
-        
-        // Only emit if the plugin declares this hook in its manifest
-        // (for now, emit to all — Node emits to all registered plugins regardless)
+
         let event_name = format!("plugin:{}:lifecycle:{}", plugin.id, hook_name);
         let payload = serde_json::json!({
             "gameId": game_id,
@@ -67,7 +68,7 @@ pub fn emit_plugin_lifecycle(
             "data": {}
         });
         
-        match io.to(game_id.to_string()).emit(&event_name, &payload) {
+        match io.emit(&event_name, &payload) {
             Ok(()) => {},
             Err(e) => {
                 tracing::warn!(
