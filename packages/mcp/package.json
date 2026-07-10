@@ -9,7 +9,8 @@
     "start": "node dist/index.cjs",
     "types": "tsc --noEmit",
     "format": "prettier --check . --log-level warn",
-    "format:fix": "prettier --write . --log-level warn"
+    "format:fix": "prettier --write . --log-level warn",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "license": "ISC",
   "dependencies": {
