@@ -545,7 +545,7 @@ pub async fn run_game_lifecycle(
                     game.game_id.clone(),
                     game.engine.quiz.subject.clone(),
                     serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
-                    None as Option<&str>, // quiz_id: TODO — extract from engine/quiz
+                    Some(game.quiz_id.clone()),
                 )
             };
             // L104: Fire-and-forget result persistence (mirror Node's behavior)
@@ -652,7 +652,7 @@ pub async fn run_game_lifecycle(
                         game.game_id.clone(),
                         game.engine.quiz.subject.clone(),
                         serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
-                        None as Option<&str>, // quiz_id: TODO
+                        Some(game.quiz_id.clone()),
                     )
                 };
                 // L104: Fire-and-forget result persistence
@@ -818,6 +818,7 @@ mod tests {
             "game-1".to_string(),
             "ABCD".to_string(),
             "manager-socket".to_string(),
+            "test-quiz".to_string(),
             quiz.clone(),
         );
         let game_ref = Arc::new(Mutex::new({
@@ -852,6 +853,7 @@ mod tests {
             "game-2".to_string(),
             "EFGH".to_string(),
             "manager-socket".to_string(),
+            "test-quiz".to_string(),
             quiz.clone(),
         );
         let game_ref = Arc::new(Mutex::new({
@@ -909,6 +911,7 @@ mod tests {
                 "game-adjust".to_string(),
                 "ADJT".to_string(),
                 "manager-socket".to_string(),
+                "test-quiz".to_string(),
                 quiz,
             );
             // Mirror what open_question() arms for a live answer window,

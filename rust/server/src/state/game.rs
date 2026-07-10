@@ -27,6 +27,9 @@ pub struct Game {
     pub host_token: String,
     pub players: Vec<Player>,
     pub engine: GameState,
+    // The quiz ID from which this game was created — immutable for the game's lifetime.
+    // Used during result persistence to link results back to the source quiz.
+    pub quiz_id: String,
     // Creation timestamp (ms since UNIX epoch) — distinct from last_activity_ms,
     // which advances as the game is used. games_list.rs's admin panel wants the
     // actual creation time, not "how recently touched".
@@ -108,6 +111,7 @@ impl Game {
         game_id: String,
         invite_code: String,
         manager_socket_id: String,
+        quiz_id: String,
         quiz: Quizz,
     ) -> Self {
         let now = SystemTime::now()
@@ -126,6 +130,7 @@ impl Game {
             host_token,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),
+            quiz_id,
             created_at_ms: now,
             last_activity_ms: now,
             low_latency: false,

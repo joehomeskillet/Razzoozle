@@ -466,6 +466,7 @@ mod tests {
             "game-test".to_string(),
             "TEST".to_string(),
             "manager-socket".to_string(),
+            "test-quiz".to_string(),
             quiz.clone(),
         );
         game.engine.phase = phase;

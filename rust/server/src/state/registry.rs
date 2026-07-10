@@ -175,12 +175,14 @@ impl GameRegistry {
         manager_client_id: String,
         low_latency: bool,
     ) -> Result<(String, String, String), &'static str> {
-        let quiz = match quiz_id {
-            Some(id) if !id.is_empty() => match self.quizzes.get(&id) {
-                Some(q) => q.clone(),
-                None => return Err("errors:quizz.notFound"),
-            },
+        let quiz_id_str = match quiz_id {
+            Some(id) if !id.is_empty() => id,
             _ => return Err("errors:quizz.notFound"),
+        };
+
+        let quiz = match self.quizzes.get(&quiz_id_str) {
+            Some(q) => q.clone(),
+            None => return Err("errors:quizz.notFound"),
         };
 
         // C3 — active-game cap: reject once N concurrent games exist
@@ -195,6 +197,7 @@ impl GameRegistry {
             game_id.clone(),
             invite_code.clone(),
             manager_socket_id,
+            quiz_id_str,
             quiz,
         );
         game.manager_client_id = Some(manager_client_id);

@@ -179,6 +179,7 @@ fn test_add_player_rejects_duplicate_client_id() {
         "game-1".to_string(),
         "INV1".to_string(),
         "manager-1".to_string(),
+        "test-quiz".to_string(),
         empty_quiz,
     );
 
@@ -408,6 +409,7 @@ fn test_manager_reconnect_records_status_roundtrip() {
         "game-reconnect".to_string(),
         "INVITE".to_string(),
         "manager-socket".to_string(),
+        "test-quiz".to_string(),
         quiz,
     );
     let select = GameStatus::SelectAnswer(SelectAnswerData {
@@ -452,6 +454,7 @@ fn test_manager_reconnect_fallback_when_nothing_recorded() {
         "game-reconnect-fallback".to_string(),
         "INVITE".to_string(),
         "manager-socket".to_string(),
+        "test-quiz".to_string(),
         quiz,
     );
     assert!(game.last_manager_status.is_none());
@@ -473,6 +476,7 @@ fn test_manager_reconnect_paused_status() {
         "game-reconnect-paused".to_string(),
         "INVITE".to_string(),
         "manager-socket".to_string(),
+        "test-quiz".to_string(),
         quiz,
     );
     let paused = GameStatus::Paused(PausedData {
@@ -497,6 +501,7 @@ async fn test_bot_manager_schedule_answers() {
         "game-bot".to_string(),
         "BOTS".to_string(),
         "manager-socket".to_string(),
+        "test-quiz".to_string(),
         quiz,
     )));
     {

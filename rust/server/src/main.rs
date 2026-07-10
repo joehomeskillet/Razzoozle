@@ -71,6 +71,7 @@ mod host_token_tests {
             "game-1".to_string(),
             "INVITE1".to_string(),
             "manager-1".to_string(),
+            "test-quiz".to_string(),
             razzoozle_protocol::quizz::Quizz {
                 subject: "Test".to_string(),
                 questions: vec![],
