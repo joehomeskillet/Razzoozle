@@ -17,6 +17,7 @@ import {
   GAME_STATE_COMPONENTS,
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
+import Result from "@razzoozle/web/features/game/components/states/Result"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
@@ -192,7 +193,7 @@ const PlayerGamePage = () => {
 
   return (
     <GameWrapper statusName={status.name}>
-      {CurrentComponent && <CurrentComponent data={status.data as never} />}
+      {CurrentComponent && <CurrentComponent {...(CurrentComponent === Result ? { audience: "player" } : {})} data={status.data as never} />}
       {CurrentComponent && <PluginRenderSlot status={status.name} data={status.data} />}
     </GameWrapper>
   )
