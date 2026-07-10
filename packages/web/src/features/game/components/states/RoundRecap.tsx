@@ -24,7 +24,7 @@ interface Props {
 
 const RoundRecap = ({ data: { roundRecap } }: Props) => {
   return (
-    <div className="relative flex h-full w-full flex-1 flex-col">
+    <div data-testid="round-recap" className="relative flex h-full w-full flex-1 flex-col">
       <RecapSequence roundAwards={roundRecap} />
     </div>
   )
