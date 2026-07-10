@@ -127,7 +127,6 @@ export const upsertSubmissionPg = async (data: Submission): Promise<{ id: string
          submitted_at = EXCLUDED.submitted_at,
          status = EXCLUDED.status,
          question = EXCLUDED.question,
-         source = EXCLUDED.source,
          category = EXCLUDED.category,
          rejection_reason = EXCLUDED.rejection_reason,
          version = submissions.version + 1,
