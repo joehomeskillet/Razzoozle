@@ -13,6 +13,10 @@ export default defineConfig({
   // No webServer: Orchestrator / ops start node|rust twins externally.
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    // Playwright's default actionTimeout is 0 = INFINITE: a click on an
+    // unmounting element (e.g. deadline-race answer vs question end) retries
+    // forever and .catch() never fires. Bound it so races reject fast.
+    actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
