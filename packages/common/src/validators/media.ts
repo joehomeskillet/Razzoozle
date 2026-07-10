@@ -11,13 +11,9 @@ export const mediaUploadValidator = z.object({
   category: z.enum(MEDIA_CATEGORIES).optional(),
 })
 
-export type MediaUploadInput = z.infer<typeof mediaUploadValidator>
-
 export const mediaDeleteValidator = z.object({
   id: z.string().min(1),
 })
-
-export type MediaDeleteInput = z.infer<typeof mediaDeleteValidator>
 
 // ── #23 media pipeline validators (public /submit) ──────────────────────────
 
@@ -33,8 +29,6 @@ export const editImageValidator = z.object({
   prompt: z.string().min(1).max(PROMPT_MAX_LEN),
 })
 
-export type EditImageInput = z.infer<typeof editImageValidator>
-
 // Public image upload (image-only, NO audio, NO category — the manager library
 // stays auth-gated). The byte cap is enforced in the handler, not here.
 export const publicUploadValidator = z.object({
@@ -42,11 +36,7 @@ export const publicUploadValidator = z.object({
   dataUrl: z.string().regex(/^data:image\//, "errors:media.invalidDataUrl"),
 })
 
-export type PublicUploadInput = z.infer<typeof publicUploadValidator>
-
 // Standalone prompt-enhance preview (LLM op, no GPU).
 export const enhancePromptValidator = z.object({
   prompt: z.string().min(1).max(PROMPT_MAX_LEN),
 })
-
-export type EnhancePromptInput = z.infer<typeof enhancePromptValidator>

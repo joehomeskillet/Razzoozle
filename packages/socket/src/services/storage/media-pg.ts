@@ -98,7 +98,7 @@ export const listMediaAssetsPg = async (): Promise<MediaMeta[]> => {
 }
 
 /** Fetch the bytea data for a media asset by id. Returns null if not found. */
-export const getMediaAssetDataPg = async (id: string): Promise<Buffer | null> => {
+const getMediaAssetDataPg = async (id: string): Promise<Buffer | null> => {
   try {
     const result = await getPool().query(
       `SELECT data FROM media_assets WHERE id = $1`,

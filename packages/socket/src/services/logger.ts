@@ -26,7 +26,7 @@ const SERVICE = "quiz-socket"
 // key is also matched at one level of nesting via the `*.key` wildcard so a
 // secret nested inside a logged payload object is still censored. pino's redact
 // engine matches these against the serialized object graph.
-export const REDACT_PATHS: string[] = [
+const REDACT_PATHS: string[] = [
   "password",
   "managerPassword",
   "*.password",
