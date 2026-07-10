@@ -13,9 +13,11 @@
     "test": "pnpm -r --if-present run test",
     "verify": "pnpm -r run types && oxlint && pnpm -r --if-present run test",
     "format": "pnpm -r --parallel run format",
-    "format:fix": "pnpm -r --parallel run format:fix"
+    "format:fix": "pnpm -r --parallel run format:fix",
+    "e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@stylistic/eslint-plugin": "latest",
     "@types/node": "^26.1.0",
     "dotenv-cli": "^11.0.0",
