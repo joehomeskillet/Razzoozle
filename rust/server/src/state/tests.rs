@@ -114,6 +114,7 @@ fn test_active_game_cap() {
             Some("test-quiz".to_string()),
             format!("client-{}", i),
             false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
         );
         assert!(result.is_ok(), "Game {} creation failed", i);
     }
@@ -124,7 +125,8 @@ fn test_active_game_cap() {
         Some("test-quiz".to_string()),
         "client-overflow".to_string(),
         false,
-    );
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        );
     assert!(result.is_err(), "101st game should fail");
     assert_eq!(result.unwrap_err(), "errors:game.serverBusy");
 }
@@ -141,7 +143,7 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
     let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
 
     // Missing quizzId
-    let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), false);
+    let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), false, serde_json::json!({"enabled": false, "clockSync": true}));
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // Empty-string quizzId
@@ -150,7 +152,8 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         Some(String::new()),
         "client-2".to_string(),
         false,
-    );
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // Unknown quizzId (not registered)
@@ -159,7 +162,8 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         Some("does-not-exist".to_string()),
         "client-3".to_string(),
         false,
-    );
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // None of the above should have created a game (parity with Node:
@@ -241,6 +245,7 @@ fn test_evict_stale_games_recovers_poisoned_mutex() {
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
             false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
     let game_ref = registry.get_game_by_id(&game_id).unwrap();
@@ -290,6 +295,7 @@ fn test_game_eviction_clears_players() {
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
             false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
 
@@ -364,6 +370,7 @@ async fn test_empty_grace_mark_reactivate_cleanup() {
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
             false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
 

@@ -32,7 +32,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 // the new Game at creation time, so a later per-ping gate
                 // (separate WP) can check game.low_latency synchronously
                 // instead of an async DB round-trip on every clock:ping.
-                let (_, low_latency_enabled, _, randomize_answers, _, _) = crate::db::get_game_config(&db_pool).await;
+                let (_, low_latency_enabled, _, randomize_answers, _, low_latency_config) = crate::db::get_game_config(&db_pool).await;
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Fetch achievements config for this game (N3 requirement)
@@ -41,7 +41,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let mut registry = registry.write().await;
                 // C3 — active-game cap; also rejects an unresolved quizzId
                 // (parity with Node — see create_game's own doc comment).
-                match registry.create_game(socket_id.clone(), quiz_id, client_id.clone(), low_latency) {
+                match registry.create_game(socket_id.clone(), quiz_id, client_id.clone(), low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true}))) {
                     Ok((game_id, invite_code, host_token)) => {
                         info!(
                             "Game created: gameId={}, inviteCode={}",

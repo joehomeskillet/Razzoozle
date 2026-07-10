@@ -174,6 +174,7 @@ impl GameRegistry {
         quiz_id: Option<String>,
         manager_client_id: String,
         low_latency: bool,
+        low_latency_config: serde_json::Value,
     ) -> Result<(String, String, String), &'static str> {
         let quiz = match quiz_id {
             Some(id) if !id.is_empty() => match self.quizzes.get(&id) {
@@ -199,6 +200,7 @@ impl GameRegistry {
         );
         game.manager_client_id = Some(manager_client_id);
         game.low_latency = low_latency;
+        game.low_latency_config = low_latency_config;
         let host_token = game.host_token.clone();
         let game = Arc::new(Mutex::new(game));
 

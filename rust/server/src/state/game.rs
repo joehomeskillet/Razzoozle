@@ -38,6 +38,10 @@ pub struct Game {
     // future per-ping gate check this synchronously instead of an async DB
     // round-trip on every clock:ping.
     pub low_latency: bool,
+    // Full low-latency config JSON object (enabled, clockSync, preloadNextQuestion, etc.).
+    // Cached at create time and refreshed on every manager:setGameConfig write.
+    // Used by clock_ping to check clockSync sub-flag without a DB query.
+    pub low_latency_config: serde_json::Value,
     // Monotonic per-game server sequence counter for SELECT_ANSWER emissions.
     // Incremented once per opened question when low_latency is true.
     pub server_seq: i32,
@@ -129,6 +133,14 @@ impl Game {
             created_at_ms: now,
             last_activity_ms: now,
             low_latency: false,
+            low_latency_config: serde_json::json!({
+                "enabled": false,
+                "clockSync": true,
+                "preloadNextQuestion": true,
+                "answerAck": true,
+                "scoreboardBroadcastThrottleMs": 100,
+                "maxLatencyCompensationMs": 150,
+            }),
             server_seq: 0,
             auto_mode: false,
             temp_round_recap: None,
