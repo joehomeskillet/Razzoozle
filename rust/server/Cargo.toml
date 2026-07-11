@@ -29,6 +29,7 @@ zip = { version = "8.6", default-features = false, features = ["deflate-flate2-z
 # WP3 — WebP transcode for media uploads + AI-generated images (parity with Node toWebp).
 image = { version = "0.24", default-features = false, features = ["png", "jpeg", "jpeg_rayon", "webp"] }
 subtle = "2.6.1"
+tower-http = { version = "0.6", features = ["cors", "fs", "set-header"] }
 
 # test-util only actually matters for `cargo test` (paused-clock timer tests in
 # socket/cooldown.rs), but Cargo unifies feature flags for a dep across the
