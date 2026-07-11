@@ -1,6 +1,7 @@
 import ConfigField from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigField"
 import ConfigNumberInput from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigNumberInput"
 import ConfigSection from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig/ConfigSection"
+import QuestionEditorAIAssist from "@razzoozle/web/features/quizz/components/QuestionEditorAIAssist"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { Clock, Timer } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -64,6 +65,8 @@ const QuestionEditorConfig = () => {
           </ConfigField.Description>
         </ConfigField>
       </ConfigSection>
+
+      <QuestionEditorAIAssist />
     </aside>
   )
 }
