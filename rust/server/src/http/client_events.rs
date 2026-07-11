@@ -315,8 +315,8 @@ mod tests {
         assert!(within_rate("client-1", now));
         assert!(within_rate("client-1", now));
 
-        // Exhaust rate limit
-        for _ in 0..18 {
+        // Exhaust rate limit (RATE_MAX = 20 total: 2 above + 17 here + 1 below)
+        for _ in 0..17 {
             assert!(within_rate("client-1", now));
         }
         // 20th should succeed
