@@ -64,6 +64,10 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "playerTokens": player_tokens,
         "autoMode": game.auto_mode,
         "currentQuestionIndex": game.engine.current_question_index,
+        // Absolute wall-clock answer deadline (ms since epoch) of the in-flight
+        // question, persisted so a mid-SELECT_ANSWER restore can reason about
+        // remaining time. See resume_plan_from_snapshot / resume_game_lifecycle (#12).
+        "answerDeadlineAtServerMs": game.deadline_ms,
         // Last recorded manager status for reconnect replay
         "lastManagerStatus": game.last_manager_status.as_ref().map(|(status, data)| {
             serde_json::json!({
@@ -185,6 +189,78 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     Some(game)
 }
 
+/// How a snapshot-restored game should resume its per-game lifecycle task
+/// (BLOCKER #12). Derived from the RAW snapshot — which still carries the true
+/// running phase — even though `game_from_snapshot` collapses `engine.phase` to
+/// a safe ShowLeaderboard baseline for reconnect. `None` for lobby/finished
+/// snapshots (nothing to drive forward).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResumePlan {
+    pub game_id: String,
+    /// Question index the resumed lifecycle loop opens first.
+    pub start_index: usize,
+    /// The snapshot caught the game AFTER the last question was already scored
+    /// (post-reveal on the final question) — drive straight to FINISHED instead
+    /// of opening a non-existent next question.
+    pub finish_now: bool,
+}
+
+/// Classify how a restored game must resume, from the raw snapshot's TRUE phase.
+///
+/// Pre-reveal phases (SHOW_START/SHOW_QUESTION/SELECT_ANSWER) replay the
+/// in-flight question: its points were not applied yet (reveal applies them), so
+/// re-opening it is correct and cannot double-count. Per-round answer state is
+/// not persisted, so the answer window simply restarts fresh.
+///
+/// Post-reveal phases (SHOW_RESULT/SHOW_ROUND_RECAP/SHOW_LEADERBOARD) already
+/// scored question `index` (points are persisted in the players), so we advance
+/// PAST it to the next question — or finish, when it was the last one, to avoid
+/// re-revealing and double-counting it.
+///
+/// Lobby (WAIT) / FINISHED / unknown → `None` (no lifecycle to resume).
+pub fn resume_plan_from_snapshot(snap: &serde_json::Value) -> Option<ResumePlan> {
+    let game_id = snap.get("gameId")?.as_str()?.to_string();
+    let started = snap.get("started").and_then(|v| v.as_bool()).unwrap_or(false);
+    if !started {
+        return None;
+    }
+    let phase = snap.get("phase")?.as_str()?;
+    let index = snap
+        .get("currentQuestionIndex")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
+    let total = snap
+        .get("quizz")
+        .and_then(|q| q.get("questions"))
+        .and_then(|q| q.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+
+    match phase {
+        "SHOW_START" | "SHOW_QUESTION" | "SELECT_ANSWER" => Some(ResumePlan {
+            game_id,
+            start_index: index,
+            finish_now: false,
+        }),
+        "SHOW_RESULT" | "SHOW_ROUND_RECAP" | "SHOW_LEADERBOARD" => {
+            if index + 1 >= total {
+                Some(ResumePlan {
+                    game_id,
+                    start_index: index,
+                    finish_now: true,
+                })
+            } else {
+                Some(ResumePlan {
+                    game_id,
+                    start_index: index + 1,
+                    finish_now: false,
+                })
+            }
+        }
+        _ => None,
+    }
+}
+
 /// Save all in-flight games to disk. Filters out trivially-empty games (no players, not started).
 /// Atomic write via temp file + rename to prevent corruption on crash mid-write.
 /// Crash-guarded: a write failure logs a warning but never throws.
@@ -231,10 +307,12 @@ pub async fn save_snapshot(games: Vec<std::sync::Arc<std::sync::Mutex<Game>>>) -
     Ok(())
 }
 
-/// Load games from the snapshot file on boot. Returns the loaded games (detached, no socket bindings).
+/// Load games from the snapshot file on boot. Returns each loaded game (detached,
+/// no socket bindings) paired with its lifecycle `ResumePlan` (`None` unless the
+/// game was restored mid-flight and needs its lifecycle task re-spawned).
 /// Missing file => returns empty Vec (no-op).
 /// Corrupt/wrong-version file => logs a warning and returns empty Vec (never throws).
-pub async fn load_snapshot() -> Vec<Game> {
+pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
     let file = snapshot_file();
 
     if !file.exists() {
@@ -275,7 +353,8 @@ pub async fn load_snapshot() -> Vec<Game> {
     for snap in games_array {
         match game_from_snapshot(snap) {
             Some(game) => {
-                restored.push(game);
+                let plan = resume_plan_from_snapshot(snap);
+                restored.push((game, plan));
             }
             None => {
                 warn!("Failed to restore a game from snapshot, continuing");
@@ -505,5 +584,52 @@ mod tests {
         assert_eq!(p2.player_token, Some("token-bob-secret".to_string()));
         assert_eq!(restored.engine.phase, GamePhase::ShowLeaderboard);
         assert_eq!(restored.engine.current_question_index, 3);
+    }
+
+    /// BLOCKER #12: the resume plan derived from the raw snapshot must classify
+    /// pre-reveal phases as "replay the in-flight question" and post-reveal
+    /// phases as "advance past it" (or finish, when it was the last).
+    #[test]
+    fn test_resume_plan_classification() {
+        let snap = |phase: &str, idx: u64, num_q: usize, started: bool| {
+            let questions: Vec<serde_json::Value> = (0..num_q)
+                .map(|_| serde_json::json!({"question": "q", "answers": [], "time": 10}))
+                .collect();
+            serde_json::json!({
+                "gameId": "game-1",
+                "started": started,
+                "phase": phase,
+                "quizz": {"subject": "S", "questions": questions},
+                "currentQuestionIndex": idx,
+            })
+        };
+
+        // Lobby / finished / not-started → no resume.
+        assert_eq!(resume_plan_from_snapshot(&snap("WAIT", 0, 3, false)), None);
+        assert_eq!(resume_plan_from_snapshot(&snap("FINISHED", 2, 3, true)), None);
+
+        // Pre-reveal → replay the current question (start_index == index).
+        for phase in ["SHOW_START", "SHOW_QUESTION", "SELECT_ANSWER"] {
+            assert_eq!(
+                resume_plan_from_snapshot(&snap(phase, 1, 3, true)),
+                Some(ResumePlan { game_id: "game-1".into(), start_index: 1, finish_now: false }),
+                "pre-reveal phase {phase} must replay the in-flight question"
+            );
+        }
+
+        // Post-reveal, not last → advance to the next question.
+        for phase in ["SHOW_RESULT", "SHOW_ROUND_RECAP", "SHOW_LEADERBOARD"] {
+            assert_eq!(
+                resume_plan_from_snapshot(&snap(phase, 1, 3, true)),
+                Some(ResumePlan { game_id: "game-1".into(), start_index: 2, finish_now: false }),
+                "post-reveal phase {phase} must advance past the scored question"
+            );
+        }
+
+        // Post-reveal on the LAST question → finish, never re-open/double-count.
+        assert_eq!(
+            resume_plan_from_snapshot(&snap("SHOW_RESULT", 2, 3, true)),
+            Some(ResumePlan { game_id: "game-1".into(), start_index: 2, finish_now: true })
+        );
     }
 }

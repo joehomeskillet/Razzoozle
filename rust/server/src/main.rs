@@ -155,35 +155,29 @@ async fn main() {
     // W2h — Crash-recovery snapshot: restore any games from the last shutdown, then start the periodic save task.
     // Mirrors Node's boot order: loadSnapshot (if present) → cleanupStaleAvatars → startSnapshotTask.
     // All steps are fully crash-guarded: a missing/corrupt snapshot is a no-op and never blocks boot.
+    // Load synchronously so the resume plans are available here; the actual
+    // lifecycle resume is spawned once the socket "/" namespace exists (further
+    // below), so restored games can emit to reconnecting clients (BLOCKER #12).
+    let resume_plans = {
+        let mut reg = registry.write().await;
+        let plans = reg.load_snapshot().await;
+        // Clean up stale avatar directories for games that no longer exist.
+        reg.cleanup_stale_avatars();
+        plans
+    };
     {
-        let registry_clone = Arc::clone(&registry);
+        // Start the periodic snapshot task (5s interval, matching Node)
+        let snapshot_registry = Arc::clone(&registry);
         tokio::spawn(async move {
-            // Load snapshot (if present) and restore games as detached
-            {
-                let mut reg = registry_clone.write().await;
-                reg.load_snapshot().await;
+            let mut interval = tokio::time::interval(Duration::from_secs(5));
+            loop {
+                interval.tick().await;
+                let reg = snapshot_registry.read().await;
+                reg.save_snapshot().await;
             }
-
-            // Clean up stale avatar directories for games that no longer exist (one-shot, after restore)
-            {
-                let reg = registry_clone.read().await;
-                reg.cleanup_stale_avatars();
-            }
-
-            // Start the periodic snapshot task (5s interval, matching Node)
-            let snapshot_registry = Arc::clone(&registry_clone);
-            tokio::spawn(async move {
-                let mut interval = tokio::time::interval(Duration::from_secs(5));
-                loop {
-                    interval.tick().await;
-                    let reg = snapshot_registry.read().await;
-                    reg.save_snapshot().await;
-                }
-            });
-
-            info!("Snapshot task started");
         });
     }
+    info!("Snapshot task started");
 
     // Node parity: WS_MAX_HTTP_BUFFER_BYTES = ceil(8_000_000 * 4 / 3) + 256_000
     // (packages/socket/src/index.ts:48-52) — covers base64-inflated avatar/media
@@ -235,6 +229,26 @@ async fn main() {
 
         }
     });
+
+    // BLOCKER #12 — resume the per-game lifecycle task for every game restored
+    // mid-flight, so a restart during a live question (every CD deploy) doesn't
+    // brick it: the countdown/reveal timers, dwell aborts and Skip all come back.
+    // The socket "/" namespace is registered above, so these tasks can emit to
+    // clients as they reconnect.
+    for plan in resume_plans {
+        let io_resume = io.clone();
+        let registry_resume = Arc::clone(&registry);
+        let db_pool_resume = db_pool.clone();
+        tokio::spawn(async move {
+            socket::lifecycle::resume_game_lifecycle(
+                io_resume,
+                registry_resume,
+                plan,
+                db_pool_resume,
+            )
+            .await;
+        });
+    }
 
     // C4 — Game eviction reaper: spawn background task to periodically evict stale games
     // (closes the memory leak from finished/inactive games)
