@@ -6,7 +6,11 @@
     "time": "Tempo"
   },
   "joinInstruction": "Unisciti al gioco su",
-  "leaderboard": "Classifica",
+  "leaderboard": {
+    "title": "Classifica",
+    "top3": "Top 3",
+    "place": "Posto {{rank}}"
+  },
   "pinLabel": "Codice PIN",
   "playersJoined": "Giocatori connessi: ",
   "questionPrefix": "Domanda #",

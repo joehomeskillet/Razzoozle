@@ -58,12 +58,14 @@
     "practiceQuestion": "Übungsfrage (0 Punkte)",
     "multipleSelect": "Mehrfachauswahl",
     "typeAnswer": "Texteingabe",
+    "sentenceBuilder": "Satzbau",
     "choiceDesc": "Eine richtige Antwort",
     "booleanDesc": "Wahr oder Falsch",
     "sliderDesc": "Zahl auf einer Skala",
     "pollDesc": "Stimmungsbild, keine Wertung",
     "multipleSelectDesc": "Mehrere richtige Antworten",
-    "typeAnswerDesc": "Frei getippte Antwort"
+    "typeAnswerDesc": "Frei getippte Antwort",
+    "sentenceBuilderDesc": "Spieler bauen einen Satz aus gemischten Wort-Chips zusammen"
   },
   "slider": {
     "min": "Min",

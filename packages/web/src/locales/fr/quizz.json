@@ -12,7 +12,7 @@
       "answerTime": "Temps de réponse",
       "answerTimeHint": "Temps dont disposent les joueurs pour répondre ({{min}}–{{max}} s).",
       "questionDisplay": "Affichage de la question",
-      "questionDisplayHint": "Délai avant l’apparition des réponses ({{min}}–{{max}} s).",
+      "questionDisplayHint": "Délai avant l'apparition des réponses ({{min}}–{{max}} s).",
       "timings": "Durées",
       "rangeMin": "Au moins {{min}} secondes.",
       "rangeMax": "Au plus {{max}} secondes."
@@ -25,19 +25,19 @@
       "image": "Image",
       "video": "Vidéo",
       "aiGenerate": "Générer avec IA",
-      "aiPromptPlaceholder": "Décris l’image...",
+      "aiPromptPlaceholder": "Décris l'image...",
       "uploadButton": "Téléverser une image",
       "uploading": "Téléversement en cours",
       "tabUrl": "URL",
       "tabUpload": "Téléverser",
       "tabAi": "IA",
       "tabEdit": "Modifier",
-      "enhanceButton": "Améliorer l’aperçu",
+      "enhanceButton": "Améliorer l'aperçu",
       "enhancing": "Optimisation en cours",
       "enhancedLabel": "Ce qui sera généré",
       "rawLabel": "Ta saisie",
-      "editPromptPlaceholder": "Décris la modification de l’image",
-      "editButton": "Modifier l’image par texte",
+      "editPromptPlaceholder": "Décris la modification de l'image",
+      "editButton": "Modifier l'image par texte",
       "editing": "Modification en cours"
     },
     "mediaUrlPlaceholder": "Entrez l'URL...",
@@ -66,12 +66,14 @@
     "practiceQuestion": "Question d'entraînement (0 point)",
     "multipleSelect": "Choix multiple",
     "typeAnswer": "Réponse texte",
+    "sentenceBuilder": "Constructeur de phrase",
     "choiceDesc": "Une seule bonne réponse",
     "booleanDesc": "Vrai ou faux",
     "sliderDesc": "Un nombre sur une échelle",
     "pollDesc": "Sondage d'opinion, sans points",
     "multipleSelectDesc": "Plusieurs bonnes réponses",
-    "typeAnswerDesc": "Réponse saisie librement"
+    "typeAnswerDesc": "Réponse saisie librement",
+    "sentenceBuilderDesc": "Les joueurs reconstruisent une phrase à partir de jetons de mots mélangés"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
@@ -100,5 +102,18 @@
   "themePicker": {
     "label": "Apparence",
     "global": "Apparence globale"
+  },
+  "sentenceBuilder": {
+    "sentenceLabel": "Phrase correcte",
+    "sentencePlaceholder": "Saisissez la phrase correcte...",
+    "autoGenerate": "Générer automatiquement",
+    "chunksLabel": "Jetons",
+    "addChunk": "Ajouter un jeton",
+    "chunkPlaceholder": "Jeton",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "removeChunk": "Supprimer le jeton {{index}}",
+    "preview": "Les joueurs verront ces jetons mélangés",
+    "minChunksRequired": "Au moins 2 jetons requis"
   }
 }

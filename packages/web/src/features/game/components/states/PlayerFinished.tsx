@@ -62,9 +62,9 @@ const MedalDisplay = ({ rank }: { rank: number }) => {
   }
 
   const medals: Record<number, { color: string; label: string }> = {
-    1: { color: "text-yellow-600", label: t("game:rank.first") },
-    2: { color: "text-slate-400", label: t("game:rank.second") },
-    3: { color: "text-orange-600", label: t("game:rank.third") },
+    1: { color: "text-yellow-600", label: t("game:rank.1") },
+    2: { color: "text-slate-400", label: t("game:rank.2") },
+    3: { color: "text-orange-600", label: t("game:rank.3") },
   }
 
   const medal = medals[rank]
@@ -141,7 +141,7 @@ const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
                   {player.username}
                 </span>
                 <span className="text-sm text-[color:var(--color-field-ink)]/60">
-                  {rank}. {t("game:leaderboard.place")}
+                  {t("game:leaderboard.place", { rank })}
                 </span>
               </div>
               <span className="font-bold tabular-nums text-[color:var(--color-field-ink)]">

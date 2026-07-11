@@ -149,6 +149,7 @@ const QuestionEditorSentence = () => {
                 onClick={() => removeChunk(i)}
                 disabled={chunks.length <= 2}
                 aria-label={t("quizz:sentenceBuilder.removeChunk", {
+                  index: i + 1,
                   defaultValue: "Remove chunk",
                 })}
                 className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"

@@ -7,7 +7,11 @@
   },
   "joinInstruction": "Rejoins la partie sur",
   "joinTimeout": "Impossible de rejoindre à temps. Réessaie",
-  "leaderboard": "Classement",
+  "leaderboard": {
+    "title": "Classement",
+    "top3": "Top 3",
+    "place": "Place {{rank}}"
+  },
   "pinLabel": "Code PIN",
   "playersJoined": "Joueurs connectés : ",
   "questionPrefix": "Question n°",

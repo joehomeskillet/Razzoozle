@@ -58,12 +58,14 @@
     "practiceQuestion": "Domanda di prova (0 punti)",
     "multipleSelect": "Selezione multipla",
     "typeAnswer": "Risposta testuale",
+    "sentenceBuilder": "Costruttore di frasi",
     "choiceDesc": "Una sola risposta corretta",
     "booleanDesc": "Vero o falso",
     "sliderDesc": "Un numero su una scala",
     "pollDesc": "Sondaggio d'opinione, senza punteggio",
     "multipleSelectDesc": "Più risposte corrette",
-    "typeAnswerDesc": "Risposta scritta liberamente"
+    "typeAnswerDesc": "Risposta scritta liberamente",
+    "sentenceBuilderDesc": "I giocatori ricostruiscono una frase da chip di parole mescolate"
   },
   "slider": {
     "min": "Min",
@@ -100,5 +102,18 @@
   "themePicker": {
     "label": "Design",
     "global": "Design globale"
+  },
+  "sentenceBuilder": {
+    "sentenceLabel": "Frase corretta",
+    "sentencePlaceholder": "Scrivi la frase corretta...",
+    "autoGenerate": "Genera automaticamente",
+    "chunksLabel": "Chip",
+    "addChunk": "Aggiungi chip",
+    "chunkPlaceholder": "Chip",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù",
+    "removeChunk": "Rimuovi chip {{index}}",
+    "preview": "I giocatori vedranno questi chip mescolati",
+    "minChunksRequired": "Sono richiesti almeno 2 chip"
   }
 }
