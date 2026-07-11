@@ -13,6 +13,7 @@ use crate::socket::lifecycle;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
+use tracing::{info, warn};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_reveal_answer(socket, ctx.clone());
@@ -106,9 +107,25 @@ fn register_show_leaderboard(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         }
 
+                        // Diagnostic (#9): capture the ACTUAL engine phase at click
+                        // time. The intermittent last-question hang manifested as a
+                        // showLeaderboard arriving while the engine was momentarily
+                        // not exactly ShowResult; logging the real phase makes any
+                        // future recurrence diagnosable from the server logs alone.
+                        let phase_at_click = { game_ref.lock().unwrap().engine.phase };
+                        info!(
+                            "manager:showLeaderboard for gameId={}: phase_at_click={:?}",
+                            game_id, phase_at_click
+                        );
+
                         // Abort whichever dwelling phase is currently active (ShowResult or ShowRoundRecap)
-                        if !lifecycle::request_abort(&game_ref, GamePhase::ShowResult) {
-                            lifecycle::request_abort(&game_ref, GamePhase::ShowRoundRecap);
+                        let fired = lifecycle::request_abort(&game_ref, GamePhase::ShowResult)
+                            || lifecycle::request_abort(&game_ref, GamePhase::ShowRoundRecap);
+                        if !fired {
+                            warn!(
+                                "manager:showLeaderboard no-op for gameId={}: phase={:?} is neither ShowResult nor ShowRoundRecap",
+                                game_id, phase_at_click
+                            );
                         }
                     }
                 }

@@ -456,6 +456,19 @@ async fn run_lifecycle_from(
             }
         }
 
+        // FIX #9 (last-question showLeaderboard race): arm the RESULT-dwell abort
+        // BEFORE the reveal flips the phase to ShowResult. `engine.reveal()` sets
+        // ShowResult early, then `perform_reveal_and_broadcast` keeps broadcasting
+        // SHOW_RESULT/SHOW_RESPONSES to every socket. A manager:showLeaderboard
+        // firing anywhere in that window calls `request_abort(ShowResult)` — which
+        // now matches the phase — and its `signal_abort()` must land on THIS Notify.
+        // Arming AFTER the reveal (the old order) left `cooldown_abort` pointing at
+        // the already-resolved SELECT_ANSWER Notify (no waiter), so the `notify_one`
+        // was swallowed and the fresh dwell Notify never got it — the (manual-mode,
+        // 3600s) result dwell then hung forever on the last question. Notify buffers
+        // one permit, so a click landing before the dwell awaits still wakes it.
+        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
         // so a reveal already performed by a racing path is a silent no-op.
@@ -463,9 +476,8 @@ async fn run_lifecycle_from(
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
-        // before the leaderboard. Notify armed right after reveal (Restfenster
-        // reveal->arm ist mikroskopisch + selbstheilend).
-        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+        // before the leaderboard. The abort Notify was armed BEFORE the reveal
+        // above, so no showLeaderboard signal can be lost in the reveal window.
         dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result).await;
 
         // SHOW_ROUND_RECAP: per-round awards screen (manager-only), one per round except the last.
@@ -1152,5 +1164,167 @@ mod tests {
             "the resumed last question must have revealed (reached the result dwell)"
         );
         handle.abort();
+    }
+
+    fn manual_game() -> Arc<Mutex<Game>> {
+        // Game::new defaults auto_mode = false (manual) — the mode where the
+        // RESULT dwell is 3600s and a lost showLeaderboard signal hangs forever.
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        Arc::new(Mutex::new(Game::new(
+            "game-9".to_string(),
+            "RACE".to_string(),
+            "manager-socket".to_string(),
+            "test-quiz".to_string(),
+            quiz,
+        )))
+    }
+
+    /// BLOCKER #9 (deterministic mechanism reproduction + fix): the intermittent
+    /// last-question hang is a lost wakeup. `engine.reveal()` flips the phase to
+    /// ShowResult, then the reveal keeps broadcasting; a manager showLeaderboard
+    /// in that window calls `request_abort(ShowResult)` (phase now matches) whose
+    /// `signal_abort()` notifies whatever `cooldown_abort` currently is. If the
+    /// result-dwell Notify is armed only AFTER the reveal (the old order), the
+    /// signal lands on the already-resolved SELECT_ANSWER Notify (no waiter) and
+    /// is lost — the fresh dwell Notify never receives it and the 3600s manual
+    /// dwell hangs. Arming the result-dwell Notify BEFORE the phase flip (the fix)
+    /// makes the signal land on the live Notify (buffering a permit), so the dwell
+    /// wakes. This test drives the exact two orderings against the REAL
+    /// `request_abort` / `dwell_auto_or_manual`.
+    #[tokio::test(start_paused = true)]
+    async fn last_question_show_leaderboard_lost_wakeup_repro_and_fix() {
+        // --- BROKEN ordering: result-dwell Notify armed AFTER phase flip + signal.
+        {
+            let game_ref = manual_game();
+            // SELECT_ANSWER cooldown Notify, already resolved (no waiter left).
+            let _stale = { game_ref.lock().unwrap().arm_abort() };
+            // reveal flips the phase, but the result-dwell Notify is NOT armed yet.
+            {
+                game_ref.lock().unwrap().engine.phase = GamePhase::ShowResult;
+            }
+            // manager clicks showLeaderboard during the reveal window.
+            assert!(
+                request_abort(&game_ref, GamePhase::ShowResult),
+                "showLeaderboard must register while phase == ShowResult"
+            );
+            // NOW the broken code arms the result-dwell Notify — fresh, no permit.
+            let abort_result = { game_ref.lock().unwrap().arm_abort() };
+            let outcome = tokio::time::timeout(
+                Duration::from_secs(30),
+                dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result),
+            )
+            .await;
+            assert!(
+                outcome.is_err(),
+                "the broken arm-after-reveal ordering must lose the signal and hang"
+            );
+        }
+
+        // --- FIXED ordering: result-dwell Notify armed BEFORE phase flip + signal.
+        {
+            let game_ref = manual_game();
+            let _stale = { game_ref.lock().unwrap().arm_abort() };
+            // FIX: arm the result-dwell Notify BEFORE the reveal flips the phase.
+            let abort_result = { game_ref.lock().unwrap().arm_abort() };
+            {
+                game_ref.lock().unwrap().engine.phase = GamePhase::ShowResult;
+            }
+            // manager clicks during the reveal window — lands on the live Notify.
+            assert!(request_abort(&game_ref, GamePhase::ShowResult));
+            let outcome = tokio::time::timeout(
+                Duration::from_secs(30),
+                dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result),
+            )
+            .await;
+            assert!(
+                outcome.is_ok(),
+                "the fixed arm-before-reveal ordering must deliver the signal, not hang"
+            );
+        }
+    }
+
+    /// BLOCKER #9 (end-to-end): in MANUAL mode, driving each dwell with a single
+    /// abort (showLeaderboard on ShowResult, nextQuestion on ShowLeaderboard) must
+    /// walk the whole game to FINISHED — including the LAST question's
+    /// ShowResult -> FINISHED transition on a single showLeaderboard. Exercises the
+    /// real `run_game_lifecycle` arm ordering end to end.
+    #[tokio::test(start_paused = true)]
+    async fn manual_mode_single_abort_per_dwell_reaches_finished() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+        let mut quizzes = std::collections::HashMap::new();
+        quizzes.insert("test-quiz".to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+        let (game_id, _invite, _host) = registry
+            .create_game(
+                "manager-socket".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+                serde_json::json!({"enabled": false, "clockSync": true}),
+            )
+            .unwrap();
+
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.add_player(
+                "player-socket".to_string(),
+                "client-1".to_string(),
+                "Alice".to_string(),
+                None,
+            )
+            .unwrap();
+            game.engine.start().unwrap();
+            game.auto_mode = false; // manual mode — the blocker's scenario
+        }
+
+        let registry = Arc::new(RwLock::new(registry));
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        // "Manager": fire exactly ONE abort per distinct dwell — showLeaderboard on
+        // every ShowResult, nextQuestion on every ShowLeaderboard — until FINISHED.
+        let gr = game_ref.clone();
+        let driver = tokio::spawn(async move {
+            let mut last_acted: Option<(GamePhase, usize)> = None;
+            for _ in 0..5000 {
+                let (phase, idx) = {
+                    let g = gr.lock().unwrap();
+                    (g.engine.phase, g.engine.current_question_index)
+                };
+                if phase == GamePhase::Finished {
+                    break;
+                }
+                let key = (phase, idx);
+                if last_acted != Some(key) {
+                    match phase {
+                        GamePhase::ShowResult => {
+                            request_abort(&gr, GamePhase::ShowResult);
+                            last_acted = Some(key);
+                        }
+                        GamePhase::ShowLeaderboard => {
+                            request_abort(&gr, GamePhase::ShowLeaderboard);
+                            last_acted = Some(key);
+                        }
+                        _ => {}
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        });
+
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(120),
+            run_game_lifecycle(io, registry, game_id.clone(), None),
+        )
+        .await;
+        assert!(outcome.is_ok(), "manual-mode lifecycle hung / never returned");
+        assert_eq!(
+            game_ref.lock().unwrap().engine.phase,
+            GamePhase::Finished,
+            "manual mode must reach FINISHED with a single showLeaderboard on the last question"
+        );
+        driver.abort();
     }
 }

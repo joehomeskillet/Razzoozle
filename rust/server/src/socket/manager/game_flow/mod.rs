@@ -393,8 +393,12 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
 
-                    lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
-                    info!("manager:nextQuestion abort fired for gameId={}", game_id);
+                    let fired = lifecycle::request_abort(&game_ref, GamePhase::ShowLeaderboard);
+                    info!(
+                        "manager:nextQuestion abort {} for gameId={}",
+                        if fired { "fired" } else { "no-op (not in ShowLeaderboard)" },
+                        game_id
+                    );
                 }
             });
         }
@@ -488,8 +492,12 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
 
-                    lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
-                    info!("manager:skipQuestion abort fired for gameId={}", game_id);
+                    let fired = lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
+                    info!(
+                        "manager:skipQuestion abort {} for gameId={}",
+                        if fired { "fired" } else { "no-op (no live answer window)" },
+                        game_id
+                    );
                 }
             });
         }
@@ -577,8 +585,12 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
 
-                    lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
-                    info!("manager:abortQuiz abort fired for gameId={}", game_id);
+                    let fired = lifecycle::request_abort(&game_ref, GamePhase::SelectAnswer);
+                    info!(
+                        "manager:abortQuiz abort {} for gameId={}",
+                        if fired { "fired" } else { "no-op (no live answer window)" },
+                        game_id
+                    );
                 }
             });
         }
