@@ -100,5 +100,18 @@
   "themePicker": {
     "label": "Design",
     "global": "Globales Design"
+  },
+  "sentenceBuilder": {
+    "sentenceLabel": "Korrekter Satz",
+    "sentencePlaceholder": "Gib den korrekten Satz ein...",
+    "autoGenerate": "Automatisch erzeugen",
+    "chunksLabel": "Satzbausteine",
+    "addChunk": "Baustein hinzufügen",
+    "chunkPlaceholder": "Baustein",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "removeChunk": "Baustein {{index}} entfernen",
+    "preview": "Spieler sehen die Bausteine gemischt",
+    "minChunksRequired": "Mindestens 2 Bausteine erforderlich"
   }
 }

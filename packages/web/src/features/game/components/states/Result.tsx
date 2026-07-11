@@ -30,6 +30,7 @@ import { motion } from "motion/react"
 import clsx from "clsx"
 
 interface Props {
+  audience?: "player" | "manager"
   data: CommonStatusDataMap["SHOW_RESULT"]
 }
 
@@ -41,6 +42,7 @@ interface Props {
 const EMPTY_CHUNKS: string[] = []
 
 const Result = ({
+  audience,
   data: {
     correct,
     message,
@@ -70,7 +72,10 @@ const Result = ({
   const reduced = reveal.reduced
   const achievementsFired = useRef(false)
 
-  // W1-D FIX 2: only show the place/rank label when the player actually scored
+  // Hide points display for players only; managers/presenters always see them
+  const showPoints = audience !== "player"
+
+    // W1-D FIX 2: only show the place/rank label when the player actually scored
   // (score > 0) AND it is a real multiplayer game (more than one player).
   // Otherwise a hollow "1st place" would appear at 0 points or in a solo game.
   const showRank = myPoints > 0 && (playerCount ?? 1) > 1
@@ -244,7 +249,7 @@ const Result = ({
           {t("game:slider.correctAnswer")}: <Markdown>{correctAnswer}</Markdown>
         </p>
       )}
-      {!poll && correct && (
+      {showPoints && !poll && correct && (
         // Points payoff: emphasised pop, delayed a touch behind the verdict so
         // the score reads as the reward beat. Opacity-only when reduced.
         <motion.span

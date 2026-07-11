@@ -6,6 +6,9 @@ import QuizzEditorSidebar from "@razzoozle/web/features/quizz/components/QuizzEd
 // tokens the header band + active type pills consume. Shared with the console.
 import "@razzoozle/web/features/manager/components/console/tokens.css"
 
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+
 /**
  * The editor frame: a solid white app surface holding header · sidebar ·
  * canvas · config. The page background is the single body cream gradient,
@@ -22,6 +25,8 @@ import "@razzoozle/web/features/manager/components/console/tokens.css"
  * white surface; the cream body only frames it (matches /submit + the console).
  */
 const QuizzEditorShell = () => {
+  const [aiExpanded, setAiExpanded] = useState(false)
+
   return (
     <div className="relative flex h-svh flex-col overflow-hidden">
       {/* Solid app surface — content sits here, never on the page background. */}
@@ -30,7 +35,20 @@ const QuizzEditorShell = () => {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
           <QuizzEditorSidebar />
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <QuestionEditorAIAssist />
+            {/* Collapsible AI Assist Panel */}
+            <div className="border-b border-gray-200">
+              <button
+                onClick={() => setAiExpanded(!aiExpanded)}
+                className="flex w-full items-center justify-between px-4 py-2 hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-sm font-semibold text-gray-700">✨ Mit KI generieren</span>
+                <ChevronDown
+                  className="size-4 transition-transform"
+                  style={{ transform: aiExpanded ? "rotate(0deg)" : "rotate(-90deg)" }}
+                />
+              </button>
+              {aiExpanded && <QuestionEditorAIAssist />}
+            </div>
             <QuestionEditor />
           </div>
         </div>

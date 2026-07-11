@@ -1,4 +1,4 @@
-import type { PlayerRecap } from "@razzoozle/common/types/game"
+import type { Player, PlayerRecap } from "@razzoozle/common/types/game"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
@@ -17,7 +17,7 @@ import { rankKeyFor } from "@razzoozle/web/features/game/utils/rank"
 import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import clsx from "clsx"
-import { Share2, Trophy } from "lucide-react"
+import { Share2, Trophy, Medal } from "lucide-react"
 import { motion } from "motion/react"
 import { useRef } from "react"
 import toast from "react-hot-toast"
@@ -48,6 +48,110 @@ function isPlayerRecap(
     typeof recap === "object" &&
     "myRecap" in recap &&
     recap.myRecap !== undefined
+  )
+}
+
+// ─── Medal/Rank Display ───────────────────────────────────────────────────────
+
+const MedalDisplay = ({ rank }: { rank: number }) => {
+  const { t } = useTranslation()
+  const reveal = useReveal()
+
+  if (rank < 1 || rank > 3) {
+    return null
+  }
+
+  const medals: Record<number, { color: string; label: string }> = {
+    1: { color: "text-yellow-600", label: t("game:rank.first") },
+    2: { color: "text-slate-400", label: t("game:rank.second") },
+    3: { color: "text-orange-600", label: t("game:rank.third") },
+  }
+
+  const medal = medals[rank]
+  if (!medal) return null
+
+  return (
+    <motion.div
+      className="flex flex-col items-center gap-2"
+      variants={reveal.item()}
+      transition={reveal.spring}
+    >
+      <Medal className={clsx("size-12 drop-shadow", medal.color)} aria-hidden />
+      <span className="text-sm font-semibold text-[color:var(--game-fg)] drop-shadow">
+        {medal.label}
+      </span>
+    </motion.div>
+  )
+}
+
+// ─── Top 3 Leaderboard ────────────────────────────────────────────────────────
+
+const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
+  const { t } = useTranslation()
+  const reveal = useReveal()
+
+  if (!topPlayers || topPlayers.length === 0) {
+    return null
+  }
+
+  const displayPlayers = topPlayers.slice(0, 3)
+
+  const medalColors: Record<number, string> = {
+    1: "text-yellow-600",
+    2: "text-slate-400",
+    3: "text-orange-600",
+  }
+
+  return (
+    <motion.section
+      className="mt-4 w-full max-w-md"
+      variants={reveal.container()}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.h3
+        className="mb-3 text-center text-lg font-bold text-[color:var(--game-fg)] drop-shadow"
+        variants={reveal.item()}
+        transition={reveal.spring}
+      >
+        {t("game:leaderboard.top3")}
+      </motion.h3>
+
+      <motion.div
+        className="flex flex-col gap-2"
+        variants={reveal.container()}
+        initial="hidden"
+        animate="visible"
+      >
+        {displayPlayers.map((player, idx) => {
+          const rank = idx + 1
+          return (
+            <motion.div
+              key={player.id}
+              className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm"
+              variants={reveal.item()}
+              transition={reveal.spring}
+            >
+              <Trophy
+                className={clsx("size-6", medalColors[rank])}
+                aria-hidden
+              />
+              <div className="flex flex-1 flex-col">
+                <span className="font-semibold text-[color:var(--color-field-ink)]">
+                  {player.username}
+                </span>
+                <span className="text-sm text-[color:var(--color-field-ink)]/60">
+                  {rank}. {t("game:leaderboard.place")}
+                </span>
+              </div>
+              <span className="font-bold tabular-nums text-[color:var(--color-field-ink)]">
+                {player.points}
+              </span>
+            </motion.div>
+          )
+        })}
+      </motion.div>
+    </motion.section>
   )
 }
 
@@ -114,10 +218,6 @@ const HighlightBadge = ({
   const { t } = useTranslation()
   const reveal = useReveal()
 
-  // Gold tier comes from the theme tier-gold token (not a hardcoded amber ramp),
-  // so a re-themed skeleton recolors the highlight badge too. Ring is a 2px gold
-  // border + the tier-gold glow (inline box-shadow), since a Tailwind shadow/ring
-  // utility would be overridden by the inline box-shadow.
   return (
     <motion.div
       className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 px-5 py-4 text-center text-[var(--answer-text)]"
@@ -153,12 +253,6 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
   const { t } = useTranslation()
   const reveal = useReveal()
 
-  // Cumulative counts (localStorage) include this game's badges once Result.tsx
-  // has persisted them. Merge defensively so the summary is correct even if the
-  // FINISHED screen renders before/without a per-round Result persist — including
-  // when the SAME badge was earned multiple times this game (e.g. first_responder
-  // per round). Take max(stored, thisGameCount): once persisted, stored already
-  // includes this game (>= thisGameCount); until then, fall back to thisGameCount.
   const stored = readStoredAchievements()
   const thisGameCounts: Record<string, number> = {}
   for (const id of thisGame) {
@@ -169,7 +263,6 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
     counts[id] = Math.max(stored[id] ?? 0, c)
   }
 
-  // Only the ids unlocked at least once (cumulative), grouped by tier.
   const byTier: Record<AchievementTier, string[]> = {
     bronze: [],
     silver: [],
@@ -307,7 +400,6 @@ const ShareStickerButton = ({
       })
       toast.success(t(`game:recap.sticker.${outcome}`))
     } catch (err) {
-      // User cancelled the native share sheet — not an error, stay silent.
       if (err instanceof Error && err.name === "AbortError") return
       toast.error(t("game:recap.sticker.error"))
     }
@@ -327,7 +419,6 @@ const ShareStickerButton = ({
           : t("game:recap.sticker.create")}
       </button>
 
-      {/* Off-screen capture root for useStickerExport. */}
       <div
         ref={captureRef}
         aria-hidden
@@ -348,7 +439,7 @@ const ShareStickerButton = ({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 const PlayerFinished = ({ data }: Props) => {
-  const { rank, subject, recap } = data
+  const { rank, subject, top, recap } = data
   const { player } = usePlayerStore()
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -384,6 +475,10 @@ const PlayerFinished = ({ data }: Props) => {
         {rankKey !== null ? t(rankKey, { rank }) : "—"}
       </motion.p>
 
+      {typeof rank === "number" && rank >= 1 && rank <= 3 && (
+        <MedalDisplay rank={rank} />
+      )}
+
       <motion.p
         className="mt-2 rounded-2xl border border-[var(--border-hairline)] bg-white px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums shadow-md"
         variants={reveal.item()}
@@ -392,9 +487,8 @@ const PlayerFinished = ({ data }: Props) => {
         {player?.points ?? 0} {t("game:recap.sticker.points")}
       </motion.p>
 
-      {/* Public entry point to the question-submission page. Standalone flow,
-          so a plain anchor / full navigation is fine and keeps Cmd-click. Kept
-          subtle (below the score) so it doesn't crowd the result. */}
+      {top && top.length > 0 && <TopThreeLeaderboard topPlayers={top} />}
+
       <motion.a
         href="/submit"
         className="focus-visible:ring-primary/60 mt-4 inline-flex min-h-11 items-center rounded px-3 py-2 text-center text-base font-semibold text-[color:var(--game-fg)] underline-offset-4 drop-shadow-lg hover:underline focus-visible:ring-2 focus-visible:outline-none"
@@ -404,7 +498,6 @@ const PlayerFinished = ({ data }: Props) => {
         {t("submit:cta.afterGame")}
       </motion.a>
 
-      {/* ── Post-game recap (WP-A FINISHED.recap, player side) ── */}
       {playerRecap && (
         <motion.div
           className="mt-6 flex w-full max-w-md flex-col gap-5"
