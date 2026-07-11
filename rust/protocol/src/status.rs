@@ -279,6 +279,9 @@ pub struct ShowResponsesData {
     pub match_mode: Option<MatchMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
+    pub chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]

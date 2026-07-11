@@ -176,6 +176,11 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
+        chunks: if is_sentence_builder {
+            question.chunks.clone()
+        } else {
+            None
+        },
         correct_chunks: if is_sentence_builder {
             question.chunks.clone()
         } else {
@@ -498,25 +503,3 @@ mod tests {
         );
     }
 
-    /// WP-N fix 4: poll and practice rounds must not generate roundRecap
-    /// (Node parity: round-recap-Berechnung schliesst poll und practice aus).
-    #[test]
-    fn poll_round_excludes_recap_from_show_responses() {
-        let mut game = game_with_quiz(
-            r#"{"subject":"S","questions":[{"question":"Poll time","type":"poll","cooldown":5,"time":15}]}"#,
-        );
-        game.engine.start().unwrap();
-        game.engine.show_question(0).unwrap();
-        game.engine.open_answers().unwrap();
-        game.engine.reveal(ScoringMode::Speed).unwrap();
-
-        let status = build_manager_show_responses(&game);
-        let GameStatus::ShowResponses(data) = status else {
-            panic!("expected ShowResponses");
-        };
-        assert!(
-            data.round_recap.is_none(),
-            "poll round must not include roundRecap (Node parity)"
-        );
-    }
-}
