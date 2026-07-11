@@ -75,10 +75,13 @@ const Result = ({
   // Hide points display for players only; managers/presenters always see them
   const showPoints = audience !== "player"
 
-    // W1-D FIX 2: only show the place/rank label when the player actually scored
+  // W1-D FIX 2: only show the place/rank label when the player actually scored
   // (score > 0) AND it is a real multiplayer game (more than one player).
   // Otherwise a hollow "1st place" would appear at 0 points or in a solo game.
   const showRank = myPoints > 0 && (playerCount ?? 1) > 1
+
+  // Hide round recap for players; only managers/presenters see the highlights
+  const showRoundRecap = audience !== "player"
 
   const resultsUrl = useSoundUrl("results")
   const boumpUrl = useSoundUrl("boump")
@@ -272,7 +275,7 @@ const Result = ({
         visible={true}
         bonusPoints={bonusPoints}
       />
-      <RoundRecapStrip awards={roundRecap ?? []} />
+      {showRoundRecap && <RoundRecapStrip awards={roundRecap ?? []} />}
     </section>
   )
 }
