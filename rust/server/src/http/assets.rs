@@ -130,7 +130,23 @@ pub async fn handle_theme_asset(
     Path(rel_path): Path<String>,
 ) -> Result<(StatusCode, axum::http::HeaderMap, Vec<u8>), (StatusCode, String)> {
     let base_dir = format!("{}/theme", get_config_path());
-    serve_static_file(&base_dir, &rel_path).await
+    serve_static_file(&base_dir, &rel_path)
+        .await
+        .map(|(status, mut headers, body)| {
+            // theme.json must not be cached; other theme assets get 1-day cache
+            if rel_path == "theme.json" || rel_path.ends_with("/theme.json") {
+                headers.insert(
+                    axum::http::header::CACHE_CONTROL,
+                    "no-store".parse().unwrap(),
+                );
+            } else {
+                headers.insert(
+                    axum::http::header::CACHE_CONTROL,
+                    "public, max-age=86400".parse().unwrap(),
+                );
+            }
+            (status, headers, body)
+        })
 }
 
 pub async fn handle_plugin_asset(
