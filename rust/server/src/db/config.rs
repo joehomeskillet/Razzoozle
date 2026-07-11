@@ -34,9 +34,9 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<bool>, Option<String>, Option<String>, Option<i32>, Option<i32>)> =
+    let rows: Vec<(String, Option<bool>, Option<String>, Option<String>, Option<i32>, Option<i32>, Option<String>)> =
         match sqlx::query_as(
-            "SELECT id, enabled, name, description, threshold, bonus FROM achievements_config ORDER BY id"
+            "SELECT id, enabled, name, description, threshold, bonus, tier FROM achievements_config ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -49,7 +49,7 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         };
 
     let result = rows.into_iter()
-        .map(|(id, enabled, name, description, threshold, bonus)| {
+        .map(|(id, enabled, name, description, threshold, bonus, tier)| {
             let mut obj = serde_json::json!({"id": id});
             if let Some(e) = enabled {
                 obj["enabled"] = serde_json::json!(e);
@@ -65,6 +65,9 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
             }
             if let Some(b) = bonus {
                 obj["bonus"] = serde_json::json!(b);
+            }
+            if let Some(t) = tier {
+                obj["tier"] = serde_json::json!(t);
             }
             obj
         })

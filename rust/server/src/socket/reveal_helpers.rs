@@ -37,9 +37,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
 
     for answer in game.engine.current_answers.values() {
         if let Some(answer_key) = answer.answer_input.answer_key {
-            if answer_key != -1 {
-                *responses.entry(answer_key.to_string()).or_insert(0) += 1;
-            }
+            *responses.entry(answer_key.to_string()).or_insert(0) += 1;
 
             if is_slider {
                 slider_values.push(answer_key);
@@ -122,7 +120,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
 
     let has_prior_round_for_manager = game.engine.current_question_index > 0;
 
-    let round_recap_for_manager = if is_poll || is_practice {
+    let round_recap_for_manager = if is_practice {
         vec![]
     } else {
         compute_round_recap(
@@ -328,8 +326,8 @@ pub async fn perform_reveal_and_broadcast(
             let has_prior_round = game.engine.current_question_index > 0;
 
             // Compute round recap awards (game-wide, same for all players)
-            // Exclude poll and practice rounds from roundRecap (Node parity)
-            let round_recap = if is_poll || is_practice {
+            // Exclude practice rounds from roundRecap (poll rounds DO carry recap — verified against live Node 2026-07-11)
+            let round_recap = if is_practice {
                 vec![]
             } else {
                 compute_round_recap(

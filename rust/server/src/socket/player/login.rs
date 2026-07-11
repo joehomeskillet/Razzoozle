@@ -31,7 +31,7 @@ pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
                         // #12: Read live game config for requireIdentifier flag (TODO: parity - currently returns None)
                         let payload = razzoozle_protocol::game::GameSuccessRoom {
                             game_id: game_data.game_id.clone(),
-                            require_identifier: None, // TODO(parity): read from live config file
+                            require_identifier: Some(false), // TODO(parity): read from live config file
                         };
                         drop(game_data);
 
