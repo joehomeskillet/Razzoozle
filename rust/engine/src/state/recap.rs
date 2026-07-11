@@ -1,13 +1,28 @@
 //! WP-N4: Manager recap builder — superlatives from recap_stats/question_stats
+//! WP-H gap 1: per-player recap builder (myRecap + highlight) — the shape
+//! Node actually sends to PLAYERS on FINISHED (game-recap.ts's `perPlayer`),
+//! distinct from the manager's full superlatives list.
 
 use crate::state::{GameState, RecapStat, QuestionStat};
-use razzoozle_protocol::results_display::{ManagerRecap, Superlative, SuperlativeKey, HardestQuestion};
+use razzoozle_protocol::results_display::{
+    HardestQuestion, ManagerRecap, MyRecap, PlayerRecap, RecapHighlight, Superlative,
+    SuperlativeKey,
+};
 use std::collections::HashMap;
 
+/// One awarded superlative plus the client_id of the player who won it (empty
+/// for hardest_question, which is quiz-level, not player-attributable).
+type AwardedSuperlative = (String, Superlative);
+
 impl GameState {
-    /// Build manager recap from accumulated recap_stats and question_stats.
+    /// Compute final_ranks (humans-only, sorted by points DESC then username
+    /// ASC) + the ordered list of (client_id, Superlative) awards + the
+    /// hardest-question detail. Shared by build_manager_recap (which only
+    /// needs the Superlative list) and build_player_recap (which additionally
+    /// needs the client_id to find each player's own highlight — Node parity:
+    /// game-recap.ts's `highlightByClient`, first award won per client wins).
     /// Port of Node's game-recap.ts:26-242.
-    pub fn build_manager_recap(&self) -> ManagerRecap {
+    fn compute_recap_parts(&self) -> (HashMap<String, i32>, Vec<AwardedSuperlative>, Option<HardestQuestion>) {
         // Compute final_ranks: humans-only, sorted by points DESC then username ASC
         let mut humans = self.players
             .iter()
@@ -23,7 +38,7 @@ impl GameState {
             .map(|(idx, p)| (p.client_id.clone(), (idx + 1) as i32))
             .collect();
 
-        let mut superlatives = Vec::new();
+        let mut awards: Vec<AwardedSuperlative> = Vec::new();
 
         // fastest_finger: min fastest_ms (must have answered)
         let mut fastest_winner: Option<(&String, &RecapStat)> = None;
@@ -36,13 +51,13 @@ impl GameState {
                 }
             }
         }
-        if let Some((_, stat)) = fastest_winner {
-            superlatives.push(Superlative {
+        if let Some((cid, stat)) = fastest_winner {
+            awards.push((cid.clone(), Superlative {
                 key: SuperlativeKey::FastestFinger,
                 winner_name: stat.username.clone(),
                 winner_avatar: None,
                 value: stat.fastest_ms.unwrap_or(0) as f64,
-            });
+            }));
         }
 
         // most_correct: max correct (floor > 0)
@@ -55,13 +70,13 @@ impl GameState {
             }
         }
         if most_correct_count > 0 {
-            if let Some((_, stat)) = most_correct_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = most_correct_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::MostCorrect,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: stat.correct as f64,
-                });
+                }));
             }
         }
 
@@ -75,13 +90,13 @@ impl GameState {
             }
         }
         if most_wrong_count > 0 {
-            if let Some((_, stat)) = most_wrong_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = most_wrong_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::MostWrong,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: stat.wrong as f64,
-                });
+                }));
             }
         }
 
@@ -95,13 +110,13 @@ impl GameState {
             }
         }
         if longest_streak > 0 {
-            if let Some((_, stat)) = longest_streak_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = longest_streak_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::LongestStreak,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: longest_streak as f64,
-                });
+                }));
             }
         }
 
@@ -115,13 +130,13 @@ impl GameState {
             }
         }
         if biggest_climb > 0 {
-            if let Some((_, stat)) = biggest_climber_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = biggest_climber_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::BiggestClimber,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: biggest_climb as f64,
-                });
+                }));
             }
         }
 
@@ -135,13 +150,13 @@ impl GameState {
             }
         }
         if lucky_guesser_count > 0 {
-            if let Some((_, stat)) = lucky_guesser_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = lucky_guesser_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::LuckyGuesser,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: lucky_guesser_count as f64,
-                });
+                }));
             }
         }
 
@@ -155,13 +170,13 @@ impl GameState {
             }
         }
         if most_achievements_count > 0 {
-            if let Some((_, stat)) = most_achievements_winner {
-                superlatives.push(Superlative {
+            if let Some((cid, stat)) = most_achievements_winner {
+                awards.push((cid.clone(), Superlative {
                     key: SuperlativeKey::MostAchievements,
                     winner_name: stat.username.clone(),
                     winner_avatar: None,
                     value: most_achievements_count as f64,
-                });
+                }));
             }
         }
 
@@ -177,16 +192,18 @@ impl GameState {
                 }
             }
         }
-        if let Some((_, stat, climb)) = comeback_winner {
-            superlatives.push(Superlative {
+        if let Some((cid, stat, climb)) = comeback_winner {
+            awards.push((cid.clone(), Superlative {
                 key: SuperlativeKey::ComebackKid,
                 winner_name: stat.username.clone(),
                 winner_avatar: None,
                 value: climb as f64,
-            });
+            }));
         }
 
         // hardest_question: min correct% over question_stats (floor: total > 0)
+        // Quiz-level, not player-attributable — tagged with an empty client_id
+        // so it never becomes anyone's `highlight`.
         let mut hardest: Option<(i32, i32)> = None; // (index, correct_pct)
         for (idx, q) in self.question_stats.iter() {
             if q.total > 0 {
@@ -202,18 +219,62 @@ impl GameState {
             correct_pct: pct as f64,
         });
 
-        if hardest_question.is_some() {
-            superlatives.push(Superlative {
+        if let Some(hq) = &hardest_question {
+            awards.push((String::new(), Superlative {
                 key: SuperlativeKey::HardestQuestion,
-                winner_name: format!("#{}", hardest_question.as_ref().unwrap().question_index + 1),
+                winner_name: format!("#{}", hq.question_index + 1),
                 winner_avatar: None,
-                value: hardest_question.as_ref().unwrap().correct_pct as f64,
-            });
+                value: hq.correct_pct,
+            }));
         }
 
+        (final_ranks, awards, hardest_question)
+    }
+
+    /// Build manager recap from accumulated recap_stats and question_stats.
+    /// Port of Node's game-recap.ts:26-242.
+    pub fn build_manager_recap(&self) -> ManagerRecap {
+        let (_final_ranks, awards, hardest_question) = self.compute_recap_parts();
         ManagerRecap {
-            superlatives,
+            superlatives: awards.into_iter().map(|(_, s)| s).collect(),
             hardest_question,
         }
+    }
+
+    /// Build ONE player's own end-of-game recap card (WP-H gap 1): their
+    /// accumulated stats (myRecap) plus the single superlative they won, if
+    /// any (highlight — the FIRST award in priority order, matching Node's
+    /// `highlightByClient`). Returns `None` when the client never had a
+    /// recap_stats entry (never played a scored round) — Node parity:
+    /// game-recap.ts's `ctx.recapStats.has(player.clientId) ? ... : undefined`.
+    pub fn build_player_recap(&self, client_id: &str) -> Option<PlayerRecap> {
+        let stat = self.recap_stats.get(client_id)?;
+        let (final_ranks, awards, _hardest_question) = self.compute_recap_parts();
+
+        // First award (in priority/push order) this client_id won becomes
+        // their phone highlight — hardest_question is tagged with an empty
+        // client_id above and can never match here.
+        let highlight = awards.iter().find(|(cid, _)| cid == client_id).map(|(_, s)| {
+            RecapHighlight { key: s.key.clone(), value: s.value }
+        });
+
+        let accuracy_pct = if stat.answered > 0 {
+            (stat.correct as f64 / stat.answered as f64 * 100.0).round() as i32
+        } else {
+            0
+        };
+
+        Some(PlayerRecap {
+            my_recap: MyRecap {
+                rank: final_ranks.get(client_id).copied().unwrap_or(0),
+                accuracy_pct,
+                correct: stat.correct,
+                wrong: stat.wrong,
+                fastest_ms: stat.fastest_ms,
+                peak_streak: stat.peak_streak,
+                achievements: stat.achievement_ids.clone(),
+            },
+            highlight,
+        })
     }
 }

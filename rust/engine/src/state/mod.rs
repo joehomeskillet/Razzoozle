@@ -288,9 +288,22 @@ impl GameState {
         self.scoring_mode = scoring_mode;
         let question = self.current_question().clone();
 
-        // Gate first_correct calculation on practice: if this is a practice question,
-        // don't award first_correct bonus (matches Node.js behavior at round-manager.ts ~1248)
-        let first_correct_id = if question.practice != Some(true) {
+        // WP-H gap 3 root cause: a question only counts toward scoring/streak/
+        // achievements/recap when it is neither practice NOR poll (Node parity:
+        // scorePlayerAnswer's isPoll early-return leaves points/streak
+        // untouched, achievement-awards.ts's `aScored = !isPoll && !practice`
+        // gates the counter/recap fold, and results-stats.ts's
+        // totalScoredQuestions/lastScoredIndex both filter out poll too).
+        // Missing the poll half of this gate here force-reset player.streak to
+        // 0 on every poll round and inflated totalScored/questionStats counts,
+        // silently swallowing the streak_5/perfect_round/perfect_game
+        // achievements for anyone who crossed a poll question mid-streak.
+        let is_scored_question =
+            question.practice != Some(true) && question.r#type != Some(QuestionType::Poll);
+
+        // Gate first_correct calculation on practice+poll (matches Node's
+        // `!isPoll && !question.practice`, results-stats.ts:168).
+        let first_correct_id = if is_scored_question {
             self
                 .answer_order
                 .iter()
@@ -348,7 +361,11 @@ impl GameState {
                 points = apply_first_correct_bonus(points, base_factor);
             }
 
-            if question.practice != Some(true) {
+            // WP-H gap 3: gate on is_scored_question (practice AND poll excluded)
+            // instead of practice alone — a poll round must leave points/streak
+            // fully untouched (Node parity: scorePlayerAnswer's isPoll early
+            // return never mutates `player`).
+            if is_scored_question {
                 player.points += points;
                 player.streak = if correct {
                     streak_before + 1
@@ -397,8 +414,9 @@ impl GameState {
             });
 
         // === N4 recap/question fold (begin) ===
-        // Only fold for scored (non-practice) rounds
-        if question.practice != Some(true) {
+        // Only fold for scored (non-practice, non-poll) rounds (Node parity:
+        // achievement-awards.ts gates this fold on `row.aScored`, WP-H gap 3).
+        if is_scored_question {
             // Compute rank_after map (from PRE-bonus points — N3 bonus fold runs after)
             let mut rank_after_vec: Vec<(String, i32)> = self.players
                 .iter()
@@ -504,7 +522,7 @@ impl GameState {
                 award_rows.push(AwardRow {
                     client_id: result.client_id.clone(),
                     is_bot: player.is_bot == Some(true),
-                    scored: question.practice != Some(true),
+                    scored: is_scored_question,
                     is_correct: result.correct,
                     base_factor: {
                         self.current_answers
@@ -540,12 +558,20 @@ impl GameState {
         // Stable sort DESC by points_after (they should already be in this order, but ensure it)
         award_rows.sort_by(|a, b| b.points_after.cmp(&a.points_after));
 
-        // Calculate metadata
+        // Calculate metadata. Node parity (results-stats.ts:107-118): scored
+        // excludes BOTH poll and practice questions, and isLastScoredRound
+        // anchors on the LAST scored question's index — not the quiz's literal
+        // last index — so a trailing poll/practice question never blocks
+        // participation/perfect_game from firing on the true final round.
         let total_scored = self.quiz.questions.iter()
-            .filter(|q| q.practice != Some(true))
+            .filter(|q| q.practice != Some(true) && q.r#type != Some(QuestionType::Poll))
             .count() as i32;
-        let is_last_scored = question.practice != Some(true)
-            && self.current_question_index + 1 == self.quiz.questions.len();
+        let last_scored_index: i32 = self.quiz.questions.iter().enumerate()
+            .filter(|(_, q)| q.practice != Some(true) && q.r#type != Some(QuestionType::Poll))
+            .map(|(idx, _)| idx as i32)
+            .last()
+            .unwrap_or(-1);
+        let is_last_scored = self.current_question_index as i32 == last_scored_index;
         let has_prior = self.current_question_index > 0;
 
         // Compute achievements (Pass A: unlocks, Pass B: bonus)

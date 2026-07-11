@@ -488,10 +488,14 @@ pub async fn run_game_lifecycle(
             // Dwell on the recap screen (manual or auto mode)
             dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_recap).await;
 
-            // Clear temp_round_recap after showing
+            // WP-H gap 5: do NOT clear temp_round_recap here. Node's showLeaderboard()
+            // still reads ctx.tempRoundRecap on the SECOND call (after the round-recap
+            // diversion) to attach it to SHOW_LEADERBOARD (leaderboard-flow.ts:249-251),
+            // only clearing it AFTER that emit (line 256). Clearing it here made it
+            // None by the time the SHOW_LEADERBOARD block below reads it, so the
+            // manager's leaderboard screen never carried roundRecap.
             {
                 let mut game = game_ref.lock().unwrap();
-                game.temp_round_recap = None;
                 // Transition phase back to ShowResult so leaderboard_view() can proceed normally
                 game.engine.phase = GamePhase::ShowResult;
             }
@@ -594,13 +598,20 @@ pub async fn run_game_lifecycle(
             };
             for (rank_idx, player) in sorted_players.iter().enumerate() {
                 if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
+                    // WP-H gap 1: players get their OWN recap (myRecap + highlight),
+                    // never the manager's superlatives list, and no autoMode key at
+                    // all (Node parity: leaderboard-flow.ts:225-231 — the player
+                    // FINISHED payload never carries autoMode).
+                    let player_recap = game.engine
+                        .build_player_recap(&player.client_id)
+                        .and_then(|r| serde_json::to_value(&r).ok());
                     let personalized_finished = FinishedData {
                         subject: finished.subject.clone(),
                         top: finished.top.clone(),
                         rank: Some((rank_idx + 1) as i32),
                         team_standings: finished.team_standings.clone(),
-                        recap: finished.recap.clone(),
-                        auto_mode: finished.auto_mode,
+                        recap: player_recap,
+                        auto_mode: None,
                     };
                     if let Ok(sid) = player_info.id.parse() {
                         if let Some(sock) = io.get_socket(sid) {
@@ -646,6 +657,10 @@ pub async fn run_game_lifecycle(
             }
         }
         emit_plugin_lifecycle(&io, &game_id, "onLeaderboard", "SHOW_LEADERBOARD");
+        // Node parity (leaderboard-flow.ts:256): tempRoundRecap is cleared only
+        // AFTER SHOW_LEADERBOARD has consumed it, so the round-recap dwell above
+        // (which runs BEFORE this point) never sees it stale.
+        game_ref.lock().unwrap().temp_round_recap = None;
 
 
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
@@ -724,13 +739,20 @@ pub async fn run_game_lifecycle(
                 };
                 for (rank_idx, player) in sorted_players.iter().enumerate() {
                     if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
+                        // WP-H gap 1: players get their OWN recap (myRecap + highlight),
+                        // never the manager's superlatives list, and no autoMode key at
+                        // all (Node parity: leaderboard-flow.ts:225-231 — the player
+                        // FINISHED payload never carries autoMode).
+                        let player_recap = game.engine
+                            .build_player_recap(&player.client_id)
+                            .and_then(|r| serde_json::to_value(&r).ok());
                         let personalized_finished = FinishedData {
                             subject: finished.subject.clone(),
                             top: finished.top.clone(),
                             rank: Some((rank_idx + 1) as i32),
                             team_standings: finished.team_standings.clone(),
-                            recap: finished.recap.clone(),
-                            auto_mode: finished.auto_mode,
+                            recap: player_recap,
+                            auto_mode: None,
                         };
                         if let Ok(sid) = player_info.id.parse() {
                             if let Some(sock) = io.get_socket(sid) {
@@ -835,6 +857,88 @@ mod tests {
             final_phase,
             GamePhase::Finished,
             "lifecycle stalled before reaching FINISHED (leaderboard/advance never happened)"
+        );
+    }
+
+    /// WP-H gap 5 regression: `temp_round_recap` must survive the
+    /// SHOW_ROUND_RECAP dwell so the SHOW_LEADERBOARD augmentation right
+    /// after `leaderboard_view()` can still read it (Node parity:
+    /// leaderboard-flow.ts reads `ctx.tempRoundRecap` on send, only clearing
+    /// it AFTER). Exercises the exact real functions
+    /// `run_game_lifecycle` calls in this order (reveal -> [round-recap dwell,
+    /// no longer clearing here] -> leaderboard_view) without racing the full
+    /// async driver's internal timers.
+    #[tokio::test(start_paused = true)]
+    async fn temp_round_recap_survives_round_recap_dwell_for_leaderboard() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+        let mut quizzes = std::collections::HashMap::new();
+        quizzes.insert("test-quiz".to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+        let (game_id, _invite_code, _host_token) = registry
+            .create_game(
+                "manager-socket".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+                serde_json::json!({"enabled": false, "clockSync": true}),
+            )
+            .unwrap();
+
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.add_player(
+                "player-socket".to_string(),
+                "client-1".to_string(),
+                "Alice".to_string(),
+                None,
+            )
+            .unwrap();
+            game.engine.start().unwrap();
+            game.engine.show_question(0).unwrap();
+            game.engine.open_answers().unwrap();
+            game.engine.set_clock_ms(500);
+            // Fixture Q0 solutions:[1] — a lone correct answerer triggers the
+            // round's fastest_finger recap award, so temp_round_recap is
+            // non-empty after reveal.
+            game.engine.record_answer("client-1", Some(1), None, None).unwrap();
+        }
+
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        // Real production reveal — populates game.temp_round_recap.
+        perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), false).await;
+
+        {
+            let recap = game_ref.lock().unwrap().temp_round_recap.clone();
+            assert!(
+                recap.as_ref().is_some_and(|r| !r.is_empty()),
+                "reveal should have populated a non-empty round recap (fastest_finger)"
+            );
+        }
+
+        // Mirror the FIXED SHOW_ROUND_RECAP dwell block: it no longer clears
+        // temp_round_recap here, only flips the phase back to ShowResult.
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.engine.phase = GamePhase::ShowResult;
+        }
+
+        // Mirror leaderboard_view() — the SHOW_LEADERBOARD augmentation in
+        // lifecycle.rs reads temp_round_recap right after this call.
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.engine.leaderboard_view().unwrap();
+        }
+
+        let recap_at_leaderboard_time = game_ref.lock().unwrap().temp_round_recap.clone();
+        assert!(
+            recap_at_leaderboard_time.as_ref().is_some_and(|r| !r.is_empty()),
+            "temp_round_recap must still be populated when SHOW_LEADERBOARD reads it \
+             (WP-H gap 5 regression — was cleared prematurely by the \
+             SHOW_ROUND_RECAP dwell block before this point)"
         );
     }
 

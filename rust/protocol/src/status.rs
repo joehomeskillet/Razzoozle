@@ -251,6 +251,17 @@ pub struct ShowResponsesData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub unit: Option<String>,
+    // WP-H gap 4: Node spreads the FULL Question object (`...question`) onto
+    // SHOW_RESPONSES, so cooldown/time always ride along and min/max come with
+    // it for slider questions. Node parity: results-broadcast.ts:201-226.
+    pub cooldown: i32,
+    pub time: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub min: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub max: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub average_guess: Option<f64>,

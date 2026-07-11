@@ -139,6 +139,11 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
             .map(|t| question_type_wire(t).to_string()),
         correct: question.correct.map(|v| v as i32),
         unit: question.unit.clone(),
+        // WP-H gap 4: Node parity (results-broadcast.ts spreads `...question`).
+        cooldown: question.cooldown,
+        time: question.time,
+        min: question.min.map(|v| v as i32),
+        max: question.max.map(|v| v as i32),
         average_guess,
         text_responses: if text_responses.is_empty() {
             None
@@ -205,6 +210,18 @@ pub async fn perform_reveal_and_broadcast(
             let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
             let bonus_flag = question.bonus.unwrap_or(false);
             let is_practice = question.practice == Some(true);
+            // WP-H gap 2: Node parity (results-broadcast.ts:172-174) — reveal the
+            // AUTHORED chunk order (not the shuffled one players answered with)
+            // on sentence-builder SHOW_RESULT so the client can show the
+            // correct sentence.
+            let correct_chunks: Option<Vec<String>> = if matches!(
+                question.r#type.as_ref(),
+                Some(QuestionType::SentenceBuilder)
+            ) {
+                question.chunks.clone()
+            } else {
+                None
+            };
             let correct_answer: Option<String> = if is_poll {
                 None
             } else {
@@ -315,6 +332,7 @@ pub async fn perform_reveal_and_broadcast(
 
                     // STEP 1 parity fields
                     show_result_data.correct_answer = correct_answer.clone();
+                    show_result_data.correct_chunks = correct_chunks.clone();
                     show_result_data.poll = Some(is_poll);
                     show_result_data.bonus = Some(bonus_flag && result.correct && !is_practice);
                     show_result_data.scoring_mode = None; // parity: Node omits it
@@ -372,5 +390,87 @@ pub async fn perform_reveal_and_broadcast(
                 send_status_to_manager(&manager_socket, &game_ref, &manager_status);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::Game;
+    use razzoozle_protocol::quizz::Quizz;
+    use razzoozle_protocol::status::ScoringMode;
+
+    fn game_with_quiz(quiz_json: &str) -> Game {
+        let quiz: Quizz = serde_json::from_str(quiz_json).expect("quiz json");
+        let mut game = Game::new(
+            "game-rh".to_string(),
+            "RH01".to_string(),
+            "manager-socket".to_string(),
+            "test-quiz".to_string(),
+            quiz,
+        );
+        game.add_player(
+            "player-socket".to_string(),
+            "client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game
+    }
+
+    /// WP-H gap 4 regression: SHOW_RESPONSES must carry cooldown/time always,
+    /// and min/max for slider questions — Node spreads the full Question
+    /// object onto the payload (results-broadcast.ts:201-226); reveal_helpers
+    /// used to build ShowResponsesData without these fields at all.
+    #[test]
+    fn manager_show_responses_carries_cooldown_time_and_slider_min_max() {
+        let mut game = game_with_quiz(
+            r#"{"subject":"S","questions":[{"question":"How many?","type":"slider","min":0,"max":10,"correct":5,"cooldown":7,"time":22}]}"#,
+        );
+        game.engine.start().unwrap();
+        game.engine.show_question(0).unwrap();
+        game.engine.open_answers().unwrap();
+        game.engine.reveal(ScoringMode::Speed).unwrap();
+
+        let status = build_manager_show_responses(&game);
+        let GameStatus::ShowResponses(data) = status else {
+            panic!("expected ShowResponses");
+        };
+        assert_eq!(data.cooldown, 7, "cooldown must always ride along (Node parity)");
+        assert_eq!(data.time, 22, "time must always ride along (Node parity)");
+        assert_eq!(data.min, Some(0), "slider min must be present");
+        assert_eq!(data.max, Some(10), "slider max must be present");
+    }
+
+    /// WP-H gap 2 regression: sentence-builder SHOW_RESULT must reveal the
+    /// AUTHORED chunk order to the player (Node parity:
+    /// results-broadcast.ts:172-174) — `RoundResult::to_show_result_data`
+    /// hardcoded `correct_chunks: None` and reveal_helpers never overrode it.
+    #[tokio::test]
+    async fn sentence_builder_show_result_carries_correct_chunks_for_player() {
+        let mut game = game_with_quiz(
+            r#"{"subject":"S","questions":[{"question":"Order it","type":"sentence-builder","chunks":["the","quick","fox"],"cooldown":5,"time":20}]}"#,
+        );
+        game.engine.start().unwrap();
+        game.engine.show_question(0).unwrap();
+        game.engine.open_answers().unwrap();
+        let game_ref = Arc::new(Mutex::new(game));
+
+        let (_layer, io) = socketioxide::SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        perform_reveal_and_broadcast(game_ref.clone(), "game-rh".to_string(), io, false).await;
+
+        let game = game_ref.lock().unwrap();
+        let show_result = game
+            .last_show_result_data
+            .get("player-socket")
+            .expect("SHOW_RESULT cached for player");
+        assert_eq!(
+            show_result.correct_chunks,
+            Some(vec!["the".to_string(), "quick".to_string(), "fox".to_string()]),
+            "sentence-builder SHOW_RESULT must reveal the authored chunk order"
+        );
     }
 }

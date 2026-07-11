@@ -72,6 +72,44 @@ pub struct HardestQuestion {
     pub correct_pct: f64,
 }
 
+/// WP-H gap 1: one player's own end-of-game recap card. Node parity:
+/// game-recap.ts's `PlayerRecap["myRecap"]`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MyRecap {
+    pub rank: i32,
+    pub accuracy_pct: i32,
+    pub correct: i32,
+    pub wrong: i32,
+    #[ts(type = "number | null")]
+    pub fastest_ms: Option<i64>,
+    pub peak_streak: i32,
+    pub achievements: Vec<String>,
+}
+
+/// The single superlative a player won, for the phone's 1-card highlight.
+/// Node parity: game-recap.ts's `PlayerRecap["highlight"]`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RecapHighlight {
+    pub key: SuperlativeKey,
+    pub value: f64,
+}
+
+/// Per-player post-game recap (WP-H gap 1): sent on FINISHED to each player
+/// INSTEAD OF ManagerRecap. Node parity: game-recap.ts's `PlayerRecap`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PlayerRecap {
+    pub my_recap: MyRecap,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub highlight: Option<RecapHighlight>,
+}
+
 /// Per-answer record for a single player on a single question.
 /// Part of QuestionResult; tracked during gameplay.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
