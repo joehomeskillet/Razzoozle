@@ -264,6 +264,9 @@ pub struct ShowResponsesData {
     pub max: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
+    pub step: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub average_guess: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
