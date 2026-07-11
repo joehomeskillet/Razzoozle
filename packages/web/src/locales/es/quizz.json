@@ -66,12 +66,14 @@
     "slider": "Slider (número)",
     "multipleSelect": "Selección múltiple",
     "typeAnswer": "Respuesta libre",
+    "sentenceBuilder": "Constructor de oraciones",
     "choiceDesc": "Una respuesta correcta",
     "booleanDesc": "Verdadero o falso",
     "sliderDesc": "Un número en una escala",
     "pollDesc": "Encuesta de opinión, sin puntuación",
     "multipleSelectDesc": "Varias respuestas correctas",
-    "typeAnswerDesc": "Respuesta escrita libremente"
+    "typeAnswerDesc": "Respuesta escrita libremente",
+    "sentenceBuilderDesc": "Los jugadores reconstruyen una oración a partir de fichas de palabras mezcladas"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -100,5 +102,18 @@
   "themePicker": {
     "label": "Diseño",
     "global": "Diseño global"
+  },
+  "sentenceBuilder": {
+    "sentenceLabel": "Oración correcta",
+    "sentencePlaceholder": "Escribe la oración correcta...",
+    "autoGenerate": "Generar automáticamente",
+    "chunksLabel": "Fichas",
+    "addChunk": "Añadir ficha",
+    "chunkPlaceholder": "Ficha",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "removeChunk": "Eliminar ficha {{index}}",
+    "preview": "Los jugadores verán estas fichas mezcladas",
+    "minChunksRequired": "Se requieren al menos 2 fichas"
   }
 }

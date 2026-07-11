@@ -7,7 +7,11 @@
   },
   "joinInstruction": "在此加入游戏",
   "joinTimeout": "未能及时加入。请重试",
-  "leaderboard": "排行榜",
+  "leaderboard": {
+    "title": "排行榜",
+    "top3": "前三名",
+    "place": "第 {{rank}} 名"
+  },
   "pinLabel": "PIN 码",
   "playersJoined": "已加入玩家： ",
   "questionPrefix": "第 # 题",

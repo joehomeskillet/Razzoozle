@@ -7,7 +7,11 @@
   },
   "joinInstruction": "Tritt dem Spiel bei auf",
   "joinTimeout": "Beitritt fehlgeschlagen. Bitte versuche es erneut",
-  "leaderboard": "Bestenliste",
+  "leaderboard": {
+    "title": "Bestenliste",
+    "top3": "Top 3",
+    "place": "Platz {{rank}}"
+  },
   "pinLabel": "PIN-Code",
   "playersJoined": "Verbundene Spieler: ",
   "questionPrefix": "Frage #",

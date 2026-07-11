@@ -66,12 +66,14 @@
     "practiceQuestion": "Practice question (0 points)",
     "multipleSelect": "Multiple select",
     "typeAnswer": "Type answer",
+    "sentenceBuilder": "Sentence builder",
     "choiceDesc": "One correct answer",
     "booleanDesc": "True or false",
     "sliderDesc": "A number on a scale",
     "pollDesc": "Opinion poll, no scoring",
     "multipleSelectDesc": "Several correct answers",
-    "typeAnswerDesc": "Freely typed answer"
+    "typeAnswerDesc": "Freely typed answer",
+    "sentenceBuilderDesc": "Players rebuild a sentence from shuffled word chips"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",

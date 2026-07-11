@@ -7,7 +7,11 @@
   },
   "joinInstruction": "Únete al juego en",
   "joinTimeout": "No se pudo unir a tiempo. Inténtalo de nuevo",
-  "leaderboard": "Clasificación",
+  "leaderboard": {
+    "title": "Clasificación",
+    "top3": "Top 3",
+    "place": "Puesto {{rank}}"
+  },
   "pinLabel": "Código PIN",
   "playersJoined": "Jugadores conectados: ",
   "questionPrefix": "Pregunta #",
@@ -50,12 +54,11 @@
     "autoOff": "desactivado",
     "autoTitle": "Modo automático: avanza automáticamente",
     "fullscreen": "Pantalla completa",
-    "mute": "Silenciar",
-    "unmute": "Activar sonido",
+    "mute": "Sin sonido",
+    "unmute": "Con sonido",
     "hapticsOff": "Vibración desactivada",
     "hapticsOn": "Vibración activada"
   },
-  "sending": "enviando…",
   "avatar": {
     "title": "Tu avatar",
     "choose": "Elegir avatar",
@@ -63,13 +66,13 @@
     "uploading": "Subiendo…",
     "uploaded": "Avatar subido",
     "skip": "Omitir",
-    "done": "Listo",
+    "done": "Hecho",
     "change": "Cambiar avatar",
     "generate": "Generar avatar",
     "reroll": "Otro avatar",
     "styleLabel": "Estilo",
     "useThis": "Usar este",
-    "preview": "Vista previa",
+    "preview": "Previsualización",
     "tooLarge": "La imagen es demasiado grande",
     "uploadFailed": "No se pudo leer esa imagen",
     "previewUse": "Usar este avatar",
@@ -79,82 +82,72 @@
       "bottts": "Robots",
       "thumbs": "Pulgares",
       "fun": "Emoji",
-      "people": "Personas"
+      "people": "Gente"
     }
   },
   "pause": {
     "title": "Pausa",
-    "paused": "El juego está en pausa",
-    "resumeHint": "Continúas en cuanto el anfitrión reanude",
+    "paused": "El juego está pausado",
+    "resumeHint": "Continuarás cuando el anfitrión reanude",
     "pauseGame": "Pausar juego",
     "resumeGame": "Reanudar juego"
   },
-  "playerReconnected": "{{name}} se ha reconectado",
-  "achievementBanner": {
-    "wins": "consigue"
-  },
-  "locked": "bloqueado",
-  "tier": {
-    "bronze": "Bronce",
-    "silver": "Plata",
-    "gold": "Oro",
-    "diamant": "Diamante"
-  },
+  "playerReconnected": "{{name}} está de vuelta en línea",
   "achievements": {
     "gallery": {
       "title": "Trofeos",
-      "empty": "Aún sin trofeos — juega una partida para ganar el primero."
+      "empty": "Sin trofeos aún — juega una ronda para ganar el primero."
     },
     "first_correct": {
       "name": "Primer acierto",
-      "desc": "Tu primera respuesta correcta en el juego."
+      "desc": "Tu primer acierto en el juego."
     },
     "participation": {
       "name": "Casa llena",
-      "desc": "Respondiste todas las preguntas sin excepción."
+      "desc": "Respondiste todas las preguntas — sin una sola omisión."
     },
     "lucky_guess": {
-      "name": "Golpe de suerte",
-      "desc": "Acertaste en el último segundo."
+      "name": "Puro suerte",
+      "desc": "¡Acertaste en el último segundo!"
     },
     "speed_demon": {
-      "name": "Demonio veloz",
+      "name": "Demonio de velocidad",
       "desc": "Respondiste correctamente en menos de un segundo."
     },
     "streak_3": {
-      "name": "Racha de tres",
+      "name": "Racha triple",
       "desc": "Tres respuestas correctas seguidas."
     },
     "sharpshooter": {
       "name": "Tirador certero",
-      "desc": "Pregunta deslizante resuelta con más del 95 % de precisión."
+      "desc": "Resolviste una pregunta de deslizador con más del 95% de precisión."
     },
     "climber": {
       "name": "Escalador",
-      "desc": "Subiste tres o más puestos en la clasificación."
+      "desc": "Subiste tres o más posiciones en la clasificación."
     },
     "first_responder": {
-      "name": "Respuesta rápida",
-      "desc": "Primero en responder correctamente en esta ronda."
+      "name": "Primer respondedor",
+      "desc": "Fuiste el primero en responder correctamente en esta ronda."
     },
     "streak_5": {
-      "name": "Cinco seguidos",
-      "desc": "Cinco respuestas correctas consecutivas."
+      "name": "Cinco en fuego",
+      "desc": "Cinco respuestas correctas seguidas."
     },
     "underdog": {
-      "name": "El rezagado",
-      "desc": "Superaste a alguien con 2000 puntos de ventaja."
+      "name": "Perdedor",
+      "desc": "Superaste a alguien con una ventaja de 2000 puntos."
     },
     "perfect_round": {
       "name": "Ronda perfecta",
-      "desc": "Ronda impecable."
+      "desc": "Desempeño perfecto en la ronda."
     },
     "streak_10": {
       "name": "Racha de diez",
       "desc": "Diez respuestas correctas seguidas — impresionante."
     },
     "speedy_gonzales": {
-      "name": "Speedy González",
+      "name": "Speedy Gonzales",
       "desc": "Respondiste correctamente en menos de 0,4 segundos."
     },
     "perfect_game": {
@@ -164,7 +157,7 @@
   },
   "teams": {
     "chooseTeam": "Elige tu equipo",
-    "teamLeaderboard": "Clasificación por equipos",
+    "teamLeaderboard": "Clasificación de equipos",
     "red": "Rojo",
     "blue": "Azul",
     "green": "Verde",
@@ -172,25 +165,25 @@
     "pick": "Elige un equipo"
   },
   "solo": {
-    "play": "Jugar en solitario",
+    "play": "Jugar solo",
     "yourScore": "Tu puntuación",
     "soloLeaderboard": "Clasificación",
     "enterName": "Tu nombre",
     "next": "Siguiente",
     "autoNext": "Avance automático",
-    "autoNextTitle": "Avanzar automáticamente a la siguiente pregunta",
-    "finish": "Finalizar",
-    "rank": "Puesto {{rank}}",
+    "autoNextTitle": "Avanza automáticamente a la siguiente pregunta",
+    "finish": "Terminar",
+    "rank": "Clasificación {{rank}}",
     "replay": "Jugar de nuevo",
     "trophies": "Mis trofeos"
   },
   "reward": {
     "bonusPoints": "Bonus",
-    "dismiss": "Cerrar"
+    "dismiss": "Descartar"
   },
   "ended": {
     "byHost": {
-      "title": "El anfitrión finalizó la partida",
+      "title": "El anfitrión terminó el juego",
       "hint": "Gracias por jugar."
     }
   },
@@ -198,25 +191,25 @@
     "title": "Tu resumen",
     "myCard": {
       "accuracy": "Precisión",
-      "correct": "Correctas",
-      "wrong": "Incorrectas",
+      "correct": "Correcto",
+      "wrong": "Incorrecto",
       "fastest": "Respuesta más rápida",
-      "peakStreak": "Mejor racha",
+      "peakStreak": "Racha más larga",
       "noFastest": "—",
       "seconds": "{{value}} s",
       "streakValue": "{{count}}×"
     },
     "highlight": {
-      "title": "Tu momento",
+      "title": "Tu destacado",
       "fastest_finger": "Dedo más rápido",
       "most_correct": "Más respuestas correctas",
       "most_wrong": "Intentos más valientes",
-      "longest_streak": "Mejor racha",
+      "longest_streak": "Racha más larga",
       "biggest_climber": "Mayor escalador",
-      "lucky_guesser": "Golpe de suerte",
-      "comeback_kid": "Remontada de la partida",
+      "lucky_guesser": "Adivinador de suerte",
+      "comeback_kid": "Regreso del juego",
       "most_achievements": "Coleccionista de trofeos",
-      "hardest_question": "Resolvió la pregunta más difícil"
+      "hardest_question": "Pregunta más difícil resuelta"
     },
     "trophies": {
       "title": "Tus trofeos",
@@ -227,28 +220,28 @@
     },
     "sticker": {
       "create": "Crear pegatina",
-      "creating": "Creando pegatina …",
+      "creating": "Creando pegatina…",
       "shared": "Pegatina compartida.",
       "copied": "Pegatina copiada al portapapeles.",
       "downloaded": "Pegatina descargada.",
       "error": "No se pudo crear la pegatina.",
       "share": "Compartir pegatina",
-      "rankBadge": "Puesto {{rank}}",
-      "points": "pts",
+      "rankBadge": "Rango {{rank}}",
+      "points": "ptos",
       "honorific": {
-        "1": "Primer puesto",
-        "2": "Segundo puesto",
-        "3": "Tercer puesto"
+        "1": "Primer lugar",
+        "2": "Segundo lugar",
+        "3": "Tercer lugar"
       }
     },
     "superlative": {
       "fastest_finger": "Dedo más rápido",
-      "most_correct": "Más aciertos",
-      "most_wrong": "Fallo más valiente",
+      "most_correct": "Más respuestas correctas",
+      "most_wrong": "Intentos más valientes",
       "longest_streak": "Racha más larga",
       "biggest_climber": "Mayor escalador",
-      "lucky_guesser": "El afortunado",
-      "comeback_kid": "Remontada del juego",
+      "lucky_guesser": "Adivinador de suerte",
+      "comeback_kid": "Regreso del juego",
       "most_achievements": "Coleccionista de trofeos",
       "hardest_question": "Pregunta más difícil"
     },
@@ -257,18 +250,18 @@
     "awardsTitle": "Premios"
   },
   "roundRecap": {
-    "title": "Lo mejor de la ronda",
+    "title": "Aspectos destacados de la ronda",
     "fastest_finger": "Dedo más rápido",
-    "first_correct": "Primer acierto",
+    "first_correct": "Primera respuesta correcta",
     "streak": "Racha",
-    "highest_round_score": "Mejor puntuación de la ronda",
+    "highest_round_score": "Puntuación de ronda más alta",
     "rank_climber": "Mayor escalador",
-    "achievement_unlock": "Bonus desbloqueado",
-    "slowest_player": "El más lento",
-    "most_wrong": "Más respuestas incorrectas"
+    "achievement_unlock": "Bonificación desbloqueada",
+    "slowest_player": "Más lento",
+    "most_wrong": "Respuestas incorrectas más comunes"
   },
   "timer": {
-    "remaining_one": "Queda {{count}} segundo",
-    "remaining_other": "Quedan {{count}} segundos"
+    "remaining_one": "{{count}} segundo restante",
+    "remaining_other": "{{count}} segundos restantes"
   }
 }

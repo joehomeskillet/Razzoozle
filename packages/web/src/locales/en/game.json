@@ -7,7 +7,11 @@
   },
   "joinInstruction": "Join the game at",
   "joinTimeout": "Could not join in time. Please try again",
-  "leaderboard": "Leaderboard",
+  "leaderboard": {
+    "title": "Leaderboard",
+    "top3": "Top 3",
+    "place": "Place {{rank}}"
+  },
   "pinLabel": "PIN Code",
   "playersJoined": "Players Joined: ",
   "questionPrefix": "Question #",

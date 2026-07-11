@@ -10,6 +10,7 @@ import type { ThemeTemplate } from "@razzoozle/common/types/theme"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import QuestionEditorAIAssist from "@razzoozle/web/features/quizz/components/QuestionEditorAIAssist"
 import CatalogPickerModal from "@razzoozle/web/features/quizz/components/CatalogPickerModal"
 import QuizzEditorCard from "@razzoozle/web/features/quizz/components/QuizzEditorCard"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
@@ -19,6 +20,7 @@ import clsx from "clsx"
 import {
   BookmarkPlus,
   BookOpen,
+  ChevronDown,
   GripVertical,
   Plus,
   Trash2,
@@ -50,6 +52,7 @@ const QuizzEditorSidebar = () => {
   const globalTheme = useThemeStore((s) => s.theme)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [aiExpanded, setAiExpanded] = useState(false)
   const [templates, setTemplates] = useState<ThemeTemplate[]>([])
 
   // Multi-select state. `selected` is the working set; `anchor` is the pivot for
@@ -356,6 +359,21 @@ const QuizzEditorSidebar = () => {
             {t("manager:catalog.saveToCatalog")}
           </span>
         </Button>
+
+        {/* AI Assist Panel */}
+        <div className="border-t border-gray-200">
+          <button
+            onClick={() => setAiExpanded(!aiExpanded)}
+            className="flex w-full items-center justify-between px-4 py-2 hover:bg-gray-100 transition-colors"
+          >
+            <span className="text-sm font-semibold text-gray-700">✨ Mit KI generieren</span>
+            <ChevronDown
+              className="size-4 transition-transform"
+              style={{ transform: aiExpanded ? "rotate(0deg)" : "rotate(-90deg)" }}
+            />
+          </button>
+          {aiExpanded && <QuestionEditorAIAssist />}
+        </div>
       </aside>
 
       <AlertDialog
