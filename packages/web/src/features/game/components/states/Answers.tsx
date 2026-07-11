@@ -86,7 +86,11 @@ const Answers = ({
   const isMultiSelect = type === "multiple-select"
   const isTypeAnswer = type === "type-answer"
   const isSentenceBuilder = type === "sentence-builder"
-  const [cooldown, setCooldown] = useState(time)
+  const [cooldown, setCooldown] = useState(() =>
+    time > 100000
+      ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
+      : time,
+  )
   const [totalAnswer, setTotalAnswer] = useState(0)
   const [sliderValue, setSliderValue] = useState(
     type === "slider" && min != null && max != null
