@@ -28,15 +28,16 @@ pub async fn get_manager_password(pool: &Option<PgPool>) -> Option<String> {
 /// Load achievements configuration from the database.
 /// Returns a vector of serde_json objects with achievement config shape.
 /// Returns empty vec if pool is None or DB query fails.
+/// tier is injected from the registry (not stored in DB).
 pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<bool>, Option<String>, Option<String>, Option<i32>, Option<i32>, Option<String>)> =
+    let rows: Vec<(String, Option<bool>, Option<String>, Option<String>, Option<i32>, Option<i32>)> =
         match sqlx::query_as(
-            "SELECT id, enabled, name, description, threshold, bonus, tier FROM achievements_config ORDER BY id"
+            "SELECT id, enabled, name, description, threshold, bonus FROM achievements_config ORDER BY id"
         )
         .fetch_all(pool)
         .await
@@ -48,8 +49,11 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
             }
         };
 
+    // Load the registry once to inject tier from the engine (static property, not in DB)
+    let registry = razzoozle_engine::achievements::default_config();
+
     let result = rows.into_iter()
-        .map(|(id, enabled, name, description, threshold, bonus, tier)| {
+        .map(|(id, enabled, name, description, threshold, bonus)| {
             let mut obj = serde_json::json!({"id": id});
             if let Some(e) = enabled {
                 obj["enabled"] = serde_json::json!(e);
@@ -66,8 +70,9 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
             if let Some(b) = bonus {
                 obj["bonus"] = serde_json::json!(b);
             }
-            if let Some(t) = tier {
-                obj["tier"] = serde_json::json!(t);
+            // tier is not in DB — inject from registry
+            if let Some(m) = registry.get(&id) {
+                obj["tier"] = serde_json::json!(m.tier.clone());
             }
             obj
         })

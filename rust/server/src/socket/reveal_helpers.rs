@@ -36,17 +36,17 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let mut text_responses = HashMap::new();
 
     for answer in game.engine.current_answers.values() {
-        if let Some(answer_key) = answer.answer_input.answer_key {
+        if let Some(answer_keys) = &answer.answer_input.answer_keys {
+            for answer_key in answer_keys {
+                *responses.entry(answer_key.to_string()).or_insert(0) += 1;
+            }
+        } else if let Some(answer_key) = answer.answer_input.answer_key {
+            // Node parity: single-bucket branch counts -1 (type-answer unmatched text);
+            // multiple-select handled by the answer_keys branch above so its -1 sentinel never lands here.
             *responses.entry(answer_key.to_string()).or_insert(0) += 1;
 
             if is_slider {
                 slider_values.push(answer_key);
-            }
-        }
-
-        if let Some(answer_keys) = &answer.answer_input.answer_keys {
-            for answer_key in answer_keys {
-                *responses.entry(answer_key.to_string()).or_insert(0) += 1;
             }
         }
 
