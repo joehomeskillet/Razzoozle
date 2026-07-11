@@ -30,7 +30,17 @@ pub fn snapshot_file() -> PathBuf {
 
 /// Serialize a single game to a JSON-compatible snapshot value.
 /// Saves the stable state needed for crash recovery: gameId, inviteCode, manager_client_id, players, quiz, phase, etc.
+///
+/// WP-M Fix: Tokens are saved in a separate "playerTokens" map since player_token has serde(skip)
+/// for wire safety. This ensures tokens survive round-trip for reconnect token-based lookups.
 pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
+    // Extract player tokens into a separate map (only Some values).
+    // This preserves tokens for crash recovery while keeping the Player wire-serialization clean.
+    let player_tokens: std::collections::HashMap<String, String> = game.players
+        .iter()
+        .filter_map(|p| p.player_token.clone().map(|token| (p.id.clone(), token)))
+        .collect();
+
     serde_json::json!({
         "gameId": game.game_id,
         "inviteCode": game.invite_code,
@@ -51,6 +61,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "quizId": game.quiz_id,
         "lowLatencyConfig": game.low_latency_config,
         "players": &game.players,
+        "playerTokens": player_tokens,
         "autoMode": game.auto_mode,
         "currentQuestionIndex": game.engine.current_question_index,
         // Last recorded manager status for reconnect replay
@@ -63,15 +74,41 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
     })
 }
 
+/// Phase restoration: map saved phase strings back to GamePhase.
+/// Resume semantics (mirroring Node's fromSnapshot behavior):
+/// - WAIT/ShowRoom → ShowRoom (lobby, no-op on reconnect)
+/// - FINISHED → Finished (game over, ready to show results)
+/// - Any running state → ShowLeaderboard (safe fallback, preserves currentQuestionIndex for context)
+fn restore_phase(phase_str: &str, started: bool) -> GamePhase {
+    match phase_str {
+        "WAIT" => GamePhase::ShowRoom,
+        "SHOW_START" if started => GamePhase::ShowLeaderboard, // Resume at leaderboard
+        "SHOW_QUESTION" if started => GamePhase::ShowLeaderboard,
+        "SELECT_ANSWER" if started => GamePhase::ShowLeaderboard,
+        "SHOW_RESULT" if started => GamePhase::ShowLeaderboard,
+        "SHOW_ROUND_RECAP" if started => GamePhase::ShowLeaderboard,
+        "SHOW_LEADERBOARD" => GamePhase::ShowLeaderboard,
+        "FINISHED" => GamePhase::Finished,
+        _ => {
+            warn!("Unknown phase string '{}', defaulting to ShowRoom", phase_str);
+            GamePhase::ShowRoom
+        }
+    }
+}
+
 /// Deserialize a game snapshot back into a Game instance.
 /// Returns None if the snapshot is malformed; logs the error but never panics.
+///
+/// WP-M Fixes:
+/// 1. Restores player_token from the separate "playerTokens" map (Cause 1)
+/// 2. Restores engine.phase using safe resume semantics (Cause 2)
 pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     let game_id = snap.get("gameId")?.as_str()?.to_string();
     let invite_code = snap.get("inviteCode")?.as_str()?.to_string();
     let manager_client_id = snap.get("managerClientId").and_then(|v| v.as_str()).map(|s| s.to_string());
     let host_token = snap.get("hostToken")?.as_str()?.to_string();
     let auto_mode = snap.get("autoMode")?.as_bool()?;
-    let players: Vec<razzoozle_protocol::player::Player> = serde_json::from_value(snap.get("players")?.clone()).ok()?;
+    let mut players: Vec<razzoozle_protocol::player::Player> = serde_json::from_value(snap.get("players")?.clone()).ok()?;
     let quiz: razzoozle_protocol::quizz::Quizz = serde_json::from_value(snap.get("quizz")?.clone()).ok()?;
 
     let now = std::time::SystemTime::now()
@@ -79,12 +116,30 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         .unwrap_or_default()
         .as_millis() as u64;
 
+    // WP-M Fix 1: Restore player tokens from the separate "playerTokens" map
+    let player_tokens: std::collections::HashMap<String, String> = snap
+        .get("playerTokens")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .unwrap_or_default();
+
+    for player in &mut players {
+        if let Some(token) = player_tokens.get(&player.id) {
+            player.player_token = Some(token.clone());
+        }
+    }
+
     // Create the engine with the restored quiz and players
     let mut engine = razzoozle_engine::state::GameState::new(quiz, players.clone());
 
     // Restore the current question index if available
     if let Some(idx) = snap.get("currentQuestionIndex").and_then(|v| v.as_u64()) {
         engine.current_question_index = idx as usize;
+    }
+
+    // WP-M Fix 2: Restore engine.phase using safe resume semantics
+    let started = snap.get("started").and_then(|v| v.as_bool()).unwrap_or(false);
+    if let Some(phase_str) = snap.get("phase").and_then(|v| v.as_str()) {
+        engine.phase = restore_phase(phase_str, started);
     }
 
     let mut game = Game {
@@ -233,4 +288,222 @@ pub async fn load_snapshot() -> Vec<Game> {
     }
 
     restored
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test that player tokens are preserved through snapshot round-trip.
+    /// WP-M Fix 1 validation: Tokens must survive serialization/deserialization.
+    #[test]
+    fn test_snapshot_roundtrip_player_tokens() {
+        let snap = serde_json::json!({
+            "gameId": "game-1",
+            "inviteCode": "invite-1",
+            "managerClientId": "mgr-client",
+            "hostToken": "host-token",
+            "started": false,
+            "phase": "WAIT",
+            "quizz": {
+                "subject": "Test",
+                "questions": []
+            },
+            "quizId": "quiz-1",
+            "lowLatencyConfig": {"enabled": false},
+            "players": [
+                {
+                    "id": "p1",
+                    "clientId": "c1",
+                    "connected": true,
+                    "username": "Alice",
+                    "points": 100,
+                    "streak": 3,
+                },
+                {
+                    "id": "p2",
+                    "clientId": "c2",
+                    "connected": true,
+                    "username": "Bob",
+                    "points": 50,
+                    "streak": 1,
+                },
+            ],
+            "playerTokens": {
+                "p1": "token-alice-secret",
+                "p2": "token-bob-secret",
+            },
+            "autoMode": false,
+            "currentQuestionIndex": 0,
+        });
+
+        let restored = game_from_snapshot(&snap).expect("Failed to restore game");
+
+        let p1 = restored.players.iter().find(|p| p.id == "p1").expect("Player p1 not found");
+        assert_eq!(p1.player_token, Some("token-alice-secret".to_string()), "p1 token mismatch");
+
+        let p2 = restored.players.iter().find(|p| p.id == "p2").expect("Player p2 not found");
+        assert_eq!(p2.player_token, Some("token-bob-secret".to_string()), "p2 token mismatch");
+    }
+
+    /// Test that Player wire serialization does NOT include playerToken (security regression guard).
+    #[test]
+    fn test_player_wire_no_token_leak() {
+        let snap = serde_json::json!({
+            "gameId": "game-1",
+            "inviteCode": "invite-1",
+            "managerClientId": "mgr-client",
+            "hostToken": "host-token",
+            "started": false,
+            "phase": "WAIT",
+            "quizz": {
+                "subject": "Test",
+                "questions": []
+            },
+            "quizId": "quiz-1",
+            "lowLatencyConfig": {"enabled": false},
+            "players": [
+                {
+                    "id": "p1",
+                    "clientId": "c1",
+                    "connected": true,
+                    "username": "Alice",
+                    "points": 100,
+                    "streak": 3,
+                }
+            ],
+            "playerTokens": {
+                "p1": "token-alice"
+            },
+            "autoMode": false,
+            "currentQuestionIndex": 0,
+        });
+
+        let restored = game_from_snapshot(&snap).expect("Failed to restore");
+        let p1 = restored.players.iter().find(|p| p.id == "p1").expect("Player p1 not found");
+
+        assert_eq!(p1.player_token, Some("token-alice".to_string()));
+
+        let player_json = serde_json::to_value(&p1).unwrap();
+        assert!(player_json.get("playerToken").is_none(), "Token leaked in wire serialization");
+    }
+
+    /// Test that engine.phase is restored correctly.
+    /// WP-M Fix 2 validation: Phase must survive round-trip and follow resume semantics.
+    #[test]
+    fn test_snapshot_phase_restoration() {
+        let test_cases = vec![
+            ("WAIT", GamePhase::ShowRoom, false),
+            ("FINISHED", GamePhase::Finished, true),
+            ("SHOW_QUESTION", GamePhase::ShowLeaderboard, true),
+            ("SELECT_ANSWER", GamePhase::ShowLeaderboard, true),
+            ("SHOW_RESULT", GamePhase::ShowLeaderboard, true),
+            ("SHOW_ROUND_RECAP", GamePhase::ShowLeaderboard, true),
+            ("SHOW_LEADERBOARD", GamePhase::ShowLeaderboard, true),
+        ];
+
+        for (phase_str, expected_phase, started) in test_cases {
+            let snap = serde_json::json!({
+                "gameId": "game-1",
+                "inviteCode": "invite-1",
+                "managerClientId": null,
+                "hostToken": "host-token",
+                "started": started,
+                "phase": phase_str,
+                "quizz": {
+                    "subject": "Test",
+                    "questions": []
+                },
+                "quizId": "quiz-1",
+                "lowLatencyConfig": {"enabled": false},
+                "players": [],
+                "playerTokens": {},
+                "autoMode": false,
+                "currentQuestionIndex": 0,
+            });
+
+            let restored = game_from_snapshot(&snap).expect(&format!("Failed to restore phase {}", phase_str));
+            assert_eq!(restored.engine.phase, expected_phase, "Phase mismatch for '{}'", phase_str);
+        }
+    }
+
+    /// Test that currentQuestionIndex is preserved through round-trip.
+    #[test]
+    fn test_snapshot_current_question_index() {
+        let snap = serde_json::json!({
+            "gameId": "game-1",
+            "inviteCode": "invite-1",
+            "managerClientId": null,
+            "hostToken": "host-token",
+            "started": true,
+            "phase": "SELECT_ANSWER",
+            "quizz": {
+                "subject": "Test",
+                "questions": []
+            },
+            "quizId": "quiz-1",
+            "lowLatencyConfig": {"enabled": false},
+            "players": [],
+            "playerTokens": {},
+            "autoMode": false,
+            "currentQuestionIndex": 3,
+        });
+
+        let restored = game_from_snapshot(&snap).expect("Failed to restore");
+        assert_eq!(restored.engine.current_question_index, 3, "currentQuestionIndex not preserved");
+    }
+
+    /// Integration test: Snapshot round-trip with multi-player state.
+    #[test]
+    fn test_snapshot_integration_multiplay() {
+        let snap = serde_json::json!({
+            "gameId": "game-1",
+            "inviteCode": "invite-xyz",
+            "managerClientId": "mgr-client",
+            "hostToken": "host-secret",
+            "started": true,
+            "phase": "SELECT_ANSWER",
+            "quizz": {
+                "subject": "Test",
+                "questions": []
+            },
+            "quizId": "quiz-1",
+            "lowLatencyConfig": {"enabled": false},
+            "players": [
+                {
+                    "id": "p1",
+                    "clientId": "c1",
+                    "connected": true,
+                    "username": "Alice",
+                    "points": 100,
+                    "streak": 3,
+                },
+                {
+                    "id": "p2",
+                    "clientId": "c2",
+                    "connected": true,
+                    "username": "Bob",
+                    "points": 50,
+                    "streak": 1,
+                },
+            ],
+            "playerTokens": {
+                "p1": "token-alice-secret",
+                "p2": "token-bob-secret",
+            },
+            "autoMode": false,
+            "currentQuestionIndex": 3,
+        });
+
+        let restored = game_from_snapshot(&snap).expect("Failed to restore");
+
+        assert_eq!(restored.players.len(), 2);
+        let p1 = restored.players.iter().find(|p| p.id == "p1").unwrap();
+        let p2 = restored.players.iter().find(|p| p.id == "p2").unwrap();
+
+        assert_eq!(p1.player_token, Some("token-alice-secret".to_string()));
+        assert_eq!(p2.player_token, Some("token-bob-secret".to_string()));
+        assert_eq!(restored.engine.phase, GamePhase::ShowLeaderboard);
+        assert_eq!(restored.engine.current_question_index, 3);
+    }
 }
