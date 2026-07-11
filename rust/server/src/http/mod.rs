@@ -9,6 +9,7 @@ pub mod skeleton;
 mod client_events;
 mod result_og;
 pub mod solo;
+mod static_files;
 
 use axum::{
     extract::Path,
@@ -203,6 +204,15 @@ pub fn router(state: AppState) -> Router {
         .route("/sounds/*path", get(assets::handle_sounds_asset))
         .route("/r/:id", get(result_og::handle_result_og))
         .route("/metrics", get(metrics::handle_metrics))
+        // Static file serving routes (added before fallback so explicit API routes take precedence)
+        .route("/sw.js", get(|| async { static_files::handle_spa_static("sw.js").await }))
+        .route("/registerSW.js", get(|| async { static_files::handle_spa_static("registerSW.js").await }))
+        .route("/manifest.webmanifest", get(|| async { static_files::handle_spa_static("manifest.webmanifest").await }))
+        .route("/media/*path", get(static_files::handle_media_asset))
+        .route("/assets/*path", get(static_files::handle_assets))
+        .route("/", get(static_files::handle_root))
         .layer(axum::middleware::from_fn(metrics::track_metrics))
+        // SPA fallback for unknown routes
+        .fallback(static_files::handle_spa_fallback)
         .with_state(state)
 }
