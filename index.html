@@ -107,7 +107,14 @@
   .gh-mini { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; font-size: .86rem; text-decoration: none; color: var(--ink); padding: .42rem .8rem; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); transition: box-shadow .16s ease, transform .16s ease; }
   .gh-mini:hover { box-shadow: var(--shadow-flat); transform: translateY(-1px); }
   .gh-mini svg { width: 16px; height: 16px; }
-  @media (max-width: 600px) { .gh-mini .gh-label { display: none; } .gh-mini { padding: .42rem .55rem; } }
+  @media (max-width: 600px) { 
+    .gh-mini .gh-label { display: none; }
+    .gh-mini { padding: .42rem .55rem; margin-left: auto; }
+    .header-row { flex-wrap: wrap; row-gap: 4px; padding-block: 8px; min-height: 0; }
+    .header-spacer { display: none; }
+    .lang-switch { order: 3; width: 100%; gap: 2px; padding: 3px; flex-wrap: nowrap; overflow-x: auto; justify-content: space-between; }
+    .lang-switch button { padding: .4rem .5rem; font-size: .78rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; flex: 1 0 auto; }
+  }
 
   /* ===== Buttons ===== */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; font: inherit; font-weight: 700; font-size: 1rem; text-decoration: none; border-radius: 999px; padding: .82rem 1.45rem; cursor: pointer; border: 1px solid transparent; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
@@ -235,7 +242,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
 .logo-card:hover img,.logo-card:focus-within img{filter:none;opacity:1}
 .site{transition:box-shadow .25s ease,background-color .25s ease}
 .site.scrolled{box-shadow:0 1px 0 var(--hairline),0 10px 28px -18px rgba(14,17,32,.22)}
-.hero{position:relative;isolation:isolate}
+.hero{position:relative;isolation:isolate;overflow-x:clip}
 .hero::before{content:"";position:absolute;inset:-12% -10% auto -10%;height:55%;background:radial-gradient(55% 60% at 50% 0,rgba(124,58,237,.10),rgba(255,153,0,.05) 45%,transparent 72%);pointer-events:none;z-index:-1}
 @media (prefers-reduced-motion: reduce){html.js [data-reveal]{opacity:1!important;transform:none!important;transition:none}.logo-card img{transition:none}}
 .showcases{padding:clamp(56px,9vw,104px) 0}
@@ -260,6 +267,70 @@ html.js [data-reveal].in{opacity:1;transform:none}
 @media (max-width:760px){.modes-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){.modes-grid{grid-template-columns:1fr}}
 @media (prefers-reduced-motion: reduce){.mode-card:hover{transform:none}}
+
+  /* ===== Agents section ===== */
+  .agents-band { background: color-mix(in srgb, var(--accent) 8%, white); border-block: 1px solid var(--hairline); }
+  .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
+  .agent-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 1.4rem; display: flex; gap: 1rem; box-shadow: var(--shadow-flat); transition: transform .16s ease, box-shadow .16s ease; }
+  .agent-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+  .agent-icon { width: 44px; height: 44px; flex: 0 0 44px; color: var(--primary-deep); }
+  .agent-card-text h3 { font-size: .95rem; font-weight: 700; margin: 0 0 .3rem; color: var(--ink); }
+  .agent-card-text p { font-size: .85rem; color: var(--ink-soft); margin: 0; }
+  .agents-note { text-align: center; color: var(--ink-soft); font-size: .9rem; margin-top: 2rem; max-width: 58ch; margin-inline: auto; }
+  @media (max-width: 760px) { .agents-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .agents-grid { grid-template-columns: 1fr; } .agent-card { flex-direction: column; align-items: center; text-align: center; } }
+
+
+  /* ===== Interactive game demo section ===== */
+  .demo-section { padding: clamp(3rem, 7vw, 5rem) 0; }
+  .demo-container { display: flex; gap: clamp(1rem, 3vw, 2rem); align-items: center; justify-content: center; margin-top: clamp(1.5rem, 4vw, 2.5rem); flex-wrap: wrap; }
+  @media (max-width: 760px) { .demo-container { flex-direction: column; gap: 2rem; width: 100%; } .demo-presenter { max-width: 100%; margin: 0; } }
+
+  .demo-mockup { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; box-shadow: var(--shadow-lift); position: relative; display: flex; flex-direction: column; overflow: hidden; transition: transform .2s ease; }
+  .demo-mockup:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -20px rgba(14,17,32,.35); }
+  @media (prefers-reduced-motion: reduce) { .demo-mockup:hover { transform: none; } }
+
+  .demo-presenter { max-width: 850px; width: 100%; padding: 3rem; aspect-ratio: 16/9; flex: 2; }
+  .demo-presenter-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem; }
+  .demo-progress { font-size: .82rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+  .demo-timer-badge { width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(var(--primary) 0deg, var(--primary) calc(var(--timer-percent, 100) * 3.6deg), var(--hairline) calc(var(--timer-percent, 100) * 3.6deg)); display: flex; align-items: center; justify-content: center; flex-direction: column; box-shadow: 0 4px 12px rgba(124,58,237,.15); }
+  .demo-timer-badge .value { font-size: 2rem; font-weight: 800; color: var(--ink); line-height: 1; }
+  .demo-timer-badge .label { font-size: .65rem; color: var(--ink-soft); margin-top: .25rem; }
+  .demo-question { font-size: 1.35rem; font-weight: 600; color: var(--ink); margin-bottom: 1.5rem; line-height: 1.35; }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .demo-tile { padding: 1.4rem 1.2rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 700; color: white; font-size: 1.1rem; cursor: default; transition: all .2s ease; position: relative; }
+  .demo-tile svg { width: 26px; height: 26px; flex-shrink: 0; }
+  .demo-tile.t1 { background: #e69f00; }
+  .demo-tile.t2 { background: #56b4e9; }
+  .demo-tile.t3 { background: #3dbfa0; }
+  .demo-tile.t4 { background: #cc79a7; }
+
+  .demo-tile.revealed-correct { background: #22c55e; border: 2px solid white; }
+  .demo-tile.revealed-correct::after { content: "✓"; position: absolute; right: .55rem; font-size: 1.3rem; font-weight: 800; }
+  .demo-tile.revealed-wrong { opacity: .35; }
+
+  .demo-phone { max-width: 280px; width: 100%; background: var(--surface); border: 1px solid var(--hairline); border-radius: 32px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.6); position: relative; }
+  .demo-phone::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 26px; background: var(--ink); border-radius: 0 0 24px 24px; z-index: 10; }
+  .demo-phone-screen { background: var(--cream-page); border-radius: 26px; overflow: hidden; display: flex; flex-direction: column; }
+  .demo-phone-header { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 16%, white), color-mix(in srgb, var(--accent) 12%, white)); padding: 1.2rem .9rem; text-align: center; }
+  .demo-phone-header .player-name { font-size: .9rem; font-weight: 700; color: var(--ink); margin-bottom: .3rem; }
+  .demo-phone-header .player-score { font-size: .75rem; color: var(--ink-soft); }
+  .demo-phone-answers { display: flex; flex-direction: column; gap: .7rem; padding: 1.2rem .9rem; flex: 1; justify-content: center; }
+  .demo-answer-btn { padding: 1rem; border-radius: 11px; border: none; font-weight: 700; color: white; font-size: .88rem; cursor: default; display: flex; align-items: center; justify-content: center; gap: .4rem; transition: all .2s ease; position: relative; }
+  .demo-answer-btn svg { width: 18px; height: 18px; }
+  .demo-answer-btn.a1 { background: #e69f00; }
+  .demo-answer-btn.a2 { background: #56b4e9; }
+  .demo-answer-btn.a3 { background: #3dbfa0; }
+  .demo-answer-btn.a4 { background: #cc79a7; }
+
+  .demo-answer-btn.locked-in { background: #22c55e; transform: scale(.96); }
+  .demo-answer-btn.locked-in::after { content: "locked"; position: absolute; right: .5rem; font-size: .6rem; font-weight: 600; opacity: .8; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .demo-timer-badge, .demo-tile, .demo-answer-btn { transition: none; }
+    .demo-tile.revealed-wrong { opacity: .35 !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -331,6 +402,54 @@ html.js [data-reveal].in{opacity:1;transform:none}
           <div class="mock-foot">
             <span class="live-dot"><i></i><span data-i18n="hero.mockLive">12 joined</span></span>
             <span data-i18n="hero.mockTimer">00:18</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== Interactive game demo ===== -->
+  <section class="demo-section" aria-labelledby="demo-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker" data-i18n="demo.kicker">Try it now</p>
+        <h2 id="demo-title" data-i18n="demo.title">See how it plays</h2>
+        <p data-i18n="demo.desc">Hover over the demo to start the countdown timer — watch the presenter screen reveal the answer on the big display while the phone locks in the player's response.</p>
+      </div>
+
+      <div class="demo-container" tabindex="0" role="region" aria-label="Interactive game demo" data-i18n="demo.alt" data-i18n-attr="aria-label">
+        <!-- Presenter mockup -->
+        <div class="demo-mockup demo-presenter">
+          <div class="demo-presenter-top">
+            <div class="demo-progress" data-i18n="demo.progress">Question 1 of 6</div>
+            <div class="demo-timer-badge" style="--timer-percent: 100">
+              <div class="value">15</div>
+              <div class="label">s</div>
+            </div>
+          </div>
+          <div class="demo-question" data-i18n="demo.question">Which planet is the largest in our solar system?</div>
+          <div class="demo-grid">
+            <div class="demo-tile t1" data-answer="1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 20H2z"/></svg> <span data-i18n="demo.a1">Jupiter</span></div>
+            <div class="demo-tile t2" data-answer="2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 12 12 22 2 12z"/></svg> <span data-i18n="demo.a2">Mars</span></div>
+            <div class="demo-tile t3" data-answer="3" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> <span data-i18n="demo.a3">Venus</span></div>
+            <div class="demo-tile t4" data-answer="4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> <span data-i18n="demo.a4">Mercury</span></div>
+          </div>
+        </div>
+
+        <!-- Phone mockup -->
+        <div class="demo-mockup demo-phone">
+          <div class="demo-phone-screen">
+            <div class="demo-phone-header">
+              <div class="player-name">Ana</div>
+              <div class="player-score" data-i18n="demo.points">420 points</div>
+            </div>
+            <div class="demo-phone-answers">
+              <button class="demo-answer-btn a1" data-answer="1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 20H2z"/></svg> <span data-i18n="demo.a1">Jupiter</span></button>
+              <button class="demo-answer-btn a2" data-answer="2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 12 12 22 2 12z"/></svg> <span data-i18n="demo.a2">Mars</span></button>
+              <button class="demo-answer-btn a3" data-answer="3" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> <span data-i18n="demo.a3">Venus</span></button>
+              <button class="demo-answer-btn a4" data-answer="4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> <span data-i18n="demo.a4">Mercury</span></button>
+            </div>
           </div>
         </div>
       </div>
@@ -416,6 +535,88 @@ html.js [data-reveal].in{opacity:1;transform:none}
       </div>
     </div>
   </section>
+
+
+  <!-- ===== Agentically developed section ===== -->
+  <div class="agents-band">
+    <section aria-labelledby="agents-title">
+      <div class="wrap">
+        <div class="section-head center">
+          <p class="kicker" data-i18n="agents.kicker">Built by AI</p>
+          <h2 id="agents-title" data-i18n="agents.title">Agentically developed</h2>
+          <p data-i18n="agents.sub">Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.</p>
+        </div>
+
+        <div class="agents-grid">
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.claude.name">Claude</h3>
+              <p data-i18n="agents.claude.role">Orchestration & review</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3zm10 0h8v8h-8zm0 10h8v8h-8zM3 13h8v8H3z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.codex.name">Codex (GPT-5.6)</h3>
+              <p data-i18n="agents.codex.role">Full-stack implementation</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 3l9 9-9 9M3 12h17"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.cursor.name">Cursor (GPT-5.6)</h3>
+              <p data-i18n="agents.cursor.role">Code refinement & fix</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.grok.name">Grok (xAI)</h3>
+              <p data-i18n="agents.grok.role">Rust backend implementation</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.gemini.name">Gemini (Google)</h3>
+              <p data-i18n="agents.gemini.role">Long-context review &amp; judging</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.openmodels.name">Open models</h3>
+              <p data-i18n="agents.openmodels.role">Qwen, DeepSeek, Nemotron</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L3 14h7v7h6v-7h7L13 3z"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.local.name">Local inference</h3>
+              <p data-i18n="agents.local.role">OpenVINO on Intel Arc</p>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M6 9l3 3-3 3"/><path d="M13 15h5"/></svg>
+            <div class="agent-card-text">
+              <h3 data-i18n="agents.playwright.name">Browser QA (Playwright)</h3>
+              <p data-i18n="agents.playwright.role">End-to-end game testing</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="agents-note" data-i18n="agents.note">Humans review and merge every commit. AI augments speed and quality, not replaces judgment.</p>
+      </div>
+    </section>
+  </div>
 
   <!-- ===== Rust backend section ===== -->
   <div class="rust-band">
@@ -556,6 +757,18 @@ html.js [data-reveal].in{opacity:1;transform:none}
         </article>
 
         <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg></div>
+          <h3 data-i18n="feat.f9.t">Player avatars</h3>
+          <p data-i18n="feat.f9.d">Every player gets a generated DiceBear avatar — pick a style and reroll, or upload your own. Avatars float around the lobby and show up on leaderboards, the podium and the awards.</p>
+        </article>
+
+        <article class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div>
+          <h3 data-i18n="feat.f7.t">Shareable results</h3>
+          <p data-i18n="feat.f7.d">Rich Open-Graph link previews, a result page with play-it-yourself CTAs, and downloadable winner stickers.</p>
+        </article>
+
+        <article class="feature">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.7 1.5-1.5 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.4-4.5-8-10-8Z"/></svg></div>
           <h3 data-i18n="feat.f4.t">Theme cockpit &amp; skeletons</h3>
           <p data-i18n="feat.f4.d">A live manager Design tab — colours, per-view backgrounds, logo, radius and a flat ⇄ glass toggle. Download or upload a whole-game theme as an LLM-readable skeleton ZIP.</p>
@@ -586,12 +799,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
         </article>
 
         <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg></div>
-          <h3 data-i18n="feat.f9.t">Player avatars</h3>
-          <p data-i18n="feat.f9.d">Every player gets a generated DiceBear avatar — pick a style and reroll, or upload your own. Avatars float around the lobby and show up on leaderboards, the podium and the awards.</p>
-        </article>
-
-        <article class="feature">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 5-7"/></svg></div>
           <h3 data-i18n="feat.f10.t">Self-host with metrics</h3>
           <p data-i18n="feat.f10.d">Ships as a Docker image you run with one command. Prometheus metrics and structured pino logs are built in, so you can actually watch a live game's health.</p>
@@ -614,6 +821,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
           <h3 data-i18n="feat.f13.t">Sentence-builder questions</h3>
           <p data-i18n="feat.f13.d">A new question type — players tap shuffled word chunks to rebuild a sentence in the right order, great for languages, definitions and sequences.</p>
         </article>
+
       </div>
     </div>
   </section>
@@ -812,6 +1020,36 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "A live theme cockpit",
       "show.r7.p": "Recolour the whole game from the manager Design tab — colours, per-view backgrounds, logo, radius — or drop in a downloadable skeleton ZIP theme. Flat cream by default, optional violet glass.",
       "show.r7.alt": "The manager Design tab — a live theme cockpit",
+      "agents.kicker": "Built by AI",
+      "agents.title": "Agentically developed",
+      "agents.sub": "Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestration & review",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Full-stack implementation",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Code refinement & fix",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Rust backend implementation",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Long-context review & judging",
+      "agents.openmodels.name": "Open models",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Local inference",
+      "agents.local.role": "OpenVINO on Intel Arc",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "End-to-end game testing",
+      "agents.note": "Humans review and merge every commit. AI augments speed and quality, not replaces judgment.",      "demo.kicker": "Try it now",
+      "demo.title": "See how it plays",
+      "demo.desc": "Hover over the demo to start the countdown timer — watch the presenter screen reveal the answer on the big display while the phone locks in the player's response.",
+      "demo.alt": "Interactive game demo showing presenter screen and player phone side by side with answer countdown",
+      "demo.progress": "Question 1 of 6",
+      "demo.question": "Which planet is the largest in our solar system?",
+      "demo.points": "420 points",
+      "demo.a1": "Jupiter",
+      "demo.a2": "Mars",
+      "demo.a3": "Venus",
+      "demo.a4": "Mercury",
       "footer.note": "Free and open source under the MIT License. Self-host it — the live instance is local-only. A friendly fork of <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Not affiliated with Kahoot!®"
     },
     de: {
@@ -857,7 +1095,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f3.t": "Team-Modus & Solo-Spiel",
       "feat.f3.d": "Rote, blaue, grüne und gelbe Teams mit einer Live-Team-Rangliste — oder übe jedes Quiz allein über einen Solo-Teilen-Link mit eigener Punkte-Historie.",
       "feat.f4.t": "Theme-Cockpit & Skeletons",
-      "feat.f4.d": "Ein Live-„Design"-Tab im Manager — Farben, Hintergründe pro Ansicht, Logo, Radius und ein Flat-⇄-Glass-Umschalter. Lade ein ganzes Spiel-Theme als LLM-lesbares Skeleton-ZIP herunter oder hoch.",
+      "feat.f4.d": "Ein Live-„Design“-Tab im Manager — Farben, Hintergründe pro Ansicht, Logo, Radius und ein Flat-⇄-Glass-Umschalter. Lade ein ganzes Spiel-Theme als LLM-lesbares Skeleton-ZIP herunter oder hoch.",
       "feat.f5.t": "PWA, Haptik & Offline",
       "feat.f5.d": "Installierbar und offline-fähig, mit optionalem Vibrations-Feedback auf Spieler-Handys für Countdown und Antworten — durchgehend reduced-motion-bewusst.",
       "feat.f6.t": "Lokale KI-Bilder",
@@ -917,8 +1155,39 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r6.p": "Teile einen Solo-Link und spiele jedes Quiz allein in deinem Tempo, mit eigener Punktehistorie — ideal zum Üben oder für asynchrones Spielen.",
       "show.r6.alt": "Der Solo-Spielbildschirm mit vier Antwortfeldern",
       "show.r7.h": "Ein Live-Theme-Cockpit",
-      "show.r7.p": "Färbe das ganze Spiel im „Design"-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
-      "show.r7.alt": "Der „Design"-Tab im Manager — ein Live-Theme-Cockpit",
+      "show.r7.p": "Färbe das ganze Spiel im „Design“-Tab des Managers um — Farben, Hintergründe pro Ansicht, Logo, Radius — oder lade ein Skeleton-ZIP-Theme hoch. Flaches Cream als Standard, optional violettes Glass.",
+      "show.r7.alt": "Der „Design“-Tab im Manager — ein Live-Theme-Cockpit",
+      "agents.kicker": "Von KI entwickelt",
+      "agents.title": "Agentisch entwickelt",
+      "agents.sub": "Razzoozle wird fast vollständig von KI-Coding-Agenten entwickelt, orchestriert von menschlicher Aufsicht. Ein vielfältiges Team spezialisierter Modelle und Tools arbeitet zusammen, um Features zu bauen, zu testen, zu reviewen und zu deployen.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestrierung & Review",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Full-Stack-Implementierung",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Code-Verfeinerung & Fixes",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Rust-Backend-Implementierung",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Long-Context-Review & Judging",
+      "agents.openmodels.name": "Open Models",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Lokale Inferenz",
+      "agents.local.role": "OpenVINO auf Intel Arc",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "End-to-End-Spieltests",
+      "agents.note": "Menschen reviewen und mergen jeden Commit. KI verbessert Geschwindigkeit und Qualität, ersetzt aber nicht das Urteil.",
+      "demo.kicker": "Probier es jetzt",
+      "demo.title": "So wird gespielt",
+      "demo.desc": "Fahre mit der Maus über die Demo, um den Countdown-Timer zu starten — beobachte, wie der Presenter-Screen die Antwort auf dem großen Bildschirm enthüllt, während das Handy die Antwort des Spielers sperrt.",
+      "demo.alt": "Interaktive Spiel-Demo mit Presenter-Screen und Spieler-Handy nebeneinander mit Antwort-Countdown",
+      "demo.progress": "Frage 1 von 6",
+      "demo.question": "Welcher Planet ist der größte in unserem Sonnensystem?",
+      "demo.points": "420 Punkte",
+      "demo.a1": "Jupiter",
+      "demo.a2": "Mars",
+      "demo.a3": "Venus",
+      "demo.a4": "Merkur",
       "footer.note": "Frei und quelloffen unter der MIT-Lizenz. Selbst hosten — die Live-Instanz ist nur lokal erreichbar. Ein freundlicher Fork von <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Steht in keiner Verbindung zu Kahoot!®"
     },
     zh: {
@@ -964,7 +1233,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f3.t": "团队模式与单人玩法",
       "feat.f3.d": "红、蓝、绿、黄队配实时团队排行榜 —— 或通过单人分享链接独自练习任意测验，拥有自己的得分历史。",
       "feat.f4.t": "主题驾驶舱与 Skeleton",
-      "feat.f4.d": "一个实时的管理员"设计"标签页 —— 颜色、各视图背景、Logo、圆角，以及一个扁平 ⇄ 玻璃切换开关。把整个游戏主题作为 LLM 可读的 skeleton ZIP 下载或上传。",
+      "feat.f4.d": "一个实时的管理员“设计“标签页 —— 颜色、各视图背景、Logo、圆角，以及一个扁平 ⇄ 玻璃切换开关。把整个游戏主题作为 LLM 可读的 skeleton ZIP 下载或上传。",
       "feat.f5.t": "PWA、触感与离线",
       "feat.f5.d": "可安装、支持离线感知，玩家手机上提供可选的倒计时和答题振动反馈 —— 全程尊重 reduced-motion。",
       "feat.f6.t": "本地 AI 图像",
@@ -1024,8 +1293,39 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r6.p": "分享一个单人链接，按自己的节奏独自游玩任意测验，并有独立的分数记录——非常适合练习或异步游玩。",
       "show.r6.alt": "带四个选项的单人游玩画面",
       "show.r7.h": "实时主题驾驶舱",
-      "show.r7.p": "在管理员"设计"标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
-      "show.r7.alt": "管理员"设计"标签——实时主题驾驶舱",
+      "show.r7.p": "在管理员“设计“标签中为整个游戏换色——颜色、各视图背景、徽标、圆角——或上传可下载的骨架 ZIP 主题。默认平面奶油色，可选紫色玻璃。",
+      "show.r7.alt": "管理员“设计“标签——实时主题驾驶舱",
+      "agents.kicker": "由人工智能驱动",
+      "agents.title": "智能体开发",
+      "agents.sub": "Razzoozle 几乎完全由 AI 编码智能体开发，由人类监督协调。由多个专业模型和工具组成的多元团队共同合作，构建、测试、审查和部署功能。",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "协调与审查",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "全栈实现",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "代码细化与修复",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Rust 后端实现",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "长上下文审查与评判",
+      "agents.openmodels.name": "开放模型",
+      "agents.openmodels.role": "Qwen、DeepSeek、Nemotron",
+      "agents.local.name": "本地推理",
+      "agents.local.role": "Intel Arc 上的 OpenVINO",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "端到端游戏测试",
+      "agents.note": "人类审查并合并每个提交。AI 增强速度和质量，而不是替代判断。",
+      "demo.kicker": "现在尝试",
+      "demo.title": "看看游戏如何进行",
+      "demo.desc": "将鼠标悬停在演示上以启动倒计时——观看演示屏幕在大屏幕上揭示答案，同时手机锁定玩家的响应。",
+      "demo.alt": "交互式游戏演示，展示演示屏幕和玩家手机并排显示，有答案倒计时",
+      "demo.progress": "问题 1/6",
+      "demo.question": "我们太阳系中哪个行星最大?",
+      "demo.points": "420 分",
+      "demo.a1": "木星",
+      "demo.a2": "火星",
+      "demo.a3": "金星",
+      "demo.a4": "水星",
       "footer.note": "基于 MIT 许可证免费开源。请自行托管 —— 在线实例仅限本地访问。它是 <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a> 的一个友好分支。与 Kahoot!® 无任何关联。"
     },
     es: {
@@ -1133,6 +1433,37 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Una cabina de temas en vivo",
       "show.r7.p": "Recolorea todo el juego desde la pestaña Diseño del gestor — colores, fondos por vista, logo, radio — o suelta un tema ZIP de esqueleto descargable. Crema plano por defecto, violeta glass opcional.",
       "show.r7.alt": "La pestaña Diseño del gestor — una cabina de temas en vivo",
+      "agents.kicker": "Construido por IA",
+      "agents.title": "Desarrollo agencial",
+      "agents.sub": "Razzoozle se desarrolla casi enteramente con agentes de IA, orquestados por supervisión humana. Un equipo diverso de modelos y herramientas especializadas trabaja junto para construir características, probar, revisar e implementar.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orquestación y revisión",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implementación full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Refinamiento y corrección de código",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Implementación del backend Rust",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Revisión de largo contexto y evaluación",
+      "agents.openmodels.name": "Modelos abiertos",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inferencia local",
+      "agents.local.role": "OpenVINO en Intel Arc",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "Pruebas de juego de extremo a extremo",
+      "agents.note": "Los humanos revisan e integran cada commit. La IA mejora la velocidad y la calidad, no reemplaza el juicio.",
+      "demo.kicker": "Pruébalo ahora",
+      "demo.title": "Mira cómo se juega",
+      "demo.desc": "Pasa el ratón sobre la demostración para iniciar la cuenta atrás — mira cómo la pantalla del presentador revela la respuesta en la pantalla grande mientras el teléfono bloquea la respuesta del jugador.",
+      "demo.alt": "Demo de juego interactivo que muestra la pantalla del presentador y el teléfono del jugador lado a lado con cuenta atrás de respuesta",
+      "demo.progress": "Pregunta 1 de 6",
+      "demo.question": "¿Cuál es el planeta más grande de nuestro sistema solar?",
+      "demo.points": "420 puntos",
+      "demo.a1": "Júpiter",
+      "demo.a2": "Marte",
+      "demo.a3": "Venus",
+      "demo.a4": "Mercurio",
       "footer.note": "Gratis y de código abierto bajo la Licencia MIT. Autoalójalo — la instancia en vivo es solo local. Un fork amistoso de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sin relación con Kahoot!®"
     },
     fr: {
@@ -1240,6 +1571,37 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Un cockpit de thèmes en direct",
       "show.r7.p": "Recolorez tout le jeu depuis l'onglet Design du manager — couleurs, arrière-plans par vue, logo, rayon — ou déposez un thème ZIP « skeleton » téléchargeable. Crème plat par défaut, violet glass en option.",
       "show.r7.alt": "L'onglet Design du manager — un cockpit de thèmes en direct",
+      "agents.kicker": "Construit par l'IA",
+      "agents.title": "Développement agentique",
+      "agents.sub": "Razzoozle est développé presque entièrement par des agents de codage IA, orchestrés par la supervision humaine. Une équipe diversifiée de modèles et d'outils spécialisés travaille ensemble pour construire, tester, examiner et déployer des fonctionnalités.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestration et révision",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implémentation full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Raffinage et correction du code",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Implémentation du backend Rust",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Examen et jugement à long contexte",
+      "agents.openmodels.name": "Modèles ouverts",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inférence locale",
+      "agents.local.role": "OpenVINO sur Intel Arc",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "Tests de jeu end-to-end",
+      "agents.note": "Les humains examinent et fusionnent chaque commit. L'IA améliore la vitesse et la qualité, elle ne remplace pas le jugement.",
+      "demo.kicker": "Essayez maintenant",
+      "demo.title": "Voyez comment on joue",
+      "demo.desc": "Survolez la démo pour démarrer le compte à rebours — regardez l'écran du présentateur révéler la réponse sur l'écran géant tandis que le téléphone verrouille la réponse du joueur.",
+      "demo.alt": "Démo de jeu interactive montrant l'écran du présentateur et le téléphone du joueur côte à côte avec compte à rebours de réponse",
+      "demo.progress": "Question 1 sur 6",
+      "demo.question": "Quelle est la plus grande planète de notre système solaire?",
+      "demo.points": "420 points",
+      "demo.a1": "Jupiter",
+      "demo.a2": "Mars",
+      "demo.a3": "Vénus",
+      "demo.a4": "Mercure",
       "footer.note": "Gratuit et open-source sous la Licence MIT. Auto-hébergez-le — l'instance en direct est uniquement locale. Un fork amical de <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Sans aucun lien avec Kahoot!®"
     },
     it: {
@@ -1347,6 +1709,37 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "show.r7.h": "Una cabina di regia dei temi dal vivo",
       "show.r7.p": "Ricolora l'intero gioco dalla scheda Design del manager — colori, sfondi per vista, logo, raggio — o carica un tema ZIP « skeleton » scaricabile. Crema piatto di default, viola glass opzionale.",
       "show.r7.alt": "La scheda Design del manager — una cabina di regia dei temi dal vivo",
+      "agents.kicker": "Costruito dall'IA",
+      "agents.title": "Sviluppo agentico",
+      "agents.sub": "Razzoozle è sviluppato quasi interamente da agenti di codifica IA, orchestrati dalla supervisione umana. Un team diversificato di modelli e strumenti specializzati lavora insieme per costruire, testare, revisionare e implementare funzionalità.",
+      "agents.claude.name": "Claude",
+      "agents.claude.role": "Orchestrazione e revisione",
+      "agents.codex.name": "Codex (GPT-5.6)",
+      "agents.codex.role": "Implementazione full-stack",
+      "agents.cursor.name": "Cursor (GPT-5.6)",
+      "agents.cursor.role": "Raffinamento e correzione del codice",
+      "agents.grok.name": "Grok (xAI)",
+      "agents.grok.role": "Implementazione del backend Rust",
+      "agents.gemini.name": "Gemini (Google)",
+      "agents.gemini.role": "Revisione a lungo contesto e giudizio",
+      "agents.openmodels.name": "Modelli aperti",
+      "agents.openmodels.role": "Qwen, DeepSeek, Nemotron",
+      "agents.local.name": "Inferenza locale",
+      "agents.local.role": "OpenVINO su Intel Arc",
+      "agents.playwright.name": "Browser QA (Playwright)",
+      "agents.playwright.role": "Test di gioco end-to-end",
+      "agents.note": "Gli umani revisionano e uniscono ogni commit. L'IA migliora la velocità e la qualità, non sostituisce il giudizio.",
+      "demo.kicker": "Provalo ora",
+      "demo.title": "Guarda come si gioca",
+      "demo.desc": "Passa il mouse sulla demo per avviare il timer del conto alla rovescia — guarda lo schermo del presentatore rivelare la risposta sul grande display mentre il telefono blocca la risposta del giocatore.",
+      "demo.alt": "Demo di gioco interattiva che mostra lo schermo del presentatore e il telefono del giocatore fianco a fianco con conto alla rovescia della risposta",
+      "demo.progress": "Domanda 1 di 6",
+      "demo.question": "Quale pianeta è il più grande del nostro sistema solare?",
+      "demo.points": "420 punti",
+      "demo.a1": "Giove",
+      "demo.a2": "Marte",
+      "demo.a3": "Venere",
+      "demo.a4": "Mercurio",
       "footer.note": "Gratuito e open-source sotto la Licenza MIT. Fai self-hosting — l'istanza dal vivo è solo locale. Un fork amichevole di <a href=\"https://github.com/Ralex91/Razzia\" rel=\"noopener\">Ralex91/Razzia</a>. Senza alcun legame con Kahoot!®"
     }
   };
@@ -1402,7 +1795,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
     try {
       var url = new URL(window.location.href);
       url.searchParams.set("lang", lang);
-      history.replaceState(null, "", url);
+      history.replaceState(null, "", url.href);
     } catch (e) {}
   });
 
@@ -1424,6 +1817,99 @@ html.js [data-reveal].in{opacity:1;transform:none}
   }
   var site = d.querySelector('.site');
   if (site){ var onScroll=function(){ site.classList.toggle('scrolled',(window.scrollY||window.pageYOffset)>8); }; addEventListener('scroll',onScroll,{passive:true}); onScroll(); }
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+  var demoContainer = document.querySelector('.demo-container');
+  var timerBadge = document.querySelector('.demo-timer-badge .value');
+  var timerLabel = document.querySelector('.demo-timer-badge .label');
+  var tiles = document.querySelectorAll('.demo-tile');
+  var answerBtns = document.querySelectorAll('.demo-answer-btn');
+  var isReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var state = { active: false, elapsed: 0, intervalId: null };
+
+  function resetDemo() {
+    state.active = false;
+    state.elapsed = 0;
+    if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = null; }
+    
+    timerBadge.textContent = '15';
+    timerLabel.textContent = 's';
+    document.querySelector('.demo-timer-badge').style.setProperty('--timer-percent', '100');
+    
+    tiles.forEach(function(t) { t.classList.remove('revealed-correct', 'revealed-wrong'); });
+    answerBtns.forEach(function(b) { b.classList.remove('locked-in'); });
+  }
+
+  function startDemo() {
+    if (state.active) return;
+    state.active = true;
+    state.elapsed = 0;
+    
+    resetDemo();
+    
+    if (isReducedMotion) {
+      state.elapsed = 15;
+      updateUI();
+      revealAnswer();
+      return;
+    }
+
+    state.intervalId = setInterval(function() {
+      state.elapsed++;
+      updateUI();
+      
+      if (state.elapsed === 8) { showLockedIn(); }
+      if (state.elapsed >= 15) {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        revealAnswer();
+      }
+    }, 1000);
+  }
+
+  function updateUI() {
+    var remaining = Math.max(0, 15 - state.elapsed);
+    timerBadge.textContent = remaining.toString();
+    var percent = (remaining / 15) * 100;
+    document.querySelector('.demo-timer-badge').style.setProperty('--timer-percent', percent.toString());
+  }
+
+  function showLockedIn() {
+    // Jupiter is answer 1 (first tile/button)
+    answerBtns[0].classList.add('locked-in');
+  }
+
+  function revealAnswer() {
+    // Reveal on presenter: Jupiter (answer 1) is correct, others dim
+    tiles[0].classList.add('revealed-correct');
+    tiles[1].classList.add('revealed-wrong');
+    tiles[2].classList.add('revealed-wrong');
+    tiles[3].classList.add('revealed-wrong');
+    
+    // Update phone: show points popup (in this case just the locked-in state)
+    answerBtns[0].classList.add('locked-in');
+  }
+
+  demoContainer.addEventListener('mouseenter', function() { startDemo(); });
+  demoContainer.addEventListener('mouseleave', function() { resetDemo(); });
+  demoContainer.addEventListener('focus', function() { startDemo(); });
+  demoContainer.addEventListener('blur', function() { resetDemo(); });
+
+  // Touch support
+  var touchStarted = false;
+  demoContainer.addEventListener('touchstart', function() {
+    if (!touchStarted) {
+      touchStarted = true;
+      startDemo();
+      setTimeout(function() { touchStarted = false; }, 300);
+    }
+  }, {passive: true});
 })();
 </script>
 
