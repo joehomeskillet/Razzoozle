@@ -1,6 +1,6 @@
 use axum::{
     extract::Path,
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, Uri},
     response::IntoResponse,
     routing::get,
 };
@@ -169,8 +169,11 @@ pub async fn handle_root() -> Result<impl IntoResponse, (StatusCode, String)> {
 
 /// Handle SPA fallback for unknown routes
 pub async fn handle_spa_fallback(
-    Path(path): Path<String>,
+    uri: Uri,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    // Extract path from URI and strip leading slash
+    let path = uri.path().trim_start_matches('/');
+
     // Guard: never fallback paths starting with protected prefixes
     if path.starts_with("api/")
         || path.starts_with("socket.io/")
