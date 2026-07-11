@@ -24,6 +24,8 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let question = game.engine.current_question();
     let is_slider = matches!(question.r#type.as_ref(), Some(QuestionType::Slider));
     let is_type_answer = matches!(question.r#type.as_ref(), Some(QuestionType::TypeAnswer));
+    let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+    let is_practice = question.practice == Some(true);
     let is_sentence_builder = matches!(
         question.r#type.as_ref(),
         Some(QuestionType::SentenceBuilder)
@@ -35,7 +37,9 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
 
     for answer in game.engine.current_answers.values() {
         if let Some(answer_key) = answer.answer_input.answer_key {
-            *responses.entry(answer_key.to_string()).or_insert(0) += 1;
+            if answer_key != -1 {
+                *responses.entry(answer_key.to_string()).or_insert(0) += 1;
+            }
 
             if is_slider {
                 slider_values.push(answer_key);
@@ -118,13 +122,17 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
 
     let has_prior_round_for_manager = game.engine.current_question_index > 0;
 
-    let round_recap_for_manager = compute_round_recap(
-        &recap_rows_for_manager,
-        &rank_map_for_manager,
-        &game.engine.last_round_rank_before,
-        first_correct_id_for_manager,
-        has_prior_round_for_manager,
-    );
+    let round_recap_for_manager = if is_poll || is_practice {
+        vec![]
+    } else {
+        compute_round_recap(
+            &recap_rows_for_manager,
+            &rank_map_for_manager,
+            &game.engine.last_round_rank_before,
+            first_correct_id_for_manager,
+            has_prior_round_for_manager,
+        )
+    };
     let round_recap_opt_for_manager = if round_recap_for_manager.is_empty() {
         None
     } else {
@@ -148,6 +156,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         time: question.time,
         min: question.min.map(|v| v as i32),
         max: question.max.map(|v| v as i32),
+        step: question.step.map(|v| v as i32),
         average_guess,
         text_responses: if text_responses.is_empty() {
             None
@@ -164,6 +173,11 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
                 .match_mode
                 .as_deref()
                 .and_then(match_mode_from_str)
+        } else {
+            None
+        },
+        chunks: if is_sentence_builder {
+            question.chunks.clone()
         } else {
             None
         },
@@ -314,13 +328,18 @@ pub async fn perform_reveal_and_broadcast(
             let has_prior_round = game.engine.current_question_index > 0;
 
             // Compute round recap awards (game-wide, same for all players)
-            let round_recap = compute_round_recap(
-                &recap_rows,
-                &rank_map,
-                &game.engine.last_round_rank_before,
-                first_correct_id,
-                has_prior_round,
-            );
+            // Exclude poll and practice rounds from roundRecap (Node parity)
+            let round_recap = if is_poll || is_practice {
+                vec![]
+            } else {
+                compute_round_recap(
+                    &recap_rows,
+                    &rank_map,
+                    &game.engine.last_round_rank_before,
+                    first_correct_id,
+                    has_prior_round,
+                )
+            };
             let round_recap_opt = if round_recap.is_empty() { None } else { Some(round_recap.clone()) };
 
             game.last_show_result_data.clear();
@@ -483,4 +502,4 @@ mod tests {
             "sentence-builder SHOW_RESULT must reveal the authored chunk order"
         );
     }
-}
+
