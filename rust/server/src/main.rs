@@ -145,6 +145,11 @@ async fn main() {
         crate::db::hydrate_plugins_from_pg(&db_pool, &config_base).await;
     }
 
+    // W0-A1 auth: bootstrap admin user if DB is empty and env vars are set
+    if let Some(ref pool) = db_pool {
+        crate::db::users::bootstrap_admin(pool).await;
+    }
+
     // Load fixture quiz
     let quiz_fixture = QuizFixture::load().expect("Failed to load fixture quiz");
 
