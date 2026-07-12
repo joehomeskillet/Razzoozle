@@ -16,6 +16,7 @@ import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLaten
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
+  ANSWER_TILE_SURFACE,
   ANSWERS_COLORS,
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
@@ -566,7 +567,10 @@ const Answers = ({
               autoFocus
               autoComplete="off"
               autoCorrect="off"
-              className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className={clsx(
+                ANSWER_TILE_SURFACE,
+                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+              )}
             />
             <button
               data-testid="type-answer-submit"
@@ -622,7 +626,7 @@ const Answers = ({
               )}
             </div>
 
-            <div className="rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]">
+            <div className={clsx(ANSWER_TILE_SURFACE, "p-4")}>
               <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
                 {t("game:sentenceBuilder.wordBank", {
                   defaultValue: "Word bank",
