@@ -269,38 +269,56 @@ const RecapSequence = ({
           // on the cream field, not bare floating text.
           <motion.div
             key={`card-${step}`}
-            className="relative flex aspect-video w-[min(94vw,64rem)] items-center justify-center gap-8 rounded-3xl border border-[var(--border-hairline)] bg-white px-10 py-8 text-center shadow-xl md:gap-16 md:px-16 md:py-10"
+            className="relative flex aspect-video w-[min(94vw,64rem)] items-center justify-center gap-8 rounded-3xl border border-[var(--border-hairline)] bg-white px-10 py-8 text-center shadow-xl md:gap-14 md:px-16 md:py-10"
             style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
             initial={flip.initial}
             animate={flip.animate}
             exit={flip.exit}
             transition={flipTransition}
           >
-            {/* Left half: glyph disc + award label */}
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 md:gap-6">
+            {/* Award side — glyph gently pulses and radiates a soft glow ring (subtle, reduced-motion safe) */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
               <span
-                className="flex size-20 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-28"
+                className="relative flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-32"
                 aria-hidden
               >
-                <svg
-                  viewBox={ICON_VIEWBOX}
-                  className="size-12 md:size-16 text-[color:var(--color-primary)]"
+                <motion.span
                   aria-hidden
+                  className="absolute inset-0 rounded-full border-2 border-[color:var(--color-primary)]"
+                  animate={
+                    reveal.reduced
+                      ? { opacity: 0 }
+                      : { scale: [1, 1.35], opacity: [0.45, 0] }
+                  }
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                />
+                <motion.svg
+                  viewBox={ICON_VIEWBOX}
+                  className="relative size-14 text-[color:var(--color-primary)] md:size-20"
+                  aria-hidden
+                  animate={reveal.reduced ? undefined : { scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
-                </svg>
+                </motion.svg>
               </span>
               <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
                 {t(current.label, { defaultValue: current.labelFallback })}
               </p>
             </div>
 
-            {/* Right half: winner avatar + name + value */}
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 md:gap-5">
+            {/* Vertical divider — gives the two halves a balanced, intentional structure */}
+            <div
+              aria-hidden
+              className="h-2/3 w-px shrink-0 self-center bg-[var(--border-hairline)]"
+            />
+
+            {/* Winner side — avatar + name + value, centered to mirror the award side */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center md:gap-5">
               <Avatar
                 src={current.winnerAvatar}
                 name={current.winnerName}
-                size={96}
+                size={128}
                 className="mx-auto"
               />
               <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
