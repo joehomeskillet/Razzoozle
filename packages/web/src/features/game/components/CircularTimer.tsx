@@ -53,8 +53,12 @@ const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
   const { t } = useTranslation()
   // Clamp the displayed seconds and the fill fraction so a late/early tick or a
   // bad `total` (0/NaN) can never produce a negative offset or a NaN dash.
-  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
   const safeTotal = Number.isFinite(total) && total > 0 ? total : 0
+  const safeSeconds = Number.isFinite(seconds)
+    ? safeTotal > 0
+      ? Math.min(safeTotal, Math.max(0, seconds))
+      : Math.max(0, seconds)
+    : 0
   const fraction = safeTotal > 0 ? Math.min(1, safeSeconds / safeTotal) : 0
   // Full ring at fraction=1 (offset 0), empty at fraction=0 (offset = full ring).
   const dashOffset = CIRCUMFERENCE * (1 - fraction)
