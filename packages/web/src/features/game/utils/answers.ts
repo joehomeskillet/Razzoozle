@@ -19,3 +19,8 @@ export function answerColor(i: number): string {
 export function answerLabel(i: number): string {
   return ANSWERS_LABELS[i % ANSWERS_LABELS.length]
 }
+
+// Shared "tile surface" className for answer containers (input / chip-zone / etc.)
+// so every answer surface matches AnswerButton's ring+radius+shadow (design.md §3).
+export const ANSWER_TILE_SURFACE =
+  "border border-[var(--border-hairline)] rounded-[var(--radius-theme)] bg-white shadow-[var(--shadow-flat)]"
