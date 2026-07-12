@@ -366,11 +366,14 @@ impl GameRegistry {
     }
 
     /// Restore games from the snapshot, marking them as empty (for reconnect grace window).
-    /// Crash-guarded: a snapshot load failure logs a warning but returns empty Vec (never panics).
-    pub async fn load_snapshot(&mut self) {
+    /// Returns the `ResumePlan`s for games restored mid-flight so the caller can
+    /// re-spawn their lifecycle tasks (BLOCKER #12).
+    /// Crash-guarded: a snapshot load failure logs a warning but returns an empty Vec (never panics).
+    pub async fn load_snapshot(&mut self) -> Vec<crate::state::snapshot::ResumePlan> {
         let games = crate::state::snapshot::load_snapshot().await;
 
-        for game in games {
+        let mut plans = Vec::new();
+        for (game, plan) in games {
             let game_id = game.game_id.clone();
             let invite_code = game.invite_code.clone();
             let game = Arc::new(Mutex::new(game));
@@ -384,7 +387,12 @@ impl GameRegistry {
                 game_id,
                 marked_at_ms: crate::state::get_now_ms(),
             });
+
+            if let Some(plan) = plan {
+                plans.push(plan);
+            }
         }
+        plans
     }
 
     /// Save all in-flight games to disk. Crash-guarded: a write failure logs a warning but never throws.

@@ -367,6 +367,23 @@ pub async fn run_game_lifecycle(
     game_id: String,
     db_pool: Option<sqlx::PgPool>,
 ) {
+    // Fresh start: run the 3-2-1 intro, then play from question 0.
+    run_lifecycle_from(io, registry, game_id, db_pool, 0, true).await;
+}
+
+/// Shared driver behind BOTH the fresh start (`run_game_lifecycle`: 3-2-1 intro,
+/// index 0) and crash-recovery resume (`resume_game_lifecycle`: no intro,
+/// restored index). `run_intro` gates the pre-Q1 cooldown; `start_index` is the
+/// question the loop opens first. Everything from `open_question` onward is
+/// identical for both paths.
+async fn run_lifecycle_from(
+    io: SocketIo,
+    registry: Arc<RwLock<GameRegistry>>,
+    game_id: String,
+    db_pool: Option<sqlx::PgPool>,
+    start_index: usize,
+    run_intro: bool,
+) {
     let game_ref = {
         let reg = registry.read().await;
         match reg.get_game_by_id(&game_id) {
@@ -375,22 +392,24 @@ pub async fn run_game_lifecycle(
         }
     };
 
-    // Pre-Q1 3-2-1 intro (node: game:startCooldown then cooldown.start(3)).
-    io.to(game_id.clone())
-        .emit(constants::game::START_COOLDOWN, &())
-        .ok();
-    let intro_abort = { game_ref.lock().unwrap().arm_abort() };
-    let io_intro = io.clone();
-    let gid_intro = game_id.clone();
-    run_cooldown(INTRO_COOLDOWN_SECS, intro_abort, move |count| {
-        io_intro
-            .to(gid_intro.clone())
-            .emit(constants::game::COOLDOWN, &count)
+    if run_intro {
+        // Pre-Q1 3-2-1 intro (node: game:startCooldown then cooldown.start(3)).
+        io.to(game_id.clone())
+            .emit(constants::game::START_COOLDOWN, &())
             .ok();
-    })
-    .await;
+        let intro_abort = { game_ref.lock().unwrap().arm_abort() };
+        let io_intro = io.clone();
+        let gid_intro = game_id.clone();
+        run_cooldown(INTRO_COOLDOWN_SECS, intro_abort, move |count| {
+            io_intro
+                .to(gid_intro.clone())
+                .emit(constants::game::COOLDOWN, &count)
+                .ok();
+        })
+        .await;
+    }
 
-    let mut index = 0usize;
+    let mut index = start_index;
 
     loop {
         if !open_question(&io, &game_ref, &game_id, index).await {
@@ -437,6 +456,19 @@ pub async fn run_game_lifecycle(
             }
         }
 
+        // FIX #9 (last-question showLeaderboard race): arm the RESULT-dwell abort
+        // BEFORE the reveal flips the phase to ShowResult. `engine.reveal()` sets
+        // ShowResult early, then `perform_reveal_and_broadcast` keeps broadcasting
+        // SHOW_RESULT/SHOW_RESPONSES to every socket. A manager:showLeaderboard
+        // firing anywhere in that window calls `request_abort(ShowResult)` — which
+        // now matches the phase — and its `signal_abort()` must land on THIS Notify.
+        // Arming AFTER the reveal (the old order) left `cooldown_abort` pointing at
+        // the already-resolved SELECT_ANSWER Notify (no waiter), so the `notify_one`
+        // was swallowed and the fresh dwell Notify never got it — the (manual-mode,
+        // 3600s) result dwell then hung forever on the last question. Notify buffers
+        // one permit, so a click landing before the dwell awaits still wakes it.
+        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
         // so a reveal already performed by a racing path is a silent no-op.
@@ -444,9 +476,8 @@ pub async fn run_game_lifecycle(
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
-        // before the leaderboard. Notify armed right after reveal (Restfenster
-        // reveal->arm ist mikroskopisch + selbstheilend).
-        let abort_result = { game_ref.lock().unwrap().arm_abort() };
+        // before the leaderboard. The abort Notify was armed BEFORE the reveal
+        // above, so no showLeaderboard signal can be lost in the reveal window.
         dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result).await;
 
         // SHOW_ROUND_RECAP: per-round awards screen (manager-only), one per round except the last.
@@ -533,95 +564,7 @@ pub async fn run_game_lifecycle(
         // no next_or_finish() call (which would reject: phase is no longer
         // ShowLeaderboard).
         if phase_after_leaderboard == GamePhase::Finished {
-            info!("Game finished: gameId={}", game_id);
-            let (game_id_copy, subject, players_json, quiz_id) = {
-                let game = game_ref.lock().unwrap();
-                let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
-                    let mut sorted = game.engine.players.clone();
-                    sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
-                    sorted.iter().enumerate()
-                        .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
-                            username: p.username.clone(),
-                            points: p.points,
-                            rank: (idx + 1) as i32,
-                        })
-                        .collect()
-                };
-                (
-                    game.game_id.clone(),
-                    game.engine.quiz.subject.clone(),
-                    serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
-                    Some(game.quiz_id.clone()),
-                )
-            };
-            // L104: Fire-and-forget result persistence (mirror Node's behavior)
-            let (recap_json, questions_json) = {
-                let game = game_ref.lock().unwrap();
-                build_recap_and_questions(&game.engine)
-            };
-            let db = db_pool.clone();
-            let gid = game_id_copy.clone();
-            let questions_json_clone = questions_json.clone();
-            let recap_json_clone = recap_json.clone();
-            tokio::spawn(async move {
-                let now = chrono::Utc::now();
-                let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
-                let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
-                if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
-                    warn!("Result persistence failed for gameId={}: {}", gid, e);
-                }
-            });
-
-            let finished = {
-                let game = game_ref.lock().unwrap();
-                build_finished_data(&game, recap_json.clone())
-            };
-
-            // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
-            let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-            if let Ok(sid) = manager_socket_id.parse() {
-                if let Some(sock) = io.get_socket(sid) {
-                    send_status_to_manager(
-                        &sock,
-                        &game_ref,
-                        &GameStatus::Finished(finished.clone()),
-                    );
-                }
-            }
-
-            // Send personalized FINISHED data to each player (raw — not manager status)
-            let game = game_ref.lock().unwrap();
-            let sorted_players: Vec<_> = {
-                let mut sorted = game.engine.players.clone();
-                sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
-                sorted
-            };
-            for (rank_idx, player) in sorted_players.iter().enumerate() {
-                if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
-                    // WP-H gap 1: players get their OWN recap (myRecap + highlight),
-                    // never the manager's superlatives list, and no autoMode key at
-                    // all (Node parity: leaderboard-flow.ts:225-231 — the player
-                    // FINISHED payload never carries autoMode).
-                    let player_recap = game.engine
-                        .build_player_recap(&player.client_id)
-                        .and_then(|r| serde_json::to_value(&r).ok());
-                    let personalized_finished = FinishedData {
-                        subject: finished.subject.clone(),
-                        top: finished.top.clone(),
-                        rank: Some((rank_idx + 1) as i32),
-                        team_standings: finished.team_standings.clone(),
-                        recap: player_recap,
-                        auto_mode: None,
-                    };
-                    if let Ok(sid) = player_info.id.parse() {
-                        if let Some(sock) = io.get_socket(sid) {
-                            sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
-                                .ok();
-                        }
-                    }
-                }
-            }
-            emit_plugin_lifecycle(&io, &game_id, "onGameEnd", "FINISHED");
+            finish_and_broadcast(&io, &game_ref, &game_id, &db_pool).await;
             return;
         }
 
@@ -674,95 +617,7 @@ pub async fn run_game_lifecycle(
 
         match next_phase {
             Ok(GamePhase::Finished) => {
-                info!("Game finished: gameId={}", game_id);
-                let (game_id_copy, subject, players_json, quiz_id) = {
-                    let game = game_ref.lock().unwrap();
-                    let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
-                        let mut sorted = game.engine.players.clone();
-                        sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
-                        sorted.iter().enumerate()
-                            .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
-                                username: p.username.clone(),
-                                points: p.points,
-                                rank: (idx + 1) as i32,
-                            })
-                            .collect()
-                    };
-                    (
-                        game.game_id.clone(),
-                        game.engine.quiz.subject.clone(),
-                        serde_json::to_value(&players).unwrap_or(serde_json::json!([]),),
-                        Some(game.quiz_id.clone()),
-                    )
-                };
-                // L104: Fire-and-forget result persistence
-                let db = db_pool.clone();
-                let gid = game_id_copy.clone();
-                let (recap_json, questions_json) = {
-                    let game = game_ref.lock().unwrap();
-                    build_recap_and_questions(&game.engine)
-                };
-                let recap_json_for_insert = recap_json.clone();
-                let questions_json_for_insert = questions_json.clone();
-                tokio::spawn(async move {
-                    let now = chrono::Utc::now();
-                    let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
-                    let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
-                    if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_for_insert), recap_json_for_insert.as_ref()).await {
-                        warn!("Result persistence failed for gameId={}: {}", gid, e);
-                    }
-                });
-
-                let finished = {
-                    let game = game_ref.lock().unwrap();
-                    build_finished_data(&game, recap_json.clone())
-                };
-
-                // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
-                let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-                if let Ok(sid) = manager_socket_id.parse() {
-                    if let Some(sock) = io.get_socket(sid) {
-                        send_status_to_manager(
-                            &sock,
-                            &game_ref,
-                            &GameStatus::Finished(finished.clone()),
-                        );
-                    }
-                }
-
-                // Send personalized FINISHED data to each player (raw — not manager status)
-                let game = game_ref.lock().unwrap();
-                let sorted_players: Vec<_> = {
-                    let mut sorted = game.engine.players.clone();
-                    sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
-                    sorted
-                };
-                for (rank_idx, player) in sorted_players.iter().enumerate() {
-                    if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
-                        // WP-H gap 1: players get their OWN recap (myRecap + highlight),
-                        // never the manager's superlatives list, and no autoMode key at
-                        // all (Node parity: leaderboard-flow.ts:225-231 — the player
-                        // FINISHED payload never carries autoMode).
-                        let player_recap = game.engine
-                            .build_player_recap(&player.client_id)
-                            .and_then(|r| serde_json::to_value(&r).ok());
-                        let personalized_finished = FinishedData {
-                            subject: finished.subject.clone(),
-                            top: finished.top.clone(),
-                            rank: Some((rank_idx + 1) as i32),
-                            team_standings: finished.team_standings.clone(),
-                            recap: player_recap,
-                            auto_mode: None,
-                        };
-                        if let Ok(sid) = player_info.id.parse() {
-                            if let Some(sock) = io.get_socket(sid) {
-                                sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
-                                    .ok();
-                            }
-                        }
-                    }
-                }
-                emit_plugin_lifecycle(&io, &game_id, "onGameEnd", "FINISHED");
+                finish_and_broadcast(&io, &game_ref, &game_id, &db_pool).await;
                 return;
             }
             Ok(GamePhase::ShowQuestion) => {
@@ -784,6 +639,149 @@ pub async fn run_game_lifecycle(
             }
         }
     }
+}
+
+/// Persist the final result and broadcast FINISHED to the manager and every
+/// player (personalized rank + own recap). Reached from both FINISHED sites in
+/// the loop (leaderboard_view on the last round, and next_or_finish) and from
+/// `resume_game_lifecycle` when a restart landed post-reveal on the last
+/// question. Assumes `engine.phase == Finished` and the leaderboard order is
+/// already settled in `engine.players`.
+async fn finish_and_broadcast(
+    io: &SocketIo,
+    game_ref: &Arc<Mutex<Game>>,
+    game_id: &str,
+    db_pool: &Option<sqlx::PgPool>,
+) {
+    info!("Game finished: gameId={}", game_id);
+    let (subject, players_json, quiz_id) = {
+        let game = game_ref.lock().unwrap();
+        let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
+            let mut sorted = game.engine.players.clone();
+            sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+            sorted
+                .iter()
+                .enumerate()
+                .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                    username: p.username.clone(),
+                    points: p.points,
+                    rank: (idx + 1) as i32,
+                })
+                .collect()
+        };
+        (
+            game.engine.quiz.subject.clone(),
+            serde_json::to_value(&players).unwrap_or(serde_json::json!([])),
+            Some(game.quiz_id.clone()),
+        )
+    };
+
+    // L104: Fire-and-forget result persistence (mirror Node's behavior)
+    let (recap_json, questions_json) = {
+        let game = game_ref.lock().unwrap();
+        build_recap_and_questions(&game.engine)
+    };
+    let db = db_pool.clone();
+    let gid = game_id.to_string();
+    let questions_json_clone = questions_json.clone();
+    let recap_json_clone = recap_json.clone();
+    tokio::spawn(async move {
+        let now = chrono::Utc::now();
+        let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
+        let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
+        if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
+            warn!("Result persistence failed for gameId={}: {}", gid, e);
+        }
+    });
+
+    let finished = {
+        let game = game_ref.lock().unwrap();
+        build_finished_data(&game, recap_json.clone())
+    };
+
+    // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
+    let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
+    if let Ok(sid) = manager_socket_id.parse() {
+        if let Some(sock) = io.get_socket(sid) {
+            send_status_to_manager(&sock, game_ref, &GameStatus::Finished(finished.clone()));
+        }
+    }
+
+    // Send personalized FINISHED data to each player (raw — not manager status)
+    let game = game_ref.lock().unwrap();
+    let sorted_players: Vec<_> = {
+        let mut sorted = game.engine.players.clone();
+        sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+        sorted
+    };
+    for (rank_idx, player) in sorted_players.iter().enumerate() {
+        if let Some(player_info) = game.players.iter().find(|p| p.username == player.username) {
+            // WP-H gap 1: players get their OWN recap (myRecap + highlight),
+            // never the manager's superlatives list, and no autoMode key at
+            // all (Node parity: leaderboard-flow.ts:225-231 — the player
+            // FINISHED payload never carries autoMode).
+            let player_recap = game
+                .engine
+                .build_player_recap(&player.client_id)
+                .and_then(|r| serde_json::to_value(&r).ok());
+            let personalized_finished = FinishedData {
+                subject: finished.subject.clone(),
+                top: finished.top.clone(),
+                rank: Some((rank_idx + 1) as i32),
+                team_standings: finished.team_standings.clone(),
+                recap: player_recap,
+                auto_mode: None,
+            };
+            if let Ok(sid) = player_info.id.parse() {
+                if let Some(sock) = io.get_socket(sid) {
+                    sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
+                        .ok();
+                }
+            }
+        }
+    }
+    emit_plugin_lifecycle(io, game_id, "onGameEnd", "FINISHED");
+}
+
+/// Crash-recovery entry point (BLOCKER #12): re-spawn the per-game lifecycle for
+/// a game restored from a snapshot mid-flight, so a mid-question restart (every
+/// CD deploy) doesn't brick it. Unlike a naive `run_game_lifecycle` respawn
+/// (which restarts from the 3-2-1 intro at question 0), this uses the
+/// snapshot-derived `ResumePlan` to resume at the RIGHT question — see
+/// `resume_plan_from_snapshot` for the pre-/post-reveal classification.
+pub async fn resume_game_lifecycle(
+    io: SocketIo,
+    registry: Arc<RwLock<GameRegistry>>,
+    plan: crate::state::snapshot::ResumePlan,
+    db_pool: Option<sqlx::PgPool>,
+) {
+    if plan.finish_now {
+        // Post-reveal on the last question: the game is effectively over —
+        // drive straight to FINISHED instead of re-opening/double-counting it.
+        let game_ref = {
+            let reg = registry.read().await;
+            match reg.get_game_by_id(&plan.game_id) {
+                Some(g) => g,
+                None => return,
+            }
+        };
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.engine.phase = GamePhase::Finished;
+        }
+        info!(
+            "Resuming restored game straight to FINISHED (post-reveal on last question): gameId={}",
+            plan.game_id
+        );
+        finish_and_broadcast(&io, &game_ref, &plan.game_id, &db_pool).await;
+        return;
+    }
+
+    info!(
+        "Resuming restored game lifecycle: gameId={}, startIndex={}",
+        plan.game_id, plan.start_index
+    );
+    run_lifecycle_from(io, registry, plan.game_id, db_pool, plan.start_index, false).await;
 }
 
 #[cfg(test)]
@@ -1092,5 +1090,241 @@ mod tests {
             crate::socket::cooldown::CooldownOutcome::Elapsed,
             "reveal did not fire at the shifted deadline"
         );
+    }
+
+    /// BLOCKER #12: a game restored mid-question (SELECT_ANSWER on the LAST
+    /// question, phase collapsed to ShowLeaderboard by the snapshot restore)
+    /// must resume by RE-OPENING that exact question — not restart from
+    /// question 0. We restore at index 1 of the 2-question fixture in manual
+    /// mode: a correct resume opens Q1 and reveals it (parking on the manual
+    /// result dwell at index 1); a buggy "reset to 0" would be parked at index 0.
+    #[tokio::test(start_paused = true)]
+    async fn resume_reopens_restored_question_not_index_zero() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+        let mut quizzes = std::collections::HashMap::new();
+        quizzes.insert("test-quiz".to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+        let (game_id, _invite, _host) = registry
+            .create_game(
+                "manager-socket".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+                serde_json::json!({"enabled": false, "clockSync": true}),
+            )
+            .unwrap();
+
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.add_player(
+                "player-socket".to_string(),
+                "client-1".to_string(),
+                "Alice".to_string(),
+                None,
+            )
+            .unwrap();
+            game.engine.start().unwrap();
+            // Simulate the game reaching the LAST question (index 1) with a live
+            // answer window, then a restart: game_from_snapshot collapses the
+            // running phase to ShowLeaderboard but preserves current_question_index.
+            game.engine.show_question(1).unwrap();
+            game.engine.open_answers().unwrap();
+            game.engine.phase = GamePhase::ShowLeaderboard;
+            game.auto_mode = false; // manual: the result dwell parks (3600s)
+        }
+
+        let registry = Arc::new(RwLock::new(registry));
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        let plan = crate::state::snapshot::ResumePlan {
+            game_id: game_id.clone(),
+            start_index: 1,
+            finish_now: false,
+        };
+        let handle = tokio::spawn(resume_game_lifecycle(io, registry, plan, None));
+
+        // Advance past ONE question's open (2s prepared) + answer window (fixture
+        // time = 10s); the manual result dwell (3600s) then parks it at index 1.
+        tokio::time::sleep(Duration::from_secs(45)).await;
+
+        let (idx, phase) = {
+            let g = game_ref.lock().unwrap();
+            (g.engine.current_question_index, g.engine.phase)
+        };
+        assert_eq!(
+            idx, 1,
+            "resume must open the RESTORED question index (1), not reset to 0"
+        );
+        assert_eq!(
+            phase,
+            GamePhase::ShowResult,
+            "the resumed last question must have revealed (reached the result dwell)"
+        );
+        handle.abort();
+    }
+
+    fn manual_game() -> Arc<Mutex<Game>> {
+        // Game::new defaults auto_mode = false (manual) — the mode where the
+        // RESULT dwell is 3600s and a lost showLeaderboard signal hangs forever.
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        Arc::new(Mutex::new(Game::new(
+            "game-9".to_string(),
+            "RACE".to_string(),
+            "manager-socket".to_string(),
+            "test-quiz".to_string(),
+            quiz,
+        )))
+    }
+
+    /// BLOCKER #9 (deterministic mechanism reproduction + fix): the intermittent
+    /// last-question hang is a lost wakeup. `engine.reveal()` flips the phase to
+    /// ShowResult, then the reveal keeps broadcasting; a manager showLeaderboard
+    /// in that window calls `request_abort(ShowResult)` (phase now matches) whose
+    /// `signal_abort()` notifies whatever `cooldown_abort` currently is. If the
+    /// result-dwell Notify is armed only AFTER the reveal (the old order), the
+    /// signal lands on the already-resolved SELECT_ANSWER Notify (no waiter) and
+    /// is lost — the fresh dwell Notify never receives it and the 3600s manual
+    /// dwell hangs. Arming the result-dwell Notify BEFORE the phase flip (the fix)
+    /// makes the signal land on the live Notify (buffering a permit), so the dwell
+    /// wakes. This test drives the exact two orderings against the REAL
+    /// `request_abort` / `dwell_auto_or_manual`.
+    #[tokio::test(start_paused = true)]
+    async fn last_question_show_leaderboard_lost_wakeup_repro_and_fix() {
+        // --- BROKEN ordering: result-dwell Notify armed AFTER phase flip + signal.
+        {
+            let game_ref = manual_game();
+            // SELECT_ANSWER cooldown Notify, already resolved (no waiter left).
+            let _stale = { game_ref.lock().unwrap().arm_abort() };
+            // reveal flips the phase, but the result-dwell Notify is NOT armed yet.
+            {
+                game_ref.lock().unwrap().engine.phase = GamePhase::ShowResult;
+            }
+            // manager clicks showLeaderboard during the reveal window.
+            assert!(
+                request_abort(&game_ref, GamePhase::ShowResult),
+                "showLeaderboard must register while phase == ShowResult"
+            );
+            // NOW the broken code arms the result-dwell Notify — fresh, no permit.
+            let abort_result = { game_ref.lock().unwrap().arm_abort() };
+            let outcome = tokio::time::timeout(
+                Duration::from_secs(30),
+                dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result),
+            )
+            .await;
+            assert!(
+                outcome.is_err(),
+                "the broken arm-after-reveal ordering must lose the signal and hang"
+            );
+        }
+
+        // --- FIXED ordering: result-dwell Notify armed BEFORE phase flip + signal.
+        {
+            let game_ref = manual_game();
+            let _stale = { game_ref.lock().unwrap().arm_abort() };
+            // FIX: arm the result-dwell Notify BEFORE the reveal flips the phase.
+            let abort_result = { game_ref.lock().unwrap().arm_abort() };
+            {
+                game_ref.lock().unwrap().engine.phase = GamePhase::ShowResult;
+            }
+            // manager clicks during the reveal window — lands on the live Notify.
+            assert!(request_abort(&game_ref, GamePhase::ShowResult));
+            let outcome = tokio::time::timeout(
+                Duration::from_secs(30),
+                dwell_auto_or_manual(&game_ref, 3600, RESULT_DWELL_SECS, abort_result),
+            )
+            .await;
+            assert!(
+                outcome.is_ok(),
+                "the fixed arm-before-reveal ordering must deliver the signal, not hang"
+            );
+        }
+    }
+
+    /// BLOCKER #9 (end-to-end): in MANUAL mode, driving each dwell with a single
+    /// abort (showLeaderboard on ShowResult, nextQuestion on ShowLeaderboard) must
+    /// walk the whole game to FINISHED — including the LAST question's
+    /// ShowResult -> FINISHED transition on a single showLeaderboard. Exercises the
+    /// real `run_game_lifecycle` arm ordering end to end.
+    #[tokio::test(start_paused = true)]
+    async fn manual_mode_single_abort_per_dwell_reaches_finished() {
+        let quiz = QuizFixture::load().expect("fixture quiz loads");
+        let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+        let mut quizzes = std::collections::HashMap::new();
+        quizzes.insert("test-quiz".to_string(), quiz);
+        registry.reload_quizzes(quizzes);
+        let (game_id, _invite, _host) = registry
+            .create_game(
+                "manager-socket".to_string(),
+                Some("test-quiz".to_string()),
+                "manager-client-1".to_string(),
+                false,
+                serde_json::json!({"enabled": false, "clockSync": true}),
+            )
+            .unwrap();
+
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        {
+            let mut game = game_ref.lock().unwrap();
+            game.add_player(
+                "player-socket".to_string(),
+                "client-1".to_string(),
+                "Alice".to_string(),
+                None,
+            )
+            .unwrap();
+            game.engine.start().unwrap();
+            game.auto_mode = false; // manual mode — the blocker's scenario
+        }
+
+        let registry = Arc::new(RwLock::new(registry));
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        // "Manager": fire exactly ONE abort per distinct dwell — showLeaderboard on
+        // every ShowResult, nextQuestion on every ShowLeaderboard — until FINISHED.
+        let gr = game_ref.clone();
+        let driver = tokio::spawn(async move {
+            let mut last_acted: Option<(GamePhase, usize)> = None;
+            for _ in 0..5000 {
+                let (phase, idx) = {
+                    let g = gr.lock().unwrap();
+                    (g.engine.phase, g.engine.current_question_index)
+                };
+                if phase == GamePhase::Finished {
+                    break;
+                }
+                let key = (phase, idx);
+                if last_acted != Some(key) {
+                    match phase {
+                        GamePhase::ShowResult => {
+                            request_abort(&gr, GamePhase::ShowResult);
+                            last_acted = Some(key);
+                        }
+                        GamePhase::ShowLeaderboard => {
+                            request_abort(&gr, GamePhase::ShowLeaderboard);
+                            last_acted = Some(key);
+                        }
+                        _ => {}
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        });
+
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(120),
+            run_game_lifecycle(io, registry, game_id.clone(), None),
+        )
+        .await;
+        assert!(outcome.is_ok(), "manual-mode lifecycle hung / never returned");
+        assert_eq!(
+            game_ref.lock().unwrap().engine.phase,
+            GamePhase::Finished,
+            "manual mode must reach FINISHED with a single showLeaderboard on the last question"
+        );
+        driver.abort();
     }
 }
