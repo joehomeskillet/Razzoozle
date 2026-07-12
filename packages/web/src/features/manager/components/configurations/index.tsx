@@ -11,6 +11,7 @@ import ConfigDisplay from "@razzoozle/web/features/manager/components/configurat
 import ConfigGameMode from "@razzoozle/web/features/manager/components/configurations/ConfigGameMode"
 import ConfigManageQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigMedia from "@razzoozle/web/features/manager/components/configurations/ConfigMedia"
+import ConfigProfile from "@razzoozle/web/features/manager/components/configurations/ConfigProfile"
 import ConfigResults from "@razzoozle/web/features/manager/components/configurations/ConfigResults"
 import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
@@ -41,6 +42,7 @@ import {
   Sparkles,
   Terminal,
   Trophy,
+  User,
   Users,
   icons as lucideIcons,
 } from "lucide-react"
@@ -56,12 +58,17 @@ interface TabDef {
   icon: LucideIcon
   component: ComponentType
   /**
-   * Visibility gate. Builtins encode it directly here. `isTabAllowed`
-   * interprets it against {devMode}.
-   *  - undefined → always visible
+   * Role visibility gate.
+   *  - undefined → visible to both user and admin
+   *  - "admin" → admin only
+   *  - "user" → user only
+   */
+  roleGate?: "user" | "admin"
+  /**
+   * Dev mode gate.
    *  - "devMode" → only when RAZZOOLE_DEV is on
    */
-  gated?: "always" | "devMode"
+  gated?: "devMode"
 }
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
@@ -80,12 +87,6 @@ const BUILTIN_TABS: TabDef[] = [
     component: ConfigManageQuizz,
   },
   {
-    key: "gamemode",
-    nameKey: "manager:tabs.gamemode",
-    icon: Users,
-    component: ConfigGameMode,
-  },
-  {
     key: "catalog",
     nameKey: "manager:tabs.catalog",
     icon: Library,
@@ -98,40 +99,10 @@ const BUILTIN_TABS: TabDef[] = [
     component: ConfigMedia,
   },
   {
-    key: "ki",
-    nameKey: "manager:tabs.ki",
-    icon: Sparkles,
-    component: ConfigAI,
-  },
-  {
-    key: "achievements",
-    nameKey: "manager:tabs.achievements",
-    icon: Award,
-    component: ConfigAchievements,
-  },
-  {
     key: "results",
     nameKey: "manager:tabs.results",
     icon: Trophy,
     component: ConfigResults,
-  },
-  {
-    key: "running",
-    nameKey: "manager:tabs.running",
-    icon: Radio,
-    component: RunningGamesSection,
-  },
-  {
-    key: "design",
-    nameKey: "manager:tabs.design",
-    icon: Palette,
-    component: ConfigTheme,
-  },
-  {
-    key: "satellite",
-    nameKey: "manager:tabs.satellite",
-    icon: Monitor,
-    component: ConfigDisplay,
   },
   {
     key: "submissions",
@@ -140,10 +111,59 @@ const BUILTIN_TABS: TabDef[] = [
     component: ConfigSubmissions,
   },
   {
+    key: "profile",
+    nameKey: "manager:tabs.profile",
+    icon: User,
+    component: ConfigProfile,
+  },
+  {
+    key: "gamemode",
+    nameKey: "manager:tabs.gamemode",
+    icon: Users,
+    component: ConfigGameMode,
+    roleGate: "admin",
+  },
+  {
+    key: "ki",
+    nameKey: "manager:tabs.ki",
+    icon: Sparkles,
+    component: ConfigAI,
+    roleGate: "admin",
+  },
+  {
+    key: "achievements",
+    nameKey: "manager:tabs.achievements",
+    icon: Award,
+    component: ConfigAchievements,
+    roleGate: "admin",
+  },
+  {
+    key: "running",
+    nameKey: "manager:tabs.running",
+    icon: Radio,
+    component: RunningGamesSection,
+    roleGate: "admin",
+  },
+  {
+    key: "design",
+    nameKey: "manager:tabs.design",
+    icon: Palette,
+    component: ConfigTheme,
+    roleGate: "admin",
+  },
+  {
+    key: "satellite",
+    nameKey: "manager:tabs.satellite",
+    icon: Monitor,
+    component: ConfigDisplay,
+    roleGate: "admin",
+  },
+  {
     key: "dev",
     nameKey: "manager:tabs.dev",
     icon: Terminal,
     gated: "devMode",
+    roleGate: "admin",
     component: ConfigDev,
   },
 ]
@@ -159,11 +179,22 @@ const resolveIcon = (name: string): LucideIcon => {
 }
 
 /**
- * Visibility gate for builtins. Builtins keep their exact prior behaviour via
- * the `gated` field ("dev" → "devMode").
+ * Visibility gate for builtins based on role and dev mode.
  */
-const isTabAllowed = (tab: TabDef, opts: { devMode: boolean }): boolean => {
-  if (tab.gated === "devMode") return opts.devMode
+const isTabAllowed = (
+  tab: TabDef,
+  opts: { devMode: boolean; role: "admin" | "user" | null },
+): boolean => {
+  // Dev mode gate
+  if (tab.gated === "devMode" && !opts.devMode) {
+    return false
+  }
+
+  // Role gate
+  if (tab.roleGate && tab.roleGate !== opts.role) {
+    return false
+  }
+
   return true
 }
 
@@ -201,26 +232,34 @@ interface ConsoleBodyProps {
 // Inner body lives under ConfigProvider so it can read the live submissions
 // count for the "Vorschläge" badge.
 const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
-  const { reset } = useManagerStore()
+  const { logout } = useManagerStore()
   const { socket } = useSocket()
   const { t } = useTranslation()
   const { submissions, devMode } = useConfig()
+  const { role } = useManagerStore()
 
   const tabs = BUILTIN_TABS
   const pendingCount = submissions.filter((s) => s.status === "pending").length
 
   const handleLogout = () => {
     socket.emit(EVENTS.MANAGER.LOGOUT)
-    reset()
+    logout()
   }
 
   const nav: ConsoleNavItem[] = tabs
-    .filter((tab) => isTabAllowed(tab, { devMode: Boolean(devMode) }))
+    .filter(
+      (tab) =>
+        isTabAllowed(tab, {
+          devMode: Boolean(devMode),
+          role: role ?? "user",
+        }),
+    )
     .map((tab) => ({
       key: tab.key,
       label: t(tab.nameKey, { defaultValue: tab.nameKey }),
       icon: tab.icon,
-      count: tab.key === "submissions" ? pendingCount : undefined,
+      count:
+        tab.key === "submissions" ? pendingCount : undefined,
     }))
 
   const active = tabs.find((tab) => tab.key === activeKey) ?? tabs[0]

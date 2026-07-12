@@ -12,19 +12,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
 const ManagerConfigPage = () => {
   const { socket, isConnected } = useSocket()
-  const { setGameId, setInviteCode, setStatus, setConfig, config, password } =
+  const { setGameId, setInviteCode, setStatus, setConfig, config, token } =
     useManagerStore()
   const navigate = useNavigate()
 
-  // Re-authenticate on every (re)connect. The manager auth lives only in the
-  // server's in-memory loggedClients set, so a server restart (deploy) wipes it
-  // and otherwise silently 401s every withAuth handler — the visible symptom is
-  // an empty KI tab after a deploy. The password is held in-memory in the store
-  // from login; on re-auth the server re-adds the client and re-pushes config +
-  // AI settings, so open tabs heal without a reload.
-  useEvent(EVENTS.MANAGER.AUTH, password ? () => {
-    socket.emit(EVENTS.MANAGER.AUTH, password)
-  } : undefined)
+  // Protect this route: if no token, redirect to login
+  if (!token) {
+    navigate({ to: "/manager", replace: true })
+    return null
+  }
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)

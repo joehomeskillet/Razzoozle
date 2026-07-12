@@ -18,6 +18,11 @@ interface ManagerStore<T> {
   // can authenticate the pairing without re-prompting.
   password: string | null
 
+  // Auth token, role, and username from login
+  token: string | null
+  role: "admin" | "user" | null
+  username: string | null
+
   setConfig: (_config: ManagerConfig) => void
   setGameId: (_gameId: string | null) => void
   setInviteCode: (_inviteCode: string | null) => void
@@ -25,6 +30,11 @@ interface ManagerStore<T> {
   resetStatus: () => void
   setPlayers: (_players: Player[]) => void
   setPassword: (_password: string) => void
+
+  setToken: (_token: string) => void
+  setRole: (_role: "admin" | "user") => void
+  setUsername: (_username: string) => void
+  logout: () => void
 
   reset: () => void
 }
@@ -36,22 +46,93 @@ const initialState = {
   status: null,
   players: [],
   password: null,
+  token: null,
+  role: null,
+  username: null,
 }
 
-export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => ({
-  ...initialState,
+const AUTH_STORAGE_KEY = "razzoozle_auth_state"
 
-  setConfig: (config) => set({ config }),
+interface StoredAuthState {
+  token: string | null
+  role: "admin" | "user" | null
+  username: string | null
+}
 
-  setGameId: (gameId) => set({ gameId }),
+const loadAuthState = (): StoredAuthState => {
+  try {
+    if (typeof window === "undefined") {
+      return { token: null, role: null, username: null }
+    }
+    const stored = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!stored) {
+      return { token: null, role: null, username: null }
+    }
+    const parsed = JSON.parse(stored)
+    return {
+      token: parsed.token ?? null,
+      role: parsed.role ?? null,
+      username: parsed.username ?? null,
+    }
+  } catch {
+    return { token: null, role: null, username: null }
+  }
+}
 
-  setInviteCode: (inviteCode) => set({ inviteCode }),
+const persistAuthState = (state: StoredAuthState) => {
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
+    }
+  } catch {
+    // Ignore storage errors (private mode / quota)
+  }
+}
 
-  setStatus: (name, data) => set({ status: createStatus(name, data) }),
-  resetStatus: () => set({ status: null }),
+export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => {
+  const authState = loadAuthState()
 
-  setPlayers: (players) => set({ players }),
-  setPassword: (password) => set({ password }),
+  return {
+    ...initialState,
+    ...authState,
 
-  reset: () => set(initialState),
-}))
+    setConfig: (config) => set({ config }),
+
+    setGameId: (gameId) => set({ gameId }),
+
+    setInviteCode: (inviteCode) => set({ inviteCode }),
+
+    setStatus: (name, data) => set({ status: createStatus(name, data) }),
+    resetStatus: () => set({ status: null }),
+
+    setPlayers: (players) => set({ players }),
+    setPassword: (password) => set({ password }),
+
+    setToken: (token) => {
+      set({ token })
+      persistAuthState({ token, role: null, username: null })
+    },
+
+    setRole: (role) => {
+      set({ role })
+      const current = loadAuthState()
+      persistAuthState({ token: current.token, role, username: current.username })
+    },
+
+    setUsername: (username) => {
+      set({ username })
+      const current = loadAuthState()
+      persistAuthState({ token: current.token, role: current.role, username })
+    },
+
+    logout: () => {
+      set({ token: null, role: null, username: null })
+      persistAuthState({ token: null, role: null, username: null })
+    },
+
+    reset: () => {
+      set(initialState)
+      persistAuthState({ token: null, role: null, username: null })
+    },
+  }
+})

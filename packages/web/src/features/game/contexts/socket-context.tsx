@@ -8,6 +8,7 @@ import type {
   ServerToClientEvents,
 } from "@razzoozle/common/types/game/socket"
 import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import React, {
   createContext,
@@ -171,9 +172,21 @@ export const socketClient: TypedSocket = io("/", {
   // For satellite kiosks, carry the token in the handshake `auth` payload so the
   // server can grant manager privileges without a password prompt. Normal
   // clients only send `clientId` and continue to authenticate via password.
-  auth: satelliteAuth.token
-    ? { clientId, satelliteToken: satelliteAuth.token }
-    : { clientId },
+  // Also include sessionToken if the manager has authenticated via HTTP /api/login.
+  auth: () => {
+    const store = useManagerStore.getState()
+    const payload: Record<string, string> = { clientId }
+
+    if (satelliteAuth.token) {
+      payload.satelliteToken = satelliteAuth.token
+    }
+
+    if (store.token) {
+      payload.sessionToken = store.token
+    }
+
+    return payload
+  },
   // Also expose the token as an HTTP handshake header (`X-Satellite-Token`) on
   // the initial polling request, so a server-side validator can read whichever
   // source it prefers. Only set when this client actually booted as a satellite.

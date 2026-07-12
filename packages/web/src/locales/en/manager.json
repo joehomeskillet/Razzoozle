@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "Manager",
-    "subtitle": "Sign in to manage your game."
+    "subtitle": "Sign in to manage your game.",
+    "username": "Username",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Username",
+    "invalidInput": "Username and password required",
+    "invalidCredentials": "Invalid username or password",
+    "passwordLabel": "Password",
+    "passwordError": "Invalid password",
+    "error": "Authentication failed",
+    "networkError": "Connection error"
   },
   "configurationsTitle": "Configurations",
   "logout": "Logout",
@@ -137,7 +146,8 @@
     "gamemode": "Mode",
     "achievements": "Achievements",
     "running": "Running Games",
-    "dev": "Dev"
+    "dev": "Dev",
+    "profile": "Profile"
   },
   "plugins": {
     "title": "Plugins",
@@ -680,5 +690,9 @@
     "title": "Really end the game?",
     "description": "All players will be notified and the game will end.",
     "confirm": "End game"
+  },
+  "profile": {
+    "welcome": "Welcome",
+    "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options."
   }
 }
