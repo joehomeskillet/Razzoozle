@@ -346,19 +346,14 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                   >
                     <AnswerButton
                       colorIndex={key}
+                      correct={resultReady && isPicked ? lastResult.correct : undefined}
                       className={clsx(
                         "w-full",
-                        ANSWERS_COLORS[key],
                         !reduced &&
                           !submitted &&
                           "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
                         submitted && "opacity-50",
                         isPicked && "ring-4 ring-white/80",
-                        resultReady &&
-                          isPicked &&
-                          (lastResult.correct
-                            ? "!bg-[var(--state-correct)] ring-2 ring-[var(--state-correct)]"
-                            : "!bg-[var(--state-wrong)]"),
                       )}
                       label={ANSWERS_LABELS[key]}
                       disabled={submitted}
@@ -503,9 +498,9 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                 >
                   <AnswerButton
                     colorIndex={key}
+                    correct={resultReady && isPicked ? lastResult.correct : undefined}
                     className={clsx(
                       "w-full",
-                      ANSWERS_COLORS[key],
                       !reduced &&
                         !submitted &&
                         "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
@@ -514,11 +509,6 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                         selectedKey !== key &&
                         "opacity-40",
                       submitted && isPicked && "ring-4 ring-white/80",
-                      resultReady &&
-                        isPicked &&
-                        (lastResult.correct
-                          ? "!bg-[var(--state-correct)] ring-2 ring-[var(--state-correct)]"
-                          : "!bg-[var(--state-wrong)]"),
                     )}
                     label={ANSWERS_LABELS[key]}
                     disabled={submitted}
