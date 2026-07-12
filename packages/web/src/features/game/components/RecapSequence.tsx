@@ -269,47 +269,49 @@ const RecapSequence = ({
           // on the cream field, not bare floating text.
           <motion.div
             key={`card-${step}`}
-            className="relative flex min-h-[30rem] w-[min(90vw,28rem)] flex-col items-center justify-center gap-5 rounded-3xl border border-[var(--border-hairline)] bg-white px-8 py-8 text-center shadow-xl md:min-h-[34rem] md:w-[32rem] md:px-12 md:py-10"
+            className="relative flex aspect-video w-[min(94vw,64rem)] items-center justify-center gap-8 rounded-3xl border border-[var(--border-hairline)] bg-white px-10 py-8 text-center shadow-xl md:gap-16 md:px-16 md:py-10"
             style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
             initial={flip.initial}
             animate={flip.animate}
             exit={flip.exit}
             transition={flipTransition}
           >
-            {/* Glyph sits in a medal disc to match the podium/achievement language. */}
-            <span
-              className="flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-32"
-              aria-hidden
-            >
-              <svg
-                viewBox={ICON_VIEWBOX}
-                className="size-14 md:size-20 text-[color:var(--color-primary)]"
+            {/* Left half: glyph disc + award label */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 md:gap-6">
+              <span
+                className="flex size-20 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-28"
                 aria-hidden
               >
-                <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
-              </svg>
-            </span>
-
-            <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(3rem,6vh,6rem)]">
-              {t(current.label, { defaultValue: current.labelFallback })}
-            </p>
-
-            {/* Winner avatar above the name — flat ink text, no accent pill. */}
-            <Avatar
-              src={current.winnerAvatar}
-              name={current.winnerName}
-              size={112}
-              className="mx-auto"
-            />
-            <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(3rem,6vh,6rem)]">
-              {current.winnerName}
-            </p>
-
-            {current.value ? (
-              <p className="rounded-full border border-[var(--border-hairline)] bg-gray-100 px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-3xl">
-                {current.value}
+                <svg
+                  viewBox={ICON_VIEWBOX}
+                  className="size-12 md:size-16 text-[color:var(--color-primary)]"
+                  aria-hidden
+                >
+                  <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
+                </svg>
+              </span>
+              <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
+                {t(current.label, { defaultValue: current.labelFallback })}
               </p>
-            ) : null}
+            </div>
+
+            {/* Right half: winner avatar + name + value */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 md:gap-5">
+              <Avatar
+                src={current.winnerAvatar}
+                name={current.winnerName}
+                size={96}
+                className="mx-auto"
+              />
+              <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
+                {current.winnerName}
+              </p>
+              {current.value ? (
+                <p className="rounded-full border border-[var(--border-hairline)] bg-gray-100 px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-3xl">
+                  {current.value}
+                </p>
+              ) : null}
+            </div>
           </motion.div>
         ) : (
           <motion.div
