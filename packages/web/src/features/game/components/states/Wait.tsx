@@ -81,21 +81,6 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
       data-testid={isLobby ? "waiting-room" : undefined}
       className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center"
     >
-      <motion.div
-        animate={loaderPulse}
-        transition={breatheTransition}
-        style={{ willChange: "transform, opacity" }}
-      >
-        <Loader className="h-30" />
-      </motion.div>
-      <motion.h2
-        animate={headingSheen}
-        transition={breatheTransition}
-        className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
-      >
-        {t(text)}
-      </motion.h2>
-
       {isLobby && (
         <AnimatePresence mode="wait" initial={false}>
           {showPicker ? (
@@ -188,6 +173,22 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           </div>
         </motion.div>
       )}
+
+      <motion.div
+        animate={loaderPulse}
+        transition={breatheTransition}
+        style={{ willChange: "transform, opacity" }}
+        className="mt-8"
+      >
+        <Loader className="h-30" />
+      </motion.div>
+      <motion.h2
+        animate={headingSheen}
+        transition={breatheTransition}
+        className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+      >
+        {t(text)}
+      </motion.h2>
     </section>
   )
 }
