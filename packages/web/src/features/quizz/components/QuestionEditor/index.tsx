@@ -61,33 +61,33 @@ const QuestionEditor = () => {
           <QuestionEditorTitle />
         </Reveal>
 
-        <Reveal index={1}>
+        {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
+          <Reveal index={1}>
+            <QuestionEditorAnswers />
+          </Reveal>
+        )}
+        {isTypeAnswer && (
+          <Reveal index={1}>
+            <QuestionEditorAcceptedAnswers />
+          </Reveal>
+        )}
+        {isSentenceBuilder && (
+          <Reveal index={1}>
+            <QuestionEditorSentence />
+          </Reveal>
+        )}
+
+        <Reveal index={2}>
           <div className="rounded-2xl bg-white p-4 shadow-sm">
             <QuestionEditorType />
           </div>
         </Reveal>
 
-        <Reveal index={2}>
+        <Reveal index={3}>
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full">
             <QuestionEditorMedia />
           </div>
         </Reveal>
-
-        {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
-          <Reveal index={3}>
-            <QuestionEditorAnswers />
-          </Reveal>
-        )}
-        {isTypeAnswer && (
-          <Reveal index={3}>
-            <QuestionEditorAcceptedAnswers />
-          </Reveal>
-        )}
-        {isSentenceBuilder && (
-          <Reveal index={3}>
-            <QuestionEditorSentence />
-          </Reveal>
-        )}
       </main>
 
       <QuestionEditorConfig />
