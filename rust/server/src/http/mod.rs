@@ -143,38 +143,8 @@ pub async fn authorize_dev_request(
 lazy_static! {
     pub static ref RATE_LIMITER: RateLimiter = RateLimiter::new();
 
-
-#[derive(Debug, serde::Deserialize)]
-pub struct LoginRequest {
-    pub username: String,
-    pub password: String,
 }
 
-#[derive(Debug, serde::Serialize)]
-pub struct LoginResponse {
-    pub token: String,
-    pub role: String,
-    pub username: String,
-}
-
-pub async fn handle_login_inline(
-    State(state): State<AppState>,
-    Json(_req): Json<LoginRequest>,
-) -> Result<Json<LoginResponse>, (StatusCode, Json<serde_json::Value>)> {
-    if state.db_pool.is_none() {
-        return Err(json_error_response(
-            StatusCode::UNAUTHORIZED,
-            "Invalid username or password",
-        ));
-    }
-
-    Ok(Json(LoginResponse {
-        token: "test".to_string(),
-        role: "admin".to_string(),
-        username: "test".to_string(),
-    }))
-}
-}
 
 pub async fn handle_health() -> Json<HealthResponse> {
     Json(HealthResponse {
@@ -211,7 +181,7 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(handle_health))
         .route("/healthz", get(handle_healthz))
         .route("/api/v1/health", get(handle_health))
-        .route("/api/login", post(handle_login_inline))
+        .route("/api/login", post(login::handle_login))
         .route("/api/achievements", get(achievements::handle_achievements))
         .route("/api/quizzes", get(solo::handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(solo::handle_get_quiz_solo))
