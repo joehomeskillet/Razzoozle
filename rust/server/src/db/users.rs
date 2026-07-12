@@ -83,11 +83,14 @@ pub async fn mint_session(
     user_id: i64,
     ttl_days: i64,
 ) -> Result<String, String> {
-    // Generate 256-bit (32 bytes) random token
-    let mut rng = rand::thread_rng();
-    let mut token_bytes = [0u8; 32];
-    rng.fill(&mut token_bytes);
-    let token = URL_SAFE_NO_PAD.encode(&token_bytes);
+    // Generate 256-bit (32 bytes) random token — scoped so the ThreadRng (!Send)
+    // is dropped BEFORE the await below, keeping the handler future Send.
+    let token = {
+        let mut rng = rand::thread_rng();
+        let mut token_bytes = [0u8; 32];
+        rng.fill(&mut token_bytes);
+        URL_SAFE_NO_PAD.encode(&token_bytes)
+    };
 
     // Calculate expiration
     let expires_at = sqlx::types::chrono::Utc::now() + chrono::Duration::days(ttl_days);
