@@ -34,7 +34,7 @@ export type Status = (typeof STATUS)[keyof typeof STATUS]
 
 export interface CommonStatusDataMap {
   SHOW_START: { time: number; subject: string }
-  SHOW_PREPARED: { totalAnswers: number; questionNumber: number }
+  SHOW_PREPARED: { totalAnswers: number; questionNumber: number; type?: QuestionType }
   SHOW_QUESTION: {
     question: string
     // Answer TEXTS only (no solutions/correct — anti-cheat). Display-only for the
