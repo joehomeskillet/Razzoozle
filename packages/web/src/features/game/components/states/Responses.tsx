@@ -153,9 +153,16 @@ const Responses = ({
                     defaultValue: "Correct answer",
                   })}
                 </p>
-                <p className="text-lg font-bold text-[color:var(--game-fg)]">
-                  {correctChunks.join(" ")}
-                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {correctChunks.map((chunk, i) => (
+                    <span
+                      key={`${chunk}-${i}`}
+                      className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                    >
+                      {chunk}
+                    </span>
+                  ))}
+                </div>
               </motion.div>
             )}
           </div>
