@@ -50,6 +50,7 @@ import {
 } from "@razzoozle/web/features/game/recap/recapVisuals"
 import { AnimatePresence, motion } from "motion/react"
 import type { Transition } from "motion/react"
+import clsx from "clsx"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -113,6 +114,19 @@ interface RecapCard {
   /** Already-formatted value string ("" when the key carries no value). */
   value: string
 }
+
+// 4-point twinkle star used for the award sparkle effect.
+const SPARKLE_PATH =
+  "M12 0C12.6 7 17 11.4 24 12C17 12.6 12.6 17 12 24C11.4 17 7 12.6 0 12C7 11.4 11.4 7 12 0Z"
+// Sparkle positions around the glyph disc + staggered delays so they twinkle out of sync.
+const SPARKLES = [
+  { top: "-10%", left: "8%", delay: 0, size: "size-3 md:size-4" },
+  { top: "6%", left: "86%", delay: 0.6, size: "size-2.5 md:size-3.5" },
+  { top: "82%", left: "-8%", delay: 1.0, size: "size-2.5 md:size-3.5" },
+  { top: "88%", left: "82%", delay: 1.4, size: "size-3 md:size-4" },
+  { top: "38%", left: "-16%", delay: 0.3, size: "size-2 md:size-3" },
+  { top: "44%", left: "102%", delay: 0.9, size: "size-2 md:size-3" },
+]
 
 const RecapSequence = ({
   superlatives,
@@ -276,22 +290,36 @@ const RecapSequence = ({
             exit={flip.exit}
             transition={flipTransition}
           >
-            {/* Award side — glyph gently pulses and radiates a soft glow ring (subtle, reduced-motion safe) */}
+            {/* Award side — glyph gently pulses with twinkling sparkles (subtle, reduced-motion safe) */}
             <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
               <span
                 className="relative flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-32"
                 aria-hidden
               >
-                <motion.span
-                  aria-hidden
-                  className="absolute inset-0 rounded-full border-2 border-[color:var(--color-primary)]"
-                  animate={
-                    reveal.reduced
-                      ? { opacity: 0 }
-                      : { scale: [1, 1.35], opacity: [0.45, 0] }
-                  }
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
-                />
+                {!reveal.reduced &&
+                  SPARKLES.map((s, i) => (
+                    <motion.svg
+                      key={i}
+                      viewBox="0 0 24 24"
+                      aria-hidden
+                      className={clsx(
+                        "absolute text-[color:var(--color-accent)] drop-shadow",
+                        s.size,
+                      )}
+                      style={{ top: s.top, left: s.left }}
+                      initial={{ scale: 0, opacity: 0, rotate: 0 }}
+                      animate={{ scale: [0, 1, 0], opacity: [0, 1, 0], rotate: [0, 80] }}
+                      transition={{
+                        duration: 1.6,
+                        repeat: Infinity,
+                        repeatDelay: 0.6,
+                        delay: s.delay,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <path d={SPARKLE_PATH} fill="currentColor" />
+                    </motion.svg>
+                  ))}
                 <motion.svg
                   viewBox={ICON_VIEWBOX}
                   className="relative size-14 text-[color:var(--color-primary)] md:size-20"
