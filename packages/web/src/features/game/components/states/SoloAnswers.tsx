@@ -16,6 +16,7 @@ import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
+  ANSWER_TILE_SURFACE,
   ANSWERS_COLORS,
   ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
@@ -307,7 +308,16 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               autoFocus
               autoComplete="off"
               autoCorrect="off"
-              className="w-full rounded-xl border-2 border-[var(--border-hairline)] bg-white px-5 py-4 text-xl font-semibold text-[color:var(--color-field-ink)] placeholder-[color:var(--color-field-ink)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+              className={clsx(
+                ANSWER_TILE_SURFACE,
+                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                // Reveal cue: green/red RING on the input (never recolor the fill — the
+                // disabled text would be unreadable). Solo knows only overall correctness.
+                resultReady &&
+                  (lastResult.correct
+                    ? "ring-2 ring-[var(--state-correct)]"
+                    : "ring-2 ring-[var(--state-wrong)]"),
+              )}
             />
             <button
               type="button"
@@ -413,7 +423,16 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-3xl flex-col gap-4 px-4">
             {/* Answer bar - where placed chips appear */}
-            <div className="rounded-[var(--radius-theme)] border-2 border-dashed border-[var(--border-hairline)] bg-[var(--surface)] p-4 min-h-24 flex flex-wrap items-center gap-2">
+            <div
+              className={clsx(
+                "rounded-[var(--radius-theme)] p-4 min-h-24 flex flex-wrap items-center gap-2 border",
+                resultReady
+                  ? lastResult.correct
+                    ? "border-[var(--border-hairline)] bg-[var(--state-correct)]"
+                    : "border-[var(--border-hairline)] bg-[var(--state-wrong)]"
+                  : "border-2 border-dashed border-[var(--border-hairline)] bg-[var(--surface)]",
+              )}
+            >
               {placedChips.length === 0 ? (
                 <span className="text-center w-full text-[var(--answer-text)]/60">
                   {t("game:sentenceBuilder.answerBar", { defaultValue: "Your answer" })}
