@@ -345,7 +345,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                       // Already-visible tile: emphasis pulse from the CURRENT
                       // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
                       // which would shrink the tile toward centre on reveal.
-                      popped: reveal.reduced ? { opacity: 1 } : { scale: [1, 1.06, 1] },
+                      popped: reveal.reduced ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: [1, 1.06, 1] },
                     }}
                     initial="hidden"
                     animate={resultReady && isPicked ? "popped" : "visible"}
@@ -506,7 +506,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                     // Already-visible tile: emphasis pulse from the CURRENT
                     // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
                     // which would shrink the tile toward centre on reveal.
-                    popped: reveal.reduced ? { opacity: 1 } : { scale: [1, 1.06, 1] },
+                    popped: reveal.reduced ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: [1, 1.06, 1] },
                   }}
                   initial="hidden"
                   animate={resultReady && isPicked ? "popped" : "visible"}
