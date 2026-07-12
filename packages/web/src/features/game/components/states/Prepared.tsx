@@ -31,25 +31,38 @@ const Prepared = ({ data: { totalAnswers, questionNumber } }: Props) => {
         {t("game:questionPrefix")}
         {questionNumber}
       </motion.h2>
-      <motion.div
-        className="grid aspect-square w-60 grid-cols-2 gap-4 rounded-2xl bg-[var(--surface-muted)] p-5 md:w-60"
-        variants={reveal.pop(0.92)}
-        transition={reveal.spring}
-      >
-        {Array.from({ length: totalAnswers }).map((_, key) => (
-          <div
-            key={key}
-            className={clsx(
-              "button shadow-inset flex aspect-square h-full w-full items-center justify-center rounded-2xl",
-              answerColor(key),
-            )}
-          >
-            <span className="text-2xl font-bold text-[var(--answer-text)] md:text-3xl">
-              {answerLabel(key)}
-            </span>
+      {totalAnswers > 0 ? (
+        <motion.div
+          className="grid aspect-square w-60 grid-cols-2 gap-4 rounded-2xl bg-[var(--surface-muted)] p-5 md:w-60"
+          variants={reveal.pop(0.92)}
+          transition={reveal.spring}
+        >
+          {Array.from({ length: totalAnswers }).map((_, key) => (
+            <div
+              key={key}
+              className={clsx(
+                "button shadow-inset flex aspect-square h-full w-full items-center justify-center rounded-2xl",
+                answerColor(key),
+              )}
+            >
+              <span className="text-2xl font-bold text-[var(--answer-text)] md:text-3xl">
+                {answerLabel(key)}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      ) : (
+        <motion.div
+          aria-hidden="true"
+          variants={reveal.pop(0.92)}
+          transition={reveal.spring}
+          className="flex aspect-[5/2] w-60 items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-6 shadow-[var(--shadow-flat)]"
+        >
+          <div className="relative h-2 w-full rounded-full bg-[color:var(--surface-muted)]/25">
+            <span className="absolute top-1/2 left-1/2 size-7 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--border-hairline)] bg-[var(--color-accent)] shadow-[var(--shadow-flat)]" />
           </div>
-        ))}
-      </motion.div>
+        </motion.div>
+      )}
     </motion.section>
   )
 }
