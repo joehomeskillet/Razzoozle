@@ -274,10 +274,12 @@ const SharePage = ({ id }: Props) => {
           mirroring the live Podium. RecapSequence supplies its own absolute
           inset-0 z-40 placement; we only mount it (never edit it). */}
       {hasRecap && recap && !recapDone && (
-        <RecapSequence
-          superlatives={recap.superlatives}
-          onComplete={() => setRecapDone(true)}
-        />
+        <div style={{ "--game-fg": "#0E1120" } as React.CSSProperties}>
+          <RecapSequence
+            superlatives={recap.superlatives}
+            onComplete={() => setRecapDone(true)}
+          />
+        </div>
       )}
 
       <div
