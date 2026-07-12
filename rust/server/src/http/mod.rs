@@ -11,6 +11,7 @@ mod result_og;
 pub mod solo;
 mod static_files;
 mod login;
+mod users;
 
 use axum::{
     extract::Path,
@@ -186,6 +187,9 @@ pub fn router(state: AppState) -> Router {
         .route("/healthz", get(handle_healthz))
         .route("/api/v1/health", get(handle_health))
         .route("/api/login", post(login::handle_login))
+        .route("/api/users", get(users::list).post(users::create))
+        .route("/api/users/:id/disable", post(users::disable))
+        .route("/api/users/:id/enable", post(users::enable))
         .route("/api/achievements", get(achievements::handle_achievements))
         .route("/api/quizzes", get(solo::handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(solo::handle_get_quiz_solo))

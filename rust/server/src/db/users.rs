@@ -138,6 +138,48 @@ pub async fn count_users(pool: &PgPool) -> Result<i64, String> {
     Ok(result.0)
 }
 
+
+#[derive(Debug, serde::Serialize)]
+pub struct UserDetail {
+    pub id: i64,
+    pub username: String,
+    pub role: String,
+    pub active: bool,
+    pub created_at: String,
+}
+
+/// List all users with their details.
+pub async fn list_users(pool: &PgPool) -> Result<Vec<UserDetail>, String> {
+    let result = sqlx::query_as::<_, (i64, String, String, bool, sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>)>(
+        "SELECT id, username, role, active, created_at FROM users ORDER BY created_at DESC"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result
+        .into_iter()
+        .map(|(id, username, role, active, created_at)| UserDetail {
+            id,
+            username,
+            role,
+            active,
+            created_at: created_at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        })
+        .collect())
+}
+
+/// Set the active flag for a user (enable or disable).
+pub async fn set_user_active(pool: &PgPool, user_id: i64, active: bool) -> Result<(), String> {
+    sqlx::query("UPDATE users SET active = $1 WHERE id = $2")
+        .bind(active)
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
 /// Bootstrap the admin user if the database is empty and env vars are set.
 /// Checks count_users() == 0; if true and BOOTSTRAP_ADMIN_USER and BOOTSTRAP_ADMIN_PASSWORD
 /// are both set, creates admin user. Otherwise no-op. Idempotent by the count==0 guard.
