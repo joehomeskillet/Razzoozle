@@ -249,7 +249,7 @@ const Responses = ({
                 key={key}
                 colorIndex={key}
                 label={answerLabel(key)}
-                correct={solutionList.includes(key)}
+                correct={type === "poll" ? undefined : solutionList.includes(key)}
               >
                 <Markdown>{answer}</Markdown>
               </AnswerButton>
