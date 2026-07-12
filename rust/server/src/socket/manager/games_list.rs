@@ -21,17 +21,15 @@ fn register_list_games(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Read the registry and build a list of game summaries
                 let summaries = {
@@ -87,17 +85,15 @@ fn register_end_game(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Ownership: game.manager_client_id must match ctx.client_id
                 let owns_game = {

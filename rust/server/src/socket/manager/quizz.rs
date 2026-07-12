@@ -81,17 +81,15 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 let registry = ctx.registry.read().await;
                 match registry.get_quiz_by_id(&id) {
@@ -131,17 +129,15 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Validate the quizz payload: {subject: string, questions: Question[]}
                 let subject = payload.get("subject").and_then(|v| v.as_str());
@@ -202,17 +198,15 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Update an existing quiz in place: {id, subject, questions[]}.
                 // Keeps the SAME id (matches Node updateQuizz, which returns the input id).
@@ -281,17 +275,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 if let Err(e) = safe_asset_id(&id) {
                     socket.emit(constants::quizz::ERROR, &e).ok();
@@ -329,17 +321,15 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Read source quiz from registry
                 let source_quiz = {
@@ -409,17 +399,15 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Parse payload {id, archived}
                 let id = payload.get("id").and_then(|v| v.as_str());

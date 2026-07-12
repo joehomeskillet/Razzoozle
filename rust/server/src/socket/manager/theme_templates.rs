@@ -64,17 +64,15 @@ fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Fetch and emit full theme templates (with theme payload)
                 let templates = db::get_theme_templates_full(&ctx.db_pool).await;
@@ -93,17 +91,15 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract name and theme
                 let name = match payload.get("name").and_then(|v| v.as_str()) {
@@ -186,17 +182,15 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -236,17 +230,15 @@ fn register_theme_revision_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Load revisions from database (newest-first, capped at 10)
                 let revisions = db::list_theme_revisions(&ctx.db_pool).await;
@@ -265,17 +257,15 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {

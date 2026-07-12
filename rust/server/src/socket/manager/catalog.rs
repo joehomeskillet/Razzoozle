@@ -62,17 +62,15 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Fetch and emit catalog data
                 let catalog = db::get_catalog(&ctx.db_pool).await;
@@ -91,17 +89,15 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract and validate question
                 let question = match payload.get("question") {
@@ -175,17 +171,15 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract and validate id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -253,17 +247,15 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Validate payload: { id: string }
                 let id = match payload.get("id").and_then(|v| v.as_str()) {

@@ -48,8 +48,8 @@ check "$SRC"   'evaluate_answer'                 2  "B2 eval wiring"
 check "$SRC"   'REMOVE_PLAYER|remove_player'     2  "B3 player-lifecycle"
 check "$STATE" 'load_quizzes'                    2  "B4 quiz-from-disk"
 check "$SRC"   'handle_get_quizzes'              2  "B4 HTTP routes"
-check "$SRC"   'is_logged'                       8  "B5 auth gate"
-check "$SRC"   'constants::manager::AUTH'        1  "B5 manager:auth"
+check "$SRC"   'require_user|require_admin' 30 "B5 auth gate (session)"
+check "$SRC"   'session_user' 2 "B5 session auth"
 check "$SRC"   'next_or_finish'                  1  "round-loop advance"
 
 # --- 3. total-source floor (code moves between files during modularization but is

@@ -7,8 +7,7 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{
-    get_now_ms, Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, LOGGED_CLIENTS_MAX_ENTRIES,
-    LOGGED_CLIENT_STALE_MS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN, USERNAME_MIN_LEN,
+    get_now_ms, Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN, USERNAME_MIN_LEN,
 };
 
 /// A game whose manager has left but may reconnect within the grace window.
@@ -23,9 +22,6 @@ pub struct GameRegistry {
     pub(super) games_by_id: HashMap<String, Arc<Mutex<Game>>>,
     quizzes: HashMap<String, Quizz>,
     default_quiz: Quizz,
-    // client_id -> last-touched ms (login/reconnect). Capped + stale-pruned
-    // like the RateLimiter maps above — see LOGGED_CLIENT_STALE_MS.
-    pub(super) logged_clients: HashMap<String, u64>,
     // O(1) socket_id -> game_id lookup for the hot per-connection paths
     // (remove/mark-disconnected/set_player_team/set_player_avatar), which
     // used to scan every active game and lock its Mutex on every call.
@@ -95,31 +91,9 @@ impl GameRegistry {
             games_by_id: HashMap::new(),
             quizzes,
             default_quiz: quiz_fixture,
-            logged_clients: HashMap::new(),
             socket_to_game: HashMap::new(),
             empty_games: Vec::new(),
         }
-    }
-
-    pub fn is_logged(&self, client_id: &str) -> bool {
-        self.logged_clients.contains_key(client_id)
-    }
-
-    pub fn login_client(&mut self, client_id: String) {
-        let now = get_now_ms();
-        self.logged_clients.insert(client_id, now);
-
-        // Cap unbounded growth from distinct client IDs (same idiom as
-        // RateLimiter's solo_by_key/auth_by_key above): prune stale entries
-        // only once the registry grows past the cap.
-        if self.logged_clients.len() > LOGGED_CLIENTS_MAX_ENTRIES {
-            self.logged_clients
-                .retain(|_, last_seen| now.saturating_sub(*last_seen) <= LOGGED_CLIENT_STALE_MS);
-        }
-    }
-
-    pub fn logout_client(&mut self, client_id: &str) {
-        self.logged_clients.remove(client_id);
     }
 
     /// Generate a 6-digit PIN code for the invite (matching Node.js validation).
@@ -160,6 +134,16 @@ impl GameRegistry {
         }
 
         Ok(())
+    }
+
+    /// Resolve a user by session token (thin wrapper over db::users::session_user).
+    /// Returns None if token is invalid, expired, or if there's a DB error.
+    pub async fn session_user(&self, token: &str, pool: &Option<PgPool>) -> Option<crate::db::users::AuthUser> {
+        if let Some(ref p) = pool {
+            crate::db::users::session_user(p, token).await.ok().flatten()
+        } else {
+            None
+        }
     }
 
     /// Create a new game with the specified quiz ID. Mirrors Node's

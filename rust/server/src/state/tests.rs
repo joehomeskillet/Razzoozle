@@ -202,33 +202,6 @@ fn test_add_player_rejects_duplicate_client_id() {
 }
 
 #[test]
-fn test_logged_clients_prunes_stale_entries_past_cap() {
-    let empty_quiz = Quizz {
-        subject: "Test".to_string(),
-        questions: vec![],
-        archived: None,
-        theme_id: None,
-    };
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
-
-    // Seed one entry as if logged in long before the staleness TTL.
-    registry.logged_clients.insert("ancient-client".to_string(), 0);
-    assert!(registry.is_logged("ancient-client"));
-
-    // Push the map past the cap with fresh logins — triggers a prune pass.
-    for i in 0..=LOGGED_CLIENTS_MAX_ENTRIES {
-        registry.login_client(format!("client-{}", i));
-    }
-
-    assert!(!registry.is_logged("ancient-client"), "stale entry should have been pruned");
-    assert!(
-        registry.is_logged(&format!("client-{}", LOGGED_CLIENTS_MAX_ENTRIES)),
-        "fresh entries must survive pruning"
-    );
-}
-
-#[test]
 fn test_evict_stale_games_recovers_poisoned_mutex() {
     let empty_quiz = Quizz {
         subject: "Test".to_string(),

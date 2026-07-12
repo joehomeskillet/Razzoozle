@@ -27,17 +27,15 @@ fn register_get_config(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 config_helper::build_and_emit_config(&socket, &ctx).await;
             });
@@ -54,17 +52,15 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Validate and filter the payload: accept specific fields
                 let mut patch = serde_json::json!({});
@@ -148,17 +144,15 @@ fn register_set_achievements_config(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_admin().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Extract config from payload: { config: {...} }
                 let config = match payload.get("config") {

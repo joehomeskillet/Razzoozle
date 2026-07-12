@@ -16,17 +16,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 socket
                     .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
@@ -41,17 +39,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 // Validate payload
                 if let Err(err) = super::ai_validate::validate_set_settings(&payload) {
@@ -80,17 +76,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_admin().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 // Validate and extract payload
                 let (provider_id, key) = match super::ai_validate::validate_set_key(&payload) {
@@ -121,17 +115,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 if !super::ai_ratelimit::allow_text_gen(
                     &ctx.client_id,
@@ -205,17 +197,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 if !super::ai_ratelimit::allow_text_gen(
                     &ctx.client_id,
@@ -258,17 +248,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 if !super::ai_ratelimit::allow_text_gen(
                     &ctx.client_id,
@@ -313,17 +301,15 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &"")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &"")
-                        .ok();
-                    return;
-                }
 
                 if !super::ai_ratelimit::allow_text_gen(
                     &ctx.client_id,

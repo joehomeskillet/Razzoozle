@@ -94,17 +94,15 @@ pub(super) fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, "")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, "")
-                        .ok();
-                    return;
-                }
 
                 match apply_theme(&payload, &ctx).await {
                     Ok(theme) => {

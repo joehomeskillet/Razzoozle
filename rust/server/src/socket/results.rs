@@ -66,17 +66,15 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 if crate::state::safe_asset_id(&id).is_err() {
                     return;
@@ -101,17 +99,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 // Path-traversal guard
                 if crate::state::safe_asset_id(&id).is_err() {

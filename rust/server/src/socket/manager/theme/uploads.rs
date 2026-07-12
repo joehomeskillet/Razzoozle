@@ -224,17 +224,15 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, "")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, "")
-                        .ok();
-                    return;
-                }
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),
@@ -284,17 +282,15 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, "")
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, "")
-                        .ok();
-                    return;
-                }
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),

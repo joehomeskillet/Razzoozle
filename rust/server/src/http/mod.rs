@@ -90,11 +90,12 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-/// Node `authorizeManagerRequest` parity: `X-Manager-Token` is a logged-in
-/// manager clientId (registry), or in dev mode the DEV_API_KEY (constant-time).
+/// Node `authorizeManagerRequest` parity: `X-Manager-Token` is a valid
+/// session token (from DB), or in dev mode the DEV_API_KEY (constant-time).
 pub async fn authorize_manager_request(
     headers: &HeaderMap,
     registry: Arc<RwLock<GameRegistry>>,
+    db_pool: &Option<sqlx::PgPool>,
 ) -> bool {
     let token = headers
         .get("x-manager-token")
@@ -103,8 +104,11 @@ pub async fn authorize_manager_request(
     if token.is_empty() {
         return false;
     }
-    if registry.read().await.is_logged(token) {
-        return true;
+    // Check if token is valid session token
+    if let Some(ref pool) = db_pool {
+        if crate::db::users::session_user(pool, token).await.ok().flatten().is_some() {
+            return true;
+        }
     }
     if is_dev_mode() {
         if let Some(key) = dev_api_key() {

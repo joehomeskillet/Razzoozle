@@ -44,8 +44,11 @@ async fn authorize_manager(
     if token.is_empty() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
-    if state.registry.read().await.is_logged(token) {
-        return Ok(());
+    // Check if token is valid session token
+    if let Some(ref pool) = state.db_pool {
+        if crate::db::users::session_user(pool, token).await.ok().flatten().is_some() {
+            return Ok(());
+        }
     }
     if is_dev_mode() {
         if let Some(key) = dev_api_key() {

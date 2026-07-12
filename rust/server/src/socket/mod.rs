@@ -4,6 +4,7 @@
 //! and registers its own `socket.on(...)`. main.rs stays thin and calls `register_all`.
 
 use crate::state::GameRegistry;
+use crate::db::users::AuthUser;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -15,6 +16,49 @@ pub struct HandlerCtx {
     pub io: SocketIo,
     pub client_id: String,
     pub db_pool: Option<sqlx::PgPool>,
+    /// Session token from handshake auth payload (None if not provided).
+    pub session_token: Option<String>,
+    /// Lazily-resolved and cached user. Populated on first require_user/require_admin call.
+    pub user_cache: Arc<RwLock<Option<AuthUser>>>,
+}
+
+impl HandlerCtx {
+    /// Resolve and cache the user if not already cached. Returns Some(&user) if valid session, None otherwise.
+    /// Call this before operations that require authentication.
+    pub async fn require_user(&self) -> Option<AuthUser> {
+        // Check cache first (read lock, non-blocking)
+        {
+            let cache = self.user_cache.read().await;
+            if cache.is_some() {
+                return cache.clone();
+            }
+        }
+
+        // Not cached; try to resolve from token
+        if let Some(ref token) = self.session_token {
+            if let Some(ref pool) = self.db_pool {
+                if let Ok(Some(user)) = crate::db::users::session_user(pool, token).await {
+                    // Cache it
+                    let mut cache = self.user_cache.write().await;
+                    *cache = Some(user.clone());
+                    return cache.clone();
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Require admin role: return Some(user) if logged in AND role=="admin", None otherwise.
+    pub async fn require_admin(&self) -> Option<AuthUser> {
+        self.require_user().await.and_then(|u| {
+            if u.role == "admin" {
+                Some(u)
+            } else {
+                None
+            }
+        })
+    }
 }
 
 // AI submodules (used by ai handler)

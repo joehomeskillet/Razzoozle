@@ -26,7 +26,7 @@ pub async fn handle_plugin_import(
     headers: HeaderMap,
     body: Body,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    if !authorize_manager_request(&headers, state.registry.clone()).await {
+    if !authorize_manager_request(&headers, state.registry.clone(), &state.db_pool).await {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 
@@ -97,7 +97,7 @@ pub async fn handle_plugin_export(
     headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), (StatusCode, Json<Value>)> {
-    if !authorize_manager_request(&headers, state.registry.clone()).await {
+    if !authorize_manager_request(&headers, state.registry.clone(), &state.db_pool).await {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 

@@ -24,17 +24,15 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                        .ok();
-                    return;
-                }
 
                 if let (Some(game_id), Some(player_id)) = (game_id_opt, player_id_opt) {
                     let (removed_count, bot_cancel) = {
@@ -111,15 +109,15 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
-                    return;
-                }
 
                 // Extract gameId and count
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());

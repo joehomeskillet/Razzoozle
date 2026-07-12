@@ -207,12 +207,17 @@ async fn main() {
             let registry = Arc::clone(&registry);
             let io_handle = io_handle.clone();
 
-            // Extract clientId from auth
+            // Extract clientId and sessionToken from auth
             let client_id = auth
                 .get("clientId")
                 .and_then(|v| v.as_str())
                 .unwrap_or("unknown")
                 .to_string();
+
+            let session_token = auth
+                .get("sessionToken")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
             info!("Client connected: client_id={}", client_id);
 
@@ -223,6 +228,8 @@ async fn main() {
                 io: io_handle.clone(),
                 client_id: client_id.clone(),
                 db_pool: db_pool.clone(),
+                session_token,
+                user_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             };
             socket::register_all(&socket, &ctx);
 

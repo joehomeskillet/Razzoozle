@@ -53,6 +53,7 @@ pub struct GetAssignmentResultsResponse {
 async fn authorize_manager_request(
     headers: &HeaderMap,
     registry: &Arc<RwLock<GameRegistry>>,
+    db_pool: &Option<sqlx::PgPool>,
 ) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
     let header_token = headers
         .get("x-manager-token")
@@ -63,12 +64,12 @@ async fn authorize_manager_request(
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 
-    let reg = registry.read().await;
-    if reg.is_logged(header_token) {
-        drop(reg);
-        return Ok(());
+    // Check if token is valid session token
+    if let Some(ref pool) = db_pool {
+        if crate::db::users::session_user(pool, header_token).await.ok().flatten().is_some() {
+            return Ok(());
+        }
     }
-    drop(reg);
 
     if is_dev_mode() {
         if let Some(dev_key) = dev_api_key() {
@@ -96,7 +97,7 @@ pub async fn handle_create_assignment(
     State(state): State<AppState>,
     Json(payload): Json<CreateAssignmentRequest>,
 ) -> Result<Json<CreateAssignmentResponse>, (StatusCode, Json<serde_json::Value>)> {
-    authorize_manager_request(&headers, &state.registry).await?;
+    authorize_manager_request(&headers, &state.registry, &state.db_pool).await?;
 
     if payload.quizz_id.is_empty() {
         return Err(json_error_response(StatusCode::BAD_REQUEST, "quizzId required"));
@@ -202,7 +203,7 @@ pub async fn handle_get_assignment_results(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    authorize_manager_request(&headers, &state.registry).await?;
+    authorize_manager_request(&headers, &state.registry, &state.db_pool).await?;
 
     safe_asset_id(&id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;

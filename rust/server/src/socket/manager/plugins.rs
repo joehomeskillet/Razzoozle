@@ -307,18 +307,28 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 /// Auth-gate shared by all three handlers (Node manager.withAuth →
 /// UNAUTHORIZED to the sender, then stop).
 async fn ensure_logged(socket: &SocketRef, ctx: &HandlerCtx) -> bool {
-    let is_logged = {
-        let registry = ctx.registry.read().await;
-        registry.is_logged(&ctx.client_id)
-    };
-
-    if !is_logged {
-        socket
-            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-            .ok();
+    match ctx.require_user().await {
+        Some(_user) => true,
+        None => {
+            socket
+                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                .ok();
+            false
+        }
     }
+}
 
-    is_logged
+/// Admin-gate for plugin install/remove/setConfig (instance-global state mutations).
+async fn ensure_admin(socket: &SocketRef, ctx: &HandlerCtx) -> bool {
+    match ctx.require_admin().await {
+        Some(_user) => true,
+        None => {
+            socket
+                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                .ok();
+            false
+        }
+    }
 }
 
 fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
@@ -329,7 +339,7 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if !ensure_logged(&socket, &ctx).await {
+                if !ensure_admin(&socket, &ctx).await {
                     return;
                 }
 
@@ -420,7 +430,7 @@ fn register_plugin_remove(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if !ensure_logged(&socket, &ctx).await {
+                if !ensure_admin(&socket, &ctx).await {
                     return;
                 }
 
@@ -479,7 +489,7 @@ fn register_plugin_set_config(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                if !ensure_logged(&socket, &ctx).await {
+                if !ensure_admin(&socket, &ctx).await {
                     return;
                 }
 

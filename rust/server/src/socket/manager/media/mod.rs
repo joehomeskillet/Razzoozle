@@ -68,17 +68,15 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth: verify manager is logged in
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &())
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &())
-                        .ok();
-                    return;
-                }
 
                 // Query media assets from the shared DB and emit the list.
                 let media_list = db::get_media_list(&ctx.db_pool).await;
@@ -97,17 +95,15 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &())
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &())
-                        .ok();
-                    return;
-                }
 
                 // Validate payload (Zod-like validator). Returns first error message.
                 let (filename, data_url, category) = match validate::validate_upload_payload(&payload) {
@@ -243,17 +239,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let is_logged = {
-                    let registry = ctx.registry.read().await;
-                    registry.is_logged(&ctx.client_id)
+                let _user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &())
+                            .ok();
+                        return;
+                    }
                 };
-
-                if !is_logged {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &())
-                        .ok();
-                    return;
-                }
 
                 // Validate payload (Zod-like validator). Returns first error message or the ID.
                 let id = match validate::validate_delete_payload(&payload) {
