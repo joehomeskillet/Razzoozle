@@ -290,7 +290,7 @@ const RecapSequence = ({
               </svg>
             </span>
 
-            <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-4xl lg:text-5xl">
+            <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(3rem,6vh,6rem)]">
               {t(current.label, { defaultValue: current.labelFallback })}
             </p>
 
@@ -301,7 +301,7 @@ const RecapSequence = ({
               size={112}
               className="mx-auto"
             />
-            <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-4xl lg:text-5xl">
+            <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(3rem,6vh,6rem)]">
               {current.winnerName}
             </p>
 

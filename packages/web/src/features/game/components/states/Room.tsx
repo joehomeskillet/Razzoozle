@@ -290,7 +290,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               <AlertDialog.Cancel asChild>
                 <button
                   type="button"
-                  className="rounded-md bg-gray-200 px-4 py-2 font-bold text-black hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+                  className="rounded-md bg-[var(--surface)] px-4 py-2 font-bold text-[var(--game-fg)] border border-[var(--border-hairline)] shadow-[var(--shadow-flat)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
                 >
                   {t("common:cancel")}
                 </button>
@@ -301,7 +301,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
                   onClick={() => {
                     if (kickTarget) kickPlayer(kickTarget.id)
                   }}
-                  className="rounded-md bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                  className="rounded-md bg-[var(--state-wrong)] px-4 py-2 font-bold text-[var(--answer-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
                 >
                   {t("manager:kickPlayer.confirm")}
                 </button>

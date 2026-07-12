@@ -488,7 +488,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               type="button"
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChips.length !== (question.shuffledChunks?.length ?? 0)}
-              className="bg-[var(--color-accent)] text-[var(--accent-contrast-text)] rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              className="bg-primary text-white rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("game:sentenceBuilder.submit", { defaultValue: "Submit" })}
             </button>

@@ -683,7 +683,7 @@ const Answers = ({
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChunks.length !== bankChips.length}
               className={clsx(
-                "rounded-xl bg-[var(--color-accent)] px-8 py-3 text-xl font-bold text-[var(--accent-contrast-text)] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                "rounded-xl bg-primary px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
                 PRESS_FEEDBACK,
               )}
             >
