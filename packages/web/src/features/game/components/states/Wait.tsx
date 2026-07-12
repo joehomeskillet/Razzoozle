@@ -12,7 +12,7 @@ import {
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { teamSwatch } from "@razzoozle/web/features/game/utils/teams"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -96,28 +96,40 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
         {t(text)}
       </motion.h2>
 
-      {isLobby && showPicker && (
-        <motion.div
-          variants={reveal.item()}
-          initial="hidden"
-          animate="visible"
-          transition={reveal.spring}
-          className="mt-8 w-full max-w-md rounded-xl bg-white p-4 shadow-lg"
-        >
-          <AvatarPicker onDone={() => setShowPicker(false)} />
-        </motion.div>
-      )}
-
-      {isLobby && !showPicker && (
-        <div className="mt-8 flex w-full justify-center">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowPicker(true)}
-          >
-            {t("game:avatar.change", { defaultValue: "Avatar ändern" })}
-          </Button>
-        </div>
+      {isLobby && (
+        <AnimatePresence mode="wait" initial={false}>
+          {showPicker ? (
+            <motion.div
+              key="avatar-picker"
+              variants={reveal.item()}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              transition={reveal.spring}
+              className="mt-8 w-full max-w-md rounded-xl bg-white p-4 shadow-lg"
+            >
+              <AvatarPicker onDone={() => setShowPicker(false)} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="avatar-change"
+              variants={reveal.item()}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              transition={reveal.spring}
+              className="mt-8 flex w-full justify-center"
+            >
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowPicker(true)}
+              >
+                {t("game:avatar.change", { defaultValue: "Avatar ändern" })}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
       {/* Team picker — only rendered in the lobby of a team-mode game. The
