@@ -152,11 +152,13 @@ impl GameRegistry {
     /// unknown id is rejected with "errors:quizz.notFound" and creates NO
     /// game, never silently falling back to a default quiz.
     /// Returns Err if active-game cap exceeded (C3) or the quiz lookup fails.
+    /// W0-A3: owner_user_id is the user_id of the authenticated game creator.
     pub fn create_game(
         &mut self,
         manager_socket_id: String,
         quiz_id: Option<String>,
         manager_client_id: String,
+        owner_user_id: Option<i64>,
         low_latency: bool,
         low_latency_config: serde_json::Value,
     ) -> Result<(String, String, String), &'static str> {
@@ -186,6 +188,7 @@ impl GameRegistry {
             quiz,
         );
         game.manager_client_id = Some(manager_client_id);
+        game.owner_user_id = owner_user_id;
         game.low_latency = low_latency;
         game.low_latency_config = low_latency_config;
         let host_token = game.host_token.clone();

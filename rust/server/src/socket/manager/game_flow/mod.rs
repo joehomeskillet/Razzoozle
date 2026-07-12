@@ -65,7 +65,7 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 return;
                             }
                             // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
-                            if !is_game_host(&game, &payload, &ctx.client_id) {
+                            if !is_game_host(&game, &payload, &ctx.client_id, None) {
                                 socket
                                     .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                     .ok();
@@ -204,7 +204,7 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
-                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
                             warn!(
                                 "manager:setAuto host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -376,7 +376,7 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
                             warn!(
                                 "manager:nextQuestion host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -480,7 +480,7 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
                             warn!(
                                 "manager:skipQuestion host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -573,7 +573,7 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
                             warn!(
                                 "manager:abortQuiz host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id

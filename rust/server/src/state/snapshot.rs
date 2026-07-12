@@ -45,6 +45,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "gameId": game.game_id,
         "inviteCode": game.invite_code,
         "managerClientId": game.manager_client_id,
+        "ownerUserId": game.owner_user_id,
         "hostToken": game.host_token,
         "started": game.engine.phase != GamePhase::ShowRoom,
         "phase": match game.engine.phase {
@@ -110,6 +111,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     let game_id = snap.get("gameId")?.as_str()?.to_string();
     let invite_code = snap.get("inviteCode")?.as_str()?.to_string();
     let manager_client_id = snap.get("managerClientId").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let owner_user_id = snap.get("ownerUserId").and_then(|v| v.as_i64());
     let host_token = snap.get("hostToken")?.as_str()?.to_string();
     let auto_mode = snap.get("autoMode")?.as_bool()?;
     let mut players: Vec<razzoozle_protocol::player::Player> = serde_json::from_value(snap.get("players")?.clone()).ok()?;
@@ -150,6 +152,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         game_id,
         invite_code,
         manager_socket_id: String::new(), // Will be re-bound on reconnect
+        owner_user_id,
         manager_client_id,
         host_token,
         players,

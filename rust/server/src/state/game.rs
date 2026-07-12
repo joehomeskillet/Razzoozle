@@ -24,6 +24,10 @@ pub struct Game {
     // verified manager:reconnect. `None` only ever for a Game built directly
     // via `Game::new()` in a test that doesn't set it.
     pub manager_client_id: Option<String>,
+    // W0-A3: Owner user ID (from authenticated creator). `None` for legacy games
+    // created before this field existed or when created without auth.
+    // Used with admin bypass for ownership checks via is_game_host.
+    pub owner_user_id: Option<i64>,
     pub host_token: String,
     pub players: Vec<Player>,
     pub engine: GameState,
@@ -131,6 +135,7 @@ impl Game {
             invite_code,
             manager_socket_id,
             manager_client_id: None,
+            owner_user_id: None,
             host_token,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),

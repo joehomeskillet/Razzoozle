@@ -40,7 +40,7 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate: manager:reconnect requires valid session
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -72,12 +72,11 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 };
 
-                // OWNERSHIP gates the reconnect (mirrors Node game.ts:95-116).
-                // is_game_host() checks real ownership via game.manager_client_id
-                // when no hostToken is sent.
+                // W0-A3: OWNERSHIP gates the reconnect with new user-id based logic + admin bypass.
+                // is_game_host() now checks user_id matching, admin bypass, and legacy fallback.
                 let is_owner = {
                     let game = game_ref.lock().unwrap();
-                    crate::is_game_host(&game, &payload, &ctx.client_id)
+                    crate::is_game_host(&game, &payload, &ctx.client_id, Some(&user))
                 };
 
                 if !is_owner {

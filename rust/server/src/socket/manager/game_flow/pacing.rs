@@ -88,7 +88,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
                         warn!(
                             "manager:adjustTimer host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id
@@ -223,7 +223,7 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
                         warn!(
                             "manager:pauseGame host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id
@@ -377,7 +377,7 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
                         warn!(
                             "manager:resumeGame host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id

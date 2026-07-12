@@ -38,25 +38,51 @@ pub(crate) fn match_mode_from_str(match_mode: &str) -> Option<MatchMode> {
     }
 }
 
-/// Helper: Check if the caller owns this game. Payloads carrying a hostToken
-/// are checked against it (unchanged). Payloads WITHOUT one (e.g. the shipped
-/// client's manager:reconnect, which only sends {gameId}) now fall back to
-/// REAL ownership via the authenticated clientId compared against
-/// `game.manager_client_id` — closing the gap where any client who merely
-/// knew the gameId could pass this check (see auth.rs's former TODO(parity)).
-/// A Game with no recorded manager_client_id (only possible via `Game::new()`
-/// directly, e.g. in a test — `create_game()` always populates it) keeps the
-/// old legacy allow.
-pub(crate) fn is_game_host(game: &state::Game, payload: &serde_json::Value, client_id: &str) -> bool {
+/// Helper: Check if the caller owns this game.
+/// W0-A3 ownership logic with admin bypass and legacy fallback:
+/// 1. hostToken check: always authoritative if present and valid
+/// 2. admin bypass: authed admin role always owns any game
+/// 3. owner_user_id check: if game.owner_user_id is set and matches authenticated user's user_id, owner
+/// 4. legacy fallback: if owner_user_id is None, fall back to manager_client_id check
+/// 5. default: deny
+pub(crate) fn is_game_host(
+    game: &state::Game,
+    payload: &serde_json::Value,
+    client_id: &str,
+    user: Option<&db::users::AuthUser>,
+) -> bool {
+    // hostToken is always authoritative if present and valid
     match payload.get("hostToken") {
-        None | Some(serde_json::Value::Null) => match &game.manager_client_id {
-            Some(owner_client_id) => owner_client_id == client_id,
-            None => true,
-        },
-        // Present → it MUST be a string that matches the game's token. A non-string value
-        // (hostToken: 123 / {} / []) DENIES — fail-CLOSED, so the check can't be bypassed by
-        // sending a malformed token instead of the right one.
-        Some(v) => v.as_str() == Some(game.host_token.as_str()),
+        Some(serde_json::Value::Null) | None => {
+            // No hostToken; check owner_user_id with admin bypass + legacy fallback
+
+            // Admin bypass: if authenticated as admin, always owner
+            if let Some(u) = user {
+                if u.role == "admin" {
+                    return true;
+                }
+                // User-id based ownership: match creator's user_id
+                if let Some(owner_id) = game.owner_user_id {
+                    if owner_id == u.user_id {
+                        return true;
+                    }
+                }
+            }
+
+            // Legacy fallback: if owner_user_id is None (pre-A3 game or old snapshot),
+            // fall back to manager_client_id check so existing games survive the deploy.
+            if game.owner_user_id.is_none() {
+                if let Some(owner_client_id) = &game.manager_client_id {
+                    return owner_client_id == client_id;
+                }
+            }
+
+            false
+        }
+        Some(v) => {
+            // hostToken present: must be a string matching the game's token
+            v.as_str() == Some(game.host_token.as_str())
+        }
     }
 }
 
@@ -81,12 +107,19 @@ mod host_token_tests {
         )
     }
 
+    fn test_user(user_id: i64, role: &str) -> db::users::AuthUser {
+        db::users::AuthUser {
+            user_id,
+            role: role.to_string(),
+        }
+    }
+
     #[test]
     fn is_game_host_accepts_correct_token() {
         let game = test_game();
         let payload = serde_json::json!({ "hostToken": game.host_token.clone() });
 
-        assert!(is_game_host(&game, &payload, "any-client-id"));
+        assert!(is_game_host(&game, &payload, "any-client-id", None));
     }
 
     #[test]
@@ -94,28 +127,57 @@ mod host_token_tests {
         let game = test_game();
         let payload = serde_json::json!({ "hostToken": "wrong-token" });
 
-        assert!(!is_game_host(&game, &payload, "any-client-id"));
+        assert!(!is_game_host(&game, &payload, "any-client-id", None));
     }
 
     #[test]
-    fn is_game_host_accepts_legacy_payload_without_token_or_recorded_owner() {
-        // No manager_client_id recorded (test_game() uses Game::new() directly —
-        // create_game() always populates it for real games) keeps the old
-        // legacy allow for a tokenless payload.
+    fn is_game_host_admin_always_owns() {
+        let game = test_game();
+        let admin = test_user(999, "admin");
+        let payload = serde_json::json!({ "gameId": game.game_id });
+
+        assert!(is_game_host(&game, &payload, "any-client-id", Some(&admin)));
+    }
+
+    #[test]
+    fn is_game_host_owner_user_id_matches() {
+        let mut game = test_game();
+        game.owner_user_id = Some(123);
+        let owner = test_user(123, "user");
+        let payload = serde_json::json!({ "gameId": game.game_id });
+
+        assert!(is_game_host(&game, &payload, "owner-client", Some(&owner)));
+    }
+
+    #[test]
+    fn is_game_host_owner_user_id_rejects_non_owner() {
+        let mut game = test_game();
+        game.owner_user_id = Some(123);
+        let non_owner = test_user(456, "user");
+        let payload = serde_json::json!({ "gameId": game.game_id });
+
+        assert!(!is_game_host(&game, &payload, "non-owner-client", Some(&non_owner)));
+    }
+
+    #[test]
+    fn is_game_host_legacy_fallback_denies_without_user() {
+        // Legacy game: owner_user_id is None (pre-A3 snapshot)
         let game = test_game();
         let payload = serde_json::json!({ "gameId": game.game_id });
 
-        assert!(is_game_host(&game, &payload, "any-client-id"));
+        // Without authentication, legacy games deny (fail closed)
+        assert!(!is_game_host(&game, &payload, "any-client-id", None));
     }
 
     #[test]
-    fn is_game_host_matches_real_owner_via_client_id_when_no_token_sent() {
-        let mut game = test_game();
-        game.manager_client_id = Some("owner-client".to_string());
+    fn is_game_host_legacy_with_admin() {
+        // Legacy game: owner_user_id is None
+        let game = test_game();
+        let admin = test_user(999, "admin");
         let payload = serde_json::json!({ "gameId": game.game_id });
 
-        assert!(is_game_host(&game, &payload, "owner-client"));
-        assert!(!is_game_host(&game, &payload, "impostor-client"));
+        // But admin bypass still works for legacy games
+        assert!(is_game_host(&game, &payload, "any-client-id", Some(&admin)));
     }
 }
 

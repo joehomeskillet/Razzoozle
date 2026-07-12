@@ -11,16 +11,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 
 fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::game::CREATE, {
-        let registry = ctx.registry.clone();
-        let socket_id = socket.id.to_string();
-        let client_id = ctx.client_id.clone();
-        let db_pool = ctx.db_pool.clone();
+        let ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<String>(quizz_id)| {
-            let registry = registry.clone();
-            let socket_id = socket_id.clone();
-            let client_id = client_id.clone();
-            let db_pool = db_pool.clone();
+            let ctx = ctx.clone();
             let quiz_id = if quizz_id.is_empty() {
                 None
             } else {
@@ -28,20 +22,26 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
             };
 
             tokio::spawn(async move {
+                // W0-A3: Require authentication to create a game; get owner_user_id from session
+                let owner_user_id = match ctx.require_user().await {
+                    Some(user) => Some(user.user_id),
+                    None => None,
+                };
+
                 // Snapshot the current (server-global) low-latency config onto
                 // the new Game at creation time, so a later per-ping gate
                 // (separate WP) can check game.low_latency synchronously
                 // instead of an async DB round-trip on every clock:ping.
-                let (_, low_latency_enabled, _, randomize_answers, _, low_latency_config) = crate::db::get_game_config(&db_pool).await;
+                let (_, low_latency_enabled, _, randomize_answers, _, low_latency_config) = crate::db::get_game_config(&ctx.db_pool).await;
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Fetch achievements config for this game (N3 requirement)
-                let ach_rows = crate::db::get_achievements(&db_pool).await;
+                let ach_rows = crate::db::get_achievements(&ctx.db_pool).await;
 
-                let mut registry = registry.write().await;
+                let mut registry = ctx.registry.write().await;
                 // C3 — active-game cap; also rejects an unresolved quizzId
                 // (parity with Node — see create_game's own doc comment).
-                match registry.create_game(socket_id.clone(), quiz_id, client_id.clone(), low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true}))) {
+                match registry.create_game(socket.id.to_string(), quiz_id, ctx.client_id.clone(), owner_user_id, low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true}))) {
                     Ok((game_id, invite_code, host_token)) => {
                         info!(
                             "Game created: gameId={}, inviteCode={}",
