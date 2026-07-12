@@ -235,7 +235,7 @@ const Result = ({
           </div>
         </motion.div>
       )}
-      <h2 className="mt-1 text-4xl font-bold text-[color:var(--game-fg)]">
+      <h2 className="mt-1 text-4xl font-bold text-[color:var(--game-fg)] text-center">
         {t(message)}
       </h2>
       {showRank && (
