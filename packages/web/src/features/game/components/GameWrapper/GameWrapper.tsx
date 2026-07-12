@@ -27,7 +27,7 @@ import {
   EASE,
 } from "@razzoozle/web/features/game/animation/presets"
 import { LogOut, Maximize } from "lucide-react"
-import { type PropsWithChildren, useEffect, useState } from "react"
+import { type PropsWithChildren, useEffect, useState, useRef } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -59,6 +59,7 @@ const GameWrapper = ({
   const reveal = useReveal()
   const [isDisabled, setIsDisabled] = useState(false)
   const [autoOn, setAutoOn] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const toggleAuto = () => {
     const nextAuto = !autoOn
@@ -98,6 +99,11 @@ const GameWrapper = ({
   })
 
   useEffect(() => {
+    // Clear any pending timeout when status changes (action succeeded)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setIsDisabled(false)
   }, [statusName])
 
@@ -108,6 +114,13 @@ const GameWrapper = ({
 
   const handleNext = () => {
     setIsDisabled(true)
+    // Arm a timeout: if no new status arrives within ~5s, re-enable the button
+    // so the host can retry instead of being permanently stuck. Clear the
+    // timeout if statusName changes (status effect above handles it).
+    timeoutRef.current = setTimeout(() => {
+      setIsDisabled(false)
+      timeoutRef.current = null
+    }, 5000)
     onNext?.()
   }
 
