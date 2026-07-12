@@ -98,7 +98,7 @@ const Responses = ({
                 {(acceptedAnswers ?? []).map((a) => (
                   <span
                     key={a}
-                    className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-green-800"
+                    className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-[var(--answer-text)]"
                   >
                     {a}
                   </span>
@@ -129,14 +129,14 @@ const Responses = ({
                       className={clsx(
                         "flex items-center justify-between rounded-xl px-4 py-2",
                         isMatch
-                          ? "bg-[var(--state-correct-soft)] text-green-800"
+                          ? "bg-[var(--state-correct-soft)] text-[var(--answer-text)]"
                           : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
                       )}
                     >
                       <span className="font-semibold">{text}</span>
                       <span className="ml-4 flex shrink-0 items-center gap-2 font-bold">
                         {count}
-                        {isMatch && <Check className="size-4 text-green-400" />}
+                        {isMatch && <Check className="size-4 text-[var(--state-correct)]" />}
                       </span>
                     </motion.div>
                   )
@@ -236,10 +236,11 @@ const Responses = ({
 
       {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
         <div>
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (
               <AnswerButton
                 key={key}
+                colorIndex={key}
                 label={answerLabel(key)}
                 correct={solutionList.includes(key)}
               >

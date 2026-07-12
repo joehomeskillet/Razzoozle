@@ -235,7 +235,7 @@ const Result = ({
           </div>
         </motion.div>
       )}
-      <h2 className="mt-1 text-4xl font-bold text-[color:var(--game-fg)] text-center">
+      <h2 className="mt-1 text-4xl md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)] font-bold text-[color:var(--game-fg)] text-center">
         {t(message)}
       </h2>
       {showRank && (
@@ -248,7 +248,7 @@ const Result = ({
       {/* W1-D FIX 1: the question is over, so reveal the correct answer on the
           wrong-answer (Too bad) screen. Never shown for poll or correct. */}
       {!poll && !correct && correctAnswer && (
-        <p className="mt-2 text-lg font-semibold text-[color:var(--game-fg)]">
+        <p className="mt-2 text-lg md:text-2xl lg:text-[clamp(1.5rem,3.5vh,3rem)] font-semibold text-[color:var(--game-fg)]">
           {t("game:slider.correctAnswer")}: <Markdown>{correctAnswer}</Markdown>
         </p>
       )}
@@ -256,7 +256,7 @@ const Result = ({
         // Points payoff: emphasised pop, delayed a touch behind the verdict so
         // the score reads as the reward beat. Opacity-only when reduced.
         <motion.span
-          className="mt-2 rounded-[var(--radius-theme)] bg-[color:var(--color-field-ink)] px-4 py-2 text-2xl font-bold text-white tabular-nums"
+          className="mt-2 rounded-[var(--radius-theme)] bg-white border border-[var(--border-hairline)] px-4 py-2 text-2xl md:text-4xl lg:text-[clamp(1.75rem,4vh,3.5rem)] font-bold text-[var(--answer-text)] tabular-nums"
           variants={reveal.pop(0.7)}
           initial="hidden"
           animate="visible"
