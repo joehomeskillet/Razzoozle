@@ -98,7 +98,7 @@ const Responses = ({
                 {(acceptedAnswers ?? []).map((a) => (
                   <span
                     key={a}
-                    className="rounded-full bg-[var(--state-correct-soft)] px-3 py-1 text-sm font-semibold text-[var(--answer-text)]"
+                    className="rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)] font-semibold text-[var(--answer-text)]"
                   >
                     {a}
                   </span>
@@ -127,7 +127,7 @@ const Responses = ({
                       variants={reveal.item()}
                       transition={reveal.spring}
                       className={clsx(
-                        "flex items-center justify-between rounded-xl px-4 py-2",
+                        "flex items-center justify-between rounded-xl px-5 py-3 text-lg md:px-6 md:py-4 md:text-2xl lg:text-[clamp(1.25rem,3vh,2.5rem)]",
                         isMatch
                           ? "bg-[var(--state-correct-soft)] text-[var(--answer-text)]"
                           : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
@@ -136,7 +136,7 @@ const Responses = ({
                       <span className="font-semibold">{text}</span>
                       <span className="ml-4 flex shrink-0 items-center gap-2 font-bold">
                         {count}
-                        {isMatch && <Check className="size-4 text-[var(--state-correct)]" />}
+                        {isMatch && <Check className="size-6 md:size-8 lg:size-10 text-[var(--state-correct)]" />}
                       </span>
                     </motion.div>
                   )
