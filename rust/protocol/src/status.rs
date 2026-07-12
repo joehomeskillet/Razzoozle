@@ -99,6 +99,10 @@ pub struct ShowStartData {
 pub struct ShowPreparedData {
     pub total_answers: i32,
     pub question_number: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "type")]
+    #[ts(optional)]
+    pub question_type: Option<String>,
 }
 
 

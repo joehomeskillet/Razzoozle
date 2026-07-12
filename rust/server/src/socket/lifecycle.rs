@@ -245,17 +245,17 @@ async fn open_question(
         }
     };
 
-    let (current, total, total_answers) = {
+    let (current, total, total_answers, question_type) = {
         let game = game_ref.lock().unwrap();
+        let question = game.engine.current_question();
         (
             game.engine.current_question_index as i32 + 1,
             game.engine.quiz.questions.len() as i32,
-            game.engine
-                .current_question()
-                .answers
+            question.answers.as_ref().map(|a| a.len()).unwrap_or(0) as i32,
+            question
+                .r#type
                 .as_ref()
-                .map(|a| a.len())
-                .unwrap_or(0) as i32,
+                .map(|t| question_type_wire(t).to_string()),
         )
     };
 
@@ -268,6 +268,7 @@ async fn open_question(
     let prepared_status = GameStatus::ShowPrepared(ShowPreparedData {
         total_answers,
         question_number: current,
+        question_type,
     });
     broadcast_status(io, game_ref, game_id, &prepared_status);
 
