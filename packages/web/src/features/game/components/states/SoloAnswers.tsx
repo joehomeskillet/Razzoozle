@@ -434,7 +434,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               )}
             >
               {placedChips.length === 0 ? (
-                <span className="text-center w-full text-[var(--answer-text)]/60">
+                <span className="text-center w-full text-[color:var(--game-fg)]/60">
                   {t("game:sentenceBuilder.answerBar", { defaultValue: "Your answer" })}
                 </span>
               ) : (
