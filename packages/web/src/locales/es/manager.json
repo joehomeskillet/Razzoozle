@@ -137,7 +137,8 @@
     "gamemode": "Modo",
     "achievements": "Logros",
     "running": "Partidas en curso",
-    "dev": "Dev"
+    "dev": "Dev",
+    "klassen": "Clases"
   },
   "plugins": {
     "title": "Complementos",
@@ -707,5 +708,43 @@
     "title": "¿Seguro que quieres finalizar la partida?",
     "description": "Se notificará a todos los jugadores y la partida finalizará.",
     "confirm": "Finalizar"
+  },
+  "classes": {
+    "create": "Crear clase",
+    "createTitle": "Crear clase",
+    "createDescription": "Ingresa un nombre para la nueva clase.",
+    "created": "Clase creada",
+    "edit": "Editar clase",
+    "editTitle": "Renombrar clase",
+    "editDescription": "Ingresa un nuevo nombre para la clase.",
+    "editClass": "Editar clase",
+    "updated": "Clase actualizada",
+    "delete": "Eliminar clase",
+    "deleteClass": "Eliminar clase",
+    "deleteTitle": "Eliminar clase",
+    "deleteConfirm": "¿Deseas eliminar la clase \"{{name}}\"? Los estudiantes en esta clase serán eliminados.",
+    "deleted": "Clase eliminada",
+    "none": "No se han creado clases aún",
+    "pleaseCreate": "Por favor, crea una clase primero",
+    "search": "Buscar clase",
+    "searchPlaceholder": "Buscar clases o estudiantes …",
+    "classNamePlaceholder": "Nombre de la clase",
+    "studentNamePlaceholder": "Nombre del estudiante",
+    "students": "Estudiantes",
+    "studentCount": "estudiantes",
+    "addStudent": "Agregar estudiante",
+    "addStudentTitle": "Agregar estudiante",
+    "addStudentDescription": "Ingresa el nombre del estudiante.",
+    "studentAdded": "Estudiante agregado",
+    "editStudent": "Editar estudiante",
+    "editStudentTitle": "Cambiar nombre del estudiante",
+    "editStudentDescription": "Ingresa un nuevo nombre para el estudiante.",
+    "studentUpdated": "Estudiante actualizado",
+    "deleteStudent": "Eliminar estudiante",
+    "deleteStudentTitle": "Eliminar estudiante",
+    "deleteStudentConfirm": "¿Deseas eliminar \"{{name}}\" de la clase?",
+    "studentRemoved": "Estudiante eliminado",
+    "noStudents": "No hay estudiantes en esta clase",
+    "errorEmptyName": "El nombre no puede estar vacío"
   }
 }

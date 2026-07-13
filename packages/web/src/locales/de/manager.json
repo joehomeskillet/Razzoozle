@@ -137,7 +137,8 @@
     "gamemode": "Modus",
     "achievements": "Achievements",
     "running": "Laufende Spiele",
-    "dev": "Dev"
+    "dev": "Dev",
+    "klassen": "Klassen"
   },
   "plugins": {
     "title": "Plugins",
@@ -707,5 +708,43 @@
     "title": "Spiel wirklich beenden?",
     "description": "Alle Spieler werden benachrichtigt und das Spiel wird beendet.",
     "confirm": "Beenden"
+  },
+  "classes": {
+    "create": "Klasse erstellen",
+    "createTitle": "Klasse erstellen",
+    "createDescription": "Gib einen Namen für die neue Klasse ein.",
+    "created": "Klasse erstellt",
+    "edit": "Klasse bearbeiten",
+    "editTitle": "Klasse umbenennen",
+    "editDescription": "Gib einen neuen Namen für die Klasse ein.",
+    "editClass": "Klasse bearbeiten",
+    "updated": "Klasse aktualisiert",
+    "delete": "Klasse löschen",
+    "deleteClass": "Klasse löschen",
+    "deleteTitle": "Klasse löschen",
+    "deleteConfirm": "Möchtest du die Klasse \"{{name}}\" wirklich löschen? Die Schüler in dieser Klasse werden gelöscht.",
+    "deleted": "Klasse gelöscht",
+    "none": "Noch keine Klassen erstellt",
+    "pleaseCreate": "Bitte erstelle zuerst eine Klasse",
+    "search": "Klasse suchen",
+    "searchPlaceholder": "Nach Klasse oder Schüler suchen …",
+    "classNamePlaceholder": "Klassenname",
+    "studentNamePlaceholder": "Schülername",
+    "students": "Schüler",
+    "studentCount": "Schüler",
+    "addStudent": "Schüler hinzufügen",
+    "addStudentTitle": "Schüler hinzufügen",
+    "addStudentDescription": "Gib den Namen des Schülers ein.",
+    "studentAdded": "Schüler hinzugefügt",
+    "editStudent": "Schüler bearbeiten",
+    "editStudentTitle": "Schülernamen ändern",
+    "editStudentDescription": "Gib einen neuen Namen für den Schüler ein.",
+    "studentUpdated": "Schüler aktualisiert",
+    "deleteStudent": "Schüler entfernen",
+    "deleteStudentTitle": "Schüler entfernen",
+    "deleteStudentConfirm": "Möchtest du \"{{name}}\" wirklich aus der Klasse entfernen?",
+    "studentRemoved": "Schüler entfernt",
+    "noStudents": "Keine Schüler in dieser Klasse",
+    "errorEmptyName": "Der Name darf nicht leer sein"
   }
 }

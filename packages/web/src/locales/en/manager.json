@@ -147,7 +147,8 @@
     "achievements": "Achievements",
     "running": "Running Games",
     "dev": "Dev",
-    "profile": "Profile"
+    "profile": "Profile",
+    "klassen": "Classes"
   },
   "plugins": {
     "title": "Plugins",
@@ -721,5 +722,43 @@
   "profile": {
     "welcome": "Welcome",
     "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options."
+  },
+  "classes": {
+    "create": "Create class",
+    "createTitle": "Create class",
+    "createDescription": "Enter a name for the new class.",
+    "created": "Class created",
+    "edit": "Edit class",
+    "editTitle": "Rename class",
+    "editDescription": "Enter a new name for the class.",
+    "editClass": "Edit class",
+    "updated": "Class updated",
+    "delete": "Delete class",
+    "deleteClass": "Delete class",
+    "deleteTitle": "Delete class",
+    "deleteConfirm": "Do you really want to delete the class \"{{name}}\"? Students in this class will be deleted.",
+    "deleted": "Class deleted",
+    "none": "No classes created yet",
+    "pleaseCreate": "Please create a class first",
+    "search": "Search class",
+    "searchPlaceholder": "Search classes or students …",
+    "classNamePlaceholder": "Class name",
+    "studentNamePlaceholder": "Student name",
+    "students": "Students",
+    "studentCount": "students",
+    "addStudent": "Add student",
+    "addStudentTitle": "Add student",
+    "addStudentDescription": "Enter the student name.",
+    "studentAdded": "Student added",
+    "editStudent": "Edit student",
+    "editStudentTitle": "Change student name",
+    "editStudentDescription": "Enter a new name for the student.",
+    "studentUpdated": "Student updated",
+    "deleteStudent": "Remove student",
+    "deleteStudentTitle": "Remove student",
+    "deleteStudentConfirm": "Do you really want to remove \"{{name}}\" from the class?",
+    "studentRemoved": "Student removed",
+    "noStudents": "No students in this class",
+    "errorEmptyName": "Name cannot be empty"
   }
 }

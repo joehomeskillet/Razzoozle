@@ -242,6 +242,25 @@ export const EVENTS = {
     LIST_EXTERNAL_PROVIDERS: "user:listExternalProviders",
     EXTERNAL_PROVIDERS: "user:externalProviders",
   },
+  // Classes and roster management (Klassen-Modus). All events are auth-gated
+  // (require_user) on the server; students belong to a class which belongs to a user.
+  CLASS: {
+    LIST: "class:list",
+    DATA: "class:data",
+    CREATE: "class:create",
+    CREATE_SUCCESS: "class:createSuccess",
+    UPDATE: "class:update",
+    UPDATE_SUCCESS: "class:updateSuccess",
+    DELETE: "class:delete",
+    DELETE_SUCCESS: "class:deleteSuccess",
+    ADD_STUDENT: "class:addStudent",
+    STUDENT_ADDED: "class:studentAdded",
+    REMOVE_STUDENT: "class:removeStudent",
+    STUDENT_REMOVED: "class:studentRemoved",
+    UPDATE_STUDENT: "class:updateStudent",
+    STUDENT_UPDATED: "class:studentUpdated",
+    ERROR: "class:error",
+  },
 } as const
 
 // Insecure placeholder; password-based display pairing is refused while this is unchanged.

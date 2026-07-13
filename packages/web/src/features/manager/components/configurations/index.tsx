@@ -17,6 +17,7 @@ import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/config
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
 import ConfigUsers from "@razzoozle/web/features/manager/components/configurations/ConfigUsers"
+import ConfigKlassen from "@razzoozle/web/features/manager/components/configurations/klassen"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
@@ -30,6 +31,7 @@ import defaultLogo from "@razzoozle/web/assets/logo.svg"
 import {
   Award,
   ClipboardList,
+  GraduationCap,
   Images,
   Library,
   type LucideIcon,
@@ -93,6 +95,12 @@ const BUILTIN_TABS: TabDef[] = [
     nameKey: "manager:tabs.catalog",
     icon: Library,
     component: ConfigCatalog,
+  },
+  {
+    key: "klassen",
+    nameKey: "manager:tabs.klassen",
+    icon: GraduationCap,
+    component: ConfigKlassen,
   },
   {
     key: "media",

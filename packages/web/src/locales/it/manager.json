@@ -128,7 +128,8 @@
     "gamemode": "Modalità",
     "achievements": "Obiettivi",
     "running": "Partite in corso",
-    "dev": "Dev"
+    "dev": "Dev",
+    "klassen": "Classi"
   },
   "plugins": {
     "title": "Plugin",
@@ -707,5 +708,43 @@
     "title": "Terminare davvero la partita?",
     "description": "Tutti i giocatori verranno avvisati e la partita terminerà.",
     "confirm": "Termina"
+  },
+  "classes": {
+    "create": "Crea classe",
+    "createTitle": "Crea classe",
+    "createDescription": "Immetti un nome per la nuova classe.",
+    "created": "Classe creata",
+    "edit": "Modifica classe",
+    "editTitle": "Rinomina classe",
+    "editDescription": "Immetti un nuovo nome per la classe.",
+    "editClass": "Modifica classe",
+    "updated": "Classe aggiornata",
+    "delete": "Elimina classe",
+    "deleteClass": "Elimina classe",
+    "deleteTitle": "Elimina classe",
+    "deleteConfirm": "Vuoi davvero eliminare la classe \"{{name}}\"? Gli studenti in questa classe saranno eliminati.",
+    "deleted": "Classe eliminata",
+    "none": "Nessuna classe creata ancora",
+    "pleaseCreate": "Crea prima una classe",
+    "search": "Cerca classe",
+    "searchPlaceholder": "Cerca classi o studenti …",
+    "classNamePlaceholder": "Nome della classe",
+    "studentNamePlaceholder": "Nome dello studente",
+    "students": "Studenti",
+    "studentCount": "studenti",
+    "addStudent": "Aggiungi studente",
+    "addStudentTitle": "Aggiungi studente",
+    "addStudentDescription": "Immetti il nome dello studente.",
+    "studentAdded": "Studente aggiunto",
+    "editStudent": "Modifica studente",
+    "editStudentTitle": "Cambia nome dello studente",
+    "editStudentDescription": "Immetti un nuovo nome per lo studente.",
+    "studentUpdated": "Studente aggiornato",
+    "deleteStudent": "Rimuovi studente",
+    "deleteStudentTitle": "Rimuovi studente",
+    "deleteStudentConfirm": "Vuoi davvero rimuovere \"{{name}}\" dalla classe?",
+    "studentRemoved": "Studente rimosso",
+    "noStudents": "Nessuno studente in questa classe",
+    "errorEmptyName": "Il nome non può essere vuoto"
   }
 }
