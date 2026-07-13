@@ -53,22 +53,16 @@ UPDATE themes SET owner_id = 1 WHERE owner_id IS NULL;
 -- ============================================================================
 -- Backfill submit_token for existing users
 -- ============================================================================
--- Use pgcrypto encode(gen_random_bytes(16),'hex') if available;
--- fall back to MD5 if pgcrypto not installed.
+-- CSPRNG token via pgcrypto gen_random_bytes (required — no weak md5 fallback).
+-- pgcrypto is ensured idempotently; a missing/permission-denied extension fails
+-- the migration loudly rather than silently minting guessable capability tokens.
+-- (New tokens are minted in Rust with a CSPRNG; this backfill covers pre-existing rows.)
 -- Idempotent: UPDATE ... WHERE ... IS NULL.
 
-DO $$
-BEGIN
-  -- Try with pgcrypto first (safest)
-  BEGIN
-    UPDATE users SET submit_token = encode(gen_random_bytes(16),'hex')
-      WHERE submit_token IS NULL;
-  EXCEPTION WHEN UNDEFINED_FUNCTION THEN
-    -- Fall back to md5 (always available)
-    UPDATE users SET submit_token = md5(random()::text || id::text || now()::text)
-      WHERE submit_token IS NULL;
-  END;
-END $$;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+UPDATE users SET submit_token = encode(gen_random_bytes(16),'hex')
+  WHERE submit_token IS NULL;
 
 -- ============================================================================
 -- Create unique index on submit_token
