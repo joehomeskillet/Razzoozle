@@ -278,6 +278,17 @@ export interface ServerToClientEvents {
   [EVENTS.USER.EXTERNAL_PROVIDERS]: (_data: {
     providers: AIProviderConfig[]
   }) => void
+
+  // Class-roster manager (server -> client). Owner-scoped; wire contract mirrors
+  // rust/server/src/socket/manager/classes.rs emits.
+  [EVENTS.CLASS.DATA]: (_classes: Array<{ id: number; name: string; createdAt: string }>) => void
+  [EVENTS.CLASS.CREATE_SUCCESS]: (_class: { id: number; name: string }) => void
+  [EVENTS.CLASS.UPDATE_SUCCESS]: () => void
+  [EVENTS.CLASS.DELETE_SUCCESS]: () => void
+  [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string }) => void
+  [EVENTS.CLASS.STUDENT_REMOVED]: () => void
+  [EVENTS.CLASS.STUDENT_UPDATED]: () => void
+  [EVENTS.CLASS.ERROR]: (_message: string) => void
 }
 
 export interface ClientToServerEvents {
@@ -517,6 +528,16 @@ export interface ClientToServerEvents {
   [EVENTS.USER.GET_AI_KEY_STATUS]: () => void
   [EVENTS.USER.DELETE_AI_KEY]: (_payload: { providerId: string }) => void
   [EVENTS.USER.LIST_EXTERNAL_PROVIDERS]: () => void
+
+  // Class-roster manager (client -> server). delete/removeStudent send a bare id
+  // (Rust Data::<i64>); the rest send objects.
+  [EVENTS.CLASS.LIST]: () => void
+  [EVENTS.CLASS.CREATE]: (_payload: { name: string }) => void
+  [EVENTS.CLASS.UPDATE]: (_payload: { id: number; name: string }) => void
+  [EVENTS.CLASS.DELETE]: (_classId: number) => void
+  [EVENTS.CLASS.ADD_STUDENT]: (_payload: { classId: number; displayName: string }) => void
+  [EVENTS.CLASS.REMOVE_STUDENT]: (_studentId: number) => void
+  [EVENTS.CLASS.UPDATE_STUDENT]: (_payload: { id: number; displayName: string }) => void
 
   // Common
   disconnect: () => void

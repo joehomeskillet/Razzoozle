@@ -108,24 +108,6 @@ const ConfigKlassen = () => {
       />
 
       {/* Create Class Dialog */}
-      <AlertDialog
-        open={isCreateDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateName("")
-          }
-          setIsCreateDialogOpen(open)
-        }}
-        title={t("manager:classes.createTitle")}
-        description={t("manager:classes.createDescription")}
-      >
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ display: isCreateDialogOpen ? "flex" : "none" }}
-        />
-      </AlertDialog>
-
-      {/* Custom Create Dialog */}
       {isCreateDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setIsCreateDialogOpen(false)} />
