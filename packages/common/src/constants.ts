@@ -230,6 +230,18 @@ export const EVENTS = {
     RESTORE_SUCCESS: "themeRevision:restoreSuccess",
     ERROR: "themeRevision:error",
   },
+  // Per-user external AI credentials (each user manages only their own keys;
+  // require_user, not admin-only). The server never echoes a stored key back —
+  // GET_AI_KEY_STATUS/AI_KEY_STATUS only ever carry a Record<providerId, boolean>.
+  USER: {
+    SET_AI_KEY: "user:setAiKey",
+    GET_AI_KEY_STATUS: "user:getAiKeyStatus",
+    AI_KEY_STATUS: "user:aiKeyStatus",
+    DELETE_AI_KEY: "user:deleteAiKey",
+    // Server filters the configured text providers to EXTERNAL-only (no local/Ollama).
+    LIST_EXTERNAL_PROVIDERS: "user:listExternalProviders",
+    EXTERNAL_PROVIDERS: "user:externalProviders",
+  },
 } as const
 
 // Insecure placeholder; password-based display pairing is refused while this is unchanged.

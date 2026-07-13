@@ -4,7 +4,11 @@ import type {
   SubmissionCategory,
   ThemeSlot,
 } from "@razzoozle/common/constants"
-import type { AISettingsPublic, AITestResult } from "@razzoozle/common/types/ai"
+import type {
+  AIProviderConfig,
+  AISettingsPublic,
+  AITestResult,
+} from "@razzoozle/common/types/ai"
 import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import type {
   EndGamePayload,
@@ -265,6 +269,15 @@ export interface ServerToClientEvents {
   // Low-latency observability: compact health snapshot for the host widget.
   // Only emitted to a subscribed manager while low-latency mode is enabled.
   [EVENTS.METRICS.HEALTH]: (_snapshot: MetricsHealthSnapshot) => void
+
+  // Per-user external AI credentials — server → client. STATUS is a
+  // Record<providerId, boolean> (configured true/false), never a secret.
+  // EXTERNAL_PROVIDERS carries the instance's configured text providers
+  // filtered to external-only (no local/Ollama).
+  [EVENTS.USER.AI_KEY_STATUS]: (_status: Record<string, boolean>) => void
+  [EVENTS.USER.EXTERNAL_PROVIDERS]: (_data: {
+    providers: AIProviderConfig[]
+  }) => void
 }
 
 export interface ClientToServerEvents {
@@ -494,6 +507,16 @@ export interface ClientToServerEvents {
   ) => void
   [EVENTS.MEDIA.UPLOAD]: (_payload: unknown) => void
   [EVENTS.MEDIA.DELETE]: (_payload: { id: string }) => void
+
+  // Per-user external AI credentials (client -> server, require_user — every
+  // user manages only their own keys, never admin-only).
+  [EVENTS.USER.SET_AI_KEY]: (_payload: {
+    providerId: string
+    key: string
+  }) => void
+  [EVENTS.USER.GET_AI_KEY_STATUS]: () => void
+  [EVENTS.USER.DELETE_AI_KEY]: (_payload: { providerId: string }) => void
+  [EVENTS.USER.LIST_EXTERNAL_PROVIDERS]: () => void
 
   // Common
   disconnect: () => void
