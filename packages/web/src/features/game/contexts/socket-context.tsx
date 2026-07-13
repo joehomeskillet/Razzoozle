@@ -173,7 +173,14 @@ export const socketClient: TypedSocket = io("/", {
   // server can grant manager privileges without a password prompt. Normal
   // clients only send `clientId` and continue to authenticate via password.
   // Also include sessionToken if the manager has authenticated via HTTP /api/login.
-  auth: () => {
+  // socket.io-client v4 `auth` function form is CALLBACK-based: it receives a
+  // callback and MUST invoke it with the payload. A return-based `() => payload`
+  // silently never fires the callback, so the client never sends the socket.io
+  // CONNECT (`40`) packet — engine.io connects (ws/poll opens, pings flow) but the
+  // namespace never connects, `isConnected` never flips, and the login splash hangs
+  // forever in every real browser. (Node/object-form auth is unaffected, which is
+  // why backend/curl smokes passed.) Regression from dd33e187 (W0-A6 login).
+  auth: (cb) => {
     const store = useManagerStore.getState()
     const payload: Record<string, string> = { clientId }
 
@@ -185,7 +192,7 @@ export const socketClient: TypedSocket = io("/", {
       payload.sessionToken = store.token
     }
 
-    return payload
+    cb(payload)
   },
   // Also expose the token as an HTTP handshake header (`X-Satellite-Token`) on
   // the initial polling request, so a server-side validator can read whichever
