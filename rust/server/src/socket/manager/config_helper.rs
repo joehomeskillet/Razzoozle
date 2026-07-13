@@ -20,13 +20,14 @@ fn scope_me(user: &crate::db::users::AuthUser) -> Option<i64> {
 /// Called after successful auth AND after any quiz/config write operation.
 pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     // Prefer cached/resolved user for owner-scoping; if absent, unfiltered (legacy).
-    let me = match ctx.require_user().await {
+    let user_opt = ctx.require_user().await;
+    let me = match user_opt {
         Some(ref u) => scope_me(u),
         None => None,
     };
 
     let quizz = build_quizz_with_ids(ctx, me).await;
-    let media = db::get_media_list(&ctx.db_pool, me).await;
+    let media = db::get_media_list(&ctx.db_pool, me, None).await;
     let results = db::get_results(&ctx.db_pool, me).await;
     let submissions = db::get_submissions(&ctx.db_pool, me).await;
     let theme_templates = db::get_themes(&ctx.db_pool, me).await;
@@ -41,6 +42,17 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         db::get_game_config(&ctx.db_pool).await;
 
     let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
+
+    // Fetch submit_token for current user (non-admin users only)
+    let submit_token = if let Some(ref user) = user_opt {
+        if user.role != "admin" {
+            db::users::get_submit_token(&ctx.db_pool, user.user_id).await
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     let payload = razzoozle_protocol::manager::ManagerConfig {
         quizz: serde_json::Value::Array(quizz),
@@ -68,6 +80,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         },
         plugins: Some(plugins),
         observability: None,
+        submit_token,
     };
 
     socket.emit(constants::manager::CONFIG, &payload).ok();

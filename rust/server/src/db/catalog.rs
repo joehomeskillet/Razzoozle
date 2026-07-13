@@ -89,24 +89,57 @@ pub async fn insert_catalog_entry_with_tags(
     .map_err(|e| e.to_string())
 }
 
+
 /// Fetch all catalog entries as an array of JSON objects (matches the
 /// Node `CatalogEntry` shape: id, question, tags, source, addedAt).
 /// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
-pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
+/// `scope`: "all" (default) = ($me IS NULL OR owner_id = $me OR is_global = true)
+///          "own" = ($me IS NULL OR owner_id = $me)
+///          "global" = is_global = true
+pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&str>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return vec![],
     };
 
-    let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>)> = sqlx::query_as(
-        "SELECT id, question, tags, source, added_at FROM catalog_entries \
-         WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
-         ORDER BY added_at DESC"
-    )
-    .bind(me)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let scope_filter = scope.unwrap_or("all");
+    
+    let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>)> = 
+        match scope_filter {
+            "own" => {
+                sqlx::query_as(
+                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
+                     WHERE ($1::bigint IS NULL OR owner_id = $1) \
+                     ORDER BY added_at DESC"
+                )
+                .bind(me)
+                .fetch_all(pool)
+                .await
+                .unwrap_or_default()
+            }
+            "global" => {
+                sqlx::query_as(
+                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
+                     WHERE is_global = true \
+                     ORDER BY added_at DESC"
+                )
+                .fetch_all(pool)
+                .await
+                .unwrap_or_default()
+            }
+            _ => {
+                // "all" or unknown → default to all
+                sqlx::query_as(
+                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
+                     WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
+                     ORDER BY added_at DESC"
+                )
+                .bind(me)
+                .fetch_all(pool)
+                .await
+                .unwrap_or_default()
+            }
+        };
 
     rows.iter()
         .map(|(id, question, tags, source, added_at)| {

@@ -63,7 +63,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::media::LIST, {
         let ctx = ctx.clone();
 
-        move |socket: SocketRef| {
+        move |socket: SocketRef, Data::<Option<serde_json::Value>>(payload)| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
@@ -79,8 +79,14 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
                 };
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
+                // Extract optional scope from payload
+                let scope = payload
+                    .as_ref()
+                    .and_then(|p| p.get("scope"))
+                    .and_then(|v| v.as_str());
+
                 // Query media assets from the shared DB and emit the list.
-                let media_list = db::get_media_list(&ctx.db_pool, me).await;
+                let media_list = db::get_media_list(&ctx.db_pool, me, scope).await;
                 socket.emit(constants::media::DATA, &media_list).ok();
             });
         }
@@ -221,7 +227,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                 {
                     Ok(_) => {
                         socket.emit(constants::media::UPLOAD_SUCCESS, &()).ok();
-                        let media_list = db::get_media_list(&ctx.db_pool, me).await;
+                        let media_list = db::get_media_list(&ctx.db_pool, me, None).await;
                         socket.emit(constants::media::DATA, &media_list).ok();
                     }
                     Err(e) => {
@@ -329,7 +335,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 // Emit updated list
-                let media_list = db::get_media_list(&ctx.db_pool, me).await;
+                let media_list = db::get_media_list(&ctx.db_pool, me, None).await;
                 socket.emit(constants::media::DATA, &media_list).ok();
             });
         }

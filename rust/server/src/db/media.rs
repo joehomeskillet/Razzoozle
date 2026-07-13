@@ -4,27 +4,72 @@ use sqlx::PgPool;
 /// Returns a vector of serde_json objects with the shape matching Node's MediaMeta.
 /// Returns empty vec if pool is None or DB query fails.
 /// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
-pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
+/// `scope`: "all" (default) = ($me IS NULL OR owner_id = $me OR is_global = true)
+///          "own" = ($me IS NULL OR owner_id = $me)
+///          "global" = is_global = true
+pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&str>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
     };
 
+    let scope_filter = scope.unwrap_or("all");
+
     let rows: Vec<(String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)> =
-        match sqlx::query_as(
-            "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
-             FROM media_assets \
-             WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
-             ORDER BY uploaded_at DESC"
-        )
-        .bind(me)
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch media_assets from database: {}", e);
-                return Vec::new();
+        match scope_filter {
+            "own" => {
+                match sqlx::query_as(
+                    "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
+                     FROM media_assets \
+                     WHERE ($1::bigint IS NULL OR owner_id = $1) \
+                     ORDER BY uploaded_at DESC"
+                )
+                .bind(me)
+                .fetch_all(pool)
+                .await
+                {
+                    Ok(rows) => rows,
+                    Err(e) => {
+                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        return Vec::new();
+                    }
+                }
+            }
+            "global" => {
+                match sqlx::query_as(
+                    "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
+                     FROM media_assets \
+                     WHERE is_global = true \
+                     ORDER BY uploaded_at DESC"
+                )
+                .fetch_all(pool)
+                .await
+                {
+                    Ok(rows) => rows,
+                    Err(e) => {
+                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        return Vec::new();
+                    }
+                }
+            }
+            _ => {
+                // "all" or unknown → default to all
+                match sqlx::query_as(
+                    "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
+                     FROM media_assets \
+                     WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
+                     ORDER BY uploaded_at DESC"
+                )
+                .bind(me)
+                .fetch_all(pool)
+                .await
+                {
+                    Ok(rows) => rows,
+                    Err(e) => {
+                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        return Vec::new();
+                    }
+                }
             }
         };
 

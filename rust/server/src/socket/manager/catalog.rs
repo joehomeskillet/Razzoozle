@@ -57,7 +57,7 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::catalog::LIST, {
         let ctx = ctx.clone();
 
-        move |socket: SocketRef| {
+        move |socket: SocketRef, Data::<Option<serde_json::Value>>(payload)| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
@@ -73,8 +73,14 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
                 };
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
+                // Extract optional scope from payload
+                let scope = payload
+                    .as_ref()
+                    .and_then(|p| p.get("scope"))
+                    .and_then(|v| v.as_str());
+
                 // Fetch and emit catalog data
-                let catalog = db::get_catalog(&ctx.db_pool, me).await;
+                let catalog = db::get_catalog(&ctx.db_pool, me, scope).await;
                 socket.emit(constants::catalog::DATA, &catalog).ok();
             });
         }
@@ -152,7 +158,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me, None).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Err(e) => {
@@ -229,7 +235,7 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me, None).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Ok(_) => {
@@ -281,7 +287,7 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 match db::delete_catalog_entry(&ctx.db_pool, &id, me).await {
                     Ok(n) if n > 0 => {
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me, None).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Ok(_) => {

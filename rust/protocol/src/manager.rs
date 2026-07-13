@@ -345,6 +345,8 @@ pub struct ManagerConfig {
     pub plugins: Option<Vec<InstalledPlugin>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability: Option<Observability>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub submit_token: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

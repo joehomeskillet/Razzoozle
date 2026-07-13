@@ -78,6 +78,29 @@ pub async fn owner_by_submit_token(
     Ok(result.map(|(id,)| id))
 }
 
+/// Get the submit_token for a given user id.
+/// Returns None if the user is not found, inactive, or has no token.
+pub async fn get_submit_token(
+    pool: &Option<PgPool>,
+    user_id: i64,
+) -> Option<String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return None,
+    };
+
+    let result = sqlx::query_as::<_, (String,)>(
+        "SELECT submit_token FROM users WHERE id = $1 AND active = true",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    result.map(|(token,)| token)
+}
+
 /// Find a user by username for login. Returns (user_id, password_hash, role, active).
 pub async fn find_user_for_login(
     pool: &PgPool,
