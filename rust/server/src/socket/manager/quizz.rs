@@ -138,6 +138,7 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Validate the quizz payload: {subject: string, questions: Question[]}
                 let subject = payload.get("subject").and_then(|v| v.as_str());
@@ -163,8 +164,18 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        match db::upsert_quiz(&ctx.db_pool, &id, subj, questions_json, theme_id.map(|s| s.to_string()), Some(user.user_id)).await {
-                            Ok(_quiz_id) => {
+                        match db::upsert_quiz(
+                            &ctx.db_pool,
+                            &id,
+                            subj,
+                            questions_json,
+                            theme_id.map(|s| s.to_string()),
+                            Some(user.user_id),
+                            me,
+                        )
+                        .await
+                        {
+                            Ok(n) if n > 0 => {
                                 // Reload registry from DB (unfiltered — runtime needs all quizzes)
                                 {
                                     let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
@@ -175,6 +186,11 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                                 let response = serde_json::json!({ "id": id });
                                 socket.emit(constants::quizz::SAVE_SUCCESS, &response).ok();
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
+                            }
+                            Ok(_) => {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                             }
                             Err(e) => {
                                 socket.emit(constants::quizz::ERROR, &e).ok();
@@ -241,8 +257,18 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json, theme_id.map(|s| s.to_string()), Some(user.user_id)).await {
-                            Ok(_quiz_id) => {
+                        match db::upsert_quiz(
+                            &ctx.db_pool,
+                            quiz_id,
+                            subj,
+                            questions_json,
+                            theme_id.map(|s| s.to_string()),
+                            Some(user.user_id),
+                            me,
+                        )
+                        .await
+                        {
+                            Ok(n) if n > 0 => {
                                 // Reload registry from DB so a live game uses the edited quiz
                                 {
                                     let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
@@ -253,6 +279,11 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                                 let response = serde_json::json!({ "id": quiz_id });
                                 socket.emit(constants::quizz::UPDATE_SUCCESS, &response).ok();
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
+                            }
+                            Ok(_) => {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                             }
                             Err(e) => {
                                 socket.emit(constants::quizz::ERROR, &e).ok();
@@ -276,7 +307,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -285,14 +316,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 if let Err(e) = safe_asset_id(&id) {
                     socket.emit(constants::quizz::ERROR, &e).ok();
                     return;
                 }
 
-                match db::delete_quiz(&ctx.db_pool, &id).await {
-                    Ok(_) => {
+                match db::delete_quiz(&ctx.db_pool, &id, me).await {
+                    Ok(n) if n > 0 => {
                         // Reload registry from DB
                         {
                             let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
@@ -301,6 +333,11 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(_) => {
                         // Node always emits errors:quizz.failedToDelete on delete failure
@@ -403,7 +440,7 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -412,6 +449,7 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Parse payload {id, archived}
                 let id = payload.get("id").and_then(|v| v.as_str());
@@ -424,8 +462,8 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        match db::update_quiz_archived(&ctx.db_pool, id_str, arch).await {
-                            Ok(_) => {
+                        match db::update_quiz_archived(&ctx.db_pool, id_str, arch, me).await {
+                            Ok(n) if n > 0 => {
                                 // Reload registry from DB
                                 {
                                     let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
@@ -434,6 +472,11 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
 
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
+                            }
+                            Ok(_) => {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
                             }
                             Err(e) => {
                                 socket.emit(constants::quizz::ERROR, &e).ok();

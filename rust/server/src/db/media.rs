@@ -106,17 +106,21 @@ pub async fn insert_media_asset(
 }
 
 /// Delete a media asset from the database.
-/// Returns true if a row was deleted, false if not found or on error.
-pub async fn delete_media_asset(pool: &Option<PgPool>, id: &str) -> bool {
+/// Returns true if a row was deleted, false if not found / not owned / error.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+pub async fn delete_media_asset(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> bool {
     let pool = match pool {
         Some(p) => p,
         None => return false,
     };
 
-    match sqlx::query("DELETE FROM media_assets WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await
+    match sqlx::query(
+        "DELETE FROM media_assets WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(id)
+    .bind(me)
+    .execute(pool)
+    .await
     {
         Ok(result) => result.rows_affected() > 0,
         Err(_) => false,
@@ -124,21 +128,48 @@ pub async fn delete_media_asset(pool: &Option<PgPool>, id: &str) -> bool {
 }
 
 /// Delete media assets by slot prefix (theme uploads cleanup).
-/// Deletes all media_assets rows where filename LIKE '<slot>-%' AND source = 'theme'.
-pub async fn delete_media_assets_by_slot(pool: &Option<PgPool>, slot: &str, source: &str) -> Result<(), String> {
+/// Deletes media_assets rows where filename LIKE '<slot>-%' AND source = $source.
+/// Returns Ok(rows_affected).
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+pub async fn delete_media_assets_by_slot(
+    pool: &Option<PgPool>,
+    slot: &str,
+    source: &str,
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Ok(()),
+        None => return Ok(0),
     };
 
     let pattern = format!("{}-%", slot);
-    sqlx::query("DELETE FROM media_assets WHERE filename LIKE $1 AND source = $2")
-        .bind(&pattern)
-        .bind(source)
-        .execute(pool)
-        .await
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    let result = sqlx::query(
+        "DELETE FROM media_assets \
+         WHERE filename LIKE $1 AND source = $2 \
+           AND ($3::bigint IS NULL OR owner_id = $3)",
+    )
+    .bind(&pattern)
+    .bind(source)
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.rows_affected())
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn delete_without_pool_returns_false_or_zero() {
+        assert!(!super::delete_media_asset(&None, "id", Some(1)).await);
+        assert_eq!(
+            super::delete_media_assets_by_slot(&None, "auth", "theme", Some(1))
+                .await
+                .unwrap(),
+            0
+        );
+    }
 }
 
 /// Get media assets with url and data for hydration.

@@ -88,18 +88,22 @@ pub(super) fn delete_media_file(category: &str, filename: &str) -> Result<(), St
     Ok(())
 }
 
-/// Query database for a media asset by ID.
-/// Returns the full media asset object or None if not found.
+/// Query database for a media asset by ID (owner-scoped).
+/// Returns the full media asset object or None if not found / not owned.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
 pub(super) async fn get_media_asset_by_id(
     pool: &Option<sqlx::PgPool>,
     id: &str,
+    me: Option<i64>,
 ) -> Option<serde_json::Value> {
     let pool = pool.as_ref()?;
 
     match sqlx::query_as::<_, (String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)>(
-        "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at FROM media_assets WHERE id = $1"
+        "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
+         FROM media_assets WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
     )
     .bind(id)
+    .bind(me)
     .fetch_optional(pool)
     .await
     {

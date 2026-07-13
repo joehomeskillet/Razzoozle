@@ -222,15 +222,20 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Persist to DB
-                match db::update_catalog_entry(&ctx.db_pool, &id, &question, &tags).await {
-                    Ok(_) => {
+                // Persist to DB (owner-scoped)
+                match db::update_catalog_entry(&ctx.db_pool, &id, &question, &tags, me).await {
+                    Ok(n) if n > 0 => {
                         socket
                             .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool, me).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket.emit(constants::catalog::ERROR, &e).ok();
@@ -272,12 +277,17 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Delete from DB
-                match db::delete_catalog_entry(&ctx.db_pool, &id).await {
-                    Ok(_) => {
+                // Delete from DB (owner-scoped)
+                match db::delete_catalog_entry(&ctx.db_pool, &id, me).await {
+                    Ok(n) if n > 0 => {
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool, me).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket.emit(constants::catalog::ERROR, &e).ok();

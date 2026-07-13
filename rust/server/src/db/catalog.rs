@@ -121,52 +121,69 @@ pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
         .collect()
 }
 
-/// Update a catalog entry's question + tags fields. Returns Err if entry not found.
+/// Update a catalog entry's question + tags fields.
+/// Returns Ok(rows_affected): 0 = not found / not owned.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
 pub async fn update_catalog_entry(
     pool: &Option<PgPool>,
     id: &str,
     question: &serde_json::Value,
     tags: &serde_json::Value,
-) -> Result<(), String> {
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
     };
 
-    let result = sqlx::query("UPDATE catalog_entries SET question = $1, tags = $2 WHERE id = $3")
-        .bind(question)
-        .bind(tags)
-        .bind(id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let result = sqlx::query(
+        "UPDATE catalog_entries SET question = $1, tags = $2 \
+         WHERE id = $3 AND ($4::bigint IS NULL OR owner_id = $4)",
+    )
+    .bind(question)
+    .bind(tags)
+    .bind(id)
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
-    if result.rows_affected() == 0 {
-        return Err("errors:catalog.notFound".to_string());
-    }
-
-    Ok(())
+    Ok(result.rows_affected())
 }
 
-/// Delete a catalog entry by id. Returns Err if entry not found.
+/// Delete a catalog entry by id. Returns Ok(rows_affected): 0 = not found / not owned.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
 pub async fn delete_catalog_entry(
     pool: &Option<PgPool>,
     id: &str,
-) -> Result<(), String> {
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
     };
 
-    let result = sqlx::query("DELETE FROM catalog_entries WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let result = sqlx::query(
+        "DELETE FROM catalog_entries WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(id)
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
-    if result.rows_affected() == 0 {
-        return Err("errors:catalog.notFound".to_string());
+    Ok(result.rows_affected())
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn mutation_without_pool_returns_err() {
+        let q = serde_json::json!({"question": "x"});
+        let tags = serde_json::json!([]);
+        assert!(super::update_catalog_entry(&None, "id", &q, &tags, Some(1))
+            .await
+            .is_err());
+        assert!(super::delete_catalog_entry(&None, "id", Some(1)).await.is_err());
     }
-
-    Ok(())
 }

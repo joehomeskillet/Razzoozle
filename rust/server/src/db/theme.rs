@@ -120,55 +120,83 @@ pub async fn get_theme_templates_full(
 
 /// Upsert a theme template into the database.
 /// If the id already exists, updates name and theme; otherwise inserts a new row.
-/// Returns Ok(()) on success, or Err on database failure.
+/// Returns Ok(rows_affected): 0 = conflict row not owned / no-op.
 /// `owner_id` is stamped on INSERT; not overwritten on conflict.
+/// `me`: None = admin/unguarded DO UPDATE; Some(id) = only update if owner_id matches.
 pub async fn upsert_theme_template(
     pool: &Option<PgPool>,
     id: &str,
     name: &str,
     theme: &serde_json::Value,
     owner_id: Option<i64>,
-) -> Result<(), String> {
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
-        None => return Ok(()), // No pool, silently skip
+        None => return Ok(0), // No pool, silently skip
     };
 
-    sqlx::query(
+    let result = sqlx::query(
         "INSERT INTO themes (id, name, theme, owner_id) VALUES ($1, $2, $3, $4) \
-         ON CONFLICT (id) DO UPDATE SET name = $2, theme = $3, updated_at = CURRENT_TIMESTAMP"
+         ON CONFLICT (id) DO UPDATE SET name = $2, theme = $3, updated_at = CURRENT_TIMESTAMP \
+         WHERE ($5::bigint IS NULL OR themes.owner_id = $5)",
     )
     .bind(id)
     .bind(name)
     .bind(theme)
     .bind(owner_id)
+    .bind(me)
     .execute(pool)
     .await
-    .map(|_| ())
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.rows_affected())
 }
 
 /// Delete a theme template from the database.
 /// Guards against deletion of the 'active' template to match Node's behavior.
-/// Returns Err if the template is not found or is the active theme.
-pub async fn delete_theme_template(pool: &Option<PgPool>, id: &str) -> Result<(), String> {
+/// Returns Ok(rows_affected): 0 = not found / not owned / is active.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+pub async fn delete_theme_template(
+    pool: &Option<PgPool>,
+    id: &str,
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("errors:themeTemplate.notFound".to_string()),
     };
 
-    let result = sqlx::query("DELETE FROM themes WHERE id = $1 AND id != $2")
-        .bind(id)
-        .bind("active")
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let result = sqlx::query(
+        "DELETE FROM themes WHERE id = $1 AND id != $2 \
+         AND ($3::bigint IS NULL OR owner_id = $3)",
+    )
+    .bind(id)
+    .bind("active")
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
-    if result.rows_affected() > 0 {
-        Ok(())
-    } else {
-        warn!("Attempted to delete protected theme template: {}", id);
-        Err(format!("Theme template \"{}\" not found or is the active theme", id))
+    if result.rows_affected() == 0 {
+        warn!("Attempted to delete protected/unowned theme template: {}", id);
+    }
+
+    Ok(result.rows_affected())
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn mutation_without_pool() {
+        let theme = serde_json::json!({});
+        assert_eq!(
+            super::upsert_theme_template(&None, "t", "n", &theme, Some(1), Some(1))
+                .await
+                .unwrap(),
+            0
+        );
+        assert!(super::delete_theme_template(&None, "t", Some(1)).await.is_err());
     }
 }
 

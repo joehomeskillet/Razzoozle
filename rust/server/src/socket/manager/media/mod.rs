@@ -268,12 +268,12 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Get media asset by ID from database
-                let media_entry = match files::get_media_asset_by_id(&ctx.db_pool, id).await {
+                // Get media asset by ID from database (owner-scoped — refuse disk delete if not owned)
+                let media_entry = match files::get_media_asset_by_id(&ctx.db_pool, id, me).await {
                     Some(entry) => entry,
                     None => {
                         socket
-                            .emit(constants::media::ERROR, "errors:media.notFound")
+                            .emit(constants::manager::UNAUTHORIZED, &())
                             .ok();
                         return;
                     }
@@ -320,10 +320,10 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Delete from database
-                if !db::delete_media_asset(&ctx.db_pool, id).await {
+                // Delete from database (owner-scoped)
+                if !db::delete_media_asset(&ctx.db_pool, id, me).await {
                     socket
-                        .emit(constants::media::ERROR, "errors:media.notFound")
+                        .emit(constants::manager::UNAUTHORIZED, &())
                         .ok();
                     return;
                 }

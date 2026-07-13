@@ -52,8 +52,15 @@ fn extension_for_image_mime(mime: &str) -> &'static str {
     }
 }
 
-/// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
-async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPool>, owner_id: Option<i64>) -> Result<String, String> {
+/// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking.
+/// `me` scopes slot cleanup deletes (None = admin can clear any owner's slot assets).
+async fn save_background_image(
+    slot: &str,
+    data_url: &str,
+    db_pool: &Option<PgPool>,
+    owner_id: Option<i64>,
+    me: Option<i64>,
+) -> Result<String, String> {
     let valid_slots = ["auth", "managerGame", "playerGame", "logo"];
     if !valid_slots.contains(&slot) {
         return Err("errors:theme.invalidSlot".to_string());
@@ -65,8 +72,8 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
         return Err("errors:theme.imageTooLarge".to_string());
     }
 
-    // Delete old slot-* entries from media_assets table
-    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme").await;
+    // Delete old slot-* entries from media_assets table (owner-scoped)
+    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme", me).await;
 
     let slot_owned = slot.to_string();
     let buffer_clone = buffer.clone();
@@ -129,8 +136,15 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
     Ok(format!("/media/backgrounds/{}", filename))
 }
 
-/// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
-async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>, owner_id: Option<i64>) -> Result<String, String> {
+/// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking.
+/// `me` scopes slot cleanup deletes (None = admin can clear any owner's slot assets).
+async fn save_sound_file(
+    slot: &str,
+    data_url: &str,
+    db_pool: &Option<PgPool>,
+    owner_id: Option<i64>,
+    me: Option<i64>,
+) -> Result<String, String> {
     let valid_slots = [
         "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
         "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
@@ -149,8 +163,8 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>, o
         return Err("errors:theme.audioTooLarge".to_string());
     }
 
-    // Delete old slot-* entries from media_assets table
-    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme").await;
+    // Delete old slot-* entries from media_assets table (owner-scoped)
+    let _ = db::delete_media_assets_by_slot(db_pool, slot, "theme", me).await;
 
     let slot_owned = slot.to_string();
     let buffer_clone = buffer.clone();
@@ -235,6 +249,7 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),
@@ -256,7 +271,7 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match save_background_image(&slot, &data_url, &ctx.db_pool, Some(user.user_id)).await {
+                match save_background_image(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me).await {
                     Ok(path) => {
                         socket
                             .emit(
@@ -293,6 +308,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),
@@ -314,7 +330,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool, Some(user.user_id)).await {
+                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me).await {
                     Ok(ref_path) => ref_path,
                     Err(error) => {
                         socket

@@ -106,13 +106,18 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Update submission with the new question
+                // Update submission with the new question (owner-scoped)
                 let patch = serde_json::json!({ "question": question });
 
-                match db::update_submission(&ctx.db_pool, &id, &patch).await {
-                    Ok(_) => {
+                match db::update_submission(&ctx.db_pool, &id, &patch, me).await {
+                    Ok(n) if n > 0 => {
                         // Round-trip config back to client
                         config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket
@@ -183,11 +188,16 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         Some(user.user_id),
                     ).await {
                         Ok(_) => {
-                            // Update submission status to "approved"
+                            // Update submission status to "approved" (owner-scoped)
                             let patch = serde_json::json!({ "status": "approved" });
-                            match db::update_submission(&ctx.db_pool, &id, &patch).await {
-                                Ok(_) => {
+                            match db::update_submission(&ctx.db_pool, &id, &patch, me).await {
+                                Ok(n) if n > 0 => {
                                     config_helper::build_and_emit_config(&socket, &ctx).await;
+                                }
+                                Ok(_) => {
+                                    socket
+                                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                        .ok();
                                 }
                                 Err(e) => {
                                     socket
@@ -230,13 +240,13 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Append question to quiz
-                match db::append_question_to_quiz(&ctx.db_pool, &quiz_id, &question_to_append).await {
-                    Ok(_) => {
-                        // Update submission status to "approved"
+                // Append question to quiz (owner-scoped)
+                match db::append_question_to_quiz(&ctx.db_pool, &quiz_id, &question_to_append, me).await {
+                    Ok(n) if n > 0 => {
+                        // Update submission status to "approved" (owner-scoped)
                         let patch = serde_json::json!({ "status": "approved" });
-                        match db::update_submission(&ctx.db_pool, &id, &patch).await {
-                            Ok(_) => {
+                        match db::update_submission(&ctx.db_pool, &id, &patch, me).await {
+                            Ok(n) if n > 0 => {
                                 // Reload quiz registry and emit config
                                 {
                                     let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
@@ -246,12 +256,23 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
 
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
                             }
+                            Ok(_) => {
+                                socket
+                                    .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                    .ok();
+                            }
                             Err(e) => {
                                 socket
                                     .emit(constants::manager::SUBMISSION_ERROR, &e)
                                     .ok();
                             }
                         }
+                    }
+                    Ok(_) => {
+                        // Not found or not owned quiz
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         // Node maps missing quiz to errors:submission.quizzNotFound
@@ -278,7 +299,7 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -287,6 +308,7 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract id (required)
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -339,10 +361,15 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     patch["category"] = serde_json::json!(c);
                 }
 
-                // Update submission
-                match db::update_submission(&ctx.db_pool, &id, &patch).await {
-                    Ok(_) => {
+                // Update submission (owner-scoped)
+                match db::update_submission(&ctx.db_pool, &id, &patch, me).await {
+                    Ok(n) if n > 0 => {
                         config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket

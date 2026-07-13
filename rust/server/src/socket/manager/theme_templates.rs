@@ -156,15 +156,29 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let id = existing_id.unwrap_or_else(|| normalize_filename(&name));
 
-                // Upsert to DB
-                match db::upsert_theme_template(&ctx.db_pool, &id, &name, &theme, Some(user.user_id)).await {
-                    Ok(_) => {
+                // Upsert to DB (owner-scoped DO UPDATE)
+                match db::upsert_theme_template(
+                    &ctx.db_pool,
+                    &id,
+                    &name,
+                    &theme,
+                    Some(user.user_id),
+                    me,
+                )
+                .await
+                {
+                    Ok(n) if n > 0 => {
                         socket.emit(constants::theme_template::SAVE_SUCCESS, &serde_json::json!([])).ok();
                         // Re-emit full list so connected admins stay in sync
                         let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                         socket.emit(constants::theme_template::DATA, &templates).ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket.emit(constants::theme_template::ERROR, &e).ok();
@@ -206,14 +220,19 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Delete from DB
-                match db::delete_theme_template(&ctx.db_pool, &id).await {
-                    Ok(_) => {
+                // Delete from DB (owner-scoped)
+                match db::delete_theme_template(&ctx.db_pool, &id, me).await {
+                    Ok(n) if n > 0 => {
                         // Re-emit full list
                         let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                         socket.emit(constants::theme_template::DATA, &templates).ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
                     }
                     Err(e) => {
                         socket.emit(constants::theme_template::ERROR, &e).ok();

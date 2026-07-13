@@ -118,16 +118,22 @@ pub async fn insert_result(
     .map_err(|e| e.to_string())
 }
 
-pub async fn delete_result(pool: &Option<PgPool>, id: &str) -> bool {
+/// Delete a game result by id.
+/// Returns true if a row was deleted, false if not found / not owned / error.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+pub async fn delete_result(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> bool {
     let pool = match pool {
         Some(p) => p,
         None => return false,
     };
 
-    match sqlx::query("DELETE FROM game_results WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await
+    match sqlx::query(
+        "DELETE FROM game_results WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(id)
+    .bind(me)
+    .execute(pool)
+    .await
     {
         Ok(result) => result.rows_affected() > 0,
         Err(_) => false,
@@ -146,14 +152,21 @@ mod tests {
         // - Contains 3 digits for milliseconds before Z
         let now = chrono::Utc::now();
         let formatted = now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
-        
+
         assert_eq!(formatted.len(), 24, "Timestamp should be exactly 24 chars: {}", formatted);
         assert!(formatted.ends_with('Z'), "Timestamp should end with Z: {}", formatted);
-        
+
         // Verify format: YYYY-MM-DDTHH:MM:SS.sssZ
         // Position 19 should be '.', position 23 should be 'Z'
         let chars: Vec<char> = formatted.chars().collect();
         assert_eq!(chars[19], '.', "Char at position 19 should be '.': {}", formatted);
         assert_eq!(chars[23], 'Z', "Char at position 23 should be 'Z': {}", formatted);
+    }
+
+    #[tokio::test]
+    async fn delete_without_pool_returns_false() {
+        // Non-owner path is SQL-guarded; without a pool the call is a no-op fail-closed.
+        assert!(!delete_result(&None, "any-id", Some(99)).await);
+        assert!(!delete_result(&None, "any-id", None).await);
     }
 }

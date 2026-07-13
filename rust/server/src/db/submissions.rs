@@ -162,11 +162,14 @@ pub async fn insert_submission(
 
 /// Update submission with a partial patch. Only updates fields present in the patch.
 /// Supports: status, rejectionReason, category, question.
+/// Returns Ok(rows_affected): 0 = not found / not owned (or empty patch).
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
 pub async fn update_submission(
     pool: &Option<PgPool>,
     id: &str,
     patch: &serde_json::Value,
-) -> Result<(), String> {
+    me: Option<i64>,
+) -> Result<u64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
@@ -175,56 +178,76 @@ pub async fn update_submission(
     let patch_obj = patch.as_object().ok_or("patch must be an object")?;
 
     if patch_obj.is_empty() {
-        return Ok(()); // Nothing to update
+        return Ok(0); // Nothing to update
     }
 
-    // Build a simple SQL query for each field; chain multiple updates if needed
-    let mut updates = Vec::new();
+    let owner_clause = " AND ($3::bigint IS NULL OR owner_id = $3)";
+    let mut max_affected: u64 = 0;
 
     if let Some(status) = patch_obj.get("status").and_then(|v| v.as_str()) {
-        updates.push((
-            "UPDATE submissions SET status = $1, updated_at = now() WHERE id = $2",
-            status.to_string(),
-        ));
-    }
-
-    if let Some(reason) = patch_obj.get("rejectionReason").and_then(|v| v.as_str()) {
-        updates.push((
-            "UPDATE submissions SET rejection_reason = $1, updated_at = now() WHERE id = $2",
-            reason.to_string(),
-        ));
-    }
-
-    if let Some(category) = patch_obj.get("category").and_then(|v| v.as_str()) {
-        updates.push((
-            "UPDATE submissions SET category = $1, updated_at = now() WHERE id = $2",
-            category.to_string(),
-        ));
-    }
-
-    if let Some(question) = patch_obj.get("question") {
-        // For question, we need to handle JSON differently
-        sqlx::query(
-            "UPDATE submissions SET question = $1, updated_at = now() WHERE id = $2"
-        )
-        .bind(question)
+        let result = sqlx::query(&format!(
+            "UPDATE submissions SET status = $1, updated_at = now() WHERE id = $2{owner_clause}"
+        ))
+        .bind(status)
         .bind(id)
+        .bind(me)
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;
+        max_affected = max_affected.max(result.rows_affected());
     }
 
-    // Execute non-JSON updates
-    for (query_str, value) in updates {
-        sqlx::query(query_str)
-            .bind(&value)
-            .bind(id)
-            .execute(pool)
+    if let Some(reason) = patch_obj.get("rejectionReason").and_then(|v| v.as_str()) {
+        let result = sqlx::query(&format!(
+            "UPDATE submissions SET rejection_reason = $1, updated_at = now() WHERE id = $2{owner_clause}"
+        ))
+        .bind(reason)
+        .bind(id)
+        .bind(me)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        max_affected = max_affected.max(result.rows_affected());
+    }
+
+    if let Some(category) = patch_obj.get("category").and_then(|v| v.as_str()) {
+        let result = sqlx::query(&format!(
+            "UPDATE submissions SET category = $1, updated_at = now() WHERE id = $2{owner_clause}"
+        ))
+        .bind(category)
+        .bind(id)
+        .bind(me)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        max_affected = max_affected.max(result.rows_affected());
+    }
+
+    if let Some(question) = patch_obj.get("question") {
+        let result = sqlx::query(&format!(
+            "UPDATE submissions SET question = $1, updated_at = now() WHERE id = $2{owner_clause}"
+        ))
+        .bind(question)
+        .bind(id)
+        .bind(me)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        max_affected = max_affected.max(result.rows_affected());
+    }
+
+    Ok(max_affected)
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn update_without_pool_returns_err() {
+        let patch = serde_json::json!({ "status": "approved" });
+        assert!(super::update_submission(&None, "id", &patch, Some(1))
             .await
-            .map_err(|e| e.to_string())?;
+            .is_err());
     }
-
-    Ok(())
 }
 
 /// Fetch a submission by id. Returns the full submission including question, rejectionReason, and category.
