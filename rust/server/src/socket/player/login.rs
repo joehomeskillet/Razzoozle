@@ -111,8 +111,14 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 // once at Game construction (this.joinLocked); Rust's Game
                                 // doesn't cache config, so a per-login DB read is the
                                 // cheapest correct source available today.
-                                let (team_mode_opt, _, join_locked_opt, _, _, _, _, _) = crate::db::get_game_config(&db_pool).await;
+                                let (_, _, join_locked_opt, _, _, _, _, _) = crate::db::get_game_config(&db_pool).await;
                                 let join_locked = join_locked_opt.unwrap_or(false);
+                                
+                                // W1-M2: Read team_mode from per-game snapshot
+                                let team_mode = {
+                                    let game = game_ref.lock().unwrap();
+                                    game.selected_modes.team_mode.unwrap_or(false)
+                                };
 
                                 let (game_id_ret, manager_socket_id, player, total_players) = {
                                     let mut game = game_ref.lock().unwrap();
@@ -200,7 +206,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 // has no per-socket-id room so it would go nowhere.
                                 let wait_status = GameStatus::Wait(WaitData {
                                     text: "game:waitingForPlayers".to_string(),
-                                    team_mode: Some(team_mode_opt.unwrap_or(false)),
+                                    team_mode: Some(team_mode),
                                 });
                                 socket.emit(constants::game::STATUS, &wait_status).ok();
 

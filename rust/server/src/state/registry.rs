@@ -296,7 +296,7 @@ impl GameRegistry {
     /// Candidate games to scan for a given socket_id: the O(1) index hit if
     /// we have one, else every active game (self-healing fallback if the
     /// index is ever incomplete/stale).
-    pub(super) fn socket_lookup_candidates(&self, socket_id: &str) -> Vec<Arc<Mutex<Game>>> {
+    pub fn socket_lookup_candidates(&self, socket_id: &str) -> Vec<Arc<Mutex<Game>>> {
         match self.socket_to_game.get(socket_id) {
             Some(game_id) => self.games_by_id.get(game_id).cloned().into_iter().collect(),
             None => self.games_by_id.values().cloned().collect(),

@@ -131,6 +131,20 @@ impl GameState {
     pub fn set_randomize_answers(&mut self, v: bool) {
         self.randomize_answers = v;
     }
+
+    pub fn set_scoring_mode(&mut self, mode: ScoringMode) {
+        self.scoring_mode = mode;
+    }
+
+    pub fn set_team_mode(&mut self, _v: bool) {
+        // W1-M2: team_mode gating happens via per-game Game.selected_modes
+        // This setter is reserved for future use if needed.
+    }
+
+    pub fn set_klassen_mode(&mut self, _v: bool) {
+        // W1-M2: klassen gating happens via per-game Game.selected_modes
+        // This setter is reserved for future use if needed.
+    }
     pub fn start(&mut self) -> Result<ShowStartData, GameError> {
         if self.phase != GamePhase::ShowRoom {
             return Err(GameError::InvalidTransition {

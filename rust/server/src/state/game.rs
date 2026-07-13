@@ -3,6 +3,7 @@ use razzoozle_engine::state::{GamePhase, GameState};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use razzoozle_protocol::status::{GameStatus, RoundRecapAward, ShowResultData, Status};
+use razzoozle_protocol::game::SelectedModes;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -112,6 +113,8 @@ pub struct Game {
     // to wake the lifecycle loop. None while no auto-advance is armed (mirrors
     // Node's autoTimer). Cancelled on setAuto(false) or when phase changes.
     pub auto_advance_task: Option<JoinHandle<()>>,
+    // W1-M2: Snapshotted mode selections at game creation time (scoring, team, klassen, end-screen).
+    pub selected_modes: SelectedModes,
 }
 
 impl Game {
@@ -167,6 +170,12 @@ impl Game {
             answer_count_push_pending: false,
             bot_manager: None,
             auto_advance_task: None,
+            selected_modes: SelectedModes {
+                scoring_mode: None,
+                team_mode: None,
+                klassen: None,
+                end_screen: None,
+            },
         }
     }
 

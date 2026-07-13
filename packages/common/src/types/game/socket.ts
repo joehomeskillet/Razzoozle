@@ -49,6 +49,18 @@ export interface MessageGameId {
   hostToken?: string
 }
 
+// ---- Mode selection types (W1-M2) ----
+
+export type EndScreen = 'full' | 'top3' | 'private'
+
+export interface SelectedModes {
+  scoringMode?: 'speed' | 'accuracy'
+  teamMode?: boolean
+  klassen?: boolean
+  endScreen?: EndScreen
+}
+
+
 // ---- Low-latency mode contracts (all OPTIONAL / additive) ----------------
 
 // Why a server may accept or reject a submitted answer. Server-authoritative;

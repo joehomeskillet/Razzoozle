@@ -39,8 +39,56 @@ pub struct MessageGameId {
 // C2S Payloads (Client → Server)
 // ============================================================================
 
-/// game:create payload (C2S) — quizzId string
-pub type GameCreate = String;
+/// game:create payload (C2S) — supports both legacy bare quizzId (string) and new
+/// CreateGamePayload with mode selection. Uses serde(untagged) for back-compat.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(untagged)]
+pub enum GameCreate {
+    /// Legacy: old client sends bare quizzId string
+    Legacy(String),
+    /// New: client sends {quizzId, selectedModes}
+    CreatePayload(CreateGamePayload),
+}
+
+/// Game creation payload with optional mode selection
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateGamePayload {
+    pub quizz_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub selected_modes: Option<SelectedModes>,
+}
+
+/// Per-game mode selection snapshot (host's choices at game creation)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectedModes {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub scoring_mode: Option<String>, // "speed" | "accuracy"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub team_mode: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub klassen: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub end_screen: Option<EndScreen>,
+}
+
+/// End-screen display mode (mutually exclusive)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "lowercase")]
+pub enum EndScreen {
+    Full,
+    Top3,
+    Private,
+}
 
 /// player:join payload (C2S) — invite code
 pub type PlayerJoin = String;
@@ -263,5 +311,43 @@ mod tests {
         let json = serde_json::to_value(&ping).unwrap();
         let re_parsed: ClockPing = serde_json::from_value(json).unwrap();
         assert_eq!(re_parsed.client_send_mono_ms, 1234567890123i64);
+    }
+
+    #[test]
+    fn test_game_create_legacy_roundtrip() {
+        let legacy = "quizz-123";
+        let json = serde_json::to_value(legacy).unwrap();
+        let parsed: GameCreate = serde_json::from_value(json).unwrap();
+        assert_eq!(parsed, GameCreate::Legacy("quizz-123".to_string()));
+    }
+
+    #[test]
+    fn test_game_create_payload_roundtrip() {
+        let payload = CreateGamePayload {
+            quizz_id: "quiz-456".to_string(),
+            selected_modes: Some(SelectedModes {
+                scoring_mode: Some("speed".to_string()),
+                team_mode: Some(true),
+                klassen: Some(false),
+                end_screen: Some(EndScreen::Top3),
+            }),
+        };
+        let json = serde_json::to_value(&payload).unwrap();
+        let parsed: GameCreate = serde_json::from_value(json).unwrap();
+        assert!(matches!(parsed, GameCreate::CreatePayload(_)));
+    }
+
+    #[test]
+    fn test_selected_modes_optional() {
+        let modes = SelectedModes {
+            scoring_mode: None,
+            team_mode: Some(false),
+            klassen: None,
+            end_screen: None,
+        };
+        let json = serde_json::to_value(&modes).unwrap();
+        let parsed: SelectedModes = serde_json::from_value(json).unwrap();
+        assert_eq!(parsed.team_mode, Some(false));
+        assert!(parsed.scoring_mode.is_none());
     }
 }

@@ -206,7 +206,8 @@ pub async fn perform_reveal_and_broadcast(
     // Call reveal on engine
     let reveal_result = {
         let mut game = game_ref.lock().unwrap();
-        game.engine.reveal(razzoozle_protocol::status::ScoringMode::Speed).ok()
+        let scoring_mode = game.engine.scoring_mode;
+        game.engine.reveal(scoring_mode).ok()
     };
 
     if let Some(_results) = reveal_result {
