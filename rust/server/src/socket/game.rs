@@ -69,12 +69,27 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                         ScoringMode::Speed
                     };
                     
-                    // End-screen: validate against allow-list, default to Full
+                    // End-screen: validate against CSV allow-list with exact token matching.
+                    // Fall back to first allowed mode if requested is not in allow-list.
                     let end_screen = if let Some(es) = req_end_screen {
-                        // Validate against end_screen_modes allow-list
-                        let allow_list = end_screen_modes.unwrap_or_else(|| "full,top3,private".to_string());
+                        let allow_list_str = end_screen_modes.unwrap_or_else(|| "full,top3,private".to_string());
+                        let allowed_tokens: Vec<&str> = allow_list_str.split(',').map(|s| s.trim()).collect();
                         let es_str = format!("{:?}", es).to_lowercase();
-                        if allow_list.contains(&es_str) { es } else { EndScreen::Full }
+                        
+                        if allowed_tokens.contains(&es_str.as_str()) {
+                            // Requested mode is in allow-list
+                            es
+                        } else if let Some(first_allowed) = allowed_tokens.first() {
+                            // Fall back to first allowed mode
+                            match *first_allowed {
+                                "top3" => EndScreen::Top3,
+                                "private" => EndScreen::Private,
+                                _ => EndScreen::Full,
+                            }
+                        } else {
+                            // Fallback to Full if allow-list is empty (should not happen)
+                            EndScreen::Full
+                        }
                     } else {
                         EndScreen::Full
                     };

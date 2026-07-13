@@ -76,6 +76,12 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
                 "data": data,
             })
         }),
+        "selectedModes": {
+            "scoringMode": game.selected_modes.scoring_mode.clone(),
+            "teamMode": game.selected_modes.team_mode,
+            "klassen": game.selected_modes.klassen,
+            "endScreen": game.selected_modes.end_screen,
+        },
     })
 }
 
@@ -147,6 +153,33 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     if let Some(phase_str) = snap.get("phase").and_then(|v| v.as_str()) {
         engine.phase = restore_phase(phase_str, started);
     }
+
+    // W1-M2: Restore selected_modes from snapshot
+    let selected_modes = snap.get("selectedModes").and_then(|v| {
+        let scoring_mode = v.get("scoringMode").and_then(|s| s.as_str()).map(|s| s.to_string());
+        let team_mode = v.get("teamMode").and_then(|b| b.as_bool());
+        let klassen = v.get("klassen").and_then(|b| b.as_bool());
+        let end_screen = v.get("endScreen").and_then(|e| e.as_str()).and_then(|es| {
+            match es {
+                "top3" => Some(razzoozle_protocol::game::EndScreen::Top3),
+                "private" => Some(razzoozle_protocol::game::EndScreen::Private),
+                "full" => Some(razzoozle_protocol::game::EndScreen::Full),
+                _ => None,
+            }
+        });
+        Some(razzoozle_protocol::game::SelectedModes {
+            scoring_mode,
+            team_mode,
+            klassen,
+            end_screen,
+        })
+    }).unwrap_or(razzoozle_protocol::game::SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+    });
+
 
     let mut game = Game {
         game_id,
