@@ -16,6 +16,7 @@ pub struct AuthUser {
 
 /// Create a new user with username, plaintext password, and role.
 /// Hashes the password using argon2, inserts into users table, returns user id.
+/// Also mints an opaque URL-safe submit_token for the public /submit/:token path.
 pub async fn create_user(
     pool: &PgPool,
     username: &str,
@@ -30,20 +31,51 @@ pub async fn create_user(
         .map_err(|e| format!("Failed to hash password: {}", e))?
         .to_string();
 
+    // Opaque URL-safe submit token (~16 random bytes → base64url), same pattern as mint_session.
+    let submit_token = {
+        let mut rng = rand::thread_rng();
+        let mut token_bytes = [0u8; 16];
+        rng.fill(&mut token_bytes);
+        URL_SAFE_NO_PAD.encode(&token_bytes)
+    };
+
     // Insert into users table
     let result = sqlx::query_as::<_, (i64,)>(
-        "INSERT INTO users (username, password_hash, role, active, created_at) \
-         VALUES ($1, $2, $3, true, now()) \
+        "INSERT INTO users (username, password_hash, role, active, created_at, submit_token) \
+         VALUES ($1, $2, $3, true, now(), $4) \
          RETURNING id"
     )
     .bind(username)
     .bind(&password_hash)
     .bind(role)
+    .bind(&submit_token)
     .fetch_one(pool)
     .await
     .map_err(|e| e.to_string())?;
 
     Ok(result.0)
+}
+
+/// Resolve the owner user id for a public submit token.
+/// Returns None when the token is unknown or the user is inactive.
+pub async fn owner_by_submit_token(
+    pool: &Option<PgPool>,
+    token: &str,
+) -> Result<Option<i64>, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Ok(None),
+    };
+
+    let result = sqlx::query_as::<_, (i64,)>(
+        "SELECT id FROM users WHERE submit_token = $1 AND active = true",
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.map(|(id,)| id))
 }
 
 /// Find a user by username for login. Returns (user_id, password_hash, role, active).

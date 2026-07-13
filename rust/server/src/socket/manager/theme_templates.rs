@@ -64,7 +64,7 @@ fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -73,9 +73,10 @@ fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Fetch and emit full theme templates (with theme payload)
-                let templates = db::get_theme_templates_full(&ctx.db_pool).await;
+                let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                 socket.emit(constants::theme_template::DATA, &templates).ok();
             });
         }
@@ -91,7 +92,7 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -100,6 +101,7 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract name and theme
                 let name = match payload.get("name").and_then(|v| v.as_str()) {
@@ -140,7 +142,7 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                 // (case-insensitive, trimmed)
                 let normalized_name = name.trim().to_lowercase();
                 let existing_id = {
-                    let templates = db::get_theme_templates_full(&ctx.db_pool).await;
+                    let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                     templates
                         .iter()
                         .find(|t| {
@@ -155,11 +157,11 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                 let id = existing_id.unwrap_or_else(|| normalize_filename(&name));
 
                 // Upsert to DB
-                match db::upsert_theme_template(&ctx.db_pool, &id, &name, &theme).await {
+                match db::upsert_theme_template(&ctx.db_pool, &id, &name, &theme, Some(user.user_id)).await {
                     Ok(_) => {
                         socket.emit(constants::theme_template::SAVE_SUCCESS, &serde_json::json!([])).ok();
                         // Re-emit full list so connected admins stay in sync
-                        let templates = db::get_theme_templates_full(&ctx.db_pool).await;
+                        let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                         socket.emit(constants::theme_template::DATA, &templates).ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
@@ -182,7 +184,7 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -191,6 +193,7 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -207,7 +210,7 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 match db::delete_theme_template(&ctx.db_pool, &id).await {
                     Ok(_) => {
                         // Re-emit full list
-                        let templates = db::get_theme_templates_full(&ctx.db_pool).await;
+                        let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
                         socket.emit(constants::theme_template::DATA, &templates).ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
@@ -257,7 +260,7 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -266,6 +269,7 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {

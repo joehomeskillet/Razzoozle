@@ -129,7 +129,7 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -163,11 +163,11 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        match db::upsert_quiz(&ctx.db_pool, &id, subj, questions_json, theme_id.map(|s| s.to_string())).await {
+                        match db::upsert_quiz(&ctx.db_pool, &id, subj, questions_json, theme_id.map(|s| s.to_string()), Some(user.user_id)).await {
                             Ok(_quiz_id) => {
-                                // Reload registry from DB
+                                // Reload registry from DB (unfiltered — runtime needs all quizzes)
                                 {
-                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                                     let mut registry = ctx.registry.write().await;
                                     registry.reload_quizzes(quizzes);
                                 }
@@ -198,7 +198,7 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -207,6 +207,7 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Update an existing quiz in place: {id, subject, questions[]}.
                 // Keeps the SAME id (matches Node updateQuizz, which returns the input id).
@@ -233,18 +234,18 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         // Verify quiz exists before upsert — do not resurrect deleted ids
-                        if !db::quiz_exists(&ctx.db_pool, quiz_id).await {
+                        if !db::quiz_exists(&ctx.db_pool, quiz_id, me).await {
                             socket
                                 .emit(constants::quizz::ERROR, "errors:quizz.notFound")
                                 .ok();
                             return;
                         }
 
-                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json, theme_id.map(|s| s.to_string())).await {
+                        match db::upsert_quiz(&ctx.db_pool, quiz_id, subj, questions_json, theme_id.map(|s| s.to_string()), Some(user.user_id)).await {
                             Ok(_quiz_id) => {
                                 // Reload registry from DB so a live game uses the edited quiz
                                 {
-                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                                     let mut registry = ctx.registry.write().await;
                                     registry.reload_quizzes(quizzes);
                                 }
@@ -294,7 +295,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     Ok(_) => {
                         // Reload registry from DB
                         {
-                            let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                            let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                             let mut registry = ctx.registry.write().await;
                             registry.reload_quizzes(quizzes);
                         }
@@ -321,7 +322,7 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -330,6 +331,7 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Read source quiz from registry
                 let source_quiz = {
@@ -364,13 +366,15 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
                             &new_id,
                             &new_subject,
                             archived,
+                            me,
+                            Some(user.user_id),
                         )
                         .await
                         {
                             Ok(_) => {
                                 // Reload registry from DB
                                 {
-                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                                     let mut registry = ctx.registry.write().await;
                                     registry.reload_quizzes(quizzes);
                                 }
@@ -424,7 +428,7 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                             Ok(_) => {
                                 // Reload registry from DB
                                 {
-                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                                     let mut registry = ctx.registry.write().await;
                                     registry.reload_quizzes(quizzes);
                                 }

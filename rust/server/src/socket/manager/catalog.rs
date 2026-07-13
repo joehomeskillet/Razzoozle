@@ -62,7 +62,7 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -71,9 +71,10 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Fetch and emit catalog data
-                let catalog = db::get_catalog(&ctx.db_pool).await;
+                let catalog = db::get_catalog(&ctx.db_pool, me).await;
                 socket.emit(constants::catalog::DATA, &catalog).ok();
             });
         }
@@ -89,7 +90,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -98,6 +99,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract and validate question
                 let question = match payload.get("question") {
@@ -142,7 +144,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                 let added_at = chrono::Utc::now();
 
                 // Persist to DB
-                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, added_at)
+                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, added_at, Some(user.user_id))
                     .await
                 {
                     Ok(_id) => {
@@ -150,7 +152,7 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Err(e) => {
@@ -171,7 +173,7 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -180,6 +182,7 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract and validate id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -226,7 +229,7 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Err(e) => {
@@ -247,7 +250,7 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -256,6 +259,7 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Validate payload: { id: string }
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -272,7 +276,7 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 match db::delete_catalog_entry(&ctx.db_pool, &id).await {
                     Ok(_) => {
                         // Re-emit full catalog so connected admins stay in sync
-                        let catalog = db::get_catalog(&ctx.db_pool).await;
+                        let catalog = db::get_catalog(&ctx.db_pool, me).await;
                         socket.emit(constants::catalog::DATA, &catalog).ok();
                     }
                     Err(e) => {

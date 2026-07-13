@@ -89,7 +89,7 @@ pub async fn handle_result_og(
     };
 
     // Try to load result and inject OG tags
-    if let Some(result) = get_result_by_id(&state.db_pool, &id).await {
+    if let Some(result) = get_result_by_id(&state.db_pool, &id, None).await {
         if let Some(players) = result.get("players").and_then(|p| p.as_array()) {
             if let Some(first_player) = players.first() {
                 let winner_name = first_player

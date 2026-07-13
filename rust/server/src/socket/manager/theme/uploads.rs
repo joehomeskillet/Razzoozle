@@ -53,7 +53,7 @@ fn extension_for_image_mime(mime: &str) -> &'static str {
 }
 
 /// Save background image with 8 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
-async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -> Result<String, String> {
+async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPool>, owner_id: Option<i64>) -> Result<String, String> {
     let valid_slots = ["auth", "managerGame", "playerGame", "logo"];
     if !valid_slots.contains(&slot) {
         return Err("errors:theme.invalidSlot".to_string());
@@ -121,6 +121,7 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
         None,
         uploaded_at,
         &buffer,
+        owner_id,
     ).await {
         eprintln!("Failed to persist background media asset {} to DB: {}", asset_id, e);
     }
@@ -129,7 +130,7 @@ async fn save_background_image(slot: &str, data_url: &str, db_pool: &Option<PgPo
 }
 
 /// Save sound file with 4 MB cap (blocking I/O wrapped in spawn_blocking) and DB tracking
-async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -> Result<String, String> {
+async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>, owner_id: Option<i64>) -> Result<String, String> {
     let valid_slots = [
         "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
         "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
@@ -209,6 +210,7 @@ async fn save_sound_file(slot: &str, data_url: &str, db_pool: &Option<PgPool>) -
         None,
         uploaded_at,
         &buffer,
+        owner_id,
     ).await {
         eprintln!("Failed to persist sound media asset {} to DB: {}", asset_id, e);
     }
@@ -224,7 +226,7 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -254,7 +256,7 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match save_background_image(&slot, &data_url, &ctx.db_pool).await {
+                match save_background_image(&slot, &data_url, &ctx.db_pool, Some(user.user_id)).await {
                     Ok(path) => {
                         socket
                             .emit(
@@ -282,7 +284,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -312,7 +314,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool).await {
+                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool, Some(user.user_id)).await {
                     Ok(ref_path) => ref_path,
                     Err(error) => {
                         socket

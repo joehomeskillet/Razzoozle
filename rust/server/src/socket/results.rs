@@ -32,7 +32,7 @@ fn register_get_shared(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                if let Some(mut result) = db::get_result_by_id(&ctx.db_pool, &id).await {
+                if let Some(mut result) = db::get_result_by_id(&ctx.db_pool, &id, None).await {
                     if let serde_json::Value::Object(ref mut obj) = result {
                         obj.remove("questions");
                     }
@@ -66,7 +66,7 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -75,12 +75,13 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 if crate::state::safe_asset_id(&id).is_err() {
                     return;
                 }
 
-                if let Some(result) = db::get_result_by_id(&ctx.db_pool, &id).await {
+                if let Some(result) = db::get_result_by_id(&ctx.db_pool, &id, me).await {
                     socket.emit(constants::results::DATA, &result).ok();
                 }
             });

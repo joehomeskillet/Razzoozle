@@ -68,7 +68,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth: verify manager is logged in
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -77,9 +77,10 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Query media assets from the shared DB and emit the list.
-                let media_list = db::get_media_list(&ctx.db_pool).await;
+                let media_list = db::get_media_list(&ctx.db_pool, me).await;
                 socket.emit(constants::media::DATA, &media_list).ok();
             });
         }
@@ -95,7 +96,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -104,6 +105,7 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Validate payload (Zod-like validator). Returns first error message.
                 let (filename, data_url, category) = match validate::validate_upload_payload(&payload) {
@@ -213,12 +215,13 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                     height,
                     uploaded_at,
                     &write_buffer,
+                    Some(user.user_id),
                 )
                 .await
                 {
                     Ok(_) => {
                         socket.emit(constants::media::UPLOAD_SUCCESS, &()).ok();
-                        let media_list = db::get_media_list(&ctx.db_pool).await;
+                        let media_list = db::get_media_list(&ctx.db_pool, me).await;
                         socket.emit(constants::media::DATA, &media_list).ok();
                     }
                     Err(e) => {
@@ -239,7 +242,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -248,6 +251,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Validate payload (Zod-like validator). Returns first error message or the ID.
                 let id = match validate::validate_delete_payload(&payload) {
@@ -325,7 +329,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 // Emit updated list
-                let media_list = db::get_media_list(&ctx.db_pool).await;
+                let media_list = db::get_media_list(&ctx.db_pool, me).await;
                 socket.emit(constants::media::DATA, &media_list).ok();
             });
         }

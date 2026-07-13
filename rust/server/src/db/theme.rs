@@ -4,7 +4,9 @@ use tracing::warn;
 /// Load theme templates from the database.
 /// Returns a vector of serde_json objects with ThemeTemplateMeta shape (id, name).
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's templates.
+/// Note: the 'active' row is never listed here (excluded by id filter).
+pub async fn get_themes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -13,8 +15,12 @@ pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let rows: Vec<(String, String)> =
         // The 'active' row is the theme-mirror written by upsert_theme (name=NULL), not a template — exclude it instead of Option<String>-decoding; Node lists templates from disk and never sees the mirror row.
         match sqlx::query_as(
-            "SELECT id, name FROM themes WHERE id <> 'active' AND name IS NOT NULL ORDER BY id"
+            "SELECT id, name FROM themes \
+             WHERE id <> 'active' AND name IS NOT NULL \
+               AND ($1::bigint IS NULL OR owner_id = $1) \
+             ORDER BY id"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -33,6 +39,7 @@ pub async fn get_themes(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 }
 
 /// Fetch the active theme (currently stored in a dedicated table or config).
+/// The 'active' row is never owner-scoped — always returns the global active theme.
 pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
@@ -51,6 +58,7 @@ pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
 }
 
 /// Save the active theme to the database (upsert).
+/// owner_id is always NULL for id='active' (never owned).
 pub async fn upsert_theme(
     pool: &Option<PgPool>,
     theme_data: &serde_json::Value,
@@ -61,8 +69,8 @@ pub async fn upsert_theme(
     };
 
     sqlx::query(
-        "INSERT INTO themes (id, theme, updated_at) VALUES ('active', $1, now()) \
-         ON CONFLICT (id) DO UPDATE SET theme = $1, updated_at = now()"
+        "INSERT INTO themes (id, theme, updated_at, owner_id) VALUES ('active', $1, now(), NULL) \
+         ON CONFLICT (id) DO UPDATE SET theme = $1, updated_at = now(), owner_id = NULL"
     )
     .bind(theme_data)
     .execute(pool)
@@ -74,7 +82,11 @@ pub async fn upsert_theme(
 /// Load full theme templates from the database with theme payload.
 /// Returns a vector of serde_json objects with ThemeTemplate shape (id, name, theme).
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_theme_templates_full(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's templates.
+pub async fn get_theme_templates_full(
+    pool: &Option<PgPool>,
+    me: Option<i64>,
+) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -83,8 +95,12 @@ pub async fn get_theme_templates_full(pool: &Option<PgPool>) -> Vec<serde_json::
     let rows: Vec<(String, String, serde_json::Value)> =
         // The 'active' row is the theme-mirror written by upsert_theme (name=NULL), not a template — exclude it instead of Option<String>-decoding; Node lists templates from disk and never sees the mirror row.
         match sqlx::query_as(
-            "SELECT id, name, theme FROM themes WHERE id <> 'active' AND name IS NOT NULL ORDER BY id"
+            "SELECT id, name, theme FROM themes \
+             WHERE id <> 'active' AND name IS NOT NULL \
+               AND ($1::bigint IS NULL OR owner_id = $1) \
+             ORDER BY id"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -105,11 +121,13 @@ pub async fn get_theme_templates_full(pool: &Option<PgPool>) -> Vec<serde_json::
 /// Upsert a theme template into the database.
 /// If the id already exists, updates name and theme; otherwise inserts a new row.
 /// Returns Ok(()) on success, or Err on database failure.
+/// `owner_id` is stamped on INSERT; not overwritten on conflict.
 pub async fn upsert_theme_template(
     pool: &Option<PgPool>,
     id: &str,
     name: &str,
     theme: &serde_json::Value,
+    owner_id: Option<i64>,
 ) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
@@ -117,12 +135,13 @@ pub async fn upsert_theme_template(
     };
 
     sqlx::query(
-        "INSERT INTO themes (id, name, theme) VALUES ($1, $2, $3) \
+        "INSERT INTO themes (id, name, theme, owner_id) VALUES ($1, $2, $3, $4) \
          ON CONFLICT (id) DO UPDATE SET name = $2, theme = $3, updated_at = CURRENT_TIMESTAMP"
     )
     .bind(id)
     .bind(name)
     .bind(theme)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| ())

@@ -655,7 +655,7 @@ async fn finish_and_broadcast(
     db_pool: &Option<sqlx::PgPool>,
 ) {
     info!("Game finished: gameId={}", game_id);
-    let (subject, players_json, quiz_id) = {
+    let (subject, players_json, quiz_id, owner_user_id) = {
         let game = game_ref.lock().unwrap();
         let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
             let mut sorted = game.engine.players.clone();
@@ -674,6 +674,7 @@ async fn finish_and_broadcast(
             game.engine.quiz.subject.clone(),
             serde_json::to_value(&players).unwrap_or(serde_json::json!([])),
             Some(game.quiz_id.clone()),
+            game.owner_user_id,
         )
     };
 
@@ -690,7 +691,7 @@ async fn finish_and_broadcast(
         let now = chrono::Utc::now();
         let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
         let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
-        if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref()).await {
+        if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref(), owner_user_id).await {
             warn!("Result persistence failed for gameId={}: {}", gid, e);
         }
     });

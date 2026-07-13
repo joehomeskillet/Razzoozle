@@ -4,7 +4,11 @@ use razzoozle_protocol::quizz::{Question, Quizz};
 /// Load quizzes from the database, keyed by id.
 /// Returns a HashMap of (quiz_id -> Quizz).
 /// Returns empty map if pool is None or DB query fails.
-pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<String, Quizz> {
+/// `me`: None = unfiltered (admin / boot reload); Some(id) = only that owner's rows.
+pub async fn get_quizzes(
+    pool: &Option<PgPool>,
+    me: Option<i64>,
+) -> std::collections::HashMap<String, Quizz> {
     let mut result = std::collections::HashMap::new();
 
     let pool = match pool {
@@ -15,8 +19,10 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
     // Load all quizzes including archived; theme_id is populated from the column.
     let rows: Vec<(String, String, serde_json::Value, Option<bool>, Option<String>)> =
         match sqlx::query_as(
-            "SELECT id, subject, questions, archived, theme_id FROM quizzes ORDER BY id"
+            "SELECT id, subject, questions, archived, theme_id FROM quizzes \
+             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY id"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -55,7 +61,8 @@ pub async fn get_quizzes(pool: &Option<PgPool>) -> std::collections::HashMap<Str
 /// Returns a vector of JSON objects with keys: id, subject, archived, questionCount.
 /// Results are sorted by id (deterministic ordering, required for consistency).
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_quizzes_meta(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
+pub async fn get_quizzes_meta(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -64,8 +71,9 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let rows: Vec<(String, String, Option<bool>, i32)> =
         match sqlx::query_as(
             "SELECT id, subject, archived, jsonb_array_length(COALESCE(questions, '[]')) as question_count \
-             FROM quizzes ORDER BY id"
+             FROM quizzes WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY id"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -93,12 +101,14 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
 /// Upsert a quiz (create or update by id). Takes subject and questions as JSON.
 /// Returns Ok(id) on success, or Err with a descriptive message.
+/// `owner_id` is stamped on INSERT; not overwritten on conflict (preserves original owner).
 pub async fn upsert_quiz(
     pool: &Option<PgPool>,
     id: &str,
     subject: &str,
     questions: serde_json::Value,
     theme_id: Option<String>,
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -106,8 +116,8 @@ pub async fn upsert_quiz(
     };
 
     sqlx::query(
-        "INSERT INTO quizzes (id, subject, questions, archived, theme_id) \
-         VALUES ($1, $2, $3, false, $4) \
+        "INSERT INTO quizzes (id, subject, questions, archived, theme_id, owner_id) \
+         VALUES ($1, $2, $3, false, $4, $5) \
          ON CONFLICT (id) DO UPDATE SET \
              subject = EXCLUDED.subject, \
              questions = EXCLUDED.questions, \
@@ -119,6 +129,7 @@ pub async fn upsert_quiz(
     .bind(subject)
     .bind(questions)
     .bind(theme_id.clone())
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| id.to_string())
@@ -148,6 +159,7 @@ pub async fn delete_quiz(pool: &Option<PgPool>, id: &str) -> Result<(), String> 
 /// Duplicate a quiz: read source by id, copy to new_id with modified subject.
 /// new_subject should be the original subject with " (Kopie)" appended (handled by caller).
 /// `archived` is preserved from the source (caller passes it after SELECT).
+/// `me` scopes the source SELECT; `owner_id` is stamped on the new row.
 /// Returns Ok(new_id) on success, or Err if source not found.
 pub async fn duplicate_quiz(
     pool: &Option<PgPool>,
@@ -155,6 +167,8 @@ pub async fn duplicate_quiz(
     new_id: &str,
     new_subject: &str,
     archived: bool,
+    me: Option<i64>,
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -163,8 +177,12 @@ pub async fn duplicate_quiz(
 
     // Fetch source quiz (including theme_id; archived comes from caller)
     let source_row: Option<(serde_json::Value, Option<String>)> =
-        sqlx::query_as("SELECT questions, theme_id FROM quizzes WHERE id = $1")
+        sqlx::query_as(
+            "SELECT questions, theme_id FROM quizzes \
+             WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+        )
             .bind(source_id)
+            .bind(me)
             .fetch_optional(pool)
             .await
             .map_err(|e| e.to_string())?;
@@ -176,29 +194,34 @@ pub async fn duplicate_quiz(
 
     // Insert as new quiz (preserving theme_id + archived from source)
     sqlx::query(
-        "INSERT INTO quizzes (id, subject, questions, archived, theme_id) \
-         VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO quizzes (id, subject, questions, archived, theme_id, owner_id) \
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(new_id)
     .bind(new_subject)
     .bind(questions)
     .bind(archived)
     .bind(theme_id.clone())
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| new_id.to_string())
     .map_err(|e| e.to_string())
 }
 
-/// Return true if a quiz row with the given id exists.
-pub async fn quiz_exists(pool: &Option<PgPool>, id: &str) -> bool {
+/// Return true if a quiz row with the given id exists (optionally owner-scoped).
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
+pub async fn quiz_exists(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> bool {
     let pool = match pool {
         Some(p) => p,
         None => return false,
     };
 
-    sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM quizzes WHERE id = $1)")
+    sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM quizzes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2))",
+    )
         .bind(id)
+        .bind(me)
         .fetch_one(pool)
         .await
         .unwrap_or(false)
@@ -273,4 +296,3 @@ pub async fn append_question_to_quiz(
     .map(|_| ())
     .map_err(|e| e.to_string())
 }
-

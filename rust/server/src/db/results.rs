@@ -3,7 +3,8 @@ use sqlx::PgPool;
 /// Load game results metadata from the database.
 /// Returns a vector of serde_json objects with GameResultMeta shape.
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
+pub async fn get_results(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -11,8 +12,10 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
     let rows: Vec<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value)> =
         match sqlx::query_as(
-            "SELECT id, subject, date, players FROM game_results ORDER BY date DESC"
+            "SELECT id, subject, date, players FROM game_results \
+             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY date DESC"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -41,15 +44,24 @@ pub async fn get_results(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 /// Load a single game result by id (for results:get / results:getShared).
 /// Returns {id, subject, date, players, questions, recap?} matching the SharedResult / result-detail
 /// shape, or None if the id is absent or pool is None.
-pub async fn get_result_by_id(pool: &Option<PgPool>, id: &str) -> Option<serde_json::Value> {
+/// `me`: None = unfiltered (admin / public share); Some(id) = only that owner's rows.
+pub async fn get_result_by_id(
+    pool: &Option<PgPool>,
+    id: &str,
+    me: Option<i64>,
+) -> Option<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return None,
     };
 
     let row: Option<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value, Option<serde_json::Value>, Option<serde_json::Value>)> =
-        sqlx::query_as("SELECT id, subject, date, players, questions, recap FROM game_results WHERE id = $1")
+        sqlx::query_as(
+            "SELECT id, subject, date, players, questions, recap FROM game_results \
+             WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+        )
             .bind(id)
+            .bind(me)
             .fetch_optional(pool)
             .await
             .ok()
@@ -81,6 +93,7 @@ pub async fn insert_result(
     players: &serde_json::Value,
     questions: Option<&serde_json::Value>,
     recap: Option<&serde_json::Value>,
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -88,8 +101,8 @@ pub async fn insert_result(
     };
 
     sqlx::query(
-        "INSERT INTO game_results (id, quiz_id, subject, date, players, questions, recap) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO game_results (id, quiz_id, subject, date, players, questions, recap, owner_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(id)
     .bind(quiz_id)
@@ -98,6 +111,7 @@ pub async fn insert_result(
     .bind(players)
     .bind(questions)
     .bind(recap)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| id.to_string())

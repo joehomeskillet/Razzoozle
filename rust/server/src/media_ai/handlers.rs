@@ -350,6 +350,7 @@ pub(super) fn register_submit_upload_image(
                         Some(saved.height),
                         uploaded_at,
                         &saved.bytes,
+                        None,
                     )
                     .await
                     {

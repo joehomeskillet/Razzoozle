@@ -7,8 +7,17 @@ pub async fn insert_catalog_entry(
     question: &serde_json::Value,
     source: &str,
     added_at: chrono::DateTime<chrono::Utc>,
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
-    insert_catalog_entry_with_tags(pool, question, source, &serde_json::json!([]), added_at).await
+    insert_catalog_entry_with_tags(
+        pool,
+        question,
+        source,
+        &serde_json::json!([]),
+        added_at,
+        owner_id,
+    )
+    .await
 }
 
 /// Same as `insert_catalog_entry` but also persists `tags` (defaults to `[]`
@@ -19,6 +28,7 @@ pub async fn insert_catalog_entry_with_tags(
     source: &str,
     tags: &serde_json::Value,
     added_at: chrono::DateTime<chrono::Utc>,
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -64,13 +74,15 @@ pub async fn insert_catalog_entry_with_tags(
 
     // Insert the catalog entry
     sqlx::query(
-        "INSERT INTO catalog_entries (id, question, tags, source, added_at) VALUES ($1, $2, $3, $4, $5)"
+        "INSERT INTO catalog_entries (id, question, tags, source, added_at, owner_id) \
+         VALUES ($1, $2, $3, $4, $5, $6)"
     )
     .bind(&id)
     .bind(question)
     .bind(tags)
     .bind(source)
     .bind(added_at)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| id)
@@ -79,15 +91,19 @@ pub async fn insert_catalog_entry_with_tags(
 
 /// Fetch all catalog entries as an array of JSON objects (matches the
 /// Node `CatalogEntry` shape: id, question, tags, source, addedAt).
-pub async fn get_catalog(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
+pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return vec![],
     };
 
     let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>)> = sqlx::query_as(
-        "SELECT id, question, tags, source, added_at FROM catalog_entries ORDER BY added_at DESC"
+        "SELECT id, question, tags, source, added_at FROM catalog_entries \
+         WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
+         ORDER BY added_at DESC"
     )
+    .bind(me)
     .fetch_all(pool)
     .await
     .unwrap_or_default();
@@ -154,4 +170,3 @@ pub async fn delete_catalog_entry(
 
     Ok(())
 }
-

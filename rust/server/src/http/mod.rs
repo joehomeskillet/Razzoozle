@@ -11,6 +11,7 @@ mod result_og;
 pub mod solo;
 mod static_files;
 mod login;
+mod submit;
 mod users;
 
 use axum::{
@@ -190,6 +191,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/users", get(users::list).post(users::create))
         .route("/api/users/:id/disable", post(users::disable))
         .route("/api/users/:id/enable", post(users::enable))
+        .route("/api/submit/:token", post(submit::handle_submit))
         .route("/api/achievements", get(achievements::handle_achievements))
         .route("/api/quizzes", get(solo::handle_get_quizzes))
         .route("/api/quizz/:id/solo", get(solo::handle_get_quiz_solo))

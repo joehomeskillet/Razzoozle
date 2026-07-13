@@ -41,7 +41,7 @@ impl GameRegistry {
 
         // First, try to load from database if pool available
         if pool.is_some() {
-            quizzes = crate::db::get_quizzes(pool).await;
+            quizzes = crate::db::get_quizzes(pool, None).await;
         }
 
         // Fall back to config/quizz files ONLY if the DB gave us nothing (no pool,

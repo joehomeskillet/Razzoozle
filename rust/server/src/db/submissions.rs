@@ -3,7 +3,11 @@ use sqlx::PgPool;
 /// Load submissions with the FULL question OBJECT (not the preview string) for the
 /// Suggestions moderation panel (manager:submissionsData). Includes rejectionReason and category.
 /// Shape mirrors Node's Submission: {id, submittedBy, submittedAt, status, question, rejectionReason?, category?}.
-pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
+pub async fn get_submissions_full(
+    pool: &Option<PgPool>,
+    me: Option<i64>,
+) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -12,8 +16,10 @@ pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Valu
     let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
         match sqlx::query_as(
             "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
-             FROM submissions ORDER BY submitted_at DESC",
+             FROM submissions WHERE ($1::bigint IS NULL OR owner_id = $1) \
+             ORDER BY submitted_at DESC",
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -47,7 +53,8 @@ pub async fn get_submissions_full(pool: &Option<PgPool>) -> Vec<serde_json::Valu
 /// Load submissions from the database.
 /// Returns a vector of serde_json objects with SubmissionMeta shape (or array of submission objects).
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
+pub async fn get_submissions(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -56,8 +63,10 @@ pub async fn get_submissions(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
         match sqlx::query_as(
             "SELECT id, submitted_by, status, question, submitted_at \
-             FROM submissions ORDER BY submitted_at DESC"
+             FROM submissions WHERE ($1::bigint IS NULL OR owner_id = $1) \
+             ORDER BY submitted_at DESC"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -114,12 +123,14 @@ pub async fn count_pending_submissions(pool: &Option<PgPool>) -> i64 {
 /// duplicating (mirrors Node's slug-id save). Returns Err on DB failure.
 ///
 /// `category` is optional (WP-17 public topic); when `None` the column stays NULL.
+/// `owner_id` stamps the receiving manager (from submit_token) when known.
 pub async fn insert_submission(
     pool: &Option<PgPool>,
     id: &str,
     submitted_by: &str,
     question: &serde_json::Value,
     category: Option<&str>,
+    owner_id: Option<i64>,
 ) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
@@ -127,20 +138,22 @@ pub async fn insert_submission(
     };
 
     sqlx::query(
-        "INSERT INTO submissions (id, status, submitted_by, submitted_at, question, source, category) \
-         VALUES ($1, 'pending', $2, now(), $3, 'submission', $4) \
+        "INSERT INTO submissions (id, status, submitted_by, submitted_at, question, source, category, owner_id) \
+         VALUES ($1, 'pending', $2, now(), $3, 'submission', $4, $5) \
          ON CONFLICT (id) DO UPDATE SET \
              status = 'pending', \
              submitted_by = EXCLUDED.submitted_by, \
              submitted_at = now(), \
              question = EXCLUDED.question, \
              category = EXCLUDED.category, \
+             owner_id = COALESCE(EXCLUDED.owner_id, submissions.owner_id), \
              updated_at = now()",
     )
     .bind(id)
     .bind(submitted_by)
     .bind(question)
     .bind(category)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| ())
@@ -215,9 +228,11 @@ pub async fn update_submission(
 }
 
 /// Fetch a submission by id. Returns the full submission including question, rejectionReason, and category.
+/// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
 pub async fn get_submission_by_id(
     pool: &Option<PgPool>,
     id: &str,
+    me: Option<i64>,
 ) -> Option<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
@@ -226,9 +241,11 @@ pub async fn get_submission_by_id(
 
     let row: Option<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
         sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category FROM submissions WHERE id = $1"
+            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
+             FROM submissions WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
         )
         .bind(id)
+        .bind(me)
         .fetch_optional(pool)
         .await
         .ok()
@@ -251,4 +268,3 @@ pub async fn get_submission_by_id(
         obj
     })
 }
-

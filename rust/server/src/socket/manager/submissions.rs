@@ -30,7 +30,7 @@ fn register_list_submissions(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -39,8 +39,9 @@ fn register_list_submissions(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                let subs = db::get_submissions_full(&ctx.db_pool).await;
+                let subs = db::get_submissions_full(&ctx.db_pool, me).await;
                 socket
                     .emit(constants::manager::SUBMISSIONS_DATA, &subs)
                     .ok();
@@ -57,7 +58,7 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -66,6 +67,7 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract id and question from payload
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -89,7 +91,7 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Check submission exists
-                if db::get_submission_by_id(&ctx.db_pool, &id).await.is_none() {
+                if db::get_submission_by_id(&ctx.db_pool, &id, me).await.is_none() {
                     socket
                         .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.notFound")
                         .ok();
@@ -131,7 +133,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -140,6 +142,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
                 // Extract id, quizzId (optional), toCatalog (optional)
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -156,7 +159,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 let quiz_id = payload.get("quizzId").and_then(|v| v.as_str()).map(|s| s.to_string());
 
                 // Fetch the submission to get the question + submittedBy
-                let submission = match db::get_submission_by_id(&ctx.db_pool, &id).await {
+                let submission = match db::get_submission_by_id(&ctx.db_pool, &id, me).await {
                     Some(sub) => sub,
                     None => {
                         socket
@@ -177,6 +180,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         &question,
                         "submission",
                         added_at,
+                        Some(user.user_id),
                     ).await {
                         Ok(_) => {
                             // Update submission status to "approved"
@@ -235,7 +239,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                             Ok(_) => {
                                 // Reload quiz registry and emit config
                                 {
-                                    let quizzes = db::get_quizzes(&ctx.db_pool).await;
+                                    let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
                                     let mut registry = ctx.registry.write().await;
                                     registry.reload_quizzes(quizzes);
                                 }

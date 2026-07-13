@@ -3,7 +3,8 @@ use sqlx::PgPool;
 /// Load media assets from the database.
 /// Returns a vector of serde_json objects with the shape matching Node's MediaMeta.
 /// Returns empty vec if pool is None or DB query fails.
-pub async fn get_media_list(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
+/// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
+pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -12,8 +13,11 @@ pub async fn get_media_list(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     let rows: Vec<(String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)> =
         match sqlx::query_as(
             "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
-             FROM media_assets ORDER BY uploaded_at DESC"
+             FROM media_assets \
+             WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
+             ORDER BY uploaded_at DESC"
         )
+        .bind(me)
         .fetch_all(pool)
         .await
         {
@@ -72,6 +76,7 @@ pub async fn insert_media_asset(
     height: Option<i32>,
     uploaded_at: chrono::DateTime<chrono::Utc>,
     data: &[u8],
+    owner_id: Option<i64>,
 ) -> Result<String, String> {
     let pool = match pool {
         Some(p) => p,
@@ -79,8 +84,8 @@ pub async fn insert_media_asset(
     };
 
     sqlx::query(
-        "INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, data) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"
+        "INSERT INTO media_assets (id, filename, url, size, type, category, source, width, height, uploaded_at, data, owner_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"
     )
     .bind(id)
     .bind(filename)
@@ -93,6 +98,7 @@ pub async fn insert_media_asset(
     .bind(height)
     .bind(uploaded_at)
     .bind(data)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map(|_| id.to_string())

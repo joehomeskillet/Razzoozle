@@ -269,6 +269,7 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                     &submitted_by,
                     &question,
                     category.as_deref(),
+                    None,
                 )
                 .await
                 {

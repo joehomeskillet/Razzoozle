@@ -7,14 +7,29 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::status::ScoringMode;
 use socketioxide::extract::SocketRef;
 
+/// Admin sees everything (`None`); non-admin is scoped to own rows (`Some(user_id)`).
+fn scope_me(user: &crate::db::users::AuthUser) -> Option<i64> {
+    if user.role == "admin" {
+        None
+    } else {
+        Some(user.user_id)
+    }
+}
+
 /// Build ManagerConfig from database and registry, then emit to the given socket.
 /// Called after successful auth AND after any quiz/config write operation.
 pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
-    let quizz = build_quizz_with_ids(ctx).await;
-    let media = db::get_media_list(&ctx.db_pool).await;
-    let results = db::get_results(&ctx.db_pool).await;
-    let submissions = db::get_submissions(&ctx.db_pool).await;
-    let theme_templates = db::get_themes(&ctx.db_pool).await;
+    // Prefer cached/resolved user for owner-scoping; if absent, unfiltered (legacy).
+    let me = match ctx.require_user().await {
+        Some(ref u) => scope_me(u),
+        None => None,
+    };
+
+    let quizz = build_quizz_with_ids(ctx, me).await;
+    let media = db::get_media_list(&ctx.db_pool, me).await;
+    let results = db::get_results(&ctx.db_pool, me).await;
+    let submissions = db::get_submissions(&ctx.db_pool, me).await;
+    let theme_templates = db::get_themes(&ctx.db_pool, me).await;
     let achievements = db::get_achievements(&ctx.db_pool).await;
     // DISK read (spec_plugins.md ruling 2): config/plugins/index.json is the
     // source of truth; the installed_plugins DB table is never written by Node,
@@ -61,6 +76,6 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
 /// Build QuizzMeta array from Postgres: {id, subject, archived, questionCount}
 /// (NOT the full questions array — matches Node's getQuizzMeta behavior)
 /// Reads LIVE from database on every call (post-auth and post-write).
-async fn build_quizz_with_ids(ctx: &HandlerCtx) -> Vec<serde_json::Value> {
-    db::get_quizzes_meta(&ctx.db_pool).await
+async fn build_quizz_with_ids(ctx: &HandlerCtx, me: Option<i64>) -> Vec<serde_json::Value> {
+    db::get_quizzes_meta(&ctx.db_pool, me).await
 }
