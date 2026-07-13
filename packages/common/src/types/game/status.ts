@@ -123,6 +123,13 @@ export interface CommonStatusDataMap {
     // Auto-mode flag echoed on the end-game screen so the client knows whether
     // the host auto-advanced through the game. OPTIONAL (old clients ignore it).
     autoMode?: boolean
+    // Host-selected end-screen render mode (W1-M2 SelectedModes snapshot),
+    // echoed to both manager (Podium) and player (PlayerFinished) so they can
+    // branch their render: "full" (unchanged), "top3" (podium/leaderboard
+    // limited to 3), "private" (player sees only their own result; manager
+    // still sees the full leaderboard). OPTIONAL — absent for old
+    // clients/games created before the snapshot existed (treat as "full").
+    endScreen?: "full" | "top3" | "private"
   }
 }
 

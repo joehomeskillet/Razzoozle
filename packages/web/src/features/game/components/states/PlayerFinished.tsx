@@ -439,13 +439,17 @@ const ShareStickerButton = ({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 const PlayerFinished = ({ data }: Props) => {
-  const { rank, subject, top, recap } = data
+  const { rank, subject, top, recap, endScreen } = data
   const { player } = usePlayerStore()
   const { t } = useTranslation()
   const reveal = useReveal()
 
   const rankKey = typeof rank === "number" ? rankKeyFor(rank) : null
   const playerRecap = isPlayerRecap(recap) ? recap : null
+  // W1-M3b: "private" mode — the player sees only their own result/rank, no
+  // public ranking. "full"/"top3" (and legacy games without endScreen) keep
+  // the top-3 mini leaderboard (TopThreeLeaderboard already caps at 3).
+  const showPublicRanking = endScreen !== "private"
 
   const isTopThree =
     typeof rank === "number" && rank >= 1 && rank <= 3
@@ -487,7 +491,9 @@ const PlayerFinished = ({ data }: Props) => {
         {player?.points ?? 0} {t("game:recap.sticker.points")}
       </motion.p>
 
-      {top && top.length > 0 && <TopThreeLeaderboard topPlayers={top} />}
+      {showPublicRanking && top && top.length > 0 && (
+        <TopThreeLeaderboard topPlayers={top} />
+      )}
 
       <motion.a
         href="/submit"

@@ -353,6 +353,14 @@ pub struct FinishedData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub auto_mode: Option<bool>,
+    // W1-M3b: the host-selected end-screen render mode (full/top3/private),
+    // echoed from the game's SelectedModes snapshot (W1-M2) so both the
+    // manager (Podium) and player (PlayerFinished) clients can branch their
+    // render. OPTIONAL/additive — absent for old clients/games created before
+    // the snapshot existed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub end_screen: Option<crate::game::EndScreen>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

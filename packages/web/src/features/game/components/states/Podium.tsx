@@ -314,7 +314,14 @@ const PodiumStickerButton = ({
   )
 }
 
-const Podium = ({ data: { subject, top, teamStandings, recap, autoMode } }: Props) => {
+const Podium = ({
+  data: { subject, top: allPlayers, teamStandings, recap, autoMode, endScreen },
+}: Props) => {
+  // W1-M3b: "top3" mode caps the podium at the top 3 players. "full" and
+  // "private" are unchanged here — the manager always sees the full result
+  // (private only hides the public ranking on the PLAYER's screen).
+  const top = endScreen === "top3" ? allPlayers.slice(0, 3) : allPlayers
+
   // Manager view: play the superlative recap BEFORE the podium when present.
   const managerRecap = isManagerRecap(recap) ? recap : null
   const hasRecap = !!managerRecap && managerRecap.superlatives.length > 0

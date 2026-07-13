@@ -188,6 +188,8 @@ fn build_finished_data(game: &Game, recap_json: Option<serde_json::Value>) -> Fi
         team_standings: None,
         recap: recap_json,
         auto_mode: Some(game.auto_mode),
+        // W1-M3b: deliver the host-selected end-screen mode to clients.
+        end_screen: game.selected_modes.end_screen,
     }
 }
 
@@ -733,6 +735,7 @@ async fn finish_and_broadcast(
                 team_standings: finished.team_standings.clone(),
                 recap: player_recap,
                 auto_mode: None,
+                end_screen: finished.end_screen,
             };
             if let Ok(sid) = player_info.id.parse() {
                 if let Some(sock) = io.get_socket(sid) {
