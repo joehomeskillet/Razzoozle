@@ -83,7 +83,14 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
                 let team_mode_enabled = {
                     let registry = registry.read().await;
                     let candidates = registry.socket_lookup_candidates(&socket_id);
-                    candidates.first().map(|g| g.lock().unwrap().selected_modes.team_mode.unwrap_or(false)).unwrap_or(false)
+                    // ponytail: trust ONLY a unique candidate. socket_lookup_candidates
+                    // returns ALL games when the socket isn't mapped (fail-open); fail
+                    // closed when ambiguous so team-select can't read a random game's gate.
+                    if candidates.len() == 1 {
+                        candidates[0].lock().unwrap().selected_modes.team_mode.unwrap_or(false)
+                    } else {
+                        false
+                    }
                 };
                 if !team_mode_enabled || !crate::state::TEAMS.contains(&team_id.as_str()) {
                     return;

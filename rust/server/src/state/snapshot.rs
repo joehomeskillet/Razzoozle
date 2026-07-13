@@ -211,12 +211,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         auto_advance_task: None,
         temp_round_recap: None,
         shuffled_chunks: None,
-        selected_modes: razzoozle_protocol::game::SelectedModes {
-            scoring_mode: None,
-            team_mode: None,
-            klassen: None,
-            end_screen: None,
-        },
+        selected_modes,
     };
 
     // Restore last manager status if present
