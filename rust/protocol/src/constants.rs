@@ -191,6 +191,24 @@ pub mod theme_revision {
     pub const ERROR: &str = "themeRevision:error";
 }
 
+pub mod class {
+    pub const LIST: &str = "class:list";
+    pub const DATA: &str = "class:data";
+    pub const CREATE: &str = "class:create";
+    pub const CREATE_SUCCESS: &str = "class:createSuccess";
+    pub const UPDATE: &str = "class:update";
+    pub const UPDATE_SUCCESS: &str = "class:updateSuccess";
+    pub const DELETE: &str = "class:delete";
+    pub const DELETE_SUCCESS: &str = "class:deleteSuccess";
+    pub const ADD_STUDENT: &str = "class:addStudent";
+    pub const STUDENT_ADDED: &str = "class:studentAdded";
+    pub const REMOVE_STUDENT: &str = "class:removeStudent";
+    pub const STUDENT_REMOVED: &str = "class:studentRemoved";
+    pub const UPDATE_STUDENT: &str = "class:updateStudent";
+    pub const STUDENT_UPDATED: &str = "class:studentUpdated";
+    pub const ERROR: &str = "class:error";
+}
+
 // Sim-mode bot tuning (server-side scripted opponents). Bots are a dev/test aid,
 // gated by RAHOOT_SIM_MODE at runtime; these constants tune behaviour, not availability.
 pub struct Bot;

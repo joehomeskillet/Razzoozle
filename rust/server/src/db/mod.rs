@@ -1,4 +1,5 @@
 mod catalog;
+pub mod classes;
 mod config;
 mod media;
 mod quizz;
@@ -9,6 +10,7 @@ pub mod users;
 pub mod user_ai;
 
 pub use catalog::*;
+pub use classes::*;
 pub use config::*;
 pub use media::*;
 pub use quizz::*;
