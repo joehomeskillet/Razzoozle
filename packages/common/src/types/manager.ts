@@ -59,4 +59,10 @@ export interface ManagerConfig {
     lokiUrl?: string
     prometheusUrl?: string
   }
+  // This manager's own opaque submission-link token (users.submit_token),
+  // rendered as `/api/submit/:token` by SubmitLinkCard. NEVER the username —
+  // an unguessable per-user token. Optional/back-compat: absent until the
+  // socket/emitConfig layer populates it; the client renders a clear
+  // "not available" state rather than inventing a fallback token.
+  submitToken?: string
 }

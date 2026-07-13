@@ -8,19 +8,13 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import Configurations from "@razzoozle/web/features/manager/components/configurations"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 const ManagerConfigPage = () => {
-  const { socket, isConnected } = useSocket()
-  const { setGameId, setInviteCode, setStatus, setConfig, config, token } =
+  const { isConnected } = useSocket()
+  const { setGameId, setInviteCode, setStatus, setConfig, config } =
     useManagerStore()
   const navigate = useNavigate()
-
-  // Protect this route: if no token, redirect to login
-  if (!token) {
-    navigate({ to: "/manager", replace: true })
-    return null
-  }
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)
@@ -56,5 +50,15 @@ const ManagerConfigPage = () => {
 }
 
 export const Route = createFileRoute("/manager/config")({
+  // Route-level guard (SECURITY): no token in the manager store → bounce to
+  // login before the route even loads. Runs on every navigation/reload, so a
+  // deep-link into /manager/config without auth never mounts the component.
+  beforeLoad: () => {
+    const { token } = useManagerStore.getState()
+
+    if (!token) {
+      throw redirect({ to: "/manager", replace: true })
+    }
+  },
   component: ManagerConfigPage,
 })

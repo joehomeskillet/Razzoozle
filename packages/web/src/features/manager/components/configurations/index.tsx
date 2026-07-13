@@ -16,6 +16,7 @@ import ConfigResults from "@razzoozle/web/features/manager/components/configurat
 import ConfigSelectQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigSelectQuizz"
 import ConfigSubmissions from "@razzoozle/web/features/manager/components/configurations/ConfigSubmissions"
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
+import ConfigUsers from "@razzoozle/web/features/manager/components/configurations/ConfigUsers"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
@@ -43,6 +44,7 @@ import {
   Terminal,
   Trophy,
   User,
+  UserCog,
   Users,
   icons as lucideIcons,
 } from "lucide-react"
@@ -142,6 +144,13 @@ const BUILTIN_TABS: TabDef[] = [
     nameKey: "manager:tabs.running",
     icon: Radio,
     component: RunningGamesSection,
+    roleGate: "admin",
+  },
+  {
+    key: "users",
+    nameKey: "manager:tabs.users",
+    icon: UserCog,
+    component: ConfigUsers,
     roleGate: "admin",
   },
   {

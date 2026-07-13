@@ -400,7 +400,12 @@ export interface ClientToServerEvents {
   }) => void
 
   // Catalog actions — client → server
-  [EVENTS.CATALOG.LIST]: () => void
+  // `scope` is a server-side ownership filter (own | global | all — global =
+  // no-owner entries). Optional: an old client omitting it keeps today's
+  // role-default behaviour (own+global for a user, everything for an admin).
+  [EVENTS.CATALOG.LIST]: (
+    _payload?: { scope?: "own" | "global" | "all" },
+  ) => void
   [EVENTS.CATALOG.ADD]: (_payload: unknown) => void
   [EVENTS.CATALOG.UPDATE]: (_payload: unknown) => void
   [EVENTS.CATALOG.DELETE]: (_payload: { id: string }) => void
@@ -483,7 +488,10 @@ export interface ClientToServerEvents {
     >
   }) => void
   // Media-manager actions (client -> server, all auth-gated server-side)
-  [EVENTS.MEDIA.LIST]: () => void
+  // `scope` — see EVENTS.CATALOG.LIST above (same own | global | all filter).
+  [EVENTS.MEDIA.LIST]: (
+    _payload?: { scope?: "own" | "global" | "all" },
+  ) => void
   [EVENTS.MEDIA.UPLOAD]: (_payload: unknown) => void
   [EVENTS.MEDIA.DELETE]: (_payload: { id: string }) => void
 

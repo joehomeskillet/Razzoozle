@@ -27,6 +27,8 @@ import { useMediaDragDrop } from "./useMediaDragDrop"
 import { useMediaSelection } from "./useMediaSelection"
 import { useMediaUpload } from "./useMediaUpload"
 
+type MediaScope = "own" | "global" | "all"
+
 const ConfigMedia = () => {
   const { socket } = useSocket()
   const { t } = useTranslation()
@@ -37,10 +39,13 @@ const ConfigMedia = () => {
   const [sourceFilter, setSourceFilter] = useState<"all" | MediaMeta["source"]>(
     "all",
   )
+  // Server-side ownership filter (own | global | all), sent on every LIST
+  // request — see EVENTS.CATALOG.LIST's doc-comment for the same contract.
+  const [scope, setScope] = useState<MediaScope>("all")
 
   const requestMedia = useCallback(() => {
-    socket.emit(EVENTS.MEDIA.LIST)
-  }, [socket])
+    socket.emit(EVENTS.MEDIA.LIST, { scope })
+  }, [socket, scope])
 
   useEffect(() => {
     requestMedia()
@@ -111,6 +116,12 @@ const ConfigMedia = () => {
     { key: "upload", label: t("manager:media.filters.upload") },
     { key: "ai", label: t("manager:media.filters.ai") },
     { key: "theme", label: t("manager:media.filters.theme") },
+  ]
+
+  const scopeFilters: Array<{ key: MediaScope; label: string }> = [
+    { key: "own", label: t("manager:media.scope.own", { defaultValue: "Eigene" }) },
+    { key: "global", label: t("manager:media.scope.global", { defaultValue: "Global" }) },
+    { key: "all", label: t("manager:media.scope.all", { defaultValue: "Alle" }) },
   ]
 
   return (
@@ -190,6 +201,34 @@ const ConfigMedia = () => {
                 key={entry.key}
                 type="button"
                 onClick={() => setSourceFilter(entry.key)}
+                aria-pressed={active}
+                className={
+                  active
+                    ? "inline-flex min-h-9 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    : "inline-flex min-h-9 items-center rounded-full bg-gray-100 px-3 text-sm font-semibold text-gray-600 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                }
+              >
+                {entry.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <div
+          role="group"
+          aria-label={t("manager:media.scope.label", {
+            defaultValue: "Sichtbarkeit",
+          })}
+          className="flex flex-wrap items-center gap-2"
+        >
+          {scopeFilters.map((entry) => {
+            const active = scope === entry.key
+
+            return (
+              <button
+                key={entry.key}
+                type="button"
+                onClick={() => setScope(entry.key)}
                 aria-pressed={active}
                 className={
                   active

@@ -21,12 +21,18 @@ import { TYPE_LABEL_KEY } from "./constants"
 import type { CatalogModalMode } from "./types"
 import { formatDate } from "./utils"
 
+type CatalogScope = "own" | "global" | "all"
+
 const ConfigCatalog = () => {
   const { socket } = useSocket()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [entries, setEntries] = useState<CatalogEntry[]>([])
   const [search, setSearch] = useState("")
+  // Server-side ownership filter (own | global | all). Sent on every LIST
+  // request; the server ultimately still enforces its own role default (see
+  // EVENTS.CATALOG.LIST doc-comment), this is a client preference on top.
+  const [scope, setScope] = useState<CatalogScope>("all")
   const [modalMode, setModalMode] = useState<CatalogModalMode>("add")
   const [editingEntry, setEditingEntry] = useState<CatalogEntry | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -38,8 +44,8 @@ const ConfigCatalog = () => {
   } | null>(null)
 
   const requestCatalog = useCallback(() => {
-    socket.emit(EVENTS.CATALOG.LIST)
-  }, [socket])
+    socket.emit(EVENTS.CATALOG.LIST, { scope })
+  }, [socket, scope])
 
   useEffect(() => {
     requestCatalog()
@@ -162,6 +168,40 @@ const ConfigCatalog = () => {
           placeholder={t("manager:catalog.searchPlaceholder")}
           className="min-h-11 w-full rounded-xl"
         />
+
+        <div
+          role="group"
+          aria-label={t("manager:catalog.scope.label", {
+            defaultValue: "Sichtbarkeit",
+          })}
+          className="flex flex-wrap items-center gap-2"
+        >
+          {(
+            [
+              { key: "own", label: t("manager:catalog.scope.own", { defaultValue: "Eigene" }) },
+              { key: "global", label: t("manager:catalog.scope.global", { defaultValue: "Global" }) },
+              { key: "all", label: t("manager:catalog.scope.all", { defaultValue: "Alle" }) },
+            ] as const
+          ).map((entry) => {
+            const active = scope === entry.key
+
+            return (
+              <button
+                key={entry.key}
+                type="button"
+                onClick={() => setScope(entry.key)}
+                aria-pressed={active}
+                className={
+                  active
+                    ? "inline-flex min-h-9 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    : "inline-flex min-h-9 items-center rounded-full bg-gray-100 px-3 text-sm font-semibold text-gray-600 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                }
+              >
+                {entry.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {entries.length === 0 ? (
