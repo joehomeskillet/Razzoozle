@@ -146,7 +146,6 @@ pub async fn insert_submission(
              submitted_at = now(), \
              question = EXCLUDED.question, \
              category = EXCLUDED.category, \
-             owner_id = COALESCE(EXCLUDED.owner_id, submissions.owner_id), \
              updated_at = now()",
     )
     .bind(id)

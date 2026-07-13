@@ -76,7 +76,10 @@ pub async fn handle_submit(
         return Err((StatusCode::TOO_MANY_REQUESTS, "Queue full".to_string()));
     }
 
-    let id = slug_id(&q_text);
+    // Namespace the id per owner so a deterministic slug cannot collide across
+    // owners — a colliding slug otherwise hits the ON CONFLICT path and could let a
+    // submitter to one manager's token overwrite another manager's submission.
+    let id = format!("{}-{}", owner_id, slug_id(&q_text));
 
     db::insert_submission(
         &db_pool,
