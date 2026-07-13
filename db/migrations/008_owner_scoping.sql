@@ -40,15 +40,27 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS submit_token TEXT;
 -- Backfill owner_id = 1 (admin bootstrap user) for legacy rows
 -- ============================================================================
 -- Idempotent: UPDATE ... WHERE ... IS NULL so re-runs are safe.
+--
+-- ORDERING: the bootstrap admin (id=1) is created by the Rust server at BOOT,
+-- not by this migration, so on a fresh `users` table id=1 does not yet exist and
+-- an unconditional backfill would violate the owner_id FK. Guard on user 1's
+-- existence: fresh DB -> skip (legacy rows stay owner_id NULL = admin-visible via
+-- the `$me IS NULL` unfiltered read); once the admin exists a re-apply reconciles
+-- the still-NULL legacy rows to owner_id=1.
 
-UPDATE quizzes SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE game_results SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE solo_results SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE assignments SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE submissions SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE catalog_entries SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE media_assets SET owner_id = 1 WHERE owner_id IS NULL;
-UPDATE themes SET owner_id = 1 WHERE owner_id IS NULL;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM users WHERE id = 1) THEN
+    UPDATE quizzes         SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE game_results    SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE solo_results    SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE assignments     SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE submissions     SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE catalog_entries SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE media_assets    SET owner_id = 1 WHERE owner_id IS NULL;
+    UPDATE themes          SET owner_id = 1 WHERE owner_id IS NULL;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- Backfill submit_token for existing users
