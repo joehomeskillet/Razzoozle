@@ -13,7 +13,7 @@ use axum::{
 };
 use serde_json::{json, Value};
 
-use super::{authorize_manager_request, json_error_response, AppState};
+use super::{authorize_admin_request, json_error_response, AppState};
 use crate::socket::manager::plugins_zip::{
     build_plugin_files_map, build_plugin_zip, import_plugin_zip, PLUGIN_ZIP_MAX_BYTES,
 };
@@ -26,7 +26,7 @@ pub async fn handle_plugin_import(
     headers: HeaderMap,
     body: Body,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    if !authorize_manager_request(&headers, state.registry.clone(), &state.db_pool).await {
+    if !authorize_admin_request(&headers, &state.db_pool).await {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 
@@ -97,7 +97,7 @@ pub async fn handle_plugin_export(
     headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), (StatusCode, Json<Value>)> {
-    if !authorize_manager_request(&headers, state.registry.clone(), &state.db_pool).await {
+    if !authorize_admin_request(&headers, &state.db_pool).await {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 

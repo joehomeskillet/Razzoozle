@@ -122,6 +122,37 @@ pub async fn authorize_manager_request(
     false
 }
 
+/// Admin-only variant of `authorize_manager_request` for privileged HTTP routes
+/// (plugin import/export) that the socket layer gates with `ensure_admin`. The
+/// `x-manager-token` (session token) must resolve to a user whose role is "admin";
+/// a plain authenticated manager (role "user") is rejected. Closes the HTTP
+/// privilege-escalation path around the admin-gated socket plugin handlers.
+pub async fn authorize_admin_request(
+    headers: &HeaderMap,
+    db_pool: &Option<sqlx::PgPool>,
+) -> bool {
+    let token = headers
+        .get("x-manager-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if token.is_empty() {
+        return false;
+    }
+    if let Some(ref pool) = db_pool {
+        if let Some(user) = crate::db::users::session_user(pool, token).await.ok().flatten() {
+            return user.role == "admin";
+        }
+    }
+    if is_dev_mode() {
+        if let Some(key) = dev_api_key() {
+            if constant_time_eq(token.as_bytes(), key.as_bytes()) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Dev-route auth for `/metrics` (and similar): fail-closed on missing
 /// `DEV_API_KEY`. When the key is set, require constant-time match on
 /// `X-Manager-Token`. Registry is accepted for call-site parity with
