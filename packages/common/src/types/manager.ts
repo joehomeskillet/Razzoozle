@@ -65,4 +65,10 @@ export interface ManagerConfig {
   // socket/emitConfig layer populates it; the client renders a clear
   // "not available" state rather than inventing a fallback token.
   submitToken?: string
+  // Persisted Klassen-Modus availability flag. When true, managers may enable
+  // Klassen-Modus in per-game settings. Optional for back-compat.
+  klassenEnabled?: boolean
+  // Persisted end-screen display modes (CSV: "full", "top3", "private" in any combination).
+  // Optional for back-compat; absent in old payloads → defaults to "full,top3,private".
+  endScreenModes?: string
 }

@@ -30,11 +30,15 @@ const ConfigGameMode = () => {
   const [joinLocked, setJoinLocked] = useState(config.joinLocked ?? false)
   const [randomizeAnswers, setRandomizeAnswers] = useState(config.randomizeAnswers ?? false)
   const [scoringMode, setScoringMode] = useState<"speed" | "accuracy">(config.scoringMode ?? "speed")
+  const [klassenEnabled, setKlassenEnabled] = useState(config.klassenEnabled ?? false)
+  const [endScreenModes, setEndScreenModes] = useState(config.endScreenModes ?? "full,top3,private")
   const [saving, setSaving] = useState(false)
   const [savingLowLatency, setSavingLowLatency] = useState(false)
   const [savingJoinLocked, setSavingJoinLocked] = useState(false)
   const [savingRandomizeAnswers, setSavingRandomizeAnswers] = useState(false)
   const [savingScoringMode, setSavingScoringMode] = useState(false)
+  const [savingKlassen, setSavingKlassen] = useState(false)
+  const [savingEndScreen, setSavingEndScreen] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lowLatencyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -46,6 +50,8 @@ const ConfigGameMode = () => {
     null,
   )
   const scoringModeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const klassenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const endScreenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
   // the saved value back after a save (and on reconnect), so re-sync local state
@@ -72,6 +78,14 @@ const ConfigGameMode = () => {
     setScoringMode(config.scoringMode ?? "speed")
   }, [config.scoringMode])
 
+  useEffect(() => {
+    setKlassenEnabled(config.klassenEnabled ?? false)
+  }, [config.klassenEnabled])
+
+  useEffect(() => {
+    setEndScreenModes(config.endScreenModes ?? "full,top3,private")
+  }, [config.endScreenModes])
+
   // Clear any pending optimistic-toast timeout on unmount.
   useEffect(() => {
     return () => {
@@ -89,6 +103,12 @@ const ConfigGameMode = () => {
       }
       if (scoringModeTimeoutRef.current !== null) {
         clearTimeout(scoringModeTimeoutRef.current)
+      }
+      if (klassenTimeoutRef.current !== null) {
+        clearTimeout(klassenTimeoutRef.current)
+      }
+      if (endScreenTimeoutRef.current !== null) {
+        clearTimeout(endScreenTimeoutRef.current)
       }
     }
   }, [])
@@ -232,6 +252,54 @@ const ConfigGameMode = () => {
             : t("manager:gameMode.speedMode", {
                 defaultValue: "Geschwindigkeitsmodus",
               }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
+  const handleKlassenToggle = useCallback(
+    (next: boolean) => {
+      setKlassenEnabled(next)
+      setSavingKlassen(true)
+
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { klassenEnabled: next })
+
+      if (klassenTimeoutRef.current !== null) {
+        clearTimeout(klassenTimeoutRef.current)
+      }
+      klassenTimeoutRef.current = setTimeout(() => {
+        setSavingKlassen(false)
+        toast.success(
+          next
+            ? t("manager:gameMode.klassenEnabled", {
+                defaultValue: "Klassen-Modus verfügbar",
+              })
+            : t("manager:gameMode.klassenDisabled", {
+                defaultValue: "Klassen-Modus deaktiviert",
+              }),
+        )
+      }, 300)
+    },
+    [socket, t],
+  )
+
+  const handleEndScreenModesChange = useCallback(
+    (next: string) => {
+      setEndScreenModes(next)
+      setSavingEndScreen(true)
+
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { endScreenModes: next })
+
+      if (endScreenTimeoutRef.current !== null) {
+        clearTimeout(endScreenTimeoutRef.current)
+      }
+      endScreenTimeoutRef.current = setTimeout(() => {
+        setSavingEndScreen(false)
+        toast.success(
+          t("manager:gameMode.endScreenModesUpdated", {
+            defaultValue: "Endbildschirm-Optionen aktualisiert",
+          }),
         )
       }, 300)
     },
@@ -396,6 +464,62 @@ const ConfigGameMode = () => {
                 defaultValue: "Genauigkeit",
               })}
             </span>
+          </label>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.klassenTitle", {
+          defaultValue: "Klassen-Modus",
+        })}
+        description={t("manager:gameMode.klassenDescription", {
+          defaultValue:
+            "Aktiviert den Klassen-Modus, in dem Spieler aus einem von der Lehrkraft verwalteten Schülerverzeichnis beitreten können.",
+        })}
+      >
+        <ToggleField
+          label={t("manager:gameMode.klassenMode", {
+            defaultValue: "Klassen-Modus verfügbar",
+          })}
+          description={t("manager:gameMode.klassenModeHint", {
+            defaultValue:
+              "Ermöglicht Lehrkräften, Klassen und Schülerverzeichnisse zu verwalten. Erfordert Neustart des Spiels.",
+          })}
+          checked={klassenEnabled}
+          onChange={handleKlassenToggle}
+          disabled={savingKlassen}
+        />
+      </FormSection>
+
+      <FormSection
+        title={t("manager:gameMode.endScreenTitle", {
+          defaultValue: "Endbildschirm-Optionen",
+        })}
+        description={t("manager:gameMode.endScreenDescription", {
+          defaultValue:
+            "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen. Kommagetrennte Liste: full, top3, private.",
+        })}
+      >
+        <div className="space-y-2">
+          <label className="block">
+            <span className="text-sm font-medium text-gray-900 block mb-1">
+              {t("manager:gameMode.endScreenModes", {
+                defaultValue: "Verfügbare Modi",
+              })}
+            </span>
+            <input
+              type="text"
+              value={endScreenModes}
+              onChange={(e) => handleEndScreenModesChange(e.target.value)}
+              disabled={savingEndScreen}
+              placeholder="full,top3,private"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-600 mt-1">
+              {t("manager:gameMode.endScreenModesHint", {
+                defaultValue: "Kommagetrennt: full, top3, private",
+              })}
+            </p>
           </label>
         </div>
       </FormSection>

@@ -238,18 +238,18 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 }
 
 /// Load game configuration from the database.
-/// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config).
+/// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config, klassen_enabled, end_screen_modes).
 /// low_latency_config is the full jsonb object that should be merged with low_latency_enabled into lowLatencyMode.
 /// Returns Nones if pool is None or DB query fails.
-pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>) {
+pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>, Option<bool>, Option<String>) {
     let pool = match pool {
         Some(p) => p,
-        None => return (None, None, None, None, None, None),
+        None => return (None, None, None, None, None, None, None, None),
     };
 
-    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>)> =
+    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>, Option<bool>, Option<String>)> =
         sqlx::query_as(
-            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config \
+            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config, klassen_enabled, end_screen_modes \
              FROM games_config WHERE id = 1"
         )
         .fetch_optional(pool)
@@ -257,12 +257,12 @@ pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<boo
         .ok()
         .flatten();
 
-    row.unwrap_or((None, None, None, None, None, None))
+    row.unwrap_or((None, None, None, None, None, None, None, None))
 }
 
 /// Update game config with a partial patch. Deep-merges into existing row.
 /// Fields: team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode,
-/// managerPassword, lowLatencyMode.
+/// managerPassword, lowLatencyMode, klassenEnabled, endScreenModes.
 /// Only updates fields that are present in the patch; omitted fields are left unchanged.
 /// Always bumps version = version + 1 and updated_at = now().
 pub async fn update_game_config(
@@ -281,6 +281,8 @@ pub async fn update_game_config(
     let randomize_answers = patch.get("randomizeAnswers").and_then(|v| v.as_bool());
     let scoring_mode = patch.get("scoringMode").and_then(|v| v.as_str());
     let manager_password = patch.get("managerPassword").and_then(|v| v.as_str());
+    let klassen_enabled = patch.get("klassenEnabled").and_then(|v| v.as_bool());
+    let end_screen_modes = patch.get("endScreenModes").and_then(|v| v.as_str());
     let low_latency_mode = patch.get("lowLatencyMode").and_then(|v| {
         if v.is_object() {
             Some(v.clone())
@@ -322,6 +324,14 @@ pub async fn update_game_config(
         updates.push(format!("manager_password = COALESCE(${}, manager_password)", idx));
         idx += 1;
     }
+    if klassen_enabled.is_some() {
+        updates.push(format!("klassen_enabled = ${}", idx));
+        idx += 1;
+    }
+    if end_screen_modes.is_some() {
+        updates.push(format!("end_screen_modes = ${}", idx));
+        idx += 1;
+    }
 
     // Always bump version and update timestamp
     updates.push("version = version + 1".to_string());
@@ -358,6 +368,12 @@ pub async fn update_game_config(
     }
     if let Some(mp) = manager_password {
         query = query.bind(mp);
+    }
+    if let Some(ke) = klassen_enabled {
+        query = query.bind(ke);
+    }
+    if let Some(esm) = end_screen_modes {
+        query = query.bind(esm);
     }
 
     query

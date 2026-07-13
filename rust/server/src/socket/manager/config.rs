@@ -1,6 +1,6 @@
 //! MANAGER CONFIG WRITES — game config and achievements config handlers
 //!
-//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, lowLatencyMode, joinLocked, randomizeAnswers, scoringMode, managerPassword)
+//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, lowLatencyMode, joinLocked, randomizeAnswers, scoringMode, managerPassword, klassenEnabled, endScreenModes)
 //! manager:setAchievementsConfig — PATCH achievements config (per-achievement deep-merge by id)
 
 use super::super::HandlerCtx;
@@ -97,6 +97,16 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 // Pass through managerPassword if provided (COALESCE prevents null-out)
                 if let Some(manager_password) = payload.get("managerPassword").and_then(|v| v.as_str()) {
                     patch["managerPassword"] = serde_json::json!(manager_password);
+                }
+
+                // Pass through klassenEnabled if provided
+                if let Some(klassen_enabled) = payload.get("klassenEnabled").and_then(|v| v.as_bool()) {
+                    patch["klassenEnabled"] = serde_json::json!(klassen_enabled);
+                }
+
+                // Pass through endScreenModes if provided (CSV string)
+                if let Some(end_screen_modes) = payload.get("endScreenModes").and_then(|v| v.as_str()) {
+                    patch["endScreenModes"] = serde_json::json!(end_screen_modes);
                 }
 
                 // If no recognized fields, silent no-op (consistent with Node)

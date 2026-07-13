@@ -32,7 +32,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 // the new Game at creation time, so a later per-ping gate
                 // (separate WP) can check game.low_latency synchronously
                 // instead of an async DB round-trip on every clock:ping.
-                let (_, low_latency_enabled, _, randomize_answers, _, low_latency_config) = crate::db::get_game_config(&ctx.db_pool).await;
+                let (_, low_latency_enabled, _, randomize_answers, _, low_latency_config, _, _) = crate::db::get_game_config(&ctx.db_pool).await;
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Fetch achievements config for this game (N3 requirement)

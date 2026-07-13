@@ -157,6 +157,12 @@ pub struct ManagerSetGameConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub scoring_mode: Option<ScoringMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub klassen_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub end_screen_modes: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -347,6 +353,10 @@ pub struct ManagerConfig {
     pub observability: Option<Observability>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub submit_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub klassen_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_screen_modes: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

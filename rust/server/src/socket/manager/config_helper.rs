@@ -38,7 +38,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     let plugins = plugins::read_plugins_index();
     // Note: low_latency_config (6th element) is fetched but not currently used in ManagerConfig.
     // It will be consumed by deferred clock-sync sub-flag fix; callers ignore with _.
-    let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, _low_latency_config) =
+    let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, _low_latency_config, klassen_enabled, end_screen_modes) =
         db::get_game_config(&ctx.db_pool).await;
 
     let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
@@ -81,6 +81,8 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         plugins: Some(plugins),
         observability: None,
         submit_token,
+        klassen_enabled,
+        end_screen_modes,
     };
 
     socket.emit(constants::manager::CONFIG, &payload).ok();
