@@ -11,7 +11,7 @@ import { useEffect } from "react"
 const ManagerAuthPage = () => {
   const { setConfig } = useManagerStore()
   const navigate = useNavigate()
-  const { socket, isConnected } = useSocket()
+  const { socket, isConnected, reconnect } = useSocket()
 
   useEffect(() => {
     if (!isConnected) {
@@ -29,8 +29,11 @@ const ManagerAuthPage = () => {
   })
 
   const handleAuth = () => {
-    // After successful HTTP login, trigger GET_CONFIG
-    socket.emit(EVENTS.MANAGER.GET_CONFIG)
+    // The socket connected pre-login as anonymous (no session token in the
+    // handshake). Reconnect so auth() re-runs and includes the now-stored
+    // sessionToken → the socket authenticates; the isConnected effect above then
+    // re-emits GET_CONFIG, whose CONFIG reply drives the redirect to the dashboard.
+    reconnect()
   }
 
   return <ManagerPassword onSubmit={handleAuth} />
