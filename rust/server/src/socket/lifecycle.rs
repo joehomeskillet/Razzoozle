@@ -807,7 +807,7 @@ mod tests {
                 "manager-socket".to_string(),
                 Some("test-quiz".to_string()),
                 "manager-client-1".to_string(),
-                false,
+                None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
             .unwrap();
@@ -879,7 +879,7 @@ mod tests {
                 "manager-socket".to_string(),
                 Some("test-quiz".to_string()),
                 "manager-client-1".to_string(),
-                false,
+                None, false,
                 serde_json::json!({"enabled": false, "clockSync": true}),
             )
             .unwrap();
@@ -1111,7 +1111,7 @@ mod tests {
                 "manager-socket".to_string(),
                 Some("test-quiz".to_string()),
                 "manager-client-1".to_string(),
-                false,
+                None, false,
                 serde_json::json!({"enabled": false, "clockSync": true}),
             )
             .unwrap();
@@ -1261,7 +1261,7 @@ mod tests {
                 "manager-socket".to_string(),
                 Some("test-quiz".to_string()),
                 "manager-client-1".to_string(),
-                false,
+                None, false,
                 serde_json::json!({"enabled": false, "clockSync": true}),
             )
             .unwrap();

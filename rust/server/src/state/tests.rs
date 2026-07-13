@@ -113,7 +113,7 @@ fn test_active_game_cap() {
             format!("socket-{}", i),
             Some("test-quiz".to_string()),
             format!("client-{}", i),
-            false,
+            None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         );
         assert!(result.is_ok(), "Game {} creation failed", i);
@@ -124,7 +124,7 @@ fn test_active_game_cap() {
         "socket-overflow".to_string(),
         Some("test-quiz".to_string()),
         "client-overflow".to_string(),
-        false,
+        None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         );
     assert!(result.is_err(), "101st game should fail");
@@ -143,7 +143,7 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
     let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
 
     // Missing quizzId
-    let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), false, serde_json::json!({"enabled": false, "clockSync": true}));
+    let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), None, false, serde_json::json!({"enabled": false, "clockSync": true}));
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // Empty-string quizzId
@@ -151,7 +151,7 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         "socket-2".to_string(),
         Some(String::new()),
         "client-2".to_string(),
-        false,
+        None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
@@ -161,7 +161,7 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         "socket-3".to_string(),
         Some("does-not-exist".to_string()),
         "client-3".to_string(),
-        false,
+        None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
@@ -218,7 +218,7 @@ fn test_evict_stale_games_recovers_poisoned_mutex() {
             "manager-1".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            false,
+            None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -268,7 +268,7 @@ fn test_game_eviction_clears_players() {
             "manager-1".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            false,
+            None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -343,7 +343,7 @@ async fn test_empty_grace_mark_reactivate_cleanup() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            false,
+            None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -521,7 +521,7 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            false,
+            None, false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
