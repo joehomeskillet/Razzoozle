@@ -1,5 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import type { SelectedModes } from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
+import ToggleField from "@razzoozle/web/components/ui/ToggleField"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -9,15 +11,20 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useNavigate } from "@tanstack/react-router"
 import { Copy, ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const ConfigSelectQuizz = () => {
   const { socket } = useSocket()
   const { quizz: quizzList } = useConfig()
+  const config = useConfig()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<string | null>(null)
+  const [scoringMode, setScoringMode] = useState<"speed" | "accuracy">("speed")
+  const [teamMode, setTeamMode] = useState(false)
+  const [klassenMode, setKlassenMode] = useState(false)
+  const [endScreen, setEndScreen] = useState<string>("full")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const list = useMemo(
@@ -31,16 +38,61 @@ const ConfigSelectQuizz = () => {
     }
   }, [list, selected])
 
+  // Parse endScreenModes CSV and set defaults
+  useEffect(() => {
+    const modes = config.endScreenModes?.split(",").map((m) => m.trim()) ?? [
+      "full",
+      "top3",
+      "private",
+    ]
+    if (modes.length > 0) {
+      setEndScreen(modes[0])
+    }
+  }, [config.endScreenModes])
+
   const handleSelect = (id: string) => () =>
     setSelected((current) => (current === id ? null : id))
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!selected) {
       return
     }
 
-    socket.emit(EVENTS.GAME.CREATE, selected)
-  }
+    // Check which modes are available and build the payload
+    const selectedModes: SelectedModes = {}
+    let hasCustomModes = false
+
+    if (config.scoringMode !== undefined) {
+      selectedModes.scoringMode = scoringMode
+      hasCustomModes = true
+    }
+
+    if (config.teamMode === true) {
+      selectedModes.teamMode = teamMode
+      hasCustomModes = true
+    }
+
+    if (config.klassenEnabled === true) {
+      selectedModes.klassen = klassenMode
+      hasCustomModes = true
+    }
+
+    const endScreenModes =
+      config.endScreenModes?.split(",").map((m) => m.trim()) ?? []
+    if (endScreenModes.length > 1) {
+      selectedModes.endScreen = endScreen as "full" | "top3" | "private"
+      hasCustomModes = true
+    }
+
+    if (hasCustomModes) {
+      socket.emit(EVENTS.GAME.CREATE, {
+        quizzId: selected,
+        selectedModes,
+      })
+    } else {
+      socket.emit(EVENTS.GAME.CREATE, selected)
+    }
+  }, [socket, selected, config, scoringMode, teamMode, klassenMode, endScreen])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -56,6 +108,15 @@ const ConfigSelectQuizz = () => {
       toast.error(t("manager:result.share.copyFailed"))
     }
   }
+
+  // Parse endScreenModes for the select
+  const endScreenModesList = useMemo(() => {
+    return config.endScreenModes?.split(",").map((m) => m.trim()) ?? [
+      "full",
+      "top3",
+      "private",
+    ]
+  }, [config.endScreenModes])
 
   if (list.length === 0) {
     return (
@@ -120,7 +181,80 @@ const ConfigSelectQuizz = () => {
         ))}
       </motion.div>
 
-      <div className="shrink-0 space-y-2 pt-4">
+      <div className="shrink-0 space-y-3 pt-4">
+        {selected && (
+          <motion.div
+            initial={reducedMotion ? false : { opacity: 0, y: -8 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={
+              reducedMotion ? undefined : { duration: 0.2, ease: "easeOut" }
+            }
+            className="space-y-2 rounded-lg bg-gray-50 p-3"
+          >
+            {config.scoringMode !== undefined && (
+              <ToggleField
+                label={t("manager:gameMode.speedMode", {
+                  defaultValue: "Geschwindigkeit",
+                })}
+                description={t("manager:selectQuizz.modeSelector.scoringModeHint", {
+                  defaultValue: "Geschwindigkeit berücksichtigen",
+                })}
+                checked={scoringMode === "speed"}
+                onChange={(isSpeed) =>
+                  setScoringMode(isSpeed ? "speed" : "accuracy")
+                }
+              />
+            )}
+
+            {config.teamMode === true && (
+              <ToggleField
+                label={t("manager:gameMode.teamMode", {
+                  defaultValue: "Team-Modus",
+                })}
+                description={t("manager:selectQuizz.modeSelector.teamModeHint", {
+                  defaultValue: "Spieler wählen Teams",
+                })}
+                checked={teamMode}
+                onChange={setTeamMode}
+              />
+            )}
+
+            {config.klassenEnabled === true && (
+              <ToggleField
+                label={t("manager:gameMode.klassenMode", {
+                  defaultValue: "Klassen-Modus",
+                })}
+                description={t("manager:selectQuizz.modeSelector.klassenModeHint", {
+                  defaultValue: "Klassen-Beitritte aktivieren",
+                })}
+                checked={klassenMode}
+                onChange={setKlassenMode}
+              />
+            )}
+
+            {endScreenModesList.length > 1 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">
+                  {t("manager:gameMode.endScreenModes", {
+                    defaultValue: "Endbildschirm",
+                  })}
+                </label>
+                <select
+                  value={endScreen}
+                  onChange={(e) => setEndScreen(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {endScreenModesList.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         <Button
           data-testid="quizz-start-btn"
           variant="primary"
