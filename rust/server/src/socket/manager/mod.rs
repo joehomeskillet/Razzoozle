@@ -19,6 +19,7 @@ pub mod theme;
 pub mod theme_templates;
 pub mod plugins;
 pub(crate) mod plugins_zip;
+pub mod user_ai;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     auth::register(socket, ctx.clone());
@@ -35,4 +36,5 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     theme::register(socket, ctx.clone());
     theme_templates::register(socket, ctx.clone());
     plugins::register(socket, ctx.clone());
+    user_ai::register(socket, ctx.clone());
 }

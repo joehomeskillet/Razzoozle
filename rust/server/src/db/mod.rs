@@ -6,6 +6,7 @@ mod results;
 mod submissions;
 mod theme;
 pub mod users;
+pub mod user_ai;
 
 pub use catalog::*;
 pub use config::*;
@@ -15,3 +16,4 @@ pub use results::*;
 pub use submissions::*;
 pub use theme::*;
 pub use users::*;
+pub use user_ai::*;

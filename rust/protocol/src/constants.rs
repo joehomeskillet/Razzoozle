@@ -218,3 +218,12 @@ impl AI {
     pub const TEMP_MAX: f64 = 2.0;
     pub const TEMP_DEFAULT: f64 = 0.7;
 }
+
+pub mod user {
+    pub const SET_AI_KEY: &str = "user:setAiKey";
+    pub const GET_AI_KEY_STATUS: &str = "user:getAiKeyStatus";
+    pub const AI_KEY_STATUS: &str = "user:aiKeyStatus";
+    pub const DELETE_AI_KEY: &str = "user:deleteAiKey";
+    pub const LIST_EXTERNAL_PROVIDERS: &str = "user:listExternalProviders";
+    pub const EXTERNAL_PROVIDERS: &str = "user:externalProviders";
+}

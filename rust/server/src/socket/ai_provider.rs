@@ -2,9 +2,12 @@
 //!
 //! Public interface for generate_text, generate_question, generate_distractors, generate_quiz.
 //! Delegates HTTP calls to ai_http, utility functions to ai_utils.
+//!
+//! User's own AI key (if set) takes precedence over admin global key.
 
 use super::{ai_http, ai_secrets, ai_utils};
 use serde_json::{json, Value};
+use sqlx::PgPool;
 
 #[derive(Debug)]
 pub struct GenerateTextOptions {
@@ -12,6 +15,25 @@ pub struct GenerateTextOptions {
     pub prompt: String,
     pub json: bool,
     pub max_tokens: Option<u32>,
+    pub user_id: Option<i64>,
+    pub db_pool: Option<PgPool>,
+}
+
+/// Get the API key for the active provider, checking user's key first, then admin global.
+async fn resolve_provider_key(
+    active_id: &str,
+    user_id: Option<i64>,
+    db_pool: Option<&PgPool>,
+) -> Result<Option<String>, String> {
+    // Check user's key first (if user_id and db_pool are provided)
+    if let (Some(uid), Some(pool)) = (user_id, db_pool) {
+        if let Ok(Some(key)) = crate::db::user_ai::get_user_ai_key(pool, uid, active_id).await {
+            return Ok(Some(key));
+        }
+    }
+
+    // Fall back to admin global key
+    ai_secrets::get_key(active_id).ok().flatten().map(Ok).transpose()
 }
 
 /// Generate text via the active provider. Returns the raw model string (secret-scanned).
@@ -33,7 +55,7 @@ pub async fn generate_text(opts: GenerateTextOptions) -> Result<String, String> 
         .find(|p| p["id"].as_str() == Some(active_id))
         .ok_or("errors:ai.notConfigured".to_string())?;
 
-    let key = ai_secrets::get_key(active_id).ok().flatten();
+    let key = resolve_provider_key(active_id, opts.user_id, opts.db_pool.as_ref()).await?;
     let kind = provider["kind"].as_str().unwrap_or("openai-compatible");
     let model = provider["model"]
         .as_str()
@@ -106,6 +128,8 @@ pub async fn generate_question(
     topic: &str,
     q_type: &str,
     language: &str,
+    user_id: Option<i64>,
+    db_pool: Option<PgPool>,
 ) -> Result<Value, String> {
     let shape_hint = match q_type {
         "choice" => r#"JSON shape: {"question": string, "answers": [4 strings], "correctIndex": number 0-3}."#,
@@ -126,6 +150,8 @@ pub async fn generate_question(
         prompt,
         json: true,
         max_tokens: Some(800),
+        user_id,
+        db_pool,
     })
     .await?;
 
@@ -224,6 +250,8 @@ pub async fn generate_distractors(
     correct: &str,
     count: usize,
     language: &str,
+    user_id: Option<i64>,
+    db_pool: Option<PgPool>,
 ) -> Result<Vec<String>, String> {
     let clamped = count.max(1).min(3);
     let system = "You produce plausible WRONG answers (distractors) for a quiz question. Output strict JSON only, no prose.";
@@ -237,6 +265,8 @@ pub async fn generate_distractors(
         prompt,
         json: true,
         max_tokens: Some(400),
+        user_id,
+        db_pool,
     })
     .await?;
 
@@ -271,6 +301,8 @@ pub async fn generate_quiz(
     topic: &str,
     count: usize,
     language: &str,
+    user_id: Option<i64>,
+    db_pool: Option<PgPool>,
 ) -> Result<Value, String> {
     let system = "You are a quiz author. Produce a full quiz of choice questions. Output strict JSON only, no prose.";
     let prompt = format!(
@@ -283,6 +315,8 @@ pub async fn generate_quiz(
         prompt,
         json: true,
         max_tokens: Some(2400),
+        user_id,
+        db_pool,
     })
     .await?;
 

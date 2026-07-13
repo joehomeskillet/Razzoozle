@@ -16,7 +16,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -39,7 +39,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -115,7 +115,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -161,6 +161,8 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     prompt: "ping".to_string(),
                     json: false,
                     max_tokens: Some(5),
+                    user_id: None,
+                    db_pool: None,
                 })
                 .await
                 {
@@ -197,7 +199,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -225,7 +227,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match super::ai_provider::generate_question(&topic, &q_type, &language).await {
+                match super::ai_provider::generate_question(&topic, &q_type, &language, Some(user.user_id), ctx.db_pool.clone()).await {
                     Ok(question) => {
                         socket
                             .emit(
@@ -248,7 +250,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -276,7 +278,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match super::ai_provider::generate_distractors(&question, &correct, count, &language)
+                match super::ai_provider::generate_distractors(&question, &correct, count, &language, Some(user.user_id), ctx.db_pool.clone())
                     .await
                 {
                     Ok(distractors) => {
@@ -301,7 +303,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -329,7 +331,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match super::ai_provider::generate_quiz(&topic, count, &language).await {
+                match super::ai_provider::generate_quiz(&topic, count, &language, Some(user.user_id), ctx.db_pool.clone()).await {
                     Ok(quizz) => {
                         socket
                             .emit(

@@ -348,6 +348,8 @@ pub(crate) async fn enhance_prompt(raw_idea: &str) -> Result<String, String> {
             prompt: raw_idea.to_string(),
             json: false,
             max_tokens: Some(150),
+            user_id: None,
+            db_pool: None,
         },
     )
     .await?;
