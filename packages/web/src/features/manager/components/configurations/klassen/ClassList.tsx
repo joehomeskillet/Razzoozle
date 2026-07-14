@@ -24,6 +24,7 @@ interface Class {
   id: number
   name: string
   createdAt: string
+  studentCount?: number
   students?: Student[]
 }
 
@@ -114,7 +115,9 @@ const ClassList = ({
                   {classObj.name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {(classObj.students ?? []).length}{" "}
+                  {expandedClassId === classObj.id
+                    ? (classObj.students ?? []).length
+                    : classObj.studentCount ?? 0}{" "}
                   {t("manager:classes.studentCount")}
                 </p>
               </div>
