@@ -1,8 +1,12 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { Trash2, Upload, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useMemo, useState } from "react"
 
+import { useLabelManager } from "../labels/useLabelManager"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import QuizzDialogs from "./QuizzDialogs"
 import QuizzList from "./QuizzList"
 import type { SortKey } from "./types"
@@ -41,6 +45,32 @@ const ConfigManageQuizz = () => {
     handleImport,
   } = useQuizzManager()
   const { t } = useTranslation()
+  const { klassenEnabled } = useConfig()
+  const { labels } = useLabelManager()
+  const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
+
+  const { filteredActive, filteredArchived, hasFilteredMatches } = useMemo(() => {
+    if (!klassenEnabled || activeFilterId === null) {
+      return {
+        filteredActive: activeQuizz,
+        filteredArchived: archivedQuizz,
+        hasFilteredMatches: hasMatches,
+      }
+    }
+
+    const filtered = activeQuizz.filter((q) =>
+      (q.labelIds ?? []).includes(activeFilterId),
+    )
+    const filteredArch = archivedQuizz.filter((q) =>
+      (q.labelIds ?? []).includes(activeFilterId),
+    )
+
+    return {
+      filteredActive: filtered,
+      filteredArchived: filteredArch,
+      hasFilteredMatches: filtered.length > 0 || filteredArch.length > 0,
+    }
+  }, [klassenEnabled, activeFilterId, activeQuizz, archivedQuizz, hasMatches])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -120,6 +150,16 @@ const ConfigManageQuizz = () => {
         </div>
       )}
 
+      {klassenEnabled && labels.length > 0 && (
+        <div className="mb-4 flex shrink-0">
+          <LabelFilterPills
+            labels={labels}
+            activeId={activeFilterId}
+            onChange={setActiveFilterId}
+          />
+        </div>
+      )}
+
       {selectionActive && (
         <div
           role="toolbar"
@@ -163,9 +203,9 @@ const ConfigManageQuizz = () => {
 
       <QuizzList
         quizz={quizz}
-        hasMatches={hasMatches}
-        activeQuizz={activeQuizz}
-        archivedQuizz={archivedQuizz}
+        hasMatches={hasFilteredMatches}
+        activeQuizz={filteredActive}
+        archivedQuizz={filteredArchived}
         selected={selected}
         showArchived={showArchived}
         navigate={navigate}
@@ -175,6 +215,7 @@ const ConfigManageQuizz = () => {
         setPendingDelete={setPendingDelete}
         setPendingDuplicate={setPendingDuplicate}
         setShowArchived={setShowArchived}
+        labels={klassenEnabled ? labels : []}
       />
 
       <QuizzDialogs
