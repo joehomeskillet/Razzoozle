@@ -58,13 +58,13 @@ export const useLabelManager = () => {
     socket.emit(EVENTS.LABEL.LIST as any)
   }, [isConnected, socket])
 
-  // ---- Handlers ----
+  // ---- Handlers (return boolean success for dialog close-on-success) ----
 
   const handleCreateLabel = useCallback(
-    (name: string, color?: string): void => {
+    (name: string, color?: string): boolean => {
       if (!name.trim()) {
         toast.error(t("manager:labels.namePlaceholder"))
-        return
+        return false
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       socket.emit(EVENTS.LABEL.CREATE as any, {
@@ -72,15 +72,16 @@ export const useLabelManager = () => {
         ...(color ? { color } : {}),
       })
       setSearch("")
+      return true
     },
     [socket, t],
   )
 
   const handleUpdateLabel = useCallback(
-    (id: number, name?: string, color?: string): void => {
-      if (name && !name.trim()) {
+    (id: number, name?: string, color?: string): boolean => {
+      if (!name?.trim()) {
         toast.error(t("manager:labels.namePlaceholder"))
-        return
+        return false
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       socket.emit(EVENTS.LABEL.UPDATE as any, {
@@ -88,6 +89,7 @@ export const useLabelManager = () => {
         ...(name ? { name: name.trim() } : {}),
         ...(color ? { color } : {}),
       })
+      return true
     },
     [socket, t],
   )
