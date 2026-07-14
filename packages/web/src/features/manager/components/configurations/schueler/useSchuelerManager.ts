@@ -27,6 +27,12 @@ export interface PinView {
   studentId: number
   pin: string
   labels: string[]
+  // ADDENDUM (symbols): optional grapheme-safe array of the 4 emoji, index
+  // -aligned with `labels`. Some emoji in the set are multi-codepoint (base
+  // + U+FE0F variation selector), so `pin` alone can't be split reliably on
+  // the client — only present once the parallel Rust WP lands it on the
+  // wire. Structurally optional so this hook compiles cleanly either way.
+  symbols?: string[]
 }
 
 // ADDENDUM (birthdate) — widened locally so we never need `as`/`any` casts;
@@ -108,6 +114,7 @@ export const useSchuelerManager = () => {
       labels: string[]
       classes: StudentClassRef[]
       birthdate?: string | null
+      symbols?: string[]
     }) => {
       setStudents((prev) => [
         {
@@ -118,7 +125,12 @@ export const useSchuelerManager = () => {
         },
         ...prev,
       ])
-      setPinView({ studentId: data.id, pin: data.pin, labels: data.labels })
+      setPinView({
+        studentId: data.id,
+        pin: data.pin,
+        labels: data.labels,
+        symbols: data.symbols,
+      })
       toast.success(t("manager:schueler.created"))
     },
   )
@@ -178,14 +190,24 @@ export const useSchuelerManager = () => {
 
   useEvent(
     EVENTS.CLASS.STUDENT_PIN_DATA,
-    (data: { studentId: number; pin: string; labels: string[] }) => {
+    (data: {
+      studentId: number
+      pin: string
+      labels: string[]
+      symbols?: string[]
+    }) => {
       setPinView(data)
     },
   )
 
   useEvent(
     EVENTS.CLASS.PIN_REGENERATED,
-    (data: { studentId: number; pin: string; labels: string[] }) => {
+    (data: {
+      studentId: number
+      pin: string
+      labels: string[]
+      symbols?: string[]
+    }) => {
       setPinView(data)
       setPendingRegenPin(null)
       toast.success(t("manager:schueler.regenerated"))

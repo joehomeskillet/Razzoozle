@@ -9,6 +9,19 @@ interface PinDialogProps {
   onRequestRegen: (studentId: number) => void
 }
 
+// Some emoji in the PIN set are multi-codepoint (base + U+FE0F variation
+// selector, e.g. "🕷️" or "✈️"), so splitting the joined `pin` string by
+// Unicode code point (Array.from) fragments those into extra tiles. Split by
+// grapheme cluster instead when Intl.Segmenter is available; Array.from is
+// the last-resort fallback for engines without it.
+const splitGraphemes = (value: string): string[] => {
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    return Array.from(segmenter.segment(value), (s) => s.segment)
+  }
+  return Array.from(value)
+}
+
 // PinDialog — read-only display of a student's 4-emoji login code (the pin
 // string is the 4 emoji joined; labels are the matching German words). Shown
 // right after creating a student and whenever a teacher clicks "PIN" on an
@@ -20,10 +33,10 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
     return null
   }
 
-  // The server sends `pin` as the 4 emoji joined into one string. Splitting
-  // by Unicode code point (not UTF-16 code unit) keeps astral-plane emoji
-  // intact.
-  const emojis = Array.from(data.pin)
+  // Prefer the server-provided grapheme-safe `symbols` array (index-aligned
+  // with `labels`); fall back to splitting `pin` client-side when the server
+  // doesn't send it yet.
+  const emojis = data.symbols ?? splitGraphemes(data.pin)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
