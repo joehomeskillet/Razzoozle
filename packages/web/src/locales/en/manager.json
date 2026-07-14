@@ -727,7 +727,22 @@
   },
   "profile": {
     "welcome": "Welcome",
-    "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options."
+    "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options.",
+    "intro": "",
+    "changePassword": {
+      "title": "Change Password",
+      "description": "Change your password to keep your account secure.",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm Password",
+      "submit": "Change Password",
+      "mismatch": "Passwords do not match",
+      "success": "Password changed successfully",
+      "wrongCurrent": "Current password is incorrect",
+      "failed": "Failed to change password",
+      "networkError": "Network error",
+      "allFieldsRequired": "All fields are required"
+    }
   },
   "classes": {
     "create": "Create class",

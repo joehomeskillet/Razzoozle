@@ -3,6 +3,7 @@ import type { AIProviderConfig } from "@razzoozle/common/types/ai"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
+import { fetchWithAuth } from "@razzoozle/web/lib/api"
 import { providerStatusClass } from "@razzoozle/web/features/manager/components/configurations/ai/helpers"
 import {
   EmptyState,
@@ -14,7 +15,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
-import { CheckCircle2, KeyRound, Trash2, XCircle } from "lucide-react"
+import { CheckCircle2, KeyRound, Lock, Trash2, XCircle } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -31,6 +32,11 @@ const ConfigProfile = () => {
   const [providers, setProviders] = useState<AIProviderConfig[] | null>(null)
   const [keyStatus, setKeyStatus] = useState<Record<string, boolean>>({})
   const [keyInputs, setKeyInputs] = useState<Record<string, string>>({})
+
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     socket.emit(EVENTS.USER.LIST_EXTERNAL_PROVIDERS)
@@ -83,6 +89,72 @@ const ConfigProfile = () => {
     )
   }
 
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error(
+        t("manager:profile.changePassword.allFieldsRequired", {
+          defaultValue: "Alle Felder sind erforderlich",
+        }),
+      )
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error(
+        t("manager:profile.changePassword.mismatch", {
+          defaultValue: "Neue Passwörter stimmen nicht überein",
+        }),
+      )
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      const response = await fetchWithAuth("/api/profile/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      })
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          toast.error(
+            t("manager:profile.changePassword.wrongCurrent", {
+              defaultValue: "Aktuelles Passwort ist falsch",
+            }),
+          )
+        } else {
+          toast.error(
+            t("manager:profile.changePassword.failed", {
+              defaultValue: "Passwort konnte nicht geändert werden",
+            }),
+          )
+        }
+        return
+      }
+
+      toast.success(
+        t("manager:profile.changePassword.success", {
+          defaultValue: "Passwort erfolgreich geändert",
+        }),
+      )
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch {
+      toast.error(
+        t("manager:profile.changePassword.networkError", {
+          defaultValue: "Verbindungsfehler",
+        }),
+      )
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div>
@@ -96,6 +168,102 @@ const ConfigProfile = () => {
           })}
         </p>
       </div>
+
+      <SectionCard
+        icon={<Lock className="size-5" aria-hidden />}
+        title={t("manager:profile.changePassword.title", {
+          defaultValue: "Passwort ändern",
+        })}
+        description={t("manager:profile.changePassword.description", {
+          defaultValue: "Ändere dein Passwort, um dein Konto zu schützen.",
+        })}
+      >
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="current-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              {t("manager:profile.changePassword.current", {
+                defaultValue: "Aktuelles Passwort",
+              })}
+            </label>
+            <Input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              variant="sm"
+              value={currentPassword}
+              placeholder={t("manager:passwordPlaceholder", {
+                defaultValue: "Passwort",
+              })}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="new-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              {t("manager:profile.changePassword.new", {
+                defaultValue: "Neues Passwort",
+              })}
+            </label>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              variant="sm"
+              value={newPassword}
+              placeholder={t("manager:passwordPlaceholder", {
+                defaultValue: "Passwort",
+              })}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              {t("manager:profile.changePassword.confirm", {
+                defaultValue: "Passwort bestätigen",
+              })}
+            </label>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              variant="sm"
+              value={confirmPassword}
+              placeholder={t("manager:passwordPlaceholder", {
+                defaultValue: "Passwort",
+              })}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleChangePassword}
+            disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+            className="mt-4"
+          >
+            {isChangingPassword ? (
+              <Loader className="h-4" />
+            ) : (
+              t("manager:profile.changePassword.submit", {
+                defaultValue: "Passwort ändern",
+              })
+            )}
+          </Button>
+        </div>
+      </SectionCard>
 
       <SectionCard
         icon={<KeyRound className="size-5" aria-hidden />}

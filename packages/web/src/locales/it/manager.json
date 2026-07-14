@@ -788,5 +788,22 @@
     },
     "roleUser": "Docente",
     "roleAdmin": "Admin"
+  },
+  "profile": {
+    "intro": "",
+    "changePassword": {
+      "title": "Cambia password",
+      "description": "Cambia la tua password per proteggere il tuo account.",
+      "current": "Password attuale",
+      "new": "Nuova password",
+      "confirm": "Conferma password",
+      "submit": "Cambia password",
+      "mismatch": "Le password non corrispondono",
+      "success": "Password cambiata con successo",
+      "wrongCurrent": "La password attuale non è corretta",
+      "failed": "Impossibile cambiare la password",
+      "networkError": "Errore di connessione",
+      "allFieldsRequired": "Tutti i campi sono obbligatori"
+    }
   }
 }

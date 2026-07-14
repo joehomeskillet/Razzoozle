@@ -788,5 +788,22 @@
     },
     "roleUser": "Lehrkraft",
     "roleAdmin": "Admin"
+  },
+  "profile": {
+    "intro": "Dein Profil und deine persönlichen Einstellungen.",
+    "changePassword": {
+      "title": "Passwort ändern",
+      "description": "Ändere dein Passwort, um dein Konto zu schützen.",
+      "current": "Aktuelles Passwort",
+      "new": "Neues Passwort",
+      "confirm": "Passwort bestätigen",
+      "submit": "Passwort ändern",
+      "mismatch": "Neue Passwörter stimmen nicht überein",
+      "success": "Passwort erfolgreich geändert",
+      "wrongCurrent": "Aktuelles Passwort ist falsch",
+      "failed": "Passwort konnte nicht geändert werden",
+      "networkError": "Verbindungsfehler",
+      "allFieldsRequired": "Alle Felder sind erforderlich"
+    }
   }
 }

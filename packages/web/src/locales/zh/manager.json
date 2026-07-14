@@ -788,5 +788,22 @@
     },
     "roleUser": "教师",
     "roleAdmin": "管理员"
+  },
+  "profile": {
+    "intro": "",
+    "changePassword": {
+      "title": "修改密码",
+      "description": "修改您的密码以保护您的账户。",
+      "current": "当前密码",
+      "new": "新密码",
+      "confirm": "确认密码",
+      "submit": "修改密码",
+      "mismatch": "密码不匹配",
+      "success": "密码修改成功",
+      "wrongCurrent": "当前密码错误",
+      "failed": "无法修改密码",
+      "networkError": "网络错误",
+      "allFieldsRequired": "所有字段都是必需的"
+    }
   }
 }

@@ -54,6 +54,24 @@ async fn require_admin_http(headers: &HeaderMap, pool: &Option<PgPool>) -> Optio
     }
 }
 
+/// Extract Authorization: Bearer token and verify it's ANY valid session.
+/// Returns Some(AuthUser) iff token is valid, else None.
+/// Fail closed: any error → None.
+async fn require_user_http(headers: &HeaderMap, pool: &Option<PgPool>) -> Option<db::users::AuthUser> {
+    let token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|auth| auth.strip_prefix("Bearer "))
+        .unwrap_or("");
+
+    if token.is_empty() {
+        return None;
+    }
+
+    let pool = pool.as_ref()?;
+    db::users::session_user(pool, token).await.ok().flatten()
+}
+
 // ── HTTP handlers ──────────────────────────────────────────────────────────
 
 /// GET /api/users — list all users (admin only).
@@ -205,6 +223,65 @@ pub async fn reset_password(
             json_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to reset password: {}", e),
+            )
+        })?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub currentPassword: String,
+    pub newPassword: String,
+}
+
+/// POST /api/profile/change-password — self-service password change.
+/// Authenticated user changes their own password.
+/// Request body: {currentPassword, newPassword}.
+/// Returns 200 on success, 401/403 if current password is wrong, 400 if new password is empty.
+pub async fn change_password(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<ChangePasswordRequest>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    // Verify authenticated session (any logged-in user, not admin-gated)
+    let session_user = match require_user_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Authentication required")),
+    };
+
+    // Reject empty new password
+    if req.newPassword.is_empty() {
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "New password cannot be empty"));
+    }
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    // Fetch current password hash for this user
+    let hash = sqlx::query_as::<_, (String,)>(
+        "SELECT password_hash FROM users WHERE id = $1 AND active = true"
+    )
+    .bind(session_user.user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
+    .ok_or_else(|| json_error_response(StatusCode::UNAUTHORIZED, "User not found or inactive"))?;
+
+    // Verify current password
+    if !db::users::verify_password(&hash.0, &req.currentPassword) {
+        return Err(json_error_response(StatusCode::FORBIDDEN, "Current password is incorrect"));
+    }
+
+    // Set the new password — session_user.user_id comes from server session, not client request
+    db::users::set_password(pool, session_user.user_id, &req.newPassword)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to change password: {}", e),
             )
         })?;
 

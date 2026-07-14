@@ -788,5 +788,22 @@
     },
     "roleUser": "Enseignant",
     "roleAdmin": "Admin"
+  },
+  "profile": {
+    "intro": "",
+    "changePassword": {
+      "title": "Modifier le mot de passe",
+      "description": "Modifiez votre mot de passe pour sécuriser votre compte.",
+      "current": "Mot de passe actuel",
+      "new": "Nouveau mot de passe",
+      "confirm": "Confirmer le mot de passe",
+      "submit": "Modifier le mot de passe",
+      "mismatch": "Les mots de passe ne correspondent pas",
+      "success": "Mot de passe modifié avec succès",
+      "wrongCurrent": "Le mot de passe actuel est incorrect",
+      "failed": "Impossible de modifier le mot de passe",
+      "networkError": "Erreur de connexion",
+      "allFieldsRequired": "Tous les champs sont obligatoires"
+    }
   }
 }
