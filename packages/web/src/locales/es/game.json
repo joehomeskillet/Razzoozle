@@ -44,6 +44,9 @@
     "submit": "Confirmar",
     "submitted": "Enviado"
   },
+  "mathematik": {
+    "correctAnswer": "Respuesta Correcta"
+  },
   "pollThanks": "Gracias por tu voto",
   "submittedBy": "enviada por {{name}}",
   "typeAnswerPlaceholder": "Escribe tu respuesta...",

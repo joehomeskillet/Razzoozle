@@ -8,7 +8,7 @@ use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_engine::eval::normalize_text;
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::QuestionType;
+use razzoozle_protocol::quizz::{Question, QuestionType};
 use razzoozle_protocol::status::{GameStatus, ShowResponsesData};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
@@ -18,6 +18,65 @@ use tracing::info;
 /// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
 const AUTO_RESULT_MS: i32 = 6000;
 
+
+/// Format the correct answer for a question, handling type-specific formatting
+/// (decimals for mathematik, unit concatenation for slider/mathematik, etc.).
+/// Returns None for poll questions; used by both player SHOW_RESULT and manager SHOW_RESPONSES.
+pub fn format_correct_answer(question: &Question) -> Option<String> {
+    let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+
+    if is_poll {
+        return None;
+    }
+
+    match question.r#type.as_ref() {
+        Some(QuestionType::Slider) => {
+            question.correct.map(|c| match &question.unit {
+                Some(u) => format!("{} {}", c, u),
+                None => format!("{}", c),
+            })
+        }
+        Some(QuestionType::TypeAnswer) => {
+            question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
+        }
+        Some(QuestionType::Mathematik) => {
+            question.correct.map(|c| {
+                let decimals = question.decimals.unwrap_or(2) as usize;
+                let formatted = format!("{:.prec$}", c, prec = decimals);
+                match &question.unit {
+                    Some(u) => format!("{} {}", formatted, u),
+                    None => formatted,
+                }
+            })
+        }
+        Some(QuestionType::Wortarten) => {
+            // Return comma-separated POS tags from correct_chunks
+            question.solutions.as_ref().and_then(|sols| {
+                question.pos_set.as_ref().map(|pos_set| {
+                    sols.iter()
+                        .filter_map(|&idx| pos_set.get(idx as usize).cloned())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+            })
+        }
+        _ => {
+            // choice / boolean / multiple-select: map solution indices to answer texts
+            let texts: Vec<String> = question
+                .solutions
+                .as_deref()
+                .unwrap_or(&[])
+                .iter()
+                .filter_map(|&i| {
+                    question.answers.as_ref().and_then(|a| {
+                        a.get(i as usize).cloned()
+                    })
+                })
+                .collect();
+            if texts.is_empty() { None } else { Some(texts.join(", ")) }
+        }
+    }
+}
 
 /// Build the manager-only SHOW_RESPONSES payload from current engine state.
 pub fn build_manager_show_responses(game: &Game) -> GameStatus {
@@ -148,6 +207,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
             .as_ref()
             .map(|t| question_type_wire(t).to_string()),
         correct: question.correct.map(|v| v as i32),
+        correct_answer: format_correct_answer(&question),
         unit: question.unit.clone(),
         // WP-H gap 4: Node parity (results-broadcast.ts spreads `...question`).
         cooldown: question.cooldown,
@@ -248,57 +308,7 @@ pub async fn perform_reveal_and_broadcast(
             } else {
                 None
             };
-            let correct_answer: Option<String> = if is_poll {
-                None
-            } else {
-                match question.r#type.as_ref() {
-                    Some(QuestionType::Slider) => {
-                        question.correct.map(|c| match &question.unit {
-                            Some(u) => format!("{} {}", c, u),
-                            None => format!("{}", c),
-                        })
-                    }
-                    Some(QuestionType::TypeAnswer) => {
-                        question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
-                    }
-                    Some(QuestionType::Mathematik) => {
-                        question.correct.map(|c| {
-                            let decimals = question.decimals.unwrap_or(2) as usize;
-                            let formatted = format!("{:.prec$}", c, prec = decimals);
-                            match &question.unit {
-                                Some(u) => format!("{} {}", formatted, u),
-                                None => formatted,
-                            }
-                        })
-                    }
-                    Some(QuestionType::Wortarten) => {
-                        // Return comma-separated POS tags from correct_chunks
-                        question.solutions.as_ref().and_then(|sols| {
-                            question.pos_set.as_ref().map(|pos_set| {
-                                sols.iter()
-                                    .filter_map(|&idx| pos_set.get(idx as usize).cloned())
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            })
-                        })
-                    }
-                    _ => {
-                        // choice / boolean / multiple-select: map solution indices to answer texts
-                        let texts: Vec<String> = question
-                            .solutions
-                            .as_deref()
-                            .unwrap_or(&[])
-                            .iter()
-                            .filter_map(|&i| {
-                                question.answers.as_ref().and_then(|a| {
-                                    a.get(i as usize).cloned()
-                                })
-                            })
-                            .collect();
-                        if texts.is_empty() { None } else { Some(texts.join(", ")) }
-                    }
-                }
-            };
+            let correct_answer = format_correct_answer(&question);
 
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
@@ -532,4 +542,32 @@ mod tests {
         );
     }
 
+    /// WP-B1: format_correct_answer helper test
+    /// Tests mathematik decimals, slider with unit, and wortarten formatting
+    #[test]
+    fn format_correct_answer_handles_mathematik_decimals_and_units() {
+        // Mathematik with decimals
+        let mut q = razzoozle_protocol::quizz::Question {
+            question: "2+2?".to_string(),
+            r#type: Some(QuestionType::Mathematik),
+            correct: Some(3.14159),
+            decimals: Some(2),
+            unit: Some("cm".to_string()),
+            ..Default::default()
+        };
+        let result = format_correct_answer(&q);
+        assert_eq!(result, Some("3.14 cm".to_string()), "mathematik with decimals and unit");
+
+        // Slider with unit
+        q.r#type = Some(QuestionType::Slider);
+        q.correct = Some(42);
+        q.decimals = None;
+        let result = format_correct_answer(&q);
+        assert_eq!(result, Some("42 cm".to_string()), "slider with unit");
+
+        // Poll returns None
+        q.r#type = Some(QuestionType::Poll);
+        let result = format_correct_answer(&q);
+        assert_eq!(result, None, "poll returns None");
+    }
 }

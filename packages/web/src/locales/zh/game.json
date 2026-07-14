@@ -84,7 +84,10 @@
       "thumbs": "拇指",
       "fun": "表情",
       "people": "人物"
-    }
+    },
+  "mathematik": {
+    "correctAnswer": "正确答案"
+  
   },
   "pause": {
     "title": "暂停",

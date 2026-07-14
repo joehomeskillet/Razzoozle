@@ -29,6 +29,7 @@ const Responses = ({
     solutions,
     type,
     correct,
+    correctAnswer,
     unit,
     averageGuess,
     textResponses,
@@ -40,6 +41,8 @@ const Responses = ({
   const isSlider = type === "slider"
   const isTypeAnswer = type === "type-answer"
   const isSentenceBuilder = type === "sentence-builder"
+  const isMathematik = type === "mathematik"
+  const isWortarten = type === "wortarten"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -199,6 +202,28 @@ const Responses = ({
               </motion.div>
             )}
           </motion.div>
+        ) : isMathematik && correctAnswer ? (
+          <motion.div
+            className="flex flex-col items-center gap-3"
+            variants={reveal.container()}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div
+              variants={reveal.item()}
+              transition={reveal.spring}
+              className="text-lg font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+            >
+              {t("game:mathematik.correctAnswer")}
+            </motion.div>
+            <motion.div
+              variants={reveal.item()}
+              transition={reveal.spring}
+              className="text-6xl font-bold text-[color:var(--game-fg)] drop-shadow-lg lg:text-[clamp(4rem,10vh,10rem)]"
+            >
+              {correctAnswer}
+            </motion.div>
+          </motion.div>
         ) : (
           <motion.div
             className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[40vh]`}
@@ -241,7 +266,7 @@ const Responses = ({
         )}
       </div>
 
-      {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
+      {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && (
         <div>
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (
