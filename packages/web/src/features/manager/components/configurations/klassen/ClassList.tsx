@@ -204,7 +204,7 @@ const ClassList = ({
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.assignTitle")}
-                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        className="focus-visible:outline-primary flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                         onClick={() => setPendingLabelPickerId(classObj.id)}
                       >
                         <Plus className="size-3" />
