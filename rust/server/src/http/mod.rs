@@ -1,5 +1,6 @@
 mod achievements;
 mod assignments;
+mod emoji_pin;
 pub mod assets;
 pub mod logs;
 mod metrics;
@@ -219,6 +220,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))
+        .route("/api/assignment/:id/validate-pin", post(assignments::handle_validate_pin))
         .route("/api/skeleton/export", get(skeleton::handle_skeleton_export))
         .route(
             "/api/skeleton/import",

@@ -76,6 +76,10 @@ pub const SUBMISSION_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
 pub const SUBMISSION_GLOBAL_MAX: i32 = 60; // max 60 submissions/min server-wide
 pub const SUBMISSION_GLOBAL_WINDOW_MS: u64 = 60_000; // 60 seconds
 
+// ── Student PIN validation rate limiting ──────────────────────────────────────
+pub const PIN_RATE_MAX_PER_CLIENT: i32 = 3; // max 3 failed PIN attempts/60s per assignment+IP
+pub const PIN_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
+
 pub fn get_now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
