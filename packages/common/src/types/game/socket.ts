@@ -306,6 +306,9 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.REMOVED_FROM_CLASS]: (_data: { studentId: number; classId: number; studentDeleted: boolean }) => void
   [EVENTS.CLASS.STUDENT_CLASSES_DATA]: (_data: { studentId: number; classes: Array<{ id: number; name: string; joinedAt: string }> }) => void
   [EVENTS.CLASS.ALL_STUDENTS_DATA]: (_data: { students: Array<{ id: number; displayName: string; classes: Array<{ id: number; name: string }> }> }) => void
+  [EVENTS.CLASS.STUDENT_CREATED]: (_data: { id: number; displayName: string; pin: string; labels: string[]; classes: Array<{ id: number; name: string }> }) => void
+  [EVENTS.CLASS.STUDENT_PIN_DATA]: (_data: { studentId: number; pin: string; labels: string[] }) => void
+  [EVENTS.CLASS.PIN_REGENERATED]: (_data: { studentId: number; pin: string; labels: string[] }) => void
 }
 
 export interface ClientToServerEvents {
@@ -560,6 +563,9 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.REMOVE_FROM_CLASS]: (_payload: { studentId: number; classId: number }) => void
   [EVENTS.CLASS.STUDENT_CLASSES]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.LIST_ALL_STUDENTS]: () => void
+  [EVENTS.CLASS.CREATE_STUDENT]: (_payload: { displayName: string; classIds?: number[] }) => void
+  [EVENTS.CLASS.STUDENT_PIN]: (_payload: { studentId: number }) => void
+  [EVENTS.CLASS.REGEN_PIN]: (_payload: { studentId: number }) => void
 
   // Common
   disconnect: () => void

@@ -221,6 +221,18 @@ pub mod class {
     /// `class:listAllStudents` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `class:allStudentsData` `{ students: [{ id, displayName, classes: [{ id, name }] }] }`.
     pub const LIST_ALL_STUDENTS: &str = "class:listAllStudents";
     pub const ALL_STUDENTS_DATA: &str = "class:allStudentsData";
+    /// `class:createStudent` req `{ displayName: string, classIds?: number[] }` — creates a student owned by the caller, optionally enrolling into the given (caller-owned) classes; server auto-generates the 4-emoji PIN (manager-authed via require_user).
+    pub const CREATE_STUDENT: &str = "class:createStudent";
+    /// `class:studentCreated` → `{ id: number, displayName: string, pin: string, labels: string[], classes: Array<{ id: number, name: string }> }` — pin is the joined 4-emoji string, labels the 4 German words (manager-authed via require_user).
+    pub const STUDENT_CREATED: &str = "class:studentCreated";
+    /// `class:studentPin` req `{ studentId: number }` — returns the student's PIN, lazily generating one if the student has none yet (pre-015 students) (manager-authed via require_user).
+    pub const STUDENT_PIN: &str = "class:studentPin";
+    /// `class:studentPinData` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+    pub const STUDENT_PIN_DATA: &str = "class:studentPinData";
+    /// `class:regenPin` req `{ studentId: number }` — replaces the student's PIN with a fresh one (manager-authed via require_user).
+    pub const REGEN_PIN: &str = "class:regenPin";
+    /// `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+    pub const PIN_REGENERATED: &str = "class:pinRegenerated";
 }
 
 // Sim-mode bot tuning (server-side scripted opponents). Bots are a dev/test aid,

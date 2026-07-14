@@ -282,6 +282,30 @@ export const EVENTS = {
      */
     LIST_ALL_STUDENTS: "class:listAllStudents",
     ALL_STUDENTS_DATA: "class:allStudentsData",
+    /**
+     * `class:createStudent` req `{ displayName: string, classIds?: number[] }` — creates a student owned by the caller, optionally enrolling into the given (caller-owned) classes; server auto-generates the 4-emoji PIN (manager-authed via require_user).
+     */
+    CREATE_STUDENT: "class:createStudent",
+    /**
+     * `class:studentCreated` → `{ id: number, displayName: string, pin: string, labels: string[], classes: Array<{ id: number, name: string }> }` — pin is the joined 4-emoji string, labels the 4 German words (manager-authed via require_user).
+     */
+    STUDENT_CREATED: "class:studentCreated",
+    /**
+     * `class:studentPin` req `{ studentId: number }` — returns the student's PIN, lazily generating one if the student has none yet (pre-015 students) (manager-authed via require_user).
+     */
+    STUDENT_PIN: "class:studentPin",
+    /**
+     * `class:studentPinData` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+     */
+    STUDENT_PIN_DATA: "class:studentPinData",
+    /**
+     * `class:regenPin` req `{ studentId: number }` — replaces the student's PIN with a fresh one (manager-authed via require_user).
+     */
+    REGEN_PIN: "class:regenPin",
+    /**
+     * `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+     */
+    PIN_REGENERATED: "class:pinRegenerated",
   },
 } as const
 
