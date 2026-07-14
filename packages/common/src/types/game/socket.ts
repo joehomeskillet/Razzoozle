@@ -302,6 +302,10 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.STUDENT_UPDATED]: (_data: { id: number; displayName: string }) => void
   [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string }> }) => void
   [EVENTS.CLASS.ERROR]: (_message: string) => void
+  [EVENTS.CLASS.STUDENT_MOVED]: (_data: { studentId: number; classId: number; joinedAt: string }) => void
+  [EVENTS.CLASS.REMOVED_FROM_CLASS]: (_data: { studentId: number; classId: number; studentDeleted: boolean }) => void
+  [EVENTS.CLASS.STUDENT_CLASSES_DATA]: (_data: { studentId: number; classes: Array<{ id: number; name: string; joinedAt: string }> }) => void
+  [EVENTS.CLASS.ALL_STUDENTS_DATA]: (_data: { students: Array<{ id: number; displayName: string; classes: Array<{ id: number; name: string }> }> }) => void
 }
 
 export interface ClientToServerEvents {
@@ -552,6 +556,10 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.REMOVE_STUDENT]: (_studentId: number) => void
   [EVENTS.CLASS.UPDATE_STUDENT]: (_payload: { id: number; displayName: string }) => void
   [EVENTS.CLASS.GET_STUDENTS]: (_classId: number) => void
+  [EVENTS.CLASS.MOVE_STUDENT]: (_payload: { studentId: number; classId: number }) => void
+  [EVENTS.CLASS.REMOVE_FROM_CLASS]: (_payload: { studentId: number; classId: number }) => void
+  [EVENTS.CLASS.STUDENT_CLASSES]: (_payload: { studentId: number }) => void
+  [EVENTS.CLASS.LIST_ALL_STUDENTS]: () => void
 
   // Common
   disconnect: () => void

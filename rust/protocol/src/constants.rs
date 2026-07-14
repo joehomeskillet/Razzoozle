@@ -209,6 +209,18 @@ pub mod class {
     pub const GET_STUDENTS: &str = "class:getStudents";
     pub const STUDENTS_DATA: &str = "class:studentsData";
     pub const ERROR: &str = "class:error";
+    /// `class:moveStudent` req `{ studentId: number, classId: number }` → success `class:studentMoved` `{ studentId, classId, joinedAt }` (adds student to an ADDITIONAL class; idempotent).
+    pub const MOVE_STUDENT: &str = "class:moveStudent";
+    pub const STUDENT_MOVED: &str = "class:studentMoved";
+    /// `class:removeFromClass` req `{ studentId, classId }` → success `class:removedFromClass` `{ studentId, classId, studentDeleted: boolean }` (studentDeleted=true when it was their last class — server orphan-deletes).
+    pub const REMOVE_FROM_CLASS: &str = "class:removeFromClass";
+    pub const REMOVED_FROM_CLASS: &str = "class:removedFromClass";
+    /// `class:studentClasses` req `{ studentId }` → `class:studentClassesData` `{ studentId, classes: [{ id, name, joinedAt }] }`.
+    pub const STUDENT_CLASSES: &str = "class:studentClasses";
+    pub const STUDENT_CLASSES_DATA: &str = "class:studentClassesData";
+    /// `class:listAllStudents` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `class:allStudentsData` `{ students: [{ id, displayName, classes: [{ id, name }] }] }`.
+    pub const LIST_ALL_STUDENTS: &str = "class:listAllStudents";
+    pub const ALL_STUDENTS_DATA: &str = "class:allStudentsData";
 }
 
 // Sim-mode bot tuning (server-side scripted opponents). Bots are a dev/test aid,
