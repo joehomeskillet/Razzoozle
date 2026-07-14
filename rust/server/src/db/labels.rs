@@ -225,11 +225,14 @@ pub async fn get_label_ids(
 }
 
 /// Carry labels from one quiz to another (on rename). Moves all labels from old_id to new_id,
-/// before old_id is replaced/deleted. No-op if old_id == new_id or old_id doesn't exist.
+/// but ONLY if old_id is owned by the caller (IDOR hardening).
+/// No-op if old_id == new_id or old_id doesn't exist or is not owned by caller.
+/// `me`: None = admin (moves any labels); Some(id) = only if old quiz is owned by caller.
 pub async fn carry_over_quiz_labels(
     pool: &Option<PgPool>,
     old_id: &str,
     new_id: &str,
+    me: Option<i64>,
 ) -> Result<(), String> {
     if old_id == new_id {
         return Ok(()); // No-op if IDs are the same
@@ -240,13 +243,18 @@ pub async fn carry_over_quiz_labels(
         None => return Err("no database configured".to_string()),
     };
 
-    // Carry quiz_labels to new ID (before old record is replaced/deleted)
-    sqlx::query("UPDATE quiz_labels SET quiz_id = $1 WHERE quiz_id = $2")
-        .bind(new_id)
-        .bind(old_id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Scoped UPDATE: only move labels if old_id quiz belongs to the caller
+    // Admin (me=None) can move any quiz's labels; users (me=Some) only their own
+    sqlx::query(
+        "UPDATE quiz_labels SET quiz_id = $1 WHERE quiz_id = $2 \
+         AND EXISTS (SELECT 1 FROM quizzes q WHERE q.id = $2 AND ($3::bigint IS NULL OR q.owner_id = $3))"
+    )
+    .bind(new_id)
+    .bind(old_id)
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
