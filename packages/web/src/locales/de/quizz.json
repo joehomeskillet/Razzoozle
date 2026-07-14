@@ -138,12 +138,7 @@
     "sentencePlaceholder": "Gib den Satz für die Wortart-Bestimmung ein...",
     "tokenizeButton": "In Wörter zerlegen",
     "tokensLabel": "Wörter und Wortarten",
-    "noTokensHint": "Klicke auf „In Wörter zerlegen", um die Wörter zu erzeugen.",
-    "selectLabel": "Part-of-Speech wählen",
-    "tapHint": "Tippe jedes Wort, um seine Wortart zu wählen",
-    "disableTokenLabel": "Wort deaktivieren",
-    "enableTokenLabel": "Wort aktivieren",
-    "allTokensDisabledError": "Mindestens ein Wort muss aktiv sein",
+    "noTokensHint": "Klicke auf „In Wörter zerlegen“, um die Wörter zu erzeugen.",
     "pos": {
       "Nomen": "Nomen",
       "Verb": "Verb",
@@ -153,6 +148,8 @@
       "Adverb": "Adverb",
       "Präposition": "Präposition",
       "Konjunktion": "Konjunktion"
-    }
+    },
+    "selectLabel": "Part-of-Speech wählen",
+    "tapHint": "Tippe jedes Wort, um seine Wortart zu wählen"
   }
 }
