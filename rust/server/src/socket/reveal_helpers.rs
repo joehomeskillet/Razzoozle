@@ -50,11 +50,18 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
             })
         }
         Some(QuestionType::Wortarten) => {
-            // Return comma-separated POS tags from correct_chunks
+            // Return comma-separated POS tags from correct_chunks. Disabled token
+            // positions are excluded from the join (they carry no POS tag).
+            let disabled: &[i32] = question
+                .disabled_tokens
+                .as_deref()
+                .unwrap_or(&[]);
             question.solutions.as_ref().and_then(|sols| {
                 question.pos_set.as_ref().map(|pos_set| {
                     sols.iter()
-                        .filter_map(|&idx| pos_set.get(idx as usize).cloned())
+                        .enumerate()
+                        .filter(|(i, _)| !disabled.contains(&(*i as i32)))
+                        .filter_map(|(_, &idx)| pos_set.get(idx as usize).cloned())
                         .collect::<Vec<_>>()
                         .join(", ")
                 })
@@ -297,11 +304,24 @@ pub async fn perform_reveal_and_broadcast(
             ) {
                 question.chunks.clone()
             } else if matches!(question.r#type.as_ref(), Some(QuestionType::Wortarten)) {
-                // Wortarten: map solutions (indices) to pos_set strings for per-token reveal coloring
+                // Wortarten: map solutions (indices) to pos_set strings for per-token
+                // reveal coloring. Disabled token positions render as "" (reveal
+                // sentinel) so the client shows them neutral instead of green/red.
+                let disabled: &[i32] = question
+                    .disabled_tokens
+                    .as_deref()
+                    .unwrap_or(&[]);
                 question.solutions.as_ref().and_then(|sols| {
                     question.pos_set.as_ref().map(|pos_set| {
                         sols.iter()
-                            .filter_map(|&idx| pos_set.get(idx as usize).cloned())
+                            .enumerate()
+                            .map(|(i, &idx)| {
+                                if disabled.contains(&(i as i32)) {
+                                    String::new()
+                                } else {
+                                    pos_set.get(idx as usize).cloned().unwrap_or_default()
+                                }
+                            })
                             .collect()
                     })
                 })
