@@ -284,5 +284,10 @@
     "wordBank": "Banca di parole",
     "tapHint": "Tocca le parole qui sotto per costruire la tua risposta",
     "submit": "Invia"
-  }
+  },
+  "badge": {
+    "solo": "Solo",
+    "assignment": "Compito"
+  },
+  "correctAnswer": "Corretto!"
 }

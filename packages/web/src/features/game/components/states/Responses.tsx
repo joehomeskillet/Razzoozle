@@ -202,7 +202,7 @@ const Responses = ({
               </motion.div>
             )}
           </motion.div>
-        ) : isMathematik && correctAnswer ? (
+        ) : (isMathematik || isWortarten) && correctAnswer ? (
           <motion.div
             className="flex flex-col items-center gap-3"
             variants={reveal.container()}
@@ -214,7 +214,7 @@ const Responses = ({
               transition={reveal.spring}
               className="text-lg font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             >
-              {t("game:mathematik.correctAnswer")}
+              {t("game:correctAnswer")}
             </motion.div>
             <motion.div
               variants={reveal.item()}

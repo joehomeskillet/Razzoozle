@@ -107,19 +107,19 @@ const usePodiumAnimation = (topLength: number, enabled: boolean) => {
 const medalColor = [
   {
     background: "bg-[var(--tier-gold)]",
-    border: "border-yellow-600",
+    border: "border-[var(--tier-gold)]",
     // gold tier → ink label (ink reads on the light-gold fill)
     text: "text-[color:var(--color-field-ink)]",
   },
   {
     background: "bg-[var(--tier-silver)]",
-    border: "border-gray-200",
+    border: "border-[var(--tier-silver)]",
     // silver tier → ink label
     text: "text-[color:var(--color-field-ink)]",
   },
   {
     background: "bg-[var(--tier-bronze)]",
-    border: "border-amber-800",
+    border: "border-[var(--tier-bronze)]",
     // bronze tier → white label
     text: "text-white",
   },

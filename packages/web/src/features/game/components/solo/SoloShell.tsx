@@ -1,5 +1,6 @@
 import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useTranslation } from "react-i18next"
 
 // ---------------------------------------------------------------------------
 // Minimal solo shell — replaces GameWrapper to avoid socket coupling
@@ -41,6 +42,7 @@ const SoloShell = ({
   variant,
 }: SoloShellProps) => {
   const reduced = useReducedMotion() ?? false
+  const { t } = useTranslation()
 
   return (
     <section
@@ -63,17 +65,19 @@ const SoloShell = ({
               </motion.div>
             )}
           </div>
-          <div className="shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
-            {variant === "solo" ? "Solo" : "Aufgabe"}
+          <div className="shrink-0 rounded-lg bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
+            {variant === "solo"
+              ? t("game:badge.solo")
+              : t("game:badge.assignment")}
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-4 pt-2 pb-3">
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-3">
           <AnimatePresence mode="wait">
             <motion.div
               key={phaseKey}
-              className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden"
+              className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto"
               initial={
                 reduced ? { opacity: 0 } : { opacity: 0, y: 20 }
               }
@@ -90,13 +94,13 @@ const SoloShell = ({
 
         {/* Bottom bar: player name + (optional next action) + points */}
         <div className="z-50 flex items-center justify-between gap-3 border-t border-[var(--border-hairline)] bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-[color:var(--color-field-ink)]">
-          <p className="min-w-0 truncate text-gray-800">{playerName}</p>
+          <p className="min-w-0 truncate text-[var(--game-fg)]">{playerName}</p>
           <div className="flex shrink-0 items-center gap-3">
             {footerAction}
             <div
               className={
                 variant === "solo"
-                  ? "rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums text-white"
+                  ? "rounded-lg bg-white border border-[var(--border-hairline)] px-3 py-1 text-lg tabular-nums text-[var(--game-fg)]"
                   : "rounded-lg bg-white border border-[var(--border-hairline)] px-3 py-1 text-lg tabular-nums text-[var(--game-fg)] shadow-[var(--shadow-flat)]"
               }
             >

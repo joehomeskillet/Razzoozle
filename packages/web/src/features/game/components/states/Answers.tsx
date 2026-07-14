@@ -710,7 +710,7 @@ const Answers = ({
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -751,7 +751,7 @@ const Answers = ({
               onClick={submitMathematikAnswer}
               disabled={submitted || mathematikAnswer.trim().length === 0}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -839,7 +839,7 @@ const Answers = ({
                 wortartenChoices.some((choice) => choice === null)
               }
               className={clsx(
-                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -944,7 +944,7 @@ const Answers = ({
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChunks.length !== bankChips.length}
               className={clsx(
-                "rounded-xl bg-primary px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+                "rounded-xl bg-[var(--color-primary)] px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -956,7 +956,7 @@ const Answers = ({
             <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
               {t("quizz:multipleSelect.selectHint")}
             </p>
-            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
               {renderOrder.map((key: number) => {
                 const answer = answers?.[key]
                 return (
@@ -984,7 +984,7 @@ const Answers = ({
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
               className={clsx(
-                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -1027,7 +1027,7 @@ const Answers = ({
               onClick={submitSlider}
               disabled={submitted}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 PRESS_FEEDBACK,
               )}
             >
@@ -1035,7 +1035,7 @@ const Answers = ({
             </button>
           </div>
         ) : (
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {renderOrder.map((key: number) => {
               const answer = answers?.[key]
               return (

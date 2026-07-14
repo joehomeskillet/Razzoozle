@@ -284,5 +284,10 @@
     "wordBank": "单词库",
     "tapHint": "点击下面的单词来构建你的答案",
     "submit": "提交"
-  }
+  },
+  "badge": {
+    "solo": "Solo",
+    "assignment": "任务"
+  },
+  "correctAnswer": "正确！"
 }

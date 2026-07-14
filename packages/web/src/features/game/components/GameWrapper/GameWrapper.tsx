@@ -191,7 +191,7 @@ const GameWrapper = ({
                     <span
                       className={clsx(
                         "relative h-5 w-9 rounded-full transition-colors",
-                        autoOn ? "bg-[var(--accent-contrast)]" : "bg-gray-300",
+                        autoOn ? "bg-[var(--accent-contrast)]" : "bg-[color:var(--color-field-ink)]/20",
                       )}
                     >
                       <span
@@ -326,9 +326,9 @@ const GameWrapper = ({
             </div>
 
             {!manager && (
-              <div className="z-50 flex items-center justify-between bg-[var(--footer-bg)] px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-white">
+              <div className="z-50 flex items-center justify-between bg-[var(--footer-bg)] px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-lg font-bold text-[var(--footer-text)]">
                 <p className="text-[var(--footer-text)]">{player?.username}</p>
-                <div className="rounded-lg bg-gray-800 px-3 py-1 text-lg tabular-nums">
+                <div className="rounded-lg bg-white border border-[var(--border-hairline)] px-3 py-1 text-lg tabular-nums text-[var(--game-fg)]">
                   {player?.points}
                 </div>
               </div>

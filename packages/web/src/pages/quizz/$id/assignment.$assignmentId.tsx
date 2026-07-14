@@ -41,15 +41,15 @@ const AssignmentErrorScreen = ({
   const navigate = useNavigate()
 
   return (
-    <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black px-6 text-center">
+    <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)] px-6 text-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
         className="flex flex-col items-center gap-3"
       >
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
-        <p className="max-w-md text-lg text-gray-300">{message}</p>
+        <h1 className="text-3xl font-bold text-[color:var(--color-field-ink)]">{title}</h1>
+        <p className="max-w-md text-lg text-[color:var(--color-field-ink)]/70">{message}</p>
       </motion.div>
 
       <button
@@ -191,9 +191,9 @@ const AssignmentPlayPage = () => {
   // ─ Loading state
   if (assignmentStatus === "loading") {
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black">
+      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)]">
         <Loader className="h-20" />
-        <p className="text-xl font-bold text-white">
+        <p className="text-xl font-bold text-[color:var(--color-field-ink)]">
           {t("common:connecting")}
         </p>
       </section>
@@ -219,8 +219,8 @@ const AssignmentPlayPage = () => {
   // ─ Solo quiz error
   if (error) {
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-        <p className="text-2xl font-bold text-white">{error}</p>
+      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)] px-6 text-center">
+        <p className="text-2xl font-bold text-[color:var(--color-field-ink)]">{error}</p>
         <button
           type="button"
           onClick={() => navigate({ to: "/" })}
@@ -235,9 +235,9 @@ const AssignmentPlayPage = () => {
   // ─ Solo quiz loading
   if (phase === "idle" || phase === "loading") {
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black">
+      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)]">
         <Loader className="h-20" />
-        <p className="text-xl font-bold text-white">{t("common:connecting")}</p>
+        <p className="text-xl font-bold text-[color:var(--color-field-ink)]">{t("common:connecting")}</p>
       </section>
     )
   }

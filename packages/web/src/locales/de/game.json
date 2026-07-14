@@ -284,5 +284,10 @@
     "wordBank": "Wortbank",
     "tapHint": "Tippe auf die Wörter unten, um deine Antwort zu bilden",
     "submit": "Absenden"
-  }
+  },
+  "badge": {
+    "solo": "Solo",
+    "assignment": "Aufgabe"
+  },
+  "correctAnswer": "Richtig!"
 }
