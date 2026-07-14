@@ -356,3 +356,99 @@ pub async fn catalog_is_visible(pool: &Option<PgPool>, catalog_id: &str, me: Opt
         _ => false,
     }
 }
+
+/// Set labels for a class. Replace-set semantics: delete all existing, insert new.
+/// `label_ids`: the new set of label IDs (may be empty).
+/// UNIQUE(class_id, label_id) is enforced by schema; ON CONFLICT DO NOTHING absorbs input dupes.
+pub async fn set_class_labels(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    label_ids: &[i64],
+) -> Result<(), String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    match sqlx::query("DELETE FROM class_labels WHERE class_id = $1")
+        .bind(class_id)
+        .execute(&mut *tx)
+        .await
+    {
+        Ok(_) => (),
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    }
+
+    if !label_ids.is_empty() {
+        for label_id in label_ids {
+            match sqlx::query(
+                "INSERT INTO class_labels (class_id, label_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+            )
+            .bind(class_id)
+            .bind(label_id)
+            .execute(&mut *tx)
+            .await
+            {
+                Ok(_) => (),
+                Err(e) => {
+                    let _ = tx.rollback().await;
+                    return Err(e.to_string());
+                }
+            }
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Check if a class is visible/owned by the user.
+/// `me`: None = admin (sees all); Some(id) = only own.
+pub async fn class_is_visible(pool: &Option<PgPool>, class_id: i64, me: Option<i64>) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2))",
+    )
+    .bind(class_id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(Some(exists)) => exists,
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Replace-set call sequence: set → change → empty. Without a pool each step errors
+    /// (same no-pool style as other db modules; live DB covered by gate/integration).
+    #[tokio::test]
+    async fn set_class_labels_replace_set_sequence_without_pool() {
+        assert!(super::set_class_labels(&None, 1, &[10, 20]).await.is_err());
+        assert!(super::set_class_labels(&None, 1, &[30]).await.is_err());
+        assert!(super::set_class_labels(&None, 1, &[]).await.is_err());
+    }
+
+    /// UNIQUE(class_id, label_id): duplicate label_ids in the input slice are accepted at the
+    /// API boundary (DB absorbs via ON CONFLICT DO NOTHING). No panic / type error.
+    #[tokio::test]
+    async fn set_class_labels_unique_pair_accepts_duplicate_input() {
+        assert!(super::set_class_labels(&None, 1, &[5, 5, 5]).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn class_is_visible_without_pool_returns_false() {
+        assert!(!super::class_is_visible(&None, 1, Some(1)).await);
+        assert!(!super::class_is_visible(&None, 1, None).await);
+    }
+}
