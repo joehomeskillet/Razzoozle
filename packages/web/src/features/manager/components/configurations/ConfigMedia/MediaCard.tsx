@@ -1,6 +1,8 @@
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useLabelManager } from "../labels/useLabelManager"
 import clsx from "clsx"
 import { Check, FileAudio, Film, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -26,6 +28,12 @@ const MediaCard = ({
 }) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
+  const config = useConfig()
+  const { labels } = useLabelManager()
+
+  const itemLabels = (item.labelIds ?? [])
+    .map((labelId) => labels.find((l) => l.id === labelId))
+    .filter((l) => l !== undefined)
 
   return (
     <motion.article
@@ -101,6 +109,9 @@ const MediaCard = ({
           {formatSize(item.size)}
           {item.type === "image" && item.width && item.height
             ? ` · ${item.width}×${item.height}`
+            : ""}
+          {config.klassenEnabled && itemLabels.length > 0
+            ? ` · ${itemLabels.map((l) => l.name).join(", ")}`
             : ""}
         </p>
 

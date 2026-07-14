@@ -8,6 +8,9 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
+import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useLabelManager } from "../labels/useLabelManager"
 import clsx from "clsx"
 import {
   Filter,
@@ -33,6 +36,8 @@ const ConfigMedia = () => {
   const { socket } = useSocket()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
+  const config = useConfig()
+  const { labels } = useLabelManager()
 
   const [items, setItems] = useState<MediaMeta[]>([])
   const [search, setSearch] = useState("")
@@ -42,6 +47,7 @@ const ConfigMedia = () => {
   // Server-side ownership filter (own | global | all), sent on every LIST
   // request — see EVENTS.CATALOG.LIST's doc-comment for the same contract.
   const [scope, setScope] = useState<MediaScope>("all")
+  const [labelFilter, setLabelFilter] = useState<number | null>(null)
 
   const requestMedia = useCallback(() => {
     socket.emit(EVENTS.MEDIA.LIST, { scope })
@@ -74,6 +80,16 @@ const ConfigMedia = () => {
     }, []),
   )
 
+  // On label:assigned for media, refetch the media list
+  useEvent(
+    EVENTS.LABEL.ASSIGNED,
+    useCallback((data: { entityType: string }) => {
+      if (data.entityType === "media") {
+        requestMedia()
+      }
+    }, [requestMedia]),
+  )
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
 
@@ -84,10 +100,12 @@ const ConfigMedia = () => {
         !q ||
         item.filename.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q)
+      const matchesLabel =
+        labelFilter === null || (item.labelIds?.includes(labelFilter) ?? false)
 
-      return matchesSource && matchesSearch
+      return matchesSource && matchesSearch && matchesLabel
     })
-  }, [items, search, sourceFilter])
+  }, [items, search, sourceFilter, labelFilter])
 
   const {
     bulkDeleteOpen,
@@ -102,6 +120,7 @@ const ConfigMedia = () => {
   const clearFilters = () => {
     setSearch("")
     setSourceFilter("all")
+    setLabelFilter(null)
   }
 
   const handleDelete = (id: string) => {
@@ -241,6 +260,14 @@ const ConfigMedia = () => {
             )
           })}
         </div>
+
+        {config.klassenEnabled && labels.length > 0 && (
+          <LabelFilterPills
+            labels={labels}
+            activeId={labelFilter}
+            onChange={setLabelFilter}
+          />
+        )}
 
         {selectionActive && (
           <div

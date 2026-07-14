@@ -1,7 +1,16 @@
+import { EVENTS } from "@razzoozle/common/constants"
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import Button from "@razzoozle/web/components/Button"
+import LabelChip from "@razzoozle/web/components/labels/LabelChip"
+import {
+  useSocket,
+} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useLabelManager } from "../labels/useLabelManager"
 import * as Dialog from "@radix-ui/react-dialog"
-import { Info } from "lucide-react"
+import * as Select from "@radix-ui/react-select"
+import { Info, Plus } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 const formatDate = (iso: string) => {
@@ -34,7 +43,49 @@ export const formatSize = (bytes: number) => {
 // behind a reused Radix dialog, opened from the ℹ button on each card.
 const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
   const { t } = useTranslation()
+  const { socket } = useSocket()
+  const config = useConfig()
+  const { labels } = useLabelManager()
+  const [selectedLabelId, setSelectedLabelId] = useState<string>("")
+  const [localLabelIds, setLocalLabelIds] = useState<number[]>(item.labelIds ?? [])
+  
   const detailsLabel = t("manager:media.details", { defaultValue: "Details" })
+
+  const itemLabels = useMemo(
+    () => localLabelIds
+      .map((labelId) => labels.find((l) => l.id === labelId))
+      .filter((l) => l !== undefined),
+    [localLabelIds, labels],
+  )
+
+  const availableLabels = useMemo(
+    () => labels.filter((l) => !localLabelIds.includes(l.id)),
+    [labels, localLabelIds],
+  )
+
+  const handleAddLabel = useCallback(
+    (labelId: string) => {
+      const id = Number(labelId)
+      if (id && !localLabelIds.includes(id)) {
+        const newLabelIds = [...localLabelIds, id]
+        setLocalLabelIds(newLabelIds)
+        setSelectedLabelId("")
+      }
+    },
+    [localLabelIds],
+  )
+
+  const handleRemoveLabel = useCallback((labelId: number) => {
+    setLocalLabelIds((prev) => prev.filter((id) => id !== labelId))
+  }, [])
+
+  const handleSaveLabels = useCallback(() => {
+    socket.emit(EVENTS.LABEL.ASSIGN, {
+      entityType: "media",
+      entityId: item.id,
+      labelIds: localLabelIds,
+    })
+  }, [socket, item.id, localLabelIds])
 
   return (
     <Dialog.Root>
@@ -90,6 +141,73 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
               : ""}
             {` · ${formatDate(item.uploadedAt)}`}
           </p>
+
+          {config.klassenEnabled && (
+            <div className="mt-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-900">
+                  {t("manager:labels.assignLabel", { defaultValue: "Fächer" })}
+                </label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {itemLabels.map((label) => (
+                    <LabelChip
+                      key={label.id}
+                      label={label}
+                      onRemove={() => handleRemoveLabel(label.id)}
+                    />
+                  ))}
+                  {availableLabels.length > 0 && (
+                    <Select.Root
+                      value={selectedLabelId}
+                      onValueChange={handleAddLabel}
+                    >
+                      <Select.Trigger
+                        aria-label={t("manager:labels.addLabel")}
+                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                      >
+                        <Plus className="size-3" />
+                        <Select.Value
+                          placeholder={t("manager:labels.addLabel", {
+                            defaultValue: "+ Fach",
+                          })}
+                        />
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Content
+                          position="popper"
+                          sideOffset={4}
+                          className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                        >
+                          <Select.Viewport className="p-1">
+                            {availableLabels.map((label) => (
+                              <Select.Item
+                                key={label.id}
+                                value={String(label.id)}
+                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                              >
+                                <Select.ItemText>{label.name}</Select.ItemText>
+                              </Select.Item>
+                            ))}
+                          </Select.Viewport>
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select.Root>
+                  )}
+                </div>
+              </div>
+              {localLabelIds.length > 0 &&
+                JSON.stringify(localLabelIds) !==
+                  JSON.stringify(item.labelIds ?? []) && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={handleSaveLabels}
+                  >
+                    {t("common:save", { defaultValue: "Speichern" })}
+                  </Button>
+                )}
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end">
             <Dialog.Close asChild>
