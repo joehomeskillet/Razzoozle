@@ -66,6 +66,8 @@ export interface CommonStatusDataMap {
     sentence?: string
     tokens?: string[]
     posSet?: string[]
+    // Wortarten: indices of tokens that are disabled (not scored/clickable).
+    disabledTokens?: number[]
     // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
     // absent in normal mode and ignored by old clients. Client uses these only
     // to drive the countdown/UI (never for scoring — scoring is server-side).

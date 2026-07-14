@@ -66,6 +66,8 @@ const Answers = ({
     sentence,
     tokens,
     posSet,
+    // Wortarten: indices of tokens that are disabled (not scored/clickable).
+    disabledTokens,
     // Low-latency server-timing anchors (all OPTIONAL — undefined in normal
     // mode). Used ONLY to render the countdown, never for scoring.
     serverNowMs,
@@ -160,6 +162,11 @@ const Answers = ({
     loop: true,
     soundEnabled: !muted,
   })
+
+  // Wortarten: check if a token index is disabled.
+  const isTokenDisabled = (i: number): boolean => {
+    return disabledTokens?.includes(i) ?? false
+  }
 
   useEffect(() => {
     if (!isSentenceBuilder || !shuffledChunks) {
@@ -393,26 +400,34 @@ const Answers = ({
     hapticTap()
   }
 
-  // Wortarten: submit once every token has a chosen POS label. Sends the
-  // sentinel answerKey: -1 plus answerText as a JSON array of POS label
-  // strings, one per token (rust/engine/src/eval.rs Wortarten arm parses this
-  // exact shape). Also stashes the choices in the shared "submittedChunks"
-  // slot so Result.tsx's existing correctChunks reveal (built for
-  // sentence-builder) colors each token green/red against the server's
-  // per-token correct POS without any changes to Result.tsx.
+  // Wortarten: submit with full answer array (disabled tokens get "" placeholders).
+  // Check completeness only for active (non-disabled) tokens.
   const submitWortarten = () => {
     if (
       !player ||
       !gameId ||
       submitted ||
-      wortartenChoices.length === 0 ||
-      wortartenChoices.some((choice) => choice === null)
+      wortartenChoices.length === 0
     ) {
       return
     }
 
+    // Check completeness: all ACTIVE (non-disabled) tokens must have a choice.
+    const hasIncompletedActiveTokens = wortartenChoices.some((choice, idx) =>
+      !isTokenDisabled(idx) && choice === null
+    )
+
+    if (hasIncompletedActiveTokens) {
+      return
+    }
+
     const clientMessageId = lowLatency ? uuid() : undefined
-    const chosenLabels = wortartenChoices as string[]
+
+    // Build the full answer array: active tokens get their chosen label,
+    // disabled tokens get "" as placeholder.
+    const answerArray = wortartenChoices.map((choice, idx) =>
+      isTokenDisabled(idx) ? "" : (choice ?? "")
+    )
 
     setSubmitted(true)
     sfxPop()
@@ -422,12 +437,12 @@ const Answers = ({
       gameId,
       data: {
         answerKey: -1,
-        answerText: JSON.stringify(chosenLabels),
+        answerText: JSON.stringify(answerArray),
         ...(clientMessageId ? { clientMessageId } : {}),
       },
     })
 
-    setSubmittedChunks(chosenLabels)
+    setSubmittedChunks(answerArray)
 
     if (lowLatency) {
       pendingMessageIdRef.current = clientMessageId ?? null
@@ -773,6 +788,7 @@ const Answers = ({
               {(tokens ?? []).map((token, i) => {
                 const choice = wortartenChoices[i] ?? null
                 const isOpen = openTokenIndex === i
+                const isDisabled = isTokenDisabled(i)
 
                 return (
                   <div key={i} className="flex flex-col items-center gap-1">
@@ -780,16 +796,17 @@ const Answers = ({
                       type="button"
                       data-testid={`wortarten-token-${i}`}
                       onClick={() =>
-                        !submitted && setOpenTokenIndex(isOpen ? null : i)
+                        !submitted && !isDisabled && setOpenTokenIndex(isOpen ? null : i)
                       }
-                      disabled={submitted}
+                      disabled={submitted || isDisabled}
                       aria-expanded={isOpen}
                       aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
                       className={clsx(
                         ANSWER_TILE_SURFACE,
                         "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)] disabled:opacity-50",
-                        !submitted && PRESS_FEEDBACK,
-                        choice && "ring-2 ring-[var(--color-accent)]",
+                        !submitted && !isDisabled && PRESS_FEEDBACK,
+                        isDisabled && "opacity-40",
+                        choice && !isDisabled && "ring-2 ring-[var(--color-accent)]",
                       )}
                     >
                       <span>{token}</span>
@@ -800,7 +817,7 @@ const Answers = ({
                       )}
                     </button>
 
-                    {isOpen && (
+                    {isOpen && !isDisabled && (
                       <div
                         className={clsx(
                           ANSWER_TILE_SURFACE,
@@ -836,7 +853,9 @@ const Answers = ({
               disabled={
                 submitted ||
                 wortartenChoices.length === 0 ||
-                wortartenChoices.some((choice) => choice === null)
+                wortartenChoices.some((choice, idx) =>
+                  !isTokenDisabled(idx) && choice === null
+                )
               }
               className={clsx(
                 "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
