@@ -136,6 +136,12 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 return Err("errors:quizz.tooFewChunks");
             }
         }
+        Some(QuestionType::Mathematik) => {
+            // Mathematik: permissive stub validation for now
+        }
+        Some(QuestionType::Wortarten) => {
+            // Wortarten: permissive stub validation for now
+        }
         // choice / boolean / None → default
         _ => {
             if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {

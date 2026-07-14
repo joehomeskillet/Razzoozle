@@ -33,6 +33,10 @@ pub enum QuestionType {
     TypeAnswer,
     #[serde(rename = "sentence-builder")]
     SentenceBuilder,
+    #[serde(rename = "mathematik")]
+    Mathematik,
+    #[serde(rename = "wortarten")]
+    Wortarten,
 }
 
 /// A single question in a quiz
@@ -88,6 +92,21 @@ pub struct Question {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub match_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub tolerance: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub decimals: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub sentence: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub tokens: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub pos_set: Option<Vec<String>>,
 }
 
 /// A complete quiz definition

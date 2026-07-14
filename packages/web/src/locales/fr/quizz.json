@@ -73,7 +73,11 @@
     "pollDesc": "Sondage d'opinion, sans points",
     "multipleSelectDesc": "Plusieurs bonnes réponses",
     "typeAnswerDesc": "Réponse saisie librement",
-    "sentenceBuilderDesc": "Les joueurs reconstruisent une phrase à partir de jetons de mots mélangés"
+    "sentenceBuilderDesc": "Les joueurs reconstruisent une phrase à partir de jetons de mots mélangés",
+    "mathematik": "Mathématiques",
+    "mathematikDesc": "Réponse numérique avec tolérance",
+    "wortarten": "Parties du Discours",
+    "wortartenDesc": "Étiquetage des parties du discours"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",

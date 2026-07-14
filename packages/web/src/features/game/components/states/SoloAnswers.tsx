@@ -86,6 +86,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isMultiSelect = question.type === "multiple-select"
   const isTypeAnswer = question.type === "type-answer"
 const isSentenceBuilder = question.type === "sentence-builder" && question.shuffledChunks?.length
+  const isMathematik = type === "mathematik"
+  const isWortarten = type === "wortarten"
 
   const [sliderValue, setSliderValue] = useState(
     isSlider ? Math.round(((question.min ?? 0) + (question.max ?? 100)) / 2) : 0,
@@ -419,6 +421,20 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
             >
               {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
             </button>
+          </div>
+        ) : isMathematik ? (
+          <div className="flex flex-col gap-4">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              placeholder="Answer"
+              className="rounded-lg border px-4 py-2 text-lg"
+            />
+          </div>
+        ) : isWortarten ? (
+          <div>
+            <p className="text-sm text-gray-500">TODO: Wortarten input</p>
           </div>
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-3xl flex-col gap-4 px-4">

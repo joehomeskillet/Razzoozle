@@ -4,8 +4,10 @@ import clsx from "clsx"
 import {
   BarChart3,
   Blocks,
+  Calculator,
   CircleDot,
   Keyboard,
+  Languages,
   ListChecks,
   SlidersHorizontal,
   ToggleLeft,
@@ -60,6 +62,18 @@ const TYPES: Array<{
     labelKey: "quizz:type.sentenceBuilder",
     descKey: "quizz:type.sentenceBuilderDesc",
     icon: Blocks,
+  },
+  {
+    key: "mathematik",
+    labelKey: "quizz:type.mathematik",
+    descKey: "quizz:type.mathematikDesc",
+    icon: Calculator,
+  },
+  {
+    key: "wortarten",
+    labelKey: "quizz:type.wortarten",
+    descKey: "quizz:type.wortartenDesc",
+    icon: Languages,
   },
 ]
 
@@ -148,6 +162,32 @@ const QuestionEditorType = () => {
         solutions: undefined,
         acceptedAnswers: undefined,
         matchMode: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "mathematik") {
+      updateQuestion(currentIndex, {
+        type: "mathematik",
+        correct: 0,
+        tolerance: 0.1,
+        decimals: 2,
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "wortarten") {
+      updateQuestion(currentIndex, {
+        type: "wortarten",
+        sentence: "",
+        tokens: [],
+        posSet: ["Nomen", "Verb", "Adjektiv", "Artikel", "Pronomen", "Adverb", "Präposition", "Konjunktion"],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
         ...SLIDER_CLEAR,
       })
     } else {

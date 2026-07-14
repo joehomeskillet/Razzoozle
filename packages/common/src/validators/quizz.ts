@@ -62,6 +62,13 @@ export const questionValidator = z
       .max(20)
       .optional(),
     matchMode: z.enum(["exact", "normalized", "fuzzy"]).optional(),
+    // Mathematik: numeric answer with tolerance
+    tolerance: z.number().optional(),
+    decimals: z.number().int().optional(),
+    // Wortarten: parts of speech tagging
+    sentence: z.string().optional(),
+    tokens: z.array(z.string()).optional(),
+    posSet: z.array(z.string()).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -114,6 +121,10 @@ export const questionValidator = z
           path: ["chunks"],
         })
       }
+    } else if (q.type === "mathematik") {
+      // Mathematik: numeric answer with tolerance (permissive stub for now)
+    } else if (q.type === "wortarten") {
+      // Wortarten: parts of speech tagging (permissive stub for now)
     } else {
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })

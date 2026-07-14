@@ -73,7 +73,11 @@
     "pollDesc": "意见投票，不计分",
     "multipleSelectDesc": "多个正确答案",
     "typeAnswerDesc": "自由输入的答案",
-    "sentenceBuilderDesc": "玩家从混合的词语标签中重新组合成一个句子"
+    "sentenceBuilderDesc": "玩家从混合的词语标签中重新组合成一个句子",
+    "mathematik": "数学",
+    "mathematikDesc": "数值答案（含容错范围）",
+    "wortarten": "词性标注",
+    "wortartenDesc": "德语词性标注"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",

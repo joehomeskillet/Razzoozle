@@ -8,6 +8,8 @@ import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/Quest
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
+import { QuestionEditorMathe } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
+import { QuestionEditorWortarten } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { useTranslation } from "react-i18next"
 import type { CatalogQuestionFormProps } from "./types"
@@ -26,6 +28,8 @@ export const CatalogQuestionForm = ({
   const { t } = useTranslation()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
+const isMathematik = currentQuestion.type === "mathematik"
+const isWortarten = currentQuestion.type === "wortarten"
 
   const handleSave = () => {
     const { id: _id, ...question } = currentQuestion
@@ -86,7 +90,7 @@ export const CatalogQuestionForm = ({
             </div>
           </section>
 
-          {!isSlider && !isTypeAnswer && (
+          {!isSlider && !isTypeAnswer && !isMathematik && !isWortarten && (
             <section className="flex flex-col gap-2">
               <div className="w-full overflow-hidden [&>div>div:nth-child(2)]:grid-cols-1 sm:[&>div>div:nth-child(2)]:grid-cols-2">
                 <QuestionEditorAnswers />

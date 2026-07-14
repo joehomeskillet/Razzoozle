@@ -209,6 +209,22 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
         };
     }
 
+
+    // Mathematik: numeric answer with tolerance (TODO: implement real scoring)
+    if q_type == &Some(QuestionType::Mathematik) {
+        return EvalResult {
+            correct: false,
+            base: 0.0, // TODO(Q1/Q3): real scoring with tolerance
+        };
+    }
+
+    // Wortarten: parts of speech tagging (TODO: implement real scoring)
+    if q_type == &Some(QuestionType::Wortarten) {
+        return EvalResult {
+            correct: false,
+            base: 0.0, // TODO(Q1/Q3): real scoring per-token
+        };
+    }
     // Choice / Boolean (default): index-based solutions lookup
     if let Some(answer_key) = answer.answer_key {
         if let Some(solutions) = &question.solutions {

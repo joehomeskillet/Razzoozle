@@ -343,6 +343,8 @@ export const QUESTION_TYPES = [
   "multiple-select",
   "type-answer",
   "sentence-builder",
+  "mathematik",
+  "wortarten",
 ] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]

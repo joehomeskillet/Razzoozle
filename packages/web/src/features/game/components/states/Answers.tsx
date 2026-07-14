@@ -87,6 +87,8 @@ const Answers = ({
   const isMultiSelect = type === "multiple-select"
   const isTypeAnswer = type === "type-answer"
   const isSentenceBuilder = type === "sentence-builder"
+  const isMathematik = type === "mathematik"
+  const isWortarten = type === "wortarten"
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -584,6 +586,35 @@ const Answers = ({
             >
               {t("game:submitAnswer")}
             </button>
+          </div>
+        ) : isMathematik ? (
+          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={totalAnswer || ""}
+              onChange={(e) => setTotalAnswer(parseFloat(e.target.value) || 0)}
+              disabled={submitted}
+              placeholder={t("game:typeAnswerPlaceholder")}
+              aria-label="Numeric answer"
+              autoFocus
+              className="rounded-lg border border-[var(--border-hairline)] px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-2xl"
+            />
+            <button
+              type="button"
+              onClick={() => {}}
+              disabled={submitted}
+              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-2xl"
+            >
+              {t("game:submitAnswer")}
+            </button>
+          </div>
+        ) : isWortarten ? (
+          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
+            <p className="text-center text-sm text-[color:var(--game-fg)]/60">
+              TODO: Wortarten input (parts of speech tagging)
+            </p>
           </div>
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">

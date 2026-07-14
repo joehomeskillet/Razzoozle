@@ -6,6 +6,8 @@ import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/Questi
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
+import { QuestionEditorMathe } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
+import { QuestionEditorWortarten } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode } from "react"
 
@@ -53,6 +55,8 @@ const QuestionEditor = () => {
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
+  const isMathematik = currentQuestion.type === "mathematik"
+  const isWortarten = currentQuestion.type === "wortarten"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
@@ -67,7 +71,7 @@ const QuestionEditor = () => {
           </div>
         </Reveal>
 
-        {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
+        {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && (
           <Reveal index={2}>
             <QuestionEditorAnswers />
           </Reveal>
@@ -80,6 +84,16 @@ const QuestionEditor = () => {
         {isSentenceBuilder && (
           <Reveal index={2}>
             <QuestionEditorSentence />
+          </Reveal>
+        )}
+        {isMathematik && (
+          <Reveal index={2}>
+            <QuestionEditorMathe />
+          </Reveal>
+        )}
+        {isWortarten && (
+          <Reveal index={2}>
+            <QuestionEditorWortarten />
           </Reveal>
         )}
 

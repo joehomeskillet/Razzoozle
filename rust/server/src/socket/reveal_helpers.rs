@@ -252,6 +252,14 @@ pub async fn perform_reveal_and_broadcast(
                     Some(QuestionType::TypeAnswer) => {
                         question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
                     }
+                    Some(QuestionType::Mathematik) => {
+                        // TODO: Return the correct numeric answer with unit
+                        question.correct.map(|c| format!("{}", c))
+                    }
+                    Some(QuestionType::Wortarten) => {
+                        // TODO: Return the POS tags for each token
+                        None
+                    }
                     _ => {
                         // choice / boolean / multiple-select: map solution indices to answer texts
                         let texts: Vec<String> = question

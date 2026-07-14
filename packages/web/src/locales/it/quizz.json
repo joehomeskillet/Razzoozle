@@ -65,7 +65,11 @@
     "pollDesc": "Sondaggio d'opinione, senza punteggio",
     "multipleSelectDesc": "Più risposte corrette",
     "typeAnswerDesc": "Risposta scritta liberamente",
-    "sentenceBuilderDesc": "I giocatori ricostruiscono una frase da chip di parole mescolate"
+    "sentenceBuilderDesc": "I giocatori ricostruiscono una frase da chip di parole mescolate",
+    "mathematik": "Matematica",
+    "mathematikDesc": "Risposta numerica con tolleranza",
+    "wortarten": "Parti del Discorso",
+    "wortartenDesc": "Etichettatura delle parti del discorso"
   },
   "slider": {
     "min": "Min",

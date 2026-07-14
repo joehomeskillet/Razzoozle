@@ -73,7 +73,11 @@
     "pollDesc": "Encuesta de opinión, sin puntuación",
     "multipleSelectDesc": "Varias respuestas correctas",
     "typeAnswerDesc": "Respuesta escrita libremente",
-    "sentenceBuilderDesc": "Los jugadores reconstruyen una oración a partir de fichas de palabras mezcladas"
+    "sentenceBuilderDesc": "Los jugadores reconstruyen una oración a partir de fichas de palabras mezcladas",
+    "mathematik": "Matemáticas",
+    "mathematikDesc": "Respuesta numérica con tolerancia",
+    "wortarten": "Partes del Habla",
+    "wortartenDesc": "Etiquetado de partes del habla"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",

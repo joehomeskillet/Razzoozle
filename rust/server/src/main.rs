@@ -26,6 +26,8 @@ pub(crate) fn question_type_wire(question_type: &QuestionType) -> &'static str {
         QuestionType::MultipleSelect => "multiple-select",
         QuestionType::TypeAnswer => "type-answer",
         QuestionType::SentenceBuilder => "sentence-builder",
+        QuestionType::Mathematik => "mathematik",
+        QuestionType::Wortarten => "wortarten",
     }
 }
 
