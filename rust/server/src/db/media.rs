@@ -8,7 +8,7 @@ use sqlx::PgPool;
 ///          "own" = ($me IS NULL OR owner_id = $me)
 ///          "global" = is_global = true
 pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&str>) -> Vec<serde_json::Value> {
-    let pool = match pool {
+    let pool_ref = match pool {
         Some(p) => p,
         None => return Vec::new(),
     };
@@ -25,7 +25,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                      ORDER BY uploaded_at DESC"
                 )
                 .bind(me)
-                .fetch_all(pool)
+                .fetch_all(pool_ref)
                 .await
                 {
                     Ok(rows) => rows,
@@ -42,7 +42,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                      WHERE is_global = true \
                      ORDER BY uploaded_at DESC"
                 )
-                .fetch_all(pool)
+                .fetch_all(pool_ref)
                 .await
                 {
                     Ok(rows) => rows,
@@ -61,7 +61,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                      ORDER BY uploaded_at DESC"
                 )
                 .bind(me)
-                .fetch_all(pool)
+                .fetch_all(pool_ref)
                 .await
                 {
                     Ok(rows) => rows,
@@ -72,6 +72,10 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                 }
             }
         };
+
+    // Batch-fetch label IDs for all media assets in one query
+    let media_ids: Vec<&str> = rows.iter().map(|(id, _, _, _, _, _, _, _, _, _)| id.as_str()).collect();
+    let label_map = super::labels::get_media_label_ids_batch(pool, &media_ids).await;
 
     let mut result = Vec::new();
 
@@ -98,6 +102,13 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
         // Add height only if non-null
         if let Some(h) = height {
             media_obj["height"] = serde_json::json!(h);
+        }
+
+        // Add labelIds only if non-empty
+        if let Some(labels) = label_map.get(&id) {
+            if !labels.is_empty() {
+                media_obj["labelIds"] = serde_json::json!(labels);
+            }
         }
 
         result.push(media_obj);
