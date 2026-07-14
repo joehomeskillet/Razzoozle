@@ -1,22 +1,12 @@
 import * as Dialog from "@radix-ui/react-dialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import { LABEL_PALETTE } from "@razzoozle/web/components/labels/labelPalette"
 import { X } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 
 import type { Label } from "./useLabelManager"
-
-const COLOR_PALETTE = [
-  { slug: "red", label: "Rot" },
-  { slug: "blue", label: "Blau" },
-  { slug: "green", label: "Grün" },
-  { slug: "yellow", label: "Gelb" },
-  { slug: "purple", label: "Violett" },
-  { slug: "pink", label: "Rosa" },
-  { slug: "indigo", label: "Indigo" },
-  { slug: "gray", label: "Grau" },
-]
 
 interface EditLabelDialogProps {
   label: Label | null
@@ -48,12 +38,14 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
     }
   }
 
+  if (!label) return null
+
   return (
-    <Dialog.Root open={label !== null} onOpenChange={handleClose}>
+    <Dialog.Root open={!!label} onOpenChange={handleClose}>
       <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--border-hairline)] bg-white p-6 shadow-lg">
         <div className="flex items-center justify-between">
           <Dialog.Title className="text-lg font-semibold text-gray-900">
-            {t("manager:labels.renameTitle")}
+            {t("manager:labels.editTitle")}
           </Dialog.Title>
           <Dialog.Close asChild>
             <button className="text-gray-400 hover:text-gray-600">
@@ -64,15 +56,16 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="edit-label-name" className="block text-sm font-medium text-gray-900">
+            <label htmlFor="label-name-edit" className="block text-sm font-medium text-gray-900">
               {t("manager:labels.namePlaceholder")}
             </label>
             <Input
-              id="edit-label-name"
+              id="label-name-edit"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("manager:labels.namePlaceholder")}
               className="mt-2 w-full rounded-lg"
+              autoFocus
             />
           </div>
           <div>
@@ -80,7 +73,7 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
               {t("manager:labels.colorLabel")}
             </label>
             <div className="flex flex-wrap gap-2">
-              {COLOR_PALETTE.map((c) => (
+              {LABEL_PALETTE.map((c) => (
                 <button
                   key={c.slug}
                   type="button"
@@ -101,7 +94,7 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
               {t("common:cancel", { defaultValue: "Cancel" })}
             </Button>
             <Button variant="primary" type="submit">
-              {t("manager:labels.assignSave")}
+              {t("manager:labels.update")}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import type { Label } from "./LabelChip"
+import { getLabelColor } from "./labelPalette"
 
 interface LabelFilterPillsProps {
   labels: Label[]
@@ -29,6 +30,7 @@ export default function LabelFilterPills({
       </button>
       {labels.map((label) => {
         const active = activeId === label.id
+        const colors = getLabelColor(label.color)
 
         return (
           <button
@@ -39,7 +41,7 @@ export default function LabelFilterPills({
             className={clsx(
               "inline-flex min-h-9 items-center rounded-full px-3 text-sm font-semibold outline-2 -outline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
               active
-                ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)] outline-[var(--color-primary)]"
+                ? clsx(colors.bg, colors.text, "outline-[var(--color-primary)]")
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200",
             )}
           >
