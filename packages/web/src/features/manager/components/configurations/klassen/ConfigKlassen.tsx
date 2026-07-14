@@ -22,6 +22,7 @@ const ConfigKlassen = () => {
     handleAddStudent,
     handleDeleteStudent,
     handleUpdateStudent,
+    handleFetchStudents,
   } = useClassManager()
 
   const { t } = useTranslation()
@@ -105,6 +106,7 @@ const ConfigKlassen = () => {
             studentName: student.displayName,
           })
         }
+        onFetchStudents={handleFetchStudents}
       />
 
       {/* Create Class Dialog */}

@@ -300,6 +300,7 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string }) => void
   [EVENTS.CLASS.STUDENT_REMOVED]: () => void
   [EVENTS.CLASS.STUDENT_UPDATED]: () => void
+  [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string }> }) => void
   [EVENTS.CLASS.ERROR]: (_message: string) => void
 }
 
@@ -550,6 +551,7 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.ADD_STUDENT]: (_payload: { classId: number; displayName: string }) => void
   [EVENTS.CLASS.REMOVE_STUDENT]: (_studentId: number) => void
   [EVENTS.CLASS.UPDATE_STUDENT]: (_payload: { id: number; displayName: string }) => void
+  [EVENTS.CLASS.GET_STUDENTS]: (_classId: number) => void
 
   // Common
   disconnect: () => void

@@ -259,6 +259,8 @@ export const EVENTS = {
     STUDENT_REMOVED: "class:studentRemoved",
     UPDATE_STUDENT: "class:updateStudent",
     STUDENT_UPDATED: "class:studentUpdated",
+    GET_STUDENTS: "class:getStudents",
+    STUDENTS_DATA: "class:studentsData",
     ERROR: "class:error",
   },
 } as const

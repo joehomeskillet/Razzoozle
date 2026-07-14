@@ -7,6 +7,7 @@
 //! class:addStudent — add a student to a class
 //! class:removeStudent — remove a student from a class
 //! class:updateStudent — update a student's display name
+//! class:getStudents — fetch students for a class
 
 use super::super::HandlerCtx;
 use crate::db;
@@ -21,6 +22,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_add_student(socket, ctx.clone());
     register_remove_student(socket, ctx.clone());
     register_update_student(socket, ctx.clone());
+    register_get_students(socket, ctx.clone());
 }
 
 fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
@@ -341,6 +343,36 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                         socket.emit(constants::class::ERROR, "errors:class.updateStudentFailed").ok();
                     }
                 }
+            });
+        }
+    });
+}
+
+fn register_get_students(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::GET_STUDENTS, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<i64>(class_id)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let students = db::get_students(&ctx.db_pool, class_id, me).await;
+
+                socket.emit(constants::class::STUDENTS_DATA, &serde_json::json!({
+                    "classId": class_id,
+                    "students": students,
+                })).ok();
             });
         }
     });

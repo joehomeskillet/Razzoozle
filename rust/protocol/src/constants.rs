@@ -206,6 +206,8 @@ pub mod class {
     pub const STUDENT_REMOVED: &str = "class:studentRemoved";
     pub const UPDATE_STUDENT: &str = "class:updateStudent";
     pub const STUDENT_UPDATED: &str = "class:studentUpdated";
+    pub const GET_STUDENTS: &str = "class:getStudents";
+    pub const STUDENTS_DATA: &str = "class:studentsData";
     pub const ERROR: &str = "class:error";
 }
 

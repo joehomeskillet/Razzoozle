@@ -3,7 +3,7 @@ import {
   useEvent,
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -53,8 +53,27 @@ export const useClassManager = () => {
 
   // Listen for class data
   useEvent(EVENTS.CLASS.DATA, (data: Class[]) => {
-    setClasses(data.map((c) => ({ ...c, students: [] })))
+    setClasses((prev) =>
+      data.map((c) => ({
+        ...c,
+        students: c.students ?? prev.find((p) => p.id === c.id)?.students ?? [],
+      })),
+    )
   })
+
+  // Listen for fetched students
+  useEvent(
+    EVENTS.CLASS.STUDENTS_DATA,
+    (data: { classId: number; students: Array<{ id: number; displayName: string }> }) => {
+      setClasses((prev) =>
+        prev.map((c) =>
+          c.id === data.classId
+            ? { ...c, students: data.students }
+            : c
+        )
+      )
+    }
+  )
 
   // Listen for class creation
   useEvent(
@@ -125,7 +144,27 @@ export const useClassManager = () => {
 
   // Request class list on mount
   useEffect(() => {
+    if (!socket) return
     socket.emit(EVENTS.CLASS.LIST)
+  }, [socket])
+
+  // Re-emit class:list when socket connects/reconnects
+  useEffect(() => {
+    if (!socket) return
+
+    const handleConnect = () => {
+      socket.emit(EVENTS.CLASS.LIST)
+    }
+
+    socket.on("connect", handleConnect)
+    return () => {
+      socket.off("connect", handleConnect)
+    }
+  }, [socket])
+
+  // Fetch students for a class
+  const handleFetchStudents = useCallback((classId: number) => {
+    socket.emit(EVENTS.CLASS.GET_STUDENTS, classId)
   }, [socket])
 
   // Handlers for class operations
@@ -187,5 +226,6 @@ export const useClassManager = () => {
     handleAddStudent,
     handleDeleteStudent,
     handleUpdateStudent,
+    handleFetchStudents,
   }
 }

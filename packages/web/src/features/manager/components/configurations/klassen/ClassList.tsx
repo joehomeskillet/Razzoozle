@@ -35,6 +35,7 @@ interface ClassListProps {
   onAddStudent: (classId: number) => void
   onEditStudent: (student: { id: number; displayName: string }) => void
   onDeleteStudent: (student: { id: number; displayName: string }) => void
+  onFetchStudents?: (classId: number) => void
 }
 
 const ClassList = ({
@@ -45,6 +46,7 @@ const ClassList = ({
   onAddStudent,
   onEditStudent,
   onDeleteStudent,
+  onFetchStudents,
 }: ClassListProps) => {
   const { t } = useTranslation()
   const [expandedClassId, setExpandedClassId] = useState<number | null>(null)
@@ -84,11 +86,13 @@ const ClassList = ({
             <div className="flex items-center gap-2 rounded-xl bg-[var(--surface)] px-4 py-3 border border-[var(--border-hairline)]">
               <button
                 type="button"
-                onClick={() =>
-                  setExpandedClassId(
-                    expandedClassId === classObj.id ? null : classObj.id
-                  )
-                }
+                onClick={() => {
+                  const newId = expandedClassId === classObj.id ? null : classObj.id
+                  setExpandedClassId(newId)
+                  if (newId !== null && (!classObj.students || classObj.students.length === 0)) {
+                    onFetchStudents?.(classObj.id)
+                  }
+                }}
                 className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--game-fg)] hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={
                   expandedClassId === classObj.id
