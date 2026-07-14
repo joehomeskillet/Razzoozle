@@ -227,7 +227,7 @@ fn register_assign(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -269,15 +269,52 @@ fn register_assign(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let label_ids: Vec<i64> = payload
+                // Strict labelIds validation: reject if any value is not i64
+                let empty_array = vec![];
+                let label_ids_raw = payload
                     .get("labelIds")
                     .and_then(|v| v.as_array())
-                    .map(|arr| {
-                        arr.iter()
-                            .filter_map(|v| v.as_i64())
-                            .collect()
-                    })
-                    .unwrap_or_default();
+                    .unwrap_or(&empty_array);
+
+                let mut label_ids = Vec::new();
+                for val in label_ids_raw {
+                    match val.as_i64() {
+                        Some(id) => label_ids.push(id),
+                        None => {
+                            socket
+                                .emit(constants::label::ERROR, &json!({"message": "invalid_label_ids"}))
+                                .ok();
+                            tracing::warn!("label:assign rejected — non-i64 labelIds value");
+                            return;
+                        }
+                    }
+                }
+
+                // Check if labelIds count matches sent count (ensure no silent skipping)
+                if label_ids.len() != label_ids_raw.len() {
+                    socket
+                        .emit(constants::label::ERROR, &json!({"message": "invalid_label_ids"}))
+                        .ok();
+                    tracing::warn!("label:assign rejected — labelIds count mismatch");
+                    return;
+                }
+
+                // Entity visibility gate: check if user owns/can see the entity
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let entity_exists = match entity_type {
+                    "quizz" => db::quiz_is_visible(&ctx.db_pool, entity_id, me).await,
+                    "media" => db::media_is_visible(&ctx.db_pool, entity_id, me).await,
+                    "catalog" => db::catalog_is_visible(&ctx.db_pool, entity_id, me).await,
+                    _ => false,
+                };
+
+                if !entity_exists {
+                    socket
+                        .emit(constants::label::ERROR, &json!({"message": "errors:label.entityNotOwned"}))
+                        .ok();
+                    tracing::warn!("label:assign denied — entity not visible to user: type={} id={} user_id={:?}", entity_type, entity_id, me);
+                    return;
+                }
 
                 match db::assign_labels(&ctx.db_pool, entity_type, entity_id, &label_ids).await {
                     Ok(_) => {

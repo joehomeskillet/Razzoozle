@@ -222,3 +222,64 @@ pub async fn get_label_ids(
         }
     }
 }
+
+/// Check if a quiz is visible/owned by the user.
+/// `me`: None = admin (sees all); Some(id) = only own.
+pub async fn quiz_is_visible(pool: &Option<PgPool>, quiz_id: &str, me: Option<i64>) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM quizzes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2))"
+    )
+    .bind(quiz_id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(Some(exists)) => exists,
+        _ => false,
+    }
+}
+
+/// Check if media is visible/owned by the user.
+pub async fn media_is_visible(pool: &Option<PgPool>, media_id: &str, me: Option<i64>) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM media_assets WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2))"
+    )
+    .bind(media_id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(Some(exists)) => exists,
+        _ => false,
+    }
+}
+
+/// Check if catalog entry is visible/owned by the user.
+pub async fn catalog_is_visible(pool: &Option<PgPool>, catalog_id: &str, me: Option<i64>) -> bool {
+    let pool = match pool {
+        Some(p) => p,
+        None => return false,
+    };
+
+    match sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM catalog_entries WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2))"
+    )
+    .bind(catalog_id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    {
+        Ok(Some(exists)) => exists,
+        _ => false,
+    }
+}
