@@ -15,6 +15,7 @@ export const CatalogQuestionModal = ({
 }: CatalogQuestionModalProps) => {
   const { t } = useTranslation()
   const [tagsValue, setTagsValue] = useState("")
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([])
   const dialogRef = useRef<HTMLElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -22,6 +23,7 @@ export const CatalogQuestionModal = ({
   useEffect(() => {
     if (open) {
       setTagsValue((editingEntry?.tags ?? []).join(", "))
+      setSelectedLabelIds((editingEntry?.labelIds ?? []))
     }
   }, [editingEntry, open])
 
@@ -41,8 +43,6 @@ export const CatalogQuestionModal = ({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [onClose, open])
 
-  // Focus management: remember the previously focused element, move focus into
-  // the modal on open, and restore it on close.
   useEffect(() => {
     if (!open) {
       return
@@ -59,7 +59,6 @@ export const CatalogQuestionModal = ({
     }
   }, [open])
 
-  // Trap Tab / Shift+Tab focus within the modal.
   const handleFocusTrap = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key !== "Tab") {
       return
@@ -152,6 +151,8 @@ export const CatalogQuestionModal = ({
             onTagsChange={setTagsValue}
             onClose={onClose}
             onSaveStart={onSaveStart}
+            selectedLabelIds={selectedLabelIds}
+            onLabelIdsChange={setSelectedLabelIds}
           />
         </QuizzEditorProvider>
       </section>

@@ -1,8 +1,9 @@
 import { EVENTS } from "@razzoozle/common/constants"
-import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import LabelChip from "@razzoozle/web/components/labels/LabelChip"
+import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import {
   useEvent,
   useSocket,
@@ -11,6 +12,8 @@ import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
+import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { BookOpen, Library, Pencil, SearchX, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -18,7 +21,7 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import { CatalogQuestionModal } from "./CatalogQuestionModal"
 import { TYPE_LABEL_KEY } from "./constants"
-import type { CatalogModalMode } from "./types"
+import type { CatalogEntry, CatalogModalMode } from "./types"
 import { formatDate } from "./utils"
 
 type CatalogScope = "own" | "global" | "all"
@@ -29,19 +32,19 @@ const ConfigCatalog = () => {
   const reducedMotion = useReducedMotion()
   const [entries, setEntries] = useState<CatalogEntry[]>([])
   const [search, setSearch] = useState("")
-  // Server-side ownership filter (own | global | all). Sent on every LIST
-  // request; the server ultimately still enforces its own role default (see
-  // EVENTS.CATALOG.LIST doc-comment), this is a client preference on top.
   const [scope, setScope] = useState<CatalogScope>("all")
+  const [selectedLabelId, setSelectedLabelId] = useState<number | null>(null)
   const [modalMode, setModalMode] = useState<CatalogModalMode>("add")
   const [editingEntry, setEditingEntry] = useState<CatalogEntry | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingOp, setPendingOp] = useState<CatalogModalMode | null>(null)
-  // The catalog entry pending a delete confirmation; drives the AlertDialog.
   const [pendingDelete, setPendingDelete] = useState<{
     id: string
     question: string
   } | null>(null)
+
+  const { labels } = useLabelManager()
+  const klassenEnabled = useManagerStore((s) => s.config?.klassenEnabled ?? false)
 
   const requestCatalog = useCallback(() => {
     socket.emit(EVENTS.CATALOG.LIST, { scope })
@@ -62,7 +65,6 @@ const ConfigCatalog = () => {
     EVENTS.CATALOG.ERROR,
     useCallback(
       (message: string) => {
-        // Reset pendingOp so a failed add/edit doesn't mislabel the next op.
         setPendingOp(null)
         toast.error(t(message))
       },
@@ -87,23 +89,39 @@ const ConfigCatalog = () => {
     }, [pendingOp, requestCatalog, t]),
   )
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useEvent(EVENTS.LABEL.ASSIGNED as any, useCallback((payload: any) => {
+    if (payload.entityType === "catalog") {
+      requestCatalog()
+    }
+  }, [requestCatalog]))
+
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase()
+    let results = entries
 
-    if (!q) {
-      return entries
+    // Filter by search text
+    if (q) {
+      results = results.filter((entry) => {
+        const question = entry.question.question.toLowerCase()
+        const tags = entry.tags ?? []
+        return (
+          question.includes(q) ||
+          tags.some((tag) => tag.toLowerCase().includes(q))
+        )
+      })
     }
 
-    return entries.filter((entry) => {
-      const question = entry.question.question.toLowerCase()
-      const tags = entry.tags ?? []
+    // Filter by selected label
+    if (selectedLabelId !== null && klassenEnabled) {
+      results = results.filter((entry) => {
+        const entryLabelIds = entry.labelIds ?? []
+        return entryLabelIds.includes(selectedLabelId)
+      })
+    }
 
-      return (
-        question.includes(q) ||
-        tags.some((tag) => tag.toLowerCase().includes(q))
-      )
-    })
-  }, [entries, search])
+    return results
+  }, [entries, search, selectedLabelId, klassenEnabled])
 
   const openAddModal = () => {
     setModalMode("add")
@@ -128,7 +146,6 @@ const ConfigCatalog = () => {
       return
     }
 
-    // Optimistic: no per-op ack for DELETE; CATALOG.ERROR covers failures.
     socket.emit(EVENTS.CATALOG.DELETE, { id: pendingDelete.id })
     toast.success(t("manager:catalog.deleted"))
     setPendingDelete(null)
@@ -202,6 +219,14 @@ const ConfigCatalog = () => {
             )
           })}
         </div>
+
+        {klassenEnabled && (
+          <LabelFilterPills
+            labels={labels}
+            activeId={selectedLabelId}
+            onChange={setSelectedLabelId}
+          />
+        )}
       </div>
 
       {entries.length === 0 ? (
@@ -234,6 +259,7 @@ const ConfigCatalog = () => {
           {filteredEntries.map((entry, index) => {
             const type = entry.question.type ?? "choice"
             const source = entry.source ?? "manual"
+            const entryLabelIds = entry.labelIds ?? []
 
             return (
               <motion.div
@@ -261,6 +287,15 @@ const ConfigCatalog = () => {
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
                           {t(`manager:catalog.source.${source}`)}
                         </span>
+                        {klassenEnabled && entryLabelIds.length > 0 && (
+                          <>
+                            {labels
+                              .filter((label) => entryLabelIds.includes(label.id))
+                              .map((label) => (
+                                <LabelChip key={label.id} label={label} />
+                              ))}
+                          </>
+                        )}
                         {(entry.tags ?? []).map((tag, tagIndex) => (
                           <span
                             key={`${tag}-${tagIndex}`}
