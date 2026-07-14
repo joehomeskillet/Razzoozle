@@ -1,4 +1,8 @@
+import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
+import LabelChip from "@razzoozle/web/components/labels/LabelChip"
+import type { Label } from "@razzoozle/web/components/labels/LabelChip"
+import type { QuizzMeta } from "@razzoozle/common/types/game"
 import {
   EmptyState,
   ListRow,
@@ -9,12 +13,17 @@ import {
   Copy,
   Download,
   ListChecks,
+  Plus,
   SearchX,
   SquarePen,
   Trash2,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
+import { useState } from "react"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { EVENTS } from "@razzoozle/common/constants"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 
 import type { useQuizzManager } from "./useQuizzManager"
 
@@ -33,7 +42,9 @@ type QuizzListProps = Pick<
   | "setPendingDelete"
   | "setPendingDuplicate"
   | "setShowArchived"
->
+> & {
+  labels: Label[]
+}
 
 const QuizzList = ({
   quizz,
@@ -49,9 +60,27 @@ const QuizzList = ({
   setPendingDelete,
   setPendingDuplicate,
   setShowArchived,
+  labels,
 }: QuizzListProps) => {
   const { t } = useTranslation()
+  const { socket } = useSocket()
+  const { klassenEnabled } = useConfig()
   const reducedMotion = useReducedMotion()
+  const [assigningLabelTo, setAssigningLabelTo] = useState<string | null>(null)
+
+  const handleLabelAssign = (quizzId: string, labelIds: number[]) => {
+    socket.emit(EVENTS.LABEL.ASSIGN, {
+      entityType: "quizz",
+      entityId: quizzId,
+      labelIds,
+    })
+    setAssigningLabelTo(null)
+  }
+
+  const getLabelMap = (q: QuizzMeta) => {
+    const assigned = new Map(labels.map((l: Label) => [l.id, l]))
+    return (q.labelIds ?? []).map((id: number) => assigned.get(id)).filter((l: Label | undefined) => l) as Label[]
+  }
 
   return quizz.length === 0 ? (
     <div className="flex min-h-0 flex-1 flex-col justify-center">
@@ -86,88 +115,153 @@ const QuizzList = ({
         reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
       }
     >
-      {activeQuizz.map((q, index) => (
-        <motion.div
-          key={q.id}
-          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={
-            reducedMotion
-              ? undefined
-              : {
-                  duration: 0.28,
-                  ease: "easeOut",
-                  delay: Math.min(index, 8) * 0.04,
-                }
-          }
-        >
-          <div className="flex items-center gap-2">
-            <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100">
-              <span className="sr-only">
-                {t("manager:quizz.selectQuiz", {
-                  name: q.subject,
-                  defaultValue: '„{{name}}“ auswählen',
-                })}
-              </span>
-              <input
-                type="checkbox"
-                checked={selected.has(q.id)}
-                onChange={() => toggleSelect(q.id)}
-                className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              />
-            </label>
-            <ListRow
-              title={q.subject}
-              className="min-w-0 flex-1"
-              meta={
-                q.questionCount != null
-                  ? t("manager:catalog.count", { count: q.questionCount })
-                  : undefined
-              }
-              actions={[
-                {
-                  key: "edit",
-                  icon: SquarePen,
-                  label: t("manager:quizz.edit", { name: q.subject }),
-                  onClick: () => {
-                    void navigate({
-                      to: "/manager/quizz/$quizzId",
-                      params: { quizzId: q.id },
-                    })
-                  },
-                },
-                {
-                  key: "duplicate",
-                  icon: Copy,
-                  label: t("manager:quizz.duplicate", { name: q.subject }),
-                  onClick: () =>
-                    setPendingDuplicate({ id: q.id, subject: q.subject }),
-                },
-                {
-                  key: "export",
-                  icon: Download,
-                  label: t("manager:quizz.export", { name: q.subject }),
-                  onClick: () => handleExport(q.id),
-                },
-                {
-                  key: "archive",
-                  icon: Archive,
-                  label: t("manager:quizz.archive"),
-                  onClick: () => handleArchived(q.id, true),
-                },
-                {
-                  key: "delete",
-                  icon: Trash2,
-                  label: t("manager:quizz.delete"),
-                  destructive: true,
-                  onClick: () =>
-                    setPendingDelete({ id: q.id, subject: q.subject }),
-                },
-              ]}
-            />
-          </div>
-        </motion.div>
-      ))}
+      {activeQuizz.map((q, index) => {
+        const assignedLabels = getLabelMap(q)
+        const availableLabels = labels.filter((l: Label) => !assignedLabels.some((al: Label) => al.id === l.id))
+
+        return (
+          <motion.div
+            key={q.id}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={
+              reducedMotion
+                ? undefined
+                : {
+                    duration: 0.28,
+                    ease: "easeOut",
+                    delay: Math.min(index, 8) * 0.04,
+                  }
+            }
+          >
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100">
+                  <span className="sr-only">
+                    {t("manager:quizz.selectQuiz", {
+                      name: q.subject,
+                      defaultValue: '„{{name}}" auswählen',
+                    })}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(q.id)}
+                    onChange={() => toggleSelect(q.id)}
+                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                </label>
+                <ListRow
+                  title={q.subject}
+                  className="min-w-0 flex-1"
+                  meta={
+                    q.questionCount != null
+                      ? t("manager:catalog.count", { count: q.questionCount })
+                      : undefined
+                  }
+                  actions={[
+                    {
+                      key: "edit",
+                      icon: SquarePen,
+                      label: t("manager:quizz.edit", { name: q.subject }),
+                      onClick: () => {
+                        void navigate({
+                          to: "/manager/quizz/$quizzId",
+                          params: { quizzId: q.id },
+                        })
+                      },
+                    },
+                    {
+                      key: "duplicate",
+                      icon: Copy,
+                      label: t("manager:quizz.duplicate", { name: q.subject }),
+                      onClick: () =>
+                        setPendingDuplicate({ id: q.id, subject: q.subject }),
+                    },
+                    {
+                      key: "export",
+                      icon: Download,
+                      label: t("manager:quizz.export", { name: q.subject }),
+                      onClick: () => handleExport(q.id),
+                    },
+                    {
+                      key: "archive",
+                      icon: Archive,
+                      label: t("manager:quizz.archive"),
+                      onClick: () => handleArchived(q.id, true),
+                    },
+                    {
+                      key: "delete",
+                      icon: Trash2,
+                      label: t("manager:quizz.delete"),
+                      destructive: true,
+                      onClick: () =>
+                        setPendingDelete({ id: q.id, subject: q.subject }),
+                    },
+                  ]}
+                />
+              </div>
+
+              {klassenEnabled && (assignedLabels.length > 0 || availableLabels.length > 0) && (
+                <div className="ml-11 flex flex-wrap items-center gap-1.5">
+                  {assignedLabels.map((label: Label) => (
+                    <LabelChip
+                      key={label.id}
+                      label={label}
+                      onRemove={() => {
+                        const newLabelIds = (q.labelIds ?? []).filter((id: number) => id !== label.id)
+                        handleLabelAssign(q.id, newLabelIds)
+                      }}
+                    />
+                  ))}
+
+                  {availableLabels.length > 0 && (
+                    <Select.Root
+                      value={assigningLabelTo === q.id ? "" : ""}
+                      onValueChange={(val: string) => {
+                        const newLabelIds = [...(q.labelIds ?? []), Number(val)]
+                        handleLabelAssign(q.id, newLabelIds)
+                      }}
+                    >
+                      <Select.Trigger
+                        aria-label={t("manager:labels.assignLabel", {
+                          defaultValue: "Label zuweisen",
+                        })}
+                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                      >
+                        <Plus className="size-3" />
+                        <Select.Value
+                          placeholder={t("manager:labels.assignTitle", {
+                            defaultValue: "+ Fach",
+                          })}
+                        />
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Content
+                          position="popper"
+                          sideOffset={4}
+                          className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                        >
+                          <Select.Viewport className="p-1">
+                            {availableLabels.map((label: Label) => (
+                              <Select.Item
+                                key={label.id}
+                                value={String(label.id)}
+                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                              >
+                                <Select.ItemText>{label.name}</Select.ItemText>
+                              </Select.Item>
+                            ))}
+                          </Select.Viewport>
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select.Root>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )
+      })}
 
       {archivedQuizz.length > 0 && (
         <div className="space-y-3 pt-3">
