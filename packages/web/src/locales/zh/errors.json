@@ -205,5 +205,10 @@
   "connection": {
     "lost": "连接已断开 —— 正在尝试重新连接",
     "restored": "连接已恢复"
+  },
+  "label": {
+    "nameExists": "已存在同名标签。",
+    "entityNotOwned": "您无权编辑此实体。",
+    "invalid": "无效的标签请求。"
   }
 }

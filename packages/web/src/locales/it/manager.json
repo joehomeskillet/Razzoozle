@@ -846,7 +846,23 @@
     "noResults": "Nessuno studente trovato"
   },
   "labels": {
-    "description": "Etichette globali per organizzare quiz, media e voci del catalogo.",
-    "emptyState": "Segnaposto della struttura — le definizioni delle etichette verranno caricate qui."
+    "title": "Etichette",
+    "description": "Definisci etichette globali (materie) per organizzare quiz, media e voci di catalogo.",
+    "emptyState": "Nessuna etichetta definita ancora. Crea la tua prima etichetta con il pulsante qui sotto.",
+    "create": "Crea etichetta",
+    "createTitle": "Crea nuova etichetta",
+    "namePlaceholder": "Nome etichetta",
+    "colorLabel": "Colore",
+    "created": "Etichetta creata",
+    "updated": "Etichetta aggiornata",
+    "deleted": "Etichetta eliminata",
+    "deleteTitle": "Elimina etichetta",
+    "deleteConfirm": "Sei sicuro di voler eliminare \"{{name}}\"? L'etichetta verrà rimossa da tutti i quiz, media e voci di catalogo.",
+    "renameTitle": "Modifica etichetta",
+    "filterAll": "Tutti",
+    "filterLabel": "Etichetta",
+    "assignTitle": "Assegna etichetta",
+    "assignSave": "Salva",
+    "noLabels": "Nessuna etichetta disponibile"
   }
 }

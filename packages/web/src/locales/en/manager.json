@@ -857,7 +857,23 @@
     "noResults": "No students found"
   },
   "labels": {
-    "description": "Global labels for organizing quizzes, media, and catalog entries.",
-    "emptyState": "Scaffold placeholder — label definitions will load here."
+    "title": "Labels",
+    "description": "Define global labels (subjects) for organizing quizzes, media, and catalog entries.",
+    "emptyState": "No labels defined yet. Create your first label with the button below.",
+    "create": "Create label",
+    "createTitle": "Create new label",
+    "namePlaceholder": "Label name",
+    "colorLabel": "Color",
+    "created": "Label created",
+    "updated": "Label updated",
+    "deleted": "Label deleted",
+    "deleteTitle": "Delete label",
+    "deleteConfirm": "Do you really want to delete \"{{name}}\"? The label will be removed from all quizzes, media, and catalog entries.",
+    "renameTitle": "Edit label",
+    "filterAll": "All",
+    "filterLabel": "Label",
+    "assignTitle": "Assign label",
+    "assignSave": "Save",
+    "noLabels": "No labels available"
   }
 }
