@@ -271,6 +271,7 @@ mod tests {
         sentence: None,
         tokens: None,
         pos_set: None,
+        disabled_tokens: None,
         };
 
         let row = AwardRow {
@@ -330,6 +331,7 @@ mod tests {
         sentence: None,
         tokens: None,
         pos_set: None,
+        disabled_tokens: None,
         };
 
         let row = AwardRow {

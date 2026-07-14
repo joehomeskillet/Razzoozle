@@ -270,15 +270,31 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
                             };
                         }
 
-                        // Count correct tokens (case-sensitive comparison)
-                        let correct_count = submitted_pos
+                        // Disabled token indices are excluded from both numerator and
+                        // denominator (they were never presented to the player). Length
+                        // guards above stay on the FULL length; only the score sum skips
+                        // disabled positions.
+                        let disabled: &[i32] = question
+                            .disabled_tokens
+                            .as_deref()
+                            .unwrap_or(&[]);
+
+                        // Count correct tokens among active (non-disabled) positions only
+                        let (correct_count, active_count) = submitted_pos
                             .iter()
                             .zip(correct_pos.iter())
-                            .filter(|(s, c)| s == c)
-                            .count();
+                            .enumerate()
+                            .filter(|(i, _)| !disabled.contains(&(*i as i32)))
+                            .fold((0usize, 0usize), |(correct, active), (_, (s, c))| {
+                                (correct + if s == c { 1 } else { 0 }, active + 1)
+                            });
 
-                        let base = correct_count as f64 / submitted_pos.len() as f64;
-                        let correct = base == 1.0;
+                        let base = if active_count == 0 {
+                            0.0
+                        } else {
+                            correct_count as f64 / active_count as f64
+                        };
+                        let correct = active_count > 0 && base == 1.0;
 
                         return EvalResult { correct, base };
                     }
@@ -336,6 +352,7 @@ mod tests {
         sentence: None,
         tokens: None,
         pos_set: None,
+        disabled_tokens: None,
         }
     }
 
@@ -553,6 +570,93 @@ mod tests {
         let result = evaluate_answer(&q, &ans);
         assert!(!result.correct);
         assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn wortarten_disabled_token_ignored_in_scoring() {
+        // 3 tokens, middle one (index 1) disabled. Submitted answer gets it
+        // wrong ("Verb" instead of "Adjektiv") but since it's disabled it must
+        // NOT count against the score: 2/2 active correct => base 1.0, correct.
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+            "Artikel".to_string(),
+        ]);
+        q.solutions = Some(vec![3, 2, 0]); // Artikel, Adjektiv, Nomen
+        q.disabled_tokens = Some(vec![1]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            // index 1 submitted is deliberately wrong; must be ignored
+            answer_text: Some(r#"["Artikel","Verb","Nomen"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn wortarten_all_disabled_defensive_zero() {
+        // Every token disabled => active_count == 0, base defensively 0.0, not correct.
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec!["Nomen".to_string(), "Verb".to_string()]);
+        q.solutions = Some(vec![0, 1]);
+        q.disabled_tokens = Some(vec![0, 1]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Nomen","Verb"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn wortarten_without_disabled_tokens_matches_legacy_behavior() {
+        // Regression guard: missing disabledTokens (None) behaves exactly like
+        // the pre-W1 path — full-length scoring, no positions skipped.
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+            "Artikel".to_string(),
+        ]);
+        q.solutions = Some(vec![3, 0, 2]); // Artikel, Nomen, Adjektiv
+        assert!(q.disabled_tokens.is_none());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Artikel","Verb","Adjektiv"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 2.0 / 3.0);
+    }
+
+    #[test]
+    fn wortarten_out_of_bounds_disabled_index_is_harmless() {
+        // disabledTokens containing an OOB index (>= tokens.length) must not
+        // panic or affect scoring of the in-bounds positions.
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+        ]);
+        q.solutions = Some(vec![0, 1, 2]);
+        q.disabled_tokens = Some(vec![99, -1]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Nomen","Verb","Adjektiv"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
     }
 
     #[test]

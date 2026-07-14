@@ -96,6 +96,7 @@ mod tests {
             step: None,
             unit: None,
             chunks: None,
+            disabled_tokens: None,
             cooldown: 1,
             time,
             practice: None,
