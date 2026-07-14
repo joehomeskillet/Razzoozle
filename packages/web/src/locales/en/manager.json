@@ -149,7 +149,8 @@
     "dev": "Dev",
     "profile": "My Profile",
     "klassen": "Classes",
-    "users": "User Management"
+    "users": "User Management",
+    "schueler": "Student management"
   },
   "plugins": {
     "title": "Plugins",
@@ -816,5 +817,10 @@
     },
     "roleUser": "Teacher",
     "roleAdmin": "Admin"
+  },
+  "schueler": {
+    "title": "Student Management",
+    "description": "Manage students across classes and view their game results at a glance.",
+    "empty": "No students created yet. Add students in the class management."
   }
 }

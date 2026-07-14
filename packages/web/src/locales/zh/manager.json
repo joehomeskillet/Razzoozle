@@ -140,7 +140,8 @@
     "dev": "开发",
     "klassen": "班级",
     "profile": "我的资料",
-    "users": "用户管理"
+    "users": "用户管理",
+    "schueler": "学生管理"
   },
   "plugins": {
     "title": "插件",
@@ -805,5 +806,10 @@
       "networkError": "网络错误",
       "allFieldsRequired": "所有字段都是必需的"
     }
+  },
+  "schueler": {
+    "title": "学生管理",
+    "description": "跨班级管理学生，一览他们的游戏成绩。",
+    "empty": "暂无学生。请在班级管理中添加学生。"
   }
 }
