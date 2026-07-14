@@ -186,7 +186,8 @@
     "studentPinFailed": "Code konnte nicht geladen werden",
     "regenPinFailed": "Neuer Code konnte nicht generiert werden",
     "classNotOwned": "Diese Klasse gehört dir nicht oder existiert nicht mehr",
-    "cannotManageStudent": "Du darfst diesen Schüler nicht verwalten"
+    "cannotManageStudent": "Du darfst diesen Schüler nicht verwalten",
+    "birthdateInFuture": "Das Geburtsdatum darf nicht in der Zukunft liegen."
   },
   "ai": {
     "notConfigured": "Kein KI-Anbieter konfiguriert.",

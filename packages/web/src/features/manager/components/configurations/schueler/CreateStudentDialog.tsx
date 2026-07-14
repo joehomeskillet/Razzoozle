@@ -4,6 +4,9 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { StudentClassRef } from "./useSchuelerManager"
 
+// Matches the server's UTC "not in the future" check (see class:createStudent).
+const todayIso = new Date().toISOString().slice(0, 10)
+
 interface CreateStudentDialogProps {
   open: boolean
   classes: StudentClassRef[]
@@ -92,6 +95,7 @@ const CreateStudentDialog = ({
           id="schueler-create-birthdate"
           type="date"
           value={birthdate}
+          max={todayIso}
           onChange={(e) => setBirthdate(e.target.value)}
           className="focus-visible:border-primary mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
         />

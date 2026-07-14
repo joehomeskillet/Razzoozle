@@ -184,7 +184,8 @@
     "studentPinFailed": "无法加载登录码",
     "regenPinFailed": "无法生成新的登录码",
     "classNotOwned": "该班级不属于你或已不存在",
-    "cannotManageStudent": "你无权管理该学生"
+    "cannotManageStudent": "你无权管理该学生",
+    "birthdateInFuture": "出生日期不能是未来的日期。"
   },
   "ai": {
     "notConfigured": "尚未配置 AI 提供商。",

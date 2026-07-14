@@ -8,6 +8,9 @@ import ClassList from "./ClassList"
 import StudentPicker from "./StudentPicker"
 import { useClassManager } from "./useClassManager"
 
+// Matches the server's UTC "not in the future" check (see class:updateStudent).
+const todayIso = new Date().toISOString().slice(0, 10)
+
 const ConfigKlassen = () => {
   const {
     classes,
@@ -260,6 +263,7 @@ const ConfigKlassen = () => {
               id="klassen-edit-student-birthdate"
               type="date"
               value={editStudentBirthdate}
+              max={todayIso}
               onChange={(e) => setEditStudentBirthdate(e.target.value)}
               className="focus-visible:border-primary mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
             />
