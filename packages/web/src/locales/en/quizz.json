@@ -77,7 +77,9 @@
     "mathematik": "Mathematics",
     "mathematikDesc": "Numeric answer with tolerance",
     "wortarten": "Parts of Speech",
-    "wortartenDesc": "Parts of speech tagging"
+    "wortartenDesc": "Parts of speech tagging",
+    "vokabelliste": "Vocabulary List",
+    "vokabellisteDesc": "Bulk editor for word pairs → emits multiple text-input questions"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",
@@ -119,5 +121,16 @@
     "removeChunk": "Remove chunk {{index}}",
     "preview": "Players will see these chips shuffled",
     "minChunksRequired": "At least 2 chunks required"
+  },
+  "vokabel": {
+    "direction": "Direction",
+    "wordToTranslation": "Word → Translation",
+    "translationToWord": "Translation → Word",
+    "wordList": "Word List",
+    "wordPlaceholder": "Word",
+    "translationPlaceholder": "Translation",
+    "removeRow": "Remove row",
+    "addRow": "Add row",
+    "createQuestions": "Create Questions"
   }
 }

@@ -77,7 +77,9 @@
     "mathematik": "Matemáticas",
     "mathematikDesc": "Respuesta numérica con tolerancia",
     "wortarten": "Partes del Habla",
-    "wortartenDesc": "Etiquetado de partes del habla"
+    "wortartenDesc": "Etiquetado de partes del habla",
+    "vokabelliste": "Lista de Vocabulario",
+    "vokabellisteDesc": "Editor en masa para pares de palabras → emite múltiples preguntas de entrada de texto"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -119,5 +121,16 @@
     "removeChunk": "Eliminar ficha {{index}}",
     "preview": "Los jugadores verán estas fichas mezcladas",
     "minChunksRequired": "Se requieren al menos 2 fichas"
+  },
+  "vokabel": {
+    "direction": "Dirección",
+    "wordToTranslation": "Palabra → Traducción",
+    "translationToWord": "Traducción → Palabra",
+    "wordList": "Lista de Palabras",
+    "wordPlaceholder": "Palabra",
+    "translationPlaceholder": "Traducción",
+    "removeRow": "Eliminar fila",
+    "addRow": "Añadir fila",
+    "createQuestions": "Crear Preguntas"
   }
 }

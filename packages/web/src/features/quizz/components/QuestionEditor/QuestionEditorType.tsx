@@ -12,12 +12,15 @@ import {
   ListChecks,
   SlidersHorizontal,
   ToggleLeft,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
+type QuestionTypeKey = QuestionType | "vokabelliste"
+
 const TYPES: Array<{
-  key: QuestionType
+  key: QuestionTypeKey
   labelKey: string
   descKey: string
   icon: LucideIcon
@@ -76,6 +79,12 @@ const TYPES: Array<{
     descKey: "quizz:type.wortartenDesc",
     icon: Languages,
   },
+  {
+    key: "vokabelliste",
+    labelKey: "quizz:type.vokabelliste",
+    descKey: "quizz:type.vokabellisteDesc",
+    icon: BookOpen,
+  },
 ]
 
 const SLIDER_FIELDS: Array<{
@@ -91,15 +100,15 @@ const SLIDER_FIELDS: Array<{
 const QuestionEditorType = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
-  const type: QuestionType = currentQuestion.type ?? "choice"
+  const type: QuestionTypeKey = (currentQuestion.type ?? "choice") as QuestionTypeKey
   
-  // Gate Mathematik and Wortarten visibility on klassenEnabled
+  // Gate Mathematik, Wortarten, and Vokabelliste visibility on klassenEnabled
   let availableTypes = TYPES
   try {
     const config = useConfig()
     const klassenEnabled = config?.klassenEnabled ?? false
     if (!klassenEnabled) {
-      availableTypes = TYPES.filter(tp => tp.key !== "mathematik" && tp.key !== "wortarten")
+      availableTypes = TYPES.filter(tp => tp.key !== "mathematik" && tp.key !== "wortarten" && tp.key !== "vokabelliste")
     }
   } catch {
     // useConfig not available in this context (e.g., catalog); show all types as fallback
@@ -116,7 +125,7 @@ const QuestionEditorType = () => {
   }
   const CHOICE_CLEAR = { answers: undefined, solutions: undefined }
 
-  const setType = (next: QuestionType) => {
+  const setType = (next: QuestionTypeKey) => {
     if (next === "boolean") {
       updateQuestion(currentIndex, {
         type: "boolean",
@@ -200,6 +209,22 @@ const QuestionEditorType = () => {
         sentence: "",
         tokens: [],
         posSet: ["Nomen", "Verb", "Adjektiv", "Artikel", "Pronomen", "Adverb", "Präposition", "Konjunktion"],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        min: undefined,
+        max: undefined,
+        correct: undefined,
+        step: undefined,
+        unit: undefined,
+      })
+    } else if (next === "vokabelliste") {
+      // Vokabelliste is a pseudo-type for bulk editing; set a marker type
+      updateQuestion(currentIndex, {
+        type: "vokabelliste" as any,
+        question: "",
         answers: undefined,
         solutions: undefined,
         acceptedAnswers: undefined,
@@ -318,8 +343,8 @@ const QuestionEditorType = () => {
         })}
       </fieldset>
 
-      <div className="flex flex-wrap gap-4">
-        {type !== "poll" && (
+      {type !== "poll" && type !== "vokabelliste" && (
+        <div className="flex flex-wrap gap-4">
           <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
             <input
               type="checkbox"
@@ -329,17 +354,17 @@ const QuestionEditorType = () => {
             />
             <span aria-hidden="true">⭐</span> {t("quizz:type.bonusQuestion")}
           </label>
-        )}
-        <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
-          <input
-            type="checkbox"
-            checked={Boolean(currentQuestion.practice)}
-            onChange={togglePractice}
-            className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-          />
-          <span aria-hidden="true">🎯</span> {t("quizz:type.practiceQuestion")}
-        </label>
-      </div>
+          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
+            <input
+              type="checkbox"
+              checked={Boolean(currentQuestion.practice)}
+              onChange={togglePractice}
+              className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+            />
+            <span aria-hidden="true">🎯</span> {t("quizz:type.practiceQuestion")}
+          </label>
+        </div>
+      )}
 
       {type === "slider" && (
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 md:grid-cols-5">

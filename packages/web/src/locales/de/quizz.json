@@ -69,7 +69,9 @@
     "mathematik": "Mathematik",
     "mathematikDesc": "Numerische Antwort mit Toleranz",
     "wortarten": "Wortarten",
-    "wortartenDesc": "Wortarten-Bestimmung (Deutsch)"
+    "wortartenDesc": "Wortarten-Bestimmung (Deutsch)",
+    "vokabelliste": "Vokabelliste",
+    "vokabellisteDesc": "Bulk-Editor für Wort-Paare → emittiert mehrere Texteingabe-Fragen"
   },
   "slider": {
     "min": "Min",
@@ -119,5 +121,16 @@
     "removeChunk": "Baustein {{index}} entfernen",
     "preview": "Spieler sehen die Bausteine gemischt",
     "minChunksRequired": "Mindestens 2 Bausteine erforderlich"
+  },
+  "vokabel": {
+    "direction": "Richtung",
+    "wordToTranslation": "Wort → Übersetzung",
+    "translationToWord": "Übersetzung → Wort",
+    "wordList": "Wortliste",
+    "wordPlaceholder": "Wort",
+    "translationPlaceholder": "Übersetzung",
+    "removeRow": "Zeile entfernen",
+    "addRow": "Zeile hinzufügen",
+    "createQuestions": "Fragen erstellen"
   }
 }

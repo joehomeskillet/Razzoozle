@@ -77,7 +77,9 @@
     "mathematik": "数学",
     "mathematikDesc": "数值答案（含容错范围）",
     "wortarten": "词性标注",
-    "wortartenDesc": "德语词性标注"
+    "wortartenDesc": "德语词性标注",
+    "vokabelliste": "词汇表",
+    "vokabellisteDesc": "单词对批量编辑器 → 生成多个文本输入问题"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",
@@ -119,5 +121,16 @@
     "removeChunk": "移除标签 {{index}}",
     "preview": "玩家将看到这些混合的标签",
     "minChunksRequired": "至少需要 2 个标签"
+  },
+  "vokabel": {
+    "direction": "方向",
+    "wordToTranslation": "单词 → 翻译",
+    "translationToWord": "翻译 → 单词",
+    "wordList": "单词列表",
+    "wordPlaceholder": "单词",
+    "translationPlaceholder": "翻译",
+    "removeRow": "删除行",
+    "addRow": "添加行",
+    "createQuestions": "创建问题"
   }
 }

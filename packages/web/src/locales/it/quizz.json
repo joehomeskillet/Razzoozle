@@ -69,7 +69,9 @@
     "mathematik": "Matematica",
     "mathematikDesc": "Risposta numerica con tolleranza",
     "wortarten": "Parti del Discorso",
-    "wortartenDesc": "Etichettatura delle parti del discorso"
+    "wortartenDesc": "Etichettatura delle parti del discorso",
+    "vokabelliste": "Elenco Vocabolario",
+    "vokabellisteDesc": "Editor in blocco per coppie di parole → emette più domande di input di testo"
   },
   "slider": {
     "min": "Min",
@@ -119,5 +121,16 @@
     "removeChunk": "Rimuovi chip {{index}}",
     "preview": "I giocatori vedranno questi chip mescolati",
     "minChunksRequired": "Sono richiesti almeno 2 chip"
+  },
+  "vokabel": {
+    "direction": "Direzione",
+    "wordToTranslation": "Parola → Traduzione",
+    "translationToWord": "Traduzione → Parola",
+    "wordList": "Elenco Parole",
+    "wordPlaceholder": "Parola",
+    "translationPlaceholder": "Traduzione",
+    "removeRow": "Rimuovi riga",
+    "addRow": "Aggiungi riga",
+    "createQuestions": "Crea Domande"
   }
 }

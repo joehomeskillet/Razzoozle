@@ -8,6 +8,7 @@ import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/Questi
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
 import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
+import QuestionEditorVokabel from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorVokabel"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode } from "react"
 
@@ -57,6 +58,7 @@ const QuestionEditor = () => {
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
+  const isVokabelliste = (currentQuestion.type as any) === "vokabelliste"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
@@ -65,13 +67,15 @@ const QuestionEditor = () => {
           <QuestionEditorTitle />
         </Reveal>
 
-        <Reveal index={1}>
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full">
-            <QuestionEditorMedia />
-          </div>
-        </Reveal>
+        {!isVokabelliste && (
+          <Reveal index={1}>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full">
+              <QuestionEditorMedia />
+            </div>
+          </Reveal>
+        )}
 
-        {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && (
+        {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && !isVokabelliste && (
           <Reveal index={2}>
             <QuestionEditorAnswers />
           </Reveal>
@@ -94,6 +98,11 @@ const QuestionEditor = () => {
         {isWortarten && (
           <Reveal index={2}>
             <QuestionEditorWortarten />
+          </Reveal>
+        )}
+        {isVokabelliste && (
+          <Reveal index={2}>
+            <QuestionEditorVokabel />
           </Reveal>
         )}
 

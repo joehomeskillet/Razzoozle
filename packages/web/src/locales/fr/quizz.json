@@ -77,7 +77,9 @@
     "mathematik": "Mathématiques",
     "mathematikDesc": "Réponse numérique avec tolérance",
     "wortarten": "Parties du Discours",
-    "wortartenDesc": "Étiquetage des parties du discours"
+    "wortartenDesc": "Étiquetage des parties du discours",
+    "vokabelliste": "Liste de Vocabulaire",
+    "vokabellisteDesc": "Éditeur en masse pour les paires de mots → émet plusieurs questions de saisie de texte"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
@@ -119,5 +121,16 @@
     "removeChunk": "Supprimer le jeton {{index}}",
     "preview": "Les joueurs verront ces jetons mélangés",
     "minChunksRequired": "Au moins 2 jetons requis"
+  },
+  "vokabel": {
+    "direction": "Direction",
+    "wordToTranslation": "Mot → Traduction",
+    "translationToWord": "Traduction → Mot",
+    "wordList": "Liste de Mots",
+    "wordPlaceholder": "Mot",
+    "translationPlaceholder": "Traduction",
+    "removeRow": "Supprimer la ligne",
+    "addRow": "Ajouter une ligne",
+    "createQuestions": "Créer des Questions"
   }
 }
