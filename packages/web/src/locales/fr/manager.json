@@ -140,7 +140,8 @@
     "dev": "Dev",
     "klassen": "Classes",
     "profile": "Mon profil",
-    "users": "Gestion des utilisateurs"
+    "users": "Gestion des utilisateurs",
+    "schueler": "Gestion des élèves"
   },
   "plugins": {
     "title": "Extensions",
@@ -805,5 +806,10 @@
       "networkError": "Erreur de connexion",
       "allFieldsRequired": "Tous les champs sont obligatoires"
     }
+  },
+  "schueler": {
+    "title": "Gestion des Élèves",
+    "description": "Gérez les élèves dans les classes et consultez leurs résultats de jeu en un coup d'œil.",
+    "empty": "Aucun élève créé pour l'instant. Ajoutez des élèves dans la gestion des classes."
   }
 }

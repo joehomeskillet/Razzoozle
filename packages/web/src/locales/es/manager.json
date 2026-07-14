@@ -140,7 +140,8 @@
     "dev": "Dev",
     "klassen": "Clases",
     "profile": "Mi perfil",
-    "users": "Gestión de usuarios"
+    "users": "Gestión de usuarios",
+    "schueler": "Gestión de estudiantes"
   },
   "plugins": {
     "title": "Complementos",
@@ -805,5 +806,10 @@
       "networkError": "Error de conexión",
       "allFieldsRequired": "Todos los campos son obligatorios"
     }
+  },
+  "schueler": {
+    "title": "Gestión de Estudiantes",
+    "description": "Administra estudiantes entre clases y ve sus resultados de juego de un vistazo.",
+    "empty": "Aún no hay estudiantes creados. Añade estudiantes en la gestión de clases."
   }
 }

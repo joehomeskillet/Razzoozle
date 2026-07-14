@@ -18,6 +18,7 @@ import ConfigSubmissions from "@razzoozle/web/features/manager/components/config
 import ConfigTheme from "@razzoozle/web/features/manager/components/configurations/ConfigTheme"
 import ConfigUsers from "@razzoozle/web/features/manager/components/configurations/ConfigUsers"
 import ConfigKlassen from "@razzoozle/web/features/manager/components/configurations/klassen"
+import ConfigSchueler from "@razzoozle/web/features/manager/components/configurations/schueler"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
@@ -69,10 +70,11 @@ interface TabDef {
    */
   roleGate?: "user" | "admin"
   /**
-   * Dev mode gate.
+   * Feature gate.
    *  - "devMode" → only when RAZZOOLE_DEV is on
+   *  - "klassenEnabled" → only when klassenEnabled is true
    */
-  gated?: "devMode"
+  gated?: "devMode" | "klassenEnabled"
 }
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
@@ -101,6 +103,14 @@ const BUILTIN_TABS: TabDef[] = [
     nameKey: "manager:tabs.klassen",
     icon: GraduationCap,
     component: ConfigKlassen,
+    gated: "klassenEnabled",
+  },
+  {
+    key: "schueler",
+    nameKey: "manager:tabs.schueler",
+    icon: Users,
+    component: ConfigSchueler,
+    gated: "klassenEnabled",
   },
   {
     key: "media",
@@ -196,14 +206,19 @@ const resolveIcon = (name: string): LucideIcon => {
 }
 
 /**
- * Visibility gate for builtins based on role and dev mode.
+ * Visibility gate for builtins based on role, dev mode, and klassenEnabled.
  */
 const isTabAllowed = (
   tab: TabDef,
-  opts: { devMode: boolean; role: "admin" | "user" | null },
+  opts: { devMode: boolean; klassenEnabled: boolean; role: "admin" | "user" | null },
 ): boolean => {
   // Dev mode gate
   if (tab.gated === "devMode" && !opts.devMode) {
+    return false
+  }
+
+  // Klassen enabled gate
+  if (tab.gated === "klassenEnabled" && !opts.klassenEnabled) {
     return false
   }
 
@@ -252,7 +267,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
   const { logout } = useManagerStore()
   const { socket } = useSocket()
   const { t } = useTranslation()
-  const { submissions, devMode } = useConfig()
+  const { submissions, devMode, klassenEnabled } = useConfig()
   const { role } = useManagerStore()
 
   const tabs = BUILTIN_TABS
@@ -268,6 +283,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
       (tab) =>
         isTabAllowed(tab, {
           devMode: Boolean(devMode),
+          klassenEnabled: Boolean(klassenEnabled ?? false),
           role: role ?? "user",
         }),
     )

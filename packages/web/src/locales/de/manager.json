@@ -140,7 +140,8 @@
     "dev": "Dev",
     "klassen": "Klassen",
     "profile": "Mein Profil",
-    "users": "Nutzerverwaltung"
+    "users": "Nutzerverwaltung",
+    "schueler": "Schülerverwaltung"
   },
   "plugins": {
     "title": "Plugins",
@@ -805,5 +806,10 @@
       "networkError": "Verbindungsfehler",
       "allFieldsRequired": "Alle Felder sind erforderlich"
     }
+  },
+  "schueler": {
+    "title": "Schülerverwaltung",
+    "description": "Verwalte Schüler klassenübergreifend und sehe deren Spielergebnisse im Überblick.",
+    "empty": "Noch keine Schüler erfasst. Lege Schüler in der Klassenverwaltung an."
   }
 }
