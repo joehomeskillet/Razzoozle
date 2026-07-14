@@ -1,4 +1,5 @@
 import clsx from "clsx"
+import { useTranslation } from "react-i18next"
 import type { Label } from "./LabelChip"
 import { getLabelColor } from "./labelPalette"
 
@@ -13,6 +14,8 @@ export default function LabelFilterPills({
   activeId,
   onChange,
 }: LabelFilterPillsProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
@@ -26,7 +29,7 @@ export default function LabelFilterPills({
             : "bg-gray-100 text-gray-600 hover:bg-gray-200",
         )}
       >
-        Alle
+        {t("manager:labels.filterAll", { defaultValue: "Alle" })}
       </button>
       {labels.map((label) => {
         const active = activeId === label.id
