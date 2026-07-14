@@ -296,8 +296,8 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.DATA]: (_classes: Array<{ id: number; name: string; createdAt: string }>) => void
   [EVENTS.CLASS.CREATE_SUCCESS]: (_class: { id: number; name: string }) => void
   [EVENTS.CLASS.UPDATE_SUCCESS]: () => void
-  [EVENTS.CLASS.DELETE_SUCCESS]: () => void
-  [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string }) => void
+  [EVENTS.CLASS.DELETE_SUCCESS]: (_data: { id: number }) => void
+  [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string; classId: number }) => void
   [EVENTS.CLASS.STUDENT_REMOVED]: () => void
   [EVENTS.CLASS.STUDENT_UPDATED]: () => void
   [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string }> }) => void

@@ -96,7 +96,8 @@ export const useClassManager = () => {
   })
 
   // Listen for class deletion
-  useEvent(EVENTS.CLASS.DELETE_SUCCESS, () => {
+  useEvent(EVENTS.CLASS.DELETE_SUCCESS, (data: { id: number }) => {
+    setClasses((prev) => prev.filter((c) => c.id !== data.id))
     setPendingDeleteClass(null)
     toast.success(t("manager:classes.deleted"))
   })
@@ -104,12 +105,11 @@ export const useClassManager = () => {
   // Listen for student additions
   useEvent(
     EVENTS.CLASS.STUDENT_ADDED,
-    (data: { id: number; displayName: string }) => {
+    (data: { id: number; displayName: string; classId: number }) => {
       setClasses((prev) =>
         prev.map((c) =>
-          c.id === pendingDeleteStudent?.studentId
-            ? c
-            : {
+          c.id === data.classId
+            ? {
                 ...c,
                 students: [
                   ...(c.students ?? []),
@@ -120,6 +120,7 @@ export const useClassManager = () => {
                   },
                 ],
               }
+            : c
         )
       )
       toast.success(t("manager:classes.studentAdded"))

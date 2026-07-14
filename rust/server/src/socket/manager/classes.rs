@@ -178,7 +178,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::DELETE_SUCCESS, &serde_json::json!({})).ok();
+                        socket.emit(constants::class::DELETE_SUCCESS, &serde_json::json!({"id": class_id})).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to delete class: {}", e);
@@ -234,6 +234,7 @@ fn register_add_student(socket: &SocketRef, ctx: HandlerCtx) {
                                 let student_obj = serde_json::json!({
                                     "id": student_id,
                                     "displayName": display_name,
+                                    "classId": class_id,
                                 });
                                 socket.emit(constants::class::STUDENT_ADDED, &student_obj).ok();
                             }

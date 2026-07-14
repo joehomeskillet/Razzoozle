@@ -93,7 +93,7 @@ const ClassList = ({
                     onFetchStudents?.(classObj.id)
                   }
                 }}
-                className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--game-fg)] hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={
                   expandedClassId === classObj.id
                     ? t("common:collapse")
@@ -107,10 +107,10 @@ const ClassList = ({
                 )}
               </button>
 
-              <GraduationCap className="size-5 shrink-0 text-[var(--game-fg)]" />
+              <GraduationCap className="size-5 shrink-0 text-gray-700" />
 
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--game-fg)]">
+                <p className="text-sm font-semibold text-gray-900">
                   {classObj.name}
                 </p>
                 <p className="text-xs text-gray-500">
@@ -155,7 +155,7 @@ const ClassList = ({
                         className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 border border-[var(--border-hairline)]"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-[var(--game-fg)]">
+                          <p className="text-sm text-gray-900">
                             {student.displayName}
                           </p>
                         </div>
