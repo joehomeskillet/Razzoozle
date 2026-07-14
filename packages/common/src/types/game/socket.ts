@@ -71,9 +71,25 @@ export interface StudentCreatedData {
   displayName: string;
   pin: string;
   labels: string[];
+  symbols: string[];
   classes: Array<{id: number; name: string}>;
   birthdate: string | null;
 }
+
+export interface StudentPinData {
+  studentId: number;
+  pin: string;
+  labels: string[];
+  symbols: string[];
+}
+
+export interface PinRegenerated {
+  studentId: number;
+  pin: string;
+  labels: string[];
+  symbols: string[];
+}
+
 
 export interface UpdateStudentPayload {
   id: number;

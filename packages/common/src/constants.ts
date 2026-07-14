@@ -287,7 +287,7 @@ export const EVENTS = {
      */
     CREATE_STUDENT: "class:createStudent",
     /**
-     * `class:studentCreated` → `{ id: number, displayName: string, pin: string, labels: string[], classes: Array<{ id: number, name: string }>, birthdate: string | null }` — pin is the joined 4-emoji string, labels the 4 German words (manager-authed via require_user).
+     * `class:studentCreated` → `{ id: number, displayName: string, pin: string, labels: string[], symbols: string[], classes: Array<{ id: number, name: string }>, birthdate: string | null }` — pin is the joined 4-emoji string, labels the 4 German words, symbols the 4 emoji strings (manager-authed via require_user).
      */
     STUDENT_CREATED: "class:studentCreated",
     /**
@@ -295,7 +295,7 @@ export const EVENTS = {
      */
     STUDENT_PIN: "class:studentPin",
     /**
-     * `class:studentPinData` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+     * `class:studentPinData` → `{ studentId: number, pin: string, labels: string[], symbols: string[] }` (manager-authed via require_user).
      */
     STUDENT_PIN_DATA: "class:studentPinData",
     /**
@@ -303,7 +303,7 @@ export const EVENTS = {
      */
     REGEN_PIN: "class:regenPin",
     /**
-     * `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[] }` (manager-authed via require_user).
+     * `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[], symbols: string[] }` (manager-authed via require_user).
      */
     PIN_REGENERATED: "class:pinRegenerated",
   },

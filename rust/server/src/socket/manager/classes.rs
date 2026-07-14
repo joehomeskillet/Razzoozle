@@ -665,7 +665,7 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
                             "id": student_id,
                             "displayName": display_name,
                             "pin": pin,
-                            "labels": labels,
+                            "labels": labels, "symbols": crate::http::emoji_pin::symbols_of(&pin).unwrap_or_default(),
                             "classes": class_names,
                             "birthdate": birthdate.map(|d| d.format("%Y-%m-%d").to_string()),
                         })).ok();
@@ -715,7 +715,7 @@ fn register_student_pin(socket: &SocketRef, ctx: HandlerCtx) {
                         socket.emit(constants::class::STUDENT_PIN_DATA, &serde_json::json!({
                             "studentId": student_id,
                             "pin": pin,
-                            "labels": labels,
+                            "labels": labels, "symbols": crate::http::emoji_pin::symbols_of(&pin).unwrap_or_default(),
                         })).ok();
                     }
                     Ok(None) => {
@@ -728,8 +728,8 @@ fn register_student_pin(socket: &SocketRef, ctx: HandlerCtx) {
                                 socket.emit(constants::class::STUDENT_PIN_DATA, &serde_json::json!({
                                     "studentId": student_id,
                                     "pin": pin,
-                                    "labels": labels,
-                                })).ok();
+                                    "labels": labels, "symbols": crate::http::emoji_pin::symbols_of(&pin).unwrap_or_default(),
+                        })).ok();
                             }
                             Err(e) => {
                                 tracing::warn!("class:studentPin failed to set pin: {}", e);
@@ -785,7 +785,7 @@ fn register_regen_pin(socket: &SocketRef, ctx: HandlerCtx) {
                         socket.emit(constants::class::PIN_REGENERATED, &serde_json::json!({
                             "studentId": student_id,
                             "pin": pin,
-                            "labels": labels,
+                            "labels": labels, "symbols": crate::http::emoji_pin::symbols_of(&pin).unwrap_or_default(),
                         })).ok();
                     }
                     Err(e) => {
