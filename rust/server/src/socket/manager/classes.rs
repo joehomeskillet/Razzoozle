@@ -23,6 +23,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_remove_student(socket, ctx.clone());
     register_update_student(socket, ctx.clone());
     register_get_students(socket, ctx.clone());
+    register_move_student(socket, ctx.clone());
+    register_remove_from_class(socket, ctx.clone());
+    register_student_classes(socket, ctx.clone());
+    register_list_all_students(socket, ctx.clone());
 }
 
 fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
@@ -374,6 +378,213 @@ fn register_get_students(socket: &SocketRef, ctx: HandlerCtx) {
                     "classId": class_id,
                     "students": students,
                 })).ok();
+            });
+        }
+    });
+}
+
+fn register_move_student(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::MOVE_STUDENT, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:moveStudent denied: no user session");
+                        return;
+                    }
+                };
+
+                let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        return;
+                    }
+                };
+
+                let class_id = match payload.get("classId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidClassId").ok();
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::move_student_to_class(&ctx.db_pool, student_id, class_id, me).await {
+                    Ok(()) => {
+                        // Fetch the student's classes to get the joinedAt timestamp
+                        match db::get_student_classes(&ctx.db_pool, student_id, me).await {
+                            Ok(classes) => {
+                                // Find the joined_at for the target class
+                                if let Some(class) = classes.iter().find(|c| c.get("id").and_then(|v| v.as_i64()) == Some(class_id)) {
+                                    if let Some(joined_at) = class.get("joinedAt").and_then(|v| v.as_str()) {
+                                        socket.emit(constants::class::STUDENT_MOVED, &serde_json::json!({
+                                            "studentId": student_id,
+                                            "classId": class_id,
+                                            "joinedAt": joined_at,
+                                        })).ok();
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                tracing::warn!("class:moveStudent failed to fetch classes: {}", e);
+                                socket.emit(constants::class::ERROR, "errors:class.moveStudentFailed").ok();
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:moveStudent failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.moveStudentFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_remove_from_class(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::REMOVE_FROM_CLASS, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:removeFromClass denied: no user session");
+                        return;
+                    }
+                };
+
+                let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        return;
+                    }
+                };
+
+                let class_id = match payload.get("classId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidClassId").ok();
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::remove_student_from_class(&ctx.db_pool, student_id, class_id, me).await {
+                    Ok(student_deleted) => {
+                        socket.emit(constants::class::REMOVED_FROM_CLASS, &serde_json::json!({
+                            "studentId": student_id,
+                            "classId": class_id,
+                            "studentDeleted": student_deleted,
+                        })).ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:removeFromClass failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.removeFromClassFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_student_classes(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::STUDENT_CLASSES, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:studentClasses denied: no user session");
+                        return;
+                    }
+                };
+
+                let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::get_student_classes(&ctx.db_pool, student_id, me).await {
+                    Ok(classes) => {
+                        socket.emit(constants::class::STUDENT_CLASSES_DATA, &serde_json::json!({
+                            "studentId": student_id,
+                            "classes": classes,
+                        })).ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:studentClasses failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.getStudentClassesFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_list_all_students(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::LIST_ALL_STUDENTS, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:listAllStudents denied: no user session");
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::list_all_students(&ctx.db_pool, me).await {
+                    Ok(students) => {
+                        socket.emit(constants::class::ALL_STUDENTS_DATA, &serde_json::json!({
+                            "students": students,
+                        })).ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:listAllStudents failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.listAllStudentsFailed").ok();
+                    }
+                }
             });
         }
     });
