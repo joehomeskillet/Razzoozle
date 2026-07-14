@@ -284,5 +284,10 @@
     "wordBank": "Word bank",
     "tapHint": "Tap the words below to build your answer",
     "submit": "Submit"
-  }
+  },
+  "badge": {
+    "solo": "Solo",
+    "assignment": "Assignment"
+  },
+  "correctAnswer": "Correct!"
 }

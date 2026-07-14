@@ -91,8 +91,8 @@ const SoloPlayPage = () => {
   // ---- Error state ----
   if (error) {
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-        <p className="text-2xl font-bold text-white">{error}</p>
+      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)] px-6 text-center">
+        <p className="text-2xl font-bold text-[color:var(--color-field-ink)]">{error}</p>
         <button
           type="button"
           onClick={() => navigate({ to: "/" })}
@@ -107,9 +107,9 @@ const SoloPlayPage = () => {
   // ---- Loading ----
   if (phase === "idle" || phase === "loading") {
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black">
+      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--color-field-cream)]">
         <Loader className="h-20" />
-        <p className="text-xl font-bold text-white">{t("common:connecting")}</p>
+        <p className="text-xl font-bold text-[color:var(--color-field-ink)]">{t("common:connecting")}</p>
       </section>
     )
   }

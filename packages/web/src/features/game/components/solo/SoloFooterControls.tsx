@@ -40,7 +40,7 @@ const SoloFooterControls = ({
         <span
           className={
             "relative h-5 w-9 rounded-full transition-colors " +
-            (autoAdvance ? "bg-primary" : "bg-gray-300")
+            (autoAdvance ? "bg-primary" : "bg-[color:var(--color-field-ink)]/20")
           }
         >
           <span

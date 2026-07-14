@@ -78,8 +78,8 @@ const RankDeltaChip = ({ move, delta }: { move: RankMove; delta: number }) => {
         "flex flex-shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5",
         "text-xs font-bold tabular-nums leading-none",
         up
-          ? "bg-[var(--rank-up-soft)] text-emerald-700"
-          : "bg-[var(--rank-down-soft)] text-rose-700",
+          ? "bg-[var(--rank-up-soft)] text-[var(--rank-up)]"
+          : "bg-[var(--rank-down-soft)] text-[var(--rank-down)]",
       ].join(" ")}
     >
       <span aria-hidden="true">{up ? "▲" : "▼"}</span>

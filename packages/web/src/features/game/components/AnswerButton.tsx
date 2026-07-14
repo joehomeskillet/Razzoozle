@@ -85,7 +85,7 @@ const AnswerButton = ({
       aria-label={ariaLabel}
       className={clsx(
         "relative flex items-center gap-3 rounded-2xl border border-[var(--border-hairline)] px-3 py-3 text-left sm:py-5 lg:gap-6 lg:rounded-3xl lg:px-8 lg:py-10",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-field-ink)]",
         // Reveal (correct defined) overrides the answer-tile color with the
         // design state tokens: correct -> green, wrong -> red. Ink label
         // (--answer-text) per design.md guardrail #5 (white fails on green/red).

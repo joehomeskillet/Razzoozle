@@ -284,5 +284,10 @@
     "wordBank": "Banque de mots",
     "tapHint": "Appuyez sur les mots ci-dessous pour construire votre réponse",
     "submit": "Envoyer"
-  }
+  },
+  "badge": {
+    "solo": "Solo",
+    "assignment": "Devoir"
+  },
+  "correctAnswer": "Correct !"
 }

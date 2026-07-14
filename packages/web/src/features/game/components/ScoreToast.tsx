@@ -115,7 +115,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
               {correct && (
                 <span
                   aria-hidden
-                  className="text-3xl font-black tabular-nums text-amber-500"
+                  className="text-3xl font-black tabular-nums text-[var(--color-accent)]"
                 >
                   +<AnimatedPoints to={points} className="tabular-nums" />
                 </span>

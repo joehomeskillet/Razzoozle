@@ -1,5 +1,6 @@
 import React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useTranslation } from "react-i18next"
 
 // ---------------------------------------------------------------------------
 // Minimal solo shell — replaces GameWrapper to avoid socket coupling
@@ -41,6 +42,7 @@ const SoloShell = ({
   variant,
 }: SoloShellProps) => {
   const reduced = useReducedMotion() ?? false
+  const { t } = useTranslation()
 
   return (
     <section
@@ -64,7 +66,9 @@ const SoloShell = ({
             )}
           </div>
           <div className="shrink-0 rounded-lg bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[color:var(--color-field-ink)]/70">
-            {variant === "solo" ? "Solo" : "Aufgabe"}
+            {variant === "solo"
+              ? t("game:badge.solo")
+              : t("game:badge.assignment")}
           </div>
         </div>
 
