@@ -158,7 +158,30 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             let _ = (correct, tolerance, decimals);
         }
         Some(QuestionType::Wortarten) => {
-            // Wortarten: permissive stub validation for now
+            // Wortarten: sentence + tokens + solutions + pos_set validation
+            if question.sentence.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
+                return Err("errors:quizz.sentenceEmpty");
+            }
+            if let Some(tokens) = &question.tokens {
+                if tokens.is_empty() || tokens.len() > 100 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+                for token in tokens {
+                    if token.is_empty() {
+                        return Err("errors:quizz.invalidPayload");
+                    }
+                }
+                if let Some(solutions) = &question.solutions {
+                    if solutions.len() != tokens.len() {
+                        return Err("errors:quizz.invalidPayload");
+                    }
+                }
+            } else {
+                return Err("errors:quizz.invalidPayload");
+            }
+            if question.pos_set.as_ref().map(|ps| ps.is_empty()).unwrap_or(true) {
+                return Err("errors:quizz.invalidPayload");
+            }
         }
         // choice / boolean / None → default
         _ => {

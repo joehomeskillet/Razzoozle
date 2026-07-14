@@ -132,5 +132,19 @@
     "removeRow": "Zeile entfernen",
     "addRow": "Zeile hinzufügen",
     "createQuestions": "Fragen erstellen"
+  },
+  "wortarten": {
+    "pos": {
+      "Nomen": "Nomen",
+      "Verb": "Verb",
+      "Adjektiv": "Adjektiv",
+      "Artikel": "Artikel",
+      "Pronomen": "Pronomen",
+      "Adverb": "Adverb",
+      "Präposition": "Präposition",
+      "Konjunktion": "Konjunktion"
+    },
+    "selectLabel": "Part-of-Speech wählen",
+    "tapHint": "Tippe jedes Wort, um seine Wortart zu wählen"
   }
 }

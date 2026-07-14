@@ -132,5 +132,19 @@
     "removeRow": "Supprimer la ligne",
     "addRow": "Ajouter une ligne",
     "createQuestions": "Créer des Questions"
+  },
+  "wortarten": {
+    "pos": {
+      "Nomen": "Nom",
+      "Verb": "Verbe",
+      "Adjektiv": "Adjectif",
+      "Artikel": "Article",
+      "Pronomen": "Pronom",
+      "Adverb": "Adverbe",
+      "Präposition": "Préposition",
+      "Konjunktion": "Conjonction"
+    },
+    "selectLabel": "Sélectionner la partie du discours",
+    "tapHint": "Appuyez sur chaque mot pour sélectionner sa partie du discours"
   }
 }

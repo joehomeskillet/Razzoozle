@@ -101,9 +101,44 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let ach_rows = crate::db::get_achievements(&ctx.db_pool).await;
 
                 let mut registry = ctx.registry.write().await;
+                
+                // Runtime class-mode guard: filter Wortarten questions for non-klassen games
+                // Temporarily modify the quiz in the registry, create the game, then restore
+                let quiz_id_str = match &quizz_id {
+                    Some(id) if !id.is_empty() => id.clone(),
+                    _ => String::new(),
+                };
+                
+                let saved_quiz = if !validated_klassen && !quiz_id_str.is_empty() {
+                    registry.quizzes.get(&quiz_id_str).cloned()
+                } else {
+                    None
+                };
+                
+                if !validated_klassen && !quiz_id_str.is_empty() {
+                    if let Some(quiz) = registry.quizzes.get_mut(&quiz_id_str) {
+                        use razzoozle_protocol::quizz::QuestionType;
+                        quiz.questions.retain(|q| {
+                            match &q.r#type {
+                                Some(QuestionType::Wortarten) => false,
+                                _ => true,
+                            }
+                        });
+                    }
+                }
+                
                 // C3 — active-game cap; also rejects an unresolved quizzId
                 // (parity with Node — see create_game's own doc comment).
-                match registry.create_game(socket.id.to_string(), quizz_id, ctx.client_id.clone(), owner_user_id, low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true}))) {
+                let create_result = registry.create_game(socket.id.to_string(), quizz_id.clone(), ctx.client_id.clone(), owner_user_id, low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true})));
+                
+                // Restore original quiz if we modified it
+                if let Some(original_quiz) = saved_quiz {
+                    if !quiz_id_str.is_empty() {
+                        registry.quizzes.insert(quiz_id_str, original_quiz);
+                    }
+                }
+                
+                match create_result {
                     Ok((game_id, invite_code, host_token)) => {
                         info!(
                             "Game created: gameId={}, inviteCode={}",

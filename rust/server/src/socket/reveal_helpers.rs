@@ -236,6 +236,15 @@ pub async fn perform_reveal_and_broadcast(
                 Some(QuestionType::SentenceBuilder)
             ) {
                 question.chunks.clone()
+            } else if matches!(question.r#type.as_ref(), Some(QuestionType::Wortarten)) {
+                // Wortarten: map solutions (indices) to pos_set strings for per-token reveal coloring
+                question.solutions.as_ref().and_then(|sols| {
+                    question.pos_set.as_ref().map(|pos_set| {
+                        sols.iter()
+                            .filter_map(|&idx| pos_set.get(idx as usize).cloned())
+                            .collect()
+                    })
+                })
             } else {
                 None
             };
@@ -263,8 +272,15 @@ pub async fn perform_reveal_and_broadcast(
                         })
                     }
                     Some(QuestionType::Wortarten) => {
-                        // TODO: Return the POS tags for each token
-                        None
+                        // Return comma-separated POS tags from correct_chunks
+                        question.solutions.as_ref().and_then(|sols| {
+                            question.pos_set.as_ref().map(|pos_set| {
+                                sols.iter()
+                                    .filter_map(|&idx| pos_set.get(idx as usize).cloned())
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            })
+                        })
                     }
                     _ => {
                         // choice / boolean / multiple-select: map solution indices to answer texts

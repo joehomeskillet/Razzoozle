@@ -132,5 +132,19 @@
     "removeRow": "Eliminar fila",
     "addRow": "Añadir fila",
     "createQuestions": "Crear Preguntas"
+  },
+  "wortarten": {
+    "pos": {
+      "Nomen": "Sustantivo",
+      "Verb": "Verbo",
+      "Adjektiv": "Adjetivo",
+      "Artikel": "Artículo",
+      "Pronomen": "Pronombre",
+      "Adverb": "Adverbio",
+      "Präposition": "Preposición",
+      "Konjunktion": "Conjunción"
+    },
+    "selectLabel": "Seleccionar parte del discurso",
+    "tapHint": "Toca cada palabra para seleccionar su parte del discurso"
   }
 }

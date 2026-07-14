@@ -20,7 +20,7 @@ pub struct EmptyGame {
 pub struct GameRegistry {
     pub(super) games_by_code: HashMap<String, Arc<Mutex<Game>>>,
     pub(super) games_by_id: HashMap<String, Arc<Mutex<Game>>>,
-    quizzes: HashMap<String, Quizz>,
+    pub quizzes: HashMap<String, Quizz>,
     default_quiz: Quizz,
     // O(1) socket_id -> game_id lookup for the hot per-connection paths
     // (remove/mark-disconnected/set_player_team/set_player_avatar), which

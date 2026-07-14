@@ -132,5 +132,19 @@
     "removeRow": "删除行",
     "addRow": "添加行",
     "createQuestions": "创建问题"
+  },
+  "wortarten": {
+    "pos": {
+      "Nomen": "名词",
+      "Verb": "动词",
+      "Adjektiv": "形容词",
+      "Artikel": "冠词",
+      "Pronomen": "代词",
+      "Adverb": "副词",
+      "Präposition": "介词",
+      "Konjunktion": "连词"
+    },
+    "selectLabel": "选择词性",
+    "tapHint": "点击每个词来选择其词性"
   }
 }

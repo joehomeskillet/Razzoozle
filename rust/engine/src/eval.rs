@@ -11,7 +11,7 @@ pub const SLIDER_TOLERANCE_FRACTION: f64 = 0.05;
 pub struct AnswerInput {
     pub answer_key: Option<i32>,           // for choice, boolean, slider (as i32)
     pub answer_keys: Option<Vec<i32>>,     // for multiple-select
-    pub answer_text: Option<String>,       // for type-answer, sentence-builder
+    pub answer_text: Option<String>,       // for type-answer, sentence-builder, wortarten
 }
 
 /// Result of evaluating an answer
@@ -235,11 +235,59 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
         };
     }
 
-    // Wortarten: parts of speech tagging (TODO: implement real scoring)
+    // Wortarten: per-token POS tagging with partial credit
+    // Parse answerText as JSON array of POS strings, compare per-token to solutions
     if q_type == &Some(QuestionType::Wortarten) {
+        if let Some(answer_text) = &answer.answer_text {
+            if let Some(solutions) = &question.solutions {
+                if let Ok(submitted_pos) = serde_json::from_str::<Vec<String>>(answer_text) {
+                    // Guard: length mismatch returns base 0
+                    if submitted_pos.len() != solutions.len() {
+                        return EvalResult {
+                            correct: false,
+                            base: 0.0,
+                        };
+                    }
+
+                    // Convert solutions (i32 indices) to string POS tags via pos_set lookup
+                    if let Some(pos_set) = &question.pos_set {
+                        let correct_pos: Vec<String> = solutions
+                            .iter()
+                            .filter_map(|&idx| {
+                                if idx >= 0 && (idx as usize) < pos_set.len() {
+                                    Some(pos_set[idx as usize].clone())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+
+                        // Length check after mapping (fail if any index was out of bounds)
+                        if correct_pos.len() != solutions.len() {
+                            return EvalResult {
+                                correct: false,
+                                base: 0.0,
+                            };
+                        }
+
+                        // Count correct tokens (case-sensitive comparison)
+                        let correct_count = submitted_pos
+                            .iter()
+                            .zip(correct_pos.iter())
+                            .filter(|(s, c)| s == c)
+                            .count();
+
+                        let base = correct_count as f64 / submitted_pos.len() as f64;
+                        let correct = base == 1.0;
+
+                        return EvalResult { correct, base };
+                    }
+                }
+            }
+        }
         return EvalResult {
             correct: false,
-            base: 0.0, // TODO(Q1/Q3): real scoring per-token
+            base: 0.0,
         };
     }
     // Choice / Boolean (default): index-based solutions lookup
@@ -446,6 +494,65 @@ mod tests {
         };
         let result = evaluate_answer(&q, &ans);
         assert!(result.correct);
+    }
+
+    #[test]
+    fn wortarten_full_correct() {
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+            "Artikel".to_string(),
+        ]);
+        q.solutions = Some(vec![3, 0, 2]); // Artikel, Nomen, Adjektiv
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Artikel","Nomen","Adjektiv"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn wortarten_partial_correct() {
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+            "Artikel".to_string(),
+        ]);
+        q.solutions = Some(vec![3, 0, 2]); // Artikel, Nomen, Adjektiv
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Artikel","Verb","Adjektiv"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 2.0 / 3.0);
+    }
+
+    #[test]
+    fn wortarten_length_mismatch() {
+        let mut q = test_question(QuestionType::Wortarten);
+        q.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+        ]);
+        q.solutions = Some(vec![0, 1, 2]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["Nomen","Verb"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
     }
 
     #[test]

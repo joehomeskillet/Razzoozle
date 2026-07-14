@@ -62,6 +62,10 @@ export interface CommonStatusDataMap {
     unit?: string
     // Sentence-builder questions: shuffled word chips (no solution info).
     shuffledChunks?: string[]
+    // Wortarten questions: sentence text and tokens with POS set for tagging
+    sentence?: string
+    tokens?: string[]
+    posSet?: string[]
     // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
     // absent in normal mode and ignored by old clients. Client uses these only
     // to drive the countdown/UI (never for scoring — scoring is server-side).
