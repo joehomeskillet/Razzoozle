@@ -18,8 +18,8 @@ interface Class {
 interface Student {
   id: number
   displayName: string
-  firstName?: string
-  lastName?: string
+  firstName?: string | null
+  lastName?: string | null
   createdAt?: string
   // ADDENDUM (birthdate): optional — only present once the parallel contract
   // WP lands the field on the wire. Structurally optional so this hook
@@ -35,8 +35,8 @@ interface Student {
 export interface AllStudent {
   id: number
   displayName: string
-  firstName?: string
-  lastName?: string
+  firstName?: string | null
+  lastName?: string | null
   classes: Array<{ id: number; name: string }>
   birthdate?: string | null
 }
@@ -86,7 +86,7 @@ export const useClassManager = () => {
   // Listen for fetched students
   useEvent(
     EVENTS.CLASS.STUDENTS_DATA,
-    (data: { classId: number; students: Array<{ id: number; displayName: string; firstName?: string; lastName?: string }> }) => {
+    (data: { classId: number; students: Array<{ id: number; displayName: string; firstName?: string | null; lastName?: string | null }> }) => {
       setClasses((prev) =>
         prev.map((c) =>
           c.id === data.classId
@@ -134,7 +134,7 @@ export const useClassManager = () => {
   // collapsed row kept showing a stale count.
   useEvent(
     EVENTS.CLASS.STUDENT_ADDED,
-    (data: { id: number; displayName: string; firstName?: string; lastName?: string; classId: number }) => {
+    (data: { id: number; displayName: string; firstName?: string | null; lastName?: string | null; classId: number }) => {
       setClasses((prev) =>
         prev.map((c) =>
           c.id === data.classId
@@ -218,7 +218,7 @@ export const useClassManager = () => {
   // Listen for student updates
   useEvent(
     EVENTS.CLASS.STUDENT_UPDATED,
-    (data: { id: number; displayName: string; firstName?: string; lastName?: string; birthdate?: string | null }) => {
+    (data: { id: number; displayName: string; firstName?: string | null; lastName?: string | null; birthdate?: string | null }) => {
       setClasses((prev) =>
         prev.map((c) => ({
           ...c,
@@ -304,7 +304,7 @@ export const useClassManager = () => {
   const handleUpdateStudent = (
     studentId: number,
     firstName: string,
-    lastName?: string,
+    lastName?: string | null,
     birthdate?: string,
   ): void => {
     if (!firstName.trim()) {
@@ -314,7 +314,7 @@ export const useClassManager = () => {
     const computedDisplayName = [firstName.trim(), lastName?.trim()]
       .filter(Boolean)
       .join(" ")
-    const payload: { id: number; displayName: string; firstName?: string; lastName?: string; birthdate?: string } = {
+    const payload: { id: number; displayName: string; firstName?: string | null; lastName?: string | null; birthdate?: string } = {
       id: studentId,
       displayName: computedDisplayName,
       firstName: firstName.trim(),

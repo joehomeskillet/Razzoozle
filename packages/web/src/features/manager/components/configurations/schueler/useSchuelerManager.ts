@@ -15,8 +15,8 @@ export interface StudentClassRef {
 export interface SchuelerStudent {
   id: number
   displayName: string
-  firstName?: string
-  lastName?: string
+  firstName?: string | null
+  lastName?: string | null
   classes: StudentClassRef[]
   // ADDENDUM (birthdate): optional, only present once the parallel contract
   // WP lands the field on the wire. Structurally optional so this hook
@@ -117,8 +117,8 @@ export const useSchuelerManager = () => {
     (data: {
       id: number
       displayName: string
-      firstName?: string
-      lastName?: string
+      firstName?: string | null
+      lastName?: string | null
       pin: string
       labels: string[]
       classes: StudentClassRef[]
@@ -241,7 +241,7 @@ export const useSchuelerManager = () => {
   // ---- Handlers ----
 
   const handleCreateStudent = useCallback(
-    (firstName: string, lastName?: string, classIds?: number[], birthdate?: string): void => {
+    (firstName: string, lastName?: string | null, classIds?: number[], birthdate?: string): void => {
       if (!firstName.trim()) {
         toast.error(t("manager:classes.errorEmptyName"))
         return
