@@ -69,6 +69,7 @@ export const questionValidator = z
     sentence: z.string().optional(),
     tokens: z.array(z.string()).optional(),
     posSet: z.array(z.string()).optional(),
+    disabledTokens: z.array(z.number().int().nonnegative()).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {

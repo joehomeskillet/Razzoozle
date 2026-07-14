@@ -107,6 +107,9 @@ pub struct Question {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub pos_set: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "disabledTokens")]
+    #[ts(optional)]
+    pub disabled_tokens: Option<Vec<i32>>,
 }
 
 /// A complete quiz definition
