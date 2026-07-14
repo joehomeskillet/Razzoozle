@@ -1,14 +1,15 @@
 use axum::{
-    extract::{Path, State},
+    extract::{ConnectInfo, Path, State},
     http::{StatusCode, HeaderMap},
     Json,
 };
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::state::{safe_asset_id, GameRegistry};
-use super::{json_error_response, AppState};
+use super::{json_error_response, AppState, emoji_pin};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Assignment {
@@ -48,6 +49,21 @@ pub struct CreateAssignmentResponse {
 #[derive(Debug, Serialize)]
 pub struct GetAssignmentResultsResponse {
     pub results: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ValidatePinRequest {
+    #[serde(rename = "studentId")]
+    pub student_id: i64,
+    pub pin: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ValidatePinResponse {
+    #[serde(rename = "studentToken")]
+    pub student_token: String,
+    #[serde(rename = "expiresAt")]
+    pub expires_at: String,
 }
 
 async fn authorize_manager_request(
@@ -102,6 +118,17 @@ pub async fn handle_create_assignment(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
     };
 
+    // Extract owner_id from the x-manager-token
+    let header_token = headers
+        .get("x-manager-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    let owner_id = if let Some(user) = crate::db::users::session_user(pool, header_token).await.ok().flatten() {
+        Some(user.user_id)
+    } else {
+        None
+    };
+
     let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
     let now = chrono::Utc::now().timestamp_millis();
     let assigned_at = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(now)
@@ -124,18 +151,71 @@ pub async fn handle_create_assignment(
     let metadata_value = serde_json::Value::Object(metadata);
 
     sqlx::query(
-        "INSERT INTO assignments (id, quiz_id, assigned_to, assigned_at, metadata, version) \
-         VALUES ($1, $2, NULL, $3, $4, 0)"
+        "INSERT INTO assignments (id, quiz_id, assigned_to, assigned_at, metadata, owner_id, version) \
+         VALUES ($1, $2, NULL, $3, $4, $5, 0)"
     )
     .bind(&id)
     .bind(&payload.quizz_id)
     .bind(assigned_at)
     .bind(metadata_value)
+    .bind(owner_id)
     .execute(pool)
     .await
     .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert assignment: {}", e)))?;
 
     Ok(Json(CreateAssignmentResponse { id }))
+}
+
+pub async fn handle_validate_pin(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<ValidatePinRequest>,
+) -> Result<Json<ValidatePinResponse>, (StatusCode, Json<serde_json::Value>)> {
+    // Brute-force guard (F-08): 3 failed attempts / 60s per assignment+IP; failures recorded below
+    let rate_key = format!("{}:{}", id, addr.ip());
+    if !super::RATE_LIMITER.check_pin_rate(&rate_key, false) {
+        return Err(json_error_response(StatusCode::TOO_MANY_REQUESTS, "invalid"));
+    }
+
+    // First validate the PIN format
+    if !emoji_pin::is_valid_pin(&payload.pin) {
+        super::RATE_LIMITER.check_pin_rate(&rate_key, true);
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "invalid"));
+    }
+
+    safe_asset_id(&id).map_err(|_| {
+        super::RATE_LIMITER.check_pin_rate(&rate_key, true);
+        json_error_response(StatusCode::FORBIDDEN, "invalid")
+    })?;
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "invalid")),
+    };
+
+    // Validate the PIN against the student and assignment
+    match crate::db::pins::validate_student_pin(pool, &id, payload.student_id, &payload.pin).await {
+        Ok(true) => {},
+        _ => {
+            super::RATE_LIMITER.check_pin_rate(&rate_key, true);
+            return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
+        }
+    }
+
+    // Generate token BEFORE any async operations (ThreadRng is !Send)
+    let token = format!("{:x}", uuid::Uuid::new_v4().as_u128());
+    let expires_at = chrono::Utc::now() + chrono::Duration::minutes(120);
+    
+    // Create solo session
+    if let Err(_) = crate::db::pins::create_solo_session(pool, &token, &id, payload.student_id, 120).await {
+        return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
+    }
+
+    Ok(Json(ValidatePinResponse {
+        student_token: token,
+        expires_at: expires_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+    }))
 }
 
 pub async fn handle_get_assignment(

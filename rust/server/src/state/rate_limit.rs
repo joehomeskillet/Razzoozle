@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use super::{
     get_now_ms, AUTH_RATE_MAX_PER_CLIENT, SOLO_RATE_MAX_PER_CLIENT, SOLO_RATE_WINDOW_MS,
     SUBMISSION_GLOBAL_MAX, SUBMISSION_GLOBAL_WINDOW_MS, SUBMISSION_RATE_MAX_PER_CLIENT,
-    SUBMISSION_RATE_WINDOW_MS,
+    SUBMISSION_RATE_WINDOW_MS, PIN_RATE_MAX_PER_CLIENT, PIN_RATE_WINDOW_MS,
 };
 
 #[derive(Debug, Clone)]
@@ -37,6 +37,7 @@ pub struct RateLimiter {
     auth_by_key: Mutex<HashMap<String, RateState>>,
     submission_by_key: Mutex<HashMap<String, RateState>>,
     submission_global: Mutex<RateState>,
+    pin_by_key: Mutex<HashMap<String, RateState>>,
 }
 
 impl RateLimiter {
@@ -46,6 +47,7 @@ impl RateLimiter {
             auth_by_key: Mutex::new(HashMap::new()),
             submission_by_key: Mutex::new(HashMap::new()),
             submission_global: Mutex::new(RateState::new()),
+            pin_by_key: Mutex::new(HashMap::new()),
         }
     }
 
@@ -195,6 +197,39 @@ impl RateLimiter {
 
             global.count += 1;
             true
+        } else {
+            true // lock failed, allow in fail-open mode
+        }
+    }
+
+    /// Check if a PIN validation is allowed for the given key (assignment:IP).
+    /// Increments counter ONLY on failed validations.
+    /// Returns false if rate-limited (too many failures), true if allowed.
+    pub fn check_pin_rate(&self, key: &str, failed: bool) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut map) = self.pin_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+
+            // Reset if window expired
+            if now.saturating_sub(entry.window_start_ms) > PIN_RATE_WINDOW_MS {
+                entry.count = 0;
+                entry.window_start_ms = now;
+            }
+
+            // Increment counter ONLY on failed validation
+            if failed {
+                entry.count += 1;
+            }
+
+            let is_limited = entry.count > PIN_RATE_MAX_PER_CLIENT;
+
+            // Evict stale keys to prevent unbounded growth
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= PIN_RATE_WINDOW_MS);
+            }
+
+            !is_limited
         } else {
             true // lock failed, allow in fail-open mode
         }
