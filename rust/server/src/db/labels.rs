@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use std::collections::HashMap;
 
 /// Get all global labels (admin-defined Fächer).
 pub async fn get_labels(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
@@ -248,6 +249,43 @@ pub async fn carry_over_quiz_labels(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Fetch label IDs for multiple media assets in a single batch query.
+/// Returns a HashMap mapping media_id -> Vec<i64> of label IDs.
+pub async fn get_media_label_ids_batch(
+    pool: &Option<PgPool>,
+    media_ids: &[&str],
+) -> HashMap<String, Vec<i64>> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return HashMap::new(),
+    };
+
+    if media_ids.is_empty() {
+        return HashMap::new();
+    }
+
+    let rows: Vec<(String, i64)> = match sqlx::query_as(
+        "SELECT media_id, label_id FROM media_labels WHERE media_id = ANY($1) ORDER BY media_id, label_id ASC"
+    )
+    .bind(media_ids)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch media label IDs batch: {}", e);
+            return HashMap::new();
+        }
+    };
+
+    let mut result = HashMap::new();
+    for (media_id, label_id) in rows {
+        result.entry(media_id).or_insert_with(Vec::new).push(label_id);
+    }
+
+    result
 }
 
 /// Check if a quiz is visible/owned by the user.
