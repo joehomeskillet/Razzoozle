@@ -846,7 +846,23 @@
     "noResults": "Aucun élève trouvé"
   },
   "labels": {
-    "description": "Étiquettes globales pour organiser les quiz, médias et entrées du catalogue.",
-    "emptyState": "Espace réservé de structure — les définitions des étiquettes seront chargées ici."
+    "title": "Étiquettes",
+    "description": "Définissez des étiquettes globales (matières) pour organiser les quiz, les médias et les entrées de catalogue.",
+    "emptyState": "Aucune étiquette définie pour l'instant. Créez votre première étiquette avec le bouton ci-dessous.",
+    "create": "Créer une étiquette",
+    "createTitle": "Créer une nouvelle étiquette",
+    "namePlaceholder": "Nom de l'étiquette",
+    "colorLabel": "Couleur",
+    "created": "Étiquette créée",
+    "updated": "Étiquette mise à jour",
+    "deleted": "Étiquette supprimée",
+    "deleteTitle": "Supprimer l'étiquette",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer \"{{name}}\"? L'étiquette sera supprimée de tous les quiz, médias et entrées de catalogue.",
+    "renameTitle": "Modifier l'étiquette",
+    "filterAll": "Tous",
+    "filterLabel": "Étiquette",
+    "assignTitle": "Attribuer une étiquette",
+    "assignSave": "Enregistrer",
+    "noLabels": "Aucune étiquette disponible"
   }
 }

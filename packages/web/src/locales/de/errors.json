@@ -207,5 +207,10 @@
   "connection": {
     "lost": "Verbindung verloren — versuche neu zu verbinden",
     "restored": "Verbindung wiederhergestellt"
+  },
+  "label": {
+    "nameExists": "Ein Fach mit diesem Namen existiert bereits.",
+    "entityNotOwned": "Du darfst diese Entität nicht bearbeiten.",
+    "invalid": "Ungültige Fach-Anfrage."
   }
 }

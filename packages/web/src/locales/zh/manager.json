@@ -846,7 +846,23 @@
     "noResults": "未找到学生"
   },
   "labels": {
-    "description": "用于组织测验、媒体和目录条目的全局标签。",
-    "emptyState": "脚手架占位符 — 标签定义将在此加载。"
+    "title": "标签",
+    "description": "定义全局标签（科目）以组织测验、媒体和目录条目。",
+    "emptyState": "尚未定义任何标签。使用下方按钮创建您的第一个标签。",
+    "create": "创建标签",
+    "createTitle": "创建新标签",
+    "namePlaceholder": "标签名称",
+    "colorLabel": "颜色",
+    "created": "标签已创建",
+    "updated": "标签已更新",
+    "deleted": "标签已删除",
+    "deleteTitle": "删除标签",
+    "deleteConfirm": "您确定要删除\"{{name}}\"吗？该标签将从所有测验、媒体和目录条目中删除。",
+    "renameTitle": "编辑标签",
+    "filterAll": "全部",
+    "filterLabel": "标签",
+    "assignTitle": "分配标签",
+    "assignSave": "保存",
+    "noLabels": "没有可用标签"
   }
 }
