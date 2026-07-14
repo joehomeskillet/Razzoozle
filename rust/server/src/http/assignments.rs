@@ -1,9 +1,10 @@
 use axum::{
-    extract::{Path, State},
+    extract::{ConnectInfo, Path, State},
     http::{StatusCode, HeaderMap},
     Json,
 };
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -166,17 +167,27 @@ pub async fn handle_create_assignment(
 }
 
 pub async fn handle_validate_pin(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<ValidatePinRequest>,
 ) -> Result<Json<ValidatePinResponse>, (StatusCode, Json<serde_json::Value>)> {
+    // Brute-force guard (F-08): 3 failed attempts / 60s per assignment+IP; failures recorded below
+    let rate_key = format!("{}:{}", id, addr.ip());
+    if !super::RATE_LIMITER.check_pin_rate(&rate_key, false) {
+        return Err(json_error_response(StatusCode::TOO_MANY_REQUESTS, "invalid"));
+    }
+
     // First validate the PIN format
     if !emoji_pin::is_valid_pin(&payload.pin) {
+        super::RATE_LIMITER.check_pin_rate(&rate_key, true);
         return Err(json_error_response(StatusCode::BAD_REQUEST, "invalid"));
     }
 
-    safe_asset_id(&id)
-        .map_err(|_| json_error_response(StatusCode::FORBIDDEN, "invalid"))?;
+    safe_asset_id(&id).map_err(|_| {
+        super::RATE_LIMITER.check_pin_rate(&rate_key, true);
+        json_error_response(StatusCode::FORBIDDEN, "invalid")
+    })?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
@@ -186,7 +197,10 @@ pub async fn handle_validate_pin(
     // Validate the PIN against the student and assignment
     match crate::db::pins::validate_student_pin(pool, &id, payload.student_id, &payload.pin).await {
         Ok(true) => {},
-        _ => return Err(json_error_response(StatusCode::FORBIDDEN, "invalid")),
+        _ => {
+            super::RATE_LIMITER.check_pin_rate(&rate_key, true);
+            return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
+        }
     }
 
     // Generate token BEFORE any async operations (ThreadRng is !Send)
