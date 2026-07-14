@@ -409,6 +409,10 @@ fn test_manager_reconnect_records_status_roundtrip() {
         question_start_at_server_ms: Some(1_000),
         answer_deadline_at_server_ms: Some(11_000),
         submitted_by: None,
+        sentence: None,
+        tokens: None,
+        pos_set: None,
+        disabled_tokens: None,
     });
 
     game.record_last_manager_status(&select);
