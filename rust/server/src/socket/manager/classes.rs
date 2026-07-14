@@ -27,6 +27,9 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_remove_from_class(socket, ctx.clone());
     register_student_classes(socket, ctx.clone());
     register_list_all_students(socket, ctx.clone());
+    register_create_student(socket, ctx.clone());
+    register_student_pin(socket, ctx.clone());
+    register_regen_pin(socket, ctx.clone());
 }
 
 fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
@@ -583,6 +586,211 @@ fn register_list_all_students(socket: &SocketRef, ctx: HandlerCtx) {
                     Err(e) => {
                         tracing::warn!("class:listAllStudents failed: {}", e);
                         socket.emit(constants::class::ERROR, "errors:class.listAllStudentsFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::CREATE_STUDENT, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:createStudent denied: no user session");
+                        return;
+                    }
+                };
+
+                let display_name = match payload.get("displayName").and_then(|v| v.as_str()) {
+                    Some(n) => {
+                        let trimmed = n.trim();
+                        if trimmed.is_empty() || trimmed.len() > 255 {
+                            socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
+                            return;
+                        }
+                        trimmed
+                    }
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
+                        return;
+                    }
+                };
+
+                let class_ids: Vec<i64> = payload
+                    .get("classIds")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_i64())
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let birthdate = if let Some(date_str) = payload.get("birthdate").and_then(|v| v.as_str()) {
+                    match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                        Ok(d) => Some(d),
+                        Err(_) => {
+                            socket.emit(constants::class::ERROR, "errors:class.invalidBirthdate").ok();
+                            return;
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // CRITICAL: Generate PIN SYNC before any .await
+                let pin = crate::http::emoji_pin::generate_pin();
+                let labels = crate::http::emoji_pin::labels_for(&pin).unwrap_or_default();
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::create_student(&ctx.db_pool, display_name, &class_ids, me.unwrap_or(1), birthdate, &pin).await {
+                    Ok(student_id) => {
+                        // Fetch class names for the response
+                        let class_names = db::get_student_classes(&ctx.db_pool, student_id, me).await
+                            .unwrap_or_default();
+
+                        socket.emit(constants::class::STUDENT_CREATED, &serde_json::json!({
+                            "id": student_id,
+                            "displayName": display_name,
+                            "pin": pin,
+                            "labels": labels,
+                            "classes": class_names,
+                            "birthdate": birthdate.map(|d| d.format("%Y-%m-%d").to_string()),
+                        })).ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:createStudent failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.createStudentFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_student_pin(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::STUDENT_PIN, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:studentPin denied: no user session");
+                        return;
+                    }
+                };
+
+                let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        return;
+                    }
+                };
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::class_get_student_pin(&ctx.db_pool, student_id, me).await {
+                    Ok(Some(pin)) => {
+                        let labels = crate::http::emoji_pin::labels_for(&pin).unwrap_or_default();
+                        socket.emit(constants::class::STUDENT_PIN_DATA, &serde_json::json!({
+                            "studentId": student_id,
+                            "pin": pin,
+                            "labels": labels,
+                        })).ok();
+                    }
+                    Ok(None) => {
+                        // Backfill: generate PIN SYNC before any .await
+                        let pin = crate::http::emoji_pin::generate_pin();
+                        let labels = crate::http::emoji_pin::labels_for(&pin).unwrap_or_default();
+
+                        match db::class_set_student_pin(&ctx.db_pool, student_id, &pin, me).await {
+                            Ok(_) => {
+                                socket.emit(constants::class::STUDENT_PIN_DATA, &serde_json::json!({
+                                    "studentId": student_id,
+                                    "pin": pin,
+                                    "labels": labels,
+                                })).ok();
+                            }
+                            Err(e) => {
+                                tracing::warn!("class:studentPin failed to set pin: {}", e);
+                                socket.emit(constants::class::ERROR, "errors:class.studentPinFailed").ok();
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:studentPin failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.studentPinFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_regen_pin(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::REGEN_PIN, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:regenPin denied: no user session");
+                        return;
+                    }
+                };
+
+                let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
+                    Some(id) => id,
+                    _ => {
+                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        return;
+                    }
+                };
+
+                // CRITICAL: Generate PIN SYNC before any .await
+                let pin = crate::http::emoji_pin::generate_pin();
+                let labels = crate::http::emoji_pin::labels_for(&pin).unwrap_or_default();
+
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                match db::class_set_student_pin(&ctx.db_pool, student_id, &pin, me).await {
+                    Ok(_) => {
+                        socket.emit(constants::class::PIN_REGENERATED, &serde_json::json!({
+                            "studentId": student_id,
+                            "pin": pin,
+                            "labels": labels,
+                        })).ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!("class:regenPin failed: {}", e);
+                        socket.emit(constants::class::ERROR, "errors:class.regenPinFailed").ok();
                     }
                 }
             });

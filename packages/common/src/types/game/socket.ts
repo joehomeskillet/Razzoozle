@@ -60,6 +60,39 @@ export interface SelectedModes {
   endScreen?: EndScreen
 }
 
+export interface CreateStudentPayload {
+  displayName: string;
+  classIds?: number[];
+  birthdate?: string;
+}
+
+export interface StudentCreatedData {
+  id: number;
+  displayName: string;
+  pin: string;
+  labels: string[];
+  classes: Array<{id: number; name: string}>;
+  birthdate: string | null;
+}
+
+export interface UpdateStudentPayload {
+  id: number;
+  displayName?: string;
+  classIds?: number[];
+  birthdate?: string;
+}
+
+export interface AllStudentsData {
+  students: Array<{
+    id: number;
+    displayName: string;
+    pin: string;
+    classes: Array<{id: number; name: string}>;
+    birthdate: string | null;
+  }>;
+}
+
+
 
 // ---- Low-latency mode contracts (all OPTIONAL / additive) ----------------
 
@@ -305,8 +338,8 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.STUDENT_MOVED]: (_data: { studentId: number; classId: number; joinedAt: string }) => void
   [EVENTS.CLASS.REMOVED_FROM_CLASS]: (_data: { studentId: number; classId: number; studentDeleted: boolean }) => void
   [EVENTS.CLASS.STUDENT_CLASSES_DATA]: (_data: { studentId: number; classes: Array<{ id: number; name: string; joinedAt: string }> }) => void
-  [EVENTS.CLASS.ALL_STUDENTS_DATA]: (_data: { students: Array<{ id: number; displayName: string; classes: Array<{ id: number; name: string }> }> }) => void
-  [EVENTS.CLASS.STUDENT_CREATED]: (_data: { id: number; displayName: string; pin: string; labels: string[]; classes: Array<{ id: number; name: string }> }) => void
+  [EVENTS.CLASS.ALL_STUDENTS_DATA]: (_data: AllStudentsData) => void
+  [EVENTS.CLASS.STUDENT_CREATED]: (_data: StudentCreatedData) => void
   [EVENTS.CLASS.STUDENT_PIN_DATA]: (_data: { studentId: number; pin: string; labels: string[] }) => void
   [EVENTS.CLASS.PIN_REGENERATED]: (_data: { studentId: number; pin: string; labels: string[] }) => void
 }
@@ -557,13 +590,13 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.DELETE]: (_classId: number) => void
   [EVENTS.CLASS.ADD_STUDENT]: (_payload: { classId: number; displayName: string }) => void
   [EVENTS.CLASS.REMOVE_STUDENT]: (_studentId: number) => void
-  [EVENTS.CLASS.UPDATE_STUDENT]: (_payload: { id: number; displayName: string }) => void
+  [EVENTS.CLASS.UPDATE_STUDENT]: (_payload: UpdateStudentPayload) => void
   [EVENTS.CLASS.GET_STUDENTS]: (_classId: number) => void
   [EVENTS.CLASS.MOVE_STUDENT]: (_payload: { studentId: number; classId: number }) => void
   [EVENTS.CLASS.REMOVE_FROM_CLASS]: (_payload: { studentId: number; classId: number }) => void
   [EVENTS.CLASS.STUDENT_CLASSES]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.LIST_ALL_STUDENTS]: () => void
-  [EVENTS.CLASS.CREATE_STUDENT]: (_payload: { displayName: string; classIds?: number[] }) => void
+  [EVENTS.CLASS.CREATE_STUDENT]: (_payload: CreateStudentPayload) => void
   [EVENTS.CLASS.STUDENT_PIN]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.REGEN_PIN]: (_payload: { studentId: number }) => void
 
