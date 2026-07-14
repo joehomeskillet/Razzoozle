@@ -546,21 +546,18 @@ mod tests {
     /// Tests mathematik decimals, slider with unit, and wortarten formatting
     #[test]
     fn format_correct_answer_handles_mathematik_decimals_and_units() {
-        // Mathematik with decimals
-        let mut q = razzoozle_protocol::quizz::Question {
-            question: "2+2?".to_string(),
-            r#type: Some(QuestionType::Mathematik),
-            correct: Some(3.14159),
-            decimals: Some(2),
-            unit: Some("cm".to_string()),
-            ..Default::default()
-        };
+        // Mathematik with decimals (constructed via serde like the other tests
+        // in this module — Question has no Default impl)
+        let mut q: razzoozle_protocol::quizz::Question = serde_json::from_str(
+            r#"{"question":"2+2?","type":"mathematik","correct":3.14159,"decimals":2,"unit":"cm","time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
         let result = format_correct_answer(&q);
         assert_eq!(result, Some("3.14 cm".to_string()), "mathematik with decimals and unit");
 
         // Slider with unit
         q.r#type = Some(QuestionType::Slider);
-        q.correct = Some(42);
+        q.correct = Some(42.0);
         q.decimals = None;
         let result = format_correct_answer(&q);
         assert_eq!(result, Some("42 cm".to_string()), "slider with unit");
