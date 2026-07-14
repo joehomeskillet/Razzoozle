@@ -67,7 +67,7 @@
   --footer-bg: #ffffff;  --footer-text: #1f2937;
 
 
-  /* Label palette (8-tone fixed set, WP-L6). Maps to answer/team/state tokens + new values. */
+  /* Label palette (8-tone fixed set). Maps to answer/team/state tokens + new values. */
   --label-red: #ef4444;        --label-red-bg: color-mix(in srgb, var(--label-red), white 92%);
   --label-blue: #3b82f6;       --label-blue-bg: color-mix(in srgb, var(--label-blue), white 92%);
   --label-green: #22c55e;      --label-green-bg: color-mix(in srgb, var(--label-green), white 92%);
