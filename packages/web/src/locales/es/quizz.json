@@ -150,6 +150,9 @@
       "Konjunktion": "Conjunción"
     },
     "selectLabel": "Seleccionar parte del discurso",
-    "tapHint": "Toca cada palabra para seleccionar su parte del discurso"
+    "tapHint": "Toca cada palabra para seleccionar su parte del discurso",
+    "disableTokenLabel": "Desactivar palabra",
+    "enableTokenLabel": "Activar palabra",
+    "allTokensDisabledError": "Debe haber al menos una palabra activa"
   }
 }

@@ -150,6 +150,9 @@
       "Konjunktion": "Conjunction"
     },
     "selectLabel": "Select part of speech",
-    "tapHint": "Tap each word to select its part of speech"
+    "tapHint": "Tap each word to select its part of speech",
+    "disableTokenLabel": "Disable word",
+    "enableTokenLabel": "Enable word",
+    "allTokensDisabledError": "At least one word must be active"
   }
 }
