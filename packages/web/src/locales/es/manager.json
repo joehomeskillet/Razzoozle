@@ -821,6 +821,8 @@
     "createTitle": "Crear estudiante",
     "createDescription": "Crea un nuevo estudiante y asígnalo opcionalmente a una o más clases de inmediato.",
     "namePlaceholder": "Nombre del estudiante",
+    "firstNamePlaceholder": "Nombre",
+    "lastNamePlaceholder": "Apellido",
     "birthdateLabel": "Fecha de nacimiento (opcional)",
     "selectClasses": "Clases (opcional)",
     "noClasses": "Aún no hay clases",

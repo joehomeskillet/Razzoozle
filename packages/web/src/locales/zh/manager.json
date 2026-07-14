@@ -821,6 +821,8 @@
     "createTitle": "创建学生",
     "createDescription": "创建一名新学生，并可选择立即将其分配到一个或多个班级。",
     "namePlaceholder": "学生姓名",
+    "firstNamePlaceholder": "名",
+    "lastNamePlaceholder": "姓",
     "birthdateLabel": "出生日期（可选）",
     "selectClasses": "班级（可选）",
     "noClasses": "暂无班级",

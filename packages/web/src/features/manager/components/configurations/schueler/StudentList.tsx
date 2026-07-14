@@ -33,6 +33,16 @@ const formatBirthdate = (birthdate: string): string => {
   }
 }
 
+// Compose display name from firstName/lastName with displayName fallback (for older data).
+const getComposedName = (student: SchuelerStudent): string => {
+  if (student.firstName) {
+    return student.lastName
+      ? `${student.firstName} ${student.lastName}`
+      : student.firstName
+  }
+  return student.displayName
+}
+
 interface StudentRowProps {
   student: SchuelerStudent
   classes: StudentClassRef[]
@@ -64,11 +74,13 @@ const StudentRow = ({
     (c) => !student.classes.some((sc) => sc.id === c.id),
   )
 
+  const composedName = getComposedName(student)
+
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-gray-900">
-          {student.displayName}
+          {composedName}
           {student.birthdate && (
             <span className="ml-2 text-xs font-normal text-gray-400">
               {formatBirthdate(student.birthdate)}
@@ -89,7 +101,7 @@ const StudentRow = ({
               onClick={() =>
                 onRemoveFromClass({
                   studentId: student.id,
-                  displayName: student.displayName,
+                  displayName: composedName,
                   classId: c.id,
                   className: c.name,
                 })
@@ -153,7 +165,7 @@ const StudentRow = ({
       <button
         type="button"
         onClick={() =>
-          onDelete({ id: student.id, displayName: student.displayName })
+          onDelete({ id: student.id, displayName: composedName })
         }
         title={t("manager:schueler.deleteTitle")}
         aria-label={t("manager:schueler.deleteTitle")}

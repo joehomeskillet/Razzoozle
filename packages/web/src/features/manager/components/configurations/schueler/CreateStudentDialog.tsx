@@ -8,10 +8,10 @@ interface CreateStudentDialogProps {
   open: boolean
   classes: StudentClassRef[]
   onClose: () => void
-  onCreate: (displayName: string, classIds: number[], birthdate?: string) => void
+  onCreate: (firstName: string, lastName?: string, classIds?: number[], birthdate?: string) => void
 }
 
-// CreateStudentDialog — displayName + optional native date input (birthdate,
+// CreateStudentDialog — firstName (required) + lastName (optional) + optional native date input (birthdate,
 // ADDENDUM) + optional class checkboxes. On submit the dialog closes
 // immediately (mirrors ConfigKlassen's create-dialog pattern); the parent
 // switches to the PIN dialog once STUDENT_CREATED arrives.
@@ -22,7 +22,8 @@ const CreateStudentDialog = ({
   onCreate,
 }: CreateStudentDialogProps) => {
   const { t } = useTranslation()
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [birthdate, setBirthdate] = useState("")
   const [selectedClassIds, setSelectedClassIds] = useState<number[]>([])
 
@@ -31,7 +32,8 @@ const CreateStudentDialog = ({
   }
 
   const reset = () => {
-    setName("")
+    setFirstName("")
+    setLastName("")
     setBirthdate("")
     setSelectedClassIds([])
   }
@@ -50,7 +52,7 @@ const CreateStudentDialog = ({
   }
 
   const handleSubmit = () => {
-    onCreate(name, selectedClassIds, birthdate || undefined)
+    onCreate(firstName, lastName || undefined, selectedClassIds.length > 0 ? selectedClassIds : undefined, birthdate || undefined)
     reset()
     onClose()
   }
@@ -67,10 +69,17 @@ const CreateStudentDialog = ({
         </p>
 
         <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t("manager:schueler.namePlaceholder")}
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          placeholder={t("manager:schueler.firstNamePlaceholder")}
           className="mt-4 min-h-11 w-full rounded-xl"
+        />
+
+        <Input
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          placeholder={t("manager:schueler.lastNamePlaceholder")}
+          className="mt-3 min-h-11 w-full rounded-xl"
         />
 
         <label

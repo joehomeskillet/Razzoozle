@@ -821,6 +821,8 @@
     "createTitle": "Créer un élève",
     "createDescription": "Crée un nouvel élève et affecte-le éventuellement à une ou plusieurs classes tout de suite.",
     "namePlaceholder": "Nom de l'élève",
+    "firstNamePlaceholder": "Prénom",
+    "lastNamePlaceholder": "Nom",
     "birthdateLabel": "Date de naissance (optionnel)",
     "selectClasses": "Classes (optionnel)",
     "noClasses": "Aucune classe pour le moment",

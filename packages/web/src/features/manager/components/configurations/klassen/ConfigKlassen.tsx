@@ -46,13 +46,16 @@ const ConfigKlassen = () => {
   const [editingStudent, setEditingStudent] = useState<{
     id: number
     displayName: string
+    firstName?: string
+    lastName?: string
     birthdate?: string | null
   } | null>(null)
 
   // Form states
   const [createName, setCreateName] = useState("")
   const [editName, setEditName] = useState("")
-  const [editStudentName, setEditStudentName] = useState("")
+  const [editStudentFirstName, setEditStudentFirstName] = useState("")
+  const [editStudentLastName, setEditStudentLastName] = useState("")
   const [editStudentBirthdate, setEditStudentBirthdate] = useState("")
 
   const handleOpenCreateDialog = () => {
@@ -74,10 +77,20 @@ const ConfigKlassen = () => {
   const handleOpenEditStudentDialog = (student: {
     id: number
     displayName: string
+    firstName?: string
+    lastName?: string
     birthdate?: string | null
   }) => {
     setEditingStudent(student)
-    setEditStudentName(student.displayName)
+    // Prefill from firstName/lastName if available; otherwise split displayName on first space
+    if (student.firstName) {
+      setEditStudentFirstName(student.firstName)
+      setEditStudentLastName(student.lastName ?? "")
+    } else {
+      const parts = student.displayName.split(" ")
+      setEditStudentFirstName(parts[0] ?? "")
+      setEditStudentLastName(parts.slice(1).join(" ") ?? "")
+    }
     setEditStudentBirthdate(student.birthdate ?? "")
     setIsEditStudentDialogOpen(true)
   }
@@ -226,10 +239,16 @@ const ConfigKlassen = () => {
               {t("manager:classes.editStudentDescription")}
             </p>
             <Input
-              value={editStudentName}
-              onChange={(e) => setEditStudentName(e.target.value)}
-              placeholder={t("manager:classes.studentNamePlaceholder")}
+              value={editStudentFirstName}
+              onChange={(e) => setEditStudentFirstName(e.target.value)}
+              placeholder={t("manager:schueler.firstNamePlaceholder")}
               className="mt-4 min-h-11 w-full rounded-xl"
+            />
+            <Input
+              value={editStudentLastName}
+              onChange={(e) => setEditStudentLastName(e.target.value)}
+              placeholder={t("manager:schueler.lastNamePlaceholder")}
+              className="mt-3 min-h-11 w-full rounded-xl"
             />
             <label
               htmlFor="klassen-edit-student-birthdate"
@@ -254,7 +273,8 @@ const ConfigKlassen = () => {
                   if (editingStudent) {
                     handleUpdateStudent(
                       editingStudent.id,
-                      editStudentName,
+                      editStudentFirstName,
+                      editStudentLastName || undefined,
                       editStudentBirthdate || undefined,
                     )
                     setIsEditStudentDialogOpen(false)
