@@ -185,6 +185,7 @@ const BUILTIN_TABS: TabDef[] = [
     icon: Puzzle,
     component: ConfigLabels,
     roleGate: "admin",
+    gated: "klassenEnabled",
   },
   {
     key: "satellite",

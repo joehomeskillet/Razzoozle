@@ -285,7 +285,8 @@ pub mod label {
     pub const UPDATE: &str = "label:update";
     /// `label:delete` req `{ id: number }` (admin-only, CASCADE removes all assignments) → `label:data` (re-emit full list).
     pub const DELETE: &str = "label:delete";
-    /// `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility) → `label:assigned` on success.
+
+    /// `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success.
     pub const ASSIGN: &str = "label:assign";
     /// `label:assigned` → `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (ack; consumers refetch their lists).
     pub const ASSIGNED: &str = "label:assigned";

@@ -238,6 +238,17 @@ fn register_assign(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
+                // Gate on klassenEnabled
+                let (_team_mode, _ll_enabled, _join_locked, _rand, _scoring, _ll_config, klassen_enabled, _end_screen) =
+                    db::get_game_config(&ctx.db_pool).await;
+                if !klassen_enabled.unwrap_or(false) {
+                    socket
+                        .emit(constants::label::ERROR, &json!({"message": "klassenEnabled_required"}))
+                        .ok();
+                    tracing::warn!("label:assign denied — klassenEnabled is false");
+                    return;
+                }
+
                 let entity_type = match payload.get("entityType").and_then(|v| v.as_str()) {
                     Some("quizz" | "media" | "catalog") => payload.get("entityType").unwrap().as_str().unwrap(),
                     _ => {

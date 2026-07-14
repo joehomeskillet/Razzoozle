@@ -630,7 +630,7 @@ export const LABEL = {
    */
   DELETE: "label:delete",
   /**
-   * `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility) → `label:assigned` on success.
+   * `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success.
    */
   ASSIGN: "label:assign",
   /**
