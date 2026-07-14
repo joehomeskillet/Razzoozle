@@ -54,6 +54,7 @@ import {
 } from "lucide-react"
 import {
   type ComponentType,
+  useEffect,
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
@@ -281,31 +282,37 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
 
   const tabs = BUILTIN_TABS
   const pendingCount = submissions.filter((s) => s.status === "pending").length
+  const gateOpts = {
+    devMode: Boolean(devMode),
+    klassenEnabled: Boolean(klassenEnabled ?? false),
+    role: role ?? "user",
+  }
+  const allowedTabs = tabs.filter((tab) => isTabAllowed(tab, gateOpts))
 
   const handleLogout = () => {
     socket.emit(EVENTS.MANAGER.LOGOUT)
     logout()
   }
 
-  const nav: ConsoleNavItem[] = tabs
-    .filter(
-      (tab) =>
-        isTabAllowed(tab, {
-          devMode: Boolean(devMode),
-          klassenEnabled: Boolean(klassenEnabled ?? false),
-          role: role ?? "user",
-        }),
-    )
-    .map((tab) => ({
-      key: tab.key,
-      label: t(tab.nameKey, { defaultValue: tab.nameKey }),
-      icon: tab.icon,
-      count:
-        tab.key === "submissions" ? pendingCount : undefined,
-    }))
+  const nav: ConsoleNavItem[] = allowedTabs.map((tab) => ({
+    key: tab.key,
+    label: t(tab.nameKey, { defaultValue: tab.nameKey }),
+    icon: tab.icon,
+    count: tab.key === "submissions" ? pendingCount : undefined,
+  }))
 
-  const active = tabs.find((tab) => tab.key === activeKey) ?? tabs[0]
+  // A tab persisted from a prior role/config (e.g. re-login with a different
+  // role in the same tab) can point at a section the current role/config no
+  // longer allows. Fall back to the first allowed tab whenever that happens.
+  const active = allowedTabs.find((tab) => tab.key === activeKey) ?? allowedTabs[0] ?? tabs[0]
   const ActiveComponent = active.component
+
+  useEffect(() => {
+    if (active.key !== activeKey) {
+      onSelect(active.key)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.key, activeKey])
 
   return (
     <ConsoleShell
