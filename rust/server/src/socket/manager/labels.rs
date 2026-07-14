@@ -250,7 +250,9 @@ fn register_assign(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 let entity_type = match payload.get("entityType").and_then(|v| v.as_str()) {
-                    Some("quizz" | "media" | "catalog") => payload.get("entityType").unwrap().as_str().unwrap(),
+                    Some("quizz" | "media" | "catalog" | "class") => {
+                        payload.get("entityType").unwrap().as_str().unwrap()
+                    }
                     _ => {
                         socket
                             .emit(constants::label::ERROR, &json!({"message": "invalid entity_type"}))
@@ -300,7 +302,62 @@ fn register_assign(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 // Entity visibility gate: check if user owns/can see the entity
+                // me=None (admin) bypasses ownership; me=Some only own rows (classes.rs idiom)
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                if entity_type == "class" {
+                    let class_id = match entity_id.parse::<i64>() {
+                        Ok(id) => id,
+                        Err(_) => {
+                            socket
+                                .emit(constants::label::ERROR, &json!({"message": "invalid entityId"}))
+                                .ok();
+                            tracing::warn!(
+                                "label:assign rejected — class entityId not i64: {}",
+                                entity_id
+                            );
+                            return;
+                        }
+                    };
+
+                    if !db::class_is_visible(&ctx.db_pool, class_id, me).await {
+                        socket
+                            .emit(
+                                constants::label::ERROR,
+                                &json!({"message": "errors:label.entityNotOwned"}),
+                            )
+                            .ok();
+                        tracing::warn!(
+                            "label:assign denied — entity not visible to user: type=class id={} user_id={:?}",
+                            entity_id,
+                            me
+                        );
+                        return;
+                    }
+
+                    match db::set_class_labels(&ctx.db_pool, class_id, &label_ids).await {
+                        Ok(_) => {
+                            socket
+                                .emit(
+                                    constants::label::ASSIGNED,
+                                    &json!({
+                                        "entityType": "class",
+                                        "entityId": entity_id,
+                                        "labelIds": label_ids
+                                    }),
+                                )
+                                .ok();
+                        }
+                        Err(e) => {
+                            tracing::warn!("label:assign failed: {}", e);
+                            socket
+                                .emit(constants::label::ERROR, &json!({"message": "assign_failed"}))
+                                .ok();
+                        }
+                    }
+                    return;
+                }
+
                 let entity_exists = match entity_type {
                     "quizz" => db::quiz_is_visible(&ctx.db_pool, entity_id, me).await,
                     "media" => db::media_is_visible(&ctx.db_pool, entity_id, me).await,
