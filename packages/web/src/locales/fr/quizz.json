@@ -134,6 +134,11 @@
     "createQuestions": "Créer des Questions"
   },
   "wortarten": {
+    "sentence": "Phrase",
+    "sentencePlaceholder": "Saisis la phrase pour l'étiquetage grammatical...",
+    "tokenizeButton": "Découper en mots",
+    "tokensLabel": "Mots et parties du discours",
+    "noTokensHint": "Clique sur « Découper en mots » pour générer les mots.",
     "pos": {
       "Nomen": "Nom",
       "Verb": "Verbe",

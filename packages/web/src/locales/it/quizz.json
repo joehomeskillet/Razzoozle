@@ -134,6 +134,11 @@
     "createQuestions": "Crea Domande"
   },
   "wortarten": {
+    "sentence": "Frase",
+    "sentencePlaceholder": "Inserisci la frase per l'analisi grammaticale...",
+    "tokenizeButton": "Dividi in parole",
+    "tokensLabel": "Parole e parti del discorso",
+    "noTokensHint": "Clicca su \"Dividi in parole\" per generare le parole.",
     "pos": {
       "Nomen": "Nome",
       "Verb": "Verbo",

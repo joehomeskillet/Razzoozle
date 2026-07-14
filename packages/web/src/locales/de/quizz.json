@@ -134,6 +134,11 @@
     "createQuestions": "Fragen erstellen"
   },
   "wortarten": {
+    "sentence": "Satz",
+    "sentencePlaceholder": "Gib den Satz für die Wortart-Bestimmung ein...",
+    "tokenizeButton": "In Wörter zerlegen",
+    "tokensLabel": "Wörter und Wortarten",
+    "noTokensHint": "Klicke auf „In Wörter zerlegen“, um die Wörter zu erzeugen.",
     "pos": {
       "Nomen": "Nomen",
       "Verb": "Verb",

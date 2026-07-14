@@ -60,6 +60,12 @@ const Answers = ({
     step,
     unit,
     shuffledChunks,
+    // Wortarten: the source sentence, its whitespace tokens, and the fixed
+    // POS label set the player picks from (server contract — see
+    // rust/protocol/src/quizz.rs + packages/common/src/types/game/status.ts).
+    sentence,
+    tokens,
+    posSet,
     // Low-latency server-timing anchors (all OPTIONAL — undefined in normal
     // mode). Used ONLY to render the countdown, never for scoring.
     serverNowMs,
@@ -114,6 +120,13 @@ const Answers = ({
   const [textAnswer, setTextAnswer] = useState("")
   // Mathematik: the numeric answer the player is entering. Reset per question.
   const [mathematikAnswer, setMathematikAnswer] = useState("")
+  // Wortarten: the POS label string the player picked for each token (null =
+  // not yet chosen), index-aligned with `tokens`. Reset per question below.
+  const [wortartenChoices, setWortartenChoices] = useState<
+    Array<string | null>
+  >([])
+  // Wortarten: which token's POS picker is currently open (one at a time).
+  const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
   const [bankChips, setBankChips] = useState<
     Array<{ text: string; originalIndex: number }>
   >([])
@@ -162,6 +175,18 @@ const Answers = ({
     setPlacedChunks([])
     setSubmittedChunks(undefined)
   }, [isSentenceBuilder, shuffledChunks, setSubmittedChunks])
+
+  // Wortarten: reset the per-token POS picks (and close any open picker) each
+  // time a fresh Wortarten question mounts.
+  useEffect(() => {
+    if (!isWortarten || !tokens) {
+      return
+    }
+
+    setWortartenChoices(new Array(tokens.length).fill(null))
+    setOpenTokenIndex(null)
+    setSubmittedChunks(undefined)
+  }, [isWortarten, tokens, setSubmittedChunks])
 
   // Clear any pending ack timer on unmount so it can't fire after teardown.
   useEffect(
@@ -335,6 +360,74 @@ const Answers = ({
         ...(clientMessageId ? { clientMessageId } : {}),
       },
     })
+
+    if (lowLatency) {
+      pendingMessageIdRef.current = clientMessageId ?? null
+      pendingSentAtRef.current = monoNow()
+      setAckPending(false)
+
+      if (ackTimerRef.current) {
+        clearTimeout(ackTimerRef.current)
+      }
+
+      ackTimerRef.current = setTimeout(() => {
+        setAckPending(true)
+      }, ACK_PENDING_HINT_MS)
+    }
+  }
+
+  // Wortarten: tapping a POS option assigns it to that token and closes the
+  // picker. No emit until Submit (mirrors multi-select's toggle-then-submit).
+  const handleSelectPos = (tokenIndex: number, pos: string) => () => {
+    if (submitted) {
+      return
+    }
+
+    setWortartenChoices((prev) => {
+      const next = [...prev]
+      next[tokenIndex] = pos
+      return next
+    })
+    setOpenTokenIndex(null)
+    sfxPop()
+    hapticTap()
+  }
+
+  // Wortarten: submit once every token has a chosen POS label. Sends the
+  // sentinel answerKey: -1 plus answerText as a JSON array of POS label
+  // strings, one per token (rust/engine/src/eval.rs Wortarten arm parses this
+  // exact shape). Also stashes the choices in the shared "submittedChunks"
+  // slot so Result.tsx's existing correctChunks reveal (built for
+  // sentence-builder) colors each token green/red against the server's
+  // per-token correct POS without any changes to Result.tsx.
+  const submitWortarten = () => {
+    if (
+      !player ||
+      !gameId ||
+      submitted ||
+      wortartenChoices.length === 0 ||
+      wortartenChoices.some((choice) => choice === null)
+    ) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+    const chosenLabels = wortartenChoices as string[]
+
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: JSON.stringify(chosenLabels),
+        ...(clientMessageId ? { clientMessageId } : {}),
+      },
+    })
+
+    setSubmittedChunks(chosenLabels)
 
     if (lowLatency) {
       pendingMessageIdRef.current = clientMessageId ?? null
@@ -666,10 +759,92 @@ const Answers = ({
             </button>
           </div>
         ) : isWortarten ? (
-          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
-            <p className="text-center text-sm text-[color:var(--game-fg)]/60">
-              TODO: Wortarten input (parts of speech tagging)
+          <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">
+            {sentence && (
+              <p className="text-center text-lg font-semibold text-[color:var(--game-fg)]">
+                <Markdown>{sentence}</Markdown>
+              </p>
+            )}
+            <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
+              {t("quizz:wortarten.tapHint")}
             </p>
+
+            <div className="flex flex-wrap items-start justify-center gap-2">
+              {(tokens ?? []).map((token, i) => {
+                const choice = wortartenChoices[i] ?? null
+                const isOpen = openTokenIndex === i
+
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      data-testid={`wortarten-token-${i}`}
+                      onClick={() =>
+                        !submitted && setOpenTokenIndex(isOpen ? null : i)
+                      }
+                      disabled={submitted}
+                      aria-expanded={isOpen}
+                      aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
+                      className={clsx(
+                        ANSWER_TILE_SURFACE,
+                        "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)] disabled:opacity-50",
+                        !submitted && PRESS_FEEDBACK,
+                        choice && "ring-2 ring-[var(--color-accent)]",
+                      )}
+                    >
+                      <span>{token}</span>
+                      {choice && (
+                        <span className="text-xs font-normal text-[color:var(--game-fg)]/60">
+                          {t(`quizz:wortarten.pos.${choice}`, choice)}
+                        </span>
+                      )}
+                    </button>
+
+                    {isOpen && (
+                      <div
+                        className={clsx(
+                          ANSWER_TILE_SURFACE,
+                          "z-10 flex max-w-[16rem] flex-wrap justify-center gap-1 p-2",
+                        )}
+                      >
+                        {(posSet ?? []).map((pos) => (
+                          <button
+                            key={pos}
+                            type="button"
+                            data-testid={`wortarten-pos-${i}-${pos}`}
+                            onClick={handleSelectPos(i, pos)}
+                            className={clsx(
+                              ANSWER_TILE_SURFACE,
+                              "min-h-11 px-3 py-2 text-sm font-medium text-[color:var(--game-fg)]",
+                              PRESS_FEEDBACK,
+                            )}
+                          >
+                            {t(`quizz:wortarten.pos.${pos}`, pos)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <button
+              data-testid="wortarten-submit"
+              type="button"
+              onClick={submitWortarten}
+              disabled={
+                submitted ||
+                wortartenChoices.length === 0 ||
+                wortartenChoices.some((choice) => choice === null)
+              }
+              className={clsx(
+                "bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                PRESS_FEEDBACK,
+              )}
+            >
+              {t("game:submitAnswer")}
+            </button>
           </div>
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">

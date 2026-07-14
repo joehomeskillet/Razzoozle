@@ -134,6 +134,11 @@
     "createQuestions": "Create Questions"
   },
   "wortarten": {
+    "sentence": "Sentence",
+    "sentencePlaceholder": "Enter the sentence for parts-of-speech tagging...",
+    "tokenizeButton": "Split into words",
+    "tokensLabel": "Words and parts of speech",
+    "noTokensHint": "Click \"Split into words\" to generate the words.",
     "pos": {
       "Nomen": "Noun",
       "Verb": "Verb",

@@ -134,6 +134,11 @@
     "createQuestions": "Crear Preguntas"
   },
   "wortarten": {
+    "sentence": "Frase",
+    "sentencePlaceholder": "Introduce la frase para el etiquetado de partes del discurso...",
+    "tokenizeButton": "Dividir en palabras",
+    "tokensLabel": "Palabras y partes del discurso",
+    "noTokensHint": "Haz clic en \"Dividir en palabras\" para generar las palabras.",
     "pos": {
       "Nomen": "Sustantivo",
       "Verb": "Verbo",

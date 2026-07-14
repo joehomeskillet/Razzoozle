@@ -134,6 +134,11 @@
     "createQuestions": "创建问题"
   },
   "wortarten": {
+    "sentence": "句子",
+    "sentencePlaceholder": "输入用于词性标注的句子...",
+    "tokenizeButton": "拆分为单词",
+    "tokensLabel": "单词与词性",
+    "noTokensHint": "点击“拆分为单词”以生成单词。",
     "pos": {
       "Nomen": "名词",
       "Verb": "动词",

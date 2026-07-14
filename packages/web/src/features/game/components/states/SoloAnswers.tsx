@@ -56,6 +56,17 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
   const [textAnswer, setTextAnswer] = useState("")
   const [mathematikAnswer, setMathematikAnswer] = useState("")
+  // Wortarten: the POS label string picked for each token (null = unset),
+  // index-aligned with question.tokens. Which token's picker is open (one at
+  // a time).
+  const [wortartenChoices, setWortartenChoices] = useState<
+    Array<string | null>
+  >(() =>
+    question.type === "wortarten"
+      ? new Array(question.tokens?.length ?? 0).fill(null)
+      : [],
+  )
+  const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [countdown, setCountdown] = useState(question.time)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -186,6 +197,10 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
       void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
     } else if (isMathematik) {
       void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
+    } else if (isWortarten) {
+      void submitAnswer(quizzId, {
+        answerText: JSON.stringify(wortartenChoices.map((c) => c ?? "")),
+      })
     } else if (selectedKey !== null) {
       void submitAnswer(quizzId, { answerId: selectedKey })
     } else {
@@ -269,6 +284,40 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() })
+  }
+
+  // Wortarten: tapping a POS option assigns it to that token and closes the
+  // picker. No REST call until Submit.
+  const handleSelectPos = (tokenIndex: number, pos: string) => () => {
+    if (submitted) return
+    setWortartenChoices((prev) => {
+      const next = [...prev]
+      next[tokenIndex] = pos
+      return next
+    })
+    setOpenTokenIndex(null)
+    sfxPop()
+    hapticTap()
+  }
+
+  // Wortarten: submit once every token has a chosen POS label. answerText is
+  // a JSON array of POS label strings, one per token (same contract as the
+  // multiplayer path — rust/engine/src/eval.rs Wortarten arm).
+  const submitWortarten = () => {
+    if (
+      submitted ||
+      wortartenChoices.length === 0 ||
+      wortartenChoices.some((choice) => choice === null)
+    ) {
+      return
+    }
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, {
+      answerText: JSON.stringify(wortartenChoices),
+    })
   }
 
   const submitSlider = () => {
@@ -475,8 +524,96 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
             </button>
           </div>
         ) : isWortarten ? (
-          <div>
-            <p className="text-sm text-gray-500">TODO: Wortarten input</p>
+          <div
+            className={clsx(
+              "mx-auto mb-4 flex w-full max-w-3xl flex-col gap-4 rounded-[var(--radius-theme)] border p-4 px-4",
+              resultReady
+                ? lastResult.correct
+                  ? "border-[var(--state-correct)]"
+                  : "border-[var(--state-wrong)]"
+                : "border-transparent",
+            )}
+          >
+            {question.sentence && (
+              <p className="text-center text-lg font-semibold text-[color:var(--game-fg)]">
+                <Markdown>{question.sentence}</Markdown>
+              </p>
+            )}
+            <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
+              {t("quizz:wortarten.tapHint")}
+            </p>
+
+            <div className="flex flex-wrap items-start justify-center gap-2">
+              {(question.tokens ?? []).map((token, i) => {
+                const choice = wortartenChoices[i] ?? null
+                const isOpen = openTokenIndex === i
+
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      data-testid={`solo-wortarten-token-${i}`}
+                      onClick={() =>
+                        !submitted && setOpenTokenIndex(isOpen ? null : i)
+                      }
+                      disabled={submitted}
+                      aria-expanded={isOpen}
+                      aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
+                      className={clsx(
+                        ANSWER_TILE_SURFACE,
+                        "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)] disabled:opacity-50",
+                        choice && "ring-2 ring-[var(--color-accent)]",
+                      )}
+                    >
+                      <span>{token}</span>
+                      {choice && (
+                        <span className="text-xs font-normal text-[color:var(--game-fg)]/60">
+                          {t(`quizz:wortarten.pos.${choice}`, choice)}
+                        </span>
+                      )}
+                    </button>
+
+                    {isOpen && (
+                      <div
+                        className={clsx(
+                          ANSWER_TILE_SURFACE,
+                          "z-10 flex max-w-[16rem] flex-wrap justify-center gap-1 p-2",
+                        )}
+                      >
+                        {(question.posSet ?? []).map((pos) => (
+                          <button
+                            key={pos}
+                            type="button"
+                            data-testid={`solo-wortarten-pos-${i}-${pos}`}
+                            onClick={handleSelectPos(i, pos)}
+                            className={clsx(
+                              ANSWER_TILE_SURFACE,
+                              "min-h-11 px-3 py-2 text-sm font-medium text-[color:var(--game-fg)]",
+                            )}
+                          >
+                            {t(`quizz:wortarten.pos.${pos}`, pos)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <button
+              type="button"
+              data-testid="solo-wortarten-submit"
+              onClick={submitWortarten}
+              disabled={
+                submitted ||
+                wortartenChoices.length === 0 ||
+                wortartenChoices.some((choice) => choice === null)
+              }
+              className="bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            >
+              {submitted ? t("game:slider.submitted") : t("game:submitAnswer")}
+            </button>
           </div>
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-3xl flex-col gap-4 px-4">
