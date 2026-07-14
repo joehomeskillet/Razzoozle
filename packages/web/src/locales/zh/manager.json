@@ -863,6 +863,22 @@
     "filterLabel": "标签",
     "assignTitle": "分配标签",
     "assignSave": "保存",
-    "noLabels": "没有可用标签"
+    "noLabels": "没有可用标签",
+    "editTitle": "编辑标签",
+    "update": "保存",
+    "assignLabel": "分配标签",
+    "addLabel": "+ 科目",
+    "errors": {
+      "generic": "操作失败",
+      "name_exists": "已存在同名标签",
+      "create_failed": "无法创建标签",
+      "update_failed": "无法更新标签",
+      "not_found": "标签未找到",
+      "delete_failed": "无法删除标签",
+      "invalid_entity_type": "无效的实体类型",
+      "entity_id_required": "需要实体 ID",
+      "invalid_label_ids": "无效的标签 ID",
+      "klassen_enabled_required": "需要启用班级模式"
+    }
   }
 }

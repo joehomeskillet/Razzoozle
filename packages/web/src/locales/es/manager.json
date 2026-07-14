@@ -863,6 +863,22 @@
     "filterLabel": "Etiqueta",
     "assignTitle": "Asignar etiqueta",
     "assignSave": "Guardar",
-    "noLabels": "Sin etiquetas disponibles"
+    "noLabels": "Sin etiquetas disponibles",
+    "editTitle": "Editar etiqueta",
+    "update": "Guardar",
+    "assignLabel": "Asignar etiqueta",
+    "addLabel": "+ Asignatura",
+    "errors": {
+      "generic": "Acción fallida",
+      "name_exists": "Ya existe una etiqueta con este nombre",
+      "create_failed": "No se pudo crear la etiqueta",
+      "update_failed": "No se pudo actualizar la etiqueta",
+      "not_found": "Etiqueta no encontrada",
+      "delete_failed": "No se pudo eliminar la etiqueta",
+      "invalid_entity_type": "Tipo de entidad no válido",
+      "entity_id_required": "ID de entidad requerida",
+      "invalid_label_ids": "IDs de etiqueta no válidas",
+      "klassen_enabled_required": "Modo de clases requerido"
+    }
   }
 }
