@@ -7,7 +7,8 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
-import { Ban, CheckCircle2, UserPlus, Users as UsersIcon } from "lucide-react"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { Ban, CheckCircle2, UserPlus, Users as UsersIcon, Key } from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -38,13 +39,17 @@ const parseErrorMessage = async (response: Response): Promise<string | null> => 
 
 const ConfigUsers = () => {
   const { t } = useTranslation()
+  const config = useConfig()
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<"user" | "admin">("user")
+  const [role, setRole] = useState<"user" | "admin" | "lehrkraft">("user")
   const [creating, setCreating] = useState(false)
   const [pendingId, setPendingId] = useState<number | null>(null)
+  const [resetPasswordId, setResetPasswordId] = useState<number | null>(null)
+  const [resetNewPassword, setResetNewPassword] = useState("")
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -144,6 +149,59 @@ const ConfigUsers = () => {
     }
   }
 
+  const handleResetPassword = async (user: ManagedUser) => {
+    if (!resetNewPassword) {
+      toast.error(
+        t("manager:users.passwordRequired", {
+          defaultValue: "Passwort erforderlich",
+        }),
+      )
+      return
+    }
+
+    setResettingPassword(true)
+    try {
+      const response = await fetchWithAuth(`/api/users/${user.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: resetNewPassword }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`)
+      }
+
+      toast.success(
+        t("manager:users.passwordReset", {
+          defaultValue: "Passwort zurückgesetzt",
+        }),
+      )
+      setResetPasswordId(null)
+      setResetNewPassword("")
+      await loadUsers()
+    } catch {
+      toast.error(
+        t("manager:users.resetFailed", {
+          defaultValue: "Zurücksetzen fehlgeschlagen",
+        }),
+      )
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const getRoleLabel = (roleValue: string) => {
+    switch (roleValue) {
+      case "admin":
+        return t("manager:users.role.admin", { defaultValue: "Admin" })
+      case "lehrkraft":
+        return t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })
+      case "user":
+      default:
+        return t("manager:users.role.user", { defaultValue: "Nutzer" })
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div>
@@ -216,18 +274,26 @@ const ConfigUsers = () => {
             <select
               id="new-user-role"
               value={role}
-              onChange={(event) =>
-                setRole(event.target.value === "admin" ? "admin" : "user")
-              }
+              onChange={(event) => {
+                const val = event.target.value
+                if (val === "admin" || val === "lehrkraft" || val === "user") {
+                  setRole(val)
+                }
+              }}
               disabled={creating}
               className="min-h-11 rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:border-primary focus-visible:outline-none"
             >
               <option value="user">
-                {t("manager:users.roleUser", { defaultValue: "Lehrkraft" })}
+                {t("manager:users.role.user", { defaultValue: "Nutzer" })}
               </option>
               <option value="admin">
-                {t("manager:users.roleAdmin", { defaultValue: "Admin" })}
+                {t("manager:users.role.admin", { defaultValue: "Admin" })}
               </option>
+              {config?.klassenEnabled && (
+                <option value="lehrkraft">
+                  {t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })}
+                </option>
+              )}
             </select>
           </div>
 
@@ -262,11 +328,7 @@ const ConfigUsers = () => {
               meta={
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                    {user.role === "admin"
-                      ? t("manager:users.roleAdmin", { defaultValue: "Admin" })
-                      : t("manager:users.roleUser", {
-                          defaultValue: "Lehrkraft",
-                        })}
+                    {getRoleLabel(user.role)}
                   </span>
                   <span
                     className={
@@ -285,13 +347,25 @@ const ConfigUsers = () => {
               }
               actions={[
                 {
+                  key: "reset",
+                  icon: Key,
+                  label: t("manager:users.resetPassword", {
+                    defaultValue: "Passwort zurücksetzen",
+                  }),
+                  disabled: pendingId === user.id || resettingPassword === true,
+                  onClick: () => {
+                    setResetPasswordId(user.id)
+                    setResetNewPassword("")
+                  },
+                },
+                {
                   key: "toggle",
                   icon: user.active ? Ban : CheckCircle2,
                   label: user.active
                     ? t("manager:users.disable", { defaultValue: "Deaktivieren" })
                     : t("manager:users.enable", { defaultValue: "Aktivieren" }),
                   destructive: user.active,
-                  disabled: pendingId === user.id,
+                  disabled: pendingId === user.id || resettingPassword === true,
                   onClick: () => {
                     void handleToggleActive(user)
                   },
@@ -299,6 +373,66 @@ const ConfigUsers = () => {
               ]}
             />
           ))}
+        </div>
+      )}
+
+      {/* Reset Password Dialog */}
+      {resetPasswordId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="rounded-lg bg-white p-6 shadow-lg">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              {t("manager:users.resetPasswordTitle", {
+                defaultValue: "Passwort zurücksetzen",
+              })}
+            </h3>
+            <div className="mb-4">
+              <label
+                htmlFor="reset-password-input"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
+                {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
+              </label>
+              <Input
+                id="reset-password-input"
+                type="password"
+                autoComplete="new-password"
+                value={resetNewPassword}
+                onChange={(event) => setResetNewPassword(event.target.value)}
+                disabled={resettingPassword}
+                className="w-full"
+                placeholder={t("manager:users.enterNewPassword", {
+                  defaultValue: "Neues Passwort eingeben",
+                })}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  setResetPasswordId(null)
+                  setResetNewPassword("")
+                }}
+                disabled={resettingPassword}
+                className="bg-gray-200 text-gray-900 hover:bg-gray-300"
+              >
+                {t("common:cancel", { defaultValue: "Abbrechen" })}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  const user = users.find((u) => u.id === resetPasswordId)
+                  if (user) {
+                    void handleResetPassword(user)
+                  }
+                }}
+                disabled={resettingPassword || !resetNewPassword}
+              >
+                {resettingPassword
+                  ? t("common:loading", { defaultValue: "Wird geladen…" })
+                  : t("common:confirm", { defaultValue: "Bestätigen" })}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -80,7 +80,7 @@ pub async fn list(
 }
 
 /// POST /api/users — create a new user (admin only).
-/// Request body: {username, password, role?} (role defaults "user", must be "admin" or "user").
+/// Request body: {username, password, role?} (role defaults "user", must be one of admin, user, or lehrkraft).
 /// Returns {id, username, role}.
 pub async fn create(
     State(state): State<AppState>,
@@ -94,8 +94,11 @@ pub async fn create(
 
     // Validate role
     let role = req.role.as_deref().unwrap_or("user");
-    if !matches!(role, "admin" | "user") {
-        return Err(json_error_response(StatusCode::BAD_REQUEST, "Role must be 'admin' or 'user'"));
+    if !matches!(role, "admin" | "user" | "lehrkraft") {
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "Role must be one of 'admin', 'user', or 'lehrkraft'",
+        ));
     }
 
     let pool = match &state.db_pool {
@@ -165,6 +168,45 @@ pub async fn enable(
     db::users::set_user_active(pool, id, true)
         .await
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to enable user: {}", e)))?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub newPassword: String,
+}
+
+/// POST /api/users/:id/reset-password — admin sets a new password for a user.
+pub async fn reset_password(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Json(req): Json<ResetPasswordRequest>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    // Verify admin
+    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    }
+
+    // Same validation as create path: reject empty passwords (create has no min-length either).
+    if req.newPassword.is_empty() {
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "Password cannot be empty"));
+    }
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    db::users::set_password(pool, id, &req.newPassword)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to reset password: {}", e),
+            )
+        })?;
 
     Ok(StatusCode::OK)
 }

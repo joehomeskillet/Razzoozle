@@ -753,5 +753,40 @@
     "studentRemoved": "Estudiante eliminado",
     "noStudents": "No hay estudiantes en esta clase",
     "errorEmptyName": "El nombre no puede estar vacío"
+  },
+  "users": {
+    "title": "Gestión de Usuarios",
+    "intro": "Crear, bloquear y desbloquear cuentas de profesores.",
+    "createTitle": "Crear Nuevo Profesor",
+    "created": "Usuario creado",
+    "loadFailed": "Error al cargar usuarios",
+    "invalidInput": "Usuario y contraseña requeridos",
+    "createFailed": "Creación fallida",
+    "networkError": "Error de red",
+    "usernameLabel": "Usuario",
+    "passwordLabel": "Contraseña",
+    "roleLabel": "Rol",
+    "emptyHeadline": "Sin profesores aún",
+    "empty": "Crea la primera cuenta arriba.",
+    "active": "Activo",
+    "disabledStatus": "Desactivado",
+    "disabled": "Usuario desactivado",
+    "enabled": "Usuario activado",
+    "disable": "Desactivar",
+    "enable": "Activar",
+    "toggleFailed": "Acción fallida",
+    "resetPassword": "Restablecer contraseña",
+    "resetPasswordTitle": "Restablecer Contraseña",
+    "passwordRequired": "Contraseña requerida",
+    "passwordReset": "Contraseña restablecida",
+    "resetFailed": "Restablecimiento fallido",
+    "enterNewPassword": "Ingrese nueva contraseña",
+    "role": {
+      "user": "Usuario",
+      "admin": "Administrador",
+      "lehrkraft": "Docente"
+    },
+    "roleUser": "Profesor",
+    "roleAdmin": "Admin"
   }
 }

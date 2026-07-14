@@ -753,5 +753,40 @@
     "studentRemoved": "Élève supprimé",
     "noStudents": "Pas d'élèves dans cette classe",
     "errorEmptyName": "Le nom ne peut pas être vide"
+  },
+  "users": {
+    "title": "Gestion des Utilisateurs",
+    "intro": "Créer, verrouiller et déverrouiller les comptes des enseignants.",
+    "createTitle": "Créer un Nouvel Enseignant",
+    "created": "Utilisateur créé",
+    "loadFailed": "Impossible de charger les utilisateurs",
+    "invalidInput": "Nom d'utilisateur et mot de passe requis",
+    "createFailed": "Création échouée",
+    "networkError": "Erreur réseau",
+    "usernameLabel": "Nom d'utilisateur",
+    "passwordLabel": "Mot de passe",
+    "roleLabel": "Rôle",
+    "emptyHeadline": "Aucun enseignant pour l'instant",
+    "empty": "Créez le premier compte ci-dessus.",
+    "active": "Actif",
+    "disabledStatus": "Désactivé",
+    "disabled": "Utilisateur désactivé",
+    "enabled": "Utilisateur activé",
+    "disable": "Désactiver",
+    "enable": "Activer",
+    "toggleFailed": "Action échouée",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetPasswordTitle": "Réinitialiser le Mot de Passe",
+    "passwordRequired": "Mot de passe requis",
+    "passwordReset": "Mot de passe réinitialisé",
+    "resetFailed": "Réinitialisation échouée",
+    "enterNewPassword": "Entrez le nouveau mot de passe",
+    "role": {
+      "user": "Utilisateur",
+      "admin": "Administrateur",
+      "lehrkraft": "Enseignant"
+    },
+    "roleUser": "Enseignant",
+    "roleAdmin": "Admin"
   }
 }

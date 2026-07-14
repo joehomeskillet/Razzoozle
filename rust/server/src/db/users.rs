@@ -235,6 +235,26 @@ pub async fn set_user_active(pool: &PgPool, user_id: i64, active: bool) -> Resul
 
     Ok(())
 }
+
+/// Admin password reset — hash and store a new password for the given user.
+pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Result<(), String> {
+    // Hash password using argon2 (same pattern as create_user).
+    let salt = SaltString::generate(rand::thread_rng());
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(new_password.as_bytes(), &salt)
+        .map_err(|e| format!("Failed to hash password: {}", e))?
+        .to_string();
+
+    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
+        .bind(&password_hash)
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
 /// Bootstrap the admin user if the database is empty and env vars are set.
 /// Checks count_users() == 0; if true and BOOTSTRAP_ADMIN_USER and BOOTSTRAP_ADMIN_PASSWORD
 /// are both set, creates admin user. Otherwise no-op. Idempotent by the count==0 guard.

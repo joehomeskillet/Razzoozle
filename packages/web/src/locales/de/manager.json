@@ -753,5 +753,40 @@
     "studentRemoved": "Schüler entfernt",
     "noStudents": "Keine Schüler in dieser Klasse",
     "errorEmptyName": "Der Name darf nicht leer sein"
+  },
+  "users": {
+    "title": "Nutzerverwaltung",
+    "intro": "Lehrkräfte-Konten anlegen, sperren und freigeben.",
+    "createTitle": "Neue Lehrkraft anlegen",
+    "created": "Nutzer angelegt",
+    "loadFailed": "Nutzer konnten nicht geladen werden",
+    "invalidInput": "Benutzername und Passwort erforderlich",
+    "createFailed": "Anlegen fehlgeschlagen",
+    "networkError": "Verbindungsfehler",
+    "usernameLabel": "Benutzername",
+    "passwordLabel": "Passwort",
+    "roleLabel": "Rolle",
+    "emptyHeadline": "Noch keine Lehrkräfte",
+    "empty": "Lege oben das erste Konto an.",
+    "active": "Aktiv",
+    "disabledStatus": "Deaktiviert",
+    "disabled": "Nutzer deaktiviert",
+    "enabled": "Nutzer aktiviert",
+    "disable": "Deaktivieren",
+    "enable": "Aktivieren",
+    "toggleFailed": "Aktion fehlgeschlagen",
+    "resetPassword": "Passwort zurücksetzen",
+    "resetPasswordTitle": "Passwort zurücksetzen",
+    "passwordRequired": "Passwort erforderlich",
+    "passwordReset": "Passwort zurückgesetzt",
+    "resetFailed": "Zurücksetzen fehlgeschlagen",
+    "enterNewPassword": "Neues Passwort eingeben",
+    "role": {
+      "user": "Nutzer",
+      "admin": "Admin",
+      "lehrkraft": "Lehrkraft"
+    },
+    "roleUser": "Lehrkraft",
+    "roleAdmin": "Admin"
   }
 }

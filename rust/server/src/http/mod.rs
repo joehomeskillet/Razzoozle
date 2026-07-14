@@ -222,6 +222,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/users", get(users::list).post(users::create))
         .route("/api/users/:id/disable", post(users::disable))
         .route("/api/users/:id/enable", post(users::enable))
+        .route("/api/users/:id/reset-password", post(users::reset_password))
         .route("/api/submit/:token", post(submit::handle_submit))
         .route("/api/achievements", get(achievements::handle_achievements))
         .route("/api/quizzes", get(solo::handle_get_quizzes))

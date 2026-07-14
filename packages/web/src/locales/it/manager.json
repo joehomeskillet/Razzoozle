@@ -753,5 +753,40 @@
     "studentRemoved": "Studente rimosso",
     "noStudents": "Nessuno studente in questa classe",
     "errorEmptyName": "Il nome non può essere vuoto"
+  },
+  "users": {
+    "title": "Gestione Utenti",
+    "intro": "Crea, blocca e sblocca gli account dei docenti.",
+    "createTitle": "Crea Nuovo Docente",
+    "created": "Utente creato",
+    "loadFailed": "Impossibile caricare gli utenti",
+    "invalidInput": "Nome utente e password obbligatori",
+    "createFailed": "Creazione non riuscita",
+    "networkError": "Errore di rete",
+    "usernameLabel": "Nome utente",
+    "passwordLabel": "Password",
+    "roleLabel": "Ruolo",
+    "emptyHeadline": "Nessun docente ancora",
+    "empty": "Crea il primo account qui sopra.",
+    "active": "Attivo",
+    "disabledStatus": "Disabilitato",
+    "disabled": "Utente disabilitato",
+    "enabled": "Utente abilitato",
+    "disable": "Disabilita",
+    "enable": "Abilita",
+    "toggleFailed": "Azione non riuscita",
+    "resetPassword": "Reimposta password",
+    "resetPasswordTitle": "Reimposta Password",
+    "passwordRequired": "Password obbligatoria",
+    "passwordReset": "Password reimpostata",
+    "resetFailed": "Reimpostazione non riuscita",
+    "enterNewPassword": "Immettere la nuova password",
+    "role": {
+      "user": "Utente",
+      "admin": "Amministratore",
+      "lehrkraft": "Insegnante"
+    },
+    "roleUser": "Docente",
+    "roleAdmin": "Admin"
   }
 }

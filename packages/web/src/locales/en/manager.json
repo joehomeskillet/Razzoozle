@@ -766,5 +766,40 @@
     "studentRemoved": "Student removed",
     "noStudents": "No students in this class",
     "errorEmptyName": "Name cannot be empty"
+  },
+  "users": {
+    "title": "User Management",
+    "intro": "Create, lock and unlock teacher accounts.",
+    "createTitle": "Create New Teacher",
+    "created": "User created",
+    "loadFailed": "Failed to load users",
+    "invalidInput": "Username and password required",
+    "createFailed": "Creation failed",
+    "networkError": "Network error",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "roleLabel": "Role",
+    "emptyHeadline": "No teachers yet",
+    "empty": "Create the first account above.",
+    "active": "Active",
+    "disabledStatus": "Disabled",
+    "disabled": "User disabled",
+    "enabled": "User enabled",
+    "disable": "Disable",
+    "enable": "Enable",
+    "toggleFailed": "Action failed",
+    "resetPassword": "Reset password",
+    "resetPasswordTitle": "Reset Password",
+    "passwordRequired": "Password required",
+    "passwordReset": "Password reset",
+    "resetFailed": "Reset failed",
+    "enterNewPassword": "Enter new password",
+    "role": {
+      "user": "User",
+      "admin": "Admin",
+      "lehrkraft": "Teacher"
+    },
+    "roleUser": "Teacher",
+    "roleAdmin": "Admin"
   }
 }

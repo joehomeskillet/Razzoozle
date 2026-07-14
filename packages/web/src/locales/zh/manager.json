@@ -753,5 +753,40 @@
     "studentRemoved": "学生已删除",
     "noStudents": "此班级中没有学生",
     "errorEmptyName": "名称不能为空"
+  },
+  "users": {
+    "title": "用户管理",
+    "intro": "创建、锁定和解锁教师账户。",
+    "createTitle": "创建新教师",
+    "created": "用户已创建",
+    "loadFailed": "无法加载用户",
+    "invalidInput": "需要用户名和密码",
+    "createFailed": "创建失败",
+    "networkError": "网络错误",
+    "usernameLabel": "用户名",
+    "passwordLabel": "密码",
+    "roleLabel": "角色",
+    "emptyHeadline": "还没有教师",
+    "empty": "在上面创建第一个账户。",
+    "active": "活跃",
+    "disabledStatus": "已禁用",
+    "disabled": "用户已禁用",
+    "enabled": "用户已启用",
+    "disable": "禁用",
+    "enable": "启用",
+    "toggleFailed": "操作失败",
+    "resetPassword": "重置密码",
+    "resetPasswordTitle": "重置密码",
+    "passwordRequired": "密码必填",
+    "passwordReset": "密码已重置",
+    "resetFailed": "重置失败",
+    "enterNewPassword": "输入新密码",
+    "role": {
+      "user": "用户",
+      "admin": "管理员",
+      "lehrkraft": "教师"
+    },
+    "roleUser": "教师",
+    "roleAdmin": "管理员"
   }
 }
