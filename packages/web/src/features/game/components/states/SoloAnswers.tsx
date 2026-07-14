@@ -392,7 +392,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               type="button"
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("game:submitAnswer")}
             </button>
@@ -402,7 +402,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
             <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
               {t("quizz:multipleSelect.selectHint")}
             </p>
-            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold text-white md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
               {renderOrder.map((key: number) => {
                 const answer = question.answers?.[key]
                 const isPicked = multiSelectedKeys.includes(key)
@@ -447,7 +447,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               type="button"
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
-              className="bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("quizz:multipleSelect.submitButton")}
             </button>
@@ -485,7 +485,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               data-testid="solo-slider-submit"
               onClick={submitSlider}
               disabled={submitted}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
             </button>
@@ -523,7 +523,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               onClick={submitMathematikAnswer}
               disabled={submitted || mathematikAnswer.trim().length === 0}
               className={clsx(
-                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
               )}
             >
               {submitted ? t("game:slider.submitted") : t("game:submitAnswer")}
@@ -616,7 +616,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                 wortartenChoices.length === 0 ||
                 wortartenChoices.some((choice) => choice === null)
               }
-              className="bg-primary mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {submitted ? t("game:slider.submitted") : t("game:submitAnswer")}
             </button>
@@ -693,13 +693,13 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               data-testid="solo-sentence-builder-submit"
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChips.length !== (question.shuffledChunks?.length ?? 0)}
-              className="bg-primary text-white rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="bg-[var(--color-primary)] text-white rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("game:sentenceBuilder.submit", { defaultValue: "Submit" })}
             </button>
           </div>
         ) : (
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold text-white md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {renderOrder.map((key: number) => {
               const answer = question.answers?.[key]
               const isPicked = selectedKey === key
