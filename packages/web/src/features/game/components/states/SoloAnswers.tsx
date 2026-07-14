@@ -101,6 +101,12 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
   const isMathematik = question.type === "mathematik"
   const isWortarten = question.type === "wortarten"
 
+  const PRESS_FEEDBACK = "transition-all [&:active]:scale-95"
+  const isTokenDisabled = (i: number): boolean => {
+    const disabledTokens = question.disabledTokens ?? []
+    return disabledTokens.includes(i)
+  }
+
   const [sliderValue, setSliderValue] = useState(
     isSlider ? Math.round(((question.min ?? 0) + (question.max ?? 100)) / 2) : 0,
   )
@@ -198,8 +204,12 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     } else if (isMathematik) {
       void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
     } else if (isWortarten) {
+      const disabledTokens = question.disabledTokens ?? []
+      const answer = wortartenChoices.map((c, i) =>
+        disabledTokens.includes(i) ? "" : (c ?? "")
+      )
       void submitAnswer(quizzId, {
-        answerText: JSON.stringify(wortartenChoices.map((c) => c ?? "")),
+        answerText: JSON.stringify(answer),
       })
     } else if (selectedKey !== null) {
       void submitAnswer(quizzId, { answerId: selectedKey })
@@ -300,14 +310,21 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     hapticTap()
   }
 
-  // Wortarten: submit once every token has a chosen POS label. answerText is
+  // Wortarten: submit once every active token has a chosen POS label. answerText is
   // a JSON array of POS label strings, one per token (same contract as the
-  // multiplayer path — rust/engine/src/eval.rs Wortarten arm).
+  // multiplayer path — rust/engine/src/eval.rs Wortarten arm). Disabled tokens
+  // submit as "".
   const submitWortarten = () => {
+    const disabledTokens = question.disabledTokens ?? []
+    const activeIndices = Array.from(
+      { length: wortartenChoices.length },
+      (_, i) => i
+    ).filter((i) => !disabledTokens.includes(i))
+
     if (
       submitted ||
       wortartenChoices.length === 0 ||
-      wortartenChoices.some((choice) => choice === null)
+      activeIndices.some((i) => wortartenChoices[i] === null)
     ) {
       return
     }
@@ -315,8 +332,14 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     sfxPop()
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
+
+    // Build answer: "" for disabled, choice for active
+    const answer = wortartenChoices.map((choice, i) =>
+      disabledTokens.includes(i) ? "" : (choice ?? "")
+    )
+
     void submitAnswer(quizzId, {
-      answerText: JSON.stringify(wortartenChoices),
+      answerText: JSON.stringify(answer),
     })
   }
 
@@ -551,6 +574,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
 
             <div className="flex flex-wrap items-start justify-center gap-2">
               {(question.tokens ?? []).map((token, i) => {
+                const disabled = isTokenDisabled(i)
                 const choice = wortartenChoices[i] ?? null
                 const isOpen = openTokenIndex === i
 
@@ -560,15 +584,16 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                       type="button"
                       data-testid={`solo-wortarten-token-${i}`}
                       onClick={() =>
-                        !submitted && setOpenTokenIndex(isOpen ? null : i)
+                        !submitted && !disabled && setOpenTokenIndex(isOpen ? null : i)
                       }
-                      disabled={submitted}
+                      disabled={submitted || disabled}
                       aria-expanded={isOpen}
                       aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
                       className={clsx(
                         ANSWER_TILE_SURFACE,
-                        "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)] disabled:opacity-50",
-                        choice && "ring-2 ring-[var(--color-accent)]",
+                        "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)]",
+                        disabled ? "opacity-40 cursor-not-allowed" : !submitted && PRESS_FEEDBACK,
+                        choice && !disabled && "ring-2 ring-[var(--color-accent)]",
                       )}
                     >
                       <span>{token}</span>
@@ -579,7 +604,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                       )}
                     </button>
 
-                    {isOpen && (
+                    {isOpen && !disabled && (
                       <div
                         className={clsx(
                           ANSWER_TILE_SURFACE,
@@ -612,9 +637,18 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               data-testid="solo-wortarten-submit"
               onClick={submitWortarten}
               disabled={
-                submitted ||
-                wortartenChoices.length === 0 ||
-                wortartenChoices.some((choice) => choice === null)
+                (() => {
+                  const disabledTokens = question.disabledTokens ?? []
+                  const activeIndices = Array.from(
+                    { length: wortartenChoices.length },
+                    (_, i) => i
+                  ).filter((i) => !disabledTokens.includes(i))
+                  return (
+                    submitted ||
+                    wortartenChoices.length === 0 ||
+                    activeIndices.some((i) => wortartenChoices[i] === null)
+                  )
+                })()
               }
               className="bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
