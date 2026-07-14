@@ -2,20 +2,10 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { Portal, Overlay } from "@radix-ui/react-dialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import { LABEL_PALETTE } from "@razzoozle/web/components/labels/labelPalette"
 import { X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-
-const COLOR_PALETTE = [
-  { slug: "red", label: "Rot" },
-  { slug: "blue", label: "Blau" },
-  { slug: "green", label: "Grün" },
-  { slug: "yellow", label: "Gelb" },
-  { slug: "purple", label: "Violett" },
-  { slug: "pink", label: "Rosa" },
-  { slug: "indigo", label: "Indigo" },
-  { slug: "gray", label: "Grau" },
-]
 
 interface CreateLabelDialogProps {
   open: boolean
@@ -40,6 +30,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!name.trim()) return
     if (onCreate(name, color)) {
       handleClose()
     }
@@ -80,7 +71,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
                 {t("manager:labels.colorLabel")}
               </label>
               <div className="flex flex-wrap gap-2">
-                {COLOR_PALETTE.map((c) => (
+                {LABEL_PALETTE.map((c) => (
                   <button
                     key={c.slug}
                     type="button"

@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import { X } from "lucide-react"
+import { getLabelColor } from "./labelPalette"
 
 export interface Label {
   id: number
@@ -12,20 +13,8 @@ interface LabelChipProps {
   onRemove?: () => void
 }
 
-const colorMap: Record<string, { bg: string; text: string }> = {
-  gray: { bg: "bg-[var(--surface)]", text: "text-[var(--answer-text)]" },
-  violet: { bg: "bg-[var(--color-primary)]", text: "text-white" },
-  accent: { bg: "bg-[var(--color-accent)]", text: "text-[var(--accent-contrast-text)]" },
-  bronze: { bg: "bg-[var(--tier-bronze)]", text: "text-white" },
-  silver: { bg: "bg-[var(--tier-silver)]", text: "text-[var(--answer-text)]" },
-  gold: { bg: "bg-[var(--tier-gold)]", text: "text-[var(--answer-text)]" },
-  diamant: { bg: "bg-[var(--tier-diamant)]", text: "text-[var(--answer-text)]" },
-  red: { bg: "bg-[var(--team-red)]", text: "text-[var(--team-red-text)]" },
-  blue: { bg: "bg-[var(--team-blue)]", text: "text-[var(--team-blue-text)]" },
-}
-
 export default function LabelChip({ label, onRemove }: LabelChipProps) {
-  const colors = colorMap[label.color] || colorMap.gray
+  const colors = getLabelColor(label.color)
 
   return (
     <span
