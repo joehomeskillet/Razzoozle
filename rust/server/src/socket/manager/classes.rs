@@ -282,7 +282,7 @@ fn register_remove_student(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::STUDENT_REMOVED, &serde_json::json!({})).ok();
+                        socket.emit(constants::class::STUDENT_REMOVED, &serde_json::json!({"studentId": student_id})).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to remove student: {}", e);
@@ -337,7 +337,7 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::STUDENT_UPDATED, &serde_json::json!({})).ok();
+                        socket.emit(constants::class::STUDENT_UPDATED, &serde_json::json!({"id": student_id, "displayName": display_name})).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to update student: {}", e);

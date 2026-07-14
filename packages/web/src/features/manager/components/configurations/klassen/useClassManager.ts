@@ -128,13 +128,27 @@ export const useClassManager = () => {
   )
 
   // Listen for student removals
-  useEvent(EVENTS.CLASS.STUDENT_REMOVED, () => {
+  useEvent(EVENTS.CLASS.STUDENT_REMOVED, (data: { studentId: number }) => {
+    setClasses((prev) =>
+      prev.map((c) => ({
+        ...c,
+        students: (c.students ?? []).filter((s) => s.id !== data.studentId),
+      }))
+    )
     setPendingDeleteStudent(null)
     toast.success(t("manager:classes.studentRemoved"))
   })
 
   // Listen for student updates
-  useEvent(EVENTS.CLASS.STUDENT_UPDATED, () => {
+  useEvent(EVENTS.CLASS.STUDENT_UPDATED, (data: { id: number; displayName: string }) => {
+    setClasses((prev) =>
+      prev.map((c) => ({
+        ...c,
+        students: (c.students ?? []).map((s) =>
+          s.id === data.id ? { ...s, displayName: data.displayName } : s
+        ),
+      }))
+    )
     toast.success(t("manager:classes.studentUpdated"))
   })
 

@@ -298,8 +298,8 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.UPDATE_SUCCESS]: () => void
   [EVENTS.CLASS.DELETE_SUCCESS]: (_data: { id: number }) => void
   [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string; classId: number }) => void
-  [EVENTS.CLASS.STUDENT_REMOVED]: () => void
-  [EVENTS.CLASS.STUDENT_UPDATED]: () => void
+  [EVENTS.CLASS.STUDENT_REMOVED]: (_data: { studentId: number }) => void
+  [EVENTS.CLASS.STUDENT_UPDATED]: (_data: { id: number; displayName: string }) => void
   [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string }> }) => void
   [EVENTS.CLASS.ERROR]: (_message: string) => void
 }
