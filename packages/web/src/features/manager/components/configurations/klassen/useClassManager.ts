@@ -18,6 +18,8 @@ interface Class {
 interface Student {
   id: number
   displayName: string
+  firstName?: string
+  lastName?: string
   createdAt?: string
   // ADDENDUM (birthdate): optional — only present once the parallel contract
   // WP lands the field on the wire. Structurally optional so this hook
@@ -33,6 +35,8 @@ interface Student {
 export interface AllStudent {
   id: number
   displayName: string
+  firstName?: string
+  lastName?: string
   classes: Array<{ id: number; name: string }>
   birthdate?: string | null
 }
@@ -82,7 +86,7 @@ export const useClassManager = () => {
   // Listen for fetched students
   useEvent(
     EVENTS.CLASS.STUDENTS_DATA,
-    (data: { classId: number; students: Array<{ id: number; displayName: string }> }) => {
+    (data: { classId: number; students: Array<{ id: number; displayName: string; firstName?: string; lastName?: string }> }) => {
       setClasses((prev) =>
         prev.map((c) =>
           c.id === data.classId
@@ -130,7 +134,7 @@ export const useClassManager = () => {
   // collapsed row kept showing a stale count.
   useEvent(
     EVENTS.CLASS.STUDENT_ADDED,
-    (data: { id: number; displayName: string; classId: number }) => {
+    (data: { id: number; displayName: string; firstName?: string; lastName?: string; classId: number }) => {
       setClasses((prev) =>
         prev.map((c) =>
           c.id === data.classId
@@ -142,6 +146,8 @@ export const useClassManager = () => {
                   {
                     id: data.id,
                     displayName: data.displayName,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
                     createdAt: new Date().toISOString(),
                   },
                 ],
@@ -189,14 +195,19 @@ export const useClassManager = () => {
           if (c.students.some((s) => s.id === data.studentId)) {
             return c
           }
-          const displayName =
-            allStudents.find((s) => s.id === data.studentId)?.displayName ?? ""
+          const student = allStudents.find((s) => s.id === data.studentId)
           return {
             ...c,
             studentCount: (c.studentCount ?? c.students.length) + 1,
             students: [
               ...c.students,
-              { id: data.studentId, displayName, createdAt: data.joinedAt },
+              {
+                id: data.studentId,
+                displayName: student?.displayName ?? "",
+                firstName: student?.firstName,
+                lastName: student?.lastName,
+                createdAt: data.joinedAt,
+              },
             ],
           }
         })
@@ -207,13 +218,19 @@ export const useClassManager = () => {
   // Listen for student updates
   useEvent(
     EVENTS.CLASS.STUDENT_UPDATED,
-    (data: { id: number; displayName: string; birthdate?: string | null }) => {
+    (data: { id: number; displayName: string; firstName?: string; lastName?: string; birthdate?: string | null }) => {
       setClasses((prev) =>
         prev.map((c) => ({
           ...c,
           students: (c.students ?? []).map((s) =>
             s.id === data.id
-              ? { ...s, displayName: data.displayName, birthdate: data.birthdate }
+              ? {
+                  ...s,
+                  displayName: data.displayName,
+                  firstName: data.firstName,
+                  lastName: data.lastName,
+                  birthdate: data.birthdate,
+                }
               : s
           ),
         }))
@@ -281,21 +298,27 @@ export const useClassManager = () => {
     }
   }
 
-  // ADDENDUM (birthdate): built as a typed variable (not an inline object
-  // literal) so the extra optional field is structurally assignable to
-  // today's narrower UPDATE_STUDENT payload type without an `as`/`any` cast.
+  // ADDENDUM (N2): dual-payload pattern sends computed displayName alongside
+  // firstName/lastName so wire works with today's contract (uses displayName)
+  // and future v3 (server prefers firstName/lastName, falls back to displayName).
   const handleUpdateStudent = (
     studentId: number,
-    displayName: string,
+    firstName: string,
+    lastName?: string,
     birthdate?: string,
   ): void => {
-    if (!displayName.trim()) {
+    if (!firstName.trim()) {
       toast.error(t("manager:classes.errorEmptyName"))
       return
     }
-    const payload: { id: number; displayName: string; birthdate?: string } = {
+    const computedDisplayName = [firstName.trim(), lastName?.trim()]
+      .filter(Boolean)
+      .join(" ")
+    const payload: { id: number; displayName: string; firstName?: string; lastName?: string; birthdate?: string } = {
       id: studentId,
-      displayName,
+      displayName: computedDisplayName,
+      firstName: firstName.trim(),
+      ...(lastName && lastName.trim() ? { lastName: lastName.trim() } : {}),
       ...(birthdate ? { birthdate } : {}),
     }
     socket.emit(EVENTS.CLASS.UPDATE_STUDENT, payload)

@@ -821,6 +821,8 @@
     "createTitle": "Schüler anlegen",
     "createDescription": "Lege einen neuen Schüler an und weise ihn optional direkt einer oder mehreren Klassen zu.",
     "namePlaceholder": "Name des Schülers",
+    "firstNamePlaceholder": "Vorname",
+    "lastNamePlaceholder": "Nachname",
     "birthdateLabel": "Geburtsdatum (optional)",
     "selectClasses": "Klassen (optional)",
     "noClasses": "Noch keine Klassen vorhanden",

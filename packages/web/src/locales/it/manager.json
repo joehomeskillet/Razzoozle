@@ -821,6 +821,8 @@
     "createTitle": "Crea studente",
     "createDescription": "Crea un nuovo studente e assegnalo facoltativamente a una o più classi subito.",
     "namePlaceholder": "Nome dello studente",
+    "firstNamePlaceholder": "Nome",
+    "lastNamePlaceholder": "Cognome",
     "birthdateLabel": "Data di nascita (facoltativo)",
     "selectClasses": "Classi (facoltativo)",
     "noClasses": "Nessuna classe ancora",
