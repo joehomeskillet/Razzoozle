@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::state::{safe_asset_id, GameRegistry};
-use super::{json_error_response, is_dev_mode, dev_api_key, AppState};
+use super::{json_error_response, AppState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Assignment {
@@ -68,24 +68,6 @@ async fn authorize_manager_request(
     if let Some(ref pool) = db_pool {
         if crate::db::users::session_user(pool, header_token).await.ok().flatten().is_some() {
             return Ok(());
-        }
-    }
-
-    if is_dev_mode() {
-        if let Some(dev_key) = dev_api_key() {
-            let a = header_token.as_bytes();
-            let b = dev_key.as_bytes();
-
-            if a.len() == b.len() {
-                let mut equal = true;
-                for (x, y) in a.iter().zip(b.iter()) {
-                    equal &= x == y;
-                }
-
-                if equal {
-                    return Ok(());
-                }
-            }
         }
     }
 

@@ -93,7 +93,7 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 }
 
 /// Node `authorizeManagerRequest` parity: `X-Manager-Token` is a valid
-/// session token (from DB), or in dev mode the DEV_API_KEY (constant-time).
+/// session token (from DB). Authorization via session token only.
 pub async fn authorize_manager_request(
     headers: &HeaderMap,
     registry: Arc<RwLock<GameRegistry>>,
@@ -110,13 +110,6 @@ pub async fn authorize_manager_request(
     if let Some(ref pool) = db_pool {
         if crate::db::users::session_user(pool, token).await.ok().flatten().is_some() {
             return true;
-        }
-    }
-    if is_dev_mode() {
-        if let Some(key) = dev_api_key() {
-            if constant_time_eq(token.as_bytes(), key.as_bytes()) {
-                return true;
-            }
         }
     }
     false
@@ -141,13 +134,6 @@ pub async fn authorize_admin_request(
     if let Some(ref pool) = db_pool {
         if let Some(user) = crate::db::users::session_user(pool, token).await.ok().flatten() {
             return user.role == "admin";
-        }
-    }
-    if is_dev_mode() {
-        if let Some(key) = dev_api_key() {
-            if constant_time_eq(token.as_bytes(), key.as_bytes()) {
-                return true;
-            }
         }
     }
     false
@@ -194,7 +180,7 @@ pub async fn handle_healthz() -> (StatusCode, &'static str) {
     (StatusCode::OK, "ok")
 }
 
-// ── Static file helpers ─────────────────────────────────────────────────────
+// ── Static file helpers ─────────────────────────────────────────────────
 
 pub fn get_config_path() -> String {
     if let Ok(config_path) = std::env::var("CONFIG_PATH") {

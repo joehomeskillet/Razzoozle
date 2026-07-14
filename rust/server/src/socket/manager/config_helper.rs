@@ -73,7 +73,9 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         }),
         achievements: Some(serde_json::Value::Array(achievements)),
         dev_mode: Some(dev_mode_on),
-        dev_api_key: if dev_mode_on {
+        dev_api_key: if dev_mode_on
+            && user_opt.as_ref().map(|u| u.role == "admin").unwrap_or(false)
+        {
             std::env::var("DEV_API_KEY").ok()
         } else {
             None
