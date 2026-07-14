@@ -173,6 +173,10 @@ pub(crate) fn build_select_answer_data(
         question_start_at_server_ms: Some(question_start_at_server_ms),
         answer_deadline_at_server_ms: Some(deadline_ms),
         submitted_by: question.submitted_by.clone(),
+        sentence: question.sentence.clone(),
+        tokens: question.tokens.clone(),
+        pos_set: question.pos_set.clone(),
+        disabled_tokens: question.disabled_tokens.clone(),
     }
 }
 

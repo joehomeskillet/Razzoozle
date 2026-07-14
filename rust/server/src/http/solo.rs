@@ -66,6 +66,8 @@ pub struct SoloQuestion {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub posSet: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub disabledTokens: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shuffledChunks: Option<Vec<String>>,
     pub time: i32,
     pub cooldown: i32,
@@ -195,6 +197,7 @@ pub async fn handle_get_quiz_solo(
                 sentence: q.sentence.clone(),
                 tokens: q.tokens.clone(),
                 posSet: q.pos_set.clone(),
+                disabledTokens: q.disabled_tokens.clone(),
                 shuffledChunks: shuffled_chunks,
                 time: q.time,
                 cooldown: q.cooldown,
@@ -392,6 +395,7 @@ mod tests {
             sentence: Some("Das ist ein Test".to_string()),
             tokens: Some(vec!["Das".to_string(), "ist".to_string(), "ein".to_string(), "Test".to_string()]),
             posSet: Some(vec!["ART".to_string(), "V".to_string(), "ART".to_string(), "N".to_string()]),
+            disabledTokens: None,
             shuffledChunks: None,
             time: 30,
             cooldown: 0,
@@ -485,6 +489,7 @@ mod tests {
             sentence: None,
             tokens: None,
             posSet: None,
+            disabledTokens: None,
             shuffledChunks: None,
             time: 30,
             cooldown: 0,
