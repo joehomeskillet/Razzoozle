@@ -29,7 +29,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::class::LIST, {
         let ctx = ctx.clone();
 
-        move |socket: SocketRef, Data::<Option<serde_json::Value>>(_payload)| {
+        move |socket: SocketRef| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
