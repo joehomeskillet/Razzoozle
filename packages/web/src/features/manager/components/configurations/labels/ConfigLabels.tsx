@@ -1,26 +1,159 @@
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
+import { Plus, Trash2, Edit2 } from "lucide-react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
-/**
- * Labels (Fächer) management tab — admin-only definitions for quiz/media/catalog tagging.
- * WP-L0 Scaffold: empty state placeholder.
- * Filled in WP-L2 with CRUD UI, socket wiring via useLabelManager.
- */
+import type { Label } from "./useLabelManager"
+import { useLabelManager } from "./useLabelManager"
+import CreateLabelDialog from "./CreateLabelDialog"
+import EditLabelDialog from "./EditLabelDialog"
+
+// Color palette for labels (fixed 8-tone palette per SDD §5 E1)
+const COLOR_PALETTE = [
+  { slug: "red" },
+  { slug: "blue" },
+  { slug: "green" },
+  { slug: "yellow" },
+  { slug: "purple" },
+  { slug: "pink" },
+  { slug: "indigo" },
+  { slug: "gray" },
+]
+
+const getLabelColorCircleStyle = (color: string) => {
+  const slug = COLOR_PALETTE.find((c) => c.slug === color)?.slug || "gray"
+  return {
+    backgroundColor: `var(--label-${slug})`,
+  }
+}
+
 const ConfigLabels = () => {
+  const {
+    labels,
+    hasLabels,
+    search,
+    setSearch,
+    pendingDeleteLabel,
+    setPendingDeleteLabel,
+    handleCreateLabel,
+    handleUpdateLabel,
+    handleDeleteLabel,
+  } = useLabelManager()
+
   const { t } = useTranslation()
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [pendingEditLabel, setPendingEditLabel] = useState<Label | null>(null)
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h2 className="text-lg font-semibold">{t("manager:tabs.labels", { defaultValue: "Labels" })}</h2>
-        <p className="text-sm text-gray-600">
-          {t("manager:labels.description", { defaultValue: "Global labels for organizing quizzes, media, and catalog entries." })}
-        </p>
+    <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {t("manager:labels.title")}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {t("manager:labels.description")}
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          className="shrink-0 rounded-xl"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
+          <Plus className="size-4" />
+          {t("manager:labels.create")}
+        </Button>
       </div>
 
-      {/* WP-L2 will render the label list and CRUD controls here */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-        <p className="text-gray-500">{t("manager:labels.emptyState", { defaultValue: "Scaffold placeholder — label definitions will load here." })}</p>
-      </div>
+      {hasLabels ? (
+        <>
+          <div className="flex shrink-0">
+            <label htmlFor="labels-search" className="sr-only">
+              {t("manager:labels.filterLabel")}
+            </label>
+            <Input
+              id="labels-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("manager:labels.namePlaceholder")}
+              className="min-h-11 w-full rounded-xl"
+            />
+          </div>
+
+          <div className="flex flex-1 flex-col gap-2 overflow-auto">
+            {labels.map((label) => (
+              <div
+                key={label.id}
+                className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-hairline)] bg-white p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
+                    style={getLabelColorCircleStyle(label.color)}
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    {label.name}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={() => setPendingEditLabel(label)}
+                  >
+                    <Edit2 className="size-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={() => setPendingDeleteLabel(label)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
+          <p className="text-sm text-gray-500">
+            {t("manager:labels.emptyState")}
+          </p>
+        </div>
+      )}
+
+      <CreateLabelDialog
+        open={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onCreate={handleCreateLabel}
+      />
+
+      <EditLabelDialog
+        label={pendingEditLabel}
+        onClose={() => setPendingEditLabel(null)}
+        onUpdate={handleUpdateLabel}
+      />
+
+      {/* Delete Label Dialog */}
+      <AlertDialog
+        open={pendingDeleteLabel !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDeleteLabel(null)
+          }
+        }}
+        title={t("manager:labels.deleteTitle")}
+        description={t("manager:labels.deleteConfirm", {
+          name: pendingDeleteLabel?.name ?? "",
+        })}
+        confirmLabel={t("common:delete")}
+        onConfirm={handleDeleteLabel}
+      />
     </div>
   )
 }

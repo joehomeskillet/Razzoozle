@@ -206,5 +206,10 @@
   "connection": {
     "lost": "Connexion perdue — tentative de reconnexion",
     "restored": "Connexion rétablie"
+  },
+  "label": {
+    "nameExists": "Une étiquette avec ce nom existe déjà.",
+    "entityNotOwned": "Vous n'avez pas la permission de modifier cette entité.",
+    "invalid": "Demande d'étiquette invalide."
   }
 }

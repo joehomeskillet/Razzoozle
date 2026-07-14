@@ -66,6 +66,16 @@
   --surface-muted: #374151;
   --footer-bg: #ffffff;  --footer-text: #1f2937;
 
+
+  /* Label palette (8-tone fixed set, WP-L6). Maps to answer/team/state tokens + new values. */
+  --label-red: #ef4444;        --label-red-bg: color-mix(in srgb, var(--label-red), white 92%);
+  --label-blue: #3b82f6;       --label-blue-bg: color-mix(in srgb, var(--label-blue), white 92%);
+  --label-green: #22c55e;      --label-green-bg: color-mix(in srgb, var(--label-green), white 92%);
+  --label-yellow: #facc15;     --label-yellow-bg: color-mix(in srgb, var(--label-yellow), white 92%);
+  --label-purple: #a855f7;     --label-purple-bg: color-mix(in srgb, var(--label-purple), white 92%);
+  --label-pink: #ec4899;       --label-pink-bg: color-mix(in srgb, var(--label-pink), white 92%);
+  --label-indigo: #6366f1;     --label-indigo-bg: color-mix(in srgb, var(--label-indigo), white 92%);
+  --label-gray: #6b7280;       --label-gray-bg: color-mix(in srgb, var(--label-gray), white 92%);
   /*
    * Derived accent tokens — globally available (not just inside the console).
    * `color-mix()` re-evaluates at paint, so they track the runtime-themed

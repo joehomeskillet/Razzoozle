@@ -846,7 +846,23 @@
     "noResults": "No se encontraron estudiantes"
   },
   "labels": {
-    "description": "Etiquetas globales para organizar cuestionarios, medios y entradas del catálogo.",
-    "emptyState": "Marcador de posición de andamios — las definiciones de etiquetas se cargarán aquí."
+    "title": "Etiquetas",
+    "description": "Define etiquetas globales (materias) para organizar cuestionarios, medios y entradas de catálogo.",
+    "emptyState": "Aún no hay etiquetas definidas. Crea tu primera etiqueta con el botón de abajo.",
+    "create": "Crear etiqueta",
+    "createTitle": "Crear nueva etiqueta",
+    "namePlaceholder": "Nombre de la etiqueta",
+    "colorLabel": "Color",
+    "created": "Etiqueta creada",
+    "updated": "Etiqueta actualizada",
+    "deleted": "Etiqueta eliminada",
+    "deleteTitle": "Eliminar etiqueta",
+    "deleteConfirm": "¿Realmente deseas eliminar \"{{name}}\"? La etiqueta se eliminará de todos los cuestionarios, medios y entradas de catálogo.",
+    "renameTitle": "Editar etiqueta",
+    "filterAll": "Todos",
+    "filterLabel": "Etiqueta",
+    "assignTitle": "Asignar etiqueta",
+    "assignSave": "Guardar",
+    "noLabels": "Sin etiquetas disponibles"
   }
 }

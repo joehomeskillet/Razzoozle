@@ -846,7 +846,23 @@
     "noResults": "Keine Schüler gefunden"
   },
   "labels": {
-    "description": "Globale Fächer für die Organisation von Quizzen, Medien und Katalogeinträgen.",
-    "emptyState": "Scaffold-Platzhalter — Label-Definitionen werden hier geladen."
+    "title": "Fächerverwaltung",
+    "description": "Definiere globale Fächer (Labels) zur Kategor­isierung von Quizzen, Medien und Katalogeinträgen.",
+    "emptyState": "Noch keine Fächer definiert. Erstelle dein erstes Fach mit dem Button unten.",
+    "create": "Fach erstellen",
+    "createTitle": "Neues Fach",
+    "namePlaceholder": "Name des Fachs",
+    "colorLabel": "Farbe",
+    "created": "Fach erstellt",
+    "updated": "Fach aktualisiert",
+    "deleted": "Fach gelöscht",
+    "deleteTitle": "Fach löschen",
+    "deleteConfirm": "Möchtest du \"{{name}}\" wirklich löschen? Das Fach wird von allen Quizzen, Medien und Katalogeinträgen entfernt.",
+    "renameTitle": "Fach bearbeiten",
+    "filterAll": "Alle",
+    "filterLabel": "Fach",
+    "assignTitle": "Fach zuweisen",
+    "assignSave": "Speichern",
+    "noLabels": "Keine Fächer verfügbar"
   }
 }
