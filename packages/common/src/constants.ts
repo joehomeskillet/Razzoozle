@@ -262,6 +262,26 @@ export const EVENTS = {
     GET_STUDENTS: "class:getStudents",
     STUDENTS_DATA: "class:studentsData",
     ERROR: "class:error",
+    /**
+     * `class:moveStudent` req `{ studentId: number, classId: number }` → success `class:studentMoved` `{ studentId, classId, joinedAt }` (adds student to an ADDITIONAL class; idempotent).
+     */
+    MOVE_STUDENT: "class:moveStudent",
+    STUDENT_MOVED: "class:studentMoved",
+    /**
+     * `class:removeFromClass` req `{ studentId, classId }` → success `class:removedFromClass` `{ studentId, classId, studentDeleted: boolean }` (studentDeleted=true when it was their last class — server orphan-deletes).
+     */
+    REMOVE_FROM_CLASS: "class:removeFromClass",
+    REMOVED_FROM_CLASS: "class:removedFromClass",
+    /**
+     * `class:studentClasses` req `{ studentId }` → `class:studentClassesData` `{ studentId, classes: [{ id, name, joinedAt }] }`.
+     */
+    STUDENT_CLASSES: "class:studentClasses",
+    STUDENT_CLASSES_DATA: "class:studentClassesData",
+    /**
+     * `class:listAllStudents` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `class:allStudentsData` `{ students: [{ id, displayName, classes: [{ id, name }] }] }`.
+     */
+    LIST_ALL_STUDENTS: "class:listAllStudents",
+    ALL_STUDENTS_DATA: "class:allStudentsData",
   },
 } as const
 
