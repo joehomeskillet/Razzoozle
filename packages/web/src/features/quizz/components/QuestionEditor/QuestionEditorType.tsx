@@ -1,6 +1,6 @@
 import type { QuestionType } from "@razzoozle/common/types/game"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
-import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import clsx from "clsx"
 import {
   BarChart3,
@@ -101,19 +101,18 @@ const QuestionEditorType = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
   const type: QuestionTypeKey = (currentQuestion.type ?? "choice") as QuestionTypeKey
-  
+
   // Gate Mathematik, Wortarten, and Vokabelliste visibility on klassenEnabled
-  let availableTypes = TYPES
-  try {
-    const config = useConfig()
-    const klassenEnabled = config?.klassenEnabled ?? false
-    if (!klassenEnabled) {
-      availableTypes = TYPES.filter(tp => tp.key !== "mathematik" && tp.key !== "wortarten" && tp.key !== "vokabelliste")
-    }
-  } catch {
-    // useConfig not available in this context (e.g., catalog); show all types as fallback
-    availableTypes = TYPES
-  }
+  const config = useManagerStore((s) => s.config)
+  const klassenEnabled = config?.klassenEnabled ?? false
+  const availableTypes = klassenEnabled
+    ? TYPES
+    : TYPES.filter(
+        (tp) =>
+          tp.key !== "mathematik" &&
+          tp.key !== "wortarten" &&
+          tp.key !== "vokabelliste"
+      )
 
   // Clear fields that don't belong to the target type (avoid stale data).
   const SLIDER_CLEAR = {

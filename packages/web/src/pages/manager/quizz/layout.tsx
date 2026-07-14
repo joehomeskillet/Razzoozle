@@ -18,10 +18,10 @@ function RouteComponent() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (isConnected && !config) {
+    if (isConnected) {
       socket.emit(EVENTS.MANAGER.GET_CONFIG)
     }
-  }, [isConnected, config, socket])
+  }, [isConnected, socket])
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)
