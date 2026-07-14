@@ -101,6 +101,12 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
   const isMathematik = question.type === "mathematik"
   const isWortarten = question.type === "wortarten"
 
+  const PRESS_FEEDBACK = "transition-all [&:active]:scale-95"
+  const isTokenDisabled = (i: number): boolean => {
+    const disabledTokens = question.disabledTokens ?? []
+    return disabledTokens.includes(i)
+  }
+
   const [sliderValue, setSliderValue] = useState(
     isSlider ? Math.round(((question.min ?? 0) + (question.max ?? 100)) / 2) : 0,
   )
@@ -568,8 +574,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
 
             <div className="flex flex-wrap items-start justify-center gap-2">
               {(question.tokens ?? []).map((token, i) => {
-                const disabledTokens = question.disabledTokens ?? []
-                const isDisabled = disabledTokens.includes(i)
+                const disabled = isTokenDisabled(i)
                 const choice = wortartenChoices[i] ?? null
                 const isOpen = openTokenIndex === i
 
@@ -579,16 +584,16 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                       type="button"
                       data-testid={`solo-wortarten-token-${i}`}
                       onClick={() =>
-                        !submitted && !isDisabled && setOpenTokenIndex(isOpen ? null : i)
+                        !submitted && !disabled && setOpenTokenIndex(isOpen ? null : i)
                       }
-                      disabled={submitted || isDisabled}
+                      disabled={submitted || disabled}
                       aria-expanded={isOpen}
                       aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
                       className={clsx(
                         ANSWER_TILE_SURFACE,
                         "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)]",
-                        isDisabled ? "opacity-50 cursor-not-allowed" : "disabled:opacity-50",
-                        choice && !isDisabled && "ring-2 ring-[var(--color-accent)]",
+                        disabled ? "opacity-40 cursor-not-allowed" : !submitted && PRESS_FEEDBACK,
+                        choice && !disabled && "ring-2 ring-[var(--color-accent)]",
                       )}
                     >
                       <span>{token}</span>
@@ -599,7 +604,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                       )}
                     </button>
 
-                    {isOpen && !isDisabled && (
+                    {isOpen && !disabled && (
                       <div
                         className={clsx(
                           ANSWER_TILE_SURFACE,
