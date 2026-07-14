@@ -16,8 +16,6 @@ export interface SchuelerStudent {
   id: number
   displayName: string
   classes: StudentClassRef[]
-  firstName?: string | null
-  lastName?: string | null
   // ADDENDUM (birthdate): optional, only present once the parallel contract
   // WP lands the field on the wire. Structurally optional so this hook
   // compiles cleanly against today's contract and picks the value up for
@@ -42,8 +40,7 @@ export interface PinView {
 // extra OPTIONAL field is structurally assignable both ways, so this stays
 // compatible whether or not the server already sends birthdate.
 interface CreateStudentPayload {
-  firstName: string
-  lastName: string
+  displayName: string
   classIds?: number[]
   birthdate?: string
 }
@@ -113,8 +110,6 @@ export const useSchuelerManager = () => {
     (data: {
       id: number
       displayName: string
-      firstName: string
-      lastName?: string | null
       pin: string
       labels: string[]
       classes: StudentClassRef[]
@@ -125,8 +120,6 @@ export const useSchuelerManager = () => {
         {
           id: data.id,
           displayName: data.displayName,
-          firstName: data.firstName,
-          lastName: data.lastName,
           classes: data.classes,
           birthdate: data.birthdate,
         },
@@ -238,18 +231,12 @@ export const useSchuelerManager = () => {
 
   const handleCreateStudent = useCallback(
     (displayName: string, classIds: number[], birthdate?: string): void => {
-      const trimmed = displayName.trim()
-      if (!trimmed) {
+      if (!displayName.trim()) {
         toast.error(t("manager:classes.errorEmptyName"))
         return
       }
-      const parts = trimmed.split(/\s+/)
-      const firstName = parts[0]
-      const lastName = parts.slice(1).join(" ")
-
       const payload: CreateStudentPayload = {
-        firstName,
-        lastName,
+        displayName: displayName.trim(),
         ...(classIds.length > 0 ? { classIds } : {}),
         ...(birthdate ? { birthdate } : {}),
       }

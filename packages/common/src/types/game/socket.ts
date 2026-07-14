@@ -61,8 +61,9 @@ export interface SelectedModes {
 }
 
 export interface CreateStudentPayload {
-  firstName: string;
-  lastName: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
   classIds?: number[];
   birthdate?: string;
 }
@@ -70,7 +71,7 @@ export interface CreateStudentPayload {
 export interface StudentCreatedData {
   id: number;
   displayName: string;
-  firstName: string;
+  firstName?: string;
   lastName?: string | null;
   pin: string;
   labels: string[];
