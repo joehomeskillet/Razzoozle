@@ -19,7 +19,14 @@ pub async fn create_class(
     .bind(name)
     .fetch_one(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| {
+        if let sqlx::Error::Database(db_err) = &e {
+            if db_err.code().as_deref() == Some("23505") {
+                return "name_exists".to_string();
+            }
+        }
+        e.to_string()
+    })?;
 
     Ok(result.0)
 }
@@ -118,7 +125,14 @@ pub async fn update_class(
     .bind(me)
     .execute(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| {
+        if let sqlx::Error::Database(db_err) = &e {
+            if db_err.code().as_deref() == Some("23505") {
+                return "name_exists".to_string();
+            }
+        }
+        e.to_string()
+    })?;
 
     Ok(result.rows_affected())
 }
@@ -243,39 +257,51 @@ pub async fn remove_student(
 
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
-    // Delete all class_students junction rows for this student,
-    // but only if the requesting user owns at least one class containing the student.
-    let result = sqlx::query(
-        "DELETE FROM class_students \
-         WHERE student_id = $1 \
-         AND ($2::bigint IS NULL OR EXISTS ( \
-           SELECT 1 FROM classes c WHERE c.id = class_students.class_id AND c.owner_id = $2 \
-         ))"
-    )
-    .bind(student_id)
-    .bind(me)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| e.to_string())?;
+    // Check permission: is_admin OR students.owner_id == me OR me in any class_students.class_id
+    let has_permission = if let Some(user_id) = me {
+        let exists: Option<(i64,)> = sqlx::query_as(
+            "SELECT 1::bigint \
+             WHERE EXISTS (SELECT 1 FROM students WHERE id = $1 AND owner_id = $2) \
+             OR EXISTS ( \
+               SELECT 1 FROM class_students cs \
+               INNER JOIN classes c ON cs.class_id = c.id \
+               WHERE cs.student_id = $1 AND c.owner_id = $2 \
+             )"
+        )
+        .bind(student_id)
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+        exists.is_some()
+    } else {
+        true
+    };
 
-    // Track how many junction rows were deleted to determine permission
-    let rows_deleted = result.rows_affected();
-
-    // If no junction rows were deleted, user doesn't have permission (return early)
-    if rows_deleted == 0 {
+    if !has_permission {
         tx.rollback().await.ok();
         return Ok(0);
     }
 
-    // Explicitly delete the student row (if trigger still exists, this is a harmless no-op)
-    sqlx::query("DELETE FROM students WHERE id = $1")
+    sqlx::query("DELETE FROM class_students WHERE student_id = $1")
+        .bind(student_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let result = sqlx::query("DELETE FROM students WHERE id = $1")
         .bind(student_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())?;
-    Ok(rows_deleted)
+    
+    if result.rows_affected() > 0 {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
 }
 
 /// Update a student's display name and log to audit table.
@@ -483,13 +509,13 @@ pub async fn list_all_students(
     };
 
     // Fetch all students visible to me (either admin or own a class containing them)
-    let students: Vec<(i64, String)> = sqlx::query_as(
-        "SELECT DISTINCT s.id, s.display_name FROM students s \
+    let students: Vec<(i64, String, Option<chrono::NaiveDate>)> = sqlx::query_as(
+        "SELECT DISTINCT s.id, s.display_name, s.birthdate FROM students s \
          WHERE $1::bigint IS NULL OR EXISTS ( \
            SELECT 1 FROM class_students cs \
            INNER JOIN classes c ON cs.class_id = c.id \
            WHERE cs.student_id = s.id AND c.owner_id = $1 \
-         )"
+         ) OR s.owner_id = $1"
     )
     .bind(me)
     .fetch_all(pool)
@@ -498,7 +524,7 @@ pub async fn list_all_students(
 
     let mut result = Vec::new();
 
-    for (student_id, display_name) in students {
+    for (student_id, display_name, birthdate) in students {
         // Fetch classes for this student
         let classes: Vec<(i64, String)> = sqlx::query_as(
             "SELECT c.id, c.name FROM classes c \
@@ -526,6 +552,7 @@ pub async fn list_all_students(
             "id": student_id,
             "displayName": display_name,
             "classes": classes_json,
+            "birthdate": birthdate.map(|d| d.format("%Y-%m-%d").to_string()),
         }));
     }
 
@@ -556,9 +583,13 @@ async fn can_manage_student_internal(
         None => Ok(true), // Admin can manage anyone
         Some(user_id) => {
             let exists: Option<(i64,)> = sqlx::query_as(
-                "SELECT 1::bigint FROM class_students cs \
-                 INNER JOIN classes c ON cs.class_id = c.id \
-                 WHERE cs.student_id = $1 AND c.owner_id = $2"
+                "SELECT 1::bigint \
+                 WHERE EXISTS (SELECT 1 FROM students WHERE id = $1 AND owner_id = $2) \
+                 OR EXISTS ( \
+                   SELECT 1 FROM class_students cs \
+                   INNER JOIN classes c ON cs.class_id = c.id \
+                   WHERE cs.student_id = $1 AND c.owner_id = $2 \
+                 )"
             )
             .bind(student_id)
             .bind(user_id)
@@ -569,6 +600,119 @@ async fn can_manage_student_internal(
             Ok(exists.is_some())
         }
     }
+}
+
+pub async fn create_student(
+    pool: &Option<PgPool>,
+    display_name: &str,
+    class_ids: &[i64],
+    owner_id: i64,
+    birthdate: Option<chrono::NaiveDate>,
+    pin: &str,
+) -> Result<i64, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    if !class_ids.is_empty() {
+        let count: Option<(i64,)> = sqlx::query_as(
+            "SELECT COUNT(*) FROM classes WHERE id = ANY($1) AND owner_id = $2"
+        )
+        .bind(class_ids)
+        .bind(owner_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        if count.map(|c| c.0).unwrap_or(0) != class_ids.len() as i64 {
+            return Err("permission denied for one or more classes".to_string());
+        }
+    }
+
+    let student_result = sqlx::query_as::<_, (i64,)>(
+        "INSERT INTO students (display_name, owner_id, pin, birthdate) VALUES ($1, $2, $3, $4) RETURNING id"
+    )
+    .bind(display_name)
+    .bind(owner_id)
+    .bind(pin)
+    .bind(birthdate)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let student_id = student_result.0;
+
+    for class_id in class_ids {
+        sqlx::query(
+            "INSERT INTO class_students (class_id, student_id, joined_at) VALUES ($1, $2, now()) ON CONFLICT DO NOTHING"
+        )
+        .bind(class_id)
+        .bind(student_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(student_id)
+}
+
+pub async fn class_get_student_pin(
+    pool: &Option<PgPool>,
+    student_id: i64,
+    me: Option<i64>,
+) -> Result<Option<String>, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if !can_manage_student_internal(pool, student_id, me).await? {
+        return Err("cannot manage student".to_string());
+    }
+
+    let result: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT pin FROM students WHERE id = $1"
+    )
+    .bind(student_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match result {
+        Some((pin,)) => Ok(pin),
+        None => Err("student not found".to_string()),
+    }
+}
+
+pub async fn class_set_student_pin(
+    pool: &Option<PgPool>,
+    student_id: i64,
+    pin: &str,
+    me: Option<i64>,
+) -> Result<u64, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if !can_manage_student_internal(pool, student_id, me).await? {
+        return Ok(0);
+    }
+
+    let result = sqlx::query(
+        "UPDATE students SET pin = $1 WHERE id = $2"
+    )
+    .bind(pin)
+    .bind(student_id)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.rows_affected())
 }
 
 #[cfg(test)]

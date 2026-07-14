@@ -1,6 +1,6 @@
 mod achievements;
 mod assignments;
-mod emoji_pin;
+pub mod emoji_pin;
 pub mod assets;
 pub mod logs;
 mod metrics;
