@@ -184,7 +184,9 @@
     "createStudentFailed": "Could not create the student",
     "invalidBirthdate": "Invalid date of birth",
     "studentPinFailed": "Could not load the code",
-    "regenPinFailed": "Could not generate a new code"
+    "regenPinFailed": "Could not generate a new code",
+    "classNotOwned": "This class doesn't belong to you or no longer exists",
+    "cannotManageStudent": "You are not allowed to manage this student"
   },
   "ai": {
     "notConfigured": "No AI provider configured.",

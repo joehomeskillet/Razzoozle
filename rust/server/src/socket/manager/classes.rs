@@ -14,6 +14,19 @@ use crate::db;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
+/// Map a known db-layer ownership/permission error string to a distinct i18n
+/// error key so the client toast can tell "not your class/student" apart from
+/// a generic operation failure. Falls back to `fallback` for anything else.
+fn ownership_error_key(err: &str, fallback: &'static str) -> &'static str {
+    match err {
+        "permission denied for one or more classes" | "class not found or not owned" => {
+            "errors:class.classNotOwned"
+        }
+        "cannot manage student" => "errors:class.cannotManageStudent",
+        _ => fallback,
+    }
+}
+
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list(socket, ctx.clone());
     register_create(socket, ctx.clone());
@@ -180,15 +193,26 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                 match db::delete_class(&ctx.db_pool, class_id, me).await {
                     Ok(0) => {
+                        tracing::warn!(
+                            "class:delete denied: class_id={} actor_user_id={} actor_role={}",
+                            class_id, user.user_id, user.role
+                        );
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();
                     }
-                    Ok(_) => {
+                    Ok(rows_affected) => {
+                        tracing::info!(
+                            "class:delete: class_id={} actor_user_id={} actor_role={} rows_affected={}",
+                            class_id, user.user_id, user.role, rows_affected
+                        );
                         socket.emit(constants::class::DELETE_SUCCESS, &serde_json::json!({"id": class_id})).ok();
                     }
                     Err(e) => {
-                        eprintln!("Failed to delete class: {}", e);
+                        tracing::warn!(
+                            "class:delete failed: class_id={} actor_user_id={} actor_role={} error={}",
+                            class_id, user.user_id, user.role, e
+                        );
                         socket.emit(constants::class::ERROR, "errors:class.deleteFailed").ok();
                     }
                 }
@@ -456,7 +480,8 @@ fn register_move_student(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Err(e) => {
                         tracing::warn!("class:moveStudent failed: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.moveStudentFailed").ok();
+                        let key = ownership_error_key(&e, "errors:class.moveStudentFailed");
+                        socket.emit(constants::class::ERROR, key).ok();
                     }
                 }
             });
@@ -511,7 +536,8 @@ fn register_remove_from_class(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Err(e) => {
                         tracing::warn!("class:removeFromClass failed: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.removeFromClassFailed").ok();
+                        let key = ownership_error_key(&e, "errors:class.removeFromClassFailed");
+                        socket.emit(constants::class::ERROR, key).ok();
                     }
                 }
             });
@@ -666,7 +692,13 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                match db::create_student(&ctx.db_pool, first_name, last_name, &class_ids, me.unwrap_or(1), birthdate, &pin).await {
+                // Bug A fix: the classIds ownership check must use the admin-aware
+                // `me` (None = admin, bypasses ownership), while the student row's
+                // owner_id is always the REAL creator (user.user_id) — previously
+                // both were collapsed into one `me.unwrap_or(1)` value, so an admin
+                // (me=None) got hardcoded to a fake owner_id=1 for the check, which
+                // then denied any class not owned by user id 1.
+                match db::create_student(&ctx.db_pool, first_name, last_name, &class_ids, user.user_id, me, birthdate, &pin).await {
                     Ok(student_id) => {
                         // Fetch class names for the response
                         let class_names = db::get_student_classes(&ctx.db_pool, student_id, me).await
@@ -693,7 +725,8 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Err(e) => {
                         tracing::warn!("class:createStudent failed: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.createStudentFailed").ok();
+                        let key = ownership_error_key(&e, "errors:class.createStudentFailed");
+                        socket.emit(constants::class::ERROR, key).ok();
                     }
                 }
             });

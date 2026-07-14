@@ -183,7 +183,9 @@
     "createStudentFailed": "No se pudo crear al estudiante",
     "invalidBirthdate": "Fecha de nacimiento no válida",
     "studentPinFailed": "No se pudo cargar el código",
-    "regenPinFailed": "No se pudo generar un nuevo código"
+    "regenPinFailed": "No se pudo generar un nuevo código",
+    "classNotOwned": "Esta clase no te pertenece o ya no existe",
+    "cannotManageStudent": "No tienes permiso para gestionar a este estudiante"
   },
   "ai": {
     "notConfigured": "No hay proveedor de IA configurado.",

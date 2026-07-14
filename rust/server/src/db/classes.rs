@@ -39,10 +39,15 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, i64)> = match sqlx::query_as(
-        "SELECT c.id, c.name, c.created_at, COALESCE(jt.student_count, 0) as student_count \
+    // ownerName is only resolved for the unfiltered (admin) view — a non-admin
+    // user's own classes never need an owner badge, and this keeps the extra
+    // JOIN a no-op cost for the common (scoped) case.
+    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, i64, Option<String>)> = match sqlx::query_as(
+        "SELECT c.id, c.name, c.created_at, COALESCE(jt.student_count, 0) as student_count, \
+                CASE WHEN $1::bigint IS NULL THEN u.username ELSE NULL END as owner_name \
          FROM classes c \
          LEFT JOIN (SELECT class_id, count(*) as student_count FROM class_students GROUP BY class_id) jt ON c.id = jt.class_id \
+         LEFT JOIN users u ON u.id = c.owner_id \
          WHERE ($1::bigint IS NULL OR c.owner_id = $1) \
          ORDER BY c.created_at DESC"
     )
@@ -58,13 +63,17 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     };
 
     rows.into_iter()
-        .map(|(id, name, created_at, student_count)| {
-            serde_json::json!({
+        .map(|(id, name, created_at, student_count, owner_name)| {
+            let mut obj = serde_json::json!({
                 "id": id,
                 "name": name,
                 "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                 "studentCount": student_count,
-            })
+            });
+            if let Some(owner_name) = owner_name {
+                obj["ownerName"] = serde_json::json!(owner_name);
+            }
+            obj
         })
         .collect()
 }
@@ -669,7 +678,8 @@ pub async fn create_student(
     first_name: &str,
     last_name: &str,
     class_ids: &[i64],
-    owner_id: i64,
+    creator_id: i64,
+    me: Option<i64>,
     birthdate: Option<chrono::NaiveDate>,
     pin: &str,
 ) -> Result<i64, String> {
@@ -680,12 +690,16 @@ pub async fn create_student(
 
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
+    // Ownership check uses `me` (None = admin, bypasses ownership) so an admin
+    // can assign a freshly-created student to ANY class, not just classes
+    // owned by the hardcoded creator id. The student row itself is always
+    // owned by the real actor (`creator_id`), independent of this check.
     if !class_ids.is_empty() {
         let count: Option<(i64,)> = match sqlx::query_as(
-            "SELECT COUNT(*) FROM classes WHERE id = ANY($1) AND owner_id = $2"
+            "SELECT COUNT(*) FROM classes WHERE id = ANY($1) AND ($2::bigint IS NULL OR owner_id = $2)"
         )
         .bind(class_ids)
-        .bind(owner_id)
+        .bind(me)
         .fetch_optional(&mut *tx)
         .await
         {
@@ -716,7 +730,7 @@ pub async fn create_student(
     .bind(display_name)
     .bind(first_name.trim())
     .bind(final_last)
-    .bind(owner_id)
+    .bind(creator_id)
     .bind(pin)
     .bind(birthdate)
     .fetch_one(&mut *tx)
@@ -817,6 +831,7 @@ mod tests {
         assert!(super::add_student(&None, 1, "Student", 1).await.is_err());
         assert!(super::remove_student(&None, 1, Some(1)).await.is_err());
         assert!(super::update_student(&None, 1, Some("Updated"), None, None, Some(1)).await.is_err());
+        assert!(super::create_student(&None, "Student", "", &[], 1, Some(1), None, "1234").await.is_err());
     }
 
     #[tokio::test]

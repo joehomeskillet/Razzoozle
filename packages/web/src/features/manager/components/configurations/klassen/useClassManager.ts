@@ -13,6 +13,9 @@ interface Class {
   createdAt: string
   studentCount?: number
   students?: Student[]
+  // Only present in the admin's unfiltered class list — disambiguates classes
+  // that share a name across different owners.
+  ownerName?: string
 }
 
 interface Student {

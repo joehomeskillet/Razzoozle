@@ -29,6 +29,9 @@ interface Class {
   createdAt: string
   studentCount?: number
   students?: Student[]
+  // Only present in the admin's unfiltered class list — disambiguates classes
+  // that share a name across different owners.
+  ownerName?: string
 }
 
 interface ClassListProps {
@@ -118,9 +121,16 @@ const ClassList = ({
               <GraduationCap className="size-5 shrink-0 text-gray-700" />
 
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900">
-                  {classObj.name}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {classObj.name}
+                  </p>
+                  {classObj.ownerName && (
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                      {classObj.ownerName}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">
                   {expandedClassId === classObj.id
                     ? (classObj.students ?? []).length

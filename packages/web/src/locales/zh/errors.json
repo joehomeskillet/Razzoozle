@@ -182,7 +182,9 @@
     "createStudentFailed": "无法创建学生",
     "invalidBirthdate": "出生日期无效",
     "studentPinFailed": "无法加载登录码",
-    "regenPinFailed": "无法生成新的登录码"
+    "regenPinFailed": "无法生成新的登录码",
+    "classNotOwned": "该班级不属于你或已不存在",
+    "cannotManageStudent": "你无权管理该学生"
   },
   "ai": {
     "notConfigured": "尚未配置 AI 提供商。",

@@ -184,7 +184,9 @@
     "createStudentFailed": "Schüler konnte nicht angelegt werden",
     "invalidBirthdate": "Ungültiges Geburtsdatum",
     "studentPinFailed": "Code konnte nicht geladen werden",
-    "regenPinFailed": "Neuer Code konnte nicht generiert werden"
+    "regenPinFailed": "Neuer Code konnte nicht generiert werden",
+    "classNotOwned": "Diese Klasse gehört dir nicht oder existiert nicht mehr",
+    "cannotManageStudent": "Du darfst diesen Schüler nicht verwalten"
   },
   "ai": {
     "notConfigured": "Kein KI-Anbieter konfiguriert.",
