@@ -366,6 +366,11 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.STUDENT_CREATED]: (_data: StudentCreatedData) => void
   [EVENTS.CLASS.STUDENT_PIN_DATA]: (_data: { studentId: number; pin: string; labels: string[] }) => void
   [EVENTS.CLASS.PIN_REGENERATED]: (_data: { studentId: number; pin: string; labels: string[] }) => void
+
+  // Global labels (server -> client)
+  [EVENTS.LABEL.DATA]: (_data: { labels: Array<{ id: number; name: string; color: string }> }) => void
+  [EVENTS.LABEL.ERROR]: (_message: string) => void
+  [EVENTS.LABEL.ASSIGNED]: (_data: { entityType: "quizz" | "media" | "catalog"; entityId: string; labelIds: number[] }) => void
 }
 
 export interface ClientToServerEvents {
@@ -623,6 +628,13 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.CREATE_STUDENT]: (_payload: CreateStudentPayload) => void
   [EVENTS.CLASS.STUDENT_PIN]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.REGEN_PIN]: (_payload: { studentId: number }) => void
+
+  // Global labels (client -> server)
+  [EVENTS.LABEL.LIST]: () => void
+  [EVENTS.LABEL.CREATE]: (_payload: { name: string; color?: string }) => void
+  [EVENTS.LABEL.UPDATE]: (_payload: { id: number; name?: string; color?: string }) => void
+  [EVENTS.LABEL.DELETE]: (_payload: { id: number }) => void
+  [EVENTS.LABEL.ASSIGN]: (_payload: { entityType: "quizz" | "media" | "catalog"; entityId: string; labelIds: number[] }) => void
 
   // Common
   disconnect: () => void
