@@ -45,6 +45,8 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
                 info!("manager:startGame received: gameId={:?}", game_id_opt);
 
@@ -59,13 +61,15 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                             let game = game_ref.lock().unwrap();
                             // Per-game ownership check: only the socket that created this game can start it
                             if game.manager_socket_id != socket.id.to_string() {
+                                warn!("manager control denied: event=startGame gameId={} check=manager_socket_id", game_id);
                                 socket
                                     .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                     .ok();
                                 return;
                             }
                             // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
-                            if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                            if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
+                                warn!("manager control denied: event=startGame gameId={} check=is_game_host", game_id);
                                 socket
                                     .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                     .ok();
@@ -149,6 +153,8 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Extract gameId and auto flag from payload
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
                 let auto_flag = payload.get("auto").and_then(|v| v.as_bool()) == Some(true);
@@ -204,7 +210,7 @@ fn register_set_auto(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check (is_game_host verifies clientId + optional hostToken)
-                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                             warn!(
                                 "manager:setAuto host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -322,6 +328,8 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Extract gameId from payload
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
@@ -376,7 +384,7 @@ fn register_next_question(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                             warn!(
                                 "manager:nextQuestion host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -426,6 +434,8 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Extract gameId from payload
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
@@ -480,7 +490,7 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                             warn!(
                                 "manager:skipQuestion host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id
@@ -519,6 +529,8 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Extract gameId from payload
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
 
@@ -573,7 +585,7 @@ fn register_abort_quiz(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                        if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                             warn!(
                                 "manager:abortQuiz host-check failed: clientId={}, gameId={}",
                                 ctx.client_id, game_id

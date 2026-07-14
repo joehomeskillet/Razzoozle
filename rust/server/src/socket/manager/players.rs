@@ -8,6 +8,7 @@ use std::sync::Arc;
 use razzoozle_engine::state::GamePhase;
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashSet;
+use tracing::warn;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_kick_player(socket, ctx.clone());
@@ -24,7 +25,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -41,7 +42,8 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                         if let Some(game_ref) = game_opt {
                             {
                                 let game = game_ref.lock().unwrap();
-                                if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                                if !is_game_host(&game, &payload, &ctx.client_id, Some(&user)) {
+                                    warn!("manager control denied: event=kickPlayer gameId={} check=is_game_host", game_id);
                                     socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                     return;
                                 }
@@ -109,7 +111,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // Check auth
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -148,7 +150,8 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                            if !is_game_host(&game, &payload, &ctx.client_id, Some(&user)) {
+                                warn!("manager control denied: event=addBots gameId={} check=is_game_host", game_id);
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }

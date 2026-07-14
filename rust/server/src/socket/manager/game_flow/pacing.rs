@@ -36,6 +36,8 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
@@ -88,7 +90,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                         warn!(
                             "manager:adjustTimer host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id
@@ -171,6 +173,8 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
@@ -223,7 +227,7 @@ pub fn register_pause_game(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                         warn!(
                             "manager:pauseGame host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id
@@ -325,6 +329,8 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
+                let user = ctx.require_user().await;
+
                 // Resolve game: try gameId first, then fall back to manager_client_id (mirrors Node)
                 let game_ref = if let Some(game_id) = game_id_opt {
                     let registry = ctx.registry.read().await;
@@ -377,7 +383,7 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                         return;
                     }
-                    if !is_game_host(&game, &payload, &ctx.client_id, None) {
+                    if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
                         warn!(
                             "manager:resumeGame host-check failed: clientId={}, gameId={}",
                             ctx.client_id, game_id
