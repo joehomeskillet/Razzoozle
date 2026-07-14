@@ -14,7 +14,7 @@ const ConfigSchueler = () => {
         </p>
       </div>
 
-      <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-white p-8">
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
         <p className="text-sm text-gray-500">
           {t("manager:schueler.empty")}
         </p>

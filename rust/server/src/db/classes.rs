@@ -534,7 +534,7 @@ async fn can_manage_student_internal(
         None => Ok(true), // Admin can manage anyone
         Some(user_id) => {
             let exists: Option<(i64,)> = sqlx::query_as(
-                "SELECT 1 FROM class_students cs \
+                "SELECT 1::bigint FROM class_students cs \
                  INNER JOIN classes c ON cs.class_id = c.id \
                  WHERE cs.student_id = $1 AND c.owner_id = $2"
             )
