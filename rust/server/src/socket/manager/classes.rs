@@ -327,24 +327,33 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let display_name = match payload.get("displayName").and_then(|v| v.as_str()) {
-                    Some(n) if !n.is_empty() => n,
-                    _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
-                        return;
-                    }
-                };
+                let display_name = payload.get("displayName").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
+                let first_name = payload.get("firstName").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
+                let last_name = payload.get("lastName").and_then(|v| v.as_str());
 
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                match db::update_student(&ctx.db_pool, student_id, display_name, me).await {
+                match db::update_student(&ctx.db_pool, student_id, display_name, first_name, last_name, me).await {
                     Ok(0) => {
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::STUDENT_UPDATED, &serde_json::json!({"id": student_id, "displayName": display_name})).ok();
+                        // The updated student info might need to reflect the composed displayName.
+                        // We can just query it or construct it here for the event, or simply emit what we have.
+                        // Wait, what if only firstName and lastName were provided?
+                        // The prompt says: "keep displayName, include firstName, lastName" in the event.
+                        // Let's refetch from DB, or construct. Constructing is easier but we don't have old names if they only provided one.
+                        // Let's just refetch. But the db call `update_student` returns rows_affected, not the full object.
+                        // We can change `update_student` to return the new name or just emit the payload values (they are optimistic in the frontend).
+                        // I will emit the optional fields we got. Actually, better yet, `updateStudent` payload is often passed as-is.
+                        socket.emit(constants::class::STUDENT_UPDATED, &serde_json::json!({
+                            "id": student_id,
+                            "displayName": display_name,
+                            "firstName": first_name,
+                            "lastName": last_name.filter(|s| !s.is_empty())
+                        })).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to update student: {}", e);
@@ -612,7 +621,7 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let display_name = match payload.get("displayName").and_then(|v| v.as_str()) {
+                let first_name = match payload.get("firstName").and_then(|v| v.as_str()) {
                     Some(n) => {
                         let trimmed = n.trim();
                         if trimmed.is_empty() || trimmed.len() > 255 {
@@ -626,6 +635,8 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+
+                let last_name = payload.get("lastName").and_then(|v| v.as_str()).unwrap_or("").trim();
 
                 let class_ids: Vec<i64> = payload
                     .get("classIds")
@@ -655,15 +666,25 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                match db::create_student(&ctx.db_pool, display_name, &class_ids, me.unwrap_or(1), birthdate, &pin).await {
+                match db::create_student(&ctx.db_pool, first_name, last_name, &class_ids, me.unwrap_or(1), birthdate, &pin).await {
                     Ok(student_id) => {
                         // Fetch class names for the response
                         let class_names = db::get_student_classes(&ctx.db_pool, student_id, me).await
                             .unwrap_or_default();
 
+                        let display_name = if last_name.is_empty() {
+                            first_name.to_string()
+                        } else {
+                            format!("{} {}", first_name, last_name)
+                        };
+
+                        let final_last = if last_name.is_empty() { None } else { Some(last_name) };
+
                         socket.emit(constants::class::STUDENT_CREATED, &serde_json::json!({
                             "id": student_id,
                             "displayName": display_name,
+                            "firstName": first_name,
+                            "lastName": final_last,
                             "pin": pin,
                             "labels": labels, "symbols": crate::http::emoji_pin::symbols_of(&pin).unwrap_or_default(),
                             "classes": class_names,

@@ -212,8 +212,8 @@ pub async fn get_students(pool: &Option<PgPool>, class_id: i64, me: Option<i64>)
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>)> = match sqlx::query_as(
-        "SELECT s.id, s.display_name, s.created_at FROM students s \
+    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> = match sqlx::query_as(
+        "SELECT s.id, s.display_name, s.created_at, s.first_name, s.last_name FROM students s \
          INNER JOIN class_students cs ON s.id = cs.student_id \
          INNER JOIN classes c ON cs.class_id = c.id \
          WHERE cs.class_id = $1 AND ($2::bigint IS NULL OR c.owner_id = $2) \
@@ -232,10 +232,12 @@ pub async fn get_students(pool: &Option<PgPool>, class_id: i64, me: Option<i64>)
     };
 
     rows.into_iter()
-        .map(|(id, display_name, created_at)| {
+        .map(|(id, display_name, created_at, first_name, last_name)| {
             serde_json::json!({
                 "id": id,
                 "displayName": display_name,
+                "firstName": first_name,
+                "lastName": last_name,
                 "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             })
         })
@@ -259,7 +261,7 @@ pub async fn remove_student(
 
     // Check permission: is_admin OR students.owner_id == me OR me in any class_students.class_id
     let has_permission = if let Some(user_id) = me {
-        let exists: Option<(i64,)> = sqlx::query_as(
+        let exists: Option<(i64,)> = match sqlx::query_as(
             "SELECT 1::bigint \
              WHERE EXISTS (SELECT 1 FROM students WHERE id = $1 AND owner_id = $2) \
              OR EXISTS ( \
@@ -272,7 +274,13 @@ pub async fn remove_student(
         .bind(user_id)
         .fetch_optional(&mut *tx)
         .await
-        .map_err(|e| e.to_string())?;
+        {
+            Ok(res) => res,
+            Err(e) => {
+                let _ = tx.rollback().await;
+                return Err(e.to_string());
+            }
+        };
         exists.is_some()
     } else {
         true
@@ -283,17 +291,29 @@ pub async fn remove_student(
         return Ok(0);
     }
 
-    sqlx::query("DELETE FROM class_students WHERE student_id = $1")
+    match sqlx::query("DELETE FROM class_students WHERE student_id = $1")
         .bind(student_id)
         .execute(&mut *tx)
         .await
-        .map_err(|e| e.to_string())?;
+    {
+        Ok(_) => (),
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    }
 
-    let result = sqlx::query("DELETE FROM students WHERE id = $1")
+    let result = match sqlx::query("DELETE FROM students WHERE id = $1")
         .bind(student_id)
         .execute(&mut *tx)
         .await
-        .map_err(|e| e.to_string())?;
+    {
+        Ok(res) => res,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    };
 
     tx.commit().await.map_err(|e| e.to_string())?;
     
@@ -309,7 +329,9 @@ pub async fn remove_student(
 pub async fn update_student(
     pool: &Option<PgPool>,
     student_id: i64,
-    display_name: &str,
+    display_name_opt: Option<&str>,
+    first_name_opt: Option<&str>,
+    last_name_opt: Option<&str>,
     me: Option<i64>,
 ) -> Result<u64, String> {
     let pool = match pool {
@@ -320,7 +342,7 @@ pub async fn update_student(
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // Fetch old display_name for audit
-    let old_name: Option<(String,)> = sqlx::query_as(
+    let old_name: Option<(String,)> = match sqlx::query_as(
         "SELECT display_name FROM students \
          WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
     )
@@ -328,37 +350,74 @@ pub async fn update_student(
     .bind(me)
     .fetch_optional(&mut *tx)
     .await
-    .map_err(|e| e.to_string())?;
+    {
+        Ok(name) => name,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    };
 
     let old_display_name = match old_name {
         Some((name,)) => name,
-        None => return Ok(0), // Not found or not owned
+        None => {
+            let _ = tx.rollback().await;
+            return Ok(0); // Not found or not owned
+        }
     };
 
+    let display_name = if let (Some(f), Some(l)) = (first_name_opt, last_name_opt) {
+        if l.is_empty() {
+            f.trim().to_string()
+        } else {
+            format!("{} {}", f.trim(), l.trim())
+        }
+    } else {
+        display_name_opt.unwrap_or(&old_display_name).to_string()
+    };
+
+    let final_last = last_name_opt.and_then(|l| if l.is_empty() { None } else { Some(l.trim()) });
+
     // Update student
-    let result = sqlx::query(
-        "UPDATE students SET display_name = $1 \
-         WHERE id = $2 AND ($3::bigint IS NULL OR owner_id = $3)"
+    let result = match sqlx::query(
+        "UPDATE students SET display_name = $1, \
+         first_name = COALESCE($2, first_name), \
+         last_name = CASE WHEN $2 IS NOT NULL THEN $3 ELSE last_name END \
+         WHERE id = $4 AND ($5::bigint IS NULL OR owner_id = $5)"
     )
-    .bind(display_name)
+    .bind(&display_name)
+    .bind(first_name_opt)
+    .bind(final_last)
     .bind(student_id)
     .bind(me)
     .execute(&mut *tx)
     .await
-    .map_err(|e| e.to_string())?;
+    {
+        Ok(res) => res,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    };
 
     // Insert audit log
-    sqlx::query(
+    match sqlx::query(
         "INSERT INTO students_audit (student_id, actor_id, old_display_name, new_display_name, changed_at) \
          VALUES ($1, $2, $3, $4, now())"
     )
     .bind(student_id)
     .bind(me)
     .bind(&old_display_name)
-    .bind(display_name)
+    .bind(&display_name)
     .execute(&mut *tx)
     .await
-    .map_err(|e| e.to_string())?;
+    {
+        Ok(_) => (),
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    }
 
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(result.rows_affected())
@@ -509,13 +568,14 @@ pub async fn list_all_students(
     };
 
     // Fetch all students visible to me (either admin or own a class containing them)
-    let students: Vec<(i64, String, Option<chrono::NaiveDate>)> = sqlx::query_as(
-        "SELECT DISTINCT s.id, s.display_name, s.birthdate FROM students s \
+    let students: Vec<(i64, String, Option<chrono::NaiveDate>, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT DISTINCT s.id, s.display_name, s.birthdate, s.first_name, s.last_name FROM students s \
          WHERE $1::bigint IS NULL OR EXISTS ( \
            SELECT 1 FROM class_students cs \
            INNER JOIN classes c ON cs.class_id = c.id \
            WHERE cs.student_id = s.id AND c.owner_id = $1 \
-         ) OR s.owner_id = $1"
+         ) OR s.owner_id = $1 \
+         ORDER BY s.last_name NULLS LAST, s.first_name"
     )
     .bind(me)
     .fetch_all(pool)
@@ -524,7 +584,7 @@ pub async fn list_all_students(
 
     let mut result = Vec::new();
 
-    for (student_id, display_name, birthdate) in students {
+    for (student_id, display_name, birthdate, first_name, last_name) in students {
         // Fetch classes for this student
         let classes: Vec<(i64, String)> = sqlx::query_as(
             "SELECT c.id, c.name FROM classes c \
@@ -551,6 +611,8 @@ pub async fn list_all_students(
         result.push(serde_json::json!({
             "id": student_id,
             "displayName": display_name,
+            "firstName": first_name,
+            "lastName": last_name,
             "classes": classes_json,
             "birthdate": birthdate.map(|d| d.format("%Y-%m-%d").to_string()),
         }));
@@ -604,7 +666,8 @@ async fn can_manage_student_internal(
 
 pub async fn create_student(
     pool: &Option<PgPool>,
-    display_name: &str,
+    first_name: &str,
+    last_name: &str,
     class_ids: &[i64],
     owner_id: i64,
     birthdate: Option<chrono::NaiveDate>,
@@ -618,42 +681,71 @@ pub async fn create_student(
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     if !class_ids.is_empty() {
-        let count: Option<(i64,)> = sqlx::query_as(
+        let count: Option<(i64,)> = match sqlx::query_as(
             "SELECT COUNT(*) FROM classes WHERE id = ANY($1) AND owner_id = $2"
         )
         .bind(class_ids)
         .bind(owner_id)
         .fetch_optional(&mut *tx)
         .await
-        .map_err(|e| e.to_string())?;
+        {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = tx.rollback().await;
+                return Err(e.to_string());
+            }
+        };
 
         if count.map(|c| c.0).unwrap_or(0) != class_ids.len() as i64 {
+            let _ = tx.rollback().await;
             return Err("permission denied for one or more classes".to_string());
         }
     }
 
-    let student_result = sqlx::query_as::<_, (i64,)>(
-        "INSERT INTO students (display_name, owner_id, pin, birthdate) VALUES ($1, $2, $3, $4) RETURNING id"
+    let display_name = if last_name.is_empty() {
+        first_name.trim().to_string()
+    } else {
+        format!("{} {}", first_name.trim(), last_name.trim())
+    };
+
+    let final_last = if last_name.trim().is_empty() { None } else { Some(last_name.trim()) };
+
+    let student_result = match sqlx::query_as::<_, (i64,)>(
+        "INSERT INTO students (display_name, first_name, last_name, owner_id, pin, birthdate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
     )
     .bind(display_name)
+    .bind(first_name.trim())
+    .bind(final_last)
     .bind(owner_id)
     .bind(pin)
     .bind(birthdate)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| e.to_string())?;
+    {
+        Ok(res) => res,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return Err(e.to_string());
+        }
+    };
 
     let student_id = student_result.0;
 
     for class_id in class_ids {
-        sqlx::query(
+        match sqlx::query(
             "INSERT INTO class_students (class_id, student_id, joined_at) VALUES ($1, $2, now()) ON CONFLICT DO NOTHING"
         )
         .bind(class_id)
         .bind(student_id)
         .execute(&mut *tx)
         .await
-        .map_err(|e| e.to_string())?;
+        {
+            Ok(_) => (),
+            Err(e) => {
+                let _ = tx.rollback().await;
+                return Err(e.to_string());
+            }
+        }
     }
 
     tx.commit().await.map_err(|e| e.to_string())?;
@@ -724,7 +816,7 @@ mod tests {
         assert!(super::delete_class(&None, 1, Some(1)).await.is_err());
         assert!(super::add_student(&None, 1, "Student", 1).await.is_err());
         assert!(super::remove_student(&None, 1, Some(1)).await.is_err());
-        assert!(super::update_student(&None, 1, "Updated", Some(1)).await.is_err());
+        assert!(super::update_student(&None, 1, Some("Updated"), None, None, Some(1)).await.is_err());
     }
 
     #[tokio::test]

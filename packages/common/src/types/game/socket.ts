@@ -61,7 +61,8 @@ export interface SelectedModes {
 }
 
 export interface CreateStudentPayload {
-  displayName: string;
+  firstName: string;
+  lastName: string;
   classIds?: number[];
   birthdate?: string;
 }
@@ -69,6 +70,8 @@ export interface CreateStudentPayload {
 export interface StudentCreatedData {
   id: number;
   displayName: string;
+  firstName: string;
+  lastName?: string | null;
   pin: string;
   labels: string[];
   symbols: string[];
@@ -94,6 +97,8 @@ export interface PinRegenerated {
 export interface UpdateStudentPayload {
   id: number;
   displayName?: string;
+  firstName?: string | null;
+  lastName?: string | null;
   classIds?: number[];
   birthdate?: string;
 }
@@ -102,6 +107,8 @@ export interface AllStudentsData {
   students: Array<{
     id: number;
     displayName: string;
+    firstName?: string | null;
+    lastName?: string | null;
     pin: string;
     classes: Array<{id: number; name: string}>;
     birthdate: string | null;
@@ -348,8 +355,8 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.DELETE_SUCCESS]: (_data: { id: number }) => void
   [EVENTS.CLASS.STUDENT_ADDED]: (_student: { id: number; displayName: string; classId: number }) => void
   [EVENTS.CLASS.STUDENT_REMOVED]: (_data: { studentId: number }) => void
-  [EVENTS.CLASS.STUDENT_UPDATED]: (_data: { id: number; displayName: string }) => void
-  [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string }> }) => void
+  [EVENTS.CLASS.STUDENT_UPDATED]: (_data: { id: number; displayName: string; firstName?: string | null; lastName?: string | null }) => void
+  [EVENTS.CLASS.STUDENTS_DATA]: (_data: { classId: number; students: Array<{ id: number; displayName: string; firstName?: string | null; lastName?: string | null }> }) => void
   [EVENTS.CLASS.ERROR]: (_message: string) => void
   [EVENTS.CLASS.STUDENT_MOVED]: (_data: { studentId: number; classId: number; joinedAt: string }) => void
   [EVENTS.CLASS.REMOVED_FROM_CLASS]: (_data: { studentId: number; classId: number; studentDeleted: boolean }) => void

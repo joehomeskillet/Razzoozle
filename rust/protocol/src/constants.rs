@@ -204,8 +204,9 @@ pub mod class {
     pub const STUDENT_ADDED: &str = "class:studentAdded";
     pub const REMOVE_STUDENT: &str = "class:removeStudent";
     pub const STUDENT_REMOVED: &str = "class:studentRemoved";
-    // Payload: {id, displayName?, classIds?, birthdate?}
+    // Payload: {id, displayName?, firstName?, lastName?, classIds?, birthdate?}
     pub const UPDATE_STUDENT: &str = "class:updateStudent";
+    // Payload: {id, displayName, firstName?, lastName?}
     pub const STUDENT_UPDATED: &str = "class:studentUpdated";
     pub const GET_STUDENTS: &str = "class:getStudents";
     pub const STUDENTS_DATA: &str = "class:studentsData";
@@ -219,12 +220,12 @@ pub mod class {
     /// `class:studentClasses` req `{ studentId }` → `class:studentClassesData` `{ studentId, classes: [{ id, name, joinedAt }] }`.
     pub const STUDENT_CLASSES: &str = "class:studentClasses";
     pub const STUDENT_CLASSES_DATA: &str = "class:studentClassesData";
-    /// `class:listAllStudents` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `class:allStudentsData` `{ students: [{ id, displayName, classes: [{ id, name }], birthdate: string | null }] }`.
+    /// `class:listAllStudents` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `class:allStudentsData` `{ students: [{ id, displayName, firstName?, lastName?, classes: [{ id, name }], birthdate: string | null }] }`.
     pub const LIST_ALL_STUDENTS: &str = "class:listAllStudents";
     pub const ALL_STUDENTS_DATA: &str = "class:allStudentsData";
-    /// `class:createStudent` req `{ displayName: string, classIds?: number[], birthdate?: "YYYY-MM-DD" }` — creates a student owned by the caller, optionally enrolling into the given (caller-owned) classes; server auto-generates the 4-emoji PIN (manager-authed via require_user).
+    /// `class:createStudent` req `{ firstName: string, lastName: string, classIds?: number[], birthdate?: "YYYY-MM-DD" }` — creates a student owned by the caller, optionally enrolling into the given (caller-owned) classes; server auto-generates the 4-emoji PIN (manager-authed via require_user).
     pub const CREATE_STUDENT: &str = "class:createStudent";
-    /// `class:studentCreated` → `{ id: number, displayName: string, pin: string, labels: string[], symbols: string[], classes: Array<{ id: number, name: string }>, birthdate: string | null }` — pin is the joined 4-emoji string, labels the 4 German words, symbols the 4 emoji strings (manager-authed via require_user).
+    /// `class:studentCreated` → `{ id: number, displayName: string, firstName: string, lastName?: string | null, pin: string, labels: string[], symbols: string[], classes: Array<{ id: number, name: string }>, birthdate: string | null }` — pin is the joined 4-emoji string, labels the 4 German words, symbols the 4 emoji strings (manager-authed via require_user).
     pub const STUDENT_CREATED: &str = "class:studentCreated";
     /// `class:studentPin` req `{ studentId: number }` — returns the student's PIN, lazily generating one if the student has none yet (pre-015 students) (manager-authed via require_user).
     pub const STUDENT_PIN: &str = "class:studentPin";
