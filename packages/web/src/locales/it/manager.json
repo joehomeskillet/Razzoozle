@@ -132,7 +132,8 @@
     "klassen": "Classi",
     "profile": "Il mio profilo",
     "users": "Gestione utenti",
-    "schueler": "Gestione studenti"
+    "schueler": "Gestione studenti",
+    "labels": "Etichette"
   },
   "plugins": {
     "title": "Plugin",
@@ -843,5 +844,9 @@
     "search": "Cerca studente",
     "searchPlaceholder": "Cerca per nome o classe …",
     "noResults": "Nessuno studente trovato"
+  },
+  "labels": {
+    "description": "Etichette globali per organizzare quiz, media e voci del catalogo.",
+    "emptyState": "Segnaposto della struttura — le definizioni delle etichette verranno caricate qui."
   }
 }

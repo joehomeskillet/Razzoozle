@@ -71,6 +71,8 @@ export interface QuizzMeta {
   archived?: boolean
   // Convenience for list UIs (avoids loading every quiz to show a count).
   questionCount?: number
+  // Label IDs assigned to this quiz (empty array when no labels).
+  labelIds?: number[]
 }
 
 export interface GameUpdateQuestion {

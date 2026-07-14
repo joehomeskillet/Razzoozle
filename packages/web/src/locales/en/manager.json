@@ -150,7 +150,8 @@
     "profile": "My Profile",
     "klassen": "Classes",
     "users": "User Management",
-    "schueler": "Student management"
+    "schueler": "Student management",
+    "labels": "Labels"
   },
   "plugins": {
     "title": "Plugins",
@@ -854,5 +855,9 @@
     "search": "Search student",
     "searchPlaceholder": "Search by name or class …",
     "noResults": "No students found"
+  },
+  "labels": {
+    "description": "Global labels for organizing quizzes, media, and catalog entries.",
+    "emptyState": "Scaffold placeholder — label definitions will load here."
   }
 }

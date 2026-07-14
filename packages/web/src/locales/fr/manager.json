@@ -141,7 +141,8 @@
     "klassen": "Classes",
     "profile": "Mon profil",
     "users": "Gestion des utilisateurs",
-    "schueler": "Gestion des élèves"
+    "schueler": "Gestion des élèves",
+    "labels": "Libellés"
   },
   "plugins": {
     "title": "Extensions",
@@ -843,5 +844,9 @@
     "search": "Rechercher un élève",
     "searchPlaceholder": "Rechercher par nom ou classe …",
     "noResults": "Aucun élève trouvé"
+  },
+  "labels": {
+    "description": "Étiquettes globales pour organiser les quiz, médias et entrées du catalogue.",
+    "emptyState": "Espace réservé de structure — les définitions des étiquettes seront chargées ici."
   }
 }
