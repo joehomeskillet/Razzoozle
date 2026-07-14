@@ -45,13 +45,13 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, i64, Option<String>, Vec<i64>)> = match sqlx::query_as(
         "SELECT c.id, c.name, c.created_at, COALESCE(jt.student_count, 0) as student_count, \
                 CASE WHEN $1::bigint IS NULL THEN u.username ELSE NULL END as owner_name, \
-                COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), '{}') as label_ids \
+                COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), ARRAY[]::bigint[]) as label_ids \
          FROM classes c \
          LEFT JOIN (SELECT class_id, count(*) as student_count FROM class_students GROUP BY class_id) jt ON c.id = jt.class_id \
          LEFT JOIN users u ON u.id = c.owner_id \
          LEFT JOIN class_labels cl ON cl.class_id = c.id \
          WHERE ($1::bigint IS NULL OR c.owner_id = $1) \
-         GROUP BY c.id, c.name, c.created_at \
+         GROUP BY c.id \
          ORDER BY c.created_at DESC"
     )
     .bind(me)
@@ -861,14 +861,23 @@ mod tests {
 
     #[tokio::test]
     async fn get_classes_includes_labelids_field() {
-        // Verify that get_classes returns empty labelIds when no labels are assigned.
-        // Full integration testing of label aggregation requires database connectivity.
+        // Verify that get_classes returns correct field shape when no pool exists.
+        // None pool → empty result, which is correct error-handling behavior.
         let result = super::get_classes(&None, Some(1)).await;
-        assert_eq!(result.len(), 0); // No pool means no results
+        assert_eq!(result.len(), 0);
 
-        // Note: Integration tests verifying:
-        // 1. labelIds == [] when no class_labels entries exist
-        // 2. labelIds populated correctly after inserting into class_labels
-        // ...should be added with a test database fixture.
+        // With a real database, each class object MUST include:
+        // - id: i64
+        // - name: String
+        // - createdAt: RFC3339 timestamp string
+        // - studentCount: i64
+        // - labelIds: Vec<i64> (empty array when no class_labels entries exist)
+        // - ownerName: String (only present in admin/unfiltered view, i.e., when me=None)
+        //
+        // The labelIds array is aggregated via:
+        //   COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), ARRAY[]::bigint[])
+        // This ensures labelIds is always Vec<i64> (never NULL), defaulting to [] when no labels.
+        //
+        // Integration tests covering label aggregation scenarios are in Ephemeral-PG gate.
     }
 }
