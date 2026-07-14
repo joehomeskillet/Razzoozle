@@ -148,6 +148,7 @@ interface ManagerExtraStatus {
     // Slider result
     type?: QuestionType
     correct?: number
+    correctAnswer?: string
     unit?: string
     averageGuess?: number
     // Type-answer result (manager-only — never sent to players). Normalized

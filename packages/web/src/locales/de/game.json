@@ -39,6 +39,9 @@
     "correctAnswer": "Richtige Antwort",
     "averageGuess": "Schnitt der Schätzungen: {{value}}"
   },
+  "mathematik": {
+    "correctAnswer": "Korrekte Antwort"
+  },
   "pollThanks": "Danke für deine Stimme",
   "streak": {
     "bonus": "Bonus ×2",

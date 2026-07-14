@@ -35,6 +35,9 @@
     "correctAnswer": "Risposta corretta",
     "averageGuess": "Media delle stime: {{value}}"
   },
+  "mathematik": {
+    "correctAnswer": "Risposta Corretta"
+  },
   "pollThanks": "Grazie per il tuo voto",
   "usernameLabel": "Soprannome",
   "usernameRequired": "Inserisci un soprannome",

@@ -36,6 +36,9 @@
     "correctAnswer": "Bonne réponse",
     "averageGuess": "Moyenne des estimations : {{value}}"
   },
+  "mathematik": {
+    "correctAnswer": "Réponse Correcte"
+  },
   "streak": {
     "bonus": "Bonus ×2",
     "firstCorrect": "Le plus rapide +100",

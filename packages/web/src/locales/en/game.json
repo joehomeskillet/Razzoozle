@@ -45,6 +45,9 @@
     "correctAnswer": "Correct answer",
     "averageGuess": "Average guess: {{value}}"
   },
+  "mathematik": {
+    "correctAnswer": "Correct answer"
+  },
   "pollThanks": "Thanks for your vote",
   "tier": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamant": "Diamond" },
   "locked": "locked",

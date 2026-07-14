@@ -253,6 +253,10 @@ pub struct ShowResponsesData {
     #[ts(optional)]
     pub correct: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "correctAnswer")]
+    #[ts(optional)]
+    pub correct_answer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub unit: Option<String>,
     // WP-H gap 4: Node spreads the FULL Question object (`...question`) onto
