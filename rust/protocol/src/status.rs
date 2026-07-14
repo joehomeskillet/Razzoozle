@@ -173,6 +173,18 @@ pub struct SelectAnswerData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub submitted_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub sentence: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub tokens: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub pos_set: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "disabledTokens")]
+    #[ts(optional)]
+    pub disabled_tokens: Option<Vec<i32>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
