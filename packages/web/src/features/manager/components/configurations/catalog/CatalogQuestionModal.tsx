@@ -112,14 +112,14 @@ export const CatalogQuestionModal = ({
     mode === "edit" && editingEntry ? `edit-${editingEntry.id}` : "add"
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-3 sm:px-6 lg:px-8 py-3 sm:py-6 lg:py-8">
       <section
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="catalog-question-modal-title"
         onKeyDown={handleFocusTrap}
-        className="flex max-h-[88svh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl xl:max-w-5xl"
+        className="flex max-h-[88svh] min-h-0 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
