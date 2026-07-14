@@ -76,7 +76,7 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>, me: Option<i64>) -> Vec<ser
              FROM quizzes q \
              LEFT JOIN quiz_labels ql ON q.id = ql.quiz_id \
              WHERE ($1::bigint IS NULL OR q.owner_id = $1) \
-             GROUP BY q.id, q.subject, q.archived, q.questions \
+             GROUP BY q.id \
              ORDER BY q.id"
         )
         .bind(me)

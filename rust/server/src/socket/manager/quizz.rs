@@ -165,24 +165,6 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
 
-                        // Carry quiz_labels to new ID on rename (IDOR-hardened):
-                        // 1. Check caller owns the old quiz before carrying over
-                        // 2. Pass me to carry_over for scoped UPDATE in SQL
-                        if let Some(old) = old_id {
-                            if old != id {
-                                // Verify ownership before carry-over (IDOR protection)
-                                if db::quiz_is_visible(&ctx.db_pool, old, me).await {
-                                    if let Err(e) = db::carry_over_quiz_labels(&ctx.db_pool, old, &id, me).await {
-                                        tracing::warn!("Failed to carry over labels on rename: {}", e);
-                                        // Continue anyway — label carry-over is not fatal
-                                    }
-                                } else {
-                                    tracing::warn!("Attempted label carry-over from unowned quiz: oldId={}", old);
-                                    // Skip carry-over for unowned quiz (IDOR mitigation)
-                                }
-                            }
-                        }
-
                         match db::upsert_quiz(
                             &ctx.db_pool,
                             &id,
@@ -195,6 +177,20 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                         .await
                         {
                             Ok(n) if n > 0 => {
+                                // Carry quiz_labels to new ID on rename (AFTER confirmed save):
+                                // Check caller owns the old quiz before carrying over (IDOR protection)
+                                if let Some(old) = old_id {
+                                    if old != id {
+                                        if db::quiz_is_visible(&ctx.db_pool, old, me).await {
+                                            if let Err(e) = db::carry_over_quiz_labels(&ctx.db_pool, old, &id, me).await {
+                                                tracing::warn!("Failed to carry over labels on rename: {}", e);
+                                            }
+                                        } else {
+                                            tracing::warn!("Attempted label carry-over from unowned quiz: oldId={}", old);
+                                        }
+                                    }
+                                }
+
                                 // Reload registry from DB (unfiltered — runtime needs all quizzes)
                                 {
                                     let quizzes = db::get_quizzes(&ctx.db_pool, None).await;
