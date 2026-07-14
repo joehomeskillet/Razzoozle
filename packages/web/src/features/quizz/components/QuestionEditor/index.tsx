@@ -6,8 +6,8 @@ import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/Questi
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
-import { QuestionEditorMathe } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
-import { QuestionEditorWortarten } from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
+import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
+import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode } from "react"
 

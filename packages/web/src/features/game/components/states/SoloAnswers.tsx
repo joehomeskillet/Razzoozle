@@ -86,8 +86,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isMultiSelect = question.type === "multiple-select"
   const isTypeAnswer = question.type === "type-answer"
 const isSentenceBuilder = question.type === "sentence-builder" && question.shuffledChunks?.length
-  const isMathematik = type === "mathematik"
-  const isWortarten = type === "wortarten"
+  const isMathematik = question.type === "mathematik"
+  const isWortarten = question.type === "wortarten"
 
   const [sliderValue, setSliderValue] = useState(
     isSlider ? Math.round(((question.min ?? 0) + (question.max ?? 100)) / 2) : 0,

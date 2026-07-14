@@ -1,5 +1,6 @@
 import type { QuestionType } from "@razzoozle/common/types/game"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import clsx from "clsx"
 import {
   BarChart3,
@@ -91,6 +92,19 @@ const QuestionEditorType = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
   const type: QuestionType = currentQuestion.type ?? "choice"
+  
+  // Gate Mathematik and Wortarten visibility on klassenEnabled
+  let availableTypes = TYPES
+  try {
+    const config = useConfig()
+    const klassenEnabled = config?.klassenEnabled ?? false
+    if (!klassenEnabled) {
+      availableTypes = TYPES.filter(tp => tp.key !== "mathematik" && tp.key !== "wortarten")
+    }
+  } catch {
+    // useConfig not available in this context (e.g., catalog); show all types as fallback
+    availableTypes = TYPES
+  }
 
   // Clear fields that don't belong to the target type (avoid stale data).
   const SLIDER_CLEAR = {
@@ -175,7 +189,10 @@ const QuestionEditorType = () => {
         acceptedAnswers: undefined,
         matchMode: undefined,
         chunks: undefined,
-        ...SLIDER_CLEAR,
+        min: undefined,
+        max: undefined,
+        step: undefined,
+        unit: undefined,
       })
     } else if (next === "wortarten") {
       updateQuestion(currentIndex, {
@@ -188,7 +205,11 @@ const QuestionEditorType = () => {
         acceptedAnswers: undefined,
         matchMode: undefined,
         chunks: undefined,
-        ...SLIDER_CLEAR,
+        min: undefined,
+        max: undefined,
+        correct: undefined,
+        step: undefined,
+        unit: undefined,
       })
     } else {
       updateQuestion(currentIndex, {
@@ -212,10 +233,10 @@ const QuestionEditorType = () => {
     else return
 
     e.preventDefault()
-    const currentIdx = TYPES.findIndex((tp) => tp.key === type)
+    const currentIdx = availableTypes.findIndex((tp) => tp.key === type)
     const fallbackIdx = currentIdx === -1 ? 0 : currentIdx
-    const nextIdx = (fallbackIdx + delta + TYPES.length) % TYPES.length
-    setType(TYPES[nextIdx].key)
+    const nextIdx = (fallbackIdx + delta + availableTypes.length) % availableTypes.length
+    setType(availableTypes[nextIdx].key)
   }
 
   // Bonus and practice are mutually exclusive (practice awards no points).
@@ -245,7 +266,7 @@ const QuestionEditorType = () => {
         aria-label={t("quizz:type.choice")}
         className="grid grid-cols-2 gap-2 sm:grid-cols-3"
       >
-        {TYPES.map((tp) => {
+        {availableTypes.map((tp) => {
           const selected = type === tp.key
           const Icon = tp.icon
           return (

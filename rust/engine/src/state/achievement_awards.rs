@@ -266,6 +266,11 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
+        tolerance: None,
+        decimals: None,
+        sentence: None,
+        tokens: None,
+        pos_set: None,
         };
 
         let row = AwardRow {
@@ -320,6 +325,11 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
+        tolerance: None,
+        decimals: None,
+        sentence: None,
+        tokens: None,
+        pos_set: None,
         };
 
         let row = AwardRow {
