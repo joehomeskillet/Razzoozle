@@ -47,8 +47,9 @@ export const useLabelManager = () => {
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useEvent(EVENTS.LABEL.ERROR as any, (message: string) => {
-    toast.error(t(message))
+  useEvent(EVENTS.LABEL.ERROR as any, (payload: string | { message?: string }) => {
+    const code = typeof payload === "string" ? payload : payload?.message
+    toast.error(t(`manager:labels.errors.${code}`, { defaultValue: t("manager:labels.errors.generic") }))
   })
 
   // Initial load — gated on isConnected (namespace-connected + authed)
