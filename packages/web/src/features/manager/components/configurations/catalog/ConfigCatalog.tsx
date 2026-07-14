@@ -1,5 +1,4 @@
 import { EVENTS } from "@razzoozle/common/constants"
-import type { CatalogEntry } from "@razzoozle/common/types/catalog"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
@@ -22,7 +21,7 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import { CatalogQuestionModal } from "./CatalogQuestionModal"
 import { TYPE_LABEL_KEY } from "./constants"
-import type { CatalogModalMode } from "./types"
+import type { CatalogEntry, CatalogModalMode } from "./types"
 import { formatDate } from "./utils"
 
 type CatalogScope = "own" | "global" | "all"
@@ -116,7 +115,6 @@ const ConfigCatalog = () => {
     // Filter by selected label
     if (selectedLabelId !== null && klassenEnabled) {
       results = results.filter((entry) => {
-        // @ts-expect-error labelIds may not be in type yet but server sends it
         const entryLabelIds = entry.labelIds ?? []
         return entryLabelIds.includes(selectedLabelId)
       })
@@ -261,7 +259,6 @@ const ConfigCatalog = () => {
           {filteredEntries.map((entry, index) => {
             const type = entry.question.type ?? "choice"
             const source = entry.source ?? "manual"
-            // @ts-expect-error labelIds may not be in type yet but server sends it
             const entryLabelIds = entry.labelIds ?? []
 
             return (

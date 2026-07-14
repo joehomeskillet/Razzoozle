@@ -153,7 +153,7 @@ export const CatalogQuestionForm = ({
             </div>
           </section>
 
-          {klassenEnabled && labels.length > 0 && (
+          {klassenEnabled && labels.length > 0 && editingEntry?.id && (
             <section className="flex flex-col gap-2">
               <label className="w-fit text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}

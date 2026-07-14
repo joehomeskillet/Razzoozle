@@ -23,7 +23,6 @@ export const CatalogQuestionModal = ({
   useEffect(() => {
     if (open) {
       setTagsValue((editingEntry?.tags ?? []).join(", "))
-      // @ts-expect-error labelIds may not be in type yet
       setSelectedLabelIds((editingEntry?.labelIds ?? []))
     }
   }, [editingEntry, open])

@@ -1,6 +1,11 @@
-import type { CatalogEntry } from "@razzoozle/common/types/catalog"
+import type { CatalogEntry as CommonCatalogEntry } from "@razzoozle/common/types/catalog"
 
 export type CatalogModalMode = "add" | "edit"
+
+// Local extension of CatalogEntry to include labelIds (received from server)
+export interface CatalogEntry extends CommonCatalogEntry {
+  labelIds?: number[]
+}
 
 export interface CatalogQuestionFormProps {
   mode: CatalogModalMode
