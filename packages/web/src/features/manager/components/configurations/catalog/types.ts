@@ -9,6 +9,8 @@ export interface CatalogQuestionFormProps {
   onTagsChange: (value: string) => void
   onClose: () => void
   onSaveStart: (mode: CatalogModalMode) => void
+  selectedLabelIds?: number[]
+  onLabelIdsChange?: (ids: number[]) => void
 }
 
 export interface CatalogQuestionModalProps {

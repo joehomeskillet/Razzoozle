@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
@@ -11,6 +12,8 @@ import QuestionEditorType from "@razzoozle/web/features/quizz/components/Questio
 import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
 import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
 import { useTranslation } from "react-i18next"
 import type { CatalogQuestionFormProps } from "./types"
 import { parseTags } from "./utils"
@@ -22,14 +25,26 @@ export const CatalogQuestionForm = ({
   onTagsChange,
   onClose,
   onSaveStart,
+  selectedLabelIds = [],
+  onLabelIdsChange,
 }: CatalogQuestionFormProps) => {
   const { currentQuestion } = useQuizzEditor()
   const { socket } = useSocket()
   const { t } = useTranslation()
+  const { labels } = useLabelManager()
+  const klassenEnabled = useManagerStore((s) => s.config?.klassenEnabled ?? false)
+
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
-const isMathematik = currentQuestion.type === "mathematik"
-const isWortarten = currentQuestion.type === "wortarten"
+  const isMathematik = currentQuestion.type === "mathematik"
+  const isWortarten = currentQuestion.type === "wortarten"
+
+  const handleLabelToggle = (labelId: number) => {
+    const newIds = selectedLabelIds.includes(labelId)
+      ? selectedLabelIds.filter((id) => id !== labelId)
+      : [...selectedLabelIds, labelId]
+    onLabelIdsChange?.(newIds)
+  }
 
   const handleSave = () => {
     const { id: _id, ...question } = currentQuestion
@@ -45,6 +60,15 @@ const isWortarten = currentQuestion.type === "wortarten"
         tags: payloadTags,
       })
 
+      // Assign labels if enabled and changed
+      if (klassenEnabled && selectedLabelIds.length > 0) {
+        socket.emit(EVENTS.LABEL.ASSIGN, {
+          entityType: "catalog",
+          entityId: editingEntry.id,
+          labelIds: selectedLabelIds,
+        })
+      }
+
       return
     }
 
@@ -53,6 +77,15 @@ const isWortarten = currentQuestion.type === "wortarten"
       tags: payloadTags,
       source: "manual",
     })
+
+    // Assign labels immediately after add if enabled
+    if (klassenEnabled && selectedLabelIds.length > 0 && editingEntry?.id) {
+      socket.emit(EVENTS.LABEL.ASSIGN, {
+        entityType: "catalog",
+        entityId: editingEntry.id,
+        labelIds: selectedLabelIds,
+      })
+    }
   }
 
   return (
@@ -119,6 +152,41 @@ const isWortarten = currentQuestion.type === "wortarten"
               <QuestionEditorConfig />
             </div>
           </section>
+
+          {klassenEnabled && labels.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <label className="w-fit text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
+              </label>
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap gap-2">
+                  {labels.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {t("manager:labels.noLabels", { defaultValue: "Keine Labels verfügbar" })}
+                    </p>
+                  ) : (
+                    labels.map((label) => {
+                      const isSelected = selectedLabelIds.includes(label.id)
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          onClick={() => handleLabelToggle(label.id)}
+                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity ${
+                            isSelected
+                              ? "opacity-100 ring-2 ring-offset-2 ring-[var(--color-primary)]"
+                              : "opacity-50 hover:opacity-75"
+                          }`}
+                        >
+                          <LabelChip label={label} />
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
