@@ -204,14 +204,17 @@ const Result = ({
           {submittedChunks.length > 0 ? (
             <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
               {submittedChunks.map((chunk, idx) => {
-                const isCorrect = chunk === correctChunks[idx]
+                const isDisabled = correctChunks[idx] === ""
+                const isCorrect = !isDisabled && chunk === correctChunks[idx]
 
                 return (
                   <span
                     key={`${chunk}-${idx}`}
                     className={clsx(
                       "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
-                      isCorrect
+                      isDisabled
+                        ? "bg-[var(--tier-silver)]"
+                        : isCorrect
                         ? "bg-[var(--state-correct)]"
                         : "bg-[var(--state-wrong)]",
                     )}
@@ -230,7 +233,7 @@ const Result = ({
               })}
             </p>
             <p className="text-lg font-bold text-[color:var(--game-fg)]">
-              {correctChunks.join(" ")}
+              {correctChunks.filter((c) => c !== "").join(" ")}
             </p>
           </div>
         </motion.div>
