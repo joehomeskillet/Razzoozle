@@ -223,6 +223,33 @@ pub async fn get_label_ids(
     }
 }
 
+/// Carry labels from one quiz to another (on rename). Moves all labels from old_id to new_id,
+/// before old_id is replaced/deleted. No-op if old_id == new_id or old_id doesn't exist.
+pub async fn carry_over_quiz_labels(
+    pool: &Option<PgPool>,
+    old_id: &str,
+    new_id: &str,
+) -> Result<(), String> {
+    if old_id == new_id {
+        return Ok(()); // No-op if IDs are the same
+    }
+
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // Carry quiz_labels to new ID (before old record is replaced/deleted)
+    sqlx::query("UPDATE quiz_labels SET quiz_id = $1 WHERE quiz_id = $2")
+        .bind(new_id)
+        .bind(old_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 /// Check if a quiz is visible/owned by the user.
 /// `me`: None = admin (sees all); Some(id) = only own.
 pub async fn quiz_is_visible(pool: &Option<PgPool>, quiz_id: &str, me: Option<i64>) -> bool {
