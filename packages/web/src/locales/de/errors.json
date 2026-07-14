@@ -165,6 +165,27 @@
     "deleteFailed": "Frage konnte nicht entfernt werden.",
     "invalid": "Die Frage ist unvollständig."
   },
+  "class": {
+    "invalidName": "Ungültiger Klassenname",
+    "createFailed": "Klasse konnte nicht erstellt werden. Möglicherweise existiert bereits eine Klasse mit diesem Namen.",
+    "invalidId": "Ungültige Klassen-ID",
+    "updateFailed": "Klasse konnte nicht aktualisiert werden. Möglicherweise existiert bereits eine Klasse mit diesem Namen.",
+    "deleteFailed": "Klasse konnte nicht gelöscht werden",
+    "invalidClassId": "Ungültige Klassen-ID",
+    "addStudentFailed": "Schüler konnte nicht hinzugefügt werden",
+    "removeStudentFailed": "Schüler konnte nicht entfernt werden",
+    "updateStudentFailed": "Schülername konnte nicht aktualisiert werden",
+    "unauthorized": "Keine Berechtigung für diese Aktion",
+    "invalidStudentId": "Ungültige Schüler-ID",
+    "moveStudentFailed": "Schüler konnte nicht zur Klasse hinzugefügt werden",
+    "removeFromClassFailed": "Schüler konnte nicht aus der Klasse entfernt werden",
+    "getStudentClassesFailed": "Klassen des Schülers konnten nicht geladen werden",
+    "listAllStudentsFailed": "Schülerliste konnte nicht geladen werden",
+    "createStudentFailed": "Schüler konnte nicht angelegt werden",
+    "invalidBirthdate": "Ungültiges Geburtsdatum",
+    "studentPinFailed": "Code konnte nicht geladen werden",
+    "regenPinFailed": "Neuer Code konnte nicht generiert werden"
+  },
   "ai": {
     "notConfigured": "Kein KI-Anbieter konfiguriert.",
     "noKey": "Für diesen Anbieter ist kein API-Schlüssel hinterlegt.",

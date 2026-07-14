@@ -753,7 +753,13 @@
     "deleteStudentConfirm": "Möchtest du \"{{name}}\" wirklich aus der Klasse entfernen?",
     "studentRemoved": "Schüler entfernt",
     "noStudents": "Keine Schüler in dieser Klasse",
-    "errorEmptyName": "Der Name darf nicht leer sein"
+    "errorEmptyName": "Der Name darf nicht leer sein",
+    "pickerTitle": "Schüler hinzufügen",
+    "pickerSearchPlaceholder": "Schüler suchen …",
+    "pickerEmpty": "Noch keine Schüler vorhanden. Lege neue Schüler in der Schülerverwaltung an.",
+    "pickerAlreadyIn": "Bereits in dieser Klasse",
+    "pickerHint": "Wähle Schüler aus, die der Klasse \"{{className}}\" hinzugefügt werden sollen.",
+    "pickerNoResults": "Keine Schüler gefunden"
   },
   "users": {
     "title": "Nutzerverwaltung",
@@ -810,6 +816,30 @@
   "schueler": {
     "title": "Schülerverwaltung",
     "description": "Verwalte Schüler klassenübergreifend und sehe deren Spielergebnisse im Überblick.",
-    "empty": "Noch keine Schüler erfasst. Lege Schüler in der Klassenverwaltung an."
+    "empty": "Noch keine Schüler erfasst. Lege Schüler in der Klassenverwaltung an.",
+    "create": "Schüler anlegen",
+    "createTitle": "Schüler anlegen",
+    "createDescription": "Lege einen neuen Schüler an und weise ihn optional direkt einer oder mehreren Klassen zu.",
+    "namePlaceholder": "Name des Schülers",
+    "birthdateLabel": "Geburtsdatum (optional)",
+    "selectClasses": "Klassen (optional)",
+    "noClasses": "Noch keine Klassen vorhanden",
+    "created": "Schüler angelegt",
+    "pinTitle": "Anmelde-Code",
+    "pinHint": "Notiere dir den Code oder zeige ihn dem Kind — es meldet sich damit im Spiel an.",
+    "showPin": "Code anzeigen",
+    "regenPin": "Neu generieren",
+    "regenConfirm": "Möchtest du wirklich einen neuen Code generieren? Der alte Code wird ungültig.",
+    "regenerated": "Neuer Code generiert",
+    "addToClass": "+ Klasse",
+    "removeFromClassTitle": "Aus Klasse entfernen",
+    "removeFromClassConfirm": "Möchtest du \"{{name}}\" wirklich aus der Klasse \"{{className}}\" entfernen?",
+    "removedFromClass": "Aus der Klasse entfernt",
+    "deleteTitle": "Schüler löschen",
+    "deleteConfirm": "Möchtest du \"{{name}}\" wirklich endgültig löschen? Alle Klassen-Zuordnungen gehen dabei verloren.",
+    "deleted": "Schüler gelöscht",
+    "search": "Schüler suchen",
+    "searchPlaceholder": "Nach Name oder Klasse suchen …",
+    "noResults": "Keine Schüler gefunden"
   }
 }

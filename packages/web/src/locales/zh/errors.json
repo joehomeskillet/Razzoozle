@@ -163,6 +163,27 @@
     "deleteFailed": "无法移除该题目。",
     "invalid": "该题目不完整。"
   },
+  "class": {
+    "invalidName": "班级名称无效",
+    "createFailed": "无法创建班级。可能已存在同名班级。",
+    "invalidId": "班级ID无效",
+    "updateFailed": "无法更新班级。可能已存在同名班级。",
+    "deleteFailed": "无法删除班级",
+    "invalidClassId": "班级ID无效",
+    "addStudentFailed": "无法添加学生",
+    "removeStudentFailed": "无法删除学生",
+    "updateStudentFailed": "无法更新学生姓名",
+    "unauthorized": "你无权执行此操作",
+    "invalidStudentId": "学生ID无效",
+    "moveStudentFailed": "无法将学生添加到班级",
+    "removeFromClassFailed": "无法将学生从班级中移除",
+    "getStudentClassesFailed": "无法加载学生的班级",
+    "listAllStudentsFailed": "无法加载学生列表",
+    "createStudentFailed": "无法创建学生",
+    "invalidBirthdate": "出生日期无效",
+    "studentPinFailed": "无法加载登录码",
+    "regenPinFailed": "无法生成新的登录码"
+  },
   "ai": {
     "notConfigured": "尚未配置 AI 提供商。",
     "noKey": "未为此提供商设置 API 密钥。",

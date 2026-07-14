@@ -19,6 +19,22 @@ interface Student {
   id: number
   displayName: string
   createdAt?: string
+  // ADDENDUM (birthdate): optional — only present once the parallel contract
+  // WP lands the field on the wire. Structurally optional so this hook
+  // compiles cleanly against today's contract and picks it up for free the
+  // moment the server starts sending it.
+  birthdate?: string | null
+}
+
+// All of the manager's own students (across every class), used to feed the
+// "Schüler hinzufügen" picker — the source of truth is ALL_STUDENTS_DATA, not
+// the per-class `students` arrays (which are only populated once a row has
+// been expanded).
+export interface AllStudent {
+  id: number
+  displayName: string
+  classes: Array<{ id: number; name: string }>
+  birthdate?: string | null
 }
 
 export const useClassManager = () => {
@@ -26,6 +42,7 @@ export const useClassManager = () => {
   const { t } = useTranslation()
 
   const [classes, setClasses] = useState<Class[]>([])
+  const [allStudents, setAllStudents] = useState<AllStudent[]>([])
   const [search, setSearch] = useState("")
 
   // Pending actions for confirmation dialogs
@@ -103,7 +120,14 @@ export const useClassManager = () => {
     toast.success(t("manager:classes.deleted"))
   })
 
-  // Listen for student additions
+  // Listen for the manager's full roster (feeds the "Schüler hinzufügen" picker).
+  useEvent(EVENTS.CLASS.ALL_STUDENTS_DATA, (data: { students: AllStudent[] }) => {
+    setAllStudents(data.students)
+  })
+
+  // Listen for student additions. Also patches the collapsed row's cached
+  // studentCount — previously only the expanded `students` array grew, so a
+  // collapsed row kept showing a stale count.
   useEvent(
     EVENTS.CLASS.STUDENT_ADDED,
     (data: { id: number; displayName: string; classId: number }) => {
@@ -112,6 +136,7 @@ export const useClassManager = () => {
           c.id === data.classId
             ? {
                 ...c,
+                studentCount: (c.studentCount ?? (c.students ?? []).length) + 1,
                 students: [
                   ...(c.students ?? []),
                   {
@@ -128,41 +153,86 @@ export const useClassManager = () => {
     }
   )
 
-  // Listen for student removals
+  // Listen for student removals. Decrements studentCount for whichever class
+  // actually had the student loaded (same stale-count bug as STUDENT_ADDED).
   useEvent(EVENTS.CLASS.STUDENT_REMOVED, (data: { studentId: number }) => {
     setClasses((prev) =>
-      prev.map((c) => ({
-        ...c,
-        students: (c.students ?? []).filter((s) => s.id !== data.studentId),
-      }))
+      prev.map((c) => {
+        const hadStudent = (c.students ?? []).some((s) => s.id === data.studentId)
+        return {
+          ...c,
+          studentCount: hadStudent
+            ? Math.max(0, (c.studentCount ?? (c.students ?? []).length) - 1)
+            : c.studentCount,
+          students: (c.students ?? []).filter((s) => s.id !== data.studentId),
+        }
+      })
     )
     setPendingDeleteStudent(null)
     toast.success(t("manager:classes.studentRemoved"))
   })
 
+  // Listen for a student joining an ADDITIONAL class via the picker
+  // (MOVE_STUDENT). Increments the target class's studentCount and, if that
+  // row is already expanded, appends the student to its loaded list too.
+  useEvent(
+    EVENTS.CLASS.STUDENT_MOVED,
+    (data: { studentId: number; classId: number; joinedAt: string }) => {
+      setClasses((prev) =>
+        prev.map((c) => {
+          if (c.id !== data.classId) {
+            return c
+          }
+          if (c.students === undefined) {
+            return { ...c, studentCount: (c.studentCount ?? 0) + 1 }
+          }
+          if (c.students.some((s) => s.id === data.studentId)) {
+            return c
+          }
+          const displayName =
+            allStudents.find((s) => s.id === data.studentId)?.displayName ?? ""
+          return {
+            ...c,
+            studentCount: (c.studentCount ?? c.students.length) + 1,
+            students: [
+              ...c.students,
+              { id: data.studentId, displayName, createdAt: data.joinedAt },
+            ],
+          }
+        })
+      )
+    }
+  )
+
   // Listen for student updates
-  useEvent(EVENTS.CLASS.STUDENT_UPDATED, (data: { id: number; displayName: string }) => {
-    setClasses((prev) =>
-      prev.map((c) => ({
-        ...c,
-        students: (c.students ?? []).map((s) =>
-          s.id === data.id ? { ...s, displayName: data.displayName } : s
-        ),
-      }))
-    )
-    toast.success(t("manager:classes.studentUpdated"))
-  })
+  useEvent(
+    EVENTS.CLASS.STUDENT_UPDATED,
+    (data: { id: number; displayName: string; birthdate?: string | null }) => {
+      setClasses((prev) =>
+        prev.map((c) => ({
+          ...c,
+          students: (c.students ?? []).map((s) =>
+            s.id === data.id
+              ? { ...s, displayName: data.displayName, birthdate: data.birthdate }
+              : s
+          ),
+        }))
+      )
+      toast.success(t("manager:classes.studentUpdated"))
+    }
+  )
 
   // Listen for errors
   useEvent(EVENTS.CLASS.ERROR, (message: string) => {
     toast.error(t(message))
   })
 
-  // Request class list when namespace connects and authenticates
+  // Request class list + full roster when namespace connects and authenticates
   useEffect(() => {
     if (!isConnected) return
 
     socket.emit(EVENTS.CLASS.LIST)
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
     // The socket may connect before this effect subscribes; gating on
     // isConnected (namespace-connected + authed) and re-emitting on each
     // isConnected flip is the correct load trigger (mirrors manager/index.tsx).
@@ -196,13 +266,14 @@ export const useClassManager = () => {
     }
   }
 
-  const handleAddStudent = (classId: number, displayName: string): void => {
-    if (!displayName.trim()) {
-      toast.error(t("manager:classes.errorEmptyName"))
-      return
-    }
-    socket.emit(EVENTS.CLASS.ADD_STUDENT, { classId, displayName })
-  }
+  // Picker (replaces the old free-text add-student dialog): adds an EXISTING
+  // student to an additional class via MOVE_STUDENT.
+  const handleMoveStudent = useCallback(
+    (studentId: number, classId: number): void => {
+      socket.emit(EVENTS.CLASS.MOVE_STUDENT, { studentId, classId })
+    },
+    [socket],
+  )
 
   const handleDeleteStudent = (): void => {
     if (pendingDeleteStudent) {
@@ -210,16 +281,29 @@ export const useClassManager = () => {
     }
   }
 
-  const handleUpdateStudent = (studentId: number, displayName: string): void => {
+  // ADDENDUM (birthdate): built as a typed variable (not an inline object
+  // literal) so the extra optional field is structurally assignable to
+  // today's narrower UPDATE_STUDENT payload type without an `as`/`any` cast.
+  const handleUpdateStudent = (
+    studentId: number,
+    displayName: string,
+    birthdate?: string,
+  ): void => {
     if (!displayName.trim()) {
       toast.error(t("manager:classes.errorEmptyName"))
       return
     }
-    socket.emit(EVENTS.CLASS.UPDATE_STUDENT, { id: studentId, displayName })
+    const payload: { id: number; displayName: string; birthdate?: string } = {
+      id: studentId,
+      displayName,
+      ...(birthdate ? { birthdate } : {}),
+    }
+    socket.emit(EVENTS.CLASS.UPDATE_STUDENT, payload)
   }
 
   return {
     classes: filteredClasses,
+    allStudents,
     search,
     setSearch,
     pendingDeleteClass,
@@ -229,7 +313,7 @@ export const useClassManager = () => {
     handleCreateClass,
     handleUpdateClass,
     handleDeleteClass,
-    handleAddStudent,
+    handleMoveStudent,
     handleDeleteStudent,
     handleUpdateStudent,
     handleFetchStudents,

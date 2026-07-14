@@ -165,6 +165,27 @@
     "deleteFailed": "Could not remove the question.",
     "invalid": "The question is incomplete."
   },
+  "class": {
+    "invalidName": "Invalid class name",
+    "createFailed": "Could not create the class. A class with this name may already exist.",
+    "invalidId": "Invalid class ID",
+    "updateFailed": "Could not update the class. A class with this name may already exist.",
+    "deleteFailed": "Could not delete the class",
+    "invalidClassId": "Invalid class ID",
+    "addStudentFailed": "Could not add the student",
+    "removeStudentFailed": "Could not remove the student",
+    "updateStudentFailed": "Could not update the student's name",
+    "unauthorized": "Not authorized to perform this action",
+    "invalidStudentId": "Invalid student ID",
+    "moveStudentFailed": "Could not add the student to the class",
+    "removeFromClassFailed": "Could not remove the student from the class",
+    "getStudentClassesFailed": "Could not load the student's classes",
+    "listAllStudentsFailed": "Could not load the student list",
+    "createStudentFailed": "Could not create the student",
+    "invalidBirthdate": "Invalid date of birth",
+    "studentPinFailed": "Could not load the code",
+    "regenPinFailed": "Could not generate a new code"
+  },
   "ai": {
     "notConfigured": "No AI provider configured.",
     "noKey": "No API key set for this provider.",

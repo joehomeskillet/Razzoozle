@@ -753,7 +753,13 @@
     "deleteStudentConfirm": "Voulez-vous vraiment supprimer \"{{name}}\" de la classe?",
     "studentRemoved": "Élève supprimé",
     "noStudents": "Pas d'élèves dans cette classe",
-    "errorEmptyName": "Le nom ne peut pas être vide"
+    "errorEmptyName": "Le nom ne peut pas être vide",
+    "pickerTitle": "Ajouter un élève",
+    "pickerSearchPlaceholder": "Rechercher des élèves …",
+    "pickerEmpty": "Aucun élève pour le moment. Crée de nouveaux élèves dans la gestion des élèves.",
+    "pickerAlreadyIn": "Déjà dans cette classe",
+    "pickerHint": "Choisis les élèves à ajouter à la classe \"{{className}}\".",
+    "pickerNoResults": "Aucun élève trouvé"
   },
   "users": {
     "title": "Gestion des Utilisateurs",
@@ -810,6 +816,30 @@
   "schueler": {
     "title": "Gestion des Élèves",
     "description": "Gérez les élèves dans les classes et consultez leurs résultats de jeu en un coup d'œil.",
-    "empty": "Aucun élève créé pour l'instant. Ajoutez des élèves dans la gestion des classes."
+    "empty": "Aucun élève créé pour l'instant. Ajoutez des élèves dans la gestion des classes.",
+    "create": "Créer un élève",
+    "createTitle": "Créer un élève",
+    "createDescription": "Crée un nouvel élève et affecte-le éventuellement à une ou plusieurs classes tout de suite.",
+    "namePlaceholder": "Nom de l'élève",
+    "birthdateLabel": "Date de naissance (optionnel)",
+    "selectClasses": "Classes (optionnel)",
+    "noClasses": "Aucune classe pour le moment",
+    "created": "Élève créé",
+    "pinTitle": "Code de connexion",
+    "pinHint": "Note le code ou montre-le à l'enfant — il l'utilise pour se connecter au jeu.",
+    "showPin": "Afficher le code",
+    "regenPin": "Générer un nouveau code",
+    "regenConfirm": "Veux-tu vraiment générer un nouveau code ? L'ancien code ne fonctionnera plus.",
+    "regenerated": "Nouveau code généré",
+    "addToClass": "+ Classe",
+    "removeFromClassTitle": "Retirer de la classe",
+    "removeFromClassConfirm": "Veux-tu vraiment retirer \"{{name}}\" de la classe \"{{className}}\" ?",
+    "removedFromClass": "Retiré de la classe",
+    "deleteTitle": "Supprimer l'élève",
+    "deleteConfirm": "Veux-tu vraiment supprimer définitivement \"{{name}}\" ? Toutes les affectations de classe seront perdues.",
+    "deleted": "Élève supprimé",
+    "search": "Rechercher un élève",
+    "searchPlaceholder": "Rechercher par nom ou classe …",
+    "noResults": "Aucun élève trouvé"
   }
 }

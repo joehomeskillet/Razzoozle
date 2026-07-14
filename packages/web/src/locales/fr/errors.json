@@ -164,6 +164,27 @@
     "deleteFailed": "Impossible de retirer la question.",
     "invalid": "La question est incomplète."
   },
+  "class": {
+    "invalidName": "Nom de classe invalide",
+    "createFailed": "Impossible de créer la classe. Une classe portant ce nom existe peut-être déjà.",
+    "invalidId": "ID de classe invalide",
+    "updateFailed": "Impossible de mettre à jour la classe. Une classe portant ce nom existe peut-être déjà.",
+    "deleteFailed": "Impossible de supprimer la classe",
+    "invalidClassId": "ID de classe invalide",
+    "addStudentFailed": "Impossible d'ajouter l'élève",
+    "removeStudentFailed": "Impossible de supprimer l'élève",
+    "updateStudentFailed": "Impossible de mettre à jour le nom de l'élève",
+    "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action",
+    "invalidStudentId": "ID d'élève invalide",
+    "moveStudentFailed": "Impossible d'ajouter l'élève à la classe",
+    "removeFromClassFailed": "Impossible de supprimer l'élève de la classe",
+    "getStudentClassesFailed": "Impossible de charger les classes de l'élève",
+    "listAllStudentsFailed": "Impossible de charger la liste des élèves",
+    "createStudentFailed": "Impossible de créer l'élève",
+    "invalidBirthdate": "Date de naissance invalide",
+    "studentPinFailed": "Impossible de charger le code",
+    "regenPinFailed": "Impossible de générer un nouveau code"
+  },
   "ai": {
     "notConfigured": "Aucun fournisseur d'IA configuré.",
     "noKey": "Aucune clé d'API définie pour ce fournisseur.",

@@ -753,7 +753,13 @@
     "deleteStudentConfirm": "¿Deseas eliminar \"{{name}}\" de la clase?",
     "studentRemoved": "Estudiante eliminado",
     "noStudents": "No hay estudiantes en esta clase",
-    "errorEmptyName": "El nombre no puede estar vacío"
+    "errorEmptyName": "El nombre no puede estar vacío",
+    "pickerTitle": "Agregar estudiante",
+    "pickerSearchPlaceholder": "Buscar estudiantes …",
+    "pickerEmpty": "Aún no hay estudiantes. Crea nuevos estudiantes en la gestión de estudiantes.",
+    "pickerAlreadyIn": "Ya está en esta clase",
+    "pickerHint": "Elige los estudiantes que deseas agregar a la clase \"{{className}}\".",
+    "pickerNoResults": "No se encontraron estudiantes"
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -810,6 +816,30 @@
   "schueler": {
     "title": "Gestión de Estudiantes",
     "description": "Administra estudiantes entre clases y ve sus resultados de juego de un vistazo.",
-    "empty": "Aún no hay estudiantes creados. Añade estudiantes en la gestión de clases."
+    "empty": "Aún no hay estudiantes creados. Añade estudiantes en la gestión de clases.",
+    "create": "Crear estudiante",
+    "createTitle": "Crear estudiante",
+    "createDescription": "Crea un nuevo estudiante y asígnalo opcionalmente a una o más clases de inmediato.",
+    "namePlaceholder": "Nombre del estudiante",
+    "birthdateLabel": "Fecha de nacimiento (opcional)",
+    "selectClasses": "Clases (opcional)",
+    "noClasses": "Aún no hay clases",
+    "created": "Estudiante creado",
+    "pinTitle": "Código de acceso",
+    "pinHint": "Anota el código o muéstraselo al niño — lo usará para iniciar sesión en el juego.",
+    "showPin": "Mostrar código",
+    "regenPin": "Generar nuevo código",
+    "regenConfirm": "¿Deseas generar un nuevo código? El código anterior dejará de funcionar.",
+    "regenerated": "Nuevo código generado",
+    "addToClass": "+ Clase",
+    "removeFromClassTitle": "Quitar de la clase",
+    "removeFromClassConfirm": "¿Deseas quitar a \"{{name}}\" de la clase \"{{className}}\"?",
+    "removedFromClass": "Eliminado de la clase",
+    "deleteTitle": "Eliminar estudiante",
+    "deleteConfirm": "¿Deseas eliminar permanentemente a \"{{name}}\"? Se perderán todas las asignaciones de clase.",
+    "deleted": "Estudiante eliminado",
+    "search": "Buscar estudiante",
+    "searchPlaceholder": "Buscar por nombre o clase …",
+    "noResults": "No se encontraron estudiantes"
   }
 }

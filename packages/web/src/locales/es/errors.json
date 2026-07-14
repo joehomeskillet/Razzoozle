@@ -164,6 +164,27 @@
     "deleteFailed": "No se pudo eliminar la pregunta.",
     "invalid": "La pregunta está incompleta."
   },
+  "class": {
+    "invalidName": "Nombre de clase no válido",
+    "createFailed": "No se pudo crear la clase. Puede que ya exista una clase con este nombre.",
+    "invalidId": "ID de clase no válido",
+    "updateFailed": "No se pudo actualizar la clase. Puede que ya exista una clase con este nombre.",
+    "deleteFailed": "No se pudo eliminar la clase",
+    "invalidClassId": "ID de clase no válido",
+    "addStudentFailed": "No se pudo agregar al estudiante",
+    "removeStudentFailed": "No se pudo eliminar al estudiante",
+    "updateStudentFailed": "No se pudo actualizar el nombre del estudiante",
+    "unauthorized": "No tienes permiso para realizar esta acción",
+    "invalidStudentId": "ID de estudiante no válido",
+    "moveStudentFailed": "No se pudo agregar al estudiante a la clase",
+    "removeFromClassFailed": "No se pudo eliminar al estudiante de la clase",
+    "getStudentClassesFailed": "No se pudieron cargar las clases del estudiante",
+    "listAllStudentsFailed": "No se pudo cargar la lista de estudiantes",
+    "createStudentFailed": "No se pudo crear al estudiante",
+    "invalidBirthdate": "Fecha de nacimiento no válida",
+    "studentPinFailed": "No se pudo cargar el código",
+    "regenPinFailed": "No se pudo generar un nuevo código"
+  },
   "ai": {
     "notConfigured": "No hay proveedor de IA configurado.",
     "noKey": "No hay clave de API configurada para este proveedor.",

@@ -5,11 +5,13 @@ import { useTranslation } from "react-i18next"
 import { useState } from "react"
 
 import ClassList from "./ClassList"
+import StudentPicker from "./StudentPicker"
 import { useClassManager } from "./useClassManager"
 
 const ConfigKlassen = () => {
   const {
     classes,
+    allStudents,
     search,
     setSearch,
     pendingDeleteClass,
@@ -19,7 +21,7 @@ const ConfigKlassen = () => {
     handleCreateClass,
     handleUpdateClass,
     handleDeleteClass,
-    handleAddStudent,
+    handleMoveStudent,
     handleDeleteStudent,
     handleUpdateStudent,
     handleFetchStudents,
@@ -35,20 +37,23 @@ const ConfigKlassen = () => {
     name: string
   } | null>(null)
 
-  const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false)
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [pickerClassId, setPickerClassId] = useState<number | null>(null)
+  const pickerClassName =
+    classes.find((c) => c.id === pickerClassId)?.name ?? ""
 
   const [isEditStudentDialogOpen, setIsEditStudentDialogOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<{
     id: number
     displayName: string
+    birthdate?: string | null
   } | null>(null)
 
   // Form states
   const [createName, setCreateName] = useState("")
   const [editName, setEditName] = useState("")
-  const [studentName, setStudentName] = useState("")
   const [editStudentName, setEditStudentName] = useState("")
+  const [editStudentBirthdate, setEditStudentBirthdate] = useState("")
 
   const handleOpenCreateDialog = () => {
     setCreateName("")
@@ -61,18 +66,19 @@ const ConfigKlassen = () => {
     setIsEditDialogOpen(true)
   }
 
-  const handleOpenAddStudentDialog = (classId: number) => {
-    setSelectedClassId(classId)
-    setStudentName("")
-    setIsAddStudentDialogOpen(true)
+  const handleOpenPicker = (classId: number) => {
+    setPickerClassId(classId)
+    setIsPickerOpen(true)
   }
 
   const handleOpenEditStudentDialog = (student: {
     id: number
     displayName: string
+    birthdate?: string | null
   }) => {
     setEditingStudent(student)
     setEditStudentName(student.displayName)
+    setEditStudentBirthdate(student.birthdate ?? "")
     setIsEditStudentDialogOpen(true)
   }
 
@@ -98,7 +104,7 @@ const ConfigKlassen = () => {
         onCreateClass={handleOpenCreateDialog}
         onEditClass={handleOpenEditDialog}
         onDeleteClass={(classObj) => setPendingDeleteClass(classObj)}
-        onAddStudent={handleOpenAddStudentDialog}
+        onAddStudent={handleOpenPicker}
         onEditStudent={handleOpenEditStudentDialog}
         onDeleteStudent={(student) =>
           setPendingDeleteStudent({
@@ -197,42 +203,16 @@ const ConfigKlassen = () => {
         onConfirm={handleDeleteClass}
       />
 
-      {/* Add Student Dialog */}
-      {isAddStudentDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setIsAddStudentDialogOpen(false)} />
-          <div className="relative rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("manager:classes.addStudentTitle")}
-            </h2>
-            <p className="mt-2 text-gray-500">
-              {t("manager:classes.addStudentDescription")}
-            </p>
-            <Input
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder={t("manager:classes.studentNamePlaceholder")}
-              className="mt-4 min-h-11 w-full rounded-xl"
-            />
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsAddStudentDialogOpen(false)}>
-                {t("common:cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (selectedClassId !== null) {
-                    handleAddStudent(selectedClassId, studentName)
-                    setIsAddStudentDialogOpen(false)
-                  }
-                }}
-              >
-                {t("common:add")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Add Student Picker — replaces the old free-text dialog. Creating new
+          students now happens only in the Schülerverwaltung tab. */}
+      <StudentPicker
+        open={isPickerOpen}
+        classId={pickerClassId}
+        className={pickerClassName}
+        allStudents={allStudents}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={handleMoveStudent}
+      />
 
       {/* Edit Student Dialog */}
       {isEditStudentDialogOpen && (
@@ -251,6 +231,19 @@ const ConfigKlassen = () => {
               placeholder={t("manager:classes.studentNamePlaceholder")}
               className="mt-4 min-h-11 w-full rounded-xl"
             />
+            <label
+              htmlFor="klassen-edit-student-birthdate"
+              className="mt-4 block text-sm font-medium text-gray-700"
+            >
+              {t("manager:schueler.birthdateLabel")}
+            </label>
+            <input
+              id="klassen-edit-student-birthdate"
+              type="date"
+              value={editStudentBirthdate}
+              onChange={(e) => setEditStudentBirthdate(e.target.value)}
+              className="focus-visible:border-primary mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
+            />
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setIsEditStudentDialogOpen(false)}>
                 {t("common:cancel")}
@@ -259,7 +252,11 @@ const ConfigKlassen = () => {
                 variant="primary"
                 onClick={() => {
                   if (editingStudent) {
-                    handleUpdateStudent(editingStudent.id, editStudentName)
+                    handleUpdateStudent(
+                      editingStudent.id,
+                      editStudentName,
+                      editStudentBirthdate || undefined,
+                    )
                     setIsEditStudentDialogOpen(false)
                   }
                 }}

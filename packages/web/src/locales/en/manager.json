@@ -781,7 +781,13 @@
     "deleteStudentConfirm": "Do you really want to remove \"{{name}}\" from the class?",
     "studentRemoved": "Student removed",
     "noStudents": "No students in this class",
-    "errorEmptyName": "Name cannot be empty"
+    "errorEmptyName": "Name cannot be empty",
+    "pickerTitle": "Add student",
+    "pickerSearchPlaceholder": "Search students …",
+    "pickerEmpty": "No students yet. Create new students in the student management.",
+    "pickerAlreadyIn": "Already in this class",
+    "pickerHint": "Choose students to add to the class \"{{className}}\".",
+    "pickerNoResults": "No students found"
   },
   "users": {
     "title": "User Management",
@@ -821,6 +827,30 @@
   "schueler": {
     "title": "Student Management",
     "description": "Manage students across classes and view their game results at a glance.",
-    "empty": "No students created yet. Add students in the class management."
+    "empty": "No students created yet. Add students in the class management.",
+    "create": "Create student",
+    "createTitle": "Create student",
+    "createDescription": "Create a new student and optionally assign them to one or more classes right away.",
+    "namePlaceholder": "Student's name",
+    "birthdateLabel": "Date of birth (optional)",
+    "selectClasses": "Classes (optional)",
+    "noClasses": "No classes yet",
+    "created": "Student created",
+    "pinTitle": "Login code",
+    "pinHint": "Write down the code or show it to the child — they use it to log into the game.",
+    "showPin": "Show code",
+    "regenPin": "Generate new code",
+    "regenConfirm": "Do you really want to generate a new code? The old code will stop working.",
+    "regenerated": "New code generated",
+    "addToClass": "+ Class",
+    "removeFromClassTitle": "Remove from class",
+    "removeFromClassConfirm": "Do you really want to remove \"{{name}}\" from the class \"{{className}}\"?",
+    "removedFromClass": "Removed from class",
+    "deleteTitle": "Delete student",
+    "deleteConfirm": "Do you really want to permanently delete \"{{name}}\"? All class assignments will be lost.",
+    "deleted": "Student deleted",
+    "search": "Search student",
+    "searchPlaceholder": "Search by name or class …",
+    "noResults": "No students found"
   }
 }

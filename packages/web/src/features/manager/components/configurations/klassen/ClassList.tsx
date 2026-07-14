@@ -18,6 +18,9 @@ interface Student {
   id: number
   displayName: string
   createdAt?: string
+  // ADDENDUM (birthdate): optional — only present once the parallel contract
+  // WP lands the field on the wire.
+  birthdate?: string | null
 }
 
 interface Class {
@@ -34,7 +37,11 @@ interface ClassListProps {
   onEditClass: (classObj: { id: number; name: string }) => void
   onDeleteClass: (classObj: { id: number; name: string }) => void
   onAddStudent: (classId: number) => void
-  onEditStudent: (student: { id: number; displayName: string }) => void
+  onEditStudent: (student: {
+    id: number
+    displayName: string
+    birthdate?: string | null
+  }) => void
   onDeleteStudent: (student: { id: number; displayName: string }) => void
   onFetchStudents?: (classId: number) => void
 }
@@ -169,6 +176,7 @@ const ClassList = ({
                             onEditStudent({
                               id: student.id,
                               displayName: student.displayName,
+                              birthdate: student.birthdate,
                             })
                           }
                           className="focus-visible:outline-primary flex size-7 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"

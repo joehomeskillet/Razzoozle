@@ -753,7 +753,13 @@
     "deleteStudentConfirm": "确定要从班级中删除\"{{name}}\"吗？",
     "studentRemoved": "学生已删除",
     "noStudents": "此班级中没有学生",
-    "errorEmptyName": "名称不能为空"
+    "errorEmptyName": "名称不能为空",
+    "pickerTitle": "添加学生",
+    "pickerSearchPlaceholder": "搜索学生 …",
+    "pickerEmpty": "暂无学生。请在学生管理中创建新学生。",
+    "pickerAlreadyIn": "已在此班级中",
+    "pickerHint": "选择要添加到班级\"{{className}}\"的学生。",
+    "pickerNoResults": "未找到学生"
   },
   "users": {
     "title": "用户管理",
@@ -810,6 +816,30 @@
   "schueler": {
     "title": "学生管理",
     "description": "跨班级管理学生，一览他们的游戏成绩。",
-    "empty": "暂无学生。请在班级管理中添加学生。"
+    "empty": "暂无学生。请在班级管理中添加学生。",
+    "create": "创建学生",
+    "createTitle": "创建学生",
+    "createDescription": "创建一名新学生，并可选择立即将其分配到一个或多个班级。",
+    "namePlaceholder": "学生姓名",
+    "birthdateLabel": "出生日期（可选）",
+    "selectClasses": "班级（可选）",
+    "noClasses": "暂无班级",
+    "created": "学生已创建",
+    "pinTitle": "登录码",
+    "pinHint": "记下登录码或展示给孩子看——孩子用它登录游戏。",
+    "showPin": "显示登录码",
+    "regenPin": "重新生成",
+    "regenConfirm": "确定要生成新的登录码吗？旧的登录码将失效。",
+    "regenerated": "已生成新登录码",
+    "addToClass": "+ 班级",
+    "removeFromClassTitle": "从班级中移除",
+    "removeFromClassConfirm": "确定要将\"{{name}}\"从班级\"{{className}}\"中移除吗？",
+    "removedFromClass": "已从班级中移除",
+    "deleteTitle": "删除学生",
+    "deleteConfirm": "确定要永久删除\"{{name}}\"吗？所有班级归属都将丢失。",
+    "deleted": "学生已删除",
+    "search": "搜索学生",
+    "searchPlaceholder": "按姓名或班级搜索 …",
+    "noResults": "未找到学生"
   }
 }
