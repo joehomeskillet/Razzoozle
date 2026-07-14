@@ -274,5 +274,14 @@
   "timer": {
     "remaining_one": "{{count}} seconde restante",
     "remaining_other": "{{count}} secondes restantes"
+  },
+  "mathematik": {
+    "decimalHint": "{{count}} decimal place_one{{count}} decimal places_other"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Votre réponse",
+    "wordBank": "Banque de mots",
+    "tapHint": "Appuyez sur les mots ci-dessous pour construire votre réponse",
+    "submit": "Envoyer"
   }
 }

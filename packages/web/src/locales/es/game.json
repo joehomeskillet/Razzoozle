@@ -44,6 +44,9 @@
     "submit": "Confirmar",
     "submitted": "Enviado"
   },
+  "mathematik": {
+    "decimalHint": "{{count}} decimal place_one{{count}} decimal places_other"
+  },
   "pollThanks": "Gracias por tu voto",
   "submittedBy": "enviada por {{name}}",
   "typeAnswerPlaceholder": "Escribe tu respuesta...",
@@ -263,5 +266,11 @@
   "timer": {
     "remaining_one": "{{count}} segundo restante",
     "remaining_other": "{{count}} segundos restantes"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Tu respuesta",
+    "wordBank": "Banco de palabras",
+    "tapHint": "Toca las palabras de abajo para construir tu respuesta",
+    "submit": "Enviar"
   }
 }

@@ -45,6 +45,9 @@
     "correctAnswer": "Correct answer",
     "averageGuess": "Average guess: {{value}}"
   },
+  "mathematik": {
+    "decimalHint": "{{count}} decimal place_one{{count}} decimal places_other"
+  },
   "pollThanks": "Thanks for your vote",
   "tier": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamant": "Diamond" },
   "locked": "locked",
@@ -267,5 +270,11 @@
   "timer": {
     "remaining_one": "{{count}} second remaining",
     "remaining_other": "{{count}} seconds remaining"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Your answer",
+    "wordBank": "Word bank",
+    "tapHint": "Tap the words below to build your answer",
+    "submit": "Submit"
   }
 }

@@ -200,6 +200,26 @@ export const useSoloStore = create<SoloState>((set, get) => ({
       }
       const result = (await res.json()) as SoloCheckAnswerResponse
       set((s) => {
+        // Poll responses: don't reset streak, don't add achievements, just show neutral feedback.
+        if (result.poll) {
+          return {
+            lastResult: result,
+            lastAchievements: [],
+            streak: s.streak,
+            totalPoints: s.totalPoints + result.points,
+            answers: [
+              ...s.answers,
+              {
+                questionIndex: currentIndex,
+                correct: result.correct,
+                points: result.points,
+                achievements: [],
+              },
+            ],
+            phase: "result",
+          }
+        }
+
         // Consecutive-correct streak: +1 on correct, reset to 0 on wrong.
         const nextStreak = result.correct ? s.streak + 1 : 0
         // Merge server badge(s) (sharpshooter) with client streak badges, dedupe.

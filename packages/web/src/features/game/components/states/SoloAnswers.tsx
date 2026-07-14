@@ -166,7 +166,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
       sfxCorrect()
       hapticSuccess()
       fireCenterSalvo(reduced)
-    } else {
+    } else if (!lastResult.poll) {
       sfxWrong()
       hapticError()
     }
@@ -336,6 +336,11 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
   // SAFETY: all tile references use the canonical index key, not the visual position.
   const renderOrder = question.answers?.map((_, i) => i) ?? []
 
+  // Format decimals hint for mathematik input
+  const decimalsHint = question.decimals
+    ? t("game:mathematik.decimalHint", { count: question.decimals, defaultValue: `${question.decimals} decimal places` })
+    : undefined
+
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
@@ -359,6 +364,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
         {isTypeAnswer ? (
           <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
             <input
+              data-testid="solo-type-answer-input"
               type="text"
               maxLength={200}
               value={textAnswer}
@@ -375,8 +381,6 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               className={clsx(
                 ANSWER_TILE_SURFACE,
                 "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
-                // Reveal cue: green/red RING on the input (never recolor the fill — the
-                // disabled text would be unreadable). Solo knows only overall correctness.
                 resultReady &&
                   (lastResult.correct
                     ? "ring-2 ring-[var(--state-correct)]"
@@ -384,6 +388,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               )}
             />
             <button
+              data-testid="solo-type-answer-submit"
               type="button"
               onClick={submitTextAnswer}
               disabled={submitted || textAnswer.trim().length === 0}
@@ -404,11 +409,9 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                 return (
                   <motion.div
                     key={key}
+                    data-testid={`solo-multiple-select-tile-${key}`}
                     variants={{
                       ...reveal.item(50),
-                      // Already-visible tile: emphasis pulse from the CURRENT
-                      // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
-                      // which would shrink the tile toward centre on reveal.
                       popped: reveal.reduced ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: [1, 1.06, 1] },
                     }}
                     initial="hidden"
@@ -440,6 +443,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               })}
             </div>
             <button
+              data-testid="solo-multiple-select-submit"
               type="button"
               onClick={submitMultiSelect}
               disabled={submitted || multiSelectedKeys.length === 0}
@@ -455,6 +459,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               {question.unit ? ` ${question.unit}` : ""}
             </div>
             <input
+              data-testid="solo-slider-input"
               type="range"
               min={question.min}
               max={question.max}
@@ -477,6 +482,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               </span>
             </div>
             <button
+              data-testid="solo-slider-submit"
               onClick={submitSlider}
               disabled={submitted}
               className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
@@ -503,7 +509,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                 }
               }}
               disabled={submitted}
-              placeholder={t("game:typeAnswerPlaceholder")}
+              placeholder={decimalsHint || t("game:typeAnswerPlaceholder")}
               aria-label="Numeric answer"
               autoFocus
               className={clsx(
@@ -627,6 +633,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                     : "border-[var(--border-hairline)] bg-[var(--state-wrong)]"
                   : "border-2 border-dashed border-[var(--border-hairline)] bg-[var(--surface)]",
               )}
+              data-testid="solo-sentence-builder-answer-bar"
             >
               {placedChips.length === 0 ? (
                 <span className="text-center w-full text-[color:var(--game-fg)]/60">
@@ -637,6 +644,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
                   <button
                     key={chip.id}
                     type="button"
+                    data-testid={`solo-sentence-builder-placed-${chip.id}`}
                     onClick={handlePlacedChipTap(chip.id)}
                     disabled={submitted}
                     className={clsx(
@@ -659,11 +667,12 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               <p className="text-xs text-[var(--game-fg)]/70 mb-3">
                 {t("game:sentenceBuilder.tapHint", { defaultValue: "Tap the words below to build your answer" })}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" data-testid="solo-sentence-builder-bank">
                 {bankChips.map((chip) => (
                   <button
                     key={chip.id}
                     type="button"
+                    data-testid={`solo-sentence-builder-bank-${chip.id}`}
                     onClick={handleBankChipTap(chip)}
                     disabled={submitted}
                     className={clsx(
@@ -681,6 +690,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
             {/* Submit button */}
             <button
               type="button"
+              data-testid="solo-sentence-builder-submit"
               onClick={submitSentenceBuilder}
               disabled={submitted || placedChips.length !== (question.shuffledChunks?.length ?? 0)}
               className="bg-primary text-white rounded-xl px-8 py-3 text-xl font-bold disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
@@ -696,11 +706,9 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               return (
                 <motion.div
                   key={key}
+                  data-testid={`solo-choice-tile-${key}`}
                   variants={{
                     ...reveal.item(50),
-                    // Already-visible tile: emphasis pulse from the CURRENT
-                    // scale (1 -> 1.06 -> 1), NOT the entrance pop's 0.6 start
-                    // which would shrink the tile toward centre on reveal.
                     popped: reveal.reduced ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: [1, 1.06, 1] },
                   }}
                   initial="hidden"
