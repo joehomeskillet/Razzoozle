@@ -11,6 +11,7 @@ interface Class {
   id: number
   name: string
   createdAt: string
+  studentCount?: number
   students?: Student[]
 }
 

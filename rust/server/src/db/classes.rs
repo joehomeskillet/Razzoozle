@@ -32,10 +32,12 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>)> = match sqlx::query_as(
-        "SELECT id, name, created_at FROM classes \
-         WHERE ($1::bigint IS NULL OR owner_id = $1) \
-         ORDER BY created_at DESC"
+    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, i64)> = match sqlx::query_as(
+        "SELECT c.id, c.name, c.created_at, COALESCE(jt.student_count, 0) as student_count \
+         FROM classes c \
+         LEFT JOIN (SELECT class_id, count(*) as student_count FROM class_students GROUP BY class_id) jt ON c.id = jt.class_id \
+         WHERE ($1::bigint IS NULL OR c.owner_id = $1) \
+         ORDER BY c.created_at DESC"
     )
     .bind(me)
     .fetch_all(pool)
@@ -49,11 +51,12 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     };
 
     rows.into_iter()
-        .map(|(id, name, created_at)| {
+        .map(|(id, name, created_at, student_count)| {
             serde_json::json!({
                 "id": id,
                 "name": name,
                 "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                "studentCount": student_count,
             })
         })
         .collect()
@@ -225,8 +228,9 @@ pub async fn get_students(pool: &Option<PgPool>, class_id: i64, me: Option<i64>)
         .collect()
 }
 
-/// Remove all class memberships for a student (deletes all junction rows, orphan trigger cleans up).
+/// Remove all class memberships for a student and delete the student row.
 /// Returns Ok(rows_affected): 0 = not found / not owned (via class ownership check).
+/// Works correctly with or without the orphan-delete trigger (explicit delete is idempotent).
 pub async fn remove_student(
     pool: &Option<PgPool>,
     student_id: i64,
@@ -237,9 +241,10 @@ pub async fn remove_student(
         None => return Err("no database configured".to_string()),
     };
 
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
     // Delete all class_students junction rows for this student,
     // but only if the requesting user owns at least one class containing the student.
-    // The orphan trigger will delete the student if they have no remaining memberships.
     let result = sqlx::query(
         "DELETE FROM class_students \
          WHERE student_id = $1 \
@@ -249,11 +254,28 @@ pub async fn remove_student(
     )
     .bind(student_id)
     .bind(me)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| e.to_string())?;
 
-    Ok(result.rows_affected())
+    // Track how many junction rows were deleted to determine permission
+    let rows_deleted = result.rows_affected();
+
+    // If no junction rows were deleted, user doesn't have permission (return early)
+    if rows_deleted == 0 {
+        tx.rollback().await.ok();
+        return Ok(0);
+    }
+
+    // Explicitly delete the student row (if trigger still exists, this is a harmless no-op)
+    sqlx::query("DELETE FROM students WHERE id = $1")
+        .bind(student_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(rows_deleted)
 }
 
 /// Update a student's display name and log to audit table.
