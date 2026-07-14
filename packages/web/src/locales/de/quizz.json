@@ -150,6 +150,9 @@
       "Konjunktion": "Konjunktion"
     },
     "selectLabel": "Part-of-Speech wählen",
-    "tapHint": "Tippe jedes Wort, um seine Wortart zu wählen"
+    "tapHint": "Tippe jedes Wort, um seine Wortart zu wählen",
+    "disableTokenLabel": "Wort deaktivieren",
+    "enableTokenLabel": "Wort aktivieren",
+    "allTokensDisabledError": "Mindestens ein Wort muss aktiv sein"
   }
 }
