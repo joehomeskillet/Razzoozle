@@ -147,8 +147,9 @@
     "achievements": "Achievements",
     "running": "Running Games",
     "dev": "Dev",
-    "profile": "Profile",
-    "klassen": "Classes"
+    "profile": "My Profile",
+    "klassen": "Classes",
+    "users": "User Management"
   },
   "plugins": {
     "title": "Plugins",
@@ -617,6 +618,11 @@
     "copySoloLink": "Copy solo link",
     "meta": {
       "questions": "{{count}} questions"
+    },
+    "modeSelector": {
+      "scoringModeHint": "Take answer speed into account",
+      "teamModeHint": "Players choose teams",
+      "klassenModeHint": "Enable class joins"
     }
   },
   "gameMode": {

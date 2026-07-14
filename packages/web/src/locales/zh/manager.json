@@ -138,7 +138,9 @@
     "achievements": "成就",
     "running": "进行中的游戏",
     "dev": "开发",
-    "klassen": "班级"
+    "klassen": "班级",
+    "profile": "我的资料",
+    "users": "用户管理"
   },
   "plugins": {
     "title": "插件",
@@ -607,6 +609,11 @@
     "copySoloLink": "复制单人链接",
     "meta": {
       "questions": "{{count}} 道题目"
+    },
+    "modeSelector": {
+      "scoringModeHint": "计入答题速度",
+      "teamModeHint": "玩家选择队伍",
+      "klassenModeHint": "启用班级加入"
     }
   },
   "gameMode": {

@@ -138,7 +138,9 @@
     "achievements": "Logros",
     "running": "Partidas en curso",
     "dev": "Dev",
-    "klassen": "Clases"
+    "klassen": "Clases",
+    "profile": "Mi perfil",
+    "users": "Gestión de usuarios"
   },
   "plugins": {
     "title": "Complementos",
@@ -607,6 +609,11 @@
     "copySoloLink": "Copiar enlace solo",
     "meta": {
       "questions": "{{count}} preguntas"
+    },
+    "modeSelector": {
+      "scoringModeHint": "Tener en cuenta la velocidad de respuesta",
+      "teamModeHint": "Los jugadores eligen equipos",
+      "klassenModeHint": "Activar la inscripción por clases"
     }
   },
   "gameMode": {

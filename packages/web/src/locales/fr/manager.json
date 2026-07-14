@@ -138,7 +138,9 @@
     "achievements": "Succès",
     "running": "Parties en cours",
     "dev": "Dev",
-    "klassen": "Classes"
+    "klassen": "Classes",
+    "profile": "Mon profil",
+    "users": "Gestion des utilisateurs"
   },
   "plugins": {
     "title": "Extensions",
@@ -607,6 +609,11 @@
     "copySoloLink": "Copier le lien solo",
     "meta": {
       "questions": "{{count}} questions"
+    },
+    "modeSelector": {
+      "scoringModeHint": "Prendre en compte la vitesse de réponse",
+      "teamModeHint": "Les joueurs choisissent leur équipe",
+      "klassenModeHint": "Activer l'adhésion par classe"
     }
   },
   "gameMode": {
