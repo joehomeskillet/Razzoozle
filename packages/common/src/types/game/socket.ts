@@ -350,7 +350,7 @@ export interface ServerToClientEvents {
 
   // Class-roster manager (server -> client). Owner-scoped; wire contract mirrors
   // rust/server/src/socket/manager/classes.rs emits.
-  [EVENTS.CLASS.DATA]: (_classes: Array<{ id: number; name: string; createdAt: string }>) => void
+  [EVENTS.CLASS.DATA]: (_classes: Array<{ id: number; name: string; createdAt: string; labelIds?: number[] }>) => void
   [EVENTS.CLASS.CREATE_SUCCESS]: (_class: { id: number; name: string }) => void
   [EVENTS.CLASS.UPDATE_SUCCESS]: () => void
   [EVENTS.CLASS.DELETE_SUCCESS]: (_data: { id: number }) => void
@@ -370,7 +370,7 @@ export interface ServerToClientEvents {
   // Global labels (server -> client)
   [EVENTS.LABEL.DATA]: (_data: { labels: Array<{ id: number; name: string; color: string }> }) => void
   [EVENTS.LABEL.ERROR]: (_message: string) => void
-  [EVENTS.LABEL.ASSIGNED]: (_data: { entityType: "quizz" | "media" | "catalog"; entityId: string; labelIds: number[] }) => void
+  [EVENTS.LABEL.ASSIGNED]: (_data: { entityType: "quizz" | "media" | "catalog" | "class"; entityId: string; labelIds: number[] }) => void
 }
 
 export interface ClientToServerEvents {
@@ -634,7 +634,7 @@ export interface ClientToServerEvents {
   [EVENTS.LABEL.CREATE]: (_payload: { name: string; color?: string }) => void
   [EVENTS.LABEL.UPDATE]: (_payload: { id: number; name?: string; color?: string }) => void
   [EVENTS.LABEL.DELETE]: (_payload: { id: number }) => void
-  [EVENTS.LABEL.ASSIGN]: (_payload: { entityType: "quizz" | "media" | "catalog"; entityId: string; labelIds: number[] }) => void
+  [EVENTS.LABEL.ASSIGN]: (_payload: { entityType: "quizz" | "media" | "catalog" | "class"; entityId: string; labelIds: number[] }) => void
 
   // Common
   disconnect: () => void

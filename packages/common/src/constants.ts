@@ -331,11 +331,11 @@ export const EVENTS = {
      */
     DELETE: "label:delete",
     /**
-     * `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success.
+     * `label:assign` req `{ entityType: "quizz"|"media"|"catalog"|"class", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success. (Note: for entityType 'class', entityId = String(classId) since classes.id is BIGSERIAL)
      */
     ASSIGN: "label:assign",
     /**
-     * `label:assigned` → `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (ack; consumers refetch their lists).
+     * `label:assigned` → `{ entityType: "quizz"|"media"|"catalog"|"class", entityId: string, labelIds: number[] }` (ack; consumers refetch their lists). (Note: for entityType 'class', entityId = String(classId) since classes.id is BIGSERIAL)
      */
     ASSIGNED: "label:assigned",
     /**
