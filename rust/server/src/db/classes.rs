@@ -341,6 +341,7 @@ pub async fn update_student(
     display_name_opt: Option<&str>,
     first_name_opt: Option<&str>,
     last_name_opt: Option<&str>,
+    birthdate_opt: Option<chrono::NaiveDate>,
     me: Option<i64>,
 ) -> Result<u64, String> {
     let pool = match pool {
@@ -387,16 +388,19 @@ pub async fn update_student(
 
     let final_last = last_name_opt.and_then(|l| if l.is_empty() { None } else { Some(l.trim()) });
 
-    // Update student
+    // Update student. birthdate_opt=None means "not provided in this update" —
+    // COALESCE keeps the existing value (same pattern as first_name).
     let result = match sqlx::query(
         "UPDATE students SET display_name = $1, \
          first_name = COALESCE($2, first_name), \
-         last_name = CASE WHEN $2 IS NOT NULL THEN $3 ELSE last_name END \
-         WHERE id = $4 AND ($5::bigint IS NULL OR owner_id = $5)"
+         last_name = CASE WHEN $2 IS NOT NULL THEN $3 ELSE last_name END, \
+         birthdate = COALESCE($4, birthdate) \
+         WHERE id = $5 AND ($6::bigint IS NULL OR owner_id = $6)"
     )
     .bind(&display_name)
     .bind(first_name_opt)
     .bind(final_last)
+    .bind(birthdate_opt)
     .bind(student_id)
     .bind(me)
     .execute(&mut *tx)
@@ -830,7 +834,7 @@ mod tests {
         assert!(super::delete_class(&None, 1, Some(1)).await.is_err());
         assert!(super::add_student(&None, 1, "Student", 1).await.is_err());
         assert!(super::remove_student(&None, 1, Some(1)).await.is_err());
-        assert!(super::update_student(&None, 1, Some("Updated"), None, None, Some(1)).await.is_err());
+        assert!(super::update_student(&None, 1, Some("Updated"), None, None, None, Some(1)).await.is_err());
         assert!(super::create_student(&None, "Student", "", &[], 1, Some(1), None, "1234").await.is_err());
     }
 

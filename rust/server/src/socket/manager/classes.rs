@@ -355,29 +355,49 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let first_name = payload.get("firstName").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
                 let last_name = payload.get("lastName").and_then(|v| v.as_str());
 
+                // Addendum: birthdate is optional here too — absent/empty means
+                // "not touched by this update" (same COALESCE semantics as
+                // first_name/last_name), so it's only parsed+validated when present.
+                let birthdate = match payload.get("birthdate").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                    Some(date_str) => match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                        Ok(d) => {
+                            if d > chrono::Utc::now().date_naive() {
+                                tracing::warn!("class:updateStudent rejected: birthdate {} is in the future", d);
+                                socket.emit(constants::class::ERROR, "errors:class.birthdateInFuture").ok();
+                                return;
+                            }
+                            Some(d)
+                        }
+                        Err(_) => {
+                            socket.emit(constants::class::ERROR, "errors:class.invalidBirthdate").ok();
+                            return;
+                        }
+                    },
+                    None => None,
+                };
+
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                match db::update_student(&ctx.db_pool, student_id, display_name, first_name, last_name, me).await {
+                match db::update_student(&ctx.db_pool, student_id, display_name, first_name, last_name, birthdate, me).await {
                     Ok(0) => {
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();
                     }
                     Ok(_) => {
-                        // The updated student info might need to reflect the composed displayName.
-                        // We can just query it or construct it here for the event, or simply emit what we have.
-                        // Wait, what if only firstName and lastName were provided?
-                        // The prompt says: "keep displayName, include firstName, lastName" in the event.
-                        // Let's refetch from DB, or construct. Constructing is easier but we don't have old names if they only provided one.
-                        // Let's just refetch. But the db call `update_student` returns rows_affected, not the full object.
-                        // We can change `update_student` to return the new name or just emit the payload values (they are optimistic in the frontend).
-                        // I will emit the optional fields we got. Actually, better yet, `updateStudent` payload is often passed as-is.
-                        socket.emit(constants::class::STUDENT_UPDATED, &serde_json::json!({
+                        // Emit what changed. birthdate is only included when this
+                        // request actually provided one — omitting it otherwise
+                        // avoids the client overwriting an unrelated existing value.
+                        let mut event = serde_json::json!({
                             "id": student_id,
                             "displayName": display_name,
                             "firstName": first_name,
                             "lastName": last_name.filter(|s| !s.is_empty())
-                        })).ok();
+                        });
+                        if let Some(d) = birthdate {
+                            event["birthdate"] = serde_json::json!(d.format("%Y-%m-%d").to_string());
+                        }
+                        socket.emit(constants::class::STUDENT_UPDATED, &event).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to update student: {}", e);
@@ -676,7 +696,14 @@ fn register_create_student(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let birthdate = if let Some(date_str) = payload.get("birthdate").and_then(|v| v.as_str()) {
                     match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        Ok(d) => Some(d),
+                        Ok(d) => {
+                            if d > chrono::Utc::now().date_naive() {
+                                tracing::warn!("class:createStudent rejected: birthdate {} is in the future", d);
+                                socket.emit(constants::class::ERROR, "errors:class.birthdateInFuture").ok();
+                                return;
+                            }
+                            Some(d)
+                        }
                         Err(_) => {
                             socket.emit(constants::class::ERROR, "errors:class.invalidBirthdate").ok();
                             return;

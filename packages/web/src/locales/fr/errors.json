@@ -185,7 +185,8 @@
     "studentPinFailed": "Impossible de charger le code",
     "regenPinFailed": "Impossible de générer un nouveau code",
     "classNotOwned": "Cette classe ne vous appartient pas ou n'existe plus",
-    "cannotManageStudent": "Vous n'êtes pas autorisé à gérer cet élève"
+    "cannotManageStudent": "Vous n'êtes pas autorisé à gérer cet élève",
+    "birthdateInFuture": "La date de naissance ne peut pas être dans le futur."
   },
   "ai": {
     "notConfigured": "Aucun fournisseur d'IA configuré.",
