@@ -56,9 +56,10 @@ pub async fn get_quizzes(
     result
 }
 
-/// Load quiz metadata from the database (id, subject, archived, questionCount).
+/// Load quiz metadata from the database (id, subject, archived, questionCount, labelIds).
 /// Efficiently computes question count using jsonb_array_length without deserializing.
-/// Returns a vector of JSON objects with keys: id, subject, archived, questionCount.
+/// Batch-aggregates label IDs via LEFT JOIN + array_agg (no N+1).
+/// Returns a vector of JSON objects with keys: id, subject, archived, questionCount, labelIds.
 /// Results are sorted by id (deterministic ordering, required for consistency).
 /// Returns empty vec if pool is None or DB query fails.
 /// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
@@ -68,10 +69,15 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>, me: Option<i64>) -> Vec<ser
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, Option<bool>, i32)> =
+    let rows: Vec<(String, String, Option<bool>, i32, Vec<i64>)> =
         match sqlx::query_as(
-            "SELECT id, subject, archived, jsonb_array_length(COALESCE(questions, '[]')) as question_count \
-             FROM quizzes WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY id"
+            "SELECT q.id, q.subject, q.archived, jsonb_array_length(COALESCE(q.questions, '[]')) as question_count, \
+             COALESCE(array_agg(ql.label_id) FILTER (WHERE ql.label_id IS NOT NULL), ARRAY[]::bigint[]) as label_ids \
+             FROM quizzes q \
+             LEFT JOIN quiz_labels ql ON q.id = ql.quiz_id \
+             WHERE ($1::bigint IS NULL OR q.owner_id = $1) \
+             GROUP BY q.id, q.subject, q.archived, q.questions \
+             ORDER BY q.id"
         )
         .bind(me)
         .fetch_all(pool)
@@ -85,12 +91,13 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>, me: Option<i64>) -> Vec<ser
         };
 
     let mut result = Vec::new();
-    for (id, subject, archived, question_count) in rows {
+    for (id, subject, archived, question_count, label_ids) in rows {
         let quizz_obj = serde_json::json!({
             "id": id,
             "subject": subject,
             "archived": archived.unwrap_or(false),
             "questionCount": question_count,
+            "labelIds": label_ids,
         });
         result.push(quizz_obj);
     }
