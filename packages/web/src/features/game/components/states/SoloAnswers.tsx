@@ -55,6 +55,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [selectedKey, setSelectedKey] = useState<number | null>(null)
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
   const [textAnswer, setTextAnswer] = useState("")
+  const [mathematikAnswer, setMathematikAnswer] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [countdown, setCountdown] = useState(question.time)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -183,6 +184,8 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
       void submitAnswer(quizzId, { answerText: textAnswer.trim() || "" })
     } else if (isSentenceBuilder) {
       void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
+    } else if (isMathematik) {
+      void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
     } else if (selectedKey !== null) {
       void submitAnswer(quizzId, { answerId: selectedKey })
     } else {
@@ -256,6 +259,16 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: trimmed })
+  }
+
+
+  const submitMathematikAnswer = () => {
+    if (submitted || !mathematikAnswer.trim()) return
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() })
   }
 
   const submitSlider = () => {
@@ -423,14 +436,43 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
             </button>
           </div>
         ) : isMathematik ? (
-          <div className="flex flex-col gap-4">
+          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
             <input
+              data-testid="mathematik-input"
               type="number"
               inputMode="decimal"
               step="0.01"
-              placeholder="Answer"
-              className="rounded-lg border px-4 py-2 text-lg"
+              value={mathematikAnswer}
+              onChange={(e) => {
+                let val = e.target.value
+                val = val.replace(',', '.')
+                setMathematikAnswer(val)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  submitMathematikAnswer()
+                }
+              }}
+              disabled={submitted}
+              placeholder={t("game:typeAnswerPlaceholder")}
+              aria-label="Numeric answer"
+              autoFocus
+              className={clsx(
+                ANSWER_TILE_SURFACE,
+                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+              )}
             />
+            <button
+              data-testid="mathematik-submit"
+              type="button"
+              onClick={submitMathematikAnswer}
+              disabled={submitted || mathematikAnswer.trim().length === 0}
+              className={clsx(
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+              )}
+            >
+              {submitted ? t("game:slider.submitted") : t("game:submitAnswer")}
+            </button>
           </div>
         ) : isWortarten ? (
           <div>

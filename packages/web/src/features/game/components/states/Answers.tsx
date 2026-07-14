@@ -112,6 +112,8 @@ const Answers = ({
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
   // Type-answer: the free-text the player is entering. Reset likewise per question.
   const [textAnswer, setTextAnswer] = useState("")
+  // Mathematik: the numeric answer the player is entering. Reset per question.
+  const [mathematikAnswer, setMathematikAnswer] = useState("")
   const [bankChips, setBankChips] = useState<
     Array<{ text: string; originalIndex: number }>
   >([])
@@ -312,6 +314,41 @@ const Answers = ({
         ...(clientMessageId ? { clientMessageId } : {}),
       },
     })
+  }
+
+
+  const submitMathematikAnswer = () => {
+    if (!player || !gameId || submitted || !mathematikAnswer.trim()) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: mathematikAnswer.trim(),
+        ...(clientMessageId ? { clientMessageId } : {}),
+      },
+    })
+
+    if (lowLatency) {
+      pendingMessageIdRef.current = clientMessageId ?? null
+      pendingSentAtRef.current = monoNow()
+      setAckPending(false)
+
+      if (ackTimerRef.current) {
+        clearTimeout(ackTimerRef.current)
+      }
+
+      ackTimerRef.current = setTimeout(() => {
+        setAckPending(true)
+      }, ACK_PENDING_HINT_MS)
+    }
   }
 
   const submitSentenceBuilder = () => {
@@ -590,22 +627,40 @@ const Answers = ({
         ) : isMathematik ? (
           <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
             <input
+              data-testid="mathematik-input"
               type="number"
               inputMode="decimal"
               step="0.01"
-              value={totalAnswer || ""}
-              onChange={(e) => setTotalAnswer(parseFloat(e.target.value) || 0)}
+              value={mathematikAnswer}
+              onChange={(e) => {
+                let val = e.target.value
+                // Accept both comma and point, display with point
+                val = val.replace(',', '.')
+                setMathematikAnswer(val)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  submitMathematikAnswer()
+                }
+              }}
               disabled={submitted}
               placeholder={t("game:typeAnswerPlaceholder")}
               aria-label="Numeric answer"
               autoFocus
-              className="rounded-lg border border-[var(--border-hairline)] px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-2xl"
+              className={clsx(
+                ANSWER_TILE_SURFACE,
+                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+              )}
             />
             <button
+              data-testid="mathematik-submit"
               type="button"
-              onClick={() => {}}
-              disabled={submitted}
-              className="bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-2xl"
+              onClick={submitMathematikAnswer}
+              disabled={submitted || mathematikAnswer.trim().length === 0}
+              className={clsx(
+                "bg-primary rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                PRESS_FEEDBACK,
+              )}
             >
               {t("game:submitAnswer")}
             </button>

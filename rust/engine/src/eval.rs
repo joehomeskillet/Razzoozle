@@ -209,12 +209,29 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
         };
     }
 
-
-    // Mathematik: numeric answer with tolerance (TODO: implement real scoring)
+    // Mathematik: numeric answer with tolerance scoring (binary base)
     if q_type == &Some(QuestionType::Mathematik) {
+        if let (Some(text), Some(correct_val), Some(tolerance)) = (
+            &answer.answer_text,
+            question.correct,
+            question.tolerance,
+        ) {
+            // Parse the submitted text as f64, accepting both ',' and '.' as decimal separators
+            let normalized = text.replace(',', ".");
+            if let Ok(answer_val) = normalized.parse::<f64>() {
+                if answer_val.is_finite() && correct_val.is_finite() {
+                    let diff = (answer_val - correct_val).abs();
+                    let within_tolerance = diff <= tolerance;
+                    return EvalResult {
+                        correct: within_tolerance,
+                        base: if within_tolerance { 1.0 } else { 0.0 },
+                    };
+                }
+            }
+        }
         return EvalResult {
             correct: false,
-            base: 0.0, // TODO(Q1/Q3): real scoring with tolerance
+            base: 0.0,
         };
     }
 
@@ -332,6 +349,66 @@ mod tests {
     }
 
     #[test]
+    fn mathematik_exact() {
+        let mut q = test_question(QuestionType::Mathematik);
+        q.correct = Some(42.0);
+        q.tolerance = Some(0.1);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("42".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn mathematik_within_tolerance() {
+        let mut q = test_question(QuestionType::Mathematik);
+        q.correct = Some(42.0);
+        q.tolerance = Some(0.5);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("42.3".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn mathematik_outside_tolerance() {
+        let mut q = test_question(QuestionType::Mathematik);
+        q.correct = Some(42.0);
+        q.tolerance = Some(0.1);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("42.5".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn mathematik_comma_input() {
+        let mut q = test_question(QuestionType::Mathematik);
+        q.correct = Some(3.14);
+        q.tolerance = Some(0.01);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("3,14".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
     fn poll_always_neutral() {
         let q = test_question(QuestionType::Poll);
         let ans = AnswerInput {
@@ -404,7 +481,7 @@ mod tests {
         assert_eq!(normalize_text("LONDON "), "london");
         assert_eq!(normalize_text("  london  "), "london");
         assert_eq!(normalize_text("Lóndon"), "london");  // with accent
-        
+
         // Empty/whitespace-only strings should become empty
         assert_eq!(normalize_text("   "), "");
         assert_eq!(normalize_text(""), "");

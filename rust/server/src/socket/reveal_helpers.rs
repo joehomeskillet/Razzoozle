@@ -253,8 +253,14 @@ pub async fn perform_reveal_and_broadcast(
                         question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
                     }
                     Some(QuestionType::Mathematik) => {
-                        // TODO: Return the correct numeric answer with unit
-                        question.correct.map(|c| format!("{}", c))
+                        question.correct.map(|c| {
+                            let decimals = question.decimals.unwrap_or(2) as usize;
+                            let formatted = format!("{:.prec$}", c, prec = decimals);
+                            match &question.unit {
+                                Some(u) => format!("{} {}", formatted, u),
+                                None => formatted,
+                            }
+                        })
                     }
                     Some(QuestionType::Wortarten) => {
                         // TODO: Return the POS tags for each token

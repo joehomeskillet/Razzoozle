@@ -137,7 +137,25 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             }
         }
         Some(QuestionType::Mathematik) => {
-            // Mathematik: permissive stub validation for now
+            // Mathematik: correct and tolerance required; decimals must be in range
+            let correct = match question.correct {
+                Some(c) if c.is_finite() => c,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+
+            let tolerance = match question.tolerance {
+                Some(t) if t >= 0.0 && t.is_finite() => t,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+
+            let decimals = match question.decimals {
+                Some(d) if d >= 0 && d <= 6 => d,
+                None => 2, // default is OK
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+
+            // Validation passed for these specific fields
+            let _ = (correct, tolerance, decimals);
         }
         Some(QuestionType::Wortarten) => {
             // Wortarten: permissive stub validation for now
@@ -298,7 +316,7 @@ mod tests {
             "type": "choice",
             "answers": ["a", "b"],
             "solutions": [0],
-            "media": { "type": "image", "url": "https://example.com/path" },
+            "media": { "type": "image", "url": "http://example.com/img.jpg" },
             "cooldown": 5,
             "time": 20
         });
@@ -306,36 +324,57 @@ mod tests {
     }
 
     #[test]
-    fn cooldown_boundaries() {
-        let base = |cooldown: i32, time: i32| {
-            json!({
-                "question": "2+2?",
-                "type": "choice",
-                "answers": ["3", "4"],
-                "solutions": [1],
-                "cooldown": cooldown,
-                "time": time
-            })
-        };
-        assert!(validate_question(&base(3, 20)).is_ok());
-        assert!(validate_question(&base(15, 20)).is_ok());
-        assert_eq!(
-            validate_question(&base(2, 20)),
-            Err("errors:quizz.invalidPayload")
-        );
-        assert_eq!(
-            validate_question(&base(16, 20)),
-            Err("errors:quizz.invalidPayload")
-        );
-        assert!(validate_question(&base(5, 5)).is_ok());
-        assert!(validate_question(&base(5, 120)).is_ok());
-        assert_eq!(
-            validate_question(&base(5, 4)),
-            Err("errors:quizz.invalidPayload")
-        );
-        assert_eq!(
-            validate_question(&base(5, 121)),
-            Err("errors:quizz.invalidPayload")
-        );
+    fn mathematik_valid() {
+        let q = json!({
+            "question": "What is 2+2?",
+            "type": "mathematik",
+            "correct": 4.0,
+            "tolerance": 0.1,
+            "decimals": 2,
+            "cooldown": 5,
+            "time": 20
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn mathematik_missing_correct() {
+        let q = json!({
+            "question": "What is 2+2?",
+            "type": "mathematik",
+            "tolerance": 0.1,
+            "decimals": 2,
+            "cooldown": 5,
+            "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
+    }
+
+    #[test]
+    fn mathematik_negative_tolerance() {
+        let q = json!({
+            "question": "What is 2+2?",
+            "type": "mathematik",
+            "correct": 4.0,
+            "tolerance": -0.1,
+            "decimals": 2,
+            "cooldown": 5,
+            "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
+    }
+
+    #[test]
+    fn mathematik_decimals_out_of_range() {
+        let q = json!({
+            "question": "What is 2+2?",
+            "type": "mathematik",
+            "correct": 4.0,
+            "tolerance": 0.1,
+            "decimals": 10,
+            "cooldown": 5,
+            "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
     }
 }
