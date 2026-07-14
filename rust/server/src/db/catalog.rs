@@ -91,7 +91,7 @@ pub async fn insert_catalog_entry_with_tags(
 
 
 /// Fetch all catalog entries as an array of JSON objects (matches the
-/// Node `CatalogEntry` shape: id, question, tags, source, addedAt).
+/// Node `CatalogEntry` shape: id, question, tags, source, addedAt, labelIds).
 /// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
 /// `scope`: "all" (default) = ($me IS NULL OR owner_id = $me OR is_global = true)
 ///          "own" = ($me IS NULL OR owner_id = $me)
@@ -103,14 +103,18 @@ pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&
     };
 
     let scope_filter = scope.unwrap_or("all");
-    
-    let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>)> = 
+
+    let rows: Vec<(String, serde_json::Value, serde_json::Value, Option<String>, Option<chrono::DateTime<chrono::Utc>>, Vec<i64>)> =
         match scope_filter {
             "own" => {
                 sqlx::query_as(
-                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
-                     WHERE ($1::bigint IS NULL OR owner_id = $1) \
-                     ORDER BY added_at DESC"
+                    "SELECT ce.id, ce.question, ce.tags, ce.source, ce.added_at, \
+                     COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), '{}') as label_ids \
+                     FROM catalog_entries ce \
+                     LEFT JOIN catalog_labels cl ON ce.id = cl.catalog_id \
+                     WHERE ($1::bigint IS NULL OR ce.owner_id = $1) \
+                     GROUP BY ce.id, ce.question, ce.tags, ce.source, ce.added_at \
+                     ORDER BY ce.added_at DESC"
                 )
                 .bind(me)
                 .fetch_all(pool)
@@ -119,9 +123,13 @@ pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&
             }
             "global" => {
                 sqlx::query_as(
-                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
-                     WHERE is_global = true \
-                     ORDER BY added_at DESC"
+                    "SELECT ce.id, ce.question, ce.tags, ce.source, ce.added_at, \
+                     COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), '{}') as label_ids \
+                     FROM catalog_entries ce \
+                     LEFT JOIN catalog_labels cl ON ce.id = cl.catalog_id \
+                     WHERE ce.is_global = true \
+                     GROUP BY ce.id, ce.question, ce.tags, ce.source, ce.added_at \
+                     ORDER BY ce.added_at DESC"
                 )
                 .fetch_all(pool)
                 .await
@@ -130,9 +138,13 @@ pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&
             _ => {
                 // "all" or unknown → default to all
                 sqlx::query_as(
-                    "SELECT id, question, tags, source, added_at FROM catalog_entries \
-                     WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
-                     ORDER BY added_at DESC"
+                    "SELECT ce.id, ce.question, ce.tags, ce.source, ce.added_at, \
+                     COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), '{}') as label_ids \
+                     FROM catalog_entries ce \
+                     LEFT JOIN catalog_labels cl ON ce.id = cl.catalog_id \
+                     WHERE ($1::bigint IS NULL OR ce.owner_id = $1 OR ce.is_global = true) \
+                     GROUP BY ce.id, ce.question, ce.tags, ce.source, ce.added_at \
+                     ORDER BY ce.added_at DESC"
                 )
                 .bind(me)
                 .fetch_all(pool)
@@ -142,13 +154,14 @@ pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&
         };
 
     rows.iter()
-        .map(|(id, question, tags, source, added_at)| {
+        .map(|(id, question, tags, source, added_at, label_ids)| {
             serde_json::json!({
                 "id": id,
                 "question": question,
                 "tags": tags,
                 "source": source,
                 "addedAt": added_at.map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)),
+                "labelIds": label_ids,
             })
         })
         .collect()
