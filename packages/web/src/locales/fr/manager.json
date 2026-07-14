@@ -863,6 +863,22 @@
     "filterLabel": "Étiquette",
     "assignTitle": "Attribuer une étiquette",
     "assignSave": "Enregistrer",
-    "noLabels": "Aucune étiquette disponible"
+    "noLabels": "Aucune étiquette disponible",
+    "editTitle": "Modifier l'étiquette",
+    "update": "Enregistrer",
+    "assignLabel": "Attribuer une étiquette",
+    "addLabel": "+ Matière",
+    "errors": {
+      "generic": "Action échouée",
+      "name_exists": "Une étiquette portant ce nom existe déjà",
+      "create_failed": "Impossible de créer l'étiquette",
+      "update_failed": "Impossible de mettre à jour l'étiquette",
+      "not_found": "Étiquette non trouvée",
+      "delete_failed": "Impossible de supprimer l'étiquette",
+      "invalid_entity_type": "Type d'entité invalide",
+      "entity_id_required": "ID d'entité requise",
+      "invalid_label_ids": "IDs d'étiquette invalides",
+      "klassen_enabled_required": "Mode classes requis"
+    }
   }
 }

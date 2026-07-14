@@ -863,6 +863,22 @@
     "filterLabel": "Etichetta",
     "assignTitle": "Assegna etichetta",
     "assignSave": "Salva",
-    "noLabels": "Nessuna etichetta disponibile"
+    "noLabels": "Nessuna etichetta disponibile",
+    "editTitle": "Modifica etichetta",
+    "update": "Salva",
+    "assignLabel": "Assegna etichetta",
+    "addLabel": "+ Materia",
+    "errors": {
+      "generic": "Azione non riuscita",
+      "name_exists": "Esiste già un'etichetta con questo nome",
+      "create_failed": "Impossibile creare l'etichetta",
+      "update_failed": "Impossibile aggiornare l'etichetta",
+      "not_found": "Etichetta non trovata",
+      "delete_failed": "Impossibile eliminare l'etichetta",
+      "invalid_entity_type": "Tipo di entità non valido",
+      "entity_id_required": "ID entità richiesto",
+      "invalid_label_ids": "ID etichetta non validi",
+      "klassen_enabled_required": "Modalità classi richiesta"
+    }
   }
 }

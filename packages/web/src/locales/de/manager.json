@@ -863,6 +863,22 @@
     "filterLabel": "Fach",
     "assignTitle": "Fach zuweisen",
     "assignSave": "Speichern",
-    "noLabels": "Keine Fächer verfügbar"
+    "noLabels": "Keine Fächer verfügbar",
+    "editTitle": "Label bearbeiten",
+    "update": "Speichern",
+    "assignLabel": "Label zuweisen",
+    "addLabel": "+ Fach",
+    "errors": {
+      "generic": "Aktion fehlgeschlagen",
+      "name_exists": "Ein Label mit diesem Namen existiert bereits",
+      "create_failed": "Label konnte nicht erstellt werden",
+      "update_failed": "Label konnte nicht aktualisiert werden",
+      "not_found": "Label nicht gefunden",
+      "delete_failed": "Label konnte nicht gelöscht werden",
+      "invalid_entity_type": "Ungültiger Entity-Typ",
+      "entity_id_required": "Entity-ID erforderlich",
+      "invalid_label_ids": "Ungültige Label-IDs",
+      "klassen_enabled_required": "Klassen-Modus erforderlich"
+    }
   }
 }

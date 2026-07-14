@@ -874,6 +874,22 @@
     "filterLabel": "Label",
     "assignTitle": "Assign label",
     "assignSave": "Save",
-    "noLabels": "No labels available"
+    "noLabels": "No labels available",
+    "editTitle": "Edit label",
+    "update": "Save",
+    "assignLabel": "Assign label",
+    "addLabel": "+ Subject",
+    "errors": {
+      "generic": "Action failed",
+      "name_exists": "A label with this name already exists",
+      "create_failed": "Label could not be created",
+      "update_failed": "Label could not be updated",
+      "not_found": "Label not found",
+      "delete_failed": "Label could not be deleted",
+      "invalid_entity_type": "Invalid entity type",
+      "entity_id_required": "Entity ID required",
+      "invalid_label_ids": "Invalid label IDs",
+      "klassen_enabled_required": "Classes mode required"
+    }
   }
 }
