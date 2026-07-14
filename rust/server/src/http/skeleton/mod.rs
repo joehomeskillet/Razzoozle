@@ -1,10 +1,9 @@
-//! GET /api/skeleton/export + POST /api/skeleton/import — manager-gated theme
+//! GET /api/skeleton/export + POST /api/skeleton/import — admin-only theme
 //! bundle routes (Node http-routes.ts handleSkeletonExport/handleSkeletonImport).
 //!
-//! Auth mirrors assignments.rs authorize_manager_request: X-Manager-Token that
-//! is either a logged-in manager clientId (registry.is_logged) or, in dev mode,
-//! the DEV_API_KEY compared constant-time. Import broadcasts MANAGER.THEME via
-//! state.io directly (no themeBroadcaster callback — io is in AppState).
+//! Auth: X-Manager-Token must be a valid session token for an admin user.
+//! Import broadcasts MANAGER.THEME via state.io directly (no themeBroadcaster
+//! callback — io is in AppState).
 
 mod bundle;
 
@@ -16,22 +15,11 @@ use axum::{
 };
 use serde_json::{json, Value};
 
-use super::{dev_api_key, is_dev_mode, json_error_response, AppState};
+use super::{json_error_response, AppState};
 use razzoozle_protocol::constants;
 
 /// http-routes.ts:109 SKELETON_IMPORT_MAX.
 const SKELETON_IMPORT_MAX: usize = 16 * 1024 * 1024;
-
-fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (x, y) in a.iter().zip(b.iter()) {
-        diff |= x ^ y;
-    }
-    diff == 0
-}
 
 async fn authorize_manager(
     headers: &HeaderMap,
@@ -44,15 +32,10 @@ async fn authorize_manager(
     if token.is_empty() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
-    // Check if token is valid session token
+    // Check if token is valid session token and user is admin
     if let Some(ref pool) = state.db_pool {
-        if crate::db::users::session_user(pool, token).await.ok().flatten().is_some() {
-            return Ok(());
-        }
-    }
-    if is_dev_mode() {
-        if let Some(key) = dev_api_key() {
-            if constant_time_eq(token.as_bytes(), key.as_bytes()) {
+        if let Some(user) = crate::db::users::session_user(pool, token).await.ok().flatten() {
+            if user.role == "admin" {
                 return Ok(());
             }
         }

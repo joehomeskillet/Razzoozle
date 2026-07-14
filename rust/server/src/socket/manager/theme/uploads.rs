@@ -240,7 +240,7 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let user = match ctx.require_user().await {
+                let user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -299,7 +299,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let user = match ctx.require_user().await {
+                let user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
                         socket

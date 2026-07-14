@@ -106,7 +106,7 @@ pub(super) fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let _user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -220,7 +220,7 @@ pub(super) fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                let _user = match ctx.require_user().await {
+                let _user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
                         socket
