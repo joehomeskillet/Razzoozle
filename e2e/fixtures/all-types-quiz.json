@@ -56,6 +56,25 @@
       "chunks": ["the", "quick", "brown", "fox"],
       "time": 10,
       "cooldown": 5
+    },
+    {
+      "type": "mathematik",
+      "question": "Was ist 6 mal 7?",
+      "correct": 42,
+      "tolerance": 0,
+      "decimals": 0,
+      "time": 30,
+      "cooldown": 5
+    },
+    {
+      "type": "wortarten",
+      "question": "Bestimme die Wortarten im Satz.",
+      "sentence": "Der Hund läuft schnell",
+      "tokens": ["Der", "Hund", "läuft", "schnell"],
+      "posSet": ["Nomen", "Verb", "Adjektiv", "Artikel", "Pronomen", "Adverb", "Präposition", "Konjunktion"],
+      "solutions": [3, 0, 1, 5],
+      "time": 45,
+      "cooldown": 5
     }
   ]
 }
