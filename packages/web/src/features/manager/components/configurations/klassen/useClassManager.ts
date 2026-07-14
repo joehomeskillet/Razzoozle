@@ -21,7 +21,7 @@ interface Student {
 }
 
 export const useClassManager = () => {
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const { t } = useTranslation()
 
   const [classes, setClasses] = useState<Class[]>([])
@@ -142,25 +142,15 @@ export const useClassManager = () => {
     toast.error(t(message))
   })
 
-  // Request class list on mount
+  // Request class list when namespace connects and authenticates
   useEffect(() => {
-    if (!socket) return
+    if (!isConnected) return
+
     socket.emit(EVENTS.CLASS.LIST)
-  }, [socket])
-
-  // Re-emit class:list when socket connects/reconnects
-  useEffect(() => {
-    if (!socket) return
-
-    const handleConnect = () => {
-      socket.emit(EVENTS.CLASS.LIST)
-    }
-
-    socket.on("connect", handleConnect)
-    return () => {
-      socket.off("connect", handleConnect)
-    }
-  }, [socket])
+    // The socket may connect before this effect subscribes; gating on
+    // isConnected (namespace-connected + authed) and re-emitting on each
+    // isConnected flip is the correct load trigger (mirrors manager/index.tsx).
+  }, [isConnected, socket])
 
   // Fetch students for a class
   const handleFetchStudents = useCallback((classId: number) => {
