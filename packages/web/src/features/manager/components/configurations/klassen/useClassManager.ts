@@ -16,6 +16,8 @@ interface Class {
   // Only present in the admin's unfiltered class list — disambiguates classes
   // that share a name across different owners.
   ownerName?: string
+  // Label IDs assigned to this class (LK4)
+  labelIds?: number[]
 }
 
 interface Student {
@@ -242,6 +244,16 @@ export const useClassManager = () => {
     }
   )
 
+  // Listen for label assignments (refetch class list after label change)
+  useEvent(
+    EVENTS.LABEL.ASSIGNED,
+    (data: { entityType: string; entityId: string }) => {
+      if (data.entityType === "class") {
+        socket.emit(EVENTS.CLASS.LIST)
+      }
+    }
+  )
+
   // Listen for errors
   useEvent(EVENTS.CLASS.ERROR, (message: string) => {
     toast.error(t(message))
@@ -327,6 +339,18 @@ export const useClassManager = () => {
     socket.emit(EVENTS.CLASS.UPDATE_STUDENT, payload)
   }
 
+  // Assign labels to a class
+  const handleAssignLabels = useCallback(
+    (classId: number, labelIds: number[]): void => {
+      socket.emit(EVENTS.LABEL.ASSIGN, {
+        entityType: "class",
+        entityId: String(classId),
+        labelIds,
+      })
+    },
+    [socket],
+  )
+
   return {
     classes: filteredClasses,
     allStudents,
@@ -343,5 +367,6 @@ export const useClassManager = () => {
     handleDeleteStudent,
     handleUpdateStudent,
     handleFetchStudents,
+    handleAssignLabels,
   }
 }
