@@ -140,10 +140,11 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                 };
                 let me = if user.role == "admin" { None } else { Some(user.user_id) };
 
-                // Validate the quizz payload: {subject: string, questions: Question[]}
+                // Validate the quizz payload: {subject: string, questions: Question[], oldId?: string}
                 let subject = payload.get("subject").and_then(|v| v.as_str());
                 let questions = payload.get("questions").and_then(|v| v.as_array());
                 let theme_id = payload.get("themeId").and_then(|v| v.as_str());
+                let old_id = payload.get("oldId").and_then(|v| v.as_str());
 
                 match (subject, questions) {
                     (Some(subj), Some(qs)) if !subj.is_empty() && !qs.is_empty() => {
@@ -162,6 +163,16 @@ fn register_save(socket: &SocketRef, ctx: HandlerCtx) {
                         if let Err(e) = safe_asset_id(&id) {
                             socket.emit(constants::quizz::ERROR, &e).ok();
                             return;
+                        }
+
+                        // Carry quiz_labels to new ID on rename (before upsert)
+                        if let Some(old) = old_id {
+                            if old != id {
+                                if let Err(e) = db::carry_over_quiz_labels(&ctx.db_pool, old, &id).await {
+                                    eprintln!("Warning: failed to carry over labels on rename: {}", e);
+                                    // Continue anyway — label carry-over is not fatal
+                                }
+                            }
                         }
 
                         match db::upsert_quiz(
