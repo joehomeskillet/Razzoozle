@@ -7,7 +7,6 @@ use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
 use razzoozle_protocol::quizz::QuestionType;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
@@ -15,6 +14,31 @@ use crate::question_type_wire;
 use super::AppState;
 
 // ── Solo play types ─────────────────────────────────────────────────────────
+
+/// Shuffles chunks using Fisher-Yates, retrying up to 10 times
+/// to ensure the result differs from the input order.
+fn shuffle_chunks_with_guard(chunks: Vec<String>) -> Vec<String> {
+    use rand::seq::SliceRandom;
+    use rand::thread_rng;
+
+    let is_equal = |a: &[String], b: &[String]| -> bool {
+        if a.len() != b.len() {
+            return false;
+        }
+        a.iter().zip(b.iter()).all(|(x, y)| x == y)
+    };
+
+    let mut rng = thread_rng();
+    let mut shuffled = chunks.clone();
+    let mut attempts = 0;
+
+    while attempts < 10 && is_equal(&shuffled, &chunks) {
+        shuffled.shuffle(&mut rng);
+        attempts += 1;
+    }
+
+    shuffled
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SoloQuestion {
@@ -33,6 +57,16 @@ pub struct SoloQuestion {
     pub step: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decimals: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sentence: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tokens: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub posSet: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shuffledChunks: Option<Vec<String>>,
     pub time: i32,
     pub cooldown: i32,
 }
@@ -64,6 +98,8 @@ pub struct CheckAnswerResponse {
     pub accuracy: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub achievements: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub poll: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -133,22 +169,36 @@ pub async fn handle_get_quiz_solo(
     let questions = quiz
         .questions
         .iter()
-        .map(|q| SoloQuestion {
-            question: q.question.clone(),
-            r#type: q.r#type.as_ref().map(|t| question_type_wire(t).to_string()),
-            media: q.media.as_ref().map(|m| {
-                serde_json::json!({
-                    "type": m.r#type,
-                    "url": m.url
-                })
-            }),
-            answers: q.answers.clone(),
-            min: q.min,
-            max: q.max,
-            step: q.step,
-            unit: q.unit.clone(),
-            time: q.time,
-            cooldown: q.cooldown,
+        .map(|q| {
+            // Shuffle chunks for sentence-builder questions
+            let shuffled_chunks = if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sentence-builder") {
+                q.chunks.as_ref().map(|chunks| shuffle_chunks_with_guard(chunks.clone()))
+            } else {
+                None
+            };
+
+            SoloQuestion {
+                question: q.question.clone(),
+                r#type: q.r#type.as_ref().map(|t| question_type_wire(t).to_string()),
+                media: q.media.as_ref().map(|m| {
+                    serde_json::json!({
+                        "type": m.r#type,
+                        "url": m.url
+                    })
+                }),
+                answers: q.answers.clone(),
+                min: q.min,
+                max: q.max,
+                step: q.step,
+                unit: q.unit.clone(),
+                decimals: q.decimals,
+                sentence: q.sentence.clone(),
+                tokens: q.tokens.clone(),
+                posSet: q.pos_set.clone(),
+                shuffledChunks: shuffled_chunks,
+                time: q.time,
+                cooldown: q.cooldown,
+            }
         })
         .collect();
 
@@ -195,13 +245,19 @@ pub async fn handle_check_answer(
     };
 
     let eval_result = evaluate_answer(question, &answer_input);
-    let points = if eval_result.correct { 1000 } else { 0 };
+
+    // Check if this is a poll question
+    let is_poll = question.r#type.as_ref() == Some(&QuestionType::Poll);
+
+    // Calculate points: base × 1000, rounded
+    let points = (eval_result.base * 1000.0).round() as i32;
 
     let mut response = CheckAnswerResponse {
         correct: eval_result.correct,
         points: Some(points),
         accuracy: None,
         achievements: None,
+        poll: if is_poll { Some(true) } else { None },
     };
 
     // For slider questions, include accuracy
@@ -241,7 +297,11 @@ pub async fn handle_solo_score(
         .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", quiz_id)))?;
     drop(registry);
 
-    let theoretical_max = quiz.questions.len() as i32 * 1000;
+    // Count only non-poll questions for theoretical_max
+    let non_poll_count = quiz.questions.iter()
+        .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
+        .count() as i32;
+    let theoretical_max = non_poll_count * 1000;
 
     // Recompute score from answers if provided
     let mut verified_score = payload.score;
@@ -311,4 +371,126 @@ pub async fn handle_solo_score(
         .collect();
 
     Ok(Json(SoloScoreResponse { leaderboard }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_solo_question_wortarten_fields() {
+        let question = SoloQuestion {
+            question: "Test question".to_string(),
+            r#type: Some("wortarten".to_string()),
+            media: None,
+            answers: None,
+            min: None,
+            max: None,
+            step: None,
+            unit: None,
+            decimals: None,
+            sentence: Some("Das ist ein Test".to_string()),
+            tokens: Some(vec!["Das".to_string(), "ist".to_string(), "ein".to_string(), "Test".to_string()]),
+            posSet: Some(vec!["ART".to_string(), "V".to_string(), "ART".to_string(), "N".to_string()]),
+            shuffledChunks: None,
+            time: 30,
+            cooldown: 0,
+        };
+
+        let json = serde_json::to_string(&question).unwrap();
+        assert!(json.contains("\"sentence\""));
+        assert!(json.contains("\"tokens\""));
+        assert!(json.contains("\"posSet\""));
+        assert!(!json.contains("\"chunks\""));
+    }
+
+    #[test]
+    fn test_solo_question_sentence_builder_shuffled() {
+        let chunks = vec!["Das".to_string(), "ist".to_string(), "ein".to_string(), "Test".to_string()];
+        let shuffled = shuffle_chunks_with_guard(chunks.clone());
+
+        // Verify shuffled is different from original (with high probability after 10 attempts)
+        // This may occasionally fail due to randomness, but with 4+ items it's extremely rare
+        if chunks.len() > 3 {
+            // Only assert if we have enough items to reliably shuffle
+            assert_ne!(chunks, shuffled);
+        }
+    }
+
+    #[test]
+    fn test_check_answer_response_poll_flag() {
+        let response = CheckAnswerResponse {
+            correct: false,
+            points: Some(0),
+            accuracy: None,
+            achievements: None,
+            poll: Some(true),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"poll\":true"));
+    }
+
+    #[test]
+    fn test_check_answer_response_no_poll_flag_when_none() {
+        let response = CheckAnswerResponse {
+            correct: true,
+            points: Some(1000),
+            accuracy: None,
+            achievements: None,
+            poll: None,
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(!json.contains("\"poll\""));
+    }
+
+    #[test]
+    fn test_points_calculation_partial_credit() {
+        // Simulate wortarten 2/3 correct = base 0.666...
+        let base: f64 = 2.0 / 3.0;
+        let points = (base * 1000.0).round() as i32;
+
+        // Should be 667 (rounded from 666.666...)
+        assert_eq!(points, 667);
+        assert!(points > 0 && points < 1000);
+    }
+
+    #[test]
+    fn test_points_calculation_full_credit() {
+        let base: f64 = 1.0;
+        let points = (base * 1000.0).round() as i32;
+        assert_eq!(points, 1000);
+    }
+
+    #[test]
+    fn test_points_calculation_no_credit() {
+        let base: f64 = 0.0;
+        let points = (base * 1000.0).round() as i32;
+        assert_eq!(points, 0);
+    }
+
+    #[test]
+    fn test_solo_question_mathematik_decimals() {
+        let question = SoloQuestion {
+            question: "What is 1.5 + 2.5?".to_string(),
+            r#type: Some("mathematik".to_string()),
+            media: None,
+            answers: None,
+            min: None,
+            max: None,
+            step: None,
+            unit: Some("m".to_string()),
+            decimals: Some(1),
+            sentence: None,
+            tokens: None,
+            posSet: None,
+            shuffledChunks: None,
+            time: 30,
+            cooldown: 0,
+        };
+
+        let json = serde_json::to_string(&question).unwrap();
+        assert!(json.contains("\"decimals\":1"));
+    }
 }
