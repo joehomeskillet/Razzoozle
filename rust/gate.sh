@@ -72,6 +72,15 @@ if command -v cargo-clippy >/dev/null 2>&1; then
   say "advisory: clippy emitted $CLIPPY_N warning/error line(s) (not blocking)"
 fi
 
+# --- 5. locale JSON validity (BLOCKING) — every web locale namespace must parse.
+# Added 2026-07-14 after a worker committed invalid zh/game.json and a textual
+# auto-merge mangled fr/it (see scripts/check-locales.sh header). Cheap (~1s),
+# python3-only, works in bare worktrees without node_modules.
+if [[ -x "$(dirname "$0")/../scripts/check-locales.sh" ]] || [[ -f "$(dirname "$0")/../scripts/check-locales.sh" ]]; then
+  if bash "$(dirname "$0")/../scripts/check-locales.sh" | tail -5; then say "ok: locale JSONs valid"
+  else say "NO-GO: invalid locale JSON (see above)"; fail=1; fi
+fi
+
 # --- verdict ------------------------------------------------------------------
 if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests compile, all batch markers intact)"; exit 0
 else say "GATE FAILED ❌ — DISCARD worker output (drop the worktree, or git checkout HEAD -- rust/server/src)"; exit 1; fi
