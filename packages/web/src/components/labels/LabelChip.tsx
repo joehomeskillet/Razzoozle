@@ -13,7 +13,7 @@ interface LabelChipProps {
 }
 
 const colorMap: Record<string, { bg: string; text: string }> = {
-  gray: { bg: "bg-gray-100", text: "text-gray-700" },
+  gray: { bg: "bg-[var(--surface)]", text: "text-[var(--answer-text)]" },
   violet: { bg: "bg-[var(--color-primary)]", text: "text-white" },
   accent: { bg: "bg-[var(--color-accent)]", text: "text-[var(--accent-contrast-text)]" },
   bronze: { bg: "bg-[var(--tier-bronze)]", text: "text-white" },
