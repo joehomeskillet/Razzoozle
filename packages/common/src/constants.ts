@@ -605,3 +605,40 @@ export const EXAMPLE_QUIZZ = {
     },
   ],
 } as const
+
+// Global labels (Fächer) — admin-defined, can tag quizzes/media/catalog.
+// All events are auth-gated (require_user for list/assign, require_admin for crud).
+export const LABEL = {
+  /**
+   * `label:list` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `label:data` `{ labels: [{ id: number, name: string, color: string }] }`.
+   */
+  LIST: "label:list",
+  /**
+   * `label:data` → `{ labels: [{ id: number, name: string, color: string }] }` (server response after list or crud).
+   */
+  DATA: "label:data",
+  /**
+   * `label:create` req `{ name: string, color?: string }` (admin-only) → `label:data` (re-emit full list).
+   */
+  CREATE: "label:create",
+  /**
+   * `label:update` req `{ id: number, name?: string, color?: string }` (admin-only) → `label:data` (re-emit full list).
+   */
+  UPDATE: "label:update",
+  /**
+   * `label:delete` req `{ id: number }` (admin-only, CASCADE removes all assignments) → `label:data` (re-emit full list).
+   */
+  DELETE: "label:delete",
+  /**
+   * `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success.
+   */
+  ASSIGN: "label:assign",
+  /**
+   * `label:assigned` → `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (ack; consumers refetch their lists).
+   */
+  ASSIGNED: "label:assigned",
+  /**
+   * `label:error` → `{ message: string }` (error response).
+   */
+  ERROR: "label:error",
+} as const

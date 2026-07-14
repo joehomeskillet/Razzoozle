@@ -13,4 +13,6 @@ export interface MediaMeta {
   uploadedAt: string
   width?: number // WP-6 — image-only; absent on audio + on pre-existing manifest rows
   height?: number // WP-6 — image-only; absent on audio + on pre-existing manifest rows
+  // Label IDs assigned to this media (WP-L0: labels scaffold). Optional for back-compat.
+  labelIds?: number[]
 }

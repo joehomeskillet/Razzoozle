@@ -141,7 +141,8 @@
     "klassen": "班级",
     "profile": "我的资料",
     "users": "用户管理",
-    "schueler": "学生管理"
+    "schueler": "学生管理",
+    "labels": "标签"
   },
   "plugins": {
     "title": "插件",
@@ -843,5 +844,9 @@
     "search": "搜索学生",
     "searchPlaceholder": "按姓名或班级搜索 …",
     "noResults": "未找到学生"
+  },
+  "labels": {
+    "description": "用于组织测验、媒体和目录条目的全局标签。",
+    "emptyState": "脚手架占位符 — 标签定义将在此加载。"
   }
 }

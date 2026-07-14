@@ -19,6 +19,7 @@ import ConfigTheme from "@razzoozle/web/features/manager/components/configuratio
 import ConfigUsers from "@razzoozle/web/features/manager/components/configurations/ConfigUsers"
 import ConfigKlassen from "@razzoozle/web/features/manager/components/configurations/klassen"
 import ConfigSchueler from "@razzoozle/web/features/manager/components/configurations/schueler"
+import ConfigLabels from "@razzoozle/web/features/manager/components/configurations/labels/ConfigLabels"
 import RunningGamesSection from "@razzoozle/web/features/manager/components/console/RunningGamesSection"
 import ConsoleShell, {
   type ConsoleNavItem,
@@ -177,6 +178,14 @@ const BUILTIN_TABS: TabDef[] = [
     icon: Palette,
     component: ConfigTheme,
     roleGate: "admin",
+  },
+  {
+    key: "labels",
+    nameKey: "manager:tabs.labels",
+    icon: Puzzle,
+    component: ConfigLabels,
+    roleGate: "admin",
+    gated: "klassenEnabled",
   },
   {
     key: "satellite",

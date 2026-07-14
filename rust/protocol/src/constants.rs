@@ -273,3 +273,23 @@ pub mod user {
     pub const LIST_EXTERNAL_PROVIDERS: &str = "user:listExternalProviders";
     pub const EXTERNAL_PROVIDERS: &str = "user:externalProviders";
 }
+
+pub mod label {
+    /// `label:list` req: NO payload — server handler MUST use the bare `|socket: SocketRef|` signature (socketioxide silently drops payloadless events if a Data extractor is present). → `label:data` `{ labels: [{ id: number, name: string, color: string }] }`.
+    pub const LIST: &str = "label:list";
+    /// `label:data` → `{ labels: [{ id: number, name: string, color: string }] }` (server response after list or crud).
+    pub const DATA: &str = "label:data";
+    /// `label:create` req `{ name: string, color?: string }` (admin-only) → `label:data` (re-emit full list).
+    pub const CREATE: &str = "label:create";
+    /// `label:update` req `{ id: number, name?: string, color?: string }` (admin-only) → `label:data` (re-emit full list).
+    pub const UPDATE: &str = "label:update";
+    /// `label:delete` req `{ id: number }` (admin-only, CASCADE removes all assignments) → `label:data` (re-emit full list).
+    pub const DELETE: &str = "label:delete";
+
+    /// `label:assign` req `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (replace-set semantics; require_user + entity visibility + klassenEnabled gate) → `label:assigned` on success.
+    pub const ASSIGN: &str = "label:assign";
+    /// `label:assigned` → `{ entityType: "quizz"|"media"|"catalog", entityId: string, labelIds: number[] }` (ack; consumers refetch their lists).
+    pub const ASSIGNED: &str = "label:assigned";
+    /// `label:error` → `{ message: string }` (error response).
+    pub const ERROR: &str = "label:error";
+}

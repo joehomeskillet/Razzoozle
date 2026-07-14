@@ -21,3 +21,5 @@ pub use submissions::*;
 pub use theme::*;
 pub use users::*;
 pub use user_ai::*;
+pub mod labels;
+pub use labels::*;

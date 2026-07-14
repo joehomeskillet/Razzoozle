@@ -141,7 +141,8 @@
     "klassen": "Clases",
     "profile": "Mi perfil",
     "users": "Gestión de usuarios",
-    "schueler": "Gestión de estudiantes"
+    "schueler": "Gestión de estudiantes",
+    "labels": "Etiquetas"
   },
   "plugins": {
     "title": "Complementos",
@@ -843,5 +844,9 @@
     "search": "Buscar estudiante",
     "searchPlaceholder": "Buscar por nombre o clase …",
     "noResults": "No se encontraron estudiantes"
+  },
+  "labels": {
+    "description": "Etiquetas globales para organizar cuestionarios, medios y entradas del catálogo.",
+    "emptyState": "Marcador de posición de andamios — las definiciones de etiquetas se cargarán aquí."
   }
 }

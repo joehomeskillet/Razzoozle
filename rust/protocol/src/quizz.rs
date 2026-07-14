@@ -154,6 +154,16 @@ pub enum CatalogSource {
     Ai,
 }
 
+/// A global label (Fach) defined by admin — orthogonal to subject titles, can tag quizzes/media/catalog.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct Label {
+    pub id: i64,
+    pub name: String,
+    pub color: String,
+}
+
 /// A reusable question in the catalog
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -164,6 +174,9 @@ pub struct CatalogEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub label_ids: Option<Vec<i64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub source: Option<CatalogSource>,

@@ -141,7 +141,8 @@
     "klassen": "Klassen",
     "profile": "Mein Profil",
     "users": "Nutzerverwaltung",
-    "schueler": "Schülerverwaltung"
+    "schueler": "Schülerverwaltung",
+    "labels": "Fächer"
   },
   "plugins": {
     "title": "Plugins",
@@ -843,5 +844,9 @@
     "search": "Schüler suchen",
     "searchPlaceholder": "Nach Name oder Klasse suchen …",
     "noResults": "Keine Schüler gefunden"
+  },
+  "labels": {
+    "description": "Globale Fächer für die Organisation von Quizzen, Medien und Katalogeinträgen.",
+    "emptyState": "Scaffold-Platzhalter — Label-Definitionen werden hier geladen."
   }
 }
