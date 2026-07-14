@@ -40,7 +40,8 @@
     "averageGuess": "Schnitt der Schätzungen: {{value}}"
   },
   "mathematik": {
-    "correctAnswer": "Korrekte Antwort"
+    "decimalHint": "{{count}} Nachkommastelle_one{{count}} Nachkommastellen_other",
+    "correctAnswer": "Richtige Antwort"
   },
   "pollThanks": "Danke für deine Stimme",
   "streak": {
@@ -49,9 +50,16 @@
     "streakTitle": "Serie",
     "streakValue": "+{{percent}}%"
   },
-  "tier": { "bronze": "Bronze", "silver": "Silber", "gold": "Gold", "diamant": "Diamant" },
+  "tier": {
+    "bronze": "Bronze",
+    "silver": "Silber",
+    "gold": "Gold",
+    "diamant": "Diamant"
+  },
   "locked": "gesperrt",
-  "achievementBanner": { "wins": "holt" },
+  "achievementBanner": {
+    "wins": "holt"
+  },
   "submittedBy": "eingereicht von {{name}}",
   "typeAnswerPlaceholder": "Antwort eingeben...",
   "submitAnswer": "Absenden",
@@ -270,5 +278,11 @@
   "timer": {
     "remaining_one": "Noch {{count}} Sekunde",
     "remaining_other": "Noch {{count}} Sekunden"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Deine Antwort",
+    "wordBank": "Wortbank",
+    "tapHint": "Tippe auf die Wörter unten, um deine Antwort zu bilden",
+    "submit": "Absenden"
   }
 }

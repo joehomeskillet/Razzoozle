@@ -36,9 +36,6 @@
     "correctAnswer": "Bonne réponse",
     "averageGuess": "Moyenne des estimations : {{value}}"
   },
-  "mathematik": {
-    "correctAnswer": "Réponse Correcte"
-  },
   "streak": {
     "bonus": "Bonus ×2",
     "firstCorrect": "Le plus rapide +100",
@@ -277,5 +274,15 @@
   "timer": {
     "remaining_one": "{{count}} seconde restante",
     "remaining_other": "{{count}} secondes restantes"
+  },
+  "mathematik": {
+    "decimalHint": "{{count}} decimal place_one{{count}} decimal places_other",
+    "correctAnswer": "Bonne réponse"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Votre réponse",
+    "wordBank": "Banque de mots",
+    "tapHint": "Appuyez sur les mots ci-dessous pour construire votre réponse",
+    "submit": "Envoyer"
   }
 }

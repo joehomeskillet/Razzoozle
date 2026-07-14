@@ -44,7 +44,7 @@ const FinishedScreen = ({
           <p className="mt-2 text-2xl font-bold text-[color:var(--color-field-ink)]/80">
             {t("game:solo.yourScore")}
           </p>
-          <div className="mt-3 inline-block rounded-2xl border border-[var(--border-hairline)] bg-white px-8 py-3 shadow-sm">
+          <div data-testid="solo-finished-score" className="mt-3 inline-block rounded-2xl border border-[var(--border-hairline)] bg-white px-8 py-3 shadow-sm">
             <AnimatedPoints
               to={totalPoints}
               className="text-6xl font-black tabular-nums text-[var(--game-fg)]"
@@ -55,14 +55,17 @@ const FinishedScreen = ({
           </div>
         </motion.div>
 
-        <SoloLeaderboard
-          leaderboard={leaderboard}
-          playerName={playerName}
-          totalPoints={totalPoints}
-        />
+        <div data-testid="solo-finished-leaderboard">
+          <SoloLeaderboard
+            leaderboard={leaderboard}
+            playerName={playerName}
+            totalPoints={totalPoints}
+          />
+        </div>
 
         <div className="flex flex-col gap-3 pb-10 sm:flex-row">
           <button
+            data-testid="solo-finished-restart"
             type="button"
             onClick={onReplay}
             className="bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/40 rounded-full px-10 py-3 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-all"

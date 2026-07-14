@@ -35,9 +35,6 @@
     "correctAnswer": "Risposta corretta",
     "averageGuess": "Media delle stime: {{value}}"
   },
-  "mathematik": {
-    "correctAnswer": "Risposta Corretta"
-  },
   "pollThanks": "Grazie per il tuo voto",
   "usernameLabel": "Soprannome",
   "usernameRequired": "Inserisci un soprannome",
@@ -277,5 +274,15 @@
   "timer": {
     "remaining_one": "{{count}} secondo rimanente",
     "remaining_other": "{{count}} secondi rimanenti"
+  },
+  "mathematik": {
+    "decimalHint": "{{count}} posizione decimale_one{{count}} posizioni decimali_other",
+    "correctAnswer": "Risposta corretta"
+  },
+  "sentenceBuilder": {
+    "answerBar": "La tua risposta",
+    "wordBank": "Banca di parole",
+    "tapHint": "Tocca le parole qui sotto per costruire la tua risposta",
+    "submit": "Invia"
   }
 }

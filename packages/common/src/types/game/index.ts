@@ -139,6 +139,9 @@ export interface SoloCheckAnswerResponse {
   // Absent for non-slider questions. Informational; the same value drives the
   // server badge decision so the client never has to recompute it.
   accuracy?: number
+  // Poll response: true if this is a poll question (neutral feedback, no sfx/haptic,
+  // no streak impact). Absent or false for regular questions.
+  poll?: boolean
 }
 
 export interface SoloScoreEntry {

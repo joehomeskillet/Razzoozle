@@ -84,10 +84,7 @@
       "thumbs": "拇指",
       "fun": "表情",
       "people": "人物"
-    },
-  "mathematik": {
-    "correctAnswer": "正确答案"
-  
+    }
   },
   "pause": {
     "title": "暂停",
@@ -277,5 +274,15 @@
   "timer": {
     "remaining_one": "剩余 {{count}} 秒",
     "remaining_other": "剩余 {{count}} 秒"
+  },
+  "mathematik": {
+    "decimalHint": "{{count}} 位小数_one{{count}} 位小数_other",
+    "correctAnswer": "正确答案"
+  },
+  "sentenceBuilder": {
+    "answerBar": "你的答案",
+    "wordBank": "单词库",
+    "tapHint": "点击下面的单词来构建你的答案",
+    "submit": "提交"
   }
 }

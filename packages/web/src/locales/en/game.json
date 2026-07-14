@@ -46,12 +46,20 @@
     "averageGuess": "Average guess: {{value}}"
   },
   "mathematik": {
+    "decimalHint": "{{count}} decimal place_one{{count}} decimal places_other",
     "correctAnswer": "Correct answer"
   },
   "pollThanks": "Thanks for your vote",
-  "tier": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamant": "Diamond" },
+  "tier": {
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "diamant": "Diamond"
+  },
   "locked": "locked",
-  "achievementBanner": { "wins": "grabs" },
+  "achievementBanner": {
+    "wins": "grabs"
+  },
   "submittedBy": "submitted by {{name}}",
   "typeAnswerPlaceholder": "Type your answer...",
   "submitAnswer": "Submit",
@@ -270,5 +278,11 @@
   "timer": {
     "remaining_one": "{{count}} second remaining",
     "remaining_other": "{{count}} seconds remaining"
+  },
+  "sentenceBuilder": {
+    "answerBar": "Your answer",
+    "wordBank": "Word bank",
+    "tapHint": "Tap the words below to build your answer",
+    "submit": "Submit"
   }
 }
