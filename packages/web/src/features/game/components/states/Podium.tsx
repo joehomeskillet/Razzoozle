@@ -341,10 +341,12 @@ const Podium = ({
   return (
     <>
       {/* Superlative recap reveal — overlays the podium until it completes. */}
+      {/* #76: terminal recap always auto-plays to the podium, independent of the */}
+      {/* in-game manual/auto pacing toggle (same as RoundRecap). */}
       {hasRecap && !recapDone && (
         <RecapSequence
           superlatives={managerRecap.superlatives}
-          autoMode={autoMode}
+          autoMode
           onComplete={() => setRecapDone(true)}
         />
       )}
