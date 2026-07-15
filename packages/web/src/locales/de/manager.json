@@ -891,6 +891,16 @@
       "entity_id_required": "Entity-ID erforderlich",
       "invalid_label_ids": "Ungültige Label-IDs",
       "klassen_enabled_required": "Klassen-Modus erforderlich"
+    },
+    "colors": {
+      "red": "Rot",
+      "blue": "Blau",
+      "green": "Grün",
+      "yellow": "Gelb",
+      "purple": "Violett",
+      "pink": "Rosa",
+      "indigo": "Indigo",
+      "gray": "Grau"
     }
   }
 }

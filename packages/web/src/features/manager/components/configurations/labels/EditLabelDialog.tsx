@@ -76,20 +76,24 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
                 {t("manager:labels.colorLabel")}
               </label>
               <div className="flex flex-wrap gap-2">
-                {LABEL_PALETTE.map((c) => (
-                  <button
-                    key={c.slug}
-                    type="button"
-                    onClick={() => setColor(c.slug)}
-                    className="h-8 w-8 rounded-full border-2 transition-all"
-                    style={{
-                      backgroundColor: `var(--label-${c.slug})`,
-                      borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
-                      boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
-                    }}
-                    title={c.label}
-                  />
-                ))}
+                {LABEL_PALETTE.map((c) => {
+                  const colorLabel = t("manager:labels.colors." + c.slug, { defaultValue: c.label })
+                  return (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      onClick={() => setColor(c.slug)}
+                      className="h-8 w-8 rounded-full border-2 transition-all"
+                      style={{
+                        backgroundColor: `var(--label-${c.slug})`,
+                        borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
+                        boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
+                      }}
+                      title={colorLabel}
+                      aria-label={colorLabel}
+                    />
+                  )
+                })}
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">

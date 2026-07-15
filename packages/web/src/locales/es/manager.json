@@ -891,6 +891,16 @@
       "entity_id_required": "ID de entidad requerida",
       "invalid_label_ids": "IDs de etiqueta no válidas",
       "klassen_enabled_required": "Modo de clases requerido"
+    },
+    "colors": {
+      "red": "Rojo",
+      "blue": "Azul",
+      "green": "Verde",
+      "yellow": "Amarillo",
+      "purple": "Púrpura",
+      "pink": "Rosa",
+      "indigo": "Índigo",
+      "gray": "Gris"
     }
   }
 }

@@ -891,6 +891,16 @@
       "entity_id_required": "需要实体 ID",
       "invalid_label_ids": "无效的标签 ID",
       "klassen_enabled_required": "需要启用班级模式"
+    },
+    "colors": {
+      "red": "红色",
+      "blue": "蓝色",
+      "green": "绿色",
+      "yellow": "黄色",
+      "purple": "紫色",
+      "pink": "粉红色",
+      "indigo": "靛蓝色",
+      "gray": "灰色"
     }
   }
 }

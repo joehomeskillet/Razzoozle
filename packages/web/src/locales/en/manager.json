@@ -902,6 +902,16 @@
       "entity_id_required": "Entity ID required",
       "invalid_label_ids": "Invalid label IDs",
       "klassen_enabled_required": "Classes mode required"
+    },
+    "colors": {
+      "red": "Red",
+      "blue": "Blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "purple": "Purple",
+      "pink": "Pink",
+      "indigo": "Indigo",
+      "gray": "Gray"
     }
   }
 }

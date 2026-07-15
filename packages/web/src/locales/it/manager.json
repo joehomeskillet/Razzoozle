@@ -891,6 +891,16 @@
       "entity_id_required": "ID entità richiesto",
       "invalid_label_ids": "ID etichetta non validi",
       "klassen_enabled_required": "Modalità classi richiesta"
+    },
+    "colors": {
+      "red": "Rosso",
+      "blue": "Blu",
+      "green": "Verde",
+      "yellow": "Giallo",
+      "purple": "Viola",
+      "pink": "Rosa",
+      "indigo": "Indaco",
+      "gray": "Grigio"
     }
   }
 }
