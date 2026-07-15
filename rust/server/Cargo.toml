@@ -30,6 +30,9 @@ zip = { version = "8.6", default-features = false, features = ["deflate-flate2-z
 image = { version = "0.24", default-features = false, features = ["png", "jpeg", "jpeg_rayon", "webp"] }
 subtle = "2.6.1"
 argon2 = "0.5"
+# Already resolved transitively via argon2's password-hash chain (see Cargo.lock);
+# declared directly here only to expose it for session-token hashing (X2a).
+sha2 = "0.10"
 base64 = "0.22"
 tower-http = { version = "0.6", features = ["cors", "fs", "set-header"] }
 

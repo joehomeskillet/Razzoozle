@@ -5,8 +5,25 @@ use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::{SaltString, PasswordHash};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use rand::Rng;
+use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use tracing::info;
+
+/// Maximum concurrent sessions retained per user (X2a). Enforced at login by
+/// deleting the oldest rows beyond this count — no cron, no background job.
+const MAX_SESSIONS_PER_USER: i64 = 10;
+
+/// Hash a bearer session token for storage/lookup. sessions.token_hash only
+/// ever holds this digest — the raw token itself is never persisted (X2a).
+fn hash_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    hex_encode(&hasher.finalize())
+}
+
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+}
 
 #[derive(Debug, Clone)]
 pub struct AuthUser {
@@ -132,7 +149,10 @@ pub fn verify_password(hash: &str, plain: &str) -> bool {
 }
 
 /// Mint a session token for a user. Returns a URL-safe base64-encoded 256-bit random token.
-/// Token expires after ttl_days. Inserts into sessions table.
+/// Token expires after ttl_days. Inserts a NEW row into sessions (X2a: multiple
+/// concurrent sessions per user are intentional — a prior login is never revoked),
+/// storing only the SHA-256 hash of the token, then caps the user's session count
+/// at MAX_SESSIONS_PER_USER by dropping the oldest rows beyond that limit.
 pub async fn mint_session(
     pool: &PgPool,
     user_id: i64,
@@ -146,18 +166,32 @@ pub async fn mint_session(
         rng.fill(&mut token_bytes);
         URL_SAFE_NO_PAD.encode(&token_bytes)
     };
+    let token_hash = hash_token(&token);
 
     // Calculate expiration
     let expires_at = sqlx::types::chrono::Utc::now() + chrono::Duration::days(ttl_days);
 
-    // Insert into sessions table
+    // Insert into sessions table (never the raw token — only its hash).
     sqlx::query(
-        "INSERT INTO sessions (token, user_id, created_at, expires_at) \
-         VALUES ($1, $2, now(), $3)"
+        "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
+         VALUES ($1, $2, now(), now(), $3)"
     )
-    .bind(&token)
+    .bind(&token_hash)
     .bind(user_id)
     .bind(expires_at)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    // Session cap: keep only the MAX_SESSIONS_PER_USER most recent rows for
+    // this user. One DELETE, no cron/background job.
+    sqlx::query(
+        "DELETE FROM sessions WHERE user_id = $1 AND id NOT IN ( \
+           SELECT id FROM sessions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 \
+         )"
+    )
+    .bind(user_id)
+    .bind(MAX_SESSIONS_PER_USER)
     .execute(pool)
     .await
     .map_err(|e| e.to_string())?;
@@ -166,21 +200,39 @@ pub async fn mint_session(
 }
 
 /// Retrieve a user by session token. Returns AuthUser if token is valid and not expired.
+/// Looks up by the SHA-256 hash of the supplied token — the raw token is never
+/// compared or stored. Called on every authenticated socket/HTTP request, so this
+/// intentionally does NOT write to last_seen (no DB write in a hot path).
 pub async fn session_user(
     pool: &PgPool,
     token: &str,
 ) -> Result<Option<AuthUser>, String> {
+    let token_hash = hash_token(token);
     let result = sqlx::query_as::<_, (i64, String)>(
         "SELECT u.id, u.role FROM sessions s \
          JOIN users u ON s.user_id = u.id \
-         WHERE s.token = $1 AND s.expires_at > now() AND u.active = true"
+         WHERE s.token_hash = $1 AND s.expires_at > now() AND u.active = true"
     )
-    .bind(token)
+    .bind(&token_hash)
     .fetch_optional(pool)
     .await
     .map_err(|e| e.to_string())?;
 
     Ok(result.map(|(user_id, role)| AuthUser { user_id, role }))
+}
+
+/// Delete a single session by its token (logout). Removes ONLY the session row
+/// matching this exact token — other concurrent sessions for the same user are
+/// left untouched (X2a).
+pub async fn delete_session(pool: &PgPool, token: &str) -> Result<(), String> {
+    let token_hash = hash_token(token);
+    sqlx::query("DELETE FROM sessions WHERE token_hash = $1")
+        .bind(&token_hash)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 /// Count the total number of users in the database.
@@ -281,4 +333,46 @@ pub async fn bootstrap_admin(pool: &PgPool) {
             eprintln!("Failed to check user count during bootstrap: {}", e);
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_token_is_deterministic_and_never_the_raw_token() {
+        let a = hash_token("device-a-token");
+        let b = hash_token("device-a-token");
+        assert_eq!(a, b, "same input must hash to the same digest");
+        assert_ne!(a, "device-a-token", "the digest must never equal the raw token");
+        assert_eq!(a.len(), 64, "SHA-256 hex digest is 64 chars");
+    }
+
+    #[test]
+    fn hash_token_differs_per_input() {
+        let a = hash_token("device-a-token");
+        let b = hash_token("device-b-token");
+        assert_ne!(a, b, "different tokens (e.g. two devices) must hash differently");
+    }
+
+    /// Cross-check against migration 020's backfill: `encode(digest(token,
+    /// 'sha256'), 'hex')` must produce the exact same lowercase hex string as
+    /// this function, otherwise a forward-hashed legacy row would silently
+    /// stop matching require_user() lookups after the migration. Expected
+    /// value computed via `psql -c "SELECT encode(digest('live-active-plaintext-token-abc123'::bytea,'sha256'),'hex')"`
+    /// against a throwaway Postgres 16 (pgcrypto) — see WP-X2a report.
+    #[test]
+    fn hash_token_matches_pgcrypto_digest_sha256_hex() {
+        let rust_hash = hash_token("live-active-plaintext-token-abc123");
+        let sql_computed_hash = "50d217cface91deae25f6d34f09f563b76db3a2a69be1efdeb0048ffd598413c";
+        assert_eq!(rust_hash, sql_computed_hash, "Rust hash_token() must be byte-identical to Postgres pgcrypto's encode(digest(token,'sha256'),'hex')");
+    }
+
+    // Multi-session behavior (two concurrent tokens valid, logout revokes only
+    // one, the 10-session cap, and 401-on-invalid-token) all require a live
+    // Postgres — this repo has no CI Postgres service (grep: no `postgres` in
+    // .gitea/workflows/ci.yml), and every other DB-touching module here follows
+    // the same convention of not spinning one up in `cargo test`. These were
+    // verified manually end-to-end against a throwaway (non-live) Postgres 16
+    // instance; see the WP-X2a report for the exact SQL/assertions run.
 }
