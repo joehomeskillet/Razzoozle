@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { MediaMeta } from "@razzoozle/common/types/media"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import {
@@ -129,9 +130,9 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           )}
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
+            <Badge className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
               {t(`manager:media.category.${item.category}`)}
-            </span>
+            </Badge>
             <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
               {t(`manager:media.source.${item.source}`)}
             </span>

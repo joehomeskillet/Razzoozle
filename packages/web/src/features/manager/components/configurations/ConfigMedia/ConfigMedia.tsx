@@ -3,6 +3,7 @@ import type { MediaMeta } from "@razzoozle/common/types/media"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   useEvent,
   useSocket,
@@ -168,36 +169,34 @@ const ConfigMedia = () => {
         </div>
       )}
       <div className="mb-4 flex shrink-0 flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">
-              {t("manager:media.title")}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
-              {t("manager:media.intro")}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="primary"
-            className="shrink-0 rounded-xl"
-            onClick={openFilePicker}
-            disabled={uploading}
-          >
-            <Upload className="size-5" aria-hidden />
-            {uploading
-              ? t("manager:media.uploading")
-              : t("manager:media.upload")}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,audio/*,video/*"
-            multiple
-            className="hidden"
-            onChange={handleUpload}
-          />
-        </div>
+        <PageHeader
+          title={t("manager:media.title")}
+          subtitle={t("manager:media.intro")}
+          action={
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                className="shrink-0 rounded-xl"
+                onClick={openFilePicker}
+                disabled={uploading}
+              >
+                <Upload className="size-5" aria-hidden />
+                {uploading
+                  ? t("manager:media.uploading")
+                  : t("manager:media.upload")}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,audio/*,video/*"
+                multiple
+                className="hidden"
+                onChange={handleUpload}
+              />
+            </>
+          }
+        />
 
         <label htmlFor="media-search" className="sr-only">
           {t("manager:media.search")}

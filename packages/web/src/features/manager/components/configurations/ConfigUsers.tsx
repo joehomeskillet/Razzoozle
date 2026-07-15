@@ -1,3 +1,4 @@
+import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
@@ -327,9 +328,7 @@ const ConfigUsers = () => {
               title={user.username}
               meta={
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
-                    {getRoleLabel(user.role)}
-                  </span>
+                  <Badge>{getRoleLabel(user.role)}</Badge>
                   <span
                     className={
                       user.active

@@ -1,4 +1,5 @@
 import type { Question } from "@razzoozle/common/types/game"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import {
   ANSWERS_COLORS,
@@ -34,9 +35,9 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
   return (
     <div className="mt-3 space-y-3 rounded-lg bg-[var(--surface-2)] p-3">
       {/* Type badge */}
-      <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
+      <Badge>
         {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-      </span>
+      </Badge>
 
       <p className="font-semibold text-[var(--ink)]">{question.question}</p>
 
