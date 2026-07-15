@@ -20,7 +20,8 @@
     "notFound": "Partie introuvable",
     "playerAlreadyConnected": "Ce joueur est déjà connecté",
     "serverBusy": "Serveur occupé, réessayez plus tard",
-    "locked": "Cette partie est verrouillée — aucun nouveau joueur ne peut rejoindre."
+    "locked": "Cette partie est verrouillée — aucun nouveau joueur ne peut rejoindre.",
+    "playerNotFound": "Partie ou joueur introuvable — veuillez rejoindre à nouveau"
   },
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",
