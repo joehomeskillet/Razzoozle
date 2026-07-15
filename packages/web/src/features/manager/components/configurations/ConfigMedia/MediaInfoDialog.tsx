@@ -97,7 +97,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           type="button"
           aria-label={detailsLabel}
           title={detailsLabel}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-gray-400 outline-2 -outline-offset-2 outline-gray-200 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-gray-200 transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <Info className="size-4" aria-hidden />
         </button>
@@ -108,7 +108,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           aria-describedby={undefined}
           className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl"
         >
-          <Dialog.Title className="truncate text-lg font-semibold text-gray-900">
+          <Dialog.Title className="truncate text-lg font-semibold text-[var(--ink)]">
             {item.filename}
           </Dialog.Title>
 
@@ -118,26 +118,26 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             <video
               controls
               src={item.url}
-              className="mt-4 aspect-video w-full rounded-lg bg-gray-50"
+              className="mt-4 aspect-video w-full rounded-lg bg-[var(--surface-2)]"
             />
           ) : (
             <img
               src={item.url}
               alt=""
-              className="mt-4 aspect-video w-full rounded-lg bg-gray-50 object-contain"
+              className="mt-4 aspect-video w-full rounded-lg bg-[var(--surface-2)] object-contain"
             />
           )}
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700">
+            <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
               {t(`manager:media.category.${item.category}`)}
             </span>
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+            <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
               {t(`manager:media.source.${item.source}`)}
             </span>
           </div>
 
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="mt-3 text-sm text-[var(--ink-subtle)]">
             {formatSize(item.size)}
             {item.type === "image" && item.width && item.height
               ? ` · ${item.width}×${item.height}`
@@ -148,7 +148,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           {config.klassenEnabled && (
             <div className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-gray-900">
+                <label className="text-sm font-semibold text-[var(--ink)]">
                   {t("manager:labels.assignLabel", { defaultValue: "Fächer" })}
                 </label>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -166,7 +166,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.addLabel")}
-                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                       >
                         <Plus className="size-3" />
                         <Select.Value
@@ -186,7 +186,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                               <Select.Item
                                 key={label.id}
                                 value={String(label.id)}
-                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
                               >
                                 <Select.ItemText>{label.name}</Select.ItemText>
                               </Select.Item>

@@ -73,14 +73,14 @@ const MediaCard = ({
             "flex size-7 items-center justify-center rounded-md border-2 transition-colors",
             isSelected
               ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white"
-              : "border-gray-300 bg-white/90 text-transparent group-hover:border-gray-400",
+              : "border-[var(--line)] bg-white/90 text-transparent group-hover:border-gray-400",
           )}
         >
           <Check className="size-4" aria-hidden />
         </span>
       </button>
 
-      <div className="flex aspect-video items-center justify-center bg-gray-50">
+      <div className="flex aspect-video items-center justify-center bg-[var(--surface-2)]">
         {item.type === "audio" ? (
           <FileAudio className="size-10 text-gray-300" aria-hidden />
         ) : item.type === "video" ? (
@@ -97,7 +97,7 @@ const MediaCard = ({
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
         <p
-          className="truncate text-sm font-semibold text-gray-900"
+          className="truncate text-sm font-semibold text-[var(--ink)]"
           title={item.filename}
         >
           {item.filename}
@@ -105,7 +105,7 @@ const MediaCard = ({
 
         {/* At-a-glance meta stays to one line so every card is the
             same height; the rest lives behind the ℹ info dialog. */}
-        <p className="truncate text-xs text-gray-500">
+        <p className="truncate text-xs text-[var(--ink-subtle)]">
           {formatSize(item.size)}
           {item.type === "image" && item.width && item.height
             ? ` · ${item.width}×${item.height}`

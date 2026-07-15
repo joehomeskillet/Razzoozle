@@ -32,13 +32,13 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
   const unit = question.unit ? ` ${question.unit}` : ""
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+    <div className="mt-3 space-y-3 rounded-lg bg-[var(--surface-2)] p-3">
       {/* Type badge */}
-      <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+      <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
         {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
       </span>
 
-      <p className="font-semibold text-gray-900">{question.question}</p>
+      <p className="font-semibold text-[var(--ink)]">{question.question}</p>
 
       {question.media && (
         <div className="flex justify-start">
@@ -80,7 +80,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
       {/* Type-answer: accepted-answers legend */}
       {isTypeAnswer && (
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+          <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
             {t("quizz:typeAnswer.acceptedAnswersLabel")}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -99,11 +99,11 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
       {/* Slider: min / max / correct */}
       {isSlider && (
         <div className="flex flex-wrap gap-2 text-sm">
-          <span className="rounded-lg bg-white px-3 py-1.5 text-gray-700 outline-1 -outline-offset-1 outline-gray-200">
+          <span className="rounded-lg bg-white px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-gray-200">
             {t("quizz:slider.min")}: {question.min}
             {unit}
           </span>
-          <span className="rounded-lg bg-white px-3 py-1.5 text-gray-700 outline-1 -outline-offset-1 outline-gray-200">
+          <span className="rounded-lg bg-white px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-gray-200">
             {t("quizz:slider.max")}: {question.max}
             {unit}
           </span>
@@ -115,7 +115,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
       )}
 
       {/* Timing */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--ink-subtle)]">
         <span className="flex items-center gap-1.5">
           <Clock className="size-3.5" aria-hidden />
           {question.time}

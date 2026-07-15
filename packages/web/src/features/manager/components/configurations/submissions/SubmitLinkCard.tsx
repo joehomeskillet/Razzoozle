@@ -15,13 +15,13 @@ const SubmitLinkCard = () => {
 
   if (!submitToken) {
     return (
-      <div className="mx-auto w-full max-w-sm space-y-1 rounded-xl bg-gray-50 p-4 text-center">
-        <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+      <div className="mx-auto w-full max-w-sm space-y-1 rounded-xl bg-[var(--surface-2)] p-4 text-center">
+        <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
           {t("manager:submissions.submitLinkHint", {
             defaultValue: "Öffentlicher Einreichungs-Link",
           })}
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[var(--ink-subtle)]">
           {t("manager:submissions.submitLinkUnavailable", {
             defaultValue:
               "Noch nicht verfügbar — dein persönlicher Link wird demnächst aktiviert.",
@@ -43,14 +43,14 @@ const SubmitLinkCard = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-sm space-y-2 rounded-xl bg-gray-50 p-4 text-center">
-      <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+    <div className="mx-auto w-full max-w-sm space-y-2 rounded-xl bg-[var(--surface-2)] p-4 text-center">
+      <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
         {t("manager:submissions.submitLinkHint", {
           defaultValue: "Öffentlicher Einreichungs-Link",
         })}
       </p>
       <div className="flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-3 py-2 text-left text-sm text-gray-700 outline-1 -outline-offset-1 outline-gray-200">
+        <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-3 py-2 text-left text-sm text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-gray-200">
           {submitUrl}
         </code>
         <Button

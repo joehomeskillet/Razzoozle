@@ -170,10 +170,10 @@ const ConfigMedia = () => {
       <div className="mb-4 flex shrink-0 flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:media.title")}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-gray-500">
+            <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
               {t("manager:media.intro")}
             </p>
           </div>
@@ -211,7 +211,7 @@ const ConfigMedia = () => {
         />
 
         <div className="flex flex-wrap items-center gap-2">
-          <Filter className="size-4 text-gray-400" aria-hidden />
+          <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
           {sourceFilters.map((entry) => {
             const active = sourceFilter === entry.key
 
@@ -224,7 +224,7 @@ const ConfigMedia = () => {
                 className={
                   active
                     ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-11 items-center rounded-full bg-gray-100 px-3 text-sm font-semibold text-gray-600 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 }
               >
                 {entry.label}
@@ -252,7 +252,7 @@ const ConfigMedia = () => {
                 className={
                   active
                     ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-11 items-center rounded-full bg-gray-100 px-3 text-sm font-semibold text-gray-600 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 }
               >
                 {entry.label}
@@ -276,9 +276,9 @@ const ConfigMedia = () => {
               count: selected.size,
               defaultValue: "{{count}} ausgewählt",
             })}
-            className="flex flex-wrap items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 outline-2 -outline-offset-2 outline-gray-200"
+            className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-gray-200"
           >
-            <span className="text-sm font-semibold text-gray-700">
+            <span className="text-sm font-semibold text-[var(--ink-muted)]">
               {t("manager:media.bulk.selected", {
                 count: selected.size,
                 defaultValue: "{{count}} ausgewählt",
@@ -298,7 +298,7 @@ const ConfigMedia = () => {
               type="button"
               onClick={clearSelection}
               aria-label={t("common:cancel")}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               <X className="size-4" aria-hidden />
             </button>
