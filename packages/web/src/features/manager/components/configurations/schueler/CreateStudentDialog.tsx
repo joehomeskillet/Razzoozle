@@ -64,10 +64,10 @@ const CreateStudentDialog = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={handleClose} />
       <div className="relative w-full max-w-lg rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:schueler.createTitle")}
         </h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
           {t("manager:schueler.createDescription")}
         </p>
 
@@ -87,7 +87,7 @@ const CreateStudentDialog = ({
 
         <label
           htmlFor="schueler-create-birthdate"
-          className="mt-4 block text-sm font-medium text-gray-700"
+          className="mt-4 block text-sm font-medium text-[var(--ink-muted)]"
         >
           {t("manager:schueler.birthdateLabel")}
         </label>
@@ -100,11 +100,11 @@ const CreateStudentDialog = ({
           className="focus-visible:border-primary mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
         />
 
-        <p className="mt-4 text-sm font-medium text-gray-700">
+        <p className="mt-4 text-sm font-medium text-[var(--ink-muted)]">
           {t("manager:schueler.selectClasses")}
         </p>
         {classes.length === 0 ? (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-[var(--ink-subtle)]">
             {t("manager:schueler.noClasses")}
           </p>
         ) : (
@@ -112,7 +112,7 @@ const CreateStudentDialog = ({
             {classes.map((c) => (
               <label
                 key={c.id}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-sm text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
               >
                 <input
                   type="checkbox"

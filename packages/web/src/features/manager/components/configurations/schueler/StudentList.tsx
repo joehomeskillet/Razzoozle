@@ -79,10 +79,10 @@ const StudentRow = ({
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-3">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-900">
+        <p className="text-sm font-semibold text-[var(--ink)]">
           {composedName}
           {student.birthdate && (
-            <span className="ml-2 text-xs font-normal text-gray-400">
+            <span className="ml-2 text-xs font-normal text-[var(--ink-faint)]">
               {formatBirthdate(student.birthdate)}
             </span>
           )}
@@ -93,7 +93,7 @@ const StudentRow = ({
         {student.classes.map((c) => (
           <span
             key={c.id}
-            className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+            className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-muted)]"
           >
             {c.name}
             <button
@@ -107,7 +107,7 @@ const StudentRow = ({
                 })
               }
               aria-label={t("manager:schueler.removeFromClassTitle")}
-              className="focus-visible:outline-primary flex size-4 items-center justify-center rounded-full hover:bg-gray-200"
+              className="focus-visible:outline-primary flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)]"
             >
               <X className="size-3" />
             </button>
@@ -124,7 +124,7 @@ const StudentRow = ({
           >
             <Select.Trigger
               aria-label={t("manager:schueler.addToClass")}
-              className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
             >
               <Plus className="size-3" />
               <Select.Value placeholder={t("manager:schueler.addToClass")} />
@@ -140,7 +140,7 @@ const StudentRow = ({
                     <Select.Item
                       key={c.id}
                       value={String(c.id)}
-                      className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                      className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
                     >
                       <Select.ItemText>{c.name}</Select.ItemText>
                     </Select.Item>
@@ -157,7 +157,7 @@ const StudentRow = ({
         onClick={() => onShowPin(student.id)}
         title={t("manager:schueler.showPin")}
         aria-label={t("manager:schueler.showPin")}
-        className="focus-visible:outline-primary flex size-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+        className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
       >
         <KeyRound className="size-4" />
       </button>
@@ -169,7 +169,7 @@ const StudentRow = ({
         }
         title={t("manager:schueler.deleteTitle")}
         aria-label={t("manager:schueler.deleteTitle")}
-        className="focus-visible:outline-primary flex size-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600"
+        className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600"
       >
         <Trash2 className="size-4" />
       </button>
@@ -189,7 +189,7 @@ const StudentList = ({
 
   if (students.length === 0) {
     return (
-      <p className="rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 text-center text-sm text-gray-500">
+      <p className="rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-subtle)]">
         {t("manager:schueler.noResults")}
       </p>
     )

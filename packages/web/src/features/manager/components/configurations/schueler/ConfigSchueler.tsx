@@ -40,10 +40,10 @@ const ConfigSchueler = () => {
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">
             {t("manager:schueler.title")}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-[var(--ink-medium)]">
             {t("manager:schueler.description")}
           </p>
         </div>
@@ -83,7 +83,7 @@ const ConfigSchueler = () => {
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:schueler.empty")}
           </p>
         </div>
