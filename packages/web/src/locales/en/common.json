@@ -23,5 +23,9 @@
   "seconds": "sec",
   "skip": "Skip",
   "submit": "Submit",
-  "close": "Close"
+  "close": "Close",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "create": "Create",
+  "add": "Add"
 }

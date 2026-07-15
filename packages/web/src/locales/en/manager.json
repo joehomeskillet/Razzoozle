@@ -744,6 +744,17 @@
       "failed": "Failed to change password",
       "networkError": "Network error",
       "allFieldsRequired": "All fields are required"
+    },
+    "aiKeys": {
+      "title": "Custom AI Providers",
+      "description": "Set up your own API key for AI generation. Without your own key, the instance default will be used if available. A stored key will never be shown again.",
+      "configured": "Custom key configured",
+      "notConfigured": "No custom key",
+      "inputLabel": "API key for {{label}}",
+      "saved": "Key saved",
+      "removed": "Key removed",
+      "emptyHeadline": "No external providers",
+      "empty": "The administrator has not set up any external AI providers yet."
     }
   },
   "classes": {
@@ -823,7 +834,8 @@
       "lehrkraft": "Teacher"
     },
     "roleUser": "Teacher",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "create": "Create"
   },
   "schueler": {
     "title": "Student Management",

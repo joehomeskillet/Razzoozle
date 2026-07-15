@@ -23,5 +23,9 @@
   "seconds": "sec",
   "skip": "Passer",
   "submit": "Valider",
-  "close": "Fermer"
+  "close": "Fermer",
+  "expand": "Développer",
+  "collapse": "Réduire",
+  "create": "Créer",
+  "add": "Ajouter"
 }

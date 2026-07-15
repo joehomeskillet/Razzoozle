@@ -795,7 +795,8 @@
       "lehrkraft": "Lehrkraft"
     },
     "roleUser": "Lehrkraft",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "create": "Erstellen"
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",
@@ -812,6 +813,17 @@
       "failed": "Passwort konnte nicht geändert werden",
       "networkError": "Verbindungsfehler",
       "allFieldsRequired": "Alle Felder sind erforderlich"
+    },
+    "aiKeys": {
+      "title": "Eigene KI-Anbieter",
+      "description": "Hinterlege deinen eigenen API-Schlüssel für die KI-Generierung. Ohne eigenen Schlüssel wird — falls vorhanden — der Standard der Instanz verwendet. Ein gespeicherter Schlüssel wird nie wieder angezeigt.",
+      "configured": "Eigener Schlüssel hinterlegt",
+      "notConfigured": "Kein eigener Schlüssel",
+      "inputLabel": "API-Schlüssel für {{label}}",
+      "saved": "Schlüssel gespeichert",
+      "removed": "Schlüssel entfernt",
+      "emptyHeadline": "Keine externen Anbieter",
+      "empty": "Der Administrator hat noch keine externen KI-Anbieter eingerichtet."
     }
   },
   "schueler": {

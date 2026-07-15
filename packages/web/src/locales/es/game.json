@@ -49,6 +49,17 @@
     "correctAnswer": "Respuesta correcta"
   },
   "pollThanks": "Gracias por tu voto",
+  "tier": {
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "diamant": "Diamante"
+  },
+  "locked": "bloqueado",
+  "achievementBanner": {
+    "wins": "captura"
+  },
+  "sending": "enviando…",
   "submittedBy": "enviada por {{name}}",
   "typeAnswerPlaceholder": "Escribe tu respuesta...",
   "submitAnswer": "Enviar",

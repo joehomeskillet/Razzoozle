@@ -795,7 +795,8 @@
       "lehrkraft": "Docente"
     },
     "roleUser": "Profesor",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "create": "Crear"
   },
   "profile": {
     "intro": "",
@@ -812,6 +813,17 @@
       "failed": "No se pudo cambiar la contraseña",
       "networkError": "Error de conexión",
       "allFieldsRequired": "Todos los campos son obligatorios"
+    },
+    "aiKeys": {
+      "title": "Proveedores de IA personalizados",
+      "description": "Establece tu propia clave API para la generación de IA. Sin tu propia clave, se utilizará el predeterminado de la instancia si está disponible. Una clave almacenada nunca se mostrará de nuevo.",
+      "configured": "Clave personalizada configurada",
+      "notConfigured": "Sin clave personalizada",
+      "inputLabel": "Clave API para {{label}}",
+      "saved": "Clave guardada",
+      "removed": "Clave eliminada",
+      "emptyHeadline": "Sin proveedores externos",
+      "empty": "El administrador aún no ha configurado ningún proveedor de IA externo."
     }
   },
   "schueler": {

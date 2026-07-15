@@ -795,7 +795,8 @@
       "lehrkraft": "教师"
     },
     "roleUser": "教师",
-    "roleAdmin": "管理员"
+    "roleAdmin": "管理员",
+    "create": "创建"
   },
   "profile": {
     "intro": "",
@@ -812,6 +813,17 @@
       "failed": "无法修改密码",
       "networkError": "网络错误",
       "allFieldsRequired": "所有字段都是必需的"
+    },
+    "aiKeys": {
+      "title": "自定义 AI 提供商",
+      "description": "设置您自己的 API 密钥用于 AI 生成。如果您没有自己的密钥，将使用实例默认值（如果可用）。存储的密钥永远不会再次显示。",
+      "configured": "已配置自定义密钥",
+      "notConfigured": "未配置自定义密钥",
+      "inputLabel": "{{label}} 的 API 密钥",
+      "saved": "密钥已保存",
+      "removed": "密钥已删除",
+      "emptyHeadline": "无外部提供商",
+      "empty": "管理员尚未设置任何外部 AI 提供商。"
     }
   },
   "schueler": {

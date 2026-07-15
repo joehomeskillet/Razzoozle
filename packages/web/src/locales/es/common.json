@@ -23,5 +23,9 @@
   "seconds": "seg",
   "skip": "Omitir",
   "submit": "Enviar",
-  "close": "Cerrar"
+  "close": "Cerrar",
+  "expand": "Expandir",
+  "collapse": "Contraer",
+  "create": "Crear",
+  "add": "Añadir"
 }

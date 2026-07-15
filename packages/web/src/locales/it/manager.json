@@ -795,7 +795,8 @@
       "lehrkraft": "Insegnante"
     },
     "roleUser": "Docente",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "create": "Creare"
   },
   "profile": {
     "intro": "",
@@ -812,6 +813,17 @@
       "failed": "Impossibile cambiare la password",
       "networkError": "Errore di connessione",
       "allFieldsRequired": "Tutti i campi sono obbligatori"
+    },
+    "aiKeys": {
+      "title": "Provider di IA personalizzati",
+      "description": "Configura la tua chiave API personale per la generazione di IA. Senza la tua chiave, verrà utilizzato il valore predefinito dell'istanza se disponibile. Una chiave archiviata non verrà mai visualizzata di nuovo.",
+      "configured": "Chiave personalizzata configurata",
+      "notConfigured": "Nessuna chiave personalizzata",
+      "inputLabel": "Chiave API per {{label}}",
+      "saved": "Chiave salvata",
+      "removed": "Chiave rimossa",
+      "emptyHeadline": "Nessun provider esterno",
+      "empty": "L'amministratore non ha ancora configurato alcun provider di IA esterno."
     }
   },
   "schueler": {
