@@ -19,7 +19,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
         move |socket: SocketRef, Data::<GameCreate>(create_payload)| {
             let ctx = ctx.clone();
-            
+
             // Parse payload — handle both legacy string and new CreateGamePayload
             let (quizz_id, selected_modes) = match create_payload {
                 GameCreate::Legacy(id) => {
@@ -42,10 +42,10 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Read global config for availability gates
-                let (team_mode_avail, low_latency_enabled, _, randomize_answers, scoring_mode_avail, 
-                     low_latency_config, klassen_enabled, end_screen_modes) = 
+                let (team_mode_avail, low_latency_enabled, _, randomize_answers, scoring_mode_avail,
+                     low_latency_config, klassen_enabled, end_screen_modes) =
                     crate::db::get_game_config(&ctx.db_pool).await;
-                
+
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Validate + snapshot modes against availability
@@ -53,29 +53,29 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                     let req_scoring = selected_modes.as_ref()
                         .and_then(|m| m.scoring_mode.as_ref())
                         .and_then(|s| if s == "speed" { Some(ScoringMode::Speed) } else if s == "accuracy" { Some(ScoringMode::Accuracy) } else { None });
-                    
+
                     let req_team = selected_modes.as_ref().and_then(|m| m.team_mode).unwrap_or(false);
                     let req_klassen = selected_modes.as_ref().and_then(|m| m.klassen).unwrap_or(false);
                     let req_end_screen = selected_modes.as_ref().and_then(|m| m.end_screen);
-                    
+
                     // Drop unavailable modes: only keep if both requested AND enabled
                     let team = req_team && team_mode_avail.unwrap_or(false);
                     let klassen = req_klassen && klassen_enabled.unwrap_or(false);
-                    
+
                     // Scoring mode: use request if available, else default to Speed
                     let scoring = if let Some(sm) = req_scoring {
                         sm
                     } else {
                         ScoringMode::Speed
                     };
-                    
+
                     // End-screen: validate against CSV allow-list with exact token matching.
                     // Fall back to first allowed mode if requested is not in allow-list.
                     let end_screen = if let Some(es) = req_end_screen {
                         let allow_list_str = end_screen_modes.unwrap_or_else(|| "full,top3,private".to_string());
                         let allowed_tokens: Vec<&str> = allow_list_str.split(',').map(|s| s.trim()).collect();
                         let es_str = format!("{:?}", es).to_lowercase();
-                        
+
                         if allowed_tokens.contains(&es_str.as_str()) {
                             // Requested mode is in allow-list
                             es
@@ -93,7 +93,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                     } else {
                         EndScreen::Full
                     };
-                    
+
                     (scoring, team, klassen, end_screen)
                 };
 
@@ -101,43 +101,11 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let ach_rows = crate::db::get_achievements(&ctx.db_pool).await;
 
                 let mut registry = ctx.registry.write().await;
-                
-                // Runtime class-mode guard: filter Wortarten questions for non-klassen games
-                // Temporarily modify the quiz in the registry, create the game, then restore
-                let quiz_id_str = match &quizz_id {
-                    Some(id) if !id.is_empty() => id.clone(),
-                    _ => String::new(),
-                };
-                
-                let saved_quiz = if !validated_klassen && !quiz_id_str.is_empty() {
-                    registry.quizzes.get(&quiz_id_str).cloned()
-                } else {
-                    None
-                };
-                
-                if !validated_klassen && !quiz_id_str.is_empty() {
-                    if let Some(quiz) = registry.quizzes.get_mut(&quiz_id_str) {
-                        use razzoozle_protocol::quizz::QuestionType;
-                        quiz.questions.retain(|q| {
-                            match &q.r#type {
-                                Some(QuestionType::Wortarten) => false,
-                                _ => true,
-                            }
-                        });
-                    }
-                }
-                
+
                 // C3 — active-game cap; also rejects an unresolved quizzId
                 // (parity with Node — see create_game's own doc comment).
                 let create_result = registry.create_game(socket.id.to_string(), quizz_id.clone(), ctx.client_id.clone(), owner_user_id, low_latency, low_latency_config.unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true})));
-                
-                // Restore original quiz if we modified it
-                if let Some(original_quiz) = saved_quiz {
-                    if !quiz_id_str.is_empty() {
-                        registry.quizzes.insert(quiz_id_str, original_quiz);
-                    }
-                }
-                
+
                 match create_result {
                     Ok((game_id, invite_code, host_token)) => {
                         info!(
@@ -156,11 +124,11 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             g.engine.set_achievements_config(cfg);
                             g.engine.set_randomize_answers(randomize_answers.unwrap_or(false));
                             g.engine.set_scoring_mode(validated_scoring_mode);
-                            
+
                             // Snapshot per-game mode selection
                             g.selected_modes = SelectedModes {
                                 scoring_mode: Some(
-                                    if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() } 
+                                    if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() }
                                     else { "accuracy".to_string() }
                                 ),
                                 team_mode: Some(validated_team_mode),
