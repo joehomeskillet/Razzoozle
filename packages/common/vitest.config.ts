@@ -9,9 +9,6 @@ export default defineConfig({
       "@razzoozle/common": fileURLToPath(
         new URL("./src", import.meta.url),
       ),
-      "@razzoozle/socket": fileURLToPath(
-        new URL("../socket/src", import.meta.url),
-      ),
       "@razzoozle/web": fileURLToPath(
         new URL("../web/src", import.meta.url),
       ),

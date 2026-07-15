@@ -1,7 +1,7 @@
 name: CI
 
 # Pipeline design (2026-07-07, scratchpad/RESEARCH-testing-cicd.md Judge synthesis).
-# 4 stages as 4 jobs: lint-typecheck -> unit (socket) -> rust gate -> build
+# 3 stages as 3 jobs: lint-typecheck -> rust gate -> build
 # (docker images, main-push only). NO deploy job here — CD stays gated/manual
 # on the host razzoozle-cd.timer poller (see deploy.yml); this Actions runner
 # has no host docker/systemctl access.
@@ -43,41 +43,6 @@ jobs:
       - name: Lint (warn-only)
         continue-on-error: true
         run: corepack pnpm lint
-
-  unit:
-    name: unit tests (socket)
-    needs: lint-typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1 (SHA-pinned)
-        with:
-          persist-credentials: false
-
-      - name: Enable corepack
-        run: corepack enable
-
-      # The socket transcodes uploaded/AI-generated images to WebP (avatar.test.ts,
-      # media.test.ts shell out to cwebp). Debian/bookworm runner package is `webp`.
-      - name: Install cwebp (libwebp)
-        run: apt-get update && apt-get install -y webp
-
-      - name: Install dependencies
-        run: CI=true corepack pnpm install --frozen-lockfile --ignore-scripts
-
-      # config/ (incl. config/quizz) is entirely gitignored — a fresh checkout
-      # lacks it. The assignments integration tests call saveQuizz(), which
-      # writeFileSync's into config/quizz/ and ENOENTs when the dir is missing
-      # (3 reds in run 9882). Only the directory is needed, no fixture content.
-      - name: Create gitignored config/quizz dir (integration tests write into it)
-        run: mkdir -p config/quizz
-
-      # Blocking gate: the FULL @razzoozle/socket suite. Green since 2026-07-07
-      # (555 passed / 0 failed / 6 DB-guarded skips) — commit 554cee39 fixed the
-      # former 2 stale reds (lobby-disconnect, player-manager). Any red test is
-      # a regression and fails CI hard. This step is intentionally NOT
-      # continue-on-error.
-      - name: Socket unit tests (blocking gate)
-        run: CI=true corepack pnpm --filter @razzoozle/socket exec vitest run
 
   rust:
     # DORMANT until a rust-ci runner is provisioned: runner ubusrv01 has no
@@ -151,7 +116,7 @@ jobs:
   build:
     name: build docker images (main push only)
     if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main'
-    needs: [unit, rust]
+    needs: [rust]
     runs-on: ubuntu-latest
     # BuildKit is required for the rust/Dockerfile `--mount=type=cache` layers.
     env:
@@ -185,14 +150,6 @@ jobs:
 
       # ponytail: skip when docker/daemon is unavailable on the runner (visible
       # ::warning::, not a silent stub) — mirrors rag-stack's compose-config gate.
-      - name: Build web+socket image
-        run: |
-          if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
-            echo "::warning::docker unavailable in runner — web+socket image build skipped"
-            exit 0
-          fi
-          docker build -t razzoozle:ci .
-
       - name: Build rust image
         run: |
           if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
