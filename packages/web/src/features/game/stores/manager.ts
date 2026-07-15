@@ -64,7 +64,19 @@ const loadAuthState = (): StoredAuthState => {
     if (typeof window === "undefined") {
       return { token: null, role: null, username: null }
     }
-    const stored = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    // Check sessionStorage first
+    let stored = window.sessionStorage.getItem(AUTH_STORAGE_KEY)
+
+    // Migration: if not in sessionStorage but exists in localStorage, move it
+    if (!stored) {
+      const oldStored = window.localStorage.getItem(AUTH_STORAGE_KEY)
+      if (oldStored) {
+        window.sessionStorage.setItem(AUTH_STORAGE_KEY, oldStored)
+        window.localStorage.removeItem(AUTH_STORAGE_KEY)
+        stored = oldStored
+      }
+    }
+
     if (!stored) {
       return { token: null, role: null, username: null }
     }
@@ -82,7 +94,7 @@ const loadAuthState = (): StoredAuthState => {
 const persistAuthState = (state: StoredAuthState) => {
   try {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
+      window.sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
     }
   } catch {
     // Ignore storage errors (private mode / quota)
