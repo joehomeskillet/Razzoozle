@@ -15,7 +15,7 @@ export default function MathematikInput({
   onSubmit,
   disabled,
   feedback: _feedback,
-  testIdPrefix = "",
+  testIdPrefix: _testIdPrefix,
   decimalsHint,
 }: MathematikInputProps) {
   const { t } = useTranslation()
@@ -23,7 +23,7 @@ export default function MathematikInput({
   return (
     <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
       <input
-        data-testid={`${testIdPrefix}mathematik-input`}
+        data-testid="mathematik-input"
         type="number"
         inputMode="decimal"
         step="0.01"
@@ -51,7 +51,7 @@ export default function MathematikInput({
       <SubmitButton
         onClick={onSubmit}
         disabled={disabled || value.trim().length === 0}
-        testId={`${testIdPrefix}mathematik-submit`}
+        testId="mathematik-submit"
       >
         {t("game:submitAnswer")}
       </SubmitButton>
