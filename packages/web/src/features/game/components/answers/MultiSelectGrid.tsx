@@ -112,7 +112,7 @@ export default function MultiSelectGrid({
                 ANSWERS_COLORS[key],
                 !disabled && PRESS_FEEDBACK,
                 disabled && "opacity-50",
-                isPicked && "ring-4 ring-white/80",
+                value.includes(key) && "ring-4 ring-white/80",
               )}
               label={ANSWERS_LABELS[key]}
               disabled={disabled}
