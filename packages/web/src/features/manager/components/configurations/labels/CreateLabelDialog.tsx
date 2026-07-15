@@ -46,7 +46,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
               {t("manager:labels.createTitle")}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="text-gray-400 hover:text-gray-600">
+              <button className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-gray-600">
                 <X className="size-5" />
               </button>
             </Dialog.Close>
@@ -78,7 +78,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
                       key={c.slug}
                       type="button"
                       onClick={() => setColor(c.slug)}
-                      className="h-8 w-8 rounded-full border-2 transition-all"
+                      className="min-h-11 min-w-11 rounded-full border-2 transition-all"
                       style={{
                         backgroundColor: `var(--label-${c.slug})`,
                         borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",

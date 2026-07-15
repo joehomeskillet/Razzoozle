@@ -117,7 +117,7 @@ const ClassList = ({
                         onFetchStudents?.(classObj.id)
                       }
                     }}
-                    className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={
                       expandedClassId === classObj.id
                         ? t("common:collapse")
@@ -157,7 +157,7 @@ const ClassList = ({
                     onClick={() =>
                       onEditClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.editClass")}
                     aria-label={t("manager:classes.editClass")}
                   >
@@ -169,7 +169,7 @@ const ClassList = ({
                     onClick={() =>
                       onDeleteClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.deleteClass")}
                     aria-label={t("manager:classes.deleteClass")}
                   >
@@ -265,7 +265,7 @@ const ClassList = ({
                                 birthdate: student.birthdate,
                               })
                             }
-                            className="focus-visible:outline-primary flex size-7 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.editStudent")}
                             aria-label={t("manager:classes.editStudent")}
                           >
@@ -280,7 +280,7 @@ const ClassList = ({
                                 displayName: student.displayName,
                               })
                             }
-                            className="focus-visible:outline-primary flex size-7 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.deleteStudent")}
                             aria-label={t("manager:classes.deleteStudent")}
                           >
