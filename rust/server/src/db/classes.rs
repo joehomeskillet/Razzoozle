@@ -51,7 +51,7 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
          LEFT JOIN users u ON u.id = c.owner_id \
          LEFT JOIN class_labels cl ON cl.class_id = c.id \
          WHERE ($1::bigint IS NULL OR c.owner_id = $1) \
-         GROUP BY c.id \
+         GROUP BY c.id, jt.student_count, u.username \
          ORDER BY c.created_at DESC"
     )
     .bind(me)
