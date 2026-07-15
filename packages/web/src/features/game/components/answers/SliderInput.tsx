@@ -1,4 +1,5 @@
 import type { AnswerViewProps } from "@razzoozle/web/features/game/components/answers/types"
+import SubmitButton from "@razzoozle/web/features/game/components/answers/SubmitButton"
 import { useTranslation } from "react-i18next"
 import clsx from "clsx"
 
@@ -8,9 +9,6 @@ interface SliderInputProps extends AnswerViewProps<number> {
   step?: number
   unit?: string
 }
-
-const PRESS_FEEDBACK =
-  "transition-transform duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
 
 export default function SliderInput({
   value,
@@ -73,18 +71,13 @@ export default function SliderInput({
       </div>
 
       {/* Submit button */}
-      <button
-        data-testid={`${testIdPrefix}slider-submit`}
-        type="button"
+      <SubmitButton
         onClick={onSubmit}
         disabled={disabled}
-        className={clsx(
-          "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-          PRESS_FEEDBACK,
-        )}
+        testId={`${testIdPrefix}slider-submit`}
       >
         {disabled ? t("game:slider.submitted") : t("game:slider.submit")}
-      </button>
+      </SubmitButton>
     </div>
   )
 }
