@@ -5,6 +5,7 @@ use super::{
     get_now_ms, AUTH_RATE_MAX_PER_CLIENT, SOLO_RATE_MAX_PER_CLIENT, SOLO_RATE_WINDOW_MS,
     SUBMISSION_GLOBAL_MAX, SUBMISSION_GLOBAL_WINDOW_MS, SUBMISSION_RATE_MAX_PER_CLIENT,
     SUBMISSION_RATE_WINDOW_MS, PIN_RATE_MAX_PER_CLIENT, PIN_RATE_WINDOW_MS,
+    GAME_CREATE_RATE_MAX_PER_USER, GAME_CREATE_RATE_WINDOW_MS,
 };
 
 #[derive(Debug, Clone)]
@@ -38,6 +39,7 @@ pub struct RateLimiter {
     submission_by_key: Mutex<HashMap<String, RateState>>,
     submission_global: Mutex<RateState>,
     pin_by_key: Mutex<HashMap<String, RateState>>,
+    game_create_by_key: Mutex<HashMap<String, RateState>>,
 }
 
 impl RateLimiter {
@@ -48,6 +50,7 @@ impl RateLimiter {
             submission_by_key: Mutex::new(HashMap::new()),
             submission_global: Mutex::new(RateState::new()),
             pin_by_key: Mutex::new(HashMap::new()),
+            game_create_by_key: Mutex::new(HashMap::new()),
         }
     }
 
@@ -233,5 +236,109 @@ impl RateLimiter {
         } else {
             true // lock failed, allow in fail-open mode
         }
+    }
+
+    /// SEC-03: Check if a game-create is allowed for the given user.
+    /// Returns true if allowed, false if rate-limited (10 per hour per user).
+    /// Note: window reset is inlined (not via maybe_reset) to use the 1-hour window.
+    pub fn check_game_create_rate(&self, key: &str) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut map) = self.game_create_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+
+            // Reset if window expired (1 hour)
+            if now.saturating_sub(entry.window_start_ms) > GAME_CREATE_RATE_WINDOW_MS {
+                entry.count = 0;
+                entry.window_start_ms = now;
+            }
+
+            let is_limited = entry.count >= GAME_CREATE_RATE_MAX_PER_USER;
+            if !is_limited {
+                entry.count += 1;
+            }
+
+            // Evict stale keys to prevent unbounded growth
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= GAME_CREATE_RATE_WINDOW_MS);
+            }
+
+            !is_limited
+        } else {
+            true // lock failed, allow in fail-open mode
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_game_create_rate_limit_10_allowed_11th_denied() {
+        let limiter = RateLimiter::new();
+        let key = "test_user:create_10_allowed";
+
+        // First 10 should be allowed
+        for i in 0..10 {
+            assert!(
+                limiter.check_game_create_rate(key),
+                "Create {} should be allowed",
+                i + 1
+            );
+        }
+
+        // 11th should be denied
+        assert!(
+            !limiter.check_game_create_rate(key),
+            "11th create should be denied (rate limited)"
+        );
+    }
+
+    #[test]
+    fn test_game_create_rate_independent_keys() {
+        let limiter = RateLimiter::new();
+
+        // Different keys should be independent
+        for _ in 0..10 {
+            assert!(limiter.check_game_create_rate("user:alice"));
+        }
+        assert!(!limiter.check_game_create_rate("user:alice")); // 11th denied
+
+        // Bob should still have full quota
+        for _ in 0..10 {
+            assert!(
+                limiter.check_game_create_rate("user:bob"),
+                "Bob's quota should be independent from Alice"
+            );
+        }
+        assert!(!limiter.check_game_create_rate("user:bob")); // 11th denied
+    }
+
+    #[test]
+    fn test_game_create_rate_window_reset() {
+        let limiter = RateLimiter::new();
+        let key = "test_user:window_reset";
+
+        // Fill the window
+        for _ in 0..10 {
+            assert!(limiter.check_game_create_rate(key));
+        }
+        assert!(!limiter.check_game_create_rate(key)); // Rate limited
+
+        // Manually advance time by more than 1 hour by manipulating the state directly
+        // (This test verifies the window reset logic works correctly)
+        if let Ok(mut map) = limiter.game_create_by_key.lock() {
+            if let Some(entry) = map.get_mut(key) {
+                // Simulate time passage: set window_start_ms to >1hr ago
+                entry.window_start_ms = entry.window_start_ms.saturating_sub(GAME_CREATE_RATE_WINDOW_MS + 1000);
+            }
+        }
+
+        // After window reset, should be allowed again
+        assert!(
+            limiter.check_game_create_rate(key),
+            "Should allow after window expires"
+        );
     }
 }
