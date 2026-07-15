@@ -153,9 +153,9 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                 match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, added_at, Some(user.user_id))
                     .await
                 {
-                    Ok(_id) => {
+                    Ok(id) => {
                         socket
-                            .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({}))
+                            .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({ "id": id.to_string() }))
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool, me, None).await;

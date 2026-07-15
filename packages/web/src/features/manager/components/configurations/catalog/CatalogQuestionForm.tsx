@@ -2,7 +2,10 @@ import { EVENTS } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
-import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import {
+  useEvent,
+  useSocket,
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
@@ -14,6 +17,7 @@ import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/Qu
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
+import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import type { CatalogQuestionFormProps } from "./types"
 import { parseTags } from "./utils"
@@ -78,10 +82,24 @@ export const CatalogQuestionForm = ({
       tags: payloadTags,
       source: "manual",
     })
-
-    // NOTE: labels picked in add-mode cannot be assigned here yet — see BLOCKER
-    // in the report for this WP (CATALOG.ADD_SUCCESS carries no entity id).
   }
+
+  // Assign pre-selected labels when add-mode succeeds and receives the new ID
+  useEvent(
+    EVENTS.CATALOG.ADD_SUCCESS as any,
+    useCallback(
+      (payload: any) => {
+        if (mode === "add" && selectedLabelIds.length > 0 && payload?.id) {
+          socket.emit(EVENTS.LABEL.ASSIGN, {
+            entityType: "catalog",
+            entityId: String(payload.id),
+            labelIds: selectedLabelIds,
+          })
+        }
+      },
+      [mode, selectedLabelIds, socket],
+    ),
+  )
 
   return (
     <>
