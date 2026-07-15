@@ -112,7 +112,7 @@ const AssetPreview = ({
     >
       <div
         className={clsx(
-          "relative w-full overflow-hidden rounded-xl bg-gray-50 outline-1 -outline-offset-1 outline-gray-200",
+          "relative w-full overflow-hidden rounded-xl bg-[var(--surface-2)] outline-1 -outline-offset-1 outline-[var(--line)]",
           aspect,
           compact && "max-h-28",
         )}
@@ -129,7 +129,7 @@ const AssetPreview = ({
             )}
           />
         ) : (
-          <div className="flex size-full flex-col items-center justify-center gap-1.5 text-gray-400">
+          <div className="flex size-full flex-col items-center justify-center gap-1.5 text-[var(--ink-faint)]">
             <ImageIcon className={clsx(compact ? "size-5" : "size-7")} aria-hidden />
             <span className={clsx("font-medium", compact ? "text-[0.625rem]" : "text-xs")}>
               {defaultLabel}
@@ -142,11 +142,11 @@ const AssetPreview = ({
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           {!hideLabel && (
-            <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+            <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
               {label}
             </p>
           )}
-          {hint && <p className="truncate text-sm text-gray-500">{hint}</p>}
+          {hint && <p className="truncate text-sm text-[var(--ink-subtle)]">{hint}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {/*
@@ -192,7 +192,7 @@ const AssetPreview = ({
       </div>
 
       {disabled && (
-        <p className="text-sm font-medium text-gray-500">
+        <p className="text-sm font-medium text-[var(--ink-subtle)]">
           {t("manager:theme.animatedBg.uploadDisabled", {
             defaultValue: "Animierter Hintergrund aktiv",
           })}
