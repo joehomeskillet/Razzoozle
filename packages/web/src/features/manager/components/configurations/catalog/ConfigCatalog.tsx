@@ -1,5 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Badge from "@razzoozle/web/components/manager/Badge"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
@@ -199,25 +201,15 @@ const ConfigCatalog = () => {
               { key: "global", label: t("manager:catalog.scope.global", { defaultValue: "Global" }) },
               { key: "all", label: t("manager:catalog.scope.all", { defaultValue: "Alle" }) },
             ] as const
-          ).map((entry) => {
-            const active = scope === entry.key
-
-            return (
-              <button
-                key={entry.key}
-                type="button"
-                onClick={() => setScope(entry.key)}
-                aria-pressed={active}
-                className={
-                  active
-                    ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                }
-              >
-                {entry.label}
-              </button>
-            )
-          })}
+          ).map((entry) => (
+            <FilterPill
+              key={entry.key}
+              active={scope === entry.key}
+              onClick={() => setScope(entry.key)}
+            >
+              {entry.label}
+            </FilterPill>
+          ))}
         </div>
 
         {klassenEnabled && (
@@ -281,9 +273,9 @@ const ConfigCatalog = () => {
                   meta={
                     <span className="flex flex-col gap-2 whitespace-normal">
                       <span className="flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
+                        <Badge>
                           {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-                        </span>
+                        </Badge>
                         <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
                           {t(`manager:catalog.source.${source}`)}
                         </span>

@@ -4,13 +4,13 @@ import type {
   Submission,
   SubmissionStatus,
 } from "@razzoozle/common/types/submission"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import {
   useEvent,
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import clsx from "clsx"
 import { CheckCircle2, Filter, Inbox, XCircle } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useState } from "react"
@@ -244,40 +244,22 @@ const ConfigSubmissions = () => {
         })}
       >
         <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
-        {statusFilters.map((entry) => {
-          const active = statusFilter === entry.key
-
-          return (
-            <button
-              key={entry.key}
-              type="button"
-              onClick={() => {
-                setStatusFilter(entry.key)
-                setApprovingId(null)
-                setEditingId(null)
-                setPreviewId(null)
-                setRejectingId(null)
-              }}
-              aria-pressed={active}
-              className={clsx(
-                "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                active
-                  ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)]"
-                  : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
-              )}
-            >
-              {entry.label}
-              <span
-                className={clsx(
-                  "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums",
-                  active ? "bg-[color:var(--color-field-ink)]/10 text-[color:var(--color-field-ink)]" : "bg-[var(--surface-4)] text-[var(--ink-medium)]",
-                )}
-              >
-                {entry.count}
-              </span>
-            </button>
-          )
-        })}
+        {statusFilters.map((entry) => (
+          <FilterPill
+            key={entry.key}
+            active={statusFilter === entry.key}
+            count={entry.count}
+            onClick={() => {
+              setStatusFilter(entry.key)
+              setApprovingId(null)
+              setEditingId(null)
+              setPreviewId(null)
+              setRejectingId(null)
+            }}
+          >
+            {entry.label}
+          </FilterPill>
+        ))}
       </div>
 
       {visible.length === 0 ? (
