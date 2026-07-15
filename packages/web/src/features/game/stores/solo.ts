@@ -60,6 +60,12 @@ export interface SoloQuestionResult {
   // accuracy) merged with client-derived streak badges (streak_3/5/10 +
   // perfect_round). Deduped. Read by SoloAnswers to feed <RewardStack>.
   achievements: string[]
+  // SEC-05: raw answer input, kept so finishGame can send it to /solo-score
+  // for server-side re-evaluation. The server never trusts `correct`/`points`
+  // above — only these.
+  answerId?: number
+  answerIds?: number[]
+  answerText?: string
 }
 
 interface SoloState {
@@ -192,6 +198,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
               correct: false,
               points: 0,
               achievements: [],
+              ...payload,
             },
           ],
           phase: "result",
@@ -214,6 +221,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
                 correct: result.correct,
                 points: result.points,
                 achievements: [],
+                ...payload,
               },
             ],
             phase: "result",
@@ -242,6 +250,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
               correct: result.correct,
               points: result.points,
               achievements: merged,
+              ...payload,
             },
           ],
           phase: "result",
@@ -259,6 +268,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
             correct: false,
             points: 0,
             achievements: [],
+            ...payload,
           },
         ],
         phase: "result",
@@ -303,7 +313,10 @@ export const useSoloStore = create<SoloState>((set, get) => ({
           score: totalPoints,
           answers: answers.map((a) => ({
             questionIndex: a.questionIndex,
-            correct: a.correct,
+            correct: a.correct, // Anzeige-/Legacy-Kompat; Server ignoriert
+            ...(a.answerId !== undefined ? { answerId: a.answerId } : {}),
+            ...(a.answerIds ? { answerIds: a.answerIds } : {}),
+            ...(a.answerText !== undefined ? { answerText: a.answerText } : {}),
           })),
         }),
       })
