@@ -355,6 +355,19 @@ mod tests {
         assert_ne!(a, b, "different tokens (e.g. two devices) must hash differently");
     }
 
+    /// Cross-check against migration 020's backfill: `encode(digest(token,
+    /// 'sha256'), 'hex')` must produce the exact same lowercase hex string as
+    /// this function, otherwise a forward-hashed legacy row would silently
+    /// stop matching require_user() lookups after the migration. Expected
+    /// value computed via `psql -c "SELECT encode(digest('live-active-plaintext-token-abc123'::bytea,'sha256'),'hex')"`
+    /// against a throwaway Postgres 16 (pgcrypto) — see WP-X2a report.
+    #[test]
+    fn hash_token_matches_pgcrypto_digest_sha256_hex() {
+        let rust_hash = hash_token("live-active-plaintext-token-abc123");
+        let sql_computed_hash = "50d217cface91deae25f6d34f09f563b76db3a2a69be1efdeb0048ffd598413c";
+        assert_eq!(rust_hash, sql_computed_hash, "Rust hash_token() must be byte-identical to Postgres pgcrypto's encode(digest(token,'sha256'),'hex')");
+    }
+
     // Multi-session behavior (two concurrent tokens valid, logout revokes only
     // one, the 10-session cap, and 401-on-invalid-token) all require a live
     // Postgres — this repo has no CI Postgres service (grep: no `postgres` in

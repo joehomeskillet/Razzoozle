@@ -17,16 +17,40 @@
 -- Idempotent: scripts/migrate-apply.sh has no migration-version tracking,
 -- so this file is re-applied on every deploy. Every statement below is safe
 -- to run repeatedly against an already-migrated table.
+--
+-- Live-DB correction (adversarial review): the first draft of this migration
+-- DROPPED every pre-existing plaintext row, which would have logged out
+-- every currently-active session on first apply. Instead we forward-hash the
+-- existing plaintext token in place (SHA-256, lowercase hex — byte-identical
+-- to db/users.rs::hash_token's format!("{:02x}", b) output) so already
+-- logged-in users keep their session.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS id BIGSERIAL;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token_hash TEXT;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ NOT NULL DEFAULT now();
 
--- Pre-migration rows carry a plaintext token in the old `token` column and
--- no token_hash — they cannot be migrated forward (no hash was ever
--- persisted for them). Drop them; they are transient 7-day-TTL rows, and
--- affected users simply log in again. No-op once every row has a
--- token_hash (i.e. on every deploy after the first).
+-- Forward-hash any pre-migration plaintext token into token_hash. Guarded by
+-- an information_schema check on the `token` column: on the 2nd+ apply that
+-- column is already dropped (see below), so this must be a no-op rather than
+-- erroring with "column token does not exist".
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'sessions' AND column_name = 'token'
+  ) THEN
+    UPDATE sessions
+    SET token_hash = encode(digest(token, 'sha256'), 'hex')
+    WHERE token_hash IS NULL AND token IS NOT NULL;
+  END IF;
+END $$;
+
+-- Safety net only: rows that still have no token_hash at this point had no
+-- recoverable plaintext token either (never happens in practice — every row
+-- either already has a token_hash or came from the pre-migration `token`
+-- column handled above). No-op in the normal case.
 DELETE FROM sessions WHERE token_hash IS NULL;
 
 ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_pkey;
