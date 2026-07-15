@@ -117,7 +117,7 @@ const ClassList = ({
                         onFetchStudents?.(classObj.id)
                       }
                     }}
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={
                       expandedClassId === classObj.id
                         ? t("common:collapse")
@@ -131,20 +131,20 @@ const ClassList = ({
                     )}
                   </button>
 
-                  <GraduationCap className="size-5 shrink-0 text-gray-700" />
+                  <GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-[var(--ink)]">
                         {classObj.name}
                       </p>
                       {classObj.ownerName && (
-                        <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
                           {classObj.ownerName}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--ink-subtle)]">
                       {expandedClassId === classObj.id
                         ? (classObj.students ?? []).length
                         : classObj.studentCount ?? 0}{" "}
@@ -157,7 +157,7 @@ const ClassList = ({
                     onClick={() =>
                       onEditClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.editClass")}
                     aria-label={t("manager:classes.editClass")}
                   >
@@ -169,7 +169,7 @@ const ClassList = ({
                     onClick={() =>
                       onDeleteClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.deleteClass")}
                     aria-label={t("manager:classes.deleteClass")}
                   >
@@ -204,7 +204,7 @@ const ClassList = ({
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.assignTitle")}
-                        className="focus-visible:outline-primary flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        className="focus-visible:outline-primary flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                         onClick={() => setPendingLabelPickerId(classObj.id)}
                       >
                         <Plus className="size-3" />
@@ -222,13 +222,13 @@ const ClassList = ({
                                 <Select.Item
                                   key={label.id}
                                   value={String(label.id)}
-                                  className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                                  className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
                                 >
                                   <Select.ItemText>{label.name}</Select.ItemText>
                                 </Select.Item>
                               ))
                             ) : (
-                              <div className="px-3 py-1.5 text-sm text-gray-500">
+                              <div className="px-3 py-1.5 text-sm text-[var(--ink-subtle)]">
                                 {t("manager:labels.noLabels")}
                               </div>
                             )}
@@ -248,10 +248,10 @@ const ClassList = ({
                       {classObj.students?.map((student) => (
                         <div
                           key={student.id}
-                          className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 border border-[var(--border-hairline)]"
+                          className="flex items-center gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 border border-[var(--border-hairline)]"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm text-gray-900">
+                            <p className="text-sm text-[var(--ink)]">
                               {student.displayName}
                             </p>
                           </div>
@@ -265,7 +265,7 @@ const ClassList = ({
                                 birthdate: student.birthdate,
                               })
                             }
-                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.editStudent")}
                             aria-label={t("manager:classes.editStudent")}
                           >
@@ -280,7 +280,7 @@ const ClassList = ({
                                 displayName: student.displayName,
                               })
                             }
-                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.deleteStudent")}
                             aria-label={t("manager:classes.deleteStudent")}
                           >
@@ -290,8 +290,8 @@ const ClassList = ({
                       ))}
                     </>
                   ) : (
-                    <div className="rounded-lg bg-gray-50 px-3 py-2 text-center">
-                      <p className="text-xs text-gray-500">
+                    <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
+                      <p className="text-xs text-[var(--ink-subtle)]">
                         {t("manager:classes.noStudents")}
                       </p>
                     </div>

@@ -62,10 +62,10 @@ const StudentPicker = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:classes.pickerTitle")}
         </h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
           {t("manager:classes.pickerHint", { className })}
         </p>
 
@@ -80,11 +80,11 @@ const StudentPicker = ({
 
         <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto">
           {allStudents.length === 0 ? (
-            <p className="p-4 text-center text-sm text-gray-500">
+            <p className="p-4 text-center text-sm text-[var(--ink-subtle)]">
               {t("manager:classes.pickerEmpty")}
             </p>
           ) : filtered.length === 0 ? (
-            <p className="p-4 text-center text-sm text-gray-500">
+            <p className="p-4 text-center text-sm text-[var(--ink-subtle)]">
               {t("manager:classes.pickerNoResults")}
             </p>
           ) : (
@@ -96,18 +96,18 @@ const StudentPicker = ({
                   type="button"
                   disabled={alreadyIn}
                   onClick={() => onSelect(student.id, classId)}
-                  className="focus-visible:outline-primary flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-gray-50"
+                  className="focus-visible:outline-primary flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-[var(--surface-2)]"
                 >
-                  <span className="min-w-0 truncate text-gray-900">
+                  <span className="min-w-0 truncate text-[var(--ink)]">
                     {student.displayName}
                     {student.birthdate && (
-                      <span className="ml-2 text-xs font-normal text-gray-400">
+                      <span className="ml-2 text-xs font-normal text-[var(--ink-faint)]">
                         {formatBirthdate(student.birthdate)}
                       </span>
                     )}
                   </span>
                   {alreadyIn && (
-                    <span className="shrink-0 text-xs text-gray-400">
+                    <span className="shrink-0 text-xs text-[var(--ink-faint)]">
                       {t("manager:classes.pickerAlreadyIn")}
                     </span>
                   )}

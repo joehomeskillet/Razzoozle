@@ -138,10 +138,10 @@ const ConfigKlassen = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setIsCreateDialogOpen(false)} />
           <div className="relative rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:classes.createTitle")}
             </h2>
-            <p className="mt-2 text-gray-500">
+            <p className="mt-2 text-[var(--ink-subtle)]">
               {t("manager:classes.createDescription")}
             </p>
             <Input
@@ -173,10 +173,10 @@ const ConfigKlassen = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setIsEditDialogOpen(false)} />
           <div className="relative rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:classes.editTitle")}
             </h2>
-            <p className="mt-2 text-gray-500">
+            <p className="mt-2 text-[var(--ink-subtle)]">
               {t("manager:classes.editDescription")}
             </p>
             <Input
@@ -237,10 +237,10 @@ const ConfigKlassen = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setIsEditStudentDialogOpen(false)} />
           <div className="relative rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:classes.editStudentTitle")}
             </h2>
-            <p className="mt-2 text-gray-500">
+            <p className="mt-2 text-[var(--ink-subtle)]">
               {t("manager:classes.editStudentDescription")}
             </p>
             <Input
@@ -257,7 +257,7 @@ const ConfigKlassen = () => {
             />
             <label
               htmlFor="klassen-edit-student-birthdate"
-              className="mt-4 block text-sm font-medium text-gray-700"
+              className="mt-4 block text-sm font-medium text-[var(--ink-muted)]"
             >
               {t("manager:schueler.birthdateLabel")}
             </label>

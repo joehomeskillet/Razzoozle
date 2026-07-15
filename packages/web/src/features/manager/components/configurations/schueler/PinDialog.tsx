@@ -42,10 +42,10 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-lg rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:schueler.pinTitle")}
         </h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
           {t("manager:schueler.pinHint")}
         </p>
 
@@ -55,11 +55,11 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
               <div
                 role="img"
                 aria-label={data.labels[i] ?? emoji}
-                className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-gray-900"
+                className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-[var(--ink)]"
               >
                 {emoji}
               </div>
-              <span className="text-center text-xs font-medium text-gray-500">
+              <span className="text-center text-xs font-medium text-[var(--ink-subtle)]">
                 {data.labels[i]}
               </span>
             </div>
