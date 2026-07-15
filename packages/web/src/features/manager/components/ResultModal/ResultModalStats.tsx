@@ -7,9 +7,9 @@ const ResultModalStats = () => {
   const { t } = useTranslation()
 
   return (
-    <div className="flex shrink-0 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50">
+    <div className="flex shrink-0 divide-x divide-[var(--line)] border-b border-[var(--line)] bg-[var(--surface-2)]">
       <div className="flex flex-1 items-center justify-between px-5 py-3">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-[var(--ink-subtle)]">
           {t("manager:result.stats.correctAnswers")}
         </p>
         <div className="flex items-center gap-2">
@@ -45,7 +45,7 @@ const ResultModalStats = () => {
       </div>
 
       <div className="flex flex-1 items-center justify-between px-5 py-3">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-[var(--ink-subtle)]">
           {t("manager:result.stats.playersAnswered")}
         </p>
         <div className="flex items-center gap-2">

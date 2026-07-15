@@ -61,11 +61,11 @@ const ResultModalHeader = () => {
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 px-5 py-3">
+    <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-5 py-3">
       <RadixDialog.Title asChild>
         <h2
           id={RESULT_MODAL_TITLE_ID}
-          className="flex-1 truncate text-base font-bold text-gray-900"
+          className="flex-1 truncate text-base font-bold text-[var(--ink)]"
         >
           {result.subject}
         </h2>
@@ -74,7 +74,7 @@ const ResultModalHeader = () => {
         {/* Whitespace-nowrap keeps the "1 von 5" counter on one line; the
             separator string already carries its own spaces, so we don't add
             extra ones. */}
-        <span className="text-sm whitespace-nowrap text-gray-400 tabular-nums">
+        <span className="text-sm whitespace-nowrap text-[var(--ink-faint)] tabular-nums">
           {questionIndex + 1}
           {t("manager:result.paginationOf")}
           {total}
@@ -84,7 +84,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.export.csv", { defaultValue: "CSV" })}
           title={t("manager:result.export.csv", { defaultValue: "CSV" })}
           onClick={handleExportCsv}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
         >
           <Download className="size-5" />
         </button>
@@ -97,7 +97,7 @@ const ResultModalHeader = () => {
             defaultValue: "Fragen-CSV",
           })}
           onClick={handleExportQuestionsCsv}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
         >
           <FileText className="size-5" />
         </button>
@@ -108,7 +108,7 @@ const ResultModalHeader = () => {
           })}
           title={t("manager:result.export.json", { defaultValue: "JSON" })}
           onClick={handleExportJson}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
         >
           <FileJson className="size-5" />
         </button>
@@ -117,7 +117,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.prevQuestion")}
           disabled={questionIndex === 0}
           onClick={goPrev}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -126,7 +126,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.nextQuestion")}
           disabled={questionIndex === total - 1}
           onClick={goNext}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
         >
           <ChevronRight className="size-5" />
         </button>
@@ -136,7 +136,7 @@ const ResultModalHeader = () => {
           <button
             type="button"
             aria-label={t("manager:result.aria.close")}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded ml-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded ml-1 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
           >
             <X className="size-5" />
           </button>
