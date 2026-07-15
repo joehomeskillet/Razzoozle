@@ -14,9 +14,12 @@
     "verify": "pnpm -r run types && oxlint && pnpm -r --if-present run test",
     "format": "pnpm -r --parallel run format",
     "format:fix": "pnpm -r --parallel run format:fix",
-    "e2e": "playwright test --config e2e/playwright.config.ts"
+    "e2e": "playwright test --config e2e/playwright.config.ts",
+    "i18n:check": "i18n-check -l packages/web/src/locales -s de -f i18next",
+    "i18n:report": "i18n-check -l packages/web/src/locales -s de -f i18next -o unused,undefined -u packages/web/src"
   },
   "devDependencies": {
+    "@lingual/i18n-check": "0.9.5",
     "@playwright/test": "^1.61.1",
     "@stylistic/eslint-plugin": "latest",
     "@types/node": "^26.1.0",
