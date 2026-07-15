@@ -1,0 +1,13 @@
+# CODEOWNERS — gelesen von Gitea UND GitHub (root = einziger gemeinsamer Ort).
+# @agent-claude gilt auf Gitea (git.joelduss.xyz), @joehomeskillet auf dem
+# GitHub-Mirror; unbekannte Namen ignoriert die jeweils andere Plattform.
+#
+# Locale-JSONs sind merge-fragil (textuelle Auto-Merges haben am 2026-07-14
+# Keys verschluckt). Strukturelle Edits laufen NUR über scripts/locale-sync.mjs;
+# jede PR-Berührung soll ein Review-Request auslösen.
+packages/web/src/locales/** @agent-claude @joehomeskillet
+
+# Das i18n-CI-Gate selbst ist ebenfalls schutzwürdig (Gate-Aushebelung per PR).
+.gitea/workflows/i18n-check.yml @agent-claude @joehomeskillet
+scripts/check-locales.sh @agent-claude @joehomeskillet
+scripts/locale-sync.mjs @agent-claude @joehomeskillet
