@@ -1,0 +1,10 @@
+{
+  "name": "@razzoozle/e2e",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@browserbasehq/stagehand": "^3.7.0",
+    "zod": "^4.4.3"
+  }
+}

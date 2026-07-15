@@ -241,6 +241,7 @@ const RecapSequence = ({
 
   return (
     <section
+      data-testid="recap-sequence"
       role="region"
       aria-label={awardsTitle}
       aria-live="polite"
@@ -254,6 +255,7 @@ const RecapSequence = ({
           (the Weiter button below is the accessible control). */}
       <button
         type="button"
+        data-testid="recap-advance"
         aria-hidden
         tabIndex={-1}
         onClick={advance}
@@ -416,6 +418,7 @@ const RecapSequence = ({
           </button>
           <button
             type="button"
+            data-testid="recap-advance"
             onClick={advance}
             className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-[var(--accent-contrast-text)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           >
