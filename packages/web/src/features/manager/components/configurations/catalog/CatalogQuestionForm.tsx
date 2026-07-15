@@ -86,9 +86,9 @@ export const CatalogQuestionForm = ({
 
   // Assign pre-selected labels when add-mode succeeds and receives the new ID
   useEvent(
-    EVENTS.CATALOG.ADD_SUCCESS as any,
+    EVENTS.CATALOG.ADD_SUCCESS,
     useCallback(
-      (payload: any) => {
+      (payload: { id: string }) => {
         if (mode === "add" && selectedLabelIds.length > 0 && payload?.id) {
           socket.emit(EVENTS.LABEL.ASSIGN, {
             entityType: "catalog",
