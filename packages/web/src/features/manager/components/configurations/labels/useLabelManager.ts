@@ -6,12 +6,9 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+import type { Label } from "@razzoozle/web/components/labels/LabelChip"
 
-export interface Label {
-  id: number
-  name: string
-  color: string
-}
+export type { Label }
 
 export const useLabelManager = () => {
   const { socket, isConnected } = useSocket()

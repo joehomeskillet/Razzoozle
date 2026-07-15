@@ -10,25 +10,6 @@ import { useLabelManager } from "./useLabelManager"
 import CreateLabelDialog from "./CreateLabelDialog"
 import EditLabelDialog from "./EditLabelDialog"
 
-// Color palette for labels (fixed 8-tone palette per SDD §5 E1)
-const COLOR_PALETTE = [
-  { slug: "red" },
-  { slug: "blue" },
-  { slug: "green" },
-  { slug: "yellow" },
-  { slug: "purple" },
-  { slug: "pink" },
-  { slug: "indigo" },
-  { slug: "gray" },
-]
-
-const getLabelColorCircleStyle = (color: string) => {
-  const slug = COLOR_PALETTE.find((c) => c.slug === color)?.slug || "gray"
-  return {
-    backgroundColor: `var(--label-${slug})`,
-  }
-}
-
 const ConfigLabels = () => {
   const {
     labels,
@@ -91,7 +72,7 @@ const ConfigLabels = () => {
                 <div className="flex items-center gap-3">
                   <div
                     className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
-                    style={getLabelColorCircleStyle(label.color)}
+                    style={{ backgroundColor: `var(--label-${label.color}, var(--label-gray))` }}
                   />
                   <span className="text-sm font-medium text-gray-900">
                     {label.name}
