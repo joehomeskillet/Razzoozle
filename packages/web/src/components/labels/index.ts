@@ -1,2 +1,3 @@
 export { default as LabelChip, type Label } from "./LabelChip"
 export { default as LabelFilterPills } from "./LabelFilterPills"
+export { default as LabelColorPicker } from "./LabelColorPicker"
