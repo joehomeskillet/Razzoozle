@@ -78,15 +78,19 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
                       key={c.slug}
                       type="button"
                       onClick={() => setColor(c.slug)}
-                      className="min-h-11 min-w-11 rounded-full border-2 transition-all"
-                      style={{
-                        backgroundColor: `var(--label-${c.slug})`,
-                        borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
-                        boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
-                      }}
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-full"
                       title={colorLabel}
                       aria-label={colorLabel}
-                    />
+                    >
+                      <span
+                        className="size-8 rounded-full border-2 transition-all"
+                        style={{
+                          backgroundColor: `var(--label-${c.slug})`,
+                          borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
+                          boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
+                        }}
+                      />
+                    </button>
                   )
                 })}
               </div>
