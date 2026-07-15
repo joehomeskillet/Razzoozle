@@ -154,5 +154,8 @@
     "disableTokenLabel": "Disable word",
     "enableTokenLabel": "Enable word",
     "allTokensDisabledError": "At least one word must be active"
+  },
+  "editor": {
+    "testPlay": "Test play"
   }
 }

@@ -445,7 +445,8 @@
       "entertainment": "Divertissement",
       "technology": "Technologie",
       "other": "Autre"
-    }
+    },
+    "submitLinkUnavailable": "Pas encore disponible — votre lien personnel sera activé bientôt."
   },
   "media": {
     "title": "Bibliothèque de médias",
@@ -487,7 +488,13 @@
       "toggle": "Sélectionner {{name}}"
     },
     "dropHint": "Déposez les fichiers ici pour les envoyer",
-    "details": "Détails"
+    "details": "Détails",
+    "scope": {
+      "own": "Personnelles",
+      "global": "Global",
+      "all": "Toutes",
+      "label": "Visibilité"
+    }
   },
   "catalog": {
     "title": "Catalogue de questions",
@@ -519,7 +526,13 @@
       "ai": "IA"
     },
     "approveToCatalog": "Vers le catalogue plutôt que le quizz",
-    "approveToCatalogHint": "Place la question approuvée dans le catalogue plutôt que directement dans un quizz."
+    "approveToCatalogHint": "Place la question approuvée dans le catalogue plutôt que directement dans un quizz.",
+    "scope": {
+      "own": "Personnelles",
+      "global": "Global",
+      "all": "Toutes",
+      "label": "Visibilité"
+    }
   },
   "ai": {
     "title": "Paramètres IA",

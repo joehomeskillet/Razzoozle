@@ -154,5 +154,8 @@
     "disableTokenLabel": "禁用单词",
     "enableTokenLabel": "启用单词",
     "allTokensDisabledError": "至少有一个单词必须处于活跃状态"
+  },
+  "editor": {
+    "testPlay": "试玩"
   }
 }

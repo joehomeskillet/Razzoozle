@@ -154,5 +154,8 @@
     "disableTokenLabel": "Desactivar palabra",
     "enableTokenLabel": "Activar palabra",
     "allTokensDisabledError": "Debe haber al menos una palabra activa"
+  },
+  "editor": {
+    "testPlay": "Prueba"
   }
 }

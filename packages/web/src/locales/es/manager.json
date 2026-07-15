@@ -445,7 +445,8 @@
       "entertainment": "Entretenimiento",
       "technology": "Tecnología",
       "other": "Otros"
-    }
+    },
+    "submitLinkUnavailable": "No disponible aún — tu enlace personal se activará pronto."
   },
   "media": {
     "title": "Biblioteca de medios",
@@ -487,7 +488,13 @@
       "toggle": "Seleccionar {{name}}"
     },
     "dropHint": "Suelta los archivos aquí para subirlos",
-    "details": "Detalles"
+    "details": "Detalles",
+    "scope": {
+      "own": "Propias",
+      "global": "Global",
+      "all": "Todas",
+      "label": "Visibilidad"
+    }
   },
   "catalog": {
     "title": "Catálogo de preguntas",
@@ -519,7 +526,13 @@
       "ai": "IA"
     },
     "approveToCatalog": "Al catálogo en lugar del cuestionario",
-    "approveToCatalogHint": "Coloca la pregunta aprobada en el catálogo en vez de directamente en un cuestionario."
+    "approveToCatalogHint": "Coloca la pregunta aprobada en el catálogo en vez de directamente en un cuestionario.",
+    "scope": {
+      "own": "Propias",
+      "global": "Global",
+      "all": "Todas",
+      "label": "Visibilidad"
+    }
   },
   "ai": {
     "title": "Ajustes de IA",
