@@ -306,7 +306,45 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     // first connect_error was swallowed.
     socketClient.io.on("reconnect_attempt", showLostNotice)
 
+    // #77: iOS/Android freeze on lock keeps the WS falsely "open" — socket.io
+    // then never re-fires `connect`, so the token re-emit in $gameId.tsx never
+    // runs. Force a hard reconnect on resume when we were hidden long enough
+    // that the server (ping_timeout ~8s) may already have dropped us.
+    let hiddenAtMs = 0
+    const STALE_AFTER_MS = 10000 // > ping_interval (10s)
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAtMs = Date.now()
+        return
+      }
+      const wasHiddenMs = hiddenAtMs === 0 ? 0 : Date.now() - hiddenAtMs
+      hiddenAtMs = 0
+      if (!socketClient.connected) {
+        socketClient.connect()
+      } else if (wasHiddenMs > STALE_AFTER_MS) {
+        socketClient.disconnect()
+        socketClient.connect()
+      }
+    }
+    const onOnline = () => {
+      if (!socketClient.connected) socketClient.connect()
+    }
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted && socketClient.connected) {
+        socketClient.disconnect()
+        socketClient.connect()
+      } else if (!socketClient.connected) {
+        socketClient.connect()
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("online", onOnline)
+    window.addEventListener("pageshow", onPageShow)
+
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("online", onOnline)
+      window.removeEventListener("pageshow", onPageShow)
       socketClient.off("connect", onConnect)
       socketClient.off("disconnect", onDisconnect)
       socketClient.off("connect_error", onConnectError)
