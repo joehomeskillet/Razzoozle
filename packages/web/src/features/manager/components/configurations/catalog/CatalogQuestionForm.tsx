@@ -90,7 +90,7 @@ export const CatalogQuestionForm = ({
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col bg-gray-50 p-4 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col bg-[var(--surface-2)] p-4 sm:p-6">
         <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
           <section className="flex flex-col gap-2">
             <QuestionEditorTitle />
@@ -102,7 +102,7 @@ export const CatalogQuestionForm = ({
           <section className="flex flex-col gap-2">
             <label
               htmlFor="catalog-tags"
-              className="w-fit text-xs font-semibold tracking-wide text-gray-500 uppercase"
+              className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase"
             >
               {t("manager:catalog.tags")}
             </label>
@@ -155,13 +155,13 @@ export const CatalogQuestionForm = ({
 
           {klassenEnabled && labels.length > 0 && editingEntry?.id && (
             <section className="flex flex-col gap-2">
-              <label className="w-fit text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              <label className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
                 {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
               </label>
               <div className="rounded-2xl bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap gap-2">
                   {labels.length === 0 ? (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[var(--ink-subtle)]">
                       {t("manager:labels.noLabels", { defaultValue: "Keine Labels verfügbar" })}
                     </p>
                   ) : (
@@ -190,7 +190,7 @@ export const CatalogQuestionForm = ({
         </div>
       </div>
 
-      <footer className="flex shrink-0 justify-end gap-2 border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <footer className="flex shrink-0 justify-end gap-2 border-t border-[var(--line)] bg-white px-4 py-3 sm:px-6">
         <Button type="button" variant="secondary" onClick={onClose}>
           {t("common:cancel")}
         </Button>

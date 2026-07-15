@@ -121,11 +121,11 @@ export const CatalogQuestionModal = ({
         onKeyDown={handleFocusTrap}
         className="flex max-h-[88svh] min-h-0 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
+        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
             <h2
               id="catalog-question-modal-title"
-              className="truncate text-lg font-semibold text-gray-900"
+              className="truncate text-lg font-semibold text-[var(--ink)]"
             >
               {mode === "edit"
                 ? t("manager:catalog.edit")
@@ -137,7 +137,7 @@ export const CatalogQuestionModal = ({
             type="button"
             onClick={onClose}
             aria-label={t("common:cancel")}
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           >
             <X className="size-5" aria-hidden />
           </button>
