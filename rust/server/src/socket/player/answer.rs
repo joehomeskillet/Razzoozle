@@ -75,6 +75,18 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
 
+                // SEC-04: Extract playerToken for answer impersonation gate
+                let player_token_opt = data_obj
+                    .and_then(|v| v.get("playerToken"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                // SEC-04: Extract playerToken for answer impersonation gate
+                let player_token_opt = data_obj
+                    .and_then(|v| v.get("playerToken"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
                 // Get current server time (wall-clock) for response_time_ms calculation
                 // This must be hoisted ABOVE the lock so it survives to the emit
                 let server_now_ms = SystemTime::now()
@@ -100,6 +112,20 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                             // Set engine clock to current wall-clock time so record_answer
                             // calculates response_time_ms correctly
                             game.engine.set_clock_ms(server_now_ms);
+
+                            // SEC-04: token↔player-Match für JEDE Antwort. clientId ist client-
+                            // kontrolliert (main.rs Handshake) und allein KEIN Auth-Nachweis.
+                            let token_ok = match game.players.iter().find(|p| p.client_id == client_id) {
+                                Some(p) => answer_token_gate(p.player_token.as_deref(), player_token_opt.as_deref()),
+                                None => true,
+                            };
+
+                            if !token_ok {
+                                drop(game);
+                                tracing::warn!("answer denied: playerToken mismatch/missing (game={}, client_id={})", game_id, client_id);
+                                socket.emit(constants::game::ERROR_MESSAGE, "errors:game.invalidAnswer").ok();
+                                return;
+                            }
 
                             let result = game.engine.record_answer(
                                 &client_id,
@@ -225,4 +251,34 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
             });
         }
     });
+
+/// true = answer may be recorded.
+/// 
+/// Test cases:
+/// - stored=Some("a"), supplied=None → false (missing token for player with token)
+/// - stored=Some("a"), supplied=Some("b") → false (mismatched token)
+/// - stored=Some("a"), supplied=Some("a") → true (matching token)
+/// - stored=None, supplied=* → true (legacy player without token)
+
+
+
+/// true = answer may be recorded.
+///
+/// Gate: if player has stored token (all regularly-joined via add_player),
+/// supplied token must match exactly. Legacy players (snapshot-restores from
+/// pre-token era, player_token = None) are allowed.
+///
+/// Test cases (exercised via integration tests + answer path):
+/// - stored=Some("a"), supplied=None → false (player has token, none sent → deny)
+/// - stored=Some("a"), supplied=Some("b") → false (mismatched token → deny)
+/// - stored=Some("a"), supplied=Some("a") → true (exact match → allow)
+/// - stored=None, supplied=* → true (legacy player → allow)
+pub(crate) fn answer_token_gate(stored: Option<&str>, supplied: Option<&str>) -> bool {
+    match stored {
+        Some(s) => supplied == Some(s),
+        None => true,
+    }
+}
+
+
 }

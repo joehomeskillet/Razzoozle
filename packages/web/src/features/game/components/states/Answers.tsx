@@ -79,6 +79,7 @@ const Answers = ({
   const muted = useSoundStore((s) => s.muted)
   const llActive = useLowLatencyStore((s) => s.active)
   const clockOffsetMs = useLowLatencyStore((s) => s.offsetMs)
+  const playerToken = localStorage.getItem(`player_token:${gameId}`) ?? undefined
   const displayOrder = useQuestionStore((s) => s.displayOrder)
   // Resume signal: did the server tell us we already answered this question?
   const resumeAnswered = useAnswerStore(
@@ -234,6 +235,7 @@ const Answers = ({
         // OPTIONAL — omitted in normal mode so the server dedups by
         // player+question only (today's behaviour).
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
 
@@ -267,6 +269,7 @@ const Answers = ({
       data: {
         answerKey: sliderValue,
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
     setSubmitted(true)
@@ -315,6 +318,7 @@ const Answers = ({
       data: {
         answerKey: -1,
         answerKeys: multiSelectedKeys,
+        ...(playerToken ? { playerToken } : {}),
       },
     })
   }
@@ -344,6 +348,7 @@ const Answers = ({
         answerKey: -1,
         answerText: trimmed,
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
   }
@@ -365,6 +370,7 @@ const Answers = ({
         answerKey: -1,
         answerText: mathematikAnswer.trim(),
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
 
@@ -439,6 +445,7 @@ const Answers = ({
         answerKey: -1,
         answerText: JSON.stringify(answerArray),
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
 
@@ -477,6 +484,7 @@ const Answers = ({
         answerKey: -1,
         answerText,
         ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
       },
     })
 
