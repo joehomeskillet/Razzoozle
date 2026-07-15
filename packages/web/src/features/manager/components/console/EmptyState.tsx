@@ -41,8 +41,8 @@ const EmptyState = ({
     >
       <Icon className="size-7" strokeWidth={2} />
     </span>
-    <p className="text-lg font-bold text-gray-900">{headline}</p>
-    {hint && <p className="max-w-sm text-sm text-gray-500">{hint}</p>}
+    <p className="text-lg font-bold text-[var(--ink)]">{headline}</p>
+    {hint && <p className="max-w-sm text-sm text-[var(--ink-subtle)]">{hint}</p>}
     {action && (
       <Button
         variant="primary"

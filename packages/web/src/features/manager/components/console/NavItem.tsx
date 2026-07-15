@@ -56,7 +56,7 @@ const NavItem = ({
           : "shrink-0 flex-col justify-center px-3 py-2 sm:flex-row",
         active
           ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+          : "text-[var(--ink-medium)] hover:bg-[var(--surface-3)] hover:text-[var(--ink)]",
         className,
       )}
       {...buttonProps}
@@ -81,7 +81,7 @@ const NavItem = ({
           "size-5 shrink-0 transition-colors",
           active
             ? "text-[var(--accent-contrast)]"
-            : "text-gray-400 group-hover:text-gray-600",
+            : "text-[var(--ink-faint)] group-hover:text-[var(--ink-medium)]",
         )}
         strokeWidth={active ? 2.6 : 2}
       />
@@ -100,7 +100,7 @@ const NavItem = ({
           "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
           active
             ? "bg-[var(--accent-contrast)] text-white"
-            : "bg-gray-200 text-gray-700 group-hover:bg-gray-300",
+            : "bg-[var(--surface-4)] text-[var(--ink-muted)] group-hover:bg-gray-300",
           !isVertical && "absolute -top-0.5 -right-0.5 sm:static",
           !hasBadge && "sr-only",
         )}

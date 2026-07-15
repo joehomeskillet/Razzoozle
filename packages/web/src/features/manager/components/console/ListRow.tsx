@@ -37,10 +37,10 @@ export interface ListRowProps {
 // a re-skin of the variant's surface/radius/focus.
 const actionClasses = (destructive?: boolean) =>
   clsx(
-    "shrink-0 text-gray-400",
+    "shrink-0 text-[var(--ink-faint)]",
     destructive
       ? "hover:bg-red-50 hover:text-red-600"
-      : "hover:bg-gray-100 hover:text-gray-700",
+      : "hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]",
   )
 
 /**
@@ -63,17 +63,17 @@ const ListRow = ({
   const body = (
     <>
       {leading && (
-        <span className="flex shrink-0 items-center text-gray-400" aria-hidden>
+        <span className="flex shrink-0 items-center text-[var(--ink-faint)]" aria-hidden>
           {leading}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold text-gray-900">{title}</span>
+        <span className="truncate font-semibold text-[var(--ink)]">{title}</span>
         {meta &&
           (typeof meta === "string" ? (
-            <span className="truncate text-sm text-gray-500">{meta}</span>
+            <span className="truncate text-sm text-[var(--ink-subtle)]">{meta}</span>
           ) : (
-            <span className="text-sm text-gray-500">{meta}</span>
+            <span className="text-sm text-[var(--ink-subtle)]">{meta}</span>
           ))}
       </span>
     </>
@@ -82,7 +82,7 @@ const ListRow = ({
   return (
     <div
       className={clsx(
-        "flex min-h-11 items-center gap-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200",
+        "flex min-h-11 items-center gap-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
         className,
       )}
     >
@@ -92,7 +92,7 @@ const ListRow = ({
           onClick={onClick}
           aria-label={bodyLabel}
           className={clsx(
-            "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-gray-50",
+            "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--surface-2)]",
             "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
           )}
         >

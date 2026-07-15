@@ -43,20 +43,20 @@ const SelectableRow = ({
       "focus-visible:outline-[var(--color-primary)] focus-visible:outline-offset-2",
       selected
         ? "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
-        : "bg-white outline-gray-200 hover:bg-gray-50",
+        : "bg-white outline-[var(--line)] hover:bg-[var(--surface-2)]",
       className,
     )}
     {...buttonProps}
   >
     {leading && (
-      <span className="flex shrink-0 items-center text-gray-400" aria-hidden>
+      <span className="flex shrink-0 items-center text-[var(--ink-faint)]" aria-hidden>
         {leading}
       </span>
     )}
 
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="truncate font-semibold text-gray-900">{title}</span>
-      {meta && <span className="truncate text-sm text-gray-500">{meta}</span>}
+      <span className="truncate font-semibold text-[var(--ink)]">{title}</span>
+      {meta && <span className="truncate text-sm text-[var(--ink-subtle)]">{meta}</span>}
     </span>
 
     {/* Radio indicator: filled accent disc + check when selected, hollow ring
@@ -67,7 +67,7 @@ const SelectableRow = ({
         "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
         selected
           ? "border-[var(--accent-contrast)] bg-[var(--accent-contrast)] text-white"
-          : "border-gray-300 bg-white",
+          : "border-[var(--line)] bg-white",
       )}
     >
       {selected && <Check className="size-4" strokeWidth={3} />}

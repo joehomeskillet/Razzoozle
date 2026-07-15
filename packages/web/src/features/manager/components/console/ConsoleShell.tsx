@@ -132,24 +132,24 @@ const ConsoleShell = ({
         // `console-shell` pins the brand tokens to fixed values (tokens.css) so an
         // active skeleton/theme never recolors the admin console — it stays a
         // stable workspace regardless of the player-facing theme.
-        "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3",
+        "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[var(--surface-2)] shadow-lg sm:m-3",
         className,
       )}
     >
       {/* ── Branded header band (spec §2 differentiation move) ───────────── */}
       <header
         className={clsx(
-          "flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 px-4 py-3 sm:px-6",
+          "flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-4 py-3 sm:px-6",
           // Subtle accent-tinted gradient → warm, but legible under any theme.
           "bg-gradient-to-r from-[var(--accent-tint)] to-white",
         )}
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex min-w-0 items-center gap-2 font-bold text-gray-900">
+          <div className="flex min-w-0 items-center gap-2 font-bold text-[var(--ink)]">
             {brand}
           </div>
           <span aria-hidden className="hidden h-5 w-px bg-gray-300 sm:block" />
-          <h1 className="hidden truncate text-lg font-semibold text-gray-700 sm:block">
+          <h1 className="hidden truncate text-lg font-semibold text-[var(--ink-muted)] sm:block">
             {title}
           </h1>
         </div>
@@ -157,7 +157,7 @@ const ConsoleShell = ({
           <div className="ml-auto flex items-center gap-2">{headerActions}</div>
         )}
         {/* Mobile: title sits on its own line under the brand. */}
-        <h1 className="w-full truncate text-base font-semibold text-gray-700 sm:hidden">
+        <h1 className="w-full truncate text-base font-semibold text-[var(--ink-muted)] sm:hidden">
           {title}
         </h1>
       </header>
@@ -167,7 +167,7 @@ const ConsoleShell = ({
         <nav
           aria-label={title}
           className={clsx(
-            "shrink-0 border-gray-200 bg-gray-50 p-2",
+            "shrink-0 border-[var(--line)] bg-[var(--surface-2)] p-2",
             // Mobile: horizontal scrollable strip. Desktop: fixed-width rail.
             "border-b min-[720px]:w-56 min-[720px]:border-r min-[720px]:border-b-0",
           )}
