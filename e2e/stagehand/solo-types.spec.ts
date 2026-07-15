@@ -98,6 +98,14 @@ async function setRangeValue(page: Page, selector: string, value: number) {
     quiz. Verify each candidate's actual question count against the fixture
     before accepting it. */
 async function resolveQuizId(page: Page): Promise<string> {
+  // The page starts at about:blank (null origin) right after init() — a
+  // fetch() to BASE_URL from there is cross-origin and gets blocked ("Failed
+  // to fetch"). Land on the app origin first so the evaluate()-fetches below
+  // are same-origin. (Live-run finding, 2026-07-15.)
+  if (!page.url().startsWith(BASE_URL)) {
+    await page.goto(BASE_URL);
+  }
+
   const ids = await page.evaluate(async (url) => {
     const res = await fetch(url);
     if (!res.ok) {
@@ -200,11 +208,46 @@ async function answerMathematik(page: Page, value: number) {
   await waitForDisabledTestId(page, 'mathematik-submit');
 }
 
-async function answerWortarten(page: Page, solutions: number[], posSet: string[]) {
-  for (let i = 0; i < solutions.length; i++) {
-    const posLabel = posSet[solutions[i]];
-    await page.locator(testIdSel(`solo-wortarten-token-${i}`)).click();
-    await page.locator(testIdSel(`solo-wortarten-pos-${i}-${posLabel}`)).click();
+/** Tag only the tokens the LIVE quiz actually has enabled, reading the real
+    `disabled` attribute per token from the DOM rather than assuming a fixed
+    count. The seeded quiz's `disabledTokens` is an independent, manager-UI
+    -editable setting (Editor-Toggle) — it is NOT part of the fixture JSON
+    and can differ from it at any time (observed live: quiz
+    e2e-all-ty-pKcA4Qj2 currently has token 0 disabled from prior manual QA).
+    Also asserts real click-consistency for both states: a disabled token's
+    click must NOT open its POS picker; an enabled token's click MUST open
+    it. This holds whether 0 or N tokens are disabled. */
+async function answerWortarten(page: Page, tokenCount: number, solutions: number[], posSet: string[]) {
+  for (let i = 0; i < tokenCount; i++) {
+    const tokenSelector = testIdSel(`solo-wortarten-token-${i}`);
+    const posPrefixSelector = testIdPrefixSel(`solo-wortarten-pos-${i}-`);
+    const disabled = (await isDisabledSelector(page, tokenSelector)) === true;
+
+    if (disabled) {
+      await page.locator(tokenSelector).click();
+      await page.waitForTimeout(300);
+      const pickerOpened = await page.locator(posPrefixSelector).first().isVisible().catch(() => false);
+      if (pickerOpened) {
+        throw new Error(`Disabled wortarten token ${i} unexpectedly opened its POS picker on click`);
+      }
+      continue;
+    }
+
+    const posSelector = testIdSel(`solo-wortarten-pos-${i}-${posSet[solutions[i]]}`);
+    await page.locator(tokenSelector).click();
+    let pickerOpened = false;
+    const start = Date.now();
+    while (Date.now() - start < 3_000) {
+      if (await page.locator(posSelector).isVisible().catch(() => false)) {
+        pickerOpened = true;
+        break;
+      }
+      await page.waitForTimeout(100);
+    }
+    if (!pickerOpened) {
+      throw new Error(`Enabled wortarten token ${i} did not open its "${posSet[solutions[i]]}" POS option on click`);
+    }
+    await page.locator(posSelector).click();
   }
   await page.locator(testIdSel('solo-wortarten-submit')).click();
   await waitForDisabledTestId(page, 'solo-wortarten-submit');
@@ -239,7 +282,7 @@ async function answerFixtureQuestion(page: Page, q: FixtureQuestion) {
       await answerMathematik(page, q.correct!);
       return;
     case 'wortarten':
-      await answerWortarten(page, q.solutions!, q.posSet!);
+      await answerWortarten(page, q.tokens!.length, q.solutions!, q.posSet!);
       return;
     default:
       // The fixture's `type` field is a plain `string` after JSON import (no
@@ -328,36 +371,29 @@ async function playFullQuizAtViewport(page: Page, quizId: string, viewport: (typ
     // Timeout budget covers the fixture's own cooldown plus network slack.
     await page.waitForSelector(controlSelector, { state: 'visible', timeout: (q.cooldown + 20) * 1000 });
 
-    // Wortarten: the fixture carries no `disabledTokens`, so every token must
-    // be enabled — assert that ground truth instead of the informational
-    // "token 0 disabled?" check the original spec logged and never enforced.
-    if (q.type === 'wortarten') {
-      for (let t = 0; t < q.tokens!.length; t++) {
-        const disabled = await isDisabledSelector(page, testIdSel(`solo-wortarten-token-${t}`));
-        if (disabled) {
-          throw new Error(
-            `Q${i + 1} wortarten @ ${viewport.name}: token ${t} ("${q.tokens![t]}") is unexpectedly disabled`,
-          );
-        }
-      }
-    }
-
+    // Wortarten's disabled-token set lives on the live quiz (manager-UI
+    // Editor-Toggle), independent of the fixture — answerWortarten() reads
+    // the real per-token `disabled` state itself and asserts click
+    // consistency for whichever tokens are actually disabled.
     await answerFixtureQuestion(page, q);
+
+    // Result-phase footer "Next"/"Finish" button has no testid. It is
+    // provably the only ENABLED button without `aria-pressed` on screen at
+    // this point: every SoloAnswers control just got `disabled` on submit
+    // (asserted above via waitForDisabledTestId/answerChoiceLike), and the
+    // only other footer control (auto-advance toggle) always carries
+    // `aria-pressed`. This click is REQUIRED even on the last question:
+    // `autoAdvance` defaults to false (solo.ts store), so nothing
+    // transitions phase "result" -> "finished" without it — nextQuestion()
+    // is the only path that flips phase to "finished" when already on the
+    // last index (solo.ts:269-286).
+    const nextBtnSelector = 'button:not([disabled]):not([aria-pressed])';
+    await page.waitForSelector(nextBtnSelector, { state: 'visible', timeout: 15_000 });
+    await page.locator(nextBtnSelector).click();
 
     const isLast = i === questions.length - 1;
     if (isLast) {
-      // The last question's result has no "next" — finishGame() posts the
-      // score and the page moves straight to the finished screen.
       await page.waitForSelector(testIdSel('solo-finished-score'), { state: 'visible', timeout: 15_000 });
-    } else {
-      // Result-phase footer "Next" button has no testid. It is provably the
-      // only ENABLED button without `aria-pressed` on screen at this point:
-      // every SoloAnswers control just got `disabled` on submit (asserted
-      // above via waitForDisabledTestId/answerChoiceLike), and the only other
-      // footer control (auto-advance toggle) always carries `aria-pressed`.
-      const nextBtnSelector = 'button:not([disabled]):not([aria-pressed])';
-      await page.waitForSelector(nextBtnSelector, { state: 'visible', timeout: 15_000 });
-      await page.locator(nextBtnSelector).click();
     }
   }
 

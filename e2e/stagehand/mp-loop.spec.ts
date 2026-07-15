@@ -166,14 +166,46 @@ async function answerMathematik(page: Page, value: number) {
   await waitForDisabledTestId(page, 'mathematik-submit');
 }
 
-// tokens/posSet/solutions come straight from the fixture: solutions[i] is the
-// posSet index for tokens[i]. This fixture has no disabledTokens (see the
-// per-token disabled assertion in the main loop below).
-async function answerWortarten(page: Page, solutions: number[], posSet: string[]) {
-  for (let i = 0; i < solutions.length; i++) {
-    const posLabel = posSet[solutions[i]];
-    await page.locator(testIdSel(`wortarten-token-${i}`)).click();
-    await page.locator(testIdSel(`wortarten-pos-${i}-${posLabel}`)).click();
+/** Tag only the tokens the LIVE quiz actually has enabled, reading the real
+    `disabled` attribute per token from the DOM rather than assuming a fixed
+    count. The seeded quiz's `disabledTokens` is an independent, manager-UI
+    -editable setting (Editor-Toggle) — it is NOT part of the fixture JSON
+    and can differ from it at any time (observed live: quiz
+    e2e-all-ty-pKcA4Qj2 currently has token 0 disabled from prior manual QA).
+    Also asserts real click-consistency for both states: a disabled token's
+    click must NOT open its POS picker; an enabled token's click MUST open
+    it. This holds whether 0 or N tokens are disabled. */
+async function answerWortarten(page: Page, tokenCount: number, solutions: number[], posSet: string[]) {
+  for (let i = 0; i < tokenCount; i++) {
+    const tokenSelector = testIdSel(`wortarten-token-${i}`);
+    const posPrefixSelector = testIdPrefixSel(`wortarten-pos-${i}-`);
+    const disabled = (await isDisabledSelector(page, tokenSelector)) === true;
+
+    if (disabled) {
+      await page.locator(tokenSelector).click();
+      await page.waitForTimeout(300);
+      const pickerOpened = await page.locator(posPrefixSelector).first().isVisible().catch(() => false);
+      if (pickerOpened) {
+        throw new Error(`Disabled wortarten token ${i} unexpectedly opened its POS picker on click`);
+      }
+      continue;
+    }
+
+    const posSelector = testIdSel(`wortarten-pos-${i}-${posSet[solutions[i]]}`);
+    await page.locator(tokenSelector).click();
+    let pickerOpened = false;
+    const start = Date.now();
+    while (Date.now() - start < 3_000) {
+      if (await page.locator(posSelector).isVisible().catch(() => false)) {
+        pickerOpened = true;
+        break;
+      }
+      await page.waitForTimeout(100);
+    }
+    if (!pickerOpened) {
+      throw new Error(`Enabled wortarten token ${i} did not open its "${posSet[solutions[i]]}" POS option on click`);
+    }
+    await page.locator(posSelector).click();
   }
   await page.locator(testIdSel('wortarten-submit')).click();
   await waitForDisabledTestId(page, 'wortarten-submit');
@@ -208,7 +240,7 @@ async function answerFixtureQuestion(page: Page, q: FixtureQuestion) {
       await answerMathematik(page, q.correct!);
       return;
     case 'wortarten':
-      await answerWortarten(page, q.solutions!, q.posSet!);
+      await answerWortarten(page, q.tokens!.length, q.solutions!, q.posSet!);
       return;
     default:
       // The fixture's `type` field is a plain `string` after JSON import (no
@@ -345,17 +377,10 @@ async function runMpGameLoop() {
         );
       }
 
-      // Wortarten: the fixture carries no `disabledTokens`, so every token
-      // must be enabled — assert that ground truth instead of the informational
-      // "token 0 disabled?" check the original spec logged and never enforced.
-      if (q.type === 'wortarten') {
-        for (let t = 0; t < q.tokens!.length; t++) {
-          const disabled = await isDisabledSelector(playerPage, testIdSel(`wortarten-token-${t}`));
-          if (disabled) {
-            throw new Error(`Q${i + 1} wortarten: token ${t} ("${q.tokens![t]}") is unexpectedly disabled`);
-          }
-        }
-      }
+      // Wortarten's disabled-token set lives on the live quiz (manager-UI
+      // Editor-Toggle), independent of the fixture — answerWortarten() reads
+      // the real per-token `disabled` state itself and asserts click
+      // consistency for whichever tokens are actually disabled.
 
       // Only the player answers — the manager is host-only in this topology
       // (every MP e2e helper in this repo has the host observe and advance
