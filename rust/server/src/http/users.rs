@@ -226,6 +226,18 @@ pub async fn reset_password(
             )
         })?;
 
+    // SEC-M1: an admin-issued reset invalidates every existing session for
+    // the target user — the old password is now unusable, so old bearer
+    // tokens shouldn't remain valid until they naturally expire.
+    db::users::revoke_user_sessions(pool, id, None)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to revoke sessions: {}", e),
+            )
+        })?;
+
     Ok(StatusCode::OK)
 }
 
@@ -249,6 +261,15 @@ pub async fn change_password(
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Authentication required")),
     };
+
+    // Raw bearer token of the session making this request (SEC-M1) — kept so
+    // the caller's own session survives the sweep below instead of being
+    // logged out by their own password change.
+    let current_token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|auth| auth.strip_prefix("Bearer "))
+        .unwrap_or("");
 
     // Reject empty new password
     if req.newPassword.is_empty() {
@@ -282,6 +303,18 @@ pub async fn change_password(
             json_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to change password: {}", e),
+            )
+        })?;
+
+    // SEC-M1: invalidate every OTHER session for this user — the old password
+    // is now unusable elsewhere. The session making this request is kept
+    // alive so the user isn't logged out by their own change.
+    db::users::revoke_user_sessions(pool, session_user.user_id, Some(current_token))
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to revoke sessions: {}", e),
             )
         })?;
 

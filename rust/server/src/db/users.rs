@@ -235,6 +235,43 @@ pub async fn delete_session(pool: &PgPool, token: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Revoke sessions for a user (SEC-M1). Call this after any change that
+/// invalidates previously-issued credentials — password reset/change, or a
+/// role downgrade — so old bearer tokens stop working immediately instead of
+/// remaining valid until they naturally expire.
+///
+/// `keep_token`, when Some, is the raw token of the session making the change
+/// (e.g. a self-service password change) — that one session is preserved so
+/// the caller isn't logged out by their own request. When None, ALL sessions
+/// for the user are deleted (admin-initiated reset — every existing login
+/// should be forced out).
+pub async fn revoke_user_sessions(
+    pool: &PgPool,
+    user_id: i64,
+    keep_token: Option<&str>,
+) -> Result<(), String> {
+    match keep_token {
+        Some(token) => {
+            let keep_hash = hash_token(token);
+            sqlx::query("DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2")
+                .bind(user_id)
+                .bind(&keep_hash)
+                .execute(pool)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        None => {
+            sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+                .bind(user_id)
+                .execute(pool)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
 /// Count the total number of users in the database.
 pub async fn count_users(pool: &PgPool) -> Result<i64, String> {
     let result = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM users")
@@ -375,4 +412,13 @@ mod tests {
     // the same convention of not spinning one up in `cargo test`. These were
     // verified manually end-to-end against a throwaway (non-live) Postgres 16
     // instance; see the WP-X2a report for the exact SQL/assertions run.
+
+    // revoke_user_sessions (SEC-M1) is the same DELETE pattern as the two
+    // cases above, so it follows the same manual-verification convention.
+    // Verified against a throwaway Postgres 16: 2 users, user A with two
+    // sessions (hash-a1, hash-a2) and user B with one (hash-b1). Running the
+    // exact `keep_token = Some` query (DELETE ... token_hash <> $2) for user A
+    // left only hash-a1 and did not touch user B's hash-b1. Running the exact
+    // `keep_token = None` query (DELETE ... WHERE user_id = $1, no hash
+    // filter) for user B removed hash-b1 and left user A's hash-a1 untouched.
 }
