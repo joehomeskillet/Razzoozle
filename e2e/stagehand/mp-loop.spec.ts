@@ -26,6 +26,12 @@ function requireE2EPassword(): string {
   return pw;
 }
 
+// E2E_USER is not a secret (it's the login name, e.g. "admin" from
+// BOOTSTRAP_ADMIN_USER) so a default is safe here, unlike the password above.
+function e2eUsername(): string {
+  return process.env.E2E_USER ?? 'admin';
+}
+
 const PinSchema = z.object({
   pin: z.string().regex(/^\d{6}$/, 'PIN must be 6 digits'),
 });
@@ -100,6 +106,91 @@ async function clickByPrefixAndText(page: Page, prefix: string, text: string) {
   throw new Error(`No element matching data-testid^="${prefix}" with text "${text}" (checked ${n} candidates)`);
 }
 
+/** Click the first <button> anywhere on the page whose visible text matches
+    one of the given candidates exactly (locale-tolerant — e.g. "Next" or
+    "Weiter"), for controls that carry no data-testid (RecapSequence.tsx's
+    advance button). Swallows a not-found rather than throwing — used for a
+    control that legitimately disappears for part of its own lifecycle (the
+    final recap cue removes its advance button and auto-completes on its own
+    timer), so "button not there right now" is a normal, retryable state here,
+    not a hard failure. */
+async function clickButtonByText(page: Page, ...textCandidates: string[]): Promise<void> {
+  const candidates = page.locator('button');
+  const n = await candidates.count();
+  for (let i = 0; i < n; i++) {
+    const el = candidates.nth(i);
+    const text = (await el.innerText().catch(() => '')).trim();
+    if (textCandidates.includes(text)) {
+      await el.click();
+      return;
+    }
+  }
+}
+
+/** Resolve the exact seeded quiz id by content, not by clicking the first
+    "E2E All Types" row found. Repeat upsert-quiz.mjs runs can leave more than
+    one seeded id with that exact subject (mirrors solo-types.spec.ts's
+    resolveQuizId — observed live there: both "e2e-all-ty-pKcA4Qj2" and
+    "e2e-all-ty-21908fc2" existed simultaneously, one carrying manually-edited
+    state e.g. a disabled wortarten token from prior manual QA). Picking the
+    wrong duplicate here doesn't throw — every fixture question TYPE still
+    exists — but produces a live quiz whose actual content/timing (or, per
+    that same drift, question count) differs from what this spec asserts,
+    which showed up as a flaky final-question reveal (live-run finding,
+    2026-07-15). Verifying full question-count + first-question match, like
+    solo already does, makes the quiz selection deterministic instead of
+    "first DOM match wins". */
+async function resolveQuizId(page: Page): Promise<string> {
+  const ids = await page.evaluate(async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`GET ${url} failed with status ${res.status}`);
+    }
+    return (await res.json()) as string[];
+  }, `${BASE_URL}/api/quizzes`);
+
+  const prefix = 'e2e-all-ty-';
+  const candidates = ids.filter((id) => id.startsWith(prefix));
+  if (candidates.length === 0) {
+    throw new Error(
+      `No seeded quiz id starting with "${prefix}" found via /api/quizzes — ` +
+        'run e2e/scripts/upsert-quiz.mjs against e2e/fixtures/all-types-quiz.json first.',
+    );
+  }
+
+  for (const candidate of candidates) {
+    const matches = await page.evaluate(
+      async ({ url, expectedCount, expectedFirstQuestion }) => {
+        const res = await fetch(url);
+        if (!res.ok) {
+          return false;
+        }
+        const body = (await res.json()) as { questions?: Array<{ question: string }> };
+        return (
+          body.questions?.length === expectedCount &&
+          body.questions?.[0]?.question === expectedFirstQuestion
+        );
+      },
+      {
+        // /solo is a public read-only projection of the same quiz content
+        // used here purely to verify identity, independent of game mode.
+        url: `${BASE_URL}/api/quizz/${candidate}/solo`,
+        expectedCount: quizFixture.questions.length,
+        expectedFirstQuestion: quizFixture.questions[0].question,
+      },
+    );
+    if (matches) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Found ${candidates.length} quiz id(s) matching prefix "${prefix}" (${candidates.join(', ')}), ` +
+      `but none has ${quizFixture.questions.length} questions starting with "${quizFixture.questions[0].question}". ` +
+      're-run e2e/scripts/upsert-quiz.mjs against the current fixture.',
+  );
+}
+
 /** Set a range/slider input's value the React-safe way (native value setter +
     dispatched input/change), since a plain `.fill()` on a controlled React
     range input does not reliably trigger onChange. */
@@ -117,11 +208,6 @@ async function setRangeValue(page: Page, selector: string, value: number) {
     },
     { sel: selector, v: value },
   );
-}
-
-async function bodyContainsText(page: Page, text: string): Promise<boolean> {
-  const bodyText = await page.locator('body').innerText();
-  return bodyText.includes(text);
 }
 
 // ── Real testid-driven answer strategies (Answers.tsx contract) ────────────
@@ -274,12 +360,53 @@ function answerControlTestId(type: FixtureQuestion['type']): string {
 async function advanceManagerUntil(
   managerPage: Page,
   targetVisible: () => Promise<boolean>,
-  maxSteps = 8,
+  maxSteps = 20,
 ) {
   for (let step = 0; step < maxSteps; step++) {
     if (await targetVisible()) {
       return;
     }
+
+    // The FINISHED/Podium screen (last question only) plays an "award recap"
+    // overlay FIRST (RecapSequence.tsx) that holds the whole podium section at
+    // opacity-0 until its own cards are stepped through. With autoMode left at
+    // its default game-config value of false (this quiz never toggles the
+    // manager's Auto-Weiter switch), that stepping never happens on its own —
+    // it needs the same "Weiter" control the recap component itself exposes.
+    // Detected/driven here by aria-label + button TEXT ("Auszeichnungen" /
+    // "Weiter", de/game.json — matches the component's own defaultValue
+    // fallback verbatim) rather than a new data-testid: this spec targets the
+    // LIVE deployed rust.razzoozle.xyz build, and a testid added to
+    // RecapSequence.tsx in this same worktree only ships on the NEXT deploy,
+    // so it can't be exercised (or verified) here yet — text/aria-label is
+    // already live. Both "en" and "de" variants are matched: i18n.ts resolves
+    // the initial language from the real browser `navigator.language`
+    // (LanguageDetector, fallbackLng "en"), and Stagehand's headless Chrome
+    // reports "en-US" with no explicit --lang flag — so the LIVE rendered
+    // text here is actually English ("Awards"/"Next"), not German, even
+    // though the rest of this app is de-first (live-run finding, 2026-07-15:
+    // an initial German-only match against "Auszeichnungen"/"Weiter" never
+    // fired at all). The click-anywhere overlay button was tried first
+    // instead of the accessible advance button and never actually advanced
+    // anything: it sits at z-0 UNDER the card content's z-10 stacking
+    // context, so a real coordinate-based click lands on the
+    // (non-interactive) card on top of it, not the overlay underneath. The
+    // advance button itself disappears on the brief final "Und jetzt: Das
+    // Podium"/"And now: the podium" cue (RecapSequence.tsx
+    // `{!isFinalCue && (...)}`), which auto-completes on its own 1400ms timer
+    // — a missing button there is expected, not an error; just wait. next-btn
+    // cannot be used at all here: for STATUS.FINISHED it is wired to "exit",
+    // not "advance" (MANAGER_SKIP_BTN[FINISHED] = "common:exit"), so clicking
+    // it would leave the game rather than progress the recap.
+    const recapVisible =
+      (await managerPage.locator('section[aria-label="Awards"]').first().isVisible().catch(() => false)) ||
+      (await managerPage.locator('section[aria-label="Auszeichnungen"]').first().isVisible().catch(() => false));
+    if (recapVisible) {
+      await clickButtonByText(managerPage, 'Next', 'Weiter');
+      await managerPage.waitForTimeout(1_500);
+      continue;
+    }
+
     const safeState =
       (await isTestIdVisible(managerPage, 'responses-view')) ||
       (await isTestIdVisible(managerPage, 'round-recap')) ||
@@ -310,20 +437,25 @@ async function runMpGameLoop() {
 
   try {
     // ============ MANAGER: LOGIN ============
+    // Real testid-driven fill+click (not act()) — the login form requires
+    // BOTH username and password (ManagerPassword.tsx handleSubmit rejects an
+    // empty username with a toast and never calls /api/login), and a
+    // single-instruction act() call for "enter password + click login" only
+    // ever performed the password fill and then reported no further
+    // actionable element, leaving the username empty and the form unsubmitted
+    // (live-run finding, 2026-07-15).
     await managerPage.goto(`${BASE_URL}/manager`);
     await waitForTestId(managerPage, 'login-password');
-
-    // %password% is substituted server-side by Stagehand's variables mechanism
-    // so the real secret never appears in the instruction text/logs.
-    await managerStagehand.act('Enter %password% into the password field and click the login button', {
-      variables: { password },
-    });
+    await managerPage.locator(testIdSel('login-username')).fill(e2eUsername());
+    await managerPage.locator(testIdSel('login-password')).fill(password);
+    await managerPage.locator(testIdSel('login-submit')).click();
     // Post-condition: the quiz list only renders once auth succeeded.
     // Testid is dynamic (`quizz-row-${id}`), so we wait on the static prefix.
     await waitForTestIdPrefix(managerPage, 'quizz-row-');
 
     // ============ MANAGER: OPEN + START "E2E All Types" QUIZ ============
-    await clickByPrefixAndText(managerPage, 'quizz-row-', quizFixture.subject);
+    const quizId = await resolveQuizId(managerPage);
+    await managerPage.locator(testIdSel(`quizz-row-${quizId}`)).click();
     await waitForTestId(managerPage, 'quizz-start-btn');
 
     await managerPage.locator(testIdSel('quizz-start-btn')).click();
@@ -390,21 +522,47 @@ async function runMpGameLoop() {
       const isLast = i === questions.length - 1;
       const nextQ = isLast ? null : questions[i + 1];
 
+      // Target must be the NEXT question's own text, not just its answer
+      // control testid — several fixture types share the same default control
+      // id (answerControlTestId('choice') === answerControlTestId('boolean')
+      // === 'answer-btn-0'), so checking only the control's visibility can
+      // report "arrived" while the current question's own (now-disabled)
+      // control is still on screen and the manager hasn't advanced at all
+      // (live-run finding, 2026-07-15: Q2 read back Q1's question text).
       await advanceManagerUntil(managerPage, async () => {
         if (isLast) {
-          return isTestIdVisible(playerPage, 'podium');
+          // 'podium' (Podium.tsx) only ever renders on the MANAGER route
+          // (GAME_STATE_COMPONENTS_MANAGER) — the plain player route maps
+          // FINISHED to PlayerFinished.tsx, which carries no testid at all,
+          // so this loop's own exit condition could never be satisfied by
+          // checking playerPage (live-run finding, 2026-07-15: this was the
+          // actual reason advanceManagerUntil kept exhausting its retry
+          // budget on the last question regardless of how large it was).
+          return isTestIdVisible(managerPage, 'podium');
         }
-        return isTestIdVisible(playerPage, answerControlTestId(nextQ!.type));
+        const text = await playerPage
+          .locator(testIdSel('question-text'))
+          .first()
+          .innerText()
+          .catch(() => '');
+        return text.includes(nextQ!.question);
       });
     }
 
     // ============ PODIUM: real assertions, not informational logs ============
-    await waitForTestId(playerPage, 'podium');
+    // FINISHED status renders DIFFERENT components per role (constants.ts
+    // GAME_STATE_COMPONENTS_MANAGER maps it to Podium.tsx — data-testid="podium"
+    // — but the plain player-facing GAME_STATE_COMPONENTS maps it to
+    // PlayerFinished.tsx, which has NO testid at all). Waiting for 'podium' on
+    // the player page can therefore never succeed (live-run finding,
+    // 2026-07-15). The player-side assertion instead targets the "Nach dem
+    // Spiel"/submit-a-quiz link, which PlayerFinished always renders
+    // unconditionally — unlike the top-3 leaderboard / "SH-Player" username,
+    // which only appears when the game's (randomly rotating, per
+    // ConfigGameMode's "full,top3,private" default) endScreen mode is not
+    // "private", so asserting on the player's own name would be flaky.
     await waitForTestId(managerPage, 'podium');
-
-    if (!(await bodyContainsText(playerPage, 'SH-Player'))) {
-      throw new Error('Expected "SH-Player" to be visible on the podium');
-    }
+    await playerPage.waitForSelector('a[href="/submit"]', { state: 'visible', timeout: 15_000 });
 
     console.log('MP game loop passed: all 9 fixture question types, podium reached.');
   } finally {
