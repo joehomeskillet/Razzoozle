@@ -157,10 +157,10 @@ const ConfigCatalog = () => {
       <div className="mb-4 flex shrink-0 flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:catalog.title")}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-gray-500">
+            <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
               {t("manager:catalog.intro")}
             </p>
           </div>
@@ -210,8 +210,8 @@ const ConfigCatalog = () => {
                 aria-pressed={active}
                 className={
                   active
-                    ? "inline-flex min-h-9 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-9 items-center rounded-full bg-gray-100 px-3 text-sm font-semibold text-gray-600 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 }
               >
                 {entry.label}
@@ -281,10 +281,10 @@ const ConfigCatalog = () => {
                   meta={
                     <span className="flex flex-col gap-2 whitespace-normal">
                       <span className="flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                        <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
                           {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                        <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
                           {t(`manager:catalog.source.${source}`)}
                         </span>
                         {klassenEnabled && entryLabelIds.length > 0 && (
@@ -299,13 +299,13 @@ const ConfigCatalog = () => {
                         {(entry.tags ?? []).map((tag, tagIndex) => (
                           <span
                             key={`${tag}-${tagIndex}`}
-                            className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600"
+                            className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-medium)]"
                           >
                             {tag}
                           </span>
                         ))}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--ink-subtle)]">
                         {formatDate(entry.addedAt)}
                       </span>
                     </span>
