@@ -6,8 +6,6 @@
  */
 export type AnswerSubmitPayload =
   | { answerKey: number }
-  | { answerKey: number; answerKeys: number[] }
-  | { answerKey: number; answerText: string }
   | { answerKey: -1; answerKeys: number[] }
   | { answerKey: -1; answerText: string }
 
