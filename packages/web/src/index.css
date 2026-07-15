@@ -7,6 +7,24 @@
   --color-text: #ffffff;
   --color-accent: #FF2D6E;
   --font-display: "Rubik Variable", sans-serif;
+
+  /* Ink/Surface/Line Mapping (Manager-neutral gray consolidation, T-0 contract)
+     text-gray-500→text-ink-subtle | text-gray-900→text-ink | text-gray-700→text-ink-muted | text-gray-600→text-ink-medium | text-gray-400→text-ink-faint | text-gray-800→text-ink
+     bg-gray-50→bg-surface-2 | bg-gray-100→bg-surface-3 | bg-gray-200→bg-surface-4
+     border-gray-200/300→border-line | divide-gray-200→divide-line | ring-white/80→ring-selected
+     Edge cases (<1%, batch-WP decides): text-gray-100/300, bg-gray-300/400/900, border-gray-100
+     Coverage: 390/411 (94.9%) */
+
+  --ink: #111827;
+  --ink-muted: #374151;
+  --ink-medium: #4b5563;
+  --ink-subtle: #6b7280;
+  --ink-faint: #9ca3af;
+  --surface-2: #f9fafb;
+  --surface-3: #f3f4f6;
+  --surface-4: #e5e7eb;
+  --line: #e5e7eb;
+  --ring-selected: #ffffff;
 }
 
 /* Defaults overridden at runtime by the theme (features/theme/apply.ts). */
