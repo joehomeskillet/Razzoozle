@@ -269,7 +269,13 @@
       "toggle": "Select {{name}}"
     },
     "dropHint": "Drop files here to upload",
-    "details": "Details"
+    "details": "Details",
+    "scope": {
+      "own": "Own",
+      "global": "Global",
+      "all": "All",
+      "label": "Visibility"
+    }
   },
   "catalog": {
     "title": "Question catalog",
@@ -301,7 +307,13 @@
       "ai": "AI"
     },
     "approveToCatalog": "To catalog instead of quiz",
-    "approveToCatalogHint": "Put the approved question into the catalog rather than directly into a quiz."
+    "approveToCatalogHint": "Put the approved question into the catalog rather than directly into a quiz.",
+    "scope": {
+      "own": "Own",
+      "global": "Global",
+      "all": "All",
+      "label": "Visibility"
+    }
   },
   "ai": {
     "title": "AI settings",
@@ -614,7 +626,8 @@
       "entertainment": "Entertainment",
       "technology": "Technology",
       "other": "Other"
-    }
+    },
+    "submitLinkUnavailable": "Not yet available — your personal link will be activated soon."
   },
   "selectQuizz": {
     "copySoloLink": "Copy solo link",

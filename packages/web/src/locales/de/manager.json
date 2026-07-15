@@ -260,7 +260,13 @@
       "toggle": "{{name}} auswählen"
     },
     "dropHint": "Dateien hier ablegen zum Hochladen",
-    "details": "Details"
+    "details": "Details",
+    "scope": {
+      "own": "Eigene",
+      "global": "Global",
+      "all": "Alle",
+      "label": "Sichtbarkeit"
+    }
   },
   "catalog": {
     "title": "Fragenkatalog",
@@ -292,7 +298,13 @@
       "ai": "KI"
     },
     "approveToCatalog": "In Katalog statt Quiz",
-    "approveToCatalogHint": "Genehmigte Frage in den Katalog legen, nicht direkt in ein Quiz."
+    "approveToCatalogHint": "Genehmigte Frage in den Katalog legen, nicht direkt in ein Quiz.",
+    "scope": {
+      "own": "Eigene",
+      "global": "Global",
+      "all": "Alle",
+      "label": "Sichtbarkeit"
+    }
   },
   "ai": {
     "title": "KI-Einstellungen",
@@ -605,7 +617,8 @@
       "entertainment": "Unterhaltung",
       "technology": "Technik",
       "other": "Sonstiges"
-    }
+    },
+    "submitLinkUnavailable": "Noch nicht verfügbar — dein persönlicher Link wird demnächst aktiviert."
   },
   "selectQuizz": {
     "copySoloLink": "Solo-Link kopieren",

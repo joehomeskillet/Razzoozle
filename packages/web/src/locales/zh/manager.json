@@ -260,7 +260,13 @@
       "toggle": "选择 {{name}}"
     },
     "dropHint": "将文件拖到此处以上传",
-    "details": "详情"
+    "details": "详情",
+    "scope": {
+      "own": "我的",
+      "global": "全局",
+      "all": "所有",
+      "label": "可见性"
+    }
   },
   "catalog": {
     "title": "题目题库",
@@ -292,7 +298,13 @@
       "ai": "AI"
     },
     "approveToCatalog": "存入题库而非测验",
-    "approveToCatalogHint": "将批准的题目放入题库，而不是直接放入测验。"
+    "approveToCatalogHint": "将批准的题目放入题库，而不是直接放入测验。",
+    "scope": {
+      "own": "我的",
+      "global": "全局",
+      "all": "所有",
+      "label": "可见性"
+    }
   },
   "ai": {
     "title": "AI 设置",
@@ -605,7 +617,8 @@
       "entertainment": "娱乐",
       "technology": "科技",
       "other": "其他"
-    }
+    },
+    "submitLinkUnavailable": "暂不可用 — 您的个人链接即将激活。"
   },
   "selectQuizz": {
     "copySoloLink": "复制单人链接",
