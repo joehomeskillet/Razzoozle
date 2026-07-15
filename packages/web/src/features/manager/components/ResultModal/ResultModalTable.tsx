@@ -29,12 +29,12 @@ const ResultModalTable = () => {
           role="switch"
           aria-checked={showNames}
           onClick={toggleShowNames}
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-[var(--ink-medium)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
         >
           {showNames ? (
-            <Eye className="size-4 text-gray-500" aria-hidden />
+            <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
           ) : (
-            <EyeOff className="size-4 text-gray-400" aria-hidden />
+            <EyeOff className="size-4 text-[var(--ink-faint)]" aria-hidden />
           )}
           <span>
             {t("manager:result.showNames", { defaultValue: "Namen anzeigen" })}
@@ -58,7 +58,7 @@ const ResultModalTable = () => {
 
       <table className="w-full text-sm">
       <thead className="sticky top-0 shadow-sm">
-        <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
+        <tr className="border-b border-[var(--line)] bg-[var(--surface-2)] text-left text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
           <th className="px-5 py-2.5">{t("manager:result.table.player")}</th>
           <th className="px-4 py-2.5">{t("manager:result.table.answered")}</th>
           <th className="px-4 py-2.5">
@@ -78,14 +78,14 @@ const ResultModalTable = () => {
             !isSlider && pa.answerId !== null ? answerLabel(pa.answerId) : null
 
           return (
-            <tr key={pa.playerName} className="hover:bg-gray-50">
+            <tr key={pa.playerName} className="hover:bg-[var(--surface-2)]">
               <td className="px-5 py-2.5 font-medium">
                 {displayName(pa.playerName)}
               </td>
               <td className="px-4 py-2.5">
                 {pa.answerText != null ? (
                   // Type-answer: render the submitted free-text
-                  <span className="inline-block max-w-32 truncate rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                  <span className="inline-block max-w-32 truncate rounded-md bg-[var(--surface-3)] px-2 py-1 text-xs font-medium text-[var(--ink-muted)]">
                     {pa.answerText}
                   </span>
                 ) : pa.answerIds != null ? (
@@ -107,13 +107,13 @@ const ResultModalTable = () => {
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-gray-400">—</span>
+                      <span className="text-xs text-[var(--ink-faint)]">—</span>
                     )}
                   </div>
                 ) : pa.answerId === null ? (
-                  <span className="text-xs text-gray-400">—</span>
+                  <span className="text-xs text-[var(--ink-faint)]">—</span>
                 ) : isSlider ? (
-                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 tabular-nums">
+                  <span className="inline-flex items-center rounded-md bg-[var(--surface-3)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)] tabular-nums">
                     {pa.answerId}
                     {questionResult.unit ? ` ${questionResult.unit}` : ""}
                   </span>
@@ -130,12 +130,12 @@ const ResultModalTable = () => {
                     </span>
                   </span>
                 ) : (
-                  <span className="text-xs text-gray-400">—</span>
+                  <span className="text-xs text-[var(--ink-faint)]">—</span>
                 )}
               </td>
               <td className="px-4 py-2.5">
                 {isPoll ? (
-                  <span className="text-gray-400">—</span>
+                  <span className="text-[var(--ink-faint)]">—</span>
                 ) : isCorrect ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <Check className="size-3.5" />{" "}
@@ -148,7 +148,7 @@ const ResultModalTable = () => {
                   </span>
                 )}
               </td>
-              <td className="px-4 py-2.5 text-right font-semibold text-gray-700 tabular-nums">
+              <td className="px-4 py-2.5 text-right font-semibold text-[var(--ink-muted)] tabular-nums">
                 {getPlayerPoints(pa.playerName)}
               </td>
             </tr>

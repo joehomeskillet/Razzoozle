@@ -35,23 +35,23 @@ const MediaPreview = ({ media }: { media?: QuestionMedia }) => {
 
   if (media?.type === MEDIA_TYPES.VIDEO) {
     return (
-      <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-gray-200 md:h-38 md:w-full">
-        <Video className="size-6 text-gray-400 md:size-10" />
+      <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-[var(--surface-4)] md:h-38 md:w-full">
+        <Video className="size-6 text-[var(--ink-faint)] md:size-10" />
       </div>
     )
   }
 
   if (media?.type === MEDIA_TYPES.AUDIO) {
     return (
-      <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-gray-200 md:h-38 md:w-full">
-        <Music className="size-6 text-gray-400 md:size-10" />
+      <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-[var(--surface-4)] md:h-38 md:w-full">
+        <Music className="size-6 text-[var(--ink-faint)] md:size-10" />
       </div>
     )
   }
 
   return (
-    <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-gray-200 md:h-38 md:w-full">
-      <ImageOff className="size-6 text-gray-400 md:size-10" />
+    <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-[var(--surface-4)] md:h-38 md:w-full">
+      <ImageOff className="size-6 text-[var(--ink-faint)] md:size-10" />
     </div>
   )
 }
@@ -133,9 +133,9 @@ const ResultModalAnswers = () => {
 
   return (
     <div className="flex flex-col border-b border-gray-100 md:flex-row">
-      <div className="flex shrink-0 flex-row items-center gap-4 border-b border-gray-100 bg-gray-50 p-4 md:w-66 md:flex-col md:justify-center md:border-r md:border-b-0">
+      <div className="flex shrink-0 flex-row items-center gap-4 border-b border-gray-100 bg-[var(--surface-2)] p-4 md:w-66 md:flex-col md:justify-center md:border-r md:border-b-0">
         <MediaPreview media={questionResult.media} />
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="flex items-center gap-1.5 text-xs text-[var(--ink-subtle)]">
           <Clock className="size-3.5" />
           <span>
             {questionResult.time}
@@ -145,7 +145,7 @@ const ResultModalAnswers = () => {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden px-4 py-3 md:gap-2 md:px-5 md:py-4">
-        <p className="text-md mb-1 font-semibold text-gray-800">
+        <p className="text-md mb-1 font-semibold text-[var(--ink)]">
           <Markdown>{questionResult.question}</Markdown>
         </p>
 
@@ -174,17 +174,17 @@ const ResultModalAnswers = () => {
                 ) : (
                   <X className="size-4 shrink-0 text-red-400" />
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--ink)]">
                   {display}
                 </span>
-                <span className="shrink-0 text-sm font-semibold text-gray-600">
+                <span className="shrink-0 text-sm font-semibold text-[var(--ink-medium)]">
                   {count}
                 </span>
               </div>
             ))}
 
             {noAnswerCount > 0 && (
-              <div className="flex items-center justify-between px-3 py-2 text-gray-400">
+              <div className="flex items-center justify-between px-3 py-2 text-[var(--ink-faint)]">
                 <span className="text-sm">{t("manager:result.noAnswer")}</span>
                 <span className="text-sm font-semibold">{noAnswerCount}</span>
               </div>
@@ -192,18 +192,18 @@ const ResultModalAnswers = () => {
           </div>
         ) : isSlider ? (
           <div className="flex flex-col gap-1 text-sm">
-            <div className="font-semibold text-gray-800">
+            <div className="font-semibold text-[var(--ink)]">
               {t("manager:result.slider.correctAnswer")}{" "}
               {questionResult.correct}
               {unit}
             </div>
             {sliderAvg !== null && (
-              <div className="text-gray-600">
+              <div className="text-[var(--ink-medium)]">
                 {t("manager:result.slider.average")} {sliderAvg}
                 {unit}
               </div>
             )}
-            <div className="text-gray-500">
+            <div className="text-[var(--ink-subtle)]">
               {t("manager:result.slider.guessSummary", {
                 count: answeredCount,
                 noAnswer: noAnswerCount,
@@ -223,14 +223,14 @@ const ResultModalAnswers = () => {
                   {row.answerLabel}
                 </div>
               ) : (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white">
-                  <X className="size-3 text-gray-400" />
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-white">
+                  <X className="size-3 text-[var(--ink-faint)]" />
                 </div>
               )}
 
               <span
                 className={clsx("min-w-0 flex-1 truncate text-sm font-medium", {
-                  "text-gray-400": !row.color,
+                  "text-[var(--ink-faint)]": !row.color,
                 })}
               >
                 <Markdown>{row.label}</Markdown>
@@ -252,7 +252,7 @@ const ResultModalAnswers = () => {
               )}
 
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-center text-sm font-semibold text-gray-600">
+                <span className="text-center text-sm font-semibold text-[var(--ink-medium)]">
                   {row.count}
                 </span>
               </div>
