@@ -180,7 +180,7 @@ const ConsoleShell = ({
             onKeyDown={handleKeyDown}
             className={clsx(
               "flex gap-2 overflow-x-auto",
-              "min-[720px]:flex-col min-[720px]:overflow-visible",
+              "min-[720px]:flex-col min-[720px]:overflow-y-auto",
             )}
           >
             {nav.map((item) => {
