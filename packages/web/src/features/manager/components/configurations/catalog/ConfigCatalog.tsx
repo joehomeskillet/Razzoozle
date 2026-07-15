@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
@@ -157,25 +158,21 @@ const ConfigCatalog = () => {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex shrink-0 flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">
-              {t("manager:catalog.title")}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
-              {t("manager:catalog.intro")}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="primary"
-            className="shrink-0 rounded-xl"
-            onClick={openAddModal}
-          >
-            <BookOpen className="size-5" aria-hidden />
-            {t("manager:catalog.addManual")}
-          </Button>
-        </div>
+        <PageHeader
+          title={t("manager:catalog.title")}
+          subtitle={t("manager:catalog.intro")}
+          action={
+            <Button
+              type="button"
+              variant="primary"
+              className="shrink-0 rounded-xl"
+              onClick={openAddModal}
+            >
+              <BookOpen className="size-5" aria-hidden />
+              {t("manager:catalog.addManual")}
+            </Button>
+          }
+        />
 
         <label htmlFor="catalog-search" className="sr-only">
           {t("manager:catalog.search")}
