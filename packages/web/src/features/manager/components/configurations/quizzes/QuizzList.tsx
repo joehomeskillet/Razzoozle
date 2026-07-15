@@ -226,6 +226,7 @@ const QuizzList = ({
                         aria-label={t("manager:labels.assignLabel", {
                           defaultValue: "Label zuweisen",
                         })}
+                        onPointerDown={(e) => e.stopPropagation()}
                         className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                       >
                         <Plus className="size-3" />
@@ -239,6 +240,7 @@ const QuizzList = ({
                         <Select.Content
                           position="popper"
                           sideOffset={4}
+                          onCloseAutoFocus={(e) => e.preventDefault()}
                           className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
                         >
                           <Select.Viewport className="p-1">
