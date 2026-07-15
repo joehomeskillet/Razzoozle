@@ -2,9 +2,11 @@
 //! Lists currently running games with summary info (id, pin, quiz subject, player count, phase, etc.)
 
 use super::super::HandlerCtx;
+use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use serde_json::json;
+use tracing::warn;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list_games(socket, ctx.clone());
@@ -85,7 +87,7 @@ fn register_end_game(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Auth-gate
-                let _user = match ctx.require_user().await {
+                let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket
@@ -95,19 +97,20 @@ fn register_end_game(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                // Ownership: game.manager_client_id must match ctx.client_id
+                // Ownership: require is_game_host check (W0-A3 with admin bypass + legacy fallback)
                 let owns_game = {
                     let registry = ctx.registry.read().await;
                     if let Some(game_ref) = registry.get_game_by_id(&game_id) {
                         let game = game_ref.lock().unwrap();
-                        game.manager_client_id.as_deref() == Some(&ctx.client_id)
+                        is_game_host(&game, &payload, &ctx.client_id, Some(&user))
                     } else {
                         false
                     }
                 };
 
                 if !owns_game {
-                    return; // Foreign/unknown gameId: silent no-op
+                    warn!("END_GAME denied: not game host (game={}, client_id={})", game_id, ctx.client_id);
+                    return;
                 }
 
                 // Emit RESET to the room, then remove the game
@@ -138,13 +141,21 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     None => return,
                 };
 
-                // No is_logged gate (unlike END_GAME) — Node parity
-                // Ownership: game.manager_client_id must match ctx.client_id
+                // Auth-gate: must be authenticated to leave a game
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        warn!("LEAVE denied: not authenticated (game={})", game_id);
+                        return;
+                    }
+                };
+
+                // Ownership: require is_game_host check (W0-A3 with admin bypass + legacy fallback)
                 let (owns_game, is_started) = {
                     let registry = ctx.registry.read().await;
                     if let Some(game_ref) = registry.get_game_by_id(&game_id) {
                         let game = game_ref.lock().unwrap();
-                        let owns = game.manager_client_id.as_deref() == Some(&ctx.client_id);
+                        let owns = is_game_host(&game, &payload, &ctx.client_id, Some(&user));
                         let started = game.engine.phase != razzoozle_engine::state::GamePhase::ShowRoom;
                         (owns, started)
                     } else {
@@ -153,7 +164,8 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if !owns_game {
-                    return; // Foreign/unknown gameId: silent no-op
+                    warn!("LEAVE denied: not game host (game={}, client_id={})", game_id, ctx.client_id);
+                    return;
                 }
 
                 // If game NOT started: tear down immediately (intentional leave on lobby)
