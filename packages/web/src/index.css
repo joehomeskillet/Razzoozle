@@ -24,7 +24,7 @@
   --surface-3: #f3f4f6;
   --surface-4: #e5e7eb;
   --line: #e5e7eb;
-  --ring-selected: #ffffff;
+  --ring-selected: rgb(255 255 255 / 0.8);
 }
 
 /* Defaults overridden at runtime by the theme (features/theme/apply.ts). */
