@@ -82,7 +82,7 @@ export default function ChoiceGrid({
                     !disabled &&
                     "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
                   disabled && value !== null && value !== key && "opacity-40",
-                  disabled && isPicked && "ring-4 ring-white/80",
+                  disabled && isPicked && "ring-4 ring-[var(--ring-selected)]",
                 )}
                 label={ANSWERS_LABELS[key]}
                 disabled={disabled}
@@ -102,7 +102,7 @@ export default function ChoiceGrid({
               ANSWERS_COLORS[key],
               !disabled && PRESS_FEEDBACK,
               disabled && value !== null && value !== key && "opacity-40",
-              disabled && isPicked && "ring-4 ring-white/80",
+              disabled && isPicked && "ring-4 ring-[var(--ring-selected)]",
             )}
             label={ANSWERS_LABELS[key]}
             disabled={disabled}

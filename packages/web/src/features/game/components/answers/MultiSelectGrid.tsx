@@ -92,7 +92,7 @@ export default function MultiSelectGrid({
                       !disabled &&
                       "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
                     disabled && "opacity-50",
-                    isPicked && "ring-4 ring-white/80",
+                    isPicked && "ring-4 ring-[var(--ring-selected)]",
                   )}
                   label={ANSWERS_LABELS[key]}
                   disabled={disabled}
@@ -112,7 +112,7 @@ export default function MultiSelectGrid({
                 ANSWERS_COLORS[key],
                 !disabled && PRESS_FEEDBACK,
                 disabled && "opacity-50",
-                value.includes(key) && "ring-4 ring-white/80",
+                value.includes(key) && "ring-4 ring-[var(--ring-selected)]",
               )}
               label={ANSWERS_LABELS[key]}
               disabled={disabled}
