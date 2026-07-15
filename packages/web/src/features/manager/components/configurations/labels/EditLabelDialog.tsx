@@ -51,7 +51,7 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
               {t("manager:labels.editTitle")}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="text-gray-400 hover:text-gray-600">
+              <button className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-gray-600">
                 <X className="size-5" />
               </button>
             </Dialog.Close>
@@ -83,15 +83,19 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
                       key={c.slug}
                       type="button"
                       onClick={() => setColor(c.slug)}
-                      className="h-8 w-8 rounded-full border-2 transition-all"
-                      style={{
-                        backgroundColor: `var(--label-${c.slug})`,
-                        borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
-                        boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
-                      }}
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-full"
                       title={colorLabel}
                       aria-label={colorLabel}
-                    />
+                    >
+                      <span
+                        className="size-8 rounded-full border-2 transition-all"
+                        style={{
+                          backgroundColor: `var(--label-${c.slug})`,
+                          borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
+                          boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
+                        }}
+                      />
+                    </button>
                   )
                 })}
               </div>
