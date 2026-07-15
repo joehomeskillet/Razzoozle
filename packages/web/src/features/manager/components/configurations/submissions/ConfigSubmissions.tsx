@@ -243,7 +243,7 @@ const ConfigSubmissions = () => {
           defaultValue: "Nach Status filtern",
         })}
       >
-        <Filter className="size-4 text-gray-400" aria-hidden />
+        <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
         {statusFilters.map((entry) => {
           const active = statusFilter === entry.key
 
@@ -263,14 +263,14 @@ const ConfigSubmissions = () => {
                 "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
                 active
                   ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)]"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                  : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
               )}
             >
               {entry.label}
               <span
                 className={clsx(
                   "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums",
-                  active ? "bg-[color:var(--color-field-ink)]/10 text-[color:var(--color-field-ink)]" : "bg-gray-200 text-gray-600",
+                  active ? "bg-[color:var(--color-field-ink)]/10 text-[color:var(--color-field-ink)]" : "bg-[var(--surface-4)] text-[var(--ink-medium)]",
                 )}
               >
                 {entry.count}

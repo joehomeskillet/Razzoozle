@@ -128,10 +128,10 @@ const SubmissionCard = ({
           aria-label={t("manager:submissions.edit")}
         />
       ) : (
-        <p className="line-clamp-2 font-semibold text-gray-900">{s.question}</p>
+        <p className="line-clamp-2 font-semibold text-[var(--ink)]">{s.question}</p>
       )}
 
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-[var(--ink-subtle)]">
         {t("manager:submissions.submittedBy", {
           name: s.submittedBy,
         })}
@@ -222,14 +222,14 @@ const SubmissionCard = ({
         (fullQuestion ? (
           <QuestionPreview question={fullQuestion} />
         ) : (
-          <p className="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-500">
+          <p className="mt-3 rounded-lg bg-[var(--surface-2)] p-3 text-sm text-[var(--ink-subtle)]">
             {t("manager:submissions.previewLabels.loading")}
           </p>
         ))}
 
       {isPending && approvingId === s.id && (
-        <div className="mt-3 space-y-2 rounded-lg bg-gray-50 p-3">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
+        <div className="mt-3 space-y-2 rounded-lg bg-[var(--surface-2)] p-3">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--ink-muted)]">
             <input
               type="checkbox"
               checked={approveToCatalog}
@@ -238,11 +238,11 @@ const SubmissionCard = ({
             />
             <span>{t("manager:catalog.approveToCatalog")}</span>
           </label>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:catalog.approveToCatalogHint")}
           </p>
           {!approveToCatalog && (
-            <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+            <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
               {t("manager:submissions.selectQuizz")}
             </p>
           )}
@@ -257,7 +257,7 @@ const SubmissionCard = ({
               {t("manager:catalog.approveToCatalog")}
             </Button>
           ) : quizzList.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[var(--ink-subtle)]">
               {t("manager:quizz.notFound")}
             </p>
           ) : (
@@ -271,7 +271,7 @@ const SubmissionCard = ({
                 classNameContent="w-full justify-between gap-2"
                 onClick={handleApprove(s.id, quizz.id)}
               >
-                <span className="min-w-0 truncate text-gray-900">
+                <span className="min-w-0 truncate text-[var(--ink)]">
                   {quizz.subject}
                 </span>
                 <Check
@@ -287,11 +287,11 @@ const SubmissionCard = ({
       {/* WP-17 — inline reject form: optional reason note + optional
           category override, then a confirm dialog. */}
       {isPending && rejectingId === s.id && (
-        <div className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+        <div className="mt-3 space-y-3 rounded-lg bg-[var(--surface-2)] p-3">
           <div className="space-y-1.5">
             <label
               htmlFor={`reject-reason-${s.id}`}
-              className="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+              className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase"
             >
               {t("manager:submissions.rejectReason.label", {
                 defaultValue: "Begründung (optional)",
@@ -306,14 +306,14 @@ const SubmissionCard = ({
               placeholder={t("manager:submissions.rejectReason.placeholder", {
                 defaultValue: "Warum wird diese Frage abgelehnt?",
               })}
-              className="focus-visible:outline-primary w-full resize-y rounded-lg bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="focus-visible:outline-primary w-full resize-y rounded-lg bg-white px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
             />
           </div>
 
           <div className="space-y-1.5">
             <label
               htmlFor={`reject-category-${s.id}`}
-              className="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+              className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase"
             >
               {t("manager:submissions.category.label", {
                 defaultValue: "Kategorie",
@@ -325,7 +325,7 @@ const SubmissionCard = ({
               onChange={(event) =>
                 setRejectCategory(event.target.value as SubmissionCategory | "")
               }
-              className="focus-visible:outline-primary min-h-11 w-full rounded-lg bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="focus-visible:outline-primary min-h-11 w-full rounded-lg bg-white px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
             >
               <option value="">—</option>
               {SUBMISSION_CATEGORIES.map((cat) => (
