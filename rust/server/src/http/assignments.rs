@@ -66,6 +66,12 @@ pub struct ValidatePinResponse {
     pub expires_at: String,
 }
 
+/// SEC-X2a: assignments-Verwaltung ist Lehr-/Admin-Funktion.
+/// `user`-Rolle (Spiel-Hosts) wird abgelehnt.
+fn role_may_manage_assignments(role: &str) -> bool {
+    matches!(role, "admin" | "lehrkraft")
+}
+
 async fn authorize_manager_request(
     headers: &HeaderMap,
     registry: &Arc<RwLock<GameRegistry>>,
@@ -80,10 +86,13 @@ async fn authorize_manager_request(
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
     }
 
-    // Check if token is valid session token
+    // Check if token is valid session token with allowed role
     if let Some(ref pool) = db_pool {
-        if crate::db::users::session_user(pool, header_token).await.ok().flatten().is_some() {
-            return Ok(());
+        if let Some(user) = crate::db::users::session_user(pool, header_token).await.ok().flatten() {
+            if role_may_manage_assignments(&user.role) {
+                return Ok(());
+            }
+            tracing::warn!("assignments: denied for role={} (SEC-X2a)", user.role);
         }
     }
 
@@ -206,7 +215,7 @@ pub async fn handle_validate_pin(
     // Generate token BEFORE any async operations (ThreadRng is !Send)
     let token = format!("{:x}", uuid::Uuid::new_v4().as_u128());
     let expires_at = chrono::Utc::now() + chrono::Duration::minutes(120);
-    
+
     // Create solo session
     if let Err(_) = crate::db::pins::create_solo_session(pool, &token, &id, payload.student_id, 120).await {
         return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
@@ -309,4 +318,36 @@ pub async fn handle_get_assignment_results(
         .collect();
 
     Ok(Json(GetAssignmentResultsResponse { results }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_role_may_manage_assignments_admin() {
+        assert!(role_may_manage_assignments("admin"));
+    }
+
+    #[test]
+    fn test_role_may_manage_assignments_lehrkraft() {
+        assert!(role_may_manage_assignments("lehrkraft"));
+    }
+
+    #[test]
+    fn test_role_may_manage_assignments_user_denied() {
+        assert!(!role_may_manage_assignments("user"));
+    }
+
+    #[test]
+    fn test_role_may_manage_assignments_empty_string_denied() {
+        assert!(!role_may_manage_assignments(""));
+    }
+
+    #[test]
+    fn test_role_may_manage_assignments_unknown_role_denied() {
+        assert!(!role_may_manage_assignments("unknown"));
+        assert!(!role_may_manage_assignments("guest"));
+        assert!(!role_may_manage_assignments("moderator"));
+    }
 }
