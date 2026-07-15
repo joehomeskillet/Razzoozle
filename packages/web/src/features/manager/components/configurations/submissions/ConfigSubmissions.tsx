@@ -248,6 +248,7 @@ const ConfigSubmissions = () => {
           <FilterPill
             key={entry.key}
             active={statusFilter === entry.key}
+            count={entry.count}
             onClick={() => {
               setStatusFilter(entry.key)
               setApprovingId(null)
@@ -256,19 +257,7 @@ const ConfigSubmissions = () => {
               setRejectingId(null)
             }}
           >
-            <span className="mx-1 inline-flex items-center gap-2">
-              {entry.label}
-              <span
-                className={
-                  "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums " +
-                  (statusFilter === entry.key
-                    ? "bg-[color:var(--color-field-ink)]/10 text-[color:var(--color-field-ink)]"
-                    : "bg-[var(--surface-4)] text-[var(--ink-medium)]")
-                }
-              >
-                {entry.count}
-              </span>
-            </span>
+            {entry.label}
           </FilterPill>
         ))}
       </div>
