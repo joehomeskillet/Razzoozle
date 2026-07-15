@@ -167,7 +167,7 @@ const ConfigManageQuizz = () => {
             count: selectionCount,
             defaultValue: "{{count}} ausgewählt",
           })}
-          className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl bg-gray-50 p-2 pl-3"
+          className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-2)] p-2 pl-3"
         >
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -175,11 +175,11 @@ const ConfigManageQuizz = () => {
               onClick={clearSelection}
               aria-label={t("common:cancel")}
               title={t("common:cancel")}
-              className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <X className="size-5" aria-hidden />
             </button>
-            <span className="min-w-0 truncate text-sm font-semibold text-gray-700">
+            <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
               {t("manager:quizz.bulkSelected", {
                 count: selectionCount,
                 defaultValue: "{{count}} ausgewählt",

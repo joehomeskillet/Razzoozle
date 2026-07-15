@@ -113,7 +113,7 @@ const SimControl = () => {
                   addBots()
                 }
               }}
-              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-bold outline-none focus-visible:border-[var(--color-primary)]"
+              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-bold outline-none focus-visible:border-[var(--color-primary)]"
             />
             <button
               type="button"
@@ -130,7 +130,7 @@ const SimControl = () => {
             </p>
           )}
           {windowOpen && (
-            <p className="mt-2 text-xs leading-snug text-gray-600">
+            <p className="mt-2 text-xs leading-snug text-[var(--ink-medium)]">
               {t("manager:sim.windowHint")}
             </p>
           )}

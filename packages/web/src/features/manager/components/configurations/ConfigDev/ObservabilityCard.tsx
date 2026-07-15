@@ -50,7 +50,7 @@ export const ObservabilityCard = ({
           className={
             isConnected
               ? "inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
-              : "inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500"
+              : "inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-subtle)]"
           }
         >
           <span

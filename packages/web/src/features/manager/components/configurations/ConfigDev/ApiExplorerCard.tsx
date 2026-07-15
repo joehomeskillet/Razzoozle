@@ -38,7 +38,7 @@ export const ApiExplorerCard = ({
     >
       <div className="space-y-3">
         {apiInfo !== null && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 tabular-nums">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--ink-subtle)] tabular-nums">
             <span>
               {apiInfo.routes} {t("dev.api.routes")}
             </span>

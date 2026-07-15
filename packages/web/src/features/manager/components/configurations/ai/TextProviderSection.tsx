@@ -178,7 +178,7 @@ const TextProviderSection = ({
                       }
                       className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                     />
-                    <span className="w-10 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+                    <span className="w-10 shrink-0 text-right text-lg font-bold tabular-nums text-[var(--ink)]">
                       {temperature.toFixed(1)}
                     </span>
                   </div>
@@ -220,7 +220,7 @@ const TextProviderSection = ({
                         ? t("manager:ai.keyConfigured")
                         : t("manager:ai.keyNotConfigured")}
                     </span>
-                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                    <span className="rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-medium)]">
                       {t(`manager:ai.kind.${selectedProvider.kind}`)}
                     </span>
                   </div>
@@ -262,7 +262,7 @@ const TextProviderSection = ({
         })()}
 
       {/* Test result feedback */}
-      <div className="space-y-2 border-t border-gray-200 pt-3">
+      <div className="space-y-2 border-t border-[var(--line)] pt-3">
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -275,7 +275,7 @@ const TextProviderSection = ({
         </div>
         <div aria-live="polite" className="min-h-5">
           {testing && (
-            <p className="text-sm text-gray-500">{t("manager:ai.testing")}</p>
+            <p className="text-sm text-[var(--ink-subtle)]">{t("manager:ai.testing")}</p>
           )}
           {!testing && lastTest === "ok" && (
             <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 outline-1 -outline-offset-1 outline-green-200">

@@ -42,9 +42,9 @@ const ImageSection = ({
                 key={provider.id}
                 className="rounded-lg bg-white p-3 outline-1 -outline-offset-1 outline-gray-200"
               >
-                <p className="font-semibold text-gray-800">{provider.label}</p>
+                <p className="font-semibold text-[var(--ink)]">{provider.label}</p>
                 {provider.baseUrl && (
-                  <p className="break-all text-sm text-gray-500">
+                  <p className="break-all text-sm text-[var(--ink-subtle)]">
                     {provider.baseUrl}
                   </p>
                 )}

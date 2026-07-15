@@ -136,7 +136,7 @@ const QuizzList = ({
           >
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100">
+                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
                   <span className="sr-only">
                     {t("manager:quizz.selectQuiz", {
                       name: q.subject,
@@ -227,7 +227,7 @@ const QuizzList = ({
                           defaultValue: "Label zuweisen",
                         })}
                         onPointerDown={(e) => e.stopPropagation()}
-                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                       >
                         <Plus className="size-3" />
                         <Select.Value
@@ -248,7 +248,7 @@ const QuizzList = ({
                               <Select.Item
                                 key={label.id}
                                 value={String(label.id)}
-                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100"
+                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
                               >
                                 <Select.ItemText>{label.name}</Select.ItemText>
                               </Select.Item>
@@ -269,11 +269,11 @@ const QuizzList = ({
         <div className="space-y-3 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-gray-700">
+              <p className="text-sm font-semibold text-[var(--ink-muted)]">
                 {t("manager:quizz.archivedSection")}
               </p>
               {showArchived && (
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-[var(--ink-subtle)]">
                   {t("manager:quizz.archivedHint")}
                 </p>
               )}
