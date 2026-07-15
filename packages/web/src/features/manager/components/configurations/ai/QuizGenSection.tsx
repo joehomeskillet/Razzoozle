@@ -75,7 +75,7 @@ const QuizGenSection = ({
               }
               className="h-11 w-full cursor-pointer accent-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
-            <span className="w-8 shrink-0 text-right text-lg font-bold tabular-nums text-gray-800">
+            <span className="w-8 shrink-0 text-right text-lg font-bold tabular-nums text-[var(--ink)]">
               {count}
             </span>
           </div>
@@ -94,12 +94,12 @@ const QuizGenSection = ({
 
       <div aria-live="polite" className="min-h-5">
         {generating && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:ai.generate.generating")}
           </p>
         )}
         {!generating && !textConfigured && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:ai.generate.notConfigured")}
           </p>
         )}

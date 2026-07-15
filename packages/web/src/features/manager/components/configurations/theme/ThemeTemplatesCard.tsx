@@ -96,9 +96,9 @@ const ThemeTemplatesCard = ({
           {templates.map((template) => (
             <div
               key={template.id}
-              className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200"
+              className="flex flex-col gap-3 rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-gray-200"
             >
-              <p className="min-w-0 truncate text-sm font-semibold text-gray-700">
+              <p className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
                 {template.name}
               </p>
               <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-gray-200">

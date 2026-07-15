@@ -261,7 +261,7 @@ const ConfigAI = () => {
   const textStatusBadge = {
     off: {
       label: t("manager:ai.status.off", { defaultValue: "Aus" }),
-      pill: "bg-gray-100 text-gray-600",
+      pill: "bg-[var(--surface-3)] text-[var(--ink-medium)]",
       dot: "bg-gray-400",
     },
     ready: {

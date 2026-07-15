@@ -121,7 +121,7 @@ const DisplayControl = () => {
           className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl"
         >
           <p className="text-sm font-bold">{t("manager:satellite.title")}</p>
-          <p className="mt-1 text-xs leading-snug text-gray-600">
+          <p className="mt-1 text-xs leading-snug text-[var(--ink-medium)]">
             {t("manager:satellite.howto")}
           </p>
           <div className="mt-2 flex gap-2">
@@ -133,7 +133,7 @@ const DisplayControl = () => {
               placeholder={t("manager:satellite.codePlaceholder")}
               aria-label={t("manager:satellite.codeLabel")}
               maxLength={6}
-              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus-visible:border-[var(--color-primary)]"
+              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus-visible:border-[var(--color-primary)]"
             />
             <button
               type="button"

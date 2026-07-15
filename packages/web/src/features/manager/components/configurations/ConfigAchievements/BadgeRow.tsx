@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next"
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+  "w-full rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-sm text-[var(--ink)] placeholder-gray-400 outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
 
 // ---------------------------------------------------------------------------
 // Achievement badge editor card
@@ -66,17 +66,17 @@ const BadgeRow = ({
       animate={{ opacity: state.enabled ? 1 : 0.6, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={`rounded-xl px-3 py-2.5 outline-2 -outline-offset-2 transition-colors ${
-        state.enabled ? "bg-white outline-gray-200" : "bg-gray-50 outline-gray-100"
+        state.enabled ? "bg-white outline-gray-200" : "bg-[var(--surface-2)] outline-gray-100"
       }`}
     >
       {/* Header: medal + name/description + enable toggle */}
       <div className="flex items-center gap-2.5">
         <AchievementMedal id={id} tier={tier} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-800">
+          <p className="truncate text-sm font-semibold text-[var(--ink)]">
             {defaultName}
           </p>
-          <p className="text-xs leading-snug text-gray-500">{defaultDesc}</p>
+          <p className="text-xs leading-snug text-[var(--ink-subtle)]">{defaultDesc}</p>
         </div>
         <div className="flex min-h-11 shrink-0 items-center">
           <button
@@ -156,12 +156,12 @@ const BadgeRow = ({
                 setThresholdDraft(null)
               }}
             />
-            <span className="text-xs font-medium text-gray-500">
+            <span className="text-xs font-medium text-[var(--ink-subtle)]">
               {thresholdUnit}
             </span>
           </div>
           {thresholdHint && (
-            <p className="mt-1 text-xs text-gray-500">{thresholdHint}</p>
+            <p className="mt-1 text-xs text-[var(--ink-subtle)]">{thresholdHint}</p>
           )}
         </div>
       )}
@@ -186,11 +186,11 @@ const BadgeRow = ({
               }
             }}
           />
-          <span className="text-xs font-medium text-gray-500">
+          <span className="text-xs font-medium text-[var(--ink-subtle)]">
             {t("manager:achievementsConfig.bonus")}
           </span>
         </div>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-[var(--ink-subtle)]">
           {t("manager:achievementsConfig.bonusHint")}
         </p>
       </div>

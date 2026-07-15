@@ -110,7 +110,7 @@ const DisplayStatusCard = () => {
           </p>
 
           {displays.length === 0 ? (
-            <p className="mt-2 text-xs leading-snug text-gray-600">
+            <p className="mt-2 text-xs leading-snug text-[var(--ink-medium)]">
               {t("manager:display.status.empty")}
             </p>
           ) : (
@@ -131,7 +131,7 @@ const DisplayStatusCard = () => {
                             defaultValue: "Beamer",
                           })}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--ink-subtle)]">
                         {t("manager:display.status.lastSeen", {
                           seconds: ageSeconds,
                         })}
@@ -141,7 +141,7 @@ const DisplayStatusCard = () => {
                       className={clsx(
                         "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
                         stale
-                          ? "bg-gray-200 text-gray-600"
+                          ? "bg-[var(--surface-4)] text-[var(--ink-medium)]"
                           : "bg-green-100 text-green-800",
                       )}
                     >
