@@ -44,6 +44,16 @@ export const CatalogQuestionForm = ({
       ? selectedLabelIds.filter((id) => id !== labelId)
       : [...selectedLabelIds, labelId]
     onLabelIdsChange?.(newIds)
+
+    // Existing entry: assign immediately (mirrors Media/Classes pattern) instead
+    // of waiting for form save. New entries have no id yet — see handleSave.
+    if (klassenEnabled && mode === "edit" && editingEntry?.id) {
+      socket.emit(EVENTS.LABEL.ASSIGN, {
+        entityType: "catalog",
+        entityId: editingEntry.id,
+        labelIds: newIds,
+      })
+    }
   }
 
   const handleSave = () => {
@@ -60,15 +70,6 @@ export const CatalogQuestionForm = ({
         tags: payloadTags,
       })
 
-      // Assign labels if enabled and changed
-      if (klassenEnabled && selectedLabelIds.length > 0) {
-        socket.emit(EVENTS.LABEL.ASSIGN, {
-          entityType: "catalog",
-          entityId: editingEntry.id,
-          labelIds: selectedLabelIds,
-        })
-      }
-
       return
     }
 
@@ -78,14 +79,8 @@ export const CatalogQuestionForm = ({
       source: "manual",
     })
 
-    // Assign labels immediately after add if enabled
-    if (klassenEnabled && selectedLabelIds.length > 0 && editingEntry?.id) {
-      socket.emit(EVENTS.LABEL.ASSIGN, {
-        entityType: "catalog",
-        entityId: editingEntry.id,
-        labelIds: selectedLabelIds,
-      })
-    }
+    // NOTE: labels picked in add-mode cannot be assigned here yet — see BLOCKER
+    // in the report for this WP (CATALOG.ADD_SUCCESS carries no entity id).
   }
 
   return (
@@ -153,7 +148,7 @@ export const CatalogQuestionForm = ({
             </div>
           </section>
 
-          {klassenEnabled && labels.length > 0 && editingEntry?.id && (
+          {klassenEnabled && labels.length > 0 && (
             <section className="flex flex-col gap-2">
               <label className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
                 {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
