@@ -743,7 +743,7 @@
   "profile": {
     "welcome": "Welcome",
     "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options.",
-    "intro": "",
+    "intro": "Your profile and your personal settings.",
     "changePassword": {
       "title": "Change Password",
       "description": "Change your password to keep your account secure.",

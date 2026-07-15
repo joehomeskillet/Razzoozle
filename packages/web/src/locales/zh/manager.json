@@ -812,7 +812,7 @@
     "create": "创建"
   },
   "profile": {
-    "intro": "",
+    "intro": "您的个人资料和设置",
     "changePassword": {
       "title": "修改密码",
       "description": "修改您的密码以保护您的账户。",

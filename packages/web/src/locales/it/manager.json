@@ -812,7 +812,7 @@
     "create": "Creare"
   },
   "profile": {
-    "intro": "",
+    "intro": "Il tuo profilo e le tue impostazioni personali.",
     "changePassword": {
       "title": "Cambia password",
       "description": "Cambia la tua password per proteggere il tuo account.",

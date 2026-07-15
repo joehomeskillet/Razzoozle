@@ -812,7 +812,7 @@
     "create": "Créer"
   },
   "profile": {
-    "intro": "",
+    "intro": "Votre profil et vos paramètres personnels.",
     "changePassword": {
       "title": "Modifier le mot de passe",
       "description": "Modifiez votre mot de passe pour sécuriser votre compte.",
