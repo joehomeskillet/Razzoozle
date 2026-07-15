@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
-use razzoozle_protocol::quizz::QuestionType;
+use razzoozle_protocol::quizz::{QuestionType, Quizz};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::sync::RwLock;
@@ -108,7 +108,15 @@ pub struct CheckAnswerResponse {
 pub struct SoloScoreSubmitAnswer {
     #[serde(rename = "questionIndex")]
     pub question_index: i32,
-    pub correct: bool,
+    /// SEC-05: kept only for deserializing older clients — never read for scoring.
+    #[serde(default)]
+    pub correct: Option<bool>,
+    #[serde(rename = "answerId")]
+    pub answer_id: Option<i32>,
+    #[serde(rename = "answerIds")]
+    pub answer_ids: Option<Vec<i32>>,
+    #[serde(rename = "answerText")]
+    pub answer_text: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,6 +284,46 @@ pub async fn handle_check_answer(
     Ok(Json(response))
 }
 
+/// Server-side re-scoring of solo answers (SEC-05). Ignores `payload.score` and
+/// each answer's client-supplied `correct` flag entirely — recomputes points via
+/// `razzoozle_engine::eval::evaluate_answer`, the same scoring truth used by
+/// `/check-answer` and multiplayer. Fail-closed: missing/empty answers score 0.
+/// Duplicate question indices count only the first occurrence; out-of-range/
+/// negative indices are ignored.
+fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -> i32 {
+    let answers = match answers {
+        Some(a) if !a.is_empty() => a,
+        _ => return 0,
+    };
+
+    let mut seen_indices = std::collections::HashSet::new();
+    let mut score = 0i32;
+
+    for answer in answers {
+        if answer.question_index < 0 {
+            continue;
+        }
+        let idx = answer.question_index as usize;
+        if idx >= quiz.questions.len() {
+            continue;
+        }
+        if !seen_indices.insert(idx) {
+            continue;
+        }
+
+        let question = &quiz.questions[idx];
+        let answer_input = AnswerInput {
+            answer_key: answer.answer_id,
+            answer_keys: answer.answer_ids.clone(),
+            answer_text: answer.answer_text.clone(),
+        };
+        let eval_result = evaluate_answer(question, &answer_input);
+        score += (eval_result.base * 1000.0).round() as i32;
+    }
+
+    score
+}
+
 pub async fn handle_solo_score(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
@@ -306,21 +354,10 @@ pub async fn handle_solo_score(
         .count() as i32;
     let theoretical_max = non_poll_count * 1000;
 
-    // Recompute score from answers if provided
-    let mut verified_score = payload.score;
-    if let Some(answers) = &payload.answers {
-        if !answers.is_empty() {
-            verified_score = 0;
-            for answer in answers {
-                if answer.question_index >= 0
-                    && (answer.question_index as usize) < quiz.questions.len()
-                    && answer.correct
-                {
-                    verified_score += 1000;
-                }
-            }
-        }
-    }
+    // Recompute score server-side (SEC-05): payload.score and each answer's
+    // client-supplied `correct` flag are never trusted. Missing/empty answers
+    // fail closed to 0 — a client that wants points must submit real answers.
+    let verified_score = compute_solo_score(&quiz, payload.answers.as_deref());
 
     // Cap at theoretical maximum
     let final_score = std::cmp::min(verified_score, theoretical_max);
@@ -497,5 +534,205 @@ mod tests {
 
         let json = serde_json::to_string(&question).unwrap();
         assert!(json.contains("\"decimals\":1"));
+    }
+
+    // ── SEC-05: compute_solo_score (server-side re-evaluation) ─────────────
+
+    use razzoozle_protocol::quizz::Question;
+
+    fn test_question(q_type: QuestionType) -> Question {
+        Question {
+            question: "Test?".to_string(),
+            r#type: Some(q_type),
+            media: None,
+            answers: None,
+            solutions: None,
+            min: None,
+            max: None,
+            correct: None,
+            step: None,
+            unit: None,
+            chunks: None,
+            cooldown: 1,
+            time: 10,
+            practice: None,
+            bonus: None,
+            submitted_by: None,
+            accepted_answers: None,
+            match_mode: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+        }
+    }
+
+    /// 3-question fixture: [0] choice (solution=1), [1] wortarten (partial-credit
+    /// case mirrors eval.rs::wortarten_partial_correct), [2] poll (never scored).
+    fn test_quiz() -> Quizz {
+        let mut choice = test_question(QuestionType::Choice);
+        choice.solutions = Some(vec![1]);
+
+        let mut wortarten = test_question(QuestionType::Wortarten);
+        wortarten.pos_set = Some(vec![
+            "Nomen".to_string(),
+            "Verb".to_string(),
+            "Adjektiv".to_string(),
+            "Artikel".to_string(),
+        ]);
+        wortarten.solutions = Some(vec![3, 0, 2]); // Artikel, Nomen, Adjektiv
+
+        let poll = test_question(QuestionType::Poll);
+
+        Quizz {
+            subject: "Test".to_string(),
+            questions: vec![choice, wortarten, poll],
+            archived: None,
+            theme_id: None,
+        }
+    }
+
+    /// Builds a submitted answer with a client-claimed `correct: true` — the
+    /// server must ignore this flag entirely and re-derive it.
+    fn answer(question_index: i32, answer_id: Option<i32>) -> SoloScoreSubmitAnswer {
+        SoloScoreSubmitAnswer {
+            question_index,
+            correct: Some(true),
+            answer_id,
+            answer_ids: None,
+            answer_text: None,
+        }
+    }
+
+    #[test]
+    fn compute_solo_score_ignores_manipulated_correct_flag_wrong_answer() {
+        // Bypass #2 from SEC-05: correct:true + answerId on the WRONG option
+        // must score 0, not the claimed 1000.
+        let quiz = test_quiz();
+        let answers = vec![answer(0, Some(0))]; // solution is 1, submits 0
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 0);
+    }
+
+    #[test]
+    fn compute_solo_score_fail_closed_on_missing_answers() {
+        // Bypass #1 from SEC-05: no answers submitted → 0, regardless of any
+        // client-claimed score (score: 999999 never reaches this function).
+        let quiz = test_quiz();
+        assert_eq!(compute_solo_score(&quiz, None), 0);
+        assert_eq!(compute_solo_score(&quiz, Some(&[])), 0);
+    }
+
+    #[test]
+    fn compute_solo_score_honest_partial_credit_matches_check_answer() {
+        // Wortarten 2/3 correct = 667, identical rounding to /check-answer
+        // (mirrors eval.rs::wortarten_partial_correct).
+        let quiz = test_quiz();
+        let answers = vec![SoloScoreSubmitAnswer {
+            question_index: 1,
+            correct: Some(false),
+            answer_id: None,
+            answer_ids: None,
+            answer_text: Some(r#"["Artikel","Verb","Adjektiv"]"#.to_string()),
+        }];
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 667);
+    }
+
+    #[test]
+    fn compute_solo_score_honest_full_credit() {
+        let quiz = test_quiz();
+        let answers = vec![answer(0, Some(1))]; // matches solutions=[1]
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 1000);
+    }
+
+    #[test]
+    fn compute_solo_score_poll_scores_zero_and_excluded_from_max() {
+        let quiz = test_quiz();
+        let answers = vec![answer(2, Some(0))]; // poll question, any answer
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 0);
+
+        let non_poll_count = quiz.questions.iter()
+            .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
+            .count();
+        assert_eq!(non_poll_count, 2); // poll excluded from theoretical_max
+    }
+
+    #[test]
+    fn compute_solo_score_out_of_range_and_negative_index_ignored() {
+        let quiz = test_quiz();
+        let answers = vec![answer(-1, Some(1)), answer(99, Some(1))];
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 0);
+    }
+
+    #[test]
+    fn compute_solo_score_duplicate_index_counts_first_only() {
+        let quiz = test_quiz();
+        let answers = vec![
+            answer(0, Some(1)), // first: correct, 1000
+            answer(0, Some(0)), // duplicate index, ignored
+        ];
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 1000);
+    }
+
+    #[test]
+    fn compute_solo_score_duplicate_index_first_wins_even_if_wrong() {
+        // Proves it's "first wins", not "max wins" or "last wins".
+        let quiz = test_quiz();
+        let answers = vec![
+            answer(0, Some(0)), // first: wrong, 0
+            answer(0, Some(1)), // duplicate index, would be correct — ignored
+        ];
+        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 0);
+    }
+
+    #[test]
+    fn compute_solo_score_never_exceeds_theoretical_max() {
+        // Structural cap proof: every distinct question index contributes at
+        // most 1000, poll always contributes 0, so the sum over ALL questions
+        // answered honestly-correct equals exactly non_poll_count * 1000 and
+        // can never exceed it (on top of the handler's explicit std::cmp::min
+        // cap against theoretical_max).
+        let quiz = test_quiz();
+        let non_poll_count = quiz.questions.iter()
+            .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
+            .count() as i32;
+        let theoretical_max = non_poll_count * 1000;
+
+        let answers = vec![
+            answer(0, Some(1)), // choice correct
+            SoloScoreSubmitAnswer {
+                question_index: 1,
+                correct: Some(true),
+                answer_id: None,
+                answer_ids: None,
+                answer_text: Some(r#"["Artikel","Nomen","Adjektiv"]"#.to_string()), // full correct
+            },
+            answer(2, Some(0)), // poll, contributes 0
+        ];
+
+        let score = compute_solo_score(&quiz, Some(&answers));
+        assert_eq!(theoretical_max, 2000);
+        assert_eq!(score, theoretical_max);
+    }
+
+    #[test]
+    fn solo_score_response_leaderboard_shape_unchanged() {
+        // Regression: this WP only changes scoring math, never the response
+        // wire shape (still {leaderboard: [{playerName, score, answeredAt,
+        // assignmentId?}]}).
+        let entry = SoloResultEntry {
+            player_name: "Alex".to_string(),
+            score: 667,
+            answered_at: "2026-07-15T12:00:00.000Z".to_string(),
+            assignment_id: None,
+        };
+        let response = SoloScoreResponse { leaderboard: vec![entry] };
+        let json = serde_json::to_value(&response).unwrap();
+        let entry_json = &json["leaderboard"][0];
+        assert_eq!(entry_json["playerName"], "Alex");
+        assert_eq!(entry_json["score"], 667);
+        assert_eq!(entry_json["answeredAt"], "2026-07-15T12:00:00.000Z");
+        assert!(entry_json.get("assignmentId").is_none());
     }
 }
