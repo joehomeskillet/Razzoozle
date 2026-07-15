@@ -48,7 +48,7 @@ export default function SentenceBuilderBoard({
     }
   }
 
-  const isComplete = value.placed.length > 0
+  const isComplete = value.bank.length === 0
 
   return (
     <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">

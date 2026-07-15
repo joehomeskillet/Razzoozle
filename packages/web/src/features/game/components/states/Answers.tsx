@@ -8,6 +8,7 @@ import { buildWortartenAnswer } from "@razzoozle/web/features/game/components/an
 import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGrid"
 import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
 import MultiSelectGrid from "@razzoozle/web/features/game/components/answers/MultiSelectGrid"
+import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answers/SentenceBuilderBoard"
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
@@ -21,14 +22,9 @@ import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
-import {
-  ANSWER_TILE_SURFACE,
-  ANSWERS_COLORS,
-} from "@razzoozle/web/features/game/utils/answers"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { hapticTap } from "@razzoozle/web/features/game/utils/haptics"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
-import clsx from "clsx"
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -43,13 +39,6 @@ interface Props {
 // hint. We do NOT resend — a missing ack just means the network is slow; the
 // server is idempotent and will count the first arrival.
 const ACK_PENDING_HINT_MS = 800
-
-// Press-feedback (tap) classes. CSS-only scale-down on :active so the firehose
-// of taps in a ~200-player room stays cheap — no per-answer layout springs.
-// `motion-reduce:` collapses the transform + transition when the user prefers
-// reduced motion, honouring the same contract as useReveal().
-const PRESS_FEEDBACK =
-  "transition-transform duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
 
 const Answers = ({
   data: {
@@ -136,10 +125,10 @@ const Answers = ({
   // Wortarten: which token's POS picker is currently open (one at a time).
   const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
   const [bankChips, setBankChips] = useState<
-    Array<{ text: string; originalIndex: number }>
+    Array<{ text: string; originalIndex: number; id: string }>
   >([])
   const [placedChunks, setPlacedChunks] = useState<
-    Array<{ text: string; originalIndex: number }>
+    Array<{ text: string; originalIndex: number; id: string }>
   >([])
   // True once we've sent an answer but not yet seen its ack (LL mode only).
   const [ackPending, setAckPending] = useState(false)
@@ -200,6 +189,7 @@ const Answers = ({
     const chips = shuffledChunks.map((text, idx) => ({
       text,
       originalIndex: idx,
+      id: String(idx),
     }))
 
     setBankChips(chips)
@@ -677,110 +667,17 @@ const Answers = ({
             disabledTokens={disabledTokens}
           />
         ) : isSentenceBuilder ? (
-          <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">
-            <div className="flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]">
-              {placedChunks.length === 0 ? (
-                <p className="text-sm text-[color:var(--game-fg)]/60">
-                  {t("game:sentenceBuilder.tapHint", {
-                    defaultValue: "Tap the words below to build your answer",
-                  })}
-                </p>
-              ) : (
-                placedChunks.map((placedChunk, idx) => (
-                  <button
-                    key={`${placedChunk.text}-${placedChunk.originalIndex}`}
-                    type="button"
-                    onClick={() => {
-                      setPlacedChunks(
-                        placedChunks.filter(
-                          (chunk) =>
-                            chunk.originalIndex !== placedChunk.originalIndex,
-                        ),
-                      )
-                      sfxPop()
-                    }}
-                    disabled={submitted}
-                    className={clsx(
-                      "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
-                      ANSWERS_COLORS[idx % ANSWERS_COLORS.length],
-                      !submitted && PRESS_FEEDBACK,
-                      submitted && "cursor-not-allowed",
-                    )}
-                    aria-label={t("game:sentenceBuilder.removeChunk", {
-                      defaultValue: "Remove {{chunk}}",
-                      chunk: placedChunk.text,
-                    })}
-                  >
-                    {placedChunk.text}
-                  </button>
-                ))
-              )}
-            </div>
-
-            <div className={clsx(ANSWER_TILE_SURFACE, "p-4")}>
-              <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
-                {t("game:sentenceBuilder.wordBank", {
-                  defaultValue: "Word bank",
-                })}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {bankChips.map((chip) => {
-                  const isPlaced = placedChunks.some(
-                    (placedChunk) =>
-                      placedChunk.originalIndex === chip.originalIndex,
-                  )
-
-                  return (
-                    <button
-                      data-testid={`sentence-chunk-${chip.originalIndex}`}
-                      key={`${chip.text}-${chip.originalIndex}`}
-                      type="button"
-                      onClick={() => {
-                        if (!isPlaced && !submitted) {
-                          setPlacedChunks([
-                            ...placedChunks,
-                            {
-                              text: chip.text,
-                              originalIndex: chip.originalIndex,
-                            },
-                          ])
-                          sfxPop()
-                        }
-                      }}
-                      disabled={submitted || isPlaced}
-                      className={clsx(
-                        "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
-                        ANSWERS_COLORS[
-                          chip.originalIndex % ANSWERS_COLORS.length
-                        ],
-                        isPlaced && "cursor-not-allowed opacity-40 grayscale",
-                        !isPlaced && !submitted && PRESS_FEEDBACK,
-                      )}
-                      aria-label={t("game:sentenceBuilder.addChunk", {
-                        defaultValue: "Add {{chunk}}",
-                        chunk: chip.text,
-                      })}
-                    >
-                      {chip.text}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <button
-              data-testid="sentence-submit"
-              type="button"
-              onClick={submitSentenceBuilder}
-              disabled={submitted || placedChunks.length !== bankChips.length}
-              className={clsx(
-                "rounded-xl bg-[var(--color-primary)] px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {t("game:sentenceBuilder.submit", { defaultValue: "Submit" })}
-            </button>
-          </div>
+          <SentenceBuilderBoard
+            value={{ bank: bankChips, placed: placedChunks }}
+            onChange={(next) => {
+              setBankChips(next.bank)
+              setPlacedChunks(next.placed)
+              sfxPop()
+            }}
+            onSubmit={submitSentenceBuilder}
+            disabled={submitted}
+            testIdPrefix=""
+          />
         ) : isMultiSelect ? (
           <MultiSelectGrid
             value={multiSelectedKeys}
