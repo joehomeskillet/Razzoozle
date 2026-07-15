@@ -24,8 +24,18 @@ fn register_logout(socket: &SocketRef, ctx: HandlerCtx) {
                     None => return,
                 };
 
-                // Logout: nothing to do on server side (session token validity is all that matters).
-                // Client clears its token on logout.
+                // X2a: revoke ONLY this session's row — other concurrent sessions
+                // for the same user (e.g. a second device) stay valid.
+                if let (Some(ref pool), Some(ref token)) = (&ctx.db_pool, &ctx.session_token) {
+                    let _ = crate::db::users::delete_session(pool, token).await;
+                }
+
+                // Also clear the in-connection cache so this socket stops being
+                // treated as authenticated for any further calls before it
+                // disconnects (require_user() would otherwise keep returning
+                // the cached user even after the DB row is gone).
+                let mut cache = ctx.user_cache.write().await;
+                *cache = None;
             });
         }
     });
