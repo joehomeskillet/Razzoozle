@@ -2,7 +2,10 @@ import { EVENTS } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
-import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import {
+  useEvent,
+  useSocket,
+} from "@razzoozle/web/features/game/contexts/socket-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
@@ -14,6 +17,7 @@ import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/Qu
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
+import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import type { CatalogQuestionFormProps } from "./types"
 import { parseTags } from "./utils"
@@ -44,6 +48,16 @@ export const CatalogQuestionForm = ({
       ? selectedLabelIds.filter((id) => id !== labelId)
       : [...selectedLabelIds, labelId]
     onLabelIdsChange?.(newIds)
+
+    // Existing entry: assign immediately (mirrors Media/Classes pattern) instead
+    // of waiting for form save. New entries have no id yet — see handleSave.
+    if (klassenEnabled && mode === "edit" && editingEntry?.id) {
+      socket.emit(EVENTS.LABEL.ASSIGN, {
+        entityType: "catalog",
+        entityId: editingEntry.id,
+        labelIds: newIds,
+      })
+    }
   }
 
   const handleSave = () => {
@@ -60,15 +74,6 @@ export const CatalogQuestionForm = ({
         tags: payloadTags,
       })
 
-      // Assign labels if enabled and changed
-      if (klassenEnabled && selectedLabelIds.length > 0) {
-        socket.emit(EVENTS.LABEL.ASSIGN, {
-          entityType: "catalog",
-          entityId: editingEntry.id,
-          labelIds: selectedLabelIds,
-        })
-      }
-
       return
     }
 
@@ -77,16 +82,24 @@ export const CatalogQuestionForm = ({
       tags: payloadTags,
       source: "manual",
     })
-
-    // Assign labels immediately after add if enabled
-    if (klassenEnabled && selectedLabelIds.length > 0 && editingEntry?.id) {
-      socket.emit(EVENTS.LABEL.ASSIGN, {
-        entityType: "catalog",
-        entityId: editingEntry.id,
-        labelIds: selectedLabelIds,
-      })
-    }
   }
+
+  // Assign pre-selected labels when add-mode succeeds and receives the new ID
+  useEvent(
+    EVENTS.CATALOG.ADD_SUCCESS,
+    useCallback(
+      (payload: { id: string }) => {
+        if (mode === "add" && selectedLabelIds.length > 0 && payload?.id) {
+          socket.emit(EVENTS.LABEL.ASSIGN, {
+            entityType: "catalog",
+            entityId: String(payload.id),
+            labelIds: selectedLabelIds,
+          })
+        }
+      },
+      [mode, selectedLabelIds, socket],
+    ),
+  )
 
   return (
     <>
@@ -153,7 +166,7 @@ export const CatalogQuestionForm = ({
             </div>
           </section>
 
-          {klassenEnabled && labels.length > 0 && editingEntry?.id && (
+          {klassenEnabled && labels.length > 0 && (
             <section className="flex flex-col gap-2">
               <label className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
                 {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}

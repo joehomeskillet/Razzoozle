@@ -294,7 +294,7 @@ export interface ServerToClientEvents {
 
   // Catalog (question bank) — server → client
   [EVENTS.CATALOG.DATA]: (_entries: CatalogEntry[]) => void
-  [EVENTS.CATALOG.ADD_SUCCESS]: () => void
+  [EVENTS.CATALOG.ADD_SUCCESS]: (_payload: { id: string }) => void
   [EVENTS.CATALOG.ERROR]: (_message: string) => void
 
   // AI provider config + generation — server → client. Settings carry only a
