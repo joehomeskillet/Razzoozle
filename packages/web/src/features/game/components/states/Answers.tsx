@@ -144,6 +144,22 @@ const Answers = ({
   const pendingSentAtRef = useRef<number | null>(null)
   const ackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
+
+  // Arm the ack-pending hint timer. Sets up refs for latency tracking and arms
+  // a timeout to show "wird gesendet…" if no ack lands within the window.
+  const armAckPending = (clientMessageId: string | undefined) => {
+    pendingMessageIdRef.current = clientMessageId ?? null
+    pendingSentAtRef.current = monoNow()
+    setAckPending(false)
+
+    if (ackTimerRef.current) {
+      clearTimeout(ackTimerRef.current)
+    }
+
+    ackTimerRef.current = setTimeout(() => {
+      setAckPending(true)
+    }, ACK_PENDING_HINT_MS)
+  }
   // Reduced-motion-aware animation bundle. Drives the one lifecycle moment on
   // this screen (the lock-in confirmation pop); the per-tap press feedback above
   // is CSS-only to keep the hot path cheap.
@@ -239,19 +255,7 @@ const Answers = ({
 
     if (lowLatency) {
       setSubmitted(true)
-      pendingMessageIdRef.current = clientMessageId ?? null
-      // Stamp the send time so the ack handler can report send→ack latency.
-      pendingSentAtRef.current = monoNow()
-      setAckPending(false)
-
-      if (ackTimerRef.current) {
-        clearTimeout(ackTimerRef.current)
-      }
-
-      // Show "wird gesendet…" if no ack lands within the window. No resend.
-      ackTimerRef.current = setTimeout(() => {
-        setAckPending(true)
-      }, ACK_PENDING_HINT_MS)
+      armAckPending(clientMessageId)
     }
   }
 
@@ -273,19 +277,7 @@ const Answers = ({
     sfxPop()
     hapticTap()
 
-    if (lowLatency) {
-      pendingMessageIdRef.current = clientMessageId ?? null
-      pendingSentAtRef.current = monoNow()
-      setAckPending(false)
-
-      if (ackTimerRef.current) {
-        clearTimeout(ackTimerRef.current)
-      }
-
-      ackTimerRef.current = setTimeout(() => {
-        setAckPending(true)
-      }, ACK_PENDING_HINT_MS)
-    }
+    armAckPending(clientMessageId)
   }
 
   // Multiple-select: tap toggles a key in the local set. No emit until Submit.
@@ -346,6 +338,10 @@ const Answers = ({
         ...(clientMessageId ? { clientMessageId } : {}),
       },
     })
+
+    if (lowLatency) {
+      armAckPending(clientMessageId)
+    }
   }
 
 
@@ -368,19 +364,7 @@ const Answers = ({
       },
     })
 
-    if (lowLatency) {
-      pendingMessageIdRef.current = clientMessageId ?? null
-      pendingSentAtRef.current = monoNow()
-      setAckPending(false)
-
-      if (ackTimerRef.current) {
-        clearTimeout(ackTimerRef.current)
-      }
-
-      ackTimerRef.current = setTimeout(() => {
-        setAckPending(true)
-      }, ACK_PENDING_HINT_MS)
-    }
+    armAckPending(clientMessageId)
   }
 
   // Wortarten: tapping a POS option assigns it to that token and closes the
@@ -444,19 +428,7 @@ const Answers = ({
 
     setSubmittedChunks(answerArray)
 
-    if (lowLatency) {
-      pendingMessageIdRef.current = clientMessageId ?? null
-      pendingSentAtRef.current = monoNow()
-      setAckPending(false)
-
-      if (ackTimerRef.current) {
-        clearTimeout(ackTimerRef.current)
-      }
-
-      ackTimerRef.current = setTimeout(() => {
-        setAckPending(true)
-      }, ACK_PENDING_HINT_MS)
-    }
+    armAckPending(clientMessageId)
   }
 
   const submitSentenceBuilder = () => {
@@ -482,19 +454,7 @@ const Answers = ({
 
     setSubmittedChunks(answerText.split(" "))
 
-    if (lowLatency) {
-      pendingMessageIdRef.current = clientMessageId ?? null
-      pendingSentAtRef.current = monoNow()
-      setAckPending(false)
-
-      if (ackTimerRef.current) {
-        clearTimeout(ackTimerRef.current)
-      }
-
-      ackTimerRef.current = setTimeout(() => {
-        setAckPending(true)
-      }, ACK_PENDING_HINT_MS)
-    }
+    armAckPending(clientMessageId)
   }
 
   useEffect(() => {
