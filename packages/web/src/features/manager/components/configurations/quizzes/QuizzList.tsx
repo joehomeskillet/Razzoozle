@@ -240,6 +240,7 @@ const QuizzList = ({
                         <Select.Content
                           position="popper"
                           sideOffset={4}
+                          onCloseAutoFocus={(e) => e.preventDefault()}
                           className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
                         >
                           <Select.Viewport className="p-1">
