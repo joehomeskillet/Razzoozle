@@ -207,6 +207,36 @@ pub struct MetricsHealthSnapshot {
 }
 
 // ============================================================================
+// PLAYER C2S Payloads (SEC-00: Contract Freeze)
+// ============================================================================
+
+/// SEC-00: canonical incoming wire shape of `player:selectedAnswer`.
+/// Data container holding all answer submission fields.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlayerSelectedAnswerData {
+    #[serde(rename = "answerKey", skip_serializing_if = "Option::is_none")]
+    pub answer_key: Option<i32>,
+    #[serde(rename = "answerKeys", skip_serializing_if = "Option::is_none")]
+    pub answer_keys: Option<Vec<i32>>,
+    #[serde(rename = "answerText", skip_serializing_if = "Option::is_none")]
+    pub answer_text: Option<String>,
+    #[serde(rename = "clientMessageId", skip_serializing_if = "Option::is_none")]
+    pub client_message_id: Option<String>,
+    #[serde(rename = "playerToken", skip_serializing_if = "Option::is_none")]
+    pub player_token: Option<String>,
+}
+
+/// SEC-00: canonical incoming wire shape of `player:selectedAnswer` with gameId.
+/// This is the FROZEN contract — answer.rs parses ad-hoc serde_json::Value today;
+/// SEC-04 will use this Type for parsing. Tests verify round-trip + legacy compat.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlayerSelectedAnswer {
+    #[serde(rename = "gameId")]
+    pub game_id: String,
+    pub data: PlayerSelectedAnswerData,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
@@ -300,5 +330,75 @@ mod tests {
         let json_str = serde_json::to_string(&snapshot).unwrap();
         let restored: MetricsHealthSnapshot = serde_json::from_str(&json_str).unwrap();
         assert_eq!(snapshot, restored);
+    }
+
+    #[test]
+    fn test_player_selected_answer_roundtrip_all_fields() {
+        let payload = PlayerSelectedAnswer {
+            game_id: "g123".to_string(),
+            data: PlayerSelectedAnswerData {
+                answer_key: Some(1),
+                answer_keys: Some(vec![0, 2]),
+                answer_text: Some("typed answer".to_string()),
+                client_message_id: Some("msg-456".to_string()),
+                player_token: Some("token-abc123".to_string()),
+            },
+        };
+
+        let json_str = serde_json::to_string(&payload).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+        assert_eq!(json["gameId"], "g123");
+        assert_eq!(json["data"]["answerKey"], 1);
+        assert_eq!(json["data"]["answerKeys"], json!([0, 2]));
+        assert_eq!(json["data"]["answerText"], "typed answer");
+        assert_eq!(json["data"]["clientMessageId"], "msg-456");
+        assert_eq!(json["data"]["playerToken"], "token-abc123");
+
+        let restored: PlayerSelectedAnswer = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(payload, restored);
+    }
+
+    #[test]
+    fn test_player_selected_answer_legacy_without_token() {
+        let legacy_json = json!({
+            "gameId": "g456",
+            "data": {
+                "answerKey": 2,
+                "answerText": "old client"
+            }
+        });
+
+        let payload: PlayerSelectedAnswer =
+            serde_json::from_value(legacy_json).unwrap();
+
+        assert_eq!(payload.game_id, "g456");
+        assert_eq!(payload.data.answer_key, Some(2));
+        assert_eq!(payload.data.answer_text, Some("old client".to_string()));
+        assert_eq!(payload.data.client_message_id, None);
+        assert_eq!(payload.data.player_token, None);
+    }
+
+    #[test]
+    fn test_player_selected_answer_skip_none_fields() {
+        let payload = PlayerSelectedAnswer {
+            game_id: "g789".to_string(),
+            data: PlayerSelectedAnswerData {
+                answer_key: Some(0),
+                answer_keys: None,
+                answer_text: None,
+                client_message_id: None,
+                player_token: None,
+            },
+        };
+
+        let json_str = serde_json::to_string(&payload).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+        assert!(json["data"]["answerKey"].is_number());
+        assert!(!json["data"].as_object().unwrap().contains_key("answerKeys"));
+        assert!(!json["data"].as_object().unwrap().contains_key("answerText"));
+        assert!(!json["data"].as_object().unwrap().contains_key("clientMessageId"));
+        assert!(!json["data"].as_object().unwrap().contains_key("playerToken"));
     }
 }

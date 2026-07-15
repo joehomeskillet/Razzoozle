@@ -558,6 +558,11 @@ export interface ClientToServerEvents {
       // Low-latency mode: per-tap dedup id. OPTIONAL — server treats a missing
       // id as today (dedup by player+question only).
       clientMessageId?: string
+      // SEC-04 — Server-minted per-player secret (aus SUCCESS_JOIN, localStorage
+      // `player_token:${gameId}`). Server verlangt exakten Match für JEDE Antwort,
+      // sobald der Spieler ein Token besitzt (alle regulär gejointen Spieler);
+      // OPTIONAL nur für Legacy-Spieler ohne Token (Snapshot-Restores von vor SEC-04).
+      playerToken?: string
     }>,
   ) => void
 
