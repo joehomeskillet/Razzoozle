@@ -36,10 +36,24 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 // W0-A3: Require authentication to create a game; get owner_user_id from session
-                let owner_user_id = match ctx.require_user().await {
-                    Some(user) => Some(user.user_id),
-                    None => None,
+                // SEC-03 (User-Policy): only authenticated hosts, fail-closed.
+                let user = match ctx.require_user().await {
+                    Some(u) => u,
+                    None => {
+                        tracing::warn!("game:create denied: unauthenticated (client_id={})", ctx.client_id);
+                        socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
+                        return;
+                    }
                 };
+
+                // SEC-03: per-user create limit (10/h) — Cap not exhaustible from one source.
+                if !crate::http::RATE_LIMITER.check_game_create_rate(&format!("user:{}", user.user_id)) {
+                    tracing::warn!("game:create denied: rate limit (user_id={})", user.user_id);
+                    socket.emit(constants::game::ERROR_MESSAGE, "errors:game.serverBusy").ok();
+                    return;
+                }
+
+                let owner_user_id = Some(user.user_id);
 
                 // Read global config for availability gates
                 let (team_mode_avail, low_latency_enabled, _, randomize_answers, scoring_mode_avail,
