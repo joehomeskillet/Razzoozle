@@ -1,421 +1,397 @@
+/**
+ * e2e/stagehand/mp-loop.spec.ts — Multiplayer game loop (E2E All Types).
+ *
+ * Run directly: `npx tsx e2e/stagehand/mp-loop.spec.ts` (per stagehand/README.md
+ * — this is a plain script, not a Playwright Test / Jest suite; the installed
+ * @browserbasehq/stagehand v3 SDK exposes its own CDP-based Page/Locator, not
+ * Playwright's, and there is no `@playwright/test` dependency in e2e/).
+ */
 import { Stagehand } from '@browserbasehq/stagehand';
+import type { Page } from '@browserbasehq/stagehand/lib/v3/understudy/page.js';
 import { z } from 'zod';
 import { newStagehand } from './config';
+import quizFixture from '../fixtures/all-types-quiz.json';
 
 const BASE_URL = 'https://rust.razzoozle.xyz';
-const E2E_PASSWORD = process.env.E2E_PW || 'notset';
 
-// Schema to extract PIN from manager's game start screen
+type FixtureQuestion = (typeof quizFixture.questions)[number];
+
+// E2E_PW has no fallback — a missing env var must fail loudly at login time,
+// not silently attempt a bogus 'notset' credential (SH1 review finding).
+function requireE2EPassword(): string {
+  const pw = process.env.E2E_PW;
+  if (!pw) {
+    throw new Error('E2E_PW environment variable is required for manager login.');
+  }
+  return pw;
+}
+
 const PinSchema = z.object({
   pin: z.string().regex(/^\d{6}$/, 'PIN must be 6 digits'),
 });
 
-// Schema to extract question type from current screen
-const QuestionSchema = z.object({
-  questionType: z.enum([
-    'multiple-choice',
-    'single-choice',
-    'true-false',
-    'text-answer',
-    'word-order',
-    'matching',
-    'wortarten',
-    'drag-drop',
-    'math',
-  ]),
-});
+// ── Stagehand Page/Locator helpers ──────────────────────────────────────────
+// stagehand.page does not exist on v3 — the active page is
+// stagehand.context.activePage(). Its Locator has no getByTestId/getByRole/
+// filter/or/waitFor/evaluate; only click/fill/type/isVisible/innerText/first/
+// nth/count on a raw CSS selector. These helpers wrap the real API.
 
-describe('Multiplayer Game Loop (E2E All Types)', () => {
-  let managerStagehand: Stagehand;
-  let playerStagehand: Stagehand;
+const testIdSel = (id: string) => `[data-testid="${id}"]`;
+const testIdPrefixSel = (prefix: string) => `[data-testid^="${prefix}"]`;
 
-  beforeEach(async () => {
-    // Create two separate Stagehand instances for manager and player
-    managerStagehand = newStagehand();
-    playerStagehand = newStagehand();
-
-    await managerStagehand.init();
-    await playerStagehand.init();
+async function waitForTestId(
+  page: Page,
+  id: string,
+  opts?: { state?: 'visible' | 'hidden' | 'attached' | 'detached'; timeout?: number },
+) {
+  await page.waitForSelector(testIdSel(id), {
+    state: opts?.state ?? 'visible',
+    timeout: opts?.timeout ?? 15_000,
   });
+}
 
-  afterEach(async () => {
-    // Clean close both browsers
-    if (managerStagehand) {
-      await managerStagehand.close();
-    }
-    if (playerStagehand) {
-      await playerStagehand.close();
-    }
+/** Same as waitForTestId, but for dynamic testids like `quizz-row-${id}` where
+    only the static prefix is known ahead of time. */
+async function waitForTestIdPrefix(
+  page: Page,
+  prefix: string,
+  opts?: { state?: 'visible' | 'hidden' | 'attached' | 'detached'; timeout?: number },
+) {
+  await page.waitForSelector(testIdPrefixSel(prefix), {
+    state: opts?.state ?? 'visible',
+    timeout: opts?.timeout ?? 15_000,
   });
+}
 
-  it('should complete full MP game loop with both players answering all 9 question types', async () => {
+async function isTestIdVisible(page: Page, id: string): Promise<boolean> {
+  return page.locator(testIdSel(id)).isVisible().catch(() => false);
+}
+
+async function isDisabledSelector(page: Page, selector: string): Promise<boolean | null> {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel) as (HTMLButtonElement | HTMLInputElement | null);
+    return el ? el.disabled : null;
+  }, selector);
+}
+
+async function waitForDisabledTestId(page: Page, id: string, timeoutMs = 15_000) {
+  const selector = testIdSel(id);
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const disabled = await isDisabledSelector(page, selector);
+    if (disabled === true) {
+      return;
+    }
+    await page.waitForTimeout(200);
+  }
+  throw new Error(`Timed out waiting for "${selector}" to become disabled (submit never registered)`);
+}
+
+async function clickByPrefixAndText(page: Page, prefix: string, text: string) {
+  const candidates = page.locator(testIdPrefixSel(prefix));
+  const n = await candidates.count();
+  for (let i = 0; i < n; i++) {
+    const el = candidates.nth(i);
+    if ((await el.innerText()).trim() === text) {
+      await el.click();
+      return;
+    }
+  }
+  throw new Error(`No element matching data-testid^="${prefix}" with text "${text}" (checked ${n} candidates)`);
+}
+
+/** Set a range/slider input's value the React-safe way (native value setter +
+    dispatched input/change), since a plain `.fill()` on a controlled React
+    range input does not reliably trigger onChange. */
+async function setRangeValue(page: Page, selector: string, value: number) {
+  await page.evaluate(
+    ({ sel, v }) => {
+      const el = document.querySelector(sel) as HTMLInputElement | null;
+      if (!el) {
+        throw new Error(`setRangeValue: no element for "${sel}"`);
+      }
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setter ? setter.call(el, String(v)) : (el.value = String(v));
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    { sel: selector, v: value },
+  );
+}
+
+async function bodyContainsText(page: Page, text: string): Promise<boolean> {
+  const bodyText = await page.locator('body').innerText();
+  return bodyText.includes(text);
+}
+
+// ── Real testid-driven answer strategies (Answers.tsx contract) ────────────
+// waitForAnswerControl() is called before every one of these, so a `click()`
+// that finds nothing throws immediately instead of silently no-op'ing.
+
+async function answerChoiceLike(page: Page, index: number) {
+  await page.locator(testIdSel(`answer-btn-${index}`)).click();
+}
+
+async function answerMultipleSelect(page: Page, indices: number[]) {
+  for (const i of indices) {
+    await page.locator(testIdSel(`answer-btn-${i}`)).click();
+  }
+  await page.locator(testIdSel('multi-select-submit')).click();
+  await waitForDisabledTestId(page, 'multi-select-submit');
+}
+
+async function answerSlider(page: Page, value: number) {
+  await setRangeValue(page, testIdSel('slider-input'), value);
+  await page.locator(testIdSel('slider-submit')).click();
+  await waitForDisabledTestId(page, 'slider-submit');
+}
+
+async function answerTypeAnswer(page: Page, text: string) {
+  await page.locator(testIdSel('type-answer-input')).fill(text);
+  await page.locator(testIdSel('type-answer-submit')).click();
+  await waitForDisabledTestId(page, 'type-answer-submit');
+}
+
+async function answerSentenceBuilder(page: Page, words: string[]) {
+  for (const word of words) {
+    await clickByPrefixAndText(page, 'sentence-chunk-', word);
+  }
+  await page.locator(testIdSel('sentence-submit')).click();
+  await waitForDisabledTestId(page, 'sentence-submit');
+}
+
+async function answerMathematik(page: Page, value: number) {
+  await page.locator(testIdSel('mathematik-input')).fill(String(value));
+  await page.locator(testIdSel('mathematik-submit')).click();
+  await waitForDisabledTestId(page, 'mathematik-submit');
+}
+
+// tokens/posSet/solutions come straight from the fixture: solutions[i] is the
+// posSet index for tokens[i]. This fixture has no disabledTokens (see the
+// per-token disabled assertion in the main loop below).
+async function answerWortarten(page: Page, solutions: number[], posSet: string[]) {
+  for (let i = 0; i < solutions.length; i++) {
+    const posLabel = posSet[solutions[i]];
+    await page.locator(testIdSel(`wortarten-token-${i}`)).click();
+    await page.locator(testIdSel(`wortarten-pos-${i}-${posLabel}`)).click();
+  }
+  await page.locator(testIdSel('wortarten-submit')).click();
+  await waitForDisabledTestId(page, 'wortarten-submit');
+}
+
+/** Submit the fixture-correct answer for one question. Type is read directly
+    from the fixture object (not sniffed from the DOM/AI), so there is no
+    fallback-to-wrong-type failure mode. */
+async function answerFixtureQuestion(page: Page, q: FixtureQuestion) {
+  switch (q.type) {
+    case 'choice':
+    case 'boolean':
+      await answerChoiceLike(page, q.solutions![0]);
+      return;
+    case 'poll':
+      // No solutions on a poll — any option is a valid vote.
+      await answerChoiceLike(page, 0);
+      return;
+    case 'slider':
+      await answerSlider(page, q.correct!);
+      return;
+    case 'multiple-select':
+      await answerMultipleSelect(page, q.solutions!);
+      return;
+    case 'type-answer':
+      await answerTypeAnswer(page, q.acceptedAnswers![0]);
+      return;
+    case 'sentence-builder':
+      await answerSentenceBuilder(page, q.chunks!);
+      return;
+    case 'mathematik':
+      await answerMathematik(page, q.correct!);
+      return;
+    case 'wortarten':
+      await answerWortarten(page, q.solutions!, q.posSet!);
+      return;
+    default:
+      // The fixture's `type` field is a plain `string` after JSON import (no
+      // discriminated-union narrowing), so this default is reachable at the
+      // type level even though every real fixture value is handled above.
+      throw new Error(`Unknown fixture question type: ${JSON.stringify(q)}`);
+  }
+}
+
+function answerControlTestId(type: FixtureQuestion['type']): string {
+  switch (type) {
+    case 'slider':
+      return 'slider-input';
+    case 'type-answer':
+      return 'type-answer-input';
+    case 'sentence-builder':
+      return 'sentence-chunk-0';
+    case 'mathematik':
+      return 'mathematik-input';
+    case 'wortarten':
+      return 'wortarten-token-0';
+    default:
+      return 'answer-btn-0';
+  }
+}
+
+/** Manager-only state advance: click next-btn (host-exclusive control) while a
+    recognized safe intermediate screen (responses/round-recap/leaderboard) is
+    showing, until the target becomes true on the player's page. Mirrors the
+    proven advanceToState pattern in e2e/answer-flow.spec.ts. */
+async function advanceManagerUntil(
+  managerPage: Page,
+  targetVisible: () => Promise<boolean>,
+  maxSteps = 8,
+) {
+  for (let step = 0; step < maxSteps; step++) {
+    if (await targetVisible()) {
+      return;
+    }
+    const safeState =
+      (await isTestIdVisible(managerPage, 'responses-view')) ||
+      (await isTestIdVisible(managerPage, 'round-recap')) ||
+      (await managerPage.locator(testIdPrefixSel('leaderboard-row-')).first().isVisible().catch(() => false));
+    if (safeState) {
+      await managerPage.locator(testIdSel('next-btn')).click();
+    }
+    await managerPage.waitForTimeout(1_500);
+  }
+  if (!(await targetVisible())) {
+    throw new Error('advanceManagerUntil: target state never became visible within the retry budget');
+  }
+}
+
+async function runMpGameLoop() {
+  const password = requireE2EPassword();
+
+  const managerStagehand: Stagehand = newStagehand();
+  const playerStagehand: Stagehand = newStagehand();
+  await managerStagehand.init();
+  await playerStagehand.init();
+
+  const managerPage = managerStagehand.context.activePage();
+  const playerPage = playerStagehand.context.activePage();
+  if (!managerPage || !playerPage) {
+    throw new Error('Stagehand did not produce an active page after init()');
+  }
+
+  try {
     // ============ MANAGER: LOGIN ============
-    await managerStagehand.page.goto(`${BASE_URL}/manager`);
+    await managerPage.goto(`${BASE_URL}/manager`);
+    await waitForTestId(managerPage, 'login-password');
 
-    // Wait for login form and enter password
-    const loginPasswordField = managerStagehand.page.locator('[data-testid="login-password"]');
-    await loginPasswordField.waitFor({ state: 'visible' });
+    // %password% is substituted server-side by Stagehand's variables mechanism
+    // so the real secret never appears in the instruction text/logs.
+    await managerStagehand.act('Enter %password% into the password field and click the login button', {
+      variables: { password },
+    });
+    // Post-condition: the quiz list only renders once auth succeeded.
+    // Testid is dynamic (`quizz-row-${id}`), so we wait on the static prefix.
+    await waitForTestIdPrefix(managerPage, 'quizz-row-');
 
-    await managerStagehand.act(
-      'Enter the password from the environment variable and click login button',
-      async (page) => {
-        const input = page.locator('[data-testid="login-password"]');
-        await input.click();
-        await input.fill(E2E_PASSWORD);
+    // ============ MANAGER: OPEN + START "E2E All Types" QUIZ ============
+    await clickByPrefixAndText(managerPage, 'quizz-row-', quizFixture.subject);
+    await waitForTestId(managerPage, 'quizz-start-btn');
 
-        // Look for login button and click it
-        const loginBtn = page.locator('button:has-text("Login"), button:has-text("Anmelden")');
-        await loginBtn.first().click();
-      }
+    await managerPage.locator(testIdSel('quizz-start-btn')).click();
+    // Post-condition: the PIN only renders once the game session actually exists.
+    await waitForTestId(managerPage, 'game-pin');
+
+    // extract(instruction, schema) resolves to the schema-inferred value
+    // directly (unlike act()'s {success, message} ActResult) — it throws on a
+    // schema/extraction failure, which is the loud-failure behaviour we want.
+    const { pin: gamePin } = await managerStagehand.extract(
+      'Locate the 6-digit PIN code displayed on the screen for players to join.',
+      PinSchema,
     );
 
-    // Verify we're in manager dashboard
-    await managerStagehand.page.waitForURL(`${BASE_URL}/manager/config`, { timeout: 10000 });
+    // ============ PLAYER: JOIN WITH PIN ============
+    await playerPage.goto(BASE_URL);
+    await waitForTestId(playerPage, 'pin-input-digit-0');
 
-    // ============ MANAGER: START GAME WITH E2E ALL TYPES QUIZ ============
-    await managerStagehand.act(
-      'Find and click on the "E2E All Types" quiz to open it, then click start game button',
-      async (page) => {
-        // Navigate to quizzes view if needed
-        const quizzLink = page.locator('a:has-text("E2E All Types")').first();
-        if (await quizzLink.isVisible()) {
-          await quizzLink.click();
+    await playerPage.locator(testIdSel('pin-input-digit-0')).click();
+    await playerPage.type(gamePin);
+    await playerPage.locator(testIdSel('join-submit')).click();
+    // Post-condition: a valid PIN moves us from the PIN screen to the username screen.
+    await waitForTestId(playerPage, 'username-input');
+
+    await playerPage.locator(testIdSel('username-input')).fill('SH-Player');
+    await playerPage.locator(testIdSel('join-submit')).click();
+    // Post-condition: username accepted → waiting room.
+    await waitForTestId(playerPage, 'waiting-room');
+
+    // ============ MANAGER: START GAME (leave lobby) ============
+    // next-btn is host-exclusive (GameWrapper gates it on `manager &&`) — the
+    // player never has a "next" control and must not be driven through one.
+    await waitForTestId(managerPage, 'next-btn');
+    await managerPage.locator(testIdSel('next-btn')).click();
+
+    // ============ QUESTIONS: 9 REAL FIXTURE TYPES, IN FIXTURE ORDER ============
+    const questions = quizFixture.questions;
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const controlId = answerControlTestId(q.type);
+
+      await playerPage.waitForSelector(testIdSel(controlId), { state: 'visible', timeout: 45_000 });
+
+      // Question text must match the fixture verbatim — a real assertion,
+      // not an informational log.
+      const questionText = await playerPage.locator(testIdSel('question-text')).first().innerText();
+      if (!questionText.includes(q.question)) {
+        throw new Error(
+          `Q${i + 1} (${q.type}): expected question text to include "${q.question}", got "${questionText}"`,
+        );
+      }
+
+      // Wortarten: the fixture carries no `disabledTokens`, so every token
+      // must be enabled — assert that ground truth instead of the informational
+      // "token 0 disabled?" check the original spec logged and never enforced.
+      if (q.type === 'wortarten') {
+        for (let t = 0; t < q.tokens!.length; t++) {
+          const disabled = await isDisabledSelector(playerPage, testIdSel(`wortarten-token-${t}`));
+          if (disabled) {
+            throw new Error(`Q${i + 1} wortarten: token ${t} ("${q.tokens![t]}") is unexpectedly disabled`);
+          }
         }
-        // Click start game button
-        const startBtn = page.locator('button:has-text("Start"), button:has-text("Spiel starten")');
-        await startBtn.first().click();
       }
-    );
 
-    // Extract PIN from the manager's screen
-    const pinResult = await managerStagehand.extract(
-      'Locate the PIN code displayed on the screen for players to join. It should be a 6-digit number.',
-      PinSchema
-    );
+      // Only the player answers — the manager is host-only in this topology
+      // (every MP e2e helper in this repo has the host observe and advance
+      // state, never submit an answer itself).
+      await answerFixtureQuestion(playerPage, q);
 
-    if (!pinResult.success) {
-      throw new Error(`Failed to extract PIN: ${pinResult.error}`);
+      const isLast = i === questions.length - 1;
+      const nextQ = isLast ? null : questions[i + 1];
+
+      await advanceManagerUntil(managerPage, async () => {
+        if (isLast) {
+          return isTestIdVisible(playerPage, 'podium');
+        }
+        return isTestIdVisible(playerPage, answerControlTestId(nextQ!.type));
+      });
     }
 
-    const gamePin = pinResult.data.pin;
-    console.log(`Manager started game with PIN: ${gamePin}`);
+    // ============ PODIUM: real assertions, not informational logs ============
+    await waitForTestId(playerPage, 'podium');
+    await waitForTestId(managerPage, 'podium');
 
-    // ============ PLAYER: NAVIGATE TO JOIN PAGE ============
-    await playerStagehand.page.goto(`${BASE_URL}`);
-
-    // Wait for start page and PIN input field
-    await playerStagehand.page.waitForURL(/.*/, { timeout: 10000 });
-
-    // ============ PLAYER: ENTER PIN AND JOIN ============
-    await playerStagehand.act(
-      'Find the PIN input field and enter the 6-digit PIN, then click join button',
-      async (page) => {
-        const pinInput = page.locator('input[type="text"], input[placeholder*="PIN"], input[data-testid*="pin"]').first();
-        await pinInput.click();
-        await pinInput.fill(gamePin);
-
-        // Find and click join button
-        const joinBtn = page.locator('button:has-text("Join"), button:has-text("Beitreten")');
-        await joinBtn.first().click();
-      }
-    );
-
-    // ============ PLAYER: ENTER NAME ============
-    await playerStagehand.act(
-      'Enter the player name "SH-Player" in the name input field',
-      async (page) => {
-        const nameInput = page.locator('input[type="text"], input[placeholder*="name"], input[data-testid*="player-name"]').first();
-        await nameInput.click();
-        await nameInput.fill('SH-Player');
-
-        // Find and click ready/confirm button
-        const readyBtn = page.locator('button:has-text("Ready"), button:has-text("Bereit"), button:has-text("Starten")').first();
-        await readyBtn.click();
-      }
-    );
-
-    // Wait for both players to be ready
-    await playerStagehand.page.waitForFunction(
-      () => document.body.innerText.includes('Game starting') || document.body.innerText.includes('Spiel startet'),
-      { timeout: 15000 }
-    );
-
-    // ============ QUESTIONS: 9 QUESTION TYPES ============
-    // Question types: multiple-choice, single-choice, true-false, text-answer, word-order, matching, wortarten, drag-drop, math
-
-    const questionStrategies: Record<string, (sh: Stagehand) => Promise<void>> = {
-      'multiple-choice': async (sh) => {
-        await sh.act(
-          'Select one option from multiple-choice and click submit',
-          async (page) => {
-            const options = page.locator('[data-testid*="option"], label:has-text("A"), label:has-text("B")').first();
-            if (await options.isVisible()) {
-              await options.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'single-choice': async (sh) => {
-        await sh.act(
-          'Select one radio button option and click submit',
-          async (page) => {
-            const radio = page.locator('input[type="radio"]').first();
-            if (await radio.isVisible()) {
-              await radio.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'true-false': async (sh) => {
-        await sh.act(
-          'Click true or false button and submit',
-          async (page) => {
-            const trueBtn = page.locator('button:has-text("True"), button:has-text("Wahr")').first();
-            if (await trueBtn.isVisible()) {
-              await trueBtn.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'text-answer': async (sh) => {
-        await sh.act(
-          'Type an answer in the text input field and submit',
-          async (page) => {
-            const textInput = page.locator('input[type="text"], textarea').first();
-            if (await textInput.isVisible()) {
-              await textInput.click();
-              await textInput.fill('answer');
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'word-order': async (sh) => {
-        await sh.act(
-          'Drag and arrange words in correct order, then submit',
-          async (page) => {
-            const words = page.locator('[data-testid*="word"], .word-item').first();
-            if (await words.isVisible()) {
-              // Stagehand handles basic interactions; for complex drag, use position
-              await words.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'matching': async (sh) => {
-        await sh.act(
-          'Match items by clicking pairs and then submit',
-          async (page) => {
-            const item = page.locator('[data-testid*="match-item"], .match-option').first();
-            if (await item.isVisible()) {
-              await item.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'wortarten': async (sh) => {
-        await sh.act(
-          'Select word types for tokens. Verify token 0 is disabled. Select: Hund=Nomen, läuft=Verb, schnell=Adverb. Token 0 (Der) should be greyed out.',
-          async (page) => {
-            // Token 0 should be disabled (verify it's greyed out / not clickable)
-            const token0 = page.locator('[data-testid="wortarten-token-0"]');
-            if (await token0.isVisible()) {
-              const isDisabled = await token0.evaluate((el) => el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true' || el.classList.contains('disabled'));
-              if (!isDisabled) {
-                console.warn('Token 0 is not visibly disabled; may be a UI state issue');
-              }
-            }
-
-            // Tag active tokens: Token 1 (Hund) = Nomen, Token 2 (läuft) = Verb, Token 3 (schnell) = Adverb
-            const hund = page.locator('[data-testid="wortarten-token-1"]');
-            if (await hund.isVisible()) {
-              await hund.click();
-              // Select Nomen from the dropdown/menu that appears
-              const nomenOption = page.locator('button:has-text("Nomen"), [data-testid*="pos-Nomen"]');
-              if (await nomenOption.isVisible()) {
-                await nomenOption.first().click();
-              }
-            }
-
-            const lauft = page.locator('[data-testid="wortarten-token-2"]');
-            if (await lauft.isVisible()) {
-              await lauft.click();
-              const verbOption = page.locator('button:has-text("Verb"), [data-testid*="pos-Verb"]');
-              if (await verbOption.isVisible()) {
-                await verbOption.first().click();
-              }
-            }
-
-            const schnell = page.locator('[data-testid="wortarten-token-3"]');
-            if (await schnell.isVisible()) {
-              await schnell.click();
-              const adverbOption = page.locator('button:has-text("Adverb"), [data-testid*="pos-Adverb"]');
-              if (await adverbOption.isVisible()) {
-                await adverbOption.first().click();
-              }
-            }
-
-            // Submit
-            const submitBtn = page.locator('[data-testid="wortarten-submit"], button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'drag-drop': async (sh) => {
-        await sh.act(
-          'Drag and drop items into target zones and submit',
-          async (page) => {
-            const dragItem = page.locator('[data-testid*="drag"], .draggable').first();
-            if (await dragItem.isVisible()) {
-              await dragItem.click();
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-
-      'math': async (sh) => {
-        await sh.act(
-          'Answer the math question by typing a number and submit',
-          async (page) => {
-            const mathInput = page.locator('input[type="number"], input[type="text"]').first();
-            if (await mathInput.isVisible()) {
-              await mathInput.click();
-              await mathInput.fill('42');
-            }
-            const submitBtn = page.locator('button:has-text("Submit"), button:has-text("Absenden")').first();
-            await submitBtn.click();
-          }
-        );
-      },
-    };
-
-    // Answer 9 questions on both player and manager
-    for (let q = 0; q < 9; q++) {
-      console.log(`\nQuestion ${q + 1} of 9`);
-
-      // Wait for question to appear on player screen
-      await playerStagehand.page.waitForFunction(
-        () => document.body.innerText.includes('Question') || document.body.innerText.includes('Frage'),
-        { timeout: 15000 }
-      );
-
-      // Detect question type
-      let currentQuestionType = 'multiple-choice';
-      const questionTypeAttempt = await playerStagehand.extract(
-        'What is the type of question currently displayed? Look for visual indicators like radio buttons, checkboxes, draggable items, etc.',
-        QuestionSchema
-      );
-      if (questionTypeAttempt.success) {
-        currentQuestionType = questionTypeAttempt.data.questionType;
-      }
-
-      console.log(`Question type: ${currentQuestionType}`);
-
-      // Player answers question
-      const playerStrategy = questionStrategies[currentQuestionType];
-      if (playerStrategy) {
-        await playerStrategy(playerStagehand);
-      } else {
-        throw new Error(`No strategy for question type: ${currentQuestionType}`);
-      }
-
-      // Manager also answers the same question (different player, same quiz)
-      const managerStrategy = questionStrategies[currentQuestionType];
-      if (managerStrategy) {
-        await managerStrategy(managerStagehand);
-      }
-
-      // Wait for both to complete the question (move to next or reveal)
-      await playerStagehand.page.waitForFunction(
-        () => document.body.innerText.includes('Reveal') || document.body.innerText.includes('Next') || document.body.innerText.includes('Nächste'),
-        { timeout: 10000 }
-      );
-
-      // ============ REVEAL: Assert Correctness ============
-      if (currentQuestionType === 'wortarten') {
-        // Wortarten reveal: assert per-token coloring
-        await playerStagehand.page.waitForFunction(
-          () => {
-            const tokens = document.querySelectorAll('[data-testid*="wortarten-token"]');
-            return tokens.length > 0 && Array.from(tokens).some((t) => window.getComputedStyle(t).color !== '');
-          },
-          { timeout: 10000 }
-        );
-
-        // Assert token 0 is neutral/greyed
-        const token0Color = await playerStagehand.page.locator('[data-testid="wortarten-token-0"]').evaluate((el) => window.getComputedStyle(el).color);
-        console.log(`Token 0 color: ${token0Color}`);
-      } else if (currentQuestionType === 'math') {
-        // Math reveal: assert formatted correctAnswer is visible
-        await playerStagehand.page.waitForFunction(
-          () => document.body.innerText.includes('Correct') || document.body.innerText.includes('Richtig') || document.body.innerText.match(/Answer:\s*\d+/i),
-          { timeout: 10000 }
-        );
-        console.log('Math answer revealed on screen');
-      }
-
-      // Click next or continue button
-      await playerStagehand.act(
-        'Click the next or continue button to move to the next question',
-        async (page) => {
-          const nextBtn = page.locator('button:has-text("Next"), button:has-text("Weiter"), button:has-text("Continue")').first();
-          await nextBtn.click();
-        }
-      );
-
-      await managerStagehand.act(
-        'Click the next or continue button to move to the next question',
-        async (page) => {
-          const nextBtn = page.locator('button:has-text("Next"), button:has-text("Weiter"), button:has-text("Continue")').first();
-          await nextBtn.click();
-        }
-      );
+    if (!(await bodyContainsText(playerPage, 'SH-Player'))) {
+      throw new Error('Expected "SH-Player" to be visible on the podium');
     }
 
-    // ============ PODIUM: Verify Both Players Listed ============
-    // Wait for podium/results screen to appear
-    await playerStagehand.page.waitForFunction(
-      () => document.body.innerText.includes('Podium') || document.body.innerText.includes('Results') || document.body.innerText.includes('Platzierung'),
-      { timeout: 15000 }
-    );
+    console.log('MP game loop passed: all 9 fixture question types, podium reached.');
+  } finally {
+    await managerStagehand.close();
+    await playerStagehand.close();
+  }
+}
 
-    // Assert podium is visible and contains player names
-    const podiumVisible = await playerStagehand.page.locator('text=Podium, text=Platzierung, text=Results').first().isVisible().catch(() => false);
-    if (!podiumVisible) {
-      console.log('Podium screen text not directly located; checking for player names in DOM');
-    }
-
-    // Verify manager appears on podium
-    const managerFound = await playerStagehand.page.getByText('Manager', { exact: false }).isVisible().catch(() => false);
-    console.log(`Manager listed on podium: ${managerFound}`);
-
-    // Verify player appears on podium
-    const playerFound = await playerStagehand.page.getByText('SH-Player').isVisible();
-    console.assert(playerFound, 'SH-Player should be visible on podium');
-    console.log(`Player "SH-Player" listed on podium: ${playerFound}`);
-
-    // ============ CLEANUP: Both instances close cleanly ============
-    console.log('Both players reached podium. Closing browsers...');
-    // afterEach handles close
-  });
-});
+runMpGameLoop().then(
+  () => process.exit(0),
+  (err) => {
+    console.error('MP game loop failed:', err);
+    process.exit(1);
+  },
+);
