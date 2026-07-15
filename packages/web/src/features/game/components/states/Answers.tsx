@@ -148,6 +148,8 @@ const Answers = ({
   // Arm the ack-pending hint timer. Sets up refs for latency tracking and arms
   // a timeout to show "wird gesendet…" if no ack lands within the window.
   const armAckPending = (clientMessageId: string | undefined) => {
+    if (!lowLatency) return
+
     pendingMessageIdRef.current = clientMessageId ?? null
     pendingSentAtRef.current = monoNow()
     setAckPending(false)
