@@ -4,7 +4,13 @@ import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
-import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
+import { buildWortartenAnswer } from "@razzoozle/web/features/game/components/answers/buildWortartenAnswer"
+import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGrid"
+import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
+import MultiSelectGrid from "@razzoozle/web/features/game/components/answers/MultiSelectGrid"
+import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
+import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
+import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
@@ -18,7 +24,6 @@ import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import {
   ANSWER_TILE_SURFACE,
   ANSWERS_COLORS,
-  ANSWERS_LABELS,
 } from "@razzoozle/web/features/game/utils/answers"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { hapticTap } from "@razzoozle/web/features/game/utils/haptics"
@@ -285,18 +290,6 @@ const Answers = ({
     armAckPending(clientMessageId)
   }
 
-  // Multiple-select: tap toggles a key in the local set. No emit until Submit.
-  const handleMultiAnswer = (key: number) => () => {
-    if (submitted) {
-      return
-    }
-
-    setMultiSelectedKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    )
-    sfxPop()
-  }
-
   // Multiple-select: explicit submit of the toggled set. Sends the sentinel
   // answerKey: -1 plus the selected keys; the server scores the set all-or-nothing.
   const submitMultiSelect = () => {
@@ -375,23 +368,6 @@ const Answers = ({
     armAckPending(clientMessageId)
   }
 
-  // Wortarten: tapping a POS option assigns it to that token and closes the
-  // picker. No emit until Submit (mirrors multi-select's toggle-then-submit).
-  const handleSelectPos = (tokenIndex: number, pos: string) => () => {
-    if (submitted) {
-      return
-    }
-
-    setWortartenChoices((prev) => {
-      const next = [...prev]
-      next[tokenIndex] = pos
-      return next
-    })
-    setOpenTokenIndex(null)
-    sfxPop()
-    hapticTap()
-  }
-
   // Wortarten: submit with full answer array (disabled tokens get "" placeholders).
   // Check completeness only for active (non-disabled) tokens.
   const submitWortarten = () => {
@@ -416,10 +392,8 @@ const Answers = ({
     const clientMessageId = lowLatency ? uuid() : undefined
 
     // Build the full answer array: active tokens get their chosen label,
-    // disabled tokens get "" as placeholder.
-    const answerArray = wortartenChoices.map((choice, idx) =>
-      isTokenDisabled(idx) ? "" : (choice ?? "")
-    )
+    // disabled tokens get "" as placeholder (W2-10 shared builder).
+    const answerArray = buildWortartenAnswer(wortartenChoices, disabledTokens)
 
     setSubmitted(true)
     sfxPop()
@@ -597,11 +571,6 @@ const Answers = ({
   // pop is fine here (not the per-tap hot path).
   const answerLockedIn = choiceLocked || submitted
 
-  // Render order: display displayOrder permutation if present, otherwise canonical.
-  // SAFETY: all tile references (colors, labels, handler keys) use the canonical
-  // index key, not the visual position.
-  const renderOrder = displayOrder ?? answers?.map((_, i) => i) ?? []
-
   return (
     <div className="flex min-h-full flex-1 flex-col justify-between">
       <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
@@ -666,175 +635,47 @@ const Answers = ({
         </div>
 
         {isTypeAnswer ? (
-          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
-            <input
-              data-testid="type-answer-input"
-              type="text"
-              maxLength={200}
-              value={textAnswer}
-              onChange={(e) => setTextAnswer(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  submitTextAnswer()
-                }
-              }}
-              disabled={submitted}
-              placeholder={t("game:typeAnswerPlaceholder")}
-              aria-label={t("game:typeAnswerPlaceholder")}
-              autoFocus
-              autoComplete="off"
-              autoCorrect="off"
-              className={clsx(
-                ANSWER_TILE_SURFACE,
-                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
-              )}
-            />
-            <button
-              data-testid="type-answer-submit"
-              type="button"
-              onClick={submitTextAnswer}
-              disabled={submitted || textAnswer.trim().length === 0}
-              className={clsx(
-                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {t("game:submitAnswer")}
-            </button>
-          </div>
+          <TypeAnswerInput
+            value={textAnswer}
+            onChange={setTextAnswer}
+            onSubmit={submitTextAnswer}
+            disabled={submitted}
+            testIdPrefix=""
+          />
         ) : isMathematik ? (
-          <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
-            <input
-              data-testid="mathematik-input"
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              value={mathematikAnswer}
-              onChange={(e) => {
-                let val = e.target.value
-                // Accept both comma and point, display with point
-                val = val.replace(',', '.')
-                setMathematikAnswer(val)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  submitMathematikAnswer()
-                }
-              }}
-              disabled={submitted}
-              placeholder={t("game:typeAnswerPlaceholder")}
-              aria-label="Numeric answer"
-              autoFocus
-              className={clsx(
-                ANSWER_TILE_SURFACE,
-                "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
-              )}
-            />
-            <button
-              data-testid="mathematik-submit"
-              type="button"
-              onClick={submitMathematikAnswer}
-              disabled={submitted || mathematikAnswer.trim().length === 0}
-              className={clsx(
-                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {t("game:submitAnswer")}
-            </button>
-          </div>
+          <MathematikInput
+            value={mathematikAnswer}
+            onChange={setMathematikAnswer}
+            onSubmit={submitMathematikAnswer}
+            disabled={submitted}
+            testIdPrefix=""
+          />
         ) : isWortarten ? (
-          <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">
-            {sentence && (
-              <p className="text-center text-lg font-semibold text-[color:var(--game-fg)]">
-                <Markdown>{sentence}</Markdown>
-              </p>
-            )}
-            <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
-              {t("quizz:wortarten.tapHint")}
-            </p>
-
-            <div className="flex flex-wrap items-start justify-center gap-2">
-              {(tokens ?? []).map((token, i) => {
-                const choice = wortartenChoices[i] ?? null
-                const isOpen = openTokenIndex === i
-                const isDisabled = isTokenDisabled(i)
-
-                return (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <button
-                      type="button"
-                      data-testid={`wortarten-token-${i}`}
-                      onClick={() =>
-                        !submitted && !isDisabled && setOpenTokenIndex(isOpen ? null : i)
-                      }
-                      disabled={submitted || isDisabled}
-                      aria-expanded={isOpen}
-                      aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
-                      className={clsx(
-                        ANSWER_TILE_SURFACE,
-                        "flex min-h-11 flex-col items-center gap-0.5 px-3 py-2 font-semibold text-[color:var(--game-fg)] disabled:opacity-50",
-                        !submitted && !isDisabled && PRESS_FEEDBACK,
-                        isDisabled && "opacity-40",
-                        choice && !isDisabled && "ring-2 ring-[var(--color-accent)]",
-                      )}
-                    >
-                      <span>{token}</span>
-                      {choice && (
-                        <span className="text-xs font-normal text-[color:var(--game-fg)]/60">
-                          {t(`quizz:wortarten.pos.${choice}`, choice)}
-                        </span>
-                      )}
-                    </button>
-
-                    {isOpen && !isDisabled && (
-                      <div
-                        className={clsx(
-                          ANSWER_TILE_SURFACE,
-                          "z-10 flex max-w-[16rem] flex-wrap justify-center gap-1 p-2",
-                        )}
-                      >
-                        {(posSet ?? []).map((pos) => (
-                          <button
-                            key={pos}
-                            type="button"
-                            data-testid={`wortarten-pos-${i}-${pos}`}
-                            onClick={handleSelectPos(i, pos)}
-                            className={clsx(
-                              ANSWER_TILE_SURFACE,
-                              "min-h-11 px-3 py-2 text-sm font-medium text-[color:var(--game-fg)]",
-                              PRESS_FEEDBACK,
-                            )}
-                          >
-                            {t(`quizz:wortarten.pos.${pos}`, pos)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            <button
-              data-testid="wortarten-submit"
-              type="button"
-              onClick={submitWortarten}
-              disabled={
-                submitted ||
-                wortartenChoices.length === 0 ||
-                wortartenChoices.some((choice, idx) =>
-                  !isTokenDisabled(idx) && choice === null
-                )
+          <WortartenPicker
+            value={{ choices: wortartenChoices, openTokenIndex }}
+            onChange={(next) => {
+              // The leaf passes the SAME `choices` reference back when only
+              // toggling which token's picker is open, and a NEW array when a
+              // POS was actually picked (see WortartenPicker's own
+              // handleSelectPos vs. token-tap). That's how we tell "a pick
+              // happened" apart from "just opened/closed a picker" without
+              // duplicating the leaf's internal logic here.
+              const picked = next.choices !== wortartenChoices
+              setWortartenChoices(next.choices)
+              setOpenTokenIndex(next.openTokenIndex)
+              if (picked) {
+                sfxPop()
+                hapticTap()
               }
-              className={clsx(
-                "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {t("game:submitAnswer")}
-            </button>
-          </div>
+            }}
+            onSubmit={submitWortarten}
+            disabled={submitted}
+            testIdPrefix=""
+            sentence={sentence}
+            tokens={tokens}
+            posSet={posSet}
+            disabledTokens={disabledTokens}
+          />
         ) : isSentenceBuilder ? (
           <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">
             <div className="flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]">
@@ -941,120 +782,42 @@ const Answers = ({
             </button>
           </div>
         ) : isMultiSelect ? (
-          <div className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-4 px-2 lg:max-w-[85vw]">
-            <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
-              {t("quizz:multipleSelect.selectHint")}
-            </p>
-            <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-              {renderOrder.map((key: number) => {
-                const answer = answers?.[key]
-                return (
-                  <AnswerButton
-                    data-testid={`answer-btn-${key}`}
-                    key={key}
-                    className={clsx(
-                      ANSWERS_COLORS[key],
-                      !submitted && PRESS_FEEDBACK,
-                      submitted && "opacity-50",
-                      multiSelectedKeys.includes(key) && "ring-4 ring-white/80",
-                    )}
-                    label={ANSWERS_LABELS[key]}
-                    disabled={submitted}
-                    onClick={handleMultiAnswer(key)}
-                  >
-                    <Markdown>{answer || ""}</Markdown>
-                  </AnswerButton>
-                )
-              })}
-            </div>
-            <button
-              data-testid="multi-select-submit"
-              type="button"
-              onClick={submitMultiSelect}
-              disabled={submitted || multiSelectedKeys.length === 0}
-              className={clsx(
-                "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {t("quizz:multipleSelect.submitButton")}
-            </button>
-          </div>
+          <MultiSelectGrid
+            value={multiSelectedKeys}
+            onChange={(next) => {
+              setMultiSelectedKeys(next)
+              sfxPop()
+            }}
+            onSubmit={submitMultiSelect}
+            disabled={submitted}
+            testIdPrefix=""
+            answers={answers ?? []}
+            displayOrder={displayOrder}
+          />
         ) : isSlider ? (
-          <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-            <div className="text-5xl font-bold text-[color:var(--game-fg)] lg:text-[clamp(3rem,8vh,8rem)]">
-              {sliderValue}
-              {unit ? ` ${unit}` : ""}
-            </div>
-            <input
-              data-testid="slider-input"
-              type="range"
-              min={min}
-              max={max}
-              step={step ?? 1}
-              value={sliderValue}
-              disabled={submitted}
-              onChange={(e) => setSliderValue(Number(e.target.value))}
-              aria-label={t("game:sliderAnswerLabel", {
-                defaultValue: "Answer value",
-              })}
-              aria-valuetext={`${sliderValue}${unit ? ` ${unit}` : ""}`}
-              className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--color-field-ink)]/5 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
-            />
-            <div className="flex w-full justify-between text-sm font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
-              <span>
-                {min}
-                {unit ? ` ${unit}` : ""}
-              </span>
-              <span>
-                {max}
-                {unit ? ` ${unit}` : ""}
-              </span>
-            </div>
-            <button
-              data-testid="slider-submit"
-              onClick={submitSlider}
-              disabled={submitted}
-              className={clsx(
-                "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                PRESS_FEEDBACK,
-              )}
-            >
-              {submitted ? t("game:slider.submitted") : t("game:slider.submit")}
-            </button>
-          </div>
+          <SliderInput
+            value={sliderValue}
+            onChange={setSliderValue}
+            onSubmit={submitSlider}
+            disabled={submitted}
+            min={min ?? 0}
+            max={max ?? 100}
+            step={step ?? 1}
+            unit={unit}
+            testIdPrefix=""
+          />
         ) : (
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-            {renderOrder.map((key: number) => {
-              const answer = answers?.[key]
-              return (
-                <AnswerButton
-                  data-testid={`answer-btn-${key}`}
-                  key={key}
-                  className={clsx(
-                    ANSWERS_COLORS[key],
-                    // Per-tap press feedback (CSS-only, reduced-motion-safe) while
-                    // the tile is still tappable. Once locked we drop it so the
-                    // dim/ring lock-in state below reads cleanly.
-                    !choiceLocked && PRESS_FEEDBACK,
-                    // Instant local feedback: dim the un-chosen buttons once a
-                    // choice is locked in (low-latency / resumed). Normal mode
-                    // never sets selectedKey/choiceLocked, so this is inert there.
-                    choiceLocked &&
-                      selectedKey !== null &&
-                      selectedKey !== key &&
-                      "opacity-40",
-                    choiceLocked && selectedKey === key && "ring-4 ring-white/80",
-                  )}
-                  label={ANSWERS_LABELS[key]}
-                  disabled={choiceLocked}
-                  onClick={handleAnswer(key)}
-                >
-                  <Markdown>{answer || ""}</Markdown>
-                </AnswerButton>
-              )
-            })}
-          </div>
+          <ChoiceGrid
+            value={selectedKey}
+            onChange={(key) => {
+              if (key !== null) handleAnswer(key)()
+            }}
+            onSubmit={() => {}}
+            disabled={choiceLocked}
+            testIdPrefix=""
+            answers={answers}
+            displayOrder={displayOrder}
+          />
         )}
       </div>
     </div>
