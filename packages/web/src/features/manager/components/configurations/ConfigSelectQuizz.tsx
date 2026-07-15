@@ -189,7 +189,7 @@ const ConfigSelectQuizz = () => {
             transition={
               reducedMotion ? undefined : { duration: 0.2, ease: "easeOut" }
             }
-            className="space-y-2 rounded-lg bg-gray-50 p-3"
+            className="space-y-2 rounded-lg bg-[var(--surface-2)] p-3"
           >
             {config.scoringMode !== undefined && (
               <ToggleField
@@ -234,7 +234,7 @@ const ConfigSelectQuizz = () => {
 
             {endScreenModesList.length > 1 && (
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-[var(--ink-muted)]">
                   {t("manager:gameMode.endScreenModes", {
                     defaultValue: "Endbildschirm",
                   })}
@@ -242,7 +242,7 @@ const ConfigSelectQuizz = () => {
                 <select
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>

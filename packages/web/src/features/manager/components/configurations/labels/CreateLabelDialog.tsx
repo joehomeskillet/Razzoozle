@@ -42,11 +42,11 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
         <Overlay className="fixed inset-0 z-40 bg-black/50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--border-hairline)] bg-white p-6 shadow-lg" role="alertdialog">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-lg font-semibold text-gray-900">
+            <Dialog.Title className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:labels.createTitle")}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-gray-600">
+              <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]">
                 <X className="size-5" />
               </button>
             </Dialog.Close>
@@ -54,7 +54,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div>
-              <label htmlFor="label-name" className="block text-sm font-medium text-gray-900">
+              <label htmlFor="label-name" className="block text-sm font-medium text-[var(--ink)]">
                 {t("manager:labels.namePlaceholder")}
               </label>
               <Input

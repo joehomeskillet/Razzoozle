@@ -54,7 +54,7 @@ const BackendPanel = () => {
 
   const HealthBadge = ({ isUp }: { isUp: boolean | null }) => {
     if (isUp === null) {
-      return <span className="text-xs text-gray-500">—</span>
+      return <span className="text-xs text-[var(--ink-subtle)]">—</span>
     }
     return (
       <div className="flex items-center gap-1">
@@ -103,7 +103,7 @@ const BackendPanel = () => {
 
         {/* Backend selector */}
         <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-[var(--ink-muted)]">
             {t("dev.backend.choice", { defaultValue: "Choose backend:" })}
           </p>
           <div className="space-y-1">

@@ -205,10 +205,10 @@ const ConfigUsers = () => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:users.title", { defaultValue: "Nutzerverwaltung" })}
         </h2>
-        <p className="mt-1 text-sm leading-6 text-gray-500">
+        <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
           {t("manager:users.intro", {
             defaultValue: "Lehrkräfte-Konten anlegen, sperren und freigeben.",
           })}
@@ -230,7 +230,7 @@ const ConfigUsers = () => {
           <div className="min-w-40 flex-1">
             <label
               htmlFor="new-user-username"
-              className="mb-1 block text-xs font-semibold text-gray-500"
+              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
             >
               {t("manager:users.usernameLabel", {
                 defaultValue: "Benutzername",
@@ -249,7 +249,7 @@ const ConfigUsers = () => {
           <div className="min-w-40 flex-1">
             <label
               htmlFor="new-user-password"
-              className="mb-1 block text-xs font-semibold text-gray-500"
+              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
             >
               {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
             </label>
@@ -267,7 +267,7 @@ const ConfigUsers = () => {
           <div>
             <label
               htmlFor="new-user-role"
-              className="mb-1 block text-xs font-semibold text-gray-500"
+              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
             >
               {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
             </label>
@@ -327,7 +327,7 @@ const ConfigUsers = () => {
               title={user.username}
               meta={
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                  <span className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
                     {getRoleLabel(user.role)}
                   </span>
                   <span
@@ -380,7 +380,7 @@ const ConfigUsers = () => {
       {resetPasswordId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="rounded-lg bg-white p-6 shadow-lg">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            <h3 className="mb-4 text-lg font-semibold text-[var(--ink)]">
               {t("manager:users.resetPasswordTitle", {
                 defaultValue: "Passwort zurücksetzen",
               })}
@@ -388,7 +388,7 @@ const ConfigUsers = () => {
             <div className="mb-4">
               <label
                 htmlFor="reset-password-input"
-                className="mb-2 block text-sm font-semibold text-gray-700"
+                className="mb-2 block text-sm font-semibold text-[var(--ink-muted)]"
               >
                 {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
               </label>
@@ -413,7 +413,7 @@ const ConfigUsers = () => {
                   setResetNewPassword("")
                 }}
                 disabled={resettingPassword}
-                className="bg-gray-200 text-gray-900 hover:bg-gray-300"
+                className="bg-[var(--surface-4)] text-[var(--ink)] hover:bg-gray-300"
               >
                 {t("common:cancel", { defaultValue: "Abbrechen" })}
               </Button>

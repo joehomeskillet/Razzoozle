@@ -39,10 +39,10 @@ const RANGE_CLASS = [
   "h-11 w-full cursor-pointer appearance-none bg-transparent",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
   // WebKit / Blink track + thumb
-  "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200",
+  "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-[var(--surface-4)]",
   "[&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-primary)] [&::-webkit-slider-thumb]:shadow-sm",
   // Firefox / Gecko track + thumb
-  "[&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-gray-200",
+  "[&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-[var(--surface-4)]",
   "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-primary)] [&::-moz-range-thumb]:shadow-sm",
 ].join(" ")
 
@@ -111,7 +111,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
         `replayKey` re-triggers the reveal. Scoped to this box — never writes
         to the document root or the saved theme. */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-[var(--ink-subtle)]">
           {t("manager:theme.animation.previewLabel", {
             defaultValue: "Vorschau",
           })}
@@ -119,7 +119,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
         <button
           type="button"
           onClick={() => setReplayKey((k) => k + 1)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--color-primary)] outline-1 -outline-offset-1 outline-gray-200 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--color-primary)] outline-1 -outline-offset-1 outline-gray-200 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <RefreshCw className="size-4" aria-hidden />
           {t("manager:theme.animation.replay", { defaultValue: "Abspielen" })}
@@ -138,12 +138,12 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
             key={row}
             variants={reveal.item()}
             transition={reveal.spring}
-            className="flex min-h-11 items-center gap-3 rounded-lg bg-gray-50 px-3 outline-1 -outline-offset-1 outline-gray-200"
+            className="flex min-h-11 items-center gap-3 rounded-lg bg-[var(--surface-2)] px-3 outline-1 -outline-offset-1 outline-gray-200"
           >
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">
               {row}
             </span>
-            <span className="h-2 flex-1 rounded-full bg-gray-200" aria-hidden />
+            <span className="h-2 flex-1 rounded-full bg-[var(--surface-4)]" aria-hidden />
           </motion.li>
         ))}
       </motion.ul>

@@ -22,12 +22,12 @@ const AnimatedCssEditor = ({ value, onChange }: AnimatedCssEditorProps) => {
   return (
     <SubGroup>
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold text-gray-700">
+        <p className="text-sm font-semibold text-[var(--ink-muted)]">
           {t("manager:theme.animatedBg.css.title", {
             defaultValue: "CSS-Editor",
           })}
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[var(--ink-subtle)]">
           {t("manager:theme.animatedBg.css.description", {
             defaultValue:
               "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
