@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { Portal, Overlay } from "@radix-ui/react-dialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
-import { LABEL_PALETTE } from "@razzoozle/web/components/labels/labelPalette"
+import LabelColorPicker from "@razzoozle/web/components/labels/LabelColorPicker"
 import { X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -66,35 +66,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
                 autoFocus
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                {t("manager:labels.colorLabel")}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {LABEL_PALETTE.map((c) => {
-                  const colorLabel = t("manager:labels.colors." + c.slug, { defaultValue: c.label })
-                  return (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      onClick={() => setColor(c.slug)}
-                      className="flex min-h-11 min-w-11 items-center justify-center rounded-full"
-                      title={colorLabel}
-                      aria-label={colorLabel}
-                    >
-                      <span
-                        className="size-8 rounded-full border-2 transition-all"
-                        style={{
-                          backgroundColor: `var(--label-${c.slug})`,
-                          borderColor: color === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
-                          boxShadow: color === c.slug ? "0 0 0 2px white" : "none",
-                        }}
-                      />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <LabelColorPicker value={color} onChange={setColor} />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={handleClose}>
                 {t("common:cancel", { defaultValue: "Cancel" })}
