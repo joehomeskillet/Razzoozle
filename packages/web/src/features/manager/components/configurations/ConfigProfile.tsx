@@ -158,11 +158,11 @@ const ConfigProfile = () => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:profile.welcome", { defaultValue: "Willkommen" })}
           {username && `, ${username}`}
         </h2>
-        <p className="mt-1 text-sm leading-6 text-gray-500">
+        <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
           {t("manager:profile.intro", {
             defaultValue: "Dein Profil und deine persönlichen Einstellungen.",
           })}
@@ -182,7 +182,7 @@ const ConfigProfile = () => {
           <div>
             <label
               htmlFor="current-password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--ink-muted)]"
             >
               {t("manager:profile.changePassword.current", {
                 defaultValue: "Aktuelles Passwort",
@@ -205,7 +205,7 @@ const ConfigProfile = () => {
           <div>
             <label
               htmlFor="new-password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--ink-muted)]"
             >
               {t("manager:profile.changePassword.new", {
                 defaultValue: "Neues Passwort",
@@ -228,7 +228,7 @@ const ConfigProfile = () => {
           <div>
             <label
               htmlFor="confirm-password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--ink-muted)]"
             >
               {t("manager:profile.changePassword.confirm", {
                 defaultValue: "Passwort bestätigen",
@@ -298,7 +298,7 @@ const ConfigProfile = () => {
               return (
                 <SubGroup key={provider.id} className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-[var(--ink)]">
                       {provider.label}
                     </span>
                     <span

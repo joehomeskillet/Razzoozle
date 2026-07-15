@@ -31,10 +31,10 @@ const ConfigLabels = () => {
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">
             {t("manager:labels.title")}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-[var(--ink-medium)]">
             {t("manager:labels.description")}
           </p>
         </div>
@@ -74,7 +74,7 @@ const ConfigLabels = () => {
                     className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
                     style={{ backgroundColor: `var(--label-${label.color}, var(--label-gray))` }}
                   />
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-[var(--ink)]">
                     {label.name}
                   </span>
                 </div>
@@ -102,7 +102,7 @@ const ConfigLabels = () => {
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:labels.emptyState")}
           </p>
         </div>

@@ -91,7 +91,7 @@ const ConfigDisplay = () => {
         reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
       }
     >
-      <p className="text-sm leading-relaxed text-gray-600">
+      <p className="text-sm leading-relaxed text-[var(--ink-medium)]">
         {t("manager:satellite.description")}
       </p>
 
@@ -99,19 +99,19 @@ const ConfigDisplay = () => {
         {steps.map(({ icon: Icon, text, result }, i) => (
           <li
             key={i}
-            className="flex items-start gap-3 rounded-xl bg-gray-50 p-4 outline-2 -outline-offset-2 outline-gray-200"
+            className="flex items-start gap-3 rounded-xl bg-[var(--surface-2)] p-4 outline-2 -outline-offset-2 outline-gray-200"
           >
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-contrast)] text-sm font-bold text-white">
               {i + 1}
             </span>
             <Icon
-              className="mt-0.5 size-5 shrink-0 text-gray-400"
+              className="mt-0.5 size-5 shrink-0 text-[var(--ink-faint)]"
               aria-hidden
             />
             <div className="flex flex-col gap-1">
-              <span className="text-sm leading-snug text-gray-700">{text}</span>
+              <span className="text-sm leading-snug text-[var(--ink-muted)]">{text}</span>
               {result && (
-                <span className="text-xs leading-snug text-gray-500">
+                <span className="text-xs leading-snug text-[var(--ink-subtle)]">
                   {result}
                 </span>
               )}
@@ -130,7 +130,7 @@ const ConfigDisplay = () => {
       >
         <h3
           id="satellite-trouble-heading"
-          className="flex items-center gap-2 text-sm font-bold text-gray-700"
+          className="flex items-center gap-2 text-sm font-bold text-[var(--ink-muted)]"
         >
           <CircleHelp className="size-4 shrink-0 text-amber-500" aria-hidden />
           {t("manager:satellite.troubleTitle", {
@@ -141,13 +141,13 @@ const ConfigDisplay = () => {
           {troubleshooting.map(({ icon: Icon, text }, i) => (
             <li
               key={i}
-              className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 outline-2 -outline-offset-2 outline-gray-200"
+              className="flex items-start gap-3 rounded-xl bg-[var(--surface-2)] p-3 outline-2 -outline-offset-2 outline-gray-200"
             >
               <Icon
-                className="mt-0.5 size-4 shrink-0 text-gray-400"
+                className="mt-0.5 size-4 shrink-0 text-[var(--ink-faint)]"
                 aria-hidden
               />
-              <span className="text-xs leading-snug text-gray-600">{text}</span>
+              <span className="text-xs leading-snug text-[var(--ink-medium)]">{text}</span>
             </li>
           ))}
         </ul>

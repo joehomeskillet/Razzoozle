@@ -154,13 +154,13 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
           return (
             <li
               key={slot}
-              className="flex flex-col gap-2 rounded-xl bg-gray-50 p-3 outline-1 -outline-offset-1 outline-gray-200 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-gray-200 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-700">
+                <p className="truncate text-sm font-semibold text-[var(--ink-muted)]">
                   {t(`manager:theme.sounds.slots.${slot}`)}
                 </p>
-                <p className="text-xs font-medium text-gray-500">
+                <p className="text-xs font-medium text-[var(--ink-subtle)]">
                   {override
                     ? t("manager:theme.sounds.custom")
                     : t("manager:theme.sounds.default")}

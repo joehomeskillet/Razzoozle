@@ -342,7 +342,7 @@ const ConfigGameMode = () => {
               return (
                 <span
                   key={team}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-3)] px-3 py-1 text-sm font-semibold text-[var(--ink-muted)]"
                 >
                   <span
                     className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
@@ -443,7 +443,7 @@ const ConfigGameMode = () => {
               disabled={savingScoringMode}
               className="h-4 w-4"
             />
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-[var(--ink)]">
               {t("manager:gameMode.speedMode", {
                 defaultValue: "Geschwindigkeit",
               })}
@@ -459,7 +459,7 @@ const ConfigGameMode = () => {
               disabled={savingScoringMode}
               className="h-4 w-4"
             />
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-[var(--ink)]">
               {t("manager:gameMode.accuracyMode", {
                 defaultValue: "Genauigkeit",
               })}
@@ -502,7 +502,7 @@ const ConfigGameMode = () => {
       >
         <div className="space-y-2">
           <label className="block">
-            <span className="text-sm font-medium text-gray-900 block mb-1">
+            <span className="text-sm font-medium text-[var(--ink)] block mb-1">
               {t("manager:gameMode.endScreenModes", {
                 defaultValue: "Verfügbare Modi",
               })}
@@ -513,9 +513,9 @@ const ConfigGameMode = () => {
               onChange={(e) => handleEndScreenModesChange(e.target.value)}
               disabled={savingEndScreen}
               placeholder="full,top3,private"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-[var(--line)] rounded-md shadow-sm text-sm text-[var(--ink)] placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-[var(--ink-medium)] mt-1">
               {t("manager:gameMode.endScreenModesHint", {
                 defaultValue: "Kommagetrennt: full, top3, private",
               })}

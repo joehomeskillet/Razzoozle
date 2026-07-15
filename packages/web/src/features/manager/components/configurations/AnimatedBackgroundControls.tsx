@@ -95,10 +95,10 @@ const RANGE_CLASS = [
   "h-11 w-full cursor-pointer appearance-none bg-transparent",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
   // WebKit / Blink track + thumb
-  "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200",
+  "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-[var(--surface-4)]",
   "[&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-primary)] [&::-webkit-slider-thumb]:shadow-sm",
   // Firefox / Gecko track + thumb
-  "[&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-gray-200",
+  "[&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-[var(--surface-4)]",
   "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-primary)] [&::-moz-range-thumb]:shadow-sm",
 ].join(" ")
 
@@ -148,7 +148,7 @@ const AnimatedBackgroundControls = ({
         return (
           <SubGroup key={slot.key}>
             <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold text-gray-700">
+              <p className="text-sm font-semibold text-[var(--ink-muted)]">
                 {t(slot.labelKey, { defaultValue: slot.fallback })}
               </p>
 
@@ -180,7 +180,7 @@ const AnimatedBackgroundControls = ({
                 </button>
                 <label
                   htmlFor={switchId}
-                  className="text-sm font-medium text-gray-600"
+                  className="text-sm font-medium text-[var(--ink-medium)]"
                 >
                   {animatedOn
                     ? t("manager:theme.animatedBg.mode.animated", {
@@ -233,7 +233,7 @@ const AnimatedBackgroundControls = ({
               ) : (
                 renderWallpaperUpload && (
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-[var(--ink-subtle)]">
                       {t("manager:theme.animatedBg.wallpaper", {
                         defaultValue: "Hintergrundbild",
                       })}

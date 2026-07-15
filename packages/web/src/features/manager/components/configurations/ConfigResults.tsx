@@ -115,7 +115,7 @@ const ConfigResults = () => {
           <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search
-                className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-gray-400"
+                className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[var(--ink-faint)]"
                 aria-hidden
               />
               <label htmlFor="results-search" className="sr-only">
