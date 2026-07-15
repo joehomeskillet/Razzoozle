@@ -48,7 +48,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
   const { labels } = useLabelManager()
   const [selectedLabelId, setSelectedLabelId] = useState<string>("")
   const [localLabelIds, setLocalLabelIds] = useState<number[]>(item.labelIds ?? [])
-  
+
   const detailsLabel = t("manager:media.details", { defaultValue: "Details" })
 
   const itemLabels = useMemo(
@@ -69,23 +69,26 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
       if (id && !localLabelIds.includes(id)) {
         const newLabelIds = [...localLabelIds, id]
         setLocalLabelIds(newLabelIds)
+        socket.emit(EVENTS.LABEL.ASSIGN, {
+          entityType: "media",
+          entityId: item.id,
+          labelIds: newLabelIds,
+        })
         setSelectedLabelId("")
       }
     },
-    [localLabelIds],
+    [localLabelIds, socket, item.id],
   )
 
   const handleRemoveLabel = useCallback((labelId: number) => {
-    setLocalLabelIds((prev) => prev.filter((id) => id !== labelId))
-  }, [])
-
-  const handleSaveLabels = useCallback(() => {
+    const newLabelIds = localLabelIds.filter((id) => id !== labelId)
+    setLocalLabelIds(newLabelIds)
     socket.emit(EVENTS.LABEL.ASSIGN, {
       entityType: "media",
       entityId: item.id,
-      labelIds: localLabelIds,
+      labelIds: newLabelIds,
     })
-  }, [socket, item.id, localLabelIds])
+  }, [localLabelIds, socket, item.id])
 
   return (
     <Dialog.Root>
@@ -195,17 +198,6 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                   )}
                 </div>
               </div>
-              {localLabelIds.length > 0 &&
-                JSON.stringify(localLabelIds) !==
-                  JSON.stringify(item.labelIds ?? []) && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={handleSaveLabels}
-                  >
-                    {t("common:save", { defaultValue: "Speichern" })}
-                  </Button>
-                )}
             </div>
           )}
 
