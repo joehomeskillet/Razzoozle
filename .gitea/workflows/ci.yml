@@ -40,6 +40,12 @@ jobs:
       - name: Typecheck (all packages)
         run: corepack pnpm -r run types
 
+      # Manager token-class gate (D1/D2/D10 design tokens).
+      # Warn-only until W1-token-migration completes; W6 flips to blocking.
+      - name: Check manager design tokens (warn-only)
+        continue-on-error: true
+        run: bash scripts/check-manager-tokens.sh
+
       - name: Lint (warn-only)
         continue-on-error: true
         run: corepack pnpm lint
