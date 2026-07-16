@@ -12,9 +12,10 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
+import { useActiveConsoleTab } from "@razzoozle/web/features/manager/contexts/active-console-tab"
 import { useNavigate } from "@tanstack/react-router"
 import { LogIn, RefreshCw, Radio, Square } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -28,9 +29,11 @@ const RunningGamesSection = () => {
   const { setGameId, setInviteCode } = useManagerStore()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const activeTab = useActiveConsoleTab()
   const [games, setGames] = useState<GameSummary[]>([])
   // The game pending an End confirmation; drives the AlertDialog.
   const [pendingEnd, setPendingEnd] = useState<GameSummary | null>(null)
+  const wasActiveBefore = useRef(false)
 
   const refresh = useCallback(() => {
     socket.emit(EVENTS.MANAGER.LIST_GAMES)
@@ -43,6 +46,16 @@ const RunningGamesSection = () => {
       refresh()
     }
   }, [isConnected, refresh])
+
+  // Refresh the list when navigating to the Running Games section to prevent
+  // staleness until manual refresh (F2 observation).
+  useEffect(() => {
+    const isNowActive = activeTab === "running"
+    if (isNowActive && !wasActiveBefore.current) {
+      refresh()
+    }
+    wasActiveBefore.current = isNowActive
+  }, [activeTab, refresh])
 
   useEvent(
     EVENTS.MANAGER.GAMES_DATA,

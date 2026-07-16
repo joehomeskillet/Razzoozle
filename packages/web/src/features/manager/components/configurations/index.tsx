@@ -28,6 +28,7 @@ import {
   ConfigProvider,
   useConfig,
 } from "@razzoozle/web/features/manager/contexts/config-context"
+import { ActiveConsoleTabProvider } from "@razzoozle/web/features/manager/contexts/active-console-tab"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import defaultLogo from "@razzoozle/web/assets/logo.svg"
 import {
@@ -336,7 +337,9 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
         </>
       }
     >
-      <ActiveComponent />
+      <ActiveConsoleTabProvider value={active.key}>
+        <ActiveComponent />
+      </ActiveConsoleTabProvider>
     </ConsoleShell>
   )
 }
