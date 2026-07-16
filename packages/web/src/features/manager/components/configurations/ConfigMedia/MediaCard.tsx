@@ -40,10 +40,10 @@ const MediaCard = ({
       key={item.id}
       aria-selected={isSelected}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-xl bg-white outline-2 -outline-offset-2 transition-colors",
+        "group relative flex flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",
         isSelected
           ? "outline-[var(--color-primary)]"
-          : "outline-gray-200",
+          : "outline-[var(--border-hairline)]",
       )}
       initial={reducedMotion ? false : { opacity: 0, y: 10 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -72,8 +72,8 @@ const MediaCard = ({
           className={clsx(
             "flex size-7 items-center justify-center rounded-md border-2 transition-colors",
             isSelected
-              ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white"
-              : "border-[var(--line)] bg-white/90 text-transparent group-hover:border-gray-400",
+              ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white" /* token-ok: white-on-accent-contrast, AA per tokens.css */
+              : "border-[var(--line)] bg-[var(--surface)]/90 text-transparent group-hover:border-[var(--ink-faint)]",
           )}
         >
           <Check className="size-4" aria-hidden />
@@ -82,9 +82,9 @@ const MediaCard = ({
 
       <div className="flex aspect-video items-center justify-center bg-[var(--surface-2)]">
         {item.type === "audio" ? (
-          <FileAudio className="size-10 text-gray-300" aria-hidden />
+          <FileAudio className="size-10 text-[var(--ink-faint)]" aria-hidden />
         ) : item.type === "video" ? (
-          <Film className="size-10 text-gray-300" aria-hidden />
+          <Film className="size-10 text-[var(--ink-faint)]" aria-hidden />
         ) : (
           <img
             src={item.url}

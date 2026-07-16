@@ -98,7 +98,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           type="button"
           aria-label={detailsLabel}
           title={detailsLabel}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-gray-200 transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <Info className="size-4" aria-hidden />
         </button>
@@ -107,7 +107,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
         <Dialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl"
+          className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-[var(--surface)] p-6 shadow-xl"
         >
           <Dialog.Title className="truncate text-lg font-semibold text-[var(--ink)]">
             {item.filename}
@@ -167,7 +167,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.addLabel")}
-                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                        className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                       >
                         <Plus className="size-3" />
                         <Select.Value

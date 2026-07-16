@@ -158,7 +158,7 @@ const ConfigMedia = () => {
       {dragActive && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--accent-tint)]/90 text-[var(--accent-contrast)]"
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-theme)] bg-[var(--accent-tint)]/90 text-[var(--accent-contrast)]"
         >
           <UploadCloud className="size-8" aria-hidden />
           <span className="text-sm font-semibold">
@@ -177,7 +177,7 @@ const ConfigMedia = () => {
               <Button
                 type="button"
                 variant="primary"
-                className="shrink-0 rounded-xl"
+                className="shrink-0 rounded-[var(--radius-theme)]"
                 onClick={openFilePicker}
                 disabled={uploading}
               >
@@ -206,7 +206,7 @@ const ConfigMedia = () => {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t("manager:media.searchPlaceholder")}
-          className="min-h-11 w-full rounded-xl"
+          className="min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -275,7 +275,7 @@ const ConfigMedia = () => {
               count: selected.size,
               defaultValue: "{{count}} ausgewählt",
             })}
-            className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-gray-200"
+            className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <span className="text-sm font-semibold text-[var(--ink-muted)]">
               {t("manager:media.bulk.selected", {
@@ -330,7 +330,7 @@ const ConfigMedia = () => {
       ) : (
         <motion.div
           className={clsx(
-            "grid auto-rows-min grid-cols-2 gap-3 rounded-2xl p-0.5 transition-colors sm:grid-cols-3 xl:grid-cols-4",
+            "grid auto-rows-min grid-cols-2 gap-3 rounded-[var(--radius-theme)] p-0.5 transition-colors sm:grid-cols-3 xl:grid-cols-4",
             dragActive &&
               "outline-2 -outline-offset-2 outline-dashed outline-[var(--color-primary)]",
           )}
