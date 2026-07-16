@@ -735,7 +735,8 @@
     "takeOver": "Übernehmen",
     "end": "Beenden",
     "endConfirm": "Soll das Spiel „{{name}}“ wirklich beendet werden?",
-    "ended": "Spiel beendet."
+    "ended": "Spiel beendet.",
+    "goToPlayTab": "Zum Play-Tab"
   },
   "auto": {
     "nextIn": "Weiter in {{seconds}}s",

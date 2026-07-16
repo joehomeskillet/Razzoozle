@@ -735,7 +735,8 @@
     "takeOver": "接管",
     "end": "结束",
     "endConfirm": "确定要结束游戏 \"{{name}}\" 吗？",
-    "ended": "游戏已结束。"
+    "ended": "游戏已结束。",
+    "goToPlayTab": "转到播放标签页"
   },
   "auto": {
     "nextIn": "{{seconds}} 秒后继续",

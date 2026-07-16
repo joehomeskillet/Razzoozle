@@ -744,7 +744,8 @@
     "takeOver": "Take over",
     "end": "End",
     "endConfirm": "Really end the game \"{{name}}\"?",
-    "ended": "Game ended."
+    "ended": "Game ended.",
+    "goToPlayTab": "Go to Play tab"
   },
   "auto": {
     "nextIn": "Next in {{seconds}}s",
