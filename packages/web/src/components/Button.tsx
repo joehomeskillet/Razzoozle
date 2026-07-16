@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import type { ButtonHTMLAttributes, PropsWithChildren } from "react"
+import { forwardRef } from "react"
 import { twMerge } from "tailwind-merge"
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost"
@@ -58,33 +59,41 @@ const sizeClasses: Record<ButtonSize, string> = {
   icon: "size-11 p-0",
 }
 
-const Button = ({
-  children,
-  className,
-  classNameContent,
-  variant = "primary",
-  size = "md",
-  ...otherProps
-}: Props) => (
-  <button
-    className={twMerge(
-      clsx(
-        baseClasses,
-        variantClasses[variant],
-        sizeClasses[size],
-        className,
-      ),
-    )}
-    {...otherProps}
-  >
-    <div
+const Button = forwardRef<HTMLButtonElement, Props>(
+  (
+    {
+      children,
+      className,
+      classNameContent,
+      variant = "primary",
+      size = "md",
+      ...otherProps
+    },
+    ref,
+  ) => (
+    <button
+      ref={ref}
       className={twMerge(
-        clsx("flex items-center justify-center gap-2", classNameContent),
+        clsx(
+          baseClasses,
+          variantClasses[variant],
+          sizeClasses[size],
+          className,
+        ),
       )}
+      {...otherProps}
     >
-      {children}
-    </div>
-  </button>
+      <div
+        className={twMerge(
+          clsx("flex items-center justify-center gap-2", classNameContent),
+        )}
+      >
+        {children}
+      </div>
+    </button>
+  ),
 )
+
+Button.displayName = "Button"
 
 export default Button
