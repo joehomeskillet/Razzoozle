@@ -538,3 +538,5 @@ mod tests {
     // `keep_token = None` query (DELETE ... WHERE user_id = $1, no hash
     // filter) for user B removed hash-b1 and left user A's hash-a1 untouched.
 }
+
+mod tests_users_delete;
