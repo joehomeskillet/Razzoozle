@@ -85,15 +85,15 @@ interface NavSection {
 const NAV_GROUPS: { labelKey: string; keys: readonly string[] }[] = [
   {
     labelKey: "manager:tabs.groups.operations",
-    keys: ["play", "running", "results"],
+    keys: ["play", "running", "results", "achievements"],
   },
   {
     labelKey: "manager:tabs.groups.content",
-    keys: ["quizz", "catalog", "media", "labels", "submissions"],
+    keys: ["quizz", "catalog", "media", "submissions"],
   },
   {
     labelKey: "manager:tabs.groups.school",
-    keys: ["klassen", "schueler", "users", "achievements"],
+    keys: ["klassen", "schueler", "users", "labels"],
   },
   {
     labelKey: "manager:tabs.groups.system",
