@@ -154,7 +154,7 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
           return (
             <li
               key={slot}
-              className="flex flex-col gap-2 rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-gray-200 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-[var(--border-hairline)] sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[var(--ink-muted)]">
@@ -187,9 +187,10 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
                 */}
                 <label
                   aria-disabled={uploading}
-                  className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--accent-contrast)] px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:brightness-[1.05] active:brightness-[0.95] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white ${
-                    uploading ? "cursor-not-allowed opacity-60" : ""
-                  }`}
+                  className={
+                    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--accent-contrast)] px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:brightness-[1.05] active:brightness-[0.95] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white " + // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
+                    (uploading ? "cursor-not-allowed opacity-60" : "")
+                  }
                 >
                   {uploading ? (
                     <LoaderCircle className="size-4 animate-spin" aria-hidden />
@@ -226,7 +227,7 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
 
               {error && (
                 <p
-                  className="w-full text-sm font-semibold text-red-600"
+                  className="w-full text-sm font-semibold text-[var(--state-wrong)]"
                   role="alert"
                 >
                   {error}

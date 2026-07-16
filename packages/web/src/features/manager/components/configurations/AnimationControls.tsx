@@ -119,7 +119,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
         <button
           type="button"
           onClick={() => setReplayKey((k) => k + 1)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--color-primary)] outline-1 -outline-offset-1 outline-gray-200 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--color-primary)] outline-1 -outline-offset-1 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <RefreshCw className="size-4" aria-hidden />
           {t("manager:theme.animation.replay", { defaultValue: "Abspielen" })}
@@ -138,9 +138,9 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
             key={row}
             variants={reveal.item()}
             transition={reveal.spring}
-            className="flex min-h-11 items-center gap-3 rounded-lg bg-[var(--surface-2)] px-3 outline-1 -outline-offset-1 outline-gray-200"
+            className="flex min-h-11 items-center gap-3 rounded-lg bg-[var(--surface-2)] px-3 outline-1 -outline-offset-1 outline-[var(--border-hairline)]"
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white"> {/* token-ok: white-on-primary, AA per design.md §8·B D6 */}
               {row}
             </span>
             <span className="h-2 flex-1 rounded-full bg-[var(--surface-4)]" aria-hidden />

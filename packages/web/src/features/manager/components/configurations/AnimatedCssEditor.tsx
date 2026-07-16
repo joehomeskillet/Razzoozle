@@ -48,7 +48,7 @@ const AnimatedCssEditor = ({ value, onChange }: AnimatedCssEditorProps) => {
             defaultValue:
               "/* .cream-backdrop .cb-blob--a { background: ... } */",
           })}
-          className="min-h-48 w-full resize-y rounded-lg bg-gray-900 p-3 font-mono text-sm text-gray-100 outline-1 -outline-offset-1 outline-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="min-h-48 w-full resize-y rounded-lg bg-[var(--surface-muted)] p-3 font-mono text-sm text-[var(--surface)] outline-1 -outline-offset-1 outline-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         />
       </div>
     </SubGroup>
