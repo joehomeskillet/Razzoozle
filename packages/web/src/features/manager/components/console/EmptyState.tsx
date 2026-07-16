@@ -31,7 +31,7 @@ const EmptyState = ({
 }: EmptyStateProps) => (
   <div
     className={clsx(
-      "flex flex-col items-center justify-center gap-3 rounded-xl px-6 py-10 text-center",
+      "flex flex-col items-center justify-center gap-3 rounded-[var(--radius-theme)] px-6 py-10 text-center",
       className,
     )}
   >
@@ -48,7 +48,7 @@ const EmptyState = ({
         variant="primary"
         size="md"
         onClick={action.onClick}
-        className="mt-1 rounded-xl"
+        className="mt-1 rounded-[var(--radius-theme)]"
       >
         {action.label}
       </Button>

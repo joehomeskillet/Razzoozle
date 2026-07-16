@@ -49,7 +49,7 @@ const NavItem = ({
       // tablist moves focus with arrow keys.
       tabIndex={active ? 0 : -1}
       className={clsx(
-        "group relative flex min-h-11 items-center gap-3 rounded-xl text-sm font-semibold transition-colors",
+        "group relative flex min-h-11 items-center gap-3 rounded-[var(--radius-theme)] text-sm font-semibold transition-colors",
         "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2",
         isVertical
           ? "w-full px-3 py-2.5 text-left"
@@ -99,8 +99,8 @@ const NavItem = ({
         className={clsx(
           "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
           active
-            ? "bg-[var(--accent-contrast)] text-white"
-            : "bg-[var(--surface-4)] text-[var(--ink-muted)] group-hover:bg-gray-300",
+            ? "bg-[var(--accent-contrast)] text-[var(--ink)]"
+            : "bg-[var(--surface-4)] text-[var(--ink-muted)] group-hover:bg-[var(--surface-4)]",
           !isVertical && "absolute -top-0.5 -right-0.5 sm:static",
           !hasBadge && "sr-only",
         )}

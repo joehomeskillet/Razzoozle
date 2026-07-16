@@ -38,12 +38,12 @@ const SelectableRow = ({
     role="radio"
     aria-checked={selected}
     className={clsx(
-      "flex min-h-11 w-full items-center gap-3 rounded-xl p-4 text-left transition-colors",
+      "flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-theme)] p-4 text-left transition-colors",
       "outline-2 -outline-offset-2",
       "focus-visible:outline-[var(--color-primary)] focus-visible:outline-offset-2",
       selected
         ? "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
-        : "bg-white outline-[var(--line)] hover:bg-[var(--surface-2)]",
+        : "bg-[var(--surface)] outline-[var(--line)] hover:bg-[var(--surface-2)]",
       className,
     )}
     {...buttonProps}
@@ -66,8 +66,8 @@ const SelectableRow = ({
       className={clsx(
         "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
         selected
-          ? "border-[var(--accent-contrast)] bg-[var(--accent-contrast)] text-white"
-          : "border-[var(--line)] bg-white",
+          ? "border-[var(--accent-contrast)] bg-[var(--accent-contrast)] text-[var(--ink)]"
+          : "border-[var(--line)] bg-[var(--surface)]",
       )}
     >
       {selected && <Check className="size-4" strokeWidth={3} />}
