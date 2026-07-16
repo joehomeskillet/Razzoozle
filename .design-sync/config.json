@@ -4,7 +4,7 @@
   "pkg": "@razzoozle/web",
   "srcDir": "src/components",
   "tsconfig": "../../../../../tsconfig.json",
-  "cssEntry": "dist/assets/index-DRBxlWsy.css",
+  "cssEntry": "dist/assets/index-BvwGq0AC.css",
   "buildCmd": "CI=true corepack pnpm -F @razzoozle/web build",
   "readmeHeader": ".design-sync/conventions.md",
   "extraEntries": ["../../../../../.design-sync/i18n-preview.ts"],

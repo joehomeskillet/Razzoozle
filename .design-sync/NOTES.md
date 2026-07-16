@@ -49,6 +49,20 @@ Repo-specific gotchas for re-syncs. First sync 2026-07-10, project
   Worth a follow-up ticket.
 - addBots (app, not sync): env-gated by RAHOOT_SIM_MODE=1 on both twins.
 
+## Re-sync 2026-07-16 (W3 dedup components)
+- cssEntry re-pinned to `dist/assets/index-BvwGq0AC.css`; all 6 extraFonts hashes UNCHANGED.
+- 6 new components synced: manager/ group (Badge, FilterPill, PageHeader) + labels/ group
+  (LabelChip, LabelColorPicker, LabelFilterPills) — authored previews, all cells graded good.
+  Badge/FilterPill floor-attempts rendered blank-but-not-swapped (children/array props) → the
+  authored previews are what fixed the `bad` flags, pattern to expect for future prop-required adds.
+- Vite now ALSO emits a code-split `dist/assets/tokens-<hash>.css` (`.console-shell` accent
+  override). NOT needed in cssEntry: `--accent-tint`/`--accent-contrast`/`--label-*-bg`/
+  `--answer-text` are all declared in the main index-*.css (verified by grep).
+- The `packages/web/node_modules/@razzoozle/web` self-link vanishes on pnpm install/prune, not
+  just fresh clones — ALWAYS re-check + recreate before running the converter.
+- LabelFilterPills inactive pills show a currentColor outline (component has unconditional
+  `outline-2` class) — faithful to the shipped app render, graded good deliberately.
+
 ## Re-sync risks
 - `cssEntry`/`extraFonts` hashed filenames go stale on every app rebuild (above).
 - The i18n bootstrap inlines EN locale JSONs at bundle time — locale edits need a
