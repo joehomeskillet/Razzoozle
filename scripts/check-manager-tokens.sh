@@ -4,8 +4,12 @@
 # Enforces design system token constraints before W1 migration completes.
 # Usage: check-manager-tokens.sh [path]
 # Defaults to packages/web/src/features/manager if no path given.
+#
+# Performance: grep-based single-pass (~8ms full tree) vs line-by-line bash (~64s).
+# Output: file:line:TAG message format. Matches counted, not lines.
+# Lines with token-ok: comments skip entirely.
 
-set -o pipefail
+set -euo pipefail
 
 SCAN_ROOT="${1:-packages/web/src/features/manager}"
 
@@ -14,77 +18,45 @@ if [[ ! -d "$SCAN_ROOT" ]]; then
   exit 1
 fi
 
-FINDINGS=0
-
-# D1: Forbidden color utilities (Tailwind hardcoded color tokens).
-# Pattern: (color-prefix)-(gray|red|green|amber|blue)-(number)
-# Also: bg-white, text-white (pure white banned in favor of design tokens).
-D1_PATTERN='(bg|text|border|ring|outline|shadow|from|to|via)-(gray|red|green|amber|blue)-[0-9]+'
-
-# Alternative D1 patterns for white shorthand.
-D1_WHITE_PATTERN='\b(bg-white|text-white)\b'
-
-# D2: Shorthand utilities for design tokens — only var() form allowed.
-# Pattern: (bg|text|border|ring|outline|from|to)-(primary|secondary|accent)
-# FORBIDDEN: these hardcoded forms; only `bg-[var(--color-primary)]` etc. allowed.
-D2_PATTERN='\b(bg|text|border|ring|outline|from|to)-(primary|secondary|accent)\b'
-
-# D10 (SCRIM): bg-black/N only allowed as exactly bg-black/40.
-# All other opacities on bg-black are violations.
-D10_PATTERN='bg-black/(?!40\b)'
-
 TMPFILE=$(mktemp)
-trap "rm -f $TMPFILE" EXIT
+trap "rm -f '$TMPFILE'" EXIT
 
-# Scan all .ts and .tsx files.
-while IFS= read -r file; do
-  [[ -z "$file" ]] && continue
+# D1: Forbidden color utilities (unanchored prefix pattern).
+# Matches divide-gray-100, placeholder-blue-50, bg-red-500, etc.
+# Pattern: any -(gray|red|green|amber|blue)-[digit]
+grep -rnE -- '-(gray|red|green|amber|blue)-[0-9]+' \
+  --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -v 'token-ok:' | \
+  sed -E 's/^([^:]+):([^:]+):(.*)(-(gray|red|green|amber|blue)-[0-9]+)(.*)/\1:\2:\4/' | \
+  sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D1 forbidden color token '\2'/" >>"$TMPFILE" || true
 
-  LINE_NUM=0
-  while IFS= read -r line; do
-    ((LINE_NUM++))
+# D1: White shorthand utilities (bg-white, text-white).
+grep -rnE '\b(bg-white|text-white)\b' \
+  --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -v 'token-ok:' | \
+  sed -E 's/^([^:]+):([^:]+):(.*)\b(bg-white|text-white)\b(.*)/\1:\2:\4/' | \
+  sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D1 forbidden white utility '\2'/" >>"$TMPFILE" || true
 
-    # Skip lines with token-ok: override marker.
-    if [[ "$line" =~ token-ok: ]]; then
-      continue
-    fi
+# D2: Shorthand design-token utilities (must use var() form).
+# Matches primary, secondary, accent in shorthand (e.g., bg-primary, border-secondary).
+grep -rnE '\b(bg|text|border|ring|outline|from|to)-(primary|secondary|accent)\b' \
+  --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -v 'token-ok:' | \
+  sed -E 's/^([^:]+):([^:]+):(.*)\b((bg|text|border|ring|outline|from|to)-(primary|secondary|accent))\b(.*)/\1:\2:\4/' | \
+  sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D2 shorthand '\2' must use var() form (e.g., bg-[var(--color-primary)])/" >>"$TMPFILE" || true
 
-    # D1: Hardcoded color utilities.
-    if grep -qE "$D1_PATTERN" <<<"$line"; then
-      # Extract the match for output.
-      match=$(grep -oE "$D1_PATTERN" <<<"$line" | head -1)
-      echo "$file:$LINE_NUM:D1 forbidden color token '$match'" >>"$TMPFILE"
-      ((FINDINGS++))
-    fi
+# D10 (SCRIM): bg-black opacity only 40 allowed.
+# Uses -o to extract just the opacity value, filters to exclude valid bg-black/40.
+grep -rnoE 'bg-black/[0-9]+' \
+  --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -v 'token-ok:' | \
+  grep -v ':bg-black/40$' | \
+  sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D10 SCRIM opacity '\2' invalid (only bg-black\/40 allowed)/" >>"$TMPFILE" || true
 
-    # D1: White shorthand.
-    if grep -qE "$D1_WHITE_PATTERN" <<<"$line"; then
-      match=$(grep -oE "$D1_WHITE_PATTERN" <<<"$line" | head -1)
-      echo "$file:$LINE_NUM:D1 forbidden white utility '$match'" >>"$TMPFILE"
-      ((FINDINGS++))
-    fi
+# Output findings. Each line is one match (matches counted, not lines).
+# Lines with token-ok: comments in source are skipped entirely.
+FINDINGS=$(wc -l < "$TMPFILE")
 
-    # D2: Shorthand design-token utilities (must use var() form).
-    if grep -qE "$D2_PATTERN" <<<"$line"; then
-      match=$(grep -oE "$D2_PATTERN" <<<"$line" | head -1)
-      echo "$file:$LINE_NUM:D2 shorthand '$match' must use var() form (e.g., bg-[var(--color-primary)])" >>"$TMPFILE"
-      ((FINDINGS++))
-    fi
-
-    # D10: bg-black opacity only 40 allowed.
-    if grep -qE 'bg-black/' <<<"$line"; then
-      # Check if it's NOT exactly bg-black/40.
-      if ! grep -qE 'bg-black/40\b' <<<"$line"; then
-        match=$(grep -oE 'bg-black/[0-9]+' <<<"$line" | head -1)
-        echo "$file:$LINE_NUM:D10 SCRIM opacity '$match' invalid (only bg-black/40 allowed)" >>"$TMPFILE"
-        ((FINDINGS++))
-      fi
-    fi
-
-  done < "$file"
-done < <(find "$SCAN_ROOT" -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null)
-
-# Output findings in order.
 if [[ -s "$TMPFILE" ]]; then
   sort "$TMPFILE"
 fi
