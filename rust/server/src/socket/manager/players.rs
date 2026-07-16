@@ -53,6 +53,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                             let mut game = game_ref.lock().unwrap();
                             // SECURITY: Only the manager socket of THIS game can kick players from it
                             if game.manager_socket_id != socket.id.to_string() {
+                                warn!("manager control denied: event=kickPlayer gameId={} check=manager_socket_mismatch expected={} got={}", game_id, game.manager_socket_id, socket.id);
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }
