@@ -6,7 +6,28 @@ use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use serde_json::json;
-use tracing::warn;
+use tracing::{warn, info};
+
+/// Decision outcome for manager leave: what action to take based on game phase
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LeaveAction {
+    /// Game not started (ShowRoom): remove immediately
+    LobbyRemove,
+    /// Game started but not finished: park in empty-grace for reaper
+    Park,
+    /// Game finished: end immediately to prevent zombie
+    EndNow,
+}
+
+/// Pure function: determine leave action from game phase (W4-2 zombie-game fix)
+fn leave_action(phase: razzoozle_engine::state::GamePhase) -> LeaveAction {
+    use razzoozle_engine::state::GamePhase;
+    match phase {
+        GamePhase::ShowRoom => LeaveAction::LobbyRemove,
+        GamePhase::Finished => LeaveAction::EndNow,
+        _ => LeaveAction::Park,
+    }
+}
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list_games(socket, ctx.clone());
@@ -151,15 +172,17 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Ownership: require is_game_host check (W0-A3 with admin bypass + legacy fallback)
-                let (owns_game, is_started) = {
+                // Also determine leave action based on game phase
+                let (owns_game, action) = {
                     let registry = ctx.registry.read().await;
                     if let Some(game_ref) = registry.get_game_by_id(&game_id) {
                         let game = game_ref.lock().unwrap();
                         let owns = is_game_host(&game, &payload, &ctx.client_id, Some(&user));
-                        let started = game.engine.phase != razzoozle_engine::state::GamePhase::ShowRoom;
-                        (owns, started)
+                        let phase = game.engine.phase;
+                        let act = leave_action(phase);
+                        (owns, act)
                     } else {
-                        (false, false)
+                        (false, LeaveAction::Park)
                     }
                 };
 
@@ -168,26 +191,65 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // If game NOT started: tear down immediately (intentional leave on lobby)
-                if !is_started {
-                    ctx.io
-                        .to(game_id.clone())
-                        .emit(constants::game::RESET, "errors:game.managerDisconnected")
-                        .ok();
+                match action {
+                    LeaveAction::LobbyRemove => {
+                        ctx.io
+                            .to(game_id.clone())
+                            .emit(constants::game::RESET, "errors:game.managerDisconnected")
+                            .ok();
 
-                    {
-                        let mut registry = ctx.registry.write().await;
-                        registry.remove_game(&game_id);
+                        {
+                            let mut registry = ctx.registry.write().await;
+                            registry.remove_game(&game_id);
+                        }
                     }
-                    return;
-                }
+                    LeaveAction::EndNow => {
+                        info!("LEAVE on finished game: ending immediately (game={}, client_id={})", game_id, ctx.client_id);
+                        ctx.io
+                            .to(game_id.clone())
+                            .emit(constants::game::RESET, "errors:game.managerDisconnected")
+                            .ok();
 
-                // Started game: park in empty-grace; cleanup reaper RESET+removes after 5 min
-                {
-                    let mut registry = ctx.registry.write().await;
-                    registry.mark_game_as_empty(game_id);
+                        {
+                            let mut registry = ctx.registry.write().await;
+                            registry.remove_game(&game_id);
+                        }
+                    }
+                    LeaveAction::Park => {
+                        let mut registry = ctx.registry.write().await;
+                        registry.mark_game_as_empty(game_id);
+                    }
                 }
             });
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use razzoozle_engine::state::GamePhase;
+
+    #[test]
+    fn test_leave_action_showroom() {
+        // Lobby (not started): remove immediately
+        assert_eq!(leave_action(GamePhase::ShowRoom), LeaveAction::LobbyRemove);
+    }
+
+    #[test]
+    fn test_leave_action_finished() {
+        // Game finished: end immediately (W4-2 zombie-game fix)
+        assert_eq!(leave_action(GamePhase::Finished), LeaveAction::EndNow);
+    }
+
+    #[test]
+    fn test_leave_action_running() {
+        // Game started but not finished: park for reaper
+        assert_eq!(leave_action(GamePhase::ShowQuestion), LeaveAction::Park);
+        assert_eq!(leave_action(GamePhase::SelectAnswer), LeaveAction::Park);
+        assert_eq!(leave_action(GamePhase::ShowResult), LeaveAction::Park);
+        assert_eq!(leave_action(GamePhase::ShowRoundRecap), LeaveAction::Park);
+        assert_eq!(leave_action(GamePhase::ShowLeaderboard), LeaveAction::Park);
+        assert_eq!(leave_action(GamePhase::ShowStart), LeaveAction::Park);
+    }
 }
