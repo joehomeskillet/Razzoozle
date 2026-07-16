@@ -236,6 +236,7 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.UNAUTHORIZED]: () => void
   [EVENTS.MANAGER.PLAYER_RECONNECTED]: (_data: {
     id: string
+    oldId: string
     username: string
   }) => void
   // Manager plugin system (server -> client). Broadcast of the installed plugin
