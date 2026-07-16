@@ -216,7 +216,7 @@ const ResultModalAnswers = () => {
               {row.color && row.answerLabel ? (
                 <div
                   className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" {/* token-ok: answer-badge-white-on-color */,
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"  /* token-ok: answer-badge-white-on-color */,
                     row.color,
                   )}
                 >

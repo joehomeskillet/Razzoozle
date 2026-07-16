@@ -139,7 +139,7 @@ const DisplayControl = () => {
               type="button"
               onClick={pair}
               disabled={!gameId || code.trim().length === 0}
-              className="shrink-0 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className={"shrink-0 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]" /* token-ok: white-on-primary, AA per design.md */}
             >
               {t("manager:satellite.pair")}
             </button>
