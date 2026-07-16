@@ -1,5 +1,11 @@
 /node_modules
+node_modules/
 /config
+# e2e/ lives outside the pnpm workspace — its deps + run artifacts must never be committed
+e2e/node_modules/
+e2e/.stagehand-cache/
+e2e/*-logs*.txt
+e2e/userdelete-logs.txt
 .env
 .secrets
 release.json
