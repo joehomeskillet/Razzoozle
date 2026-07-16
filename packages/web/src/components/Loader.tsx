@@ -11,13 +11,6 @@ const Loader = ({ className }: Props) => (
     viewBox="0 0 100 100"
     preserveAspectRatio="xMidYMid"
   >
-    <style>{`
-      @media (prefers-reduced-motion: reduce) {
-        svg { animation: none !important; }
-        svg circle > animate { dur: 0s; }
-        svg circle > animateTransform { dur: 0s; }
-      }
-    `}</style>
     <circle
       cx="50"
       cy="50"
