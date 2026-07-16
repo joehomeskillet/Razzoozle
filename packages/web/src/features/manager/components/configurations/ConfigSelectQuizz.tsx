@@ -242,7 +242,7 @@ const ConfigSelectQuizz = () => {
                 <select
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                  className="min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
