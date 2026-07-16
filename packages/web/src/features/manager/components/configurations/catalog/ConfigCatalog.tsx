@@ -165,7 +165,7 @@ const ConfigCatalog = () => {
             <Button
               type="button"
               variant="primary"
-              className="shrink-0 rounded-xl"
+              className="shrink-0 rounded-[var(--radius-theme)]"
               onClick={openAddModal}
             >
               <BookOpen className="size-5" aria-hidden />
@@ -182,7 +182,7 @@ const ConfigCatalog = () => {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t("manager:catalog.searchPlaceholder")}
-          className="min-h-11 w-full rounded-xl"
+          className="min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
         <div

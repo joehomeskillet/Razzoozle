@@ -119,7 +119,7 @@ export const CatalogQuestionModal = ({
         aria-modal="true"
         aria-labelledby="catalog-question-modal-title"
         onKeyDown={handleFocusTrap}
-        className="flex max-h-[88svh] min-h-0 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[88svh] min-h-0 w-full flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] shadow-xl"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
