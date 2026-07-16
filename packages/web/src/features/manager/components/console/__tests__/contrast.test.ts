@@ -82,3 +82,23 @@ describe("wcagLevel", () => {
     expect(wcagLevel(1)).toBe("fail")
   })
 })
+
+describe("Status-token contrast (D3)", () => {
+  it("online: #166534 text on #dcfce7 bg meets WCAG AA (≥4.5:1)", () => {
+    const ratio = contrastRatio("#166534", "#dcfce7")
+    expect(wcagLevel(ratio)).toBe("AA")
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it("offline: #991b1b text on #fee2e2 bg meets WCAG AA (≥4.5:1)", () => {
+    const ratio = contrastRatio("#991b1b", "#fee2e2")
+    expect(wcagLevel(ratio)).toBe("AA")
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it("pending: #92400e text on #fef3c7 bg meets WCAG AA (≥4.5:1)", () => {
+    const ratio = contrastRatio("#92400e", "#fef3c7")
+    expect(wcagLevel(ratio)).toBe("AA")
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+  })
+})
