@@ -2,6 +2,7 @@ import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import type { Label } from "@razzoozle/web/components/labels/LabelChip"
+import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import type { QuizzMeta } from "@razzoozle/common/types/game"
 import {
@@ -21,7 +22,7 @@ import {
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
@@ -69,15 +70,6 @@ const QuizzList = ({
   const { klassenEnabled } = useConfig()
   const reducedMotion = useReducedMotion()
   const [assigningLabelTo, setAssigningLabelTo] = useState<string | null>(null)
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 600 : false
-  )
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 600)
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   const handleLabelAssign = (quizzId: string, labelIds: number[]) => {
     socket.emit(EVENTS.LABEL.ASSIGN, {
@@ -134,15 +126,15 @@ const QuizzList = ({
     },
   ]
 
-  const getPrimaryActions = (actions: ListRowAction[]): ListRowAction[] => {
-    if (!isMobile) return actions
-    return actions.filter((a) => a.key === "edit" || a.key === "delete")
-  }
+  // D22d: >3 actions → 2 inline + Shared-OverflowMenu (order preserved,
+  // destructive last), on every viewport — no longer mobile-gated.
+  const ACTION_SPLIT_THRESHOLD = 3
 
-  const getOverflowActions = (actions: ListRowAction[]): ListRowAction[] => {
-    if (!isMobile) return []
-    return actions.filter((a) => a.key !== "edit" && a.key !== "delete")
-  }
+  const getPrimaryActions = (actions: ListRowAction[]): ListRowAction[] =>
+    actions.length > ACTION_SPLIT_THRESHOLD ? actions.slice(0, 2) : actions
+
+  const getOverflowActions = (actions: ListRowAction[]): ListRowAction[] =>
+    actions.length > ACTION_SPLIT_THRESHOLD ? actions.slice(2) : []
 
   return quizz.length === 0 ? (
     <div className="flex min-h-0 flex-1 flex-col justify-center">
@@ -199,95 +191,97 @@ const QuizzList = ({
                   }
             }
           >
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
-                  <span className="sr-only">
-                    {t("manager:quizz.selectQuiz", {
-                      name: q.subject,
-                      defaultValue: '„{{name}}" auswählen',
-                    })}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(q.id)}
-                    onChange={() => toggleSelect(q.id)}
-                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                  />
-                </label>
-                <ListRow
-                  title={q.subject}
-                  className="min-w-0 flex-1"
-                  meta={
-                    q.questionCount != null
-                      ? t("manager:catalog.count", { count: q.questionCount })
-                      : undefined
-                  }
-                  actions={visibleActions}
+            <div className="flex items-center gap-2">
+              <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
+                <span className="sr-only">
+                  {t("manager:quizz.selectQuiz", {
+                    name: q.subject,
+                    defaultValue: '„{{name}}" auswählen',
+                  })}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={selected.has(q.id)}
+                  onChange={() => toggleSelect(q.id)}
+                  className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 />
-                {isMobile && overflowActions.length > 0 && (
-                  <OverflowMenu actions={overflowActions} />
-                )}
-              </div>
-
-              {klassenEnabled && (assignedLabels.length > 0 || availableLabels.length > 0) && (
-                <div className="ml-11 flex flex-wrap items-center gap-1.5">
-                  {assignedLabels.map((label: Label) => (
-                    <LabelChip
-                      key={label.id}
-                      label={label}
-                      onRemove={() => {
-                        const newLabelIds = (q.labelIds ?? []).filter((id: number) => id !== label.id)
-                        handleLabelAssign(q.id, newLabelIds)
-                      }}
-                    />
-                  ))}
-
-                  {availableLabels.length > 0 && (
-                    <Select.Root
-                      value={assigningLabelTo === q.id ? "" : ""}
-                      onValueChange={(val: string) => {
-                        const newLabelIds = [...(q.labelIds ?? []), Number(val)]
-                        handleLabelAssign(q.id, newLabelIds)
-                      }}
-                    >
-                      <Select.Trigger
-                        aria-label={t("manager:labels.assignLabel", {
-                          defaultValue: "Label zuweisen",
-                        })}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
-                      >
-                        <Plus className="size-3" />
-                        <Select.Value
-                          placeholder={t("manager:labels.assignTitle", {
-                            defaultValue: "+ Fach",
-                          })}
+              </label>
+              <ListRow
+                leading={<ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                title={q.subject}
+                className="min-w-0 flex-1"
+                meta={
+                  q.questionCount != null ? (
+                    <span className="text-xs text-[var(--ink-subtle)]">
+                      {t("manager:catalog.count", { count: q.questionCount })}
+                    </span>
+                  ) : undefined
+                }
+                actions={visibleActions}
+                footer={
+                  klassenEnabled && (assignedLabels.length > 0 || availableLabels.length > 0) ? (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {assignedLabels.map((label: Label) => (
+                        <LabelChip
+                          key={label.id}
+                          label={label}
+                          onRemove={() => {
+                            const newLabelIds = (q.labelIds ?? []).filter((id: number) => id !== label.id)
+                            handleLabelAssign(q.id, newLabelIds)
+                          }}
                         />
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content
-                          position="popper"
-                          sideOffset={4}
-                          onCloseAutoFocus={(e) => e.preventDefault()}
-                          className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                      ))}
+
+                      {availableLabels.length > 0 && (
+                        <Select.Root
+                          value={assigningLabelTo === q.id ? "" : ""}
+                          onValueChange={(val: string) => {
+                            const newLabelIds = [...(q.labelIds ?? []), Number(val)]
+                            handleLabelAssign(q.id, newLabelIds)
+                          }}
                         >
-                          <Select.Viewport className="p-1">
-                            {availableLabels.map((label: Label) => (
-                              <Select.Item
-                                key={label.id}
-                                value={String(label.id)}
-                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
-                              >
-                                <Select.ItemText>{label.name}</Select.ItemText>
-                              </Select.Item>
-                            ))}
-                          </Select.Viewport>
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
-                  )}
-                </div>
+                          <Select.Trigger
+                            aria-label={t("manager:labels.assignLabel", {
+                              defaultValue: "Label zuweisen",
+                            })}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            className={assignTriggerClass}
+                          >
+                            <Plus className="size-3" />
+                            <Select.Value
+                              placeholder={t("manager:labels.assignTitle", {
+                                defaultValue: "+ Fach",
+                              })}
+                            />
+                          </Select.Trigger>
+                          <Select.Portal>
+                            <Select.Content
+                              position="popper"
+                              sideOffset={4}
+                              onCloseAutoFocus={(e) => e.preventDefault()}
+                              className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                            >
+                              <Select.Viewport className="p-1">
+                                {availableLabels.map((label: Label) => (
+                                  <Select.Item
+                                    key={label.id}
+                                    value={String(label.id)}
+                                    className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                                  >
+                                    <Select.ItemText>{label.name}</Select.ItemText>
+                                  </Select.Item>
+                                ))}
+                              </Select.Viewport>
+                            </Select.Content>
+                          </Select.Portal>
+                        </Select.Root>
+                      )}
+                    </div>
+                  ) : undefined
+                }
+              />
+              {overflowActions.length > 0 && (
+                <OverflowMenu actions={overflowActions} />
               )}
             </div>
           </motion.div>
@@ -321,72 +315,87 @@ const QuizzList = ({
           </div>
 
           {showArchived &&
-            archivedQuizz.map((q, index) => (
-              <motion.div
-                key={q.id}
-                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={
-                  reducedMotion
-                    ? undefined
-                    : {
-                        duration: 0.28,
-                        ease: "easeOut",
-                        delay: Math.min(index, 8) * 0.04,
-                      }
-                }
-              >
-                <ListRow
-                  title={q.subject}
-                  meta={
-                    q.questionCount != null
-                      ? t("manager:catalog.count", {
-                          count: q.questionCount,
-                        })
-                      : t("manager:quizz.archived")
+            archivedQuizz.map((q, index) => {
+              // D22d archived order: edit → export → restore → delete (destructive last).
+              const allActions: ListRowAction[] = [
+                {
+                  key: "edit",
+                  icon: SquarePen,
+                  label: t("manager:quizz.edit", {
+                    name: q.subject,
+                  }),
+                  onClick: () => {
+                    void navigate({
+                      to: "/manager/quizz/$quizzId",
+                      params: { quizzId: q.id },
+                    })
+                  },
+                },
+                {
+                  key: "export",
+                  icon: Download,
+                  label: t("manager:quizz.export", { name: q.subject }),
+                  onClick: () => handleExport(q.id),
+                },
+                {
+                  key: "restore",
+                  icon: ArchiveRestore,
+                  label: t("manager:quizz.unarchive"),
+                  onClick: () => handleArchived(q.id, false),
+                },
+                {
+                  key: "delete",
+                  icon: Trash2,
+                  label: t("manager:quizz.delete"),
+                  destructive: true,
+                  onClick: () =>
+                    setPendingDelete({
+                      id: q.id,
+                      subject: q.subject,
+                    }),
+                },
+              ]
+              const visibleActions = getPrimaryActions(allActions)
+              const overflowActions = getOverflowActions(allActions)
+
+              return (
+                <motion.div
+                  key={q.id}
+                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={
+                    reducedMotion
+                      ? undefined
+                      : {
+                          duration: 0.28,
+                          ease: "easeOut",
+                          delay: Math.min(index, 8) * 0.04,
+                        }
                   }
-                  className="opacity-85"
-                  actions={[
-                    {
-                      key: "restore",
-                      icon: ArchiveRestore,
-                      label: t("manager:quizz.unarchive"),
-                      onClick: () => handleArchived(q.id, false),
-                    },
-                    {
-                      key: "edit",
-                      icon: SquarePen,
-                      label: t("manager:quizz.edit", {
-                        name: q.subject,
-                      }),
-                      onClick: () => {
-                        void navigate({
-                          to: "/manager/quizz/$quizzId",
-                          params: { quizzId: q.id },
-                        })
-                      },
-                    },
-                    {
-                      key: "export",
-                      icon: Download,
-                      label: t("manager:quizz.export", { name: q.subject }),
-                      onClick: () => handleExport(q.id),
-                    },
-                    {
-                      key: "delete",
-                      icon: Trash2,
-                      label: t("manager:quizz.delete"),
-                      destructive: true,
-                      onClick: () =>
-                        setPendingDelete({
-                          id: q.id,
-                          subject: q.subject,
-                        }),
-                    },
-                  ]}
-                />
-              </motion.div>
-            ))}
+                >
+                  <div className="flex items-center gap-2">
+                    <ListRow
+                      leading={<ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                      title={q.subject}
+                      meta={
+                        <span className="text-xs text-[var(--ink-subtle)]">
+                          {q.questionCount != null
+                            ? t("manager:catalog.count", {
+                                count: q.questionCount,
+                              })
+                            : t("manager:quizz.archived")}
+                        </span>
+                      }
+                      className="min-w-0 flex-1 opacity-85"
+                      actions={visibleActions}
+                    />
+                    {overflowActions.length > 0 && (
+                      <OverflowMenu actions={overflowActions} />
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
         </div>
       )}
     </motion.div>
