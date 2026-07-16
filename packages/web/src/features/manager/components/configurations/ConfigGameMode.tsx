@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
@@ -12,6 +13,28 @@ const TEAM_COLOR_MAP: Record<string, string> = {
   blue: "bg-blue-500",
   green: "bg-green-500",
   yellow: "bg-yellow-400",
+}
+
+const VALID_END_SCREEN_MODES = ["full", "top3", "private"] as const
+
+/**
+ * Parse comma-separated modes string into a set of valid modes.
+ * Ignores unknown tokens (robustness for legacy data).
+ */
+const parseModes = (str: string): Set<string> => {
+  return new Set(
+    str
+      .split(",")
+      .map((m) => m.trim())
+      .filter((m) => VALID_END_SCREEN_MODES.includes(m as any)),
+  )
+}
+
+/**
+ * Reconstruct comma-separated modes string in canonical order.
+ */
+const stringifyModes = (modes: Set<string>): string => {
+  return VALID_END_SCREEN_MODES.filter((m) => modes.has(m)).join(",")
 }
 
 /**
@@ -284,12 +307,34 @@ const ConfigGameMode = () => {
     [socket, t],
   )
 
-  const handleEndScreenModesChange = useCallback(
-    (next: string) => {
-      setEndScreenModes(next)
+  const handleEndScreenModeToggle = useCallback(
+    (mode: string) => {
+      // Prevent clicks while saving
+      if (savingEndScreen) {
+        return
+      }
+
+      const current = parseModes(endScreenModes)
+      const isActive = current.has(mode)
+      const isLastActive = current.size === 1 && isActive
+
+      // No-op: can't deselect the last active mode
+      if (isLastActive) {
+        return
+      }
+
+      const next = new Set(current)
+      if (isActive) {
+        next.delete(mode)
+      } else {
+        next.add(mode)
+      }
+
+      const nextString = stringifyModes(next)
+      setEndScreenModes(nextString)
       setSavingEndScreen(true)
 
-      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { endScreenModes: next })
+      socket.emit(EVENTS.MANAGER.SET_GAME_CONFIG, { endScreenModes: nextString })
 
       if (endScreenTimeoutRef.current !== null) {
         clearTimeout(endScreenTimeoutRef.current)
@@ -303,7 +348,7 @@ const ConfigGameMode = () => {
         )
       }, 300)
     },
-    [socket, t],
+    [endScreenModes, savingEndScreen, socket, t],
   )
 
   const teamLabelMap = useMemo<Record<string, string>>(
@@ -315,6 +360,17 @@ const ConfigGameMode = () => {
     }),
     [t],
   )
+
+  const endScreenModeLabelMap = useMemo<Record<string, string>>(
+    () => ({
+      full: t("manager:gameMode.endScreenMode.full", { defaultValue: "Vollständig" }),
+      top3: t("manager:gameMode.endScreenMode.top3", { defaultValue: "Top 3" }),
+      private: t("manager:gameMode.endScreenMode.private", { defaultValue: "Privat" }),
+    }),
+    [t],
+  )
+
+  const activeModes = useMemo(() => parseModes(endScreenModes), [endScreenModes])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -497,30 +553,19 @@ const ConfigGameMode = () => {
         })}
         description={t("manager:gameMode.endScreenDescription", {
           defaultValue:
-            "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen. Kommagetrennte Liste: full, top3, private.",
+            "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen.",
         })}
       >
-        <div className="space-y-2">
-          <label className="block">
-            <span className="text-sm font-medium text-[var(--ink)] block mb-1">
-              {t("manager:gameMode.endScreenModes", {
-                defaultValue: "Verfügbare Modi",
-              })}
-            </span>
-            <input
-              type="text"
-              value={endScreenModes}
-              onChange={(e) => handleEndScreenModesChange(e.target.value)}
-              disabled={savingEndScreen}
-              placeholder="full,top3,private"
-              className="w-full px-3 py-2 border border-[var(--line)] rounded-md shadow-sm text-sm text-[var(--ink)] placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <p className="text-xs text-[var(--ink-medium)] mt-1">
-              {t("manager:gameMode.endScreenModesHint", {
-                defaultValue: "Kommagetrennt: full, top3, private",
-              })}
-            </p>
-          </label>
+        <div className="flex flex-wrap items-center gap-2">
+          {VALID_END_SCREEN_MODES.map((mode) => (
+            <FilterPill
+              key={mode}
+              active={activeModes.has(mode)}
+              onClick={() => handleEndScreenModeToggle(mode)}
+            >
+              {endScreenModeLabelMap[mode]}
+            </FilterPill>
+          ))}
         </div>
       </FormSection>
     </div>
