@@ -216,42 +216,27 @@ pub async fn delete_user_handler(
         return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete your own account"));
     }
 
-    // Load target user's role/active state
-    let target = db::users::get_user_role_active(pool, id)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load user: {}", e)))?;
-    let (role, active) = match target {
-        Some(v) => v,
-        None => return Err(json_error_response(StatusCode::NOT_FOUND, "User not found")),
-    };
-
-    // Last-admin guard: never delete the last remaining active admin.
-    if role == "admin" && active {
-        let active_admins = db::users::count_active_admins(pool)
-            .await
-            .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to count admins: {}", e)))?;
-        if active_admins <= 1 {
-            warn!("user delete denied: check=last_admin user={}", id);
-            return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete the last active admin"));
+    // Load + last-admin-check + delete all happen inside a single DB
+    // transaction (delete_user_guarded) to close the TOCTOU race a separate
+    // count-then-delete pair has: two admins deleting each other concurrently
+    // could each read count=2 before either commits.
+    match db::users::delete_user_guarded(pool, id).await {
+        Ok(db::users::DeleteUserOutcome::Deleted) => {
+            info!("user deleted: id={}", id);
+            Ok(StatusCode::OK)
         }
+        Ok(db::users::DeleteUserOutcome::NotFound) => {
+            Err(json_error_response(StatusCode::NOT_FOUND, "User not found"))
+        }
+        Ok(db::users::DeleteUserOutcome::LastActiveAdmin) => {
+            warn!("user delete denied: check=last_admin user={}", id);
+            Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete the last active admin"))
+        }
+        Err(e) => Err(json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to delete user: {}", e),
+        )),
     }
-
-    // Revoke sessions before delete — self-documenting order, even though a
-    // FK CASCADE (if configured) would clean these up anyway.
-    db::users::revoke_user_sessions(pool, id, None)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to revoke sessions: {}", e)))?;
-
-    let deleted = db::users::delete_user(pool, id)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete user: {}", e)))?;
-
-    if !deleted {
-        return Err(json_error_response(StatusCode::NOT_FOUND, "User not found"));
-    }
-
-    info!("user deleted: id={}", id);
-    Ok(StatusCode::OK)
 }
 
 #[derive(Debug, Deserialize)]

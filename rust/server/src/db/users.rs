@@ -361,6 +361,86 @@ pub async fn delete_user(pool: &PgPool, user_id: i64) -> Result<bool, sqlx::Erro
     Ok(result.rows_affected() > 0)
 }
 
+/// Outcome of `delete_user_guarded` — the HTTP handler maps each variant to
+/// its own status code (Deleted -> 200, NotFound -> 404, LastActiveAdmin -> 400).
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeleteUserOutcome {
+    Deleted,
+    NotFound,
+    LastActiveAdmin,
+}
+
+/// Delete a user with the last-admin guard enforced INSIDE a single
+/// transaction — this closes a TOCTOU race that a separate
+/// count_active_admins()-then-delete_user() call pair has: two admins
+/// deleting each other concurrently could each read count=2 before either
+/// commits, and both proceed, leaving zero admins. A "DELETE ... WHERE id NOT
+/// IN (subquery)" one-liner does NOT fix this under READ COMMITTED either —
+/// each statement's snapshot doesn't see the other transaction's uncommitted
+/// delete.
+///
+/// Instead: `SELECT ... FOR UPDATE` locks the *entire* active-admin set (in a
+/// deterministic `ORDER BY id`, so two concurrent callers block on each other
+/// in the same row order instead of deadlocking) before deciding. The second
+/// transaction to acquire the lock re-reads a set that already reflects the
+/// first transaction's outcome (post-commit) or waits (pre-commit) — either
+/// way the count it sees is correct at decision time.
+pub async fn delete_user_guarded(pool: &PgPool, user_id: i64) -> Result<DeleteUserOutcome, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    // Read target WITHOUT a row lock — only used to decide whether the
+    // last-admin check below even applies to this user.
+    let target = sqlx::query_as::<_, (String, bool)>(
+        "SELECT role, active FROM users WHERE id = $1"
+    )
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let (role, active) = match target {
+        Some(v) => v,
+        None => {
+            tx.rollback().await?;
+            return Ok(DeleteUserOutcome::NotFound);
+        }
+    };
+
+    if role == "admin" && active {
+        let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+        )
+        .fetch_all(&mut *tx)
+        .await?;
+
+        let target_is_locked_active_admin = locked_admin_ids.iter().any(|(id,)| *id == user_id);
+        if target_is_locked_active_admin && locked_admin_ids.len() <= 1 {
+            tx.rollback().await?;
+            return Ok(DeleteUserOutcome::LastActiveAdmin);
+        }
+        // Either the target dropped out of the locked active-admin set
+        // (changed concurrently — guard is moot) or more than one active
+        // admin remains — safe to proceed.
+    }
+
+    // sessions.user_id -> users.id ON DELETE CASCADE (migration 007): deleting
+    // the user row atomically removes their sessions in this same
+    // transaction. No separate revoke_user_sessions() call here — that would
+    // run on its own connection/transaction and would NOT be atomic with the
+    // delete (the exact gap this guard closes for the admin-count race).
+    let result = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        tx.rollback().await?;
+        return Ok(DeleteUserOutcome::NotFound);
+    }
+
+    tx.commit().await?;
+    Ok(DeleteUserOutcome::Deleted)
+}
+
 /// Admin password reset — hash and store a new password for the given user.
 pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Result<(), String> {
     // Hash password using argon2 (same pattern as create_user).
