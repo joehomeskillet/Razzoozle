@@ -293,6 +293,12 @@ impl GameRegistry {
         self.socket_to_game.remove(socket_id);
     }
 
+    /// Check if a socket_id is currently indexed (for testing).
+    #[cfg(test)]
+    pub fn is_socket_indexed(&self, socket_id: &str) -> bool {
+        self.socket_to_game.contains_key(socket_id)
+    }
+
     /// Candidate games to scan for a given socket_id: the O(1) index hit if
     /// we have one, else every active game (self-healing fallback if the
     /// index is ever incomplete/stale).

@@ -37,7 +37,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if let (Some(game_id), Some(player_id)) = (game_id_opt, player_id_opt) {
-                    let (removed_count, bot_cancel) = {
+                    let (removed_count, bot_cancel, socket_id_to_deindex) = {
                         let registry = ctx.registry.read().await;
                         let game_opt = registry.get_game_by_id(&game_id);
                         if let Some(game_ref) = game_opt {
@@ -69,16 +69,22 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                                 } else {
                                     None
                                 };
-                                (Some(game.players.len()), cancel)
+                                (Some(game.players.len()), cancel, Some(player_id.clone()))
                             } else {
                                 warn!("manager control failed: event=kickPlayer gameId={} playerId={} check=player_not_found", game_id, player_id);
-                                (None, None)
+                                (None, None, None)
                             }
                         } else {
                             warn!("manager control failed: event=kickPlayer gameId={} check=game_not_found", game_id);
-                            (None, None)
+                            (None, None, None)
                         }
                     };
+
+                    // Remove the player from the socket_to_game index (#144)
+                    if let Some(socket_id) = socket_id_to_deindex {
+                        let mut registry = ctx.registry.write().await;
+                        registry.deindex_player_socket(&socket_id);
+                    }
 
                     if let Some((bot_manager, client_id)) = bot_cancel {
                         if let Some(bm) = bot_manager {
