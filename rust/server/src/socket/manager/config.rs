@@ -111,7 +111,7 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 // Downstream: ConfigSelectQuizz splits on "," to construct UI mode selector.
                 if let Some(end_screen_modes) = payload.get("endScreenModes").and_then(|v| v.as_str()) {
                     let raw_value = end_screen_modes.to_string();
-                    let mut modes: std::collections::HashSet<&str> = end_screen_modes
+                    let modes: std::collections::HashSet<&str> = end_screen_modes
                         .split(',')
                         .map(|s| s.trim())
                         .filter(|s| !s.is_empty())
@@ -130,8 +130,12 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         patch["endScreenModes"] = serde_json::json!(validated);
                     } else {
                         // Invalid input: skip patching (preserve existing config value)
+                        // Truncate at char boundary (not byte) to prevent UTF-8 panic on multi-byte chars
                         let truncated = if raw_value.len() > 64 {
-                            format!("{}…", &raw_value[..64])
+                            format!(
+                                "{}…",
+                                raw_value.chars().take(64).collect::<String>()
+                            )
                         } else {
                             raw_value
                         };
