@@ -652,7 +652,6 @@
     "klassenDisabled": "Mode classe désactivé",
     "endScreenTitle": "Options d'Écran Final",
     "endScreenDescription": "Sélectionnez les options d'écran final disponibles pour l'enseignant.",
-    "endScreenModes": "Modes disponibles",
     "endScreenModesUpdated": "Options d'écran final mises à jour",
     "lobbyTitle": "Verrouillage du Vestibule",
     "lobbyDescription": "Lorsque cette option est activée, les nouveaux joueurs ne peuvent plus rejoindre le vestibule. Les joueurs existants et leurs reconnexions ne sont pas affectés.",

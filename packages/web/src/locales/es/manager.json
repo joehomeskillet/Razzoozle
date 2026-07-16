@@ -652,7 +652,6 @@
     "klassenDisabled": "Modo de clase deshabilitado",
     "endScreenTitle": "Opciones de Pantalla Final",
     "endScreenDescription": "Selecciona qué opciones de pantalla final deben estar disponibles para el docente.",
-    "endScreenModes": "Modos disponibles",
     "endScreenModesUpdated": "Opciones de pantalla final actualizadas",
     "lobbyTitle": "Bloqueo de Vestíbulo",
     "lobbyDescription": "Cuando está habilitado, los nuevos jugadores no pueden unirse al vestíbulo. Los jugadores existentes y sus reconexiones no se ven afectados.",
