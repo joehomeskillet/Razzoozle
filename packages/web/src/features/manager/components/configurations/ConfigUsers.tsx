@@ -3,14 +3,24 @@ import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
+import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import { fetchWithAuth } from "@razzoozle/web/lib/api"
 import {
   EmptyState,
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
+import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { Ban, CheckCircle2, UserPlus, Users as UsersIcon, Key, Trash2 } from "lucide-react"
+import {
+  Ban,
+  CheckCircle2,
+  UserCog,
+  UserPlus,
+  Users as UsersIcon,
+  Key,
+  Trash2,
+} from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -58,6 +68,15 @@ const ConfigUsers = () => {
     role: string
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 600 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 600)
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -385,72 +404,88 @@ const ConfigUsers = () => {
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
-          {users.map((user) => (
-            <ListRow
-              key={user.id}
-              title={user.username}
-              meta={
-                <span className="flex flex-wrap items-center gap-2">
-                  <Badge>{getRoleLabel(user.role)}</Badge>
-                  <Badge
-                    className={
-                      user.active
-                        ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
-                        : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
-                    }
-                  >
-                    {user.active
-                      ? t("manager:users.active", { defaultValue: "Aktiv" })
-                      : t("manager:users.disabledStatus", {
-                          defaultValue: "Deaktiviert",
-                        })}
-                  </Badge>
-                </span>
-              }
-              actions={[
-                {
-                  key: "reset",
-                  icon: Key,
-                  label: t("manager:users.resetPassword", {
-                    defaultValue: "Passwort zurücksetzen",
-                  }),
-                  disabled: pendingId === user.id || resettingPassword === true || deleting,
-                  onClick: () => {
-                    setResetPasswordId(user.id)
-                    setResetNewPassword("")
-                  },
+          {users.map((user) => {
+            const allActions: ListRowAction[] = [
+              {
+                key: "reset",
+                icon: Key,
+                label: t("manager:users.resetPassword", {
+                  defaultValue: "Passwort zurücksetzen",
+                }),
+                disabled: pendingId === user.id || resettingPassword === true || deleting,
+                onClick: () => {
+                  setResetPasswordId(user.id)
+                  setResetNewPassword("")
                 },
-                {
-                  key: "toggle",
-                  icon: user.active ? Ban : CheckCircle2,
-                  label: user.active
-                    ? t("manager:users.disable", { defaultValue: "Deaktivieren" })
-                    : t("manager:users.enable", { defaultValue: "Aktivieren" }),
-                  destructive: user.active,
-                  disabled: pendingId === user.id || resettingPassword === true || deleting,
-                  onClick: () => {
-                    void handleToggleActive(user)
-                  },
+              },
+              {
+                key: "toggle",
+                icon: user.active ? Ban : CheckCircle2,
+                label: user.active
+                  ? t("manager:users.disable", { defaultValue: "Deaktivieren" })
+                  : t("manager:users.enable", { defaultValue: "Aktivieren" }),
+                destructive: user.active,
+                disabled: pendingId === user.id || resettingPassword === true || deleting,
+                onClick: () => {
+                  void handleToggleActive(user)
                 },
-                {
-                  key: "delete",
-                  icon: Trash2,
-                  label: t("manager:users.delete", {
-                    defaultValue: "Löschen",
-                  }),
-                  destructive: true,
-                  disabled: pendingId === user.id || resettingPassword === true || deleting,
-                  onClick: () => {
-                    setPendingDelete({
-                      id: user.id,
-                      username: user.username,
-                      role: user.role,
-                    })
-                  },
+              },
+              {
+                key: "delete",
+                icon: Trash2,
+                label: t("manager:users.delete", {
+                  defaultValue: "Löschen",
+                }),
+                destructive: true,
+                disabled: pendingId === user.id || resettingPassword === true || deleting,
+                onClick: () => {
+                  setPendingDelete({
+                    id: user.id,
+                    username: user.username,
+                    role: user.role,
+                  })
                 },
-              ]}
-            />
-          ))}
+              },
+            ]
+            const visibleActions = isMobile
+              ? allActions.filter((a) => a.key === "reset" || a.key === "toggle")
+              : allActions
+            const overflowActions = isMobile
+              ? allActions.filter((a) => a.key === "delete")
+              : []
+
+            return (
+              <div key={user.id} className="flex items-center gap-2">
+                <ListRow
+                  leading={<UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                  title={user.username}
+                  meta={
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge>{getRoleLabel(user.role)}</Badge>
+                      <Badge
+                        className={
+                          user.active
+                            ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+                            : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
+                        }
+                      >
+                        {user.active
+                          ? t("manager:users.active", { defaultValue: "Aktiv" })
+                          : t("manager:users.disabledStatus", {
+                              defaultValue: "Deaktiviert",
+                            })}
+                      </Badge>
+                    </span>
+                  }
+                  actions={visibleActions}
+                  className="min-w-0 flex-1"
+                />
+                {isMobile && overflowActions.length > 0 && (
+                  <OverflowMenu actions={overflowActions} />
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
