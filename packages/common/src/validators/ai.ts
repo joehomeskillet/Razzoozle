@@ -43,36 +43,4 @@ export const aiSettingsValidator = z.object({
   }),
 })
 
-// SET_KEY payload: empty/whitespace key clears the stored secret.
-export const aiSetKeyValidator = z.object({
-  providerId: z.string().min(1).max(40),
-  key: z.string().max(400),
-})
-
-export const aiTestValidator = z.object({
-  providerId: z.string().min(1).max(40).optional(),
-})
-
-export const aiGenerateQuestionValidator = z.object({
-  topic: z.string().min(1).max(AI.TOPIC_MAX_LEN),
-  // Which question kind to author (defaults to "choice" server-side).
-  type: z
-    .enum(["choice", "boolean", "multiple-select", "type-answer"])
-    .optional(),
-  language: z.string().min(2).max(8).optional(),
-})
-
-export const aiGenerateDistractorsValidator = z.object({
-  question: z.string().min(1).max(300),
-  correct: z.string().min(1).max(200),
-  count: z.number().int().min(1).max(3).optional(),
-  language: z.string().min(2).max(8).optional(),
-})
-
-export const aiGenerateQuizValidator = z.object({
-  topic: z.string().min(1).max(AI.TOPIC_MAX_LEN),
-  count: z.number().int().min(AI.QUIZ_MIN_QUESTIONS).max(AI.QUIZ_MAX_QUESTIONS),
-  language: z.string().min(2).max(8).optional(),
-})
-
 export { AI_PROVIDER_OFF }
