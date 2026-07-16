@@ -235,7 +235,7 @@ const ConfigSelectQuizz = () => {
             {endScreenModesList.length > 1 && (
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-[var(--ink-muted)]">
-                  {t("manager:gameMode.endScreenModes", {
+                  {t("manager:gameMode.endScreenSelectTitle", {
                     defaultValue: "Endbildschirm",
                   })}
                 </label>
