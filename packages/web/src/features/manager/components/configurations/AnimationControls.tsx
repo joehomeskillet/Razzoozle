@@ -140,7 +140,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
             transition={reveal.spring}
             className="flex min-h-11 items-center gap-3 rounded-lg bg-[var(--surface-2)] px-3 outline-1 -outline-offset-1 outline-[var(--border-hairline)]"
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white"> {/* token-ok: white-on-primary, AA per design.md §8·B D6 */}
               {row}
             </span>
             <span className="h-2 flex-1 rounded-full bg-[var(--surface-4)]" aria-hidden />

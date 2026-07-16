@@ -99,9 +99,9 @@ const ConfigDisplay = () => {
         {steps.map(({ icon: Icon, text, result }, i) => (
           <li
             key={i}
-            className="flex items-start gap-3 rounded-xl bg-[var(--surface-2)] p-4 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+            className="flex items-start gap-3 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-4 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-contrast)] text-sm font-bold text-white">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-contrast)] text-sm font-bold text-white"> {/* token-ok: white-on-accent-contrast, AA per tokens.css §design.md */}
               {i + 1}
             </span>
             <Icon
@@ -120,7 +120,7 @@ const ConfigDisplay = () => {
         ))}
       </ol>
 
-      <p className="rounded-xl bg-[var(--color-accent)]/10 p-4 text-xs leading-snug text-[var(--ink-muted)]">
+      <p className="rounded-[var(--radius-theme)] bg-[var(--color-accent)]/10 p-4 text-xs leading-snug text-[var(--ink-muted)]">
         {t("manager:satellite.hint")}
       </p>
 
@@ -141,7 +141,7 @@ const ConfigDisplay = () => {
           {troubleshooting.map(({ icon: Icon, text }, i) => (
             <li
               key={i}
-              className="flex items-start gap-3 rounded-xl bg-[var(--surface-2)] p-3 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+              className="flex items-start gap-3 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-3 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
             >
               <Icon
                 className="mt-0.5 size-4 shrink-0 text-[var(--ink-faint)]"

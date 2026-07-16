@@ -37,7 +37,7 @@ const MockCard = ({
   animated?: { speed: number; intensity: number; iconCount: number; color: string } | null
   children: ReactNode
 }) => (
-  <div className="overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
+  <div className="overflow-hidden rounded-[var(--radius-theme)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
     <p className="bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-subtle)]">
       {label}
     </p>
@@ -138,7 +138,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
       {/* Reflect the editor's custom backdrop CSS inside the preview. Manager-
           trusted CSS, same trust model as the skeleton custom CSS. */}
       {customCss && <style>{customCss}</style>}
-      <div className="relative isolate overflow-hidden rounded-2xl bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
+      <div className="relative isolate overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
         <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
@@ -178,7 +178,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               123 456
             </div>
             <span
-              className="rounded-lg px-4 py-1.5 text-sm font-semibold text-white shadow"
+              className={"rounded-lg px-4 py-1.5 text-sm font-semibold text-white shadow" /* token-ok: stage-preview mirrors real join CTA white-on-primary (SubmitButton.tsx), design.md §2 Guardrail #5 */}
               style={{ background: "var(--color-primary)" }}
             >
               {t("manager:themePreview.join", {
@@ -186,7 +186,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               })}
             </span>
             {theme.showBranding && (
-              <span className="text-[10px] font-semibold text-white/50">
+              <span className="text-[10px] font-semibold text-white/50"> {/* token-ok: stage-preview watermark over image/backdrop, mirrors overlay-on-image convention */}
                 {appTitle ?? "Razzoozle"}
               </span>
             )}
@@ -249,7 +249,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               {MOCK_PODIUM.map(({ rank, score }) => (
                 <div
                   key={rank}
-                  className="flex items-center gap-2 rounded-md px-2 py-1 text-xs font-bold text-white shadow"
+                  className={"flex items-center gap-2 rounded-md px-2 py-1 text-xs font-bold text-white shadow" /* token-ok: stage-preview mirrors real Podium.tsx white-on-accent/primary (states/Podium.tsx), design.md §2 Guardrail #5 */}
                   style={{
                     background:
                       rank === 1
