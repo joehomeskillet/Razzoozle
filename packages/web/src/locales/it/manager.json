@@ -627,7 +627,9 @@
       "label": "Risoluzione immagine",
       "help": "Lunghezza del lato dell’immagine generata",
       "option": "{{size}} × {{size}}"
-    }
+    },
+    "imageResolution": "Risoluzione immagine",
+    "imageSizeLong": "Lunghezza del lato dell'immagine generata"
   },
   "selectQuizz": {
     "copySoloLink": "Copia link solo",

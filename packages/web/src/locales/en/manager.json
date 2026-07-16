@@ -408,7 +408,9 @@
       "label": "Image resolution",
       "help": "Edge length of the generated image",
       "option": "{{size}} × {{size}}"
-    }
+    },
+    "imageResolution": "Image resolution",
+    "imageSizeLong": "Edge length of the generated image"
   },
   "satellite": {
     "title": "Satellite Display",

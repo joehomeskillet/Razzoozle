@@ -27,5 +27,6 @@
   "expand": "Erweitern",
   "collapse": "Einklappen",
   "create": "Erstellen",
-  "add": "Hinzufügen"
+  "add": "Hinzufügen",
+  "removeLabelNamed": "{{name}} entfernen"
 }
