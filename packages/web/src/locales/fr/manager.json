@@ -813,7 +813,12 @@
     },
     "roleUser": "Enseignant",
     "roleAdmin": "Admin",
-    "create": "Créer"
+    "create": "Créer",
+    "delete": "Supprimer",
+    "deleteConfirmTitle": "Supprimer l'utilisateur ?",
+    "deleteConfirmDescription": "{{name}} sera supprimé définitivement. Cette action ne peut pas être annulée.",
+    "deleteConfirmCascade": "Attention : Tous les cours et élèves de cet enseignant seront également supprimés.",
+    "deleted": "{{name}} a été supprimé"
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",

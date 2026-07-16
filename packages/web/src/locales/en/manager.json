@@ -852,7 +852,12 @@
     },
     "roleUser": "Teacher",
     "roleAdmin": "Admin",
-    "create": "Create"
+    "create": "Create",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete user?",
+    "deleteConfirmDescription": "{{name}} will be permanently deleted. This cannot be undone.",
+    "deleteConfirmCascade": "Warning: All classes and students of this teacher will also be deleted.",
+    "deleted": "{{name}} was deleted"
   },
   "schueler": {
     "title": "Student Management",

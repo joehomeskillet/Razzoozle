@@ -813,7 +813,12 @@
     },
     "roleUser": "教师",
     "roleAdmin": "管理员",
-    "create": "创建"
+    "create": "创建",
+    "delete": "删除",
+    "deleteConfirmTitle": "删除用户？",
+    "deleteConfirmDescription": "{{name}} 将被永久删除。此操作无法撤销。",
+    "deleteConfirmCascade": "警告：此教师的所有班级和学生也将被删除。",
+    "deleted": "{{name}} 已被删除"
   },
   "profile": {
     "intro": "您的个人资料和设置",
