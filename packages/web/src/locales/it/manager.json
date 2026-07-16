@@ -651,9 +651,7 @@
     "klassenEnabled": "Modalità classe abilitata",
     "klassenDisabled": "Modalità classe disabilitata",
     "endScreenTitle": "Opzioni Schermata Finale",
-    "endScreenDescription": "Scegli quali opzioni di schermata finale sono disponibili per gli insegnanti. Elenco separato da virgole: full, top3, private.",
-    "endScreenModes": "Modalità disponibili",
-    "endScreenModesHint": "Separato da virgole: full, top3, private",
+    "endScreenDescription": "Seleziona quali opzioni di visualizzazione della schermata finale devono essere disponibili per l'insegnante.",
     "endScreenModesUpdated": "Opzioni schermata finale aggiornate",
     "lobbyTitle": "Blocco della Lobby",
     "lobbyDescription": "Se abilitato, i nuovi giocatori non possono più unirsi alla lobby. I giocatori esistenti e i loro ricollegamenti non sono interessati.",
@@ -670,7 +668,13 @@
     "scoringDescription": "Scegli come vengono calcolati i punti. La velocità tiene conto del tempo di risposta, l'accuratezza conta solo risposte corrette o errate.",
     "scoringMode": "Modalità punteggio",
     "speedMode": "Velocità",
-    "accuracyMode": "Precisione"
+    "accuracyMode": "Precisione",
+    "endScreenMode": {
+      "full": "Completo",
+      "top3": "Top 3",
+      "private": "Privato"
+    },
+    "endScreenSelectTitle": "Schermata finale"
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",

@@ -651,9 +651,7 @@
     "klassenEnabled": "Mode classe activé",
     "klassenDisabled": "Mode classe désactivé",
     "endScreenTitle": "Options d'Écran Final",
-    "endScreenDescription": "Choisissez les options d'écran final disponibles pour les enseignants. Liste séparée par des virgules : full, top3, private.",
-    "endScreenModes": "Modes disponibles",
-    "endScreenModesHint": "Séparé par des virgules : full, top3, private",
+    "endScreenDescription": "Sélectionnez les options d'écran final disponibles pour l'enseignant.",
     "endScreenModesUpdated": "Options d'écran final mises à jour",
     "lobbyTitle": "Verrouillage du Vestibule",
     "lobbyDescription": "Lorsque cette option est activée, les nouveaux joueurs ne peuvent plus rejoindre le vestibule. Les joueurs existants et leurs reconnexions ne sont pas affectés.",
@@ -670,7 +668,13 @@
     "scoringDescription": "Choisissez comment les points sont calculés. La vitesse tient compte du temps de réponse, la précision ne compte que les réponses correctes ou incorrectes.",
     "scoringMode": "Mode de notation",
     "speedMode": "Vitesse",
-    "accuracyMode": "Précision"
+    "accuracyMode": "Précision",
+    "endScreenMode": {
+      "full": "Complet",
+      "top3": "Top 3",
+      "private": "Privé"
+    },
+    "endScreenSelectTitle": "Écran de fin"
   },
   "achievementsConfig": {
     "title": "Configurer les succès",
