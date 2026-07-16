@@ -65,8 +65,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
                     : "opacity-90",
                 )}
               >
-                {/* token-ok: answer-label-overlay, legibility on answer colors */}
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/20 text-xs font-bold">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/20 text-xs font-bold"> {/* token-ok: image-overlay scrim, deferred→W5 */}
                   {ANSWERS_LABELS[ai % ANSWERS_LABELS.length]}
                 </span>
                 <span className="min-w-0 flex-1 break-words">{answer}</span>
