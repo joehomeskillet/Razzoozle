@@ -27,6 +27,26 @@ import {
   reducedVariants,
 } from "@razzoozle/web/features/game/animation/presets"
 
+/**
+ * Shared reward-card shell classes (also consumed by ScoreToast). "toast" tone
+ * matches ScoreToast's own sizing (px-5 py-3 shadow-xl); "compact" is the
+ * RewardStack row default. Callers that need interactive affordances (hover
+ * group, pointer-events) append those separately — this shell only covers the
+ * visual surface both cards share.
+ */
+export const rewardCardClass = (tone: "compact" | "toast" = "compact") =>
+  `relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)] ${tone === "toast" ? "px-5 py-3 shadow-xl" : "py-2.5 pr-3 pl-2.5 shadow-md"}`
+
+/**
+ * Leading accent wash background. Normalized to `color-mix(in srgb, <accent>
+ * 20%, transparent)` — a plain string-concat suffix (e.g. `${accent}33`)
+ * silently breaks when accent is a `var(--token)` reference, since
+ * `var(--x)33` is not valid CSS and the whole `background` declaration is
+ * dropped.
+ */
+export const accentWash = (accent: string) =>
+  `linear-gradient(90deg, color-mix(in srgb, ${accent} 20%, transparent), transparent)`
+
 export interface RewardRowProps {
   id: string
   icon: ReactNode
@@ -122,14 +142,14 @@ const RewardRow = ({
       onMouseLeave={resume}
       onFocus={pause}
       onBlur={resume}
-      className={`group relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)] pointer-events-auto ${tone === "toast" ? "px-5 py-3 shadow-xl" : "py-2.5 pr-3 pl-2.5 shadow-md"}`}
+      className={`group pointer-events-auto ${rewardCardClass(tone)}`}
       style={{ borderLeft: `4px solid ${accent}` }}
     >
       {/* Leading accent wash */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-y-0 left-0 w-16"
-        style={{ background: `linear-gradient(90deg, ${accent}33, transparent)` }}
+        style={{ background: accentWash(accent) }}
       />
 
       {/* Icon slot */}
