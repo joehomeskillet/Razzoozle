@@ -133,7 +133,7 @@ const DisplayControl = () => {
               placeholder={t("manager:satellite.codePlaceholder")}
               aria-label={t("manager:satellite.codeLabel")}
               maxLength={6}
-              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase outline-none focus-visible:border-[var(--color-primary)]"
+              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
             <button
               type="button"

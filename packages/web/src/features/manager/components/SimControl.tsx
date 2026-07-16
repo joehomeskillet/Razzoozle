@@ -113,7 +113,7 @@ const SimControl = () => {
                   addBots()
                 }
               }}
-              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-bold outline-none focus-visible:border-[var(--color-primary)]"
+              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
             <button
               type="button"
