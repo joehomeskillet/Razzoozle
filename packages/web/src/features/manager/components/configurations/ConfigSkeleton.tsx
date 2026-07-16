@@ -359,7 +359,7 @@ const ConfigSkeleton = () => {
             placeholder={t("manager:skeleton.css.placeholder", {
               defaultValue: "/* :root { --team-red: #ff0000 } */",
             })}
-            className="min-h-48 w-full resize-y rounded-lg bg-gray-900 p-3 font-mono text-sm text-gray-100 outline-1 -outline-offset-1 outline-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           />
           <div className="flex justify-end">
             <Button
@@ -389,10 +389,10 @@ const ConfigSkeleton = () => {
           {/* Prominent red warning — this is stored XSS by design (contract §1). */}
           <div
             role="alert"
-            className="flex items-start gap-2.5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800"
+            className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-[var(--status-offline-bg)] p-3 text-sm font-medium text-[var(--status-offline-text)]"
           >
             <AlertTriangle
-              className="mt-0.5 size-5 shrink-0 text-red-600"
+              className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"
               aria-hidden
             />
             <span>
@@ -417,7 +417,7 @@ const ConfigSkeleton = () => {
             placeholder={t("manager:skeleton.js.placeholder", {
               defaultValue: "// console.log(window.razzoozle.theme)",
             })}
-            className="min-h-48 w-full resize-y rounded-lg bg-gray-900 p-3 font-mono text-sm text-gray-100 outline-1 -outline-offset-1 outline-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           />
           <div className="flex justify-end">
             <Button

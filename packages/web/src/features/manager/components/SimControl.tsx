@@ -90,7 +90,7 @@ const SimControl = () => {
               setOpen(false)
             }
           }}
-          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl"
+          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[var(--surface)] p-3 text-left text-[var(--ink)] shadow-xl"
         >
           <p className="text-sm font-bold">{t("manager:sim.button")}</p>
           <div className="mt-2 flex gap-2">
@@ -113,19 +113,19 @@ const SimControl = () => {
                   addBots()
                 }
               }}
-              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-bold outline-none focus-visible:border-[var(--color-primary)]"
+              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
             <button
               type="button"
               onClick={addBots}
               disabled={!gameId || count < 1 || windowOpen}
-              className="bg-primary shrink-0 rounded-md px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="shrink-0 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               {t("manager:sim.add")}
             </button>
           </div>
           {error && (
-            <p className="mt-2 text-xs leading-snug text-red-600" role="alert">
+            <p className="mt-2 text-xs leading-snug text-[var(--state-wrong)]" role="alert">
               {t(error)}
             </p>
           )}

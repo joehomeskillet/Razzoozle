@@ -327,7 +327,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
           <LanguageSwitcher />
           <button
             type="button"
-            className="focus-visible:outline-primary inline-flex size-11 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="focus-visible:outline-[var(--color-primary)] inline-flex size-11 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
             onClick={handleLogout}
             title={t("manager:logout")}
             aria-label={t("manager:logout")}

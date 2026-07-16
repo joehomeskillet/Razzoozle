@@ -49,7 +49,7 @@ export const ObservabilityCard = ({
         <span
           className={
             isConnected
-              ? "inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
+              ? "inline-flex items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]"
               : "inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-subtle)]"
           }
         >
@@ -57,8 +57,8 @@ export const ObservabilityCard = ({
             aria-hidden
             className={
               isConnected
-                ? "size-2 rounded-full bg-green-500"
-                : "size-2 rounded-full bg-gray-400"
+                ? "size-2 rounded-full bg-[var(--state-correct)]"
+                : "size-2 rounded-full bg-[var(--ink-faint)]"
             }
           />
           {t("dev.observability.serverHealth")}
