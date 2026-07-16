@@ -1,6 +1,7 @@
 import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
+import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import {
@@ -162,9 +163,72 @@ const ClassList = ({
           const visibleActions = getPrimaryActions(allActions)
           const overflowActions = getOverflowActions(allActions)
 
+          const footer = (classLabels.length > 0 || labels.length > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {classLabels.map((label) => (
+                <LabelChip
+                  key={label.id}
+                  label={label}
+                  onRemove={() => {
+                    const updated = (classObj.labelIds ?? []).filter(
+                      (id) => id !== label.id
+                    )
+                    onAssignLabels?.(classObj.id, updated)
+                  }}
+                />
+              ))}
+
+              {labels.length > 0 && (
+                <Select.Root
+                  value={pendingLabelPickerId === classObj.id ? "pending" : ""}
+                  onValueChange={(val) => {
+                    const labelId = Number(val)
+                    const updated = [...(classObj.labelIds ?? []), labelId]
+                    onAssignLabels?.(classObj.id, updated)
+                    setPendingLabelPickerId(null)
+                  }}
+                >
+                  <Select.Trigger
+                    aria-label={t("manager:labels.assignTitle")}
+                    className={assignTriggerClass}
+                    onClick={() => setPendingLabelPickerId(classObj.id)}
+                  >
+                    <Plus className="size-3" />
+                    <Select.Value placeholder={t("manager:labels.assignTitle")} />
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content
+                      position="popper"
+                      sideOffset={4}
+                      className="z-50 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                    >
+                      <Select.Viewport className="p-1">
+                        {availableLabels.length > 0 ? (
+                          availableLabels.map((label) => (
+                            <Select.Item
+                              key={label.id}
+                              value={String(label.id)}
+                              className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                            >
+                              <Select.ItemText>{label.name}</Select.ItemText>
+                            </Select.Item>
+                          ))
+                        ) : (
+                          <div className="px-3 py-1.5 text-sm text-[var(--ink-subtle)]">
+                            {t("manager:labels.noLabels")}
+                          </div>
+                        )}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              )}
+            </div>
+          )
+
           return (
             <div key={classObj.id} className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <ListRow
                   leading={<GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />}
                   title={classObj.name}
@@ -183,77 +247,16 @@ const ClassList = ({
                       </span>
                     </div>
                   }
+                  footer={footer}
                   actions={visibleActions}
                   className="min-w-0 flex-1"
                 />
                 {isMobile && overflowActions.length > 0 && (
-                  <OverflowMenu actions={overflowActions} />
+                  <div className="mt-4">
+                    <OverflowMenu actions={overflowActions} />
+                  </div>
                 )}
               </div>
-
-              {/* Labels row */}
-              {(classLabels.length > 0 || labels.length > 0) && (
-                <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-[var(--surface)] rounded-lg ml-10">
-                  {classLabels.map((label) => (
-                    <LabelChip
-                      key={label.id}
-                      label={label}
-                      onRemove={() => {
-                        const updated = (classObj.labelIds ?? []).filter(
-                          (id) => id !== label.id
-                        )
-                        onAssignLabels?.(classObj.id, updated)
-                      }}
-                    />
-                  ))}
-
-                  {labels.length > 0 && (
-                    <Select.Root
-                      value={pendingLabelPickerId === classObj.id ? "pending" : ""}
-                      onValueChange={(val) => {
-                        const labelId = Number(val)
-                        const updated = [...(classObj.labelIds ?? []), labelId]
-                        onAssignLabels?.(classObj.id, updated)
-                        setPendingLabelPickerId(null)
-                      }}
-                    >
-                      <Select.Trigger
-                        aria-label={t("manager:labels.assignTitle")}
-                        className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
-                        onClick={() => setPendingLabelPickerId(classObj.id)}
-                      >
-                        <Plus className="size-3" />
-                        <Select.Value placeholder={t("manager:labels.assignTitle")} />
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content
-                          position="popper"
-                          sideOffset={4}
-                          className="z-50 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
-                        >
-                          <Select.Viewport className="p-1">
-                            {availableLabels.length > 0 ? (
-                              availableLabels.map((label) => (
-                                <Select.Item
-                                  key={label.id}
-                                  value={String(label.id)}
-                                  className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
-                                >
-                                  <Select.ItemText>{label.name}</Select.ItemText>
-                                </Select.Item>
-                              ))
-                            ) : (
-                              <div className="px-3 py-1.5 text-sm text-[var(--ink-subtle)]">
-                                {t("manager:labels.noLabels")}
-                              </div>
-                            )}
-                          </Select.Viewport>
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
-                  )}
-                </div>
-              )}
 
               {/* Expanded Students List */}
               {expandedClassId === classObj.id && (
