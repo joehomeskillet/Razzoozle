@@ -98,7 +98,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           type="button"
           aria-label={detailsLabel}
           title={detailsLabel}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <Info className="size-4" aria-hidden />
         </button>

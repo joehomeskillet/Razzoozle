@@ -122,7 +122,7 @@ const MediaCard = ({
               <Button
                 type="button"
                 variant="danger"
-                size="sm"
+                size="md"
                 className="flex-1"
               >
                 <Trash2 className="size-4" aria-hidden />
