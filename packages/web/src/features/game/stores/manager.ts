@@ -24,6 +24,7 @@ interface ManagerStore<T> {
   username: string | null
 
   setConfig: (_config: ManagerConfig) => void
+  patchQuizzLabels: (_quizzId: string, _labelIds: number[]) => void
   setGameId: (_gameId: string | null) => void
   setInviteCode: (_inviteCode: string | null) => void
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
@@ -109,6 +110,26 @@ export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => {
     ...authState,
 
     setConfig: (config) => set({ config }),
+
+    // #145: patch a single quiz's labelIds in place (label:assigned ack) so the
+    // UI reflects an assign/remove immediately, without waiting for the next
+    // full CONFIG refresh — and without a component-local copy of server state
+    // that a refresh (or a remount racing ahead of it) can silently undo.
+    // Server persistence already succeeded by the time this ack arrives; this
+    // only keeps the client's own copy of config.quizz in sync with it.
+    patchQuizzLabels: (quizzId, labelIds) =>
+      set((state) =>
+        state.config
+          ? {
+              config: {
+                ...state.config,
+                quizz: state.config.quizz.map((q) =>
+                  q.id === quizzId ? { ...q, labelIds } : q,
+                ),
+              },
+            }
+          : {},
+      ),
 
     setGameId: (gameId) => set({ gameId }),
 
