@@ -430,7 +430,7 @@ pub async fn handle_solo_score(
     let non_poll_count = quiz.questions.iter()
         .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
         .count() as i32;
-    let theoretical_max = non_poll_count * 1000;
+    let theoretical_max = non_poll_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
 
     drop(registry);
 
@@ -778,7 +778,7 @@ mod tests {
         let non_poll_count = quiz.questions.iter()
             .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
             .count() as i32;
-        let theoretical_max = non_poll_count * 1000;
+        let theoretical_max = non_poll_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
 
         let answers = vec![
             answer(0, Some(1)), // choice correct
