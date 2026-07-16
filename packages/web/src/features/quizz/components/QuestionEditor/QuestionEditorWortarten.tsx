@@ -28,7 +28,7 @@ const samePosSet = (a: string[] | undefined, b: string[]): boolean =>
   !!a && a.length === b.length && a.every((v, i) => v === b[i])
 
 const QuestionEditorWortarten = () => {
-  const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
+  const { currentQuestion, currentIndex, updateQuestion, silentUpdateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
   const [toastError, setToastError] = useState<string>("")
 
@@ -38,7 +38,8 @@ const QuestionEditorWortarten = () => {
   const disabledTokens = currentQuestion.disabledTokens ?? []
 
   // Self-heal: keep posSet fixed to POS_LABELS, solutions.length in lockstep
-  // with tokens.length, and disabledTokens in sync (remove indices >= tokens.length)
+  // with tokens.length, and disabledTokens in sync (remove indices >= tokens.length).
+  // Use silentUpdateQuestion so mount-normalization doesn't mark the editor dirty (#28).
   useEffect(() => {
     const patch: {
       posSet?: string[]
@@ -61,7 +62,7 @@ const QuestionEditorWortarten = () => {
     }
 
     if (Object.keys(patch).length > 0) {
-      updateQuestion(currentIndex, patch)
+      silentUpdateQuestion(currentIndex, patch)
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, tokens.length])

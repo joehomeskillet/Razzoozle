@@ -34,6 +34,17 @@ interface QuizzEditorContextType {
   removeQuestions: (_indices: number[]) => void
   reorderQuestions: (_from: number, _to: number) => void
   updateQuestion: (_index: number, _updates: Partial<QuestionWithId>) => void
+  /**
+   * Silent update: applies a patch to a question without marking the editor as dirty.
+   * Used for internal normalization (e.g., self-healing posSet on mount) where the
+   * change should not trigger beforeunload prompts.
+   *
+   * IMPORTANT: Only updates the saved snapshot if the editor is currently pristine.
+   * This prevents accidentally absorbing unrelated unsaved edits from other questions.
+   * If already dirty, leaves the snapshot unchanged so beforeunload protection remains
+   * active and user changes are not silently lost.
+   */
+  silentUpdateQuestion: (_index: number, _updates: Partial<QuestionWithId>) => void
   /** True when the editor state diverges from the last-saved snapshot. */
   isDirty: boolean
   /**
@@ -205,6 +216,21 @@ export const QuizzEditorProvider = ({
     )
   }
 
+  const silentUpdateQuestion = (index: number, updates: Partial<QuestionWithId>) => {
+    // Apply the patch to the questions state
+    const updatedQuestions = questions.map((q, i) =>
+      i === index ? { ...q, ...updates } : q
+    )
+    setQuestions(updatedQuestions)
+    // Only update the saved snapshot if the editor is currently pristine.
+    // This allows mount-normalization to fix structural issues (#28) without
+    // absorbing unrelated user edits. If already dirty, leave the snapshot alone
+    // so beforeunload remains sharp and preserves pending user changes.
+    if (!isDirty) {
+      setSavedSnapshot(snapshotOf(subject, themeId, updatedQuestions))
+    }
+  }
+
   return (
     <QuizzEditorContext.Provider
       value={{
@@ -223,6 +249,7 @@ export const QuizzEditorProvider = ({
         removeQuestions,
         reorderQuestions,
         updateQuestion,
+        silentUpdateQuestion,
         isDirty,
         markSaved,
       }}
