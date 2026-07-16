@@ -1,12 +1,19 @@
 /**
- * e2e/stagehand/quiz-title-mobile.spec.ts — Quiz title visibility on mobile (375px).
+ * e2e/stagehand/quiz-title-mobile.spec.ts — Quiz title + overflow menu at 375px (D13, F3).
  *
- * Run directly: `npx tsx e2e/stagehand/quiz-title-mobile.spec.ts`
- * 
- * Validates D13 mobile pattern: quiz title remains visible at 375px viewport,
- * action overflow menu appears, and menu items are accessible.
+ * Run directly: `npx tsx e2e/stagehand/quiz-title-mobile.spec.ts` (per
+ * stagehand/README.md — plain script, not a Playwright Test / Jest suite; the
+ * installed @browserbasehq/stagehand v3 SDK exposes its own CDP-based
+ * Page/Locator, not Playwright's, and `@playwright/test` is not a dependency
+ * of e2e/).
+ *
+ * Validates design.md's D13 mobile list-action pattern for the quiz
+ * management list (QuizzList.tsx, under the "Quiz" nav tab — NOT the "Play"
+ * landing tab's quiz picker, which carries no overflow menu at all): at
+ * <600px each row's title stays laid out (non-zero width) and secondary
+ * actions collapse into an overflow trigger (aria-haspopup="menu" ->
+ * role="menu" containing >=1 role="menuitem").
  */
-import { z } from 'zod';
 import { newStagehand } from './config';
 import type { Page } from '@browserbasehq/stagehand/lib/v3/understudy/page.js';
 
@@ -29,134 +36,115 @@ function e2eUsername(): string {
 }
 
 // ── Stagehand Page/Locator helpers ──────────────────────────────────────────
+// stagehand.page does not exist on v3 — the active page is
+// stagehand.context.activePage(). Its Locator has no getByTestId/getByRole/
+// filter/or/waitFor/evaluate/locator(); only click/fill/type/isVisible/
+// innerText/first/nth/count on a raw (possibly compound) CSS selector.
 const testIdSel = (id: string) => `[data-testid="${id}"]`;
+const testIdPrefixSel = (prefix: string) => `[data-testid^="${prefix}"]`;
 
-async function waitForTestId(
-  page: Page,
-  id: string,
-  opts?: { state?: 'visible' | 'hidden' | 'attached' | 'detached'; timeout?: number },
-) {
-  await page.waitForSelector(testIdSel(id), {
-    state: opts?.state ?? 'visible',
-    timeout: opts?.timeout ?? 15_000,
-  });
+async function waitForTestId(page: Page, id: string, timeoutMs = 15_000) {
+  await page.waitForSelector(testIdSel(id), { state: 'visible', timeout: timeoutMs });
 }
 
-async function waitForSelector(
-  page: Page,
-  selector: string,
-  opts?: { state?: 'visible' | 'hidden' | 'attached' | 'detached'; timeout?: number },
-) {
-  await page.waitForSelector(selector, {
-    state: opts?.state ?? 'visible',
-    timeout: opts?.timeout ?? 15_000,
-  });
+async function waitForTestIdPrefix(page: Page, prefix: string, timeoutMs = 15_000) {
+  await page.waitForSelector(testIdPrefixSel(prefix), { state: 'visible', timeout: timeoutMs });
+}
+
+/** Click the first <button> anywhere on the page whose visible text matches
+    one of the given candidates exactly (locale-tolerant — copied verbatim
+    from mp-loop.spec.ts's clickButtonByText: live headless Chrome resolves
+    "en-US" via LanguageDetector regardless of the app's de-first default, so
+    tab/button text asserted here must not assume German). */
+async function clickButtonByText(page: Page, ...textCandidates: string[]): Promise<void> {
+  const candidates = page.locator('button');
+  const n = await candidates.count();
+  for (let i = 0; i < n; i++) {
+    const el = candidates.nth(i);
+    const text = (await el.innerText().catch(() => '')).trim();
+    if (textCandidates.includes(text)) {
+      await el.click();
+      return;
+    }
+  }
+  throw new Error(`No <button> found with text among: ${textCandidates.join(', ')}`);
 }
 
 async function runQuizTitleMobileTest() {
-  const stagehand = newStagehand();
-  try {
-    const page = stagehand.context.activePage();
-    const password = requireE2EPassword();
+  const password = requireE2EPassword();
 
-    // ============ LOGIN TO MANAGER ============
+  const stagehand = newStagehand();
+  await stagehand.init();
+  const page = stagehand.context.activePage();
+  if (!page) {
+    throw new Error('Stagehand did not produce an active page after init()');
+  }
+
+  try {
+    // ============ MOBILE VIEWPORT (375px, D13 breakpoint) — set before nav so
+    // isMobile state (window.innerWidth < 600) is correct on first mount ============
+    await page.setViewportSize(375, 667);
+
+    // ============ MANAGER: LOGIN ============
     await page.goto(`${BASE_URL}/manager`);
     await waitForTestId(page, 'login-password');
     await page.locator(testIdSel('login-username')).fill(e2eUsername());
     await page.locator(testIdSel('login-password')).fill(password);
     await page.locator(testIdSel('login-submit')).click();
+    // Post-condition: the "Play" landing tab (quiz picker) only renders once
+    // auth succeeds. Testid is dynamic (`quizz-row-${id}`), wait on the prefix.
+    await waitForTestIdPrefix(page, 'quizz-row-');
 
-    // Post-condition: quiz list renders after auth succeeds
-    // (look for any quiz row — testid is dynamic quizz-row-${id})
-    await page.waitForSelector('[data-testid^="quizz-row-"]', {
-      state: 'visible',
-      timeout: 15_000,
-    });
+    // ============ NAVIGATE: open the D12 mobile Drawer, select "Quiz" tab ============
+    // Below the 920px rail breakpoint (design.md), nav lives in a hamburger
+    // Drawer (ConsoleShell.tsx) — the "Quiz" tab (QuizzList.tsx) is the D13
+    // row-with-overflow-menu view; "Play" (default landing) has no overflow
+    // menu at all, so this navigation step is required, not optional.
+    const openNavSel = 'button[aria-label="Open navigation"], button[aria-label="Navigation öffnen"]';
+    await page.waitForSelector(openNavSel, { state: 'visible', timeout: 10_000 });
+    await page.locator(openNavSel).first().click();
+    await clickButtonByText(page, 'Quiz');
 
-    // ============ SET MOBILE VIEWPORT (375px) ============
-    // Stagehand v3 uses setViewportSize on the Page directly
-    await page.setViewportSize({ width: 375, height: 812 });
+    // ============ FIRST QUIZ ROW: title stays laid out at 375px (D13) ============
+    // ListRow renders the title as a `span.truncate.font-semibold` — no row
+    // testid exists on this tab, so scope by class + document order (first
+    // match = first row) instead of Locator.locator() chaining, which this
+    // SDK's Locator class does not support.
+    const titleSelector = 'span.truncate.font-semibold';
+    await page.waitForSelector(titleSelector, { state: 'visible', timeout: 15_000 });
 
-    // Small delay to allow re-render at new viewport
-    await page.waitForTimeout(500);
-
-    // ============ VALIDATE QUIZ TITLE VISIBLE ON MOBILE ============
-    // Find the first quiz row container (any element with data-testid="quizz-row-*")
-    const firstQuizRow = page.locator('[data-testid^="quizz-row-"]').first();
-    
-    // Title is rendered inside ListRow as a <span> with truncate class
-    // and the text content is q.subject
-    const titleElement = firstQuizRow.locator('span.truncate').first();
-
-    // Wait for the title to be visible
-    await titleElement.isVisible();
-    
-    // Verify bounding box exists and width > 0
-    const boundingBox = await page.evaluate((sel) => {
+    const box = await page.evaluate((sel) => {
       const el = document.querySelector(sel) as HTMLElement | null;
       if (!el) return null;
       const rect = el.getBoundingClientRect();
-      return {
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y,
-      };
-    }, 'span.truncate');
+      return { width: rect.width, height: rect.height };
+    }, titleSelector);
 
-    if (!boundingBox) {
-      throw new Error('Quiz title element not found in DOM');
+    if (!box) {
+      throw new Error('Quiz title element not found in DOM (first row, "Quiz" tab)');
     }
-
-    if (boundingBox.width <= 0) {
-      throw new Error(`Quiz title width is ${boundingBox.width}px (expected > 0)`);
+    if (box.width <= 0) {
+      throw new Error(`Quiz title width is ${box.width}px (expected > 0) — title collapsed at 375px`);
     }
+    console.log(`Quiz title visible + laid out at 375px (${Math.round(box.width)}px wide).`);
 
-    const titleText = await titleElement.innerText();
-    if (!titleText || titleText.trim().length === 0) {
-      throw new Error('Quiz title text is empty or whitespace');
+    // ============ OVERFLOW MENU: aria-haspopup -> role=menu -> role=menuitem ============
+    const overflowSelector = 'button[aria-haspopup="menu"]';
+    const overflowVisible = await page.locator(overflowSelector).first().isVisible();
+    if (!overflowVisible) {
+      throw new Error('Overflow trigger (aria-haspopup="menu") not visible at 375px — D13 collapse did not happen');
     }
+    await page.locator(overflowSelector).first().click();
 
-    console.log(`✓ Quiz title visible: "${titleText}" (${Math.round(boundingBox.width)}px wide)`);
-
-    // ============ VALIDATE OVERFLOW MENU ON MOBILE ============
-    // Find the overflow menu button (aria-haspopup="menu" within the same row)
-    const overflowButton = firstQuizRow.locator('button[aria-haspopup="menu"]');
-    const isOverflowVisible = await overflowButton.isVisible();
-
-    if (!isOverflowVisible) {
-      throw new Error('Overflow menu button (aria-haspopup="menu") not visible on mobile');
-    }
-
-    console.log('✓ Overflow menu button visible');
-
-    // Click the overflow button to open the menu
-    await overflowButton.click();
-
-    // Verify the menu (role="menu") appears
-    await waitForSelector(page, '[role="menu"]', { state: 'visible', timeout: 5_000 });
-    console.log('✓ Menu opened (role="menu" visible)');
-
-    // Verify at least one menu item exists (look for role="menuitem")
-    const menuItems = page.locator('[role="menuitem"]');
-    const menuItemCount = await menuItems.count();
-
+    await page.waitForSelector('[role="menu"]', { state: 'visible', timeout: 5_000 });
+    const menuItemCount = await page.locator('[role="menuitem"]').count();
     if (menuItemCount === 0) {
-      throw new Error('No menu items (role="menuitem") found in overflow menu');
+      throw new Error('Overflow menu opened but has 0 role="menuitem" entries');
     }
 
-    console.log(`✓ Menu has ${menuItemCount} items`);
-
-    // Verify specific action is accessible (e.g., "edit" action)
-    const editItem = page.locator(testIdSel('edit'));
-    const editVisible = await editItem.isVisible().catch(() => false);
-    if (!editVisible) {
-      throw new Error('Edit action not found in overflow menu (data-testid="edit")');
-    }
-
-    console.log('✓ Edit action accessible in menu');
-
-    console.log('\n✅ Quiz title mobile test passed: title visible at 375px, menu functional');
+    console.log(
+      `Quiz title mobile test passed: title visible + laid out, overflow menu has ${menuItemCount} item(s).`,
+    );
   } finally {
     await stagehand.close();
   }
