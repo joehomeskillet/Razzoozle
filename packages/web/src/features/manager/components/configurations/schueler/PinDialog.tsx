@@ -1,5 +1,7 @@
+import * as Dialog from "@radix-ui/react-dialog"
+import { Portal, Overlay } from "@radix-ui/react-dialog"
 import Button from "@razzoozle/web/components/Button"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { PinView } from "./useSchuelerManager"
 
@@ -39,48 +41,58 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
   const emojis = data.symbols ?? splitGraphemes(data.pin)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
-        <h2 className="text-lg font-semibold text-[var(--ink)]">
-          {t("manager:schueler.pinTitle")}
-        </h2>
-        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
-          {t("manager:schueler.pinHint")}
-        </p>
+    <Dialog.Root open={!!data} onOpenChange={onClose}>
+      <Portal>
+        <Overlay className="fixed inset-0 z-40 bg-black/40" />
+        <Dialog.Content aria-labelledby="pin-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <Dialog.Title id="pin-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
+              {t("manager:schueler.pinTitle")}
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
+                <X className="size-5" />
+              </button>
+            </Dialog.Close>
+          </div>
 
-        <div className="mt-6 grid grid-cols-4 gap-3">
-          {emojis.map((emoji, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <div
-                role="img"
-                aria-label={data.labels[i] ?? emoji}
-                className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-[var(--ink)]"
-              >
-                {emoji}
+          <p className="mt-2 text-sm text-[var(--ink-subtle)]">
+            {t("manager:schueler.pinHint")}
+          </p>
+
+          <div className="mt-6 grid grid-cols-4 gap-3">
+            {emojis.map((emoji, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <div
+                  role="img"
+                  aria-label={data.labels[i] ?? emoji}
+                  className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-[var(--ink)]"
+                >
+                  {emoji}
+                </div>
+                <span className="text-center text-xs font-medium text-[var(--ink-subtle)]">
+                  {data.labels[i]}
+                </span>
               </div>
-              <span className="text-center text-xs font-medium text-[var(--ink-subtle)]">
-                {data.labels[i]}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="mt-6 flex items-center justify-between gap-2">
-          <Button
-            variant="secondary"
-            className="rounded-[var(--radius-theme)]"
-            onClick={() => onRequestRegen(data.studentId)}
-          >
-            <RefreshCw className="size-4" />
-            {t("manager:schueler.regenPin")}
-          </Button>
-          <Button variant="primary" className="rounded-[var(--radius-theme)]" onClick={onClose}>
-            {t("common:close")}
-          </Button>
-        </div>
-      </div>
-    </div>
+          <div className="mt-6 flex items-center justify-between gap-2">
+            <Button
+              variant="secondary"
+              className="rounded-[var(--radius-theme)]"
+              onClick={() => onRequestRegen(data.studentId)}
+            >
+              <RefreshCw className="size-4" />
+              {t("manager:schueler.regenPin")}
+            </Button>
+            <Button variant="primary" className="rounded-[var(--radius-theme)]" onClick={onClose}>
+              {t("common:close")}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Portal>
+    </Dialog.Root>
   )
 }
 
