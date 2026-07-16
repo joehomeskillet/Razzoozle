@@ -15,6 +15,10 @@
  * and clip the slide-in / re-scope z-[60]).
  */
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
+import {
+  accentWash,
+  rewardCardClass,
+} from "@razzoozle/web/features/game/components/RewardRow"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Trophy, X } from "lucide-react"
@@ -59,16 +63,14 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
           </span>
 
           <div
-            className="relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-5 py-3 text-[color:var(--color-field-ink)] shadow-xl"
+            className={rewardCardClass("toast")}
             style={{ borderLeft: `4px solid ${accent}` }}
           >
             {/* Leading accent wash */}
             <span
               aria-hidden
               className="pointer-events-none absolute inset-y-0 left-0 w-16"
-              style={{
-                background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 20%, transparent), transparent)`,
-              }}
+              style={{ background: accentWash(accent) }}
             />
 
             {/* One-shot sheen sweep — correct only, full-motion only */}
