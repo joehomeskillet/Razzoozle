@@ -1,6 +1,7 @@
 import clsx from "clsx"
 import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { chipBase } from "../manager/Badge"
 import { getLabelColor } from "./labelPalette"
 
 export interface Label {
@@ -21,7 +22,8 @@ export default function LabelChip({ label, onRemove }: LabelChipProps) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium border border-[var(--border-hairline)]",
+        chipBase,
+        "gap-1.5 border border-[var(--border-hairline)]",
         colors.bg,
         colors.text,
       )}
