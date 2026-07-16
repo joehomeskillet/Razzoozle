@@ -28,7 +28,7 @@ test("Quiz title should be visible on mobile 375px viewport", async ({ page }) =
   expect(titleText).toBeTruthy()
   expect(titleText?.length).toBeGreaterThan(0)
 
-  const overflowButton = quizItem.locator("button[aria-label*='Weitere']")
+  const overflowButton = quizItem.locator("button[aria-haspopup='menu']")
   await expect(overflowButton).toBeVisible()
 
   await overflowButton.click()
