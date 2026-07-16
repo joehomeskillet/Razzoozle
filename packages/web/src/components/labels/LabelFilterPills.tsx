@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import { useTranslation } from "react-i18next"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import type { Label } from "./LabelChip"
 import { getLabelColor } from "./labelPalette"
 
@@ -18,38 +19,21 @@ export default function LabelFilterPills({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => onChange(null)}
-        aria-pressed={activeId === null}
-        className={clsx(
-          "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold outline-2 -outline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-          activeId === null
-            ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)] outline-[var(--color-primary)]"
-            : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
-        )}
-      >
+      <FilterPill active={activeId === null} onClick={() => onChange(null)}>
         {t("manager:labels.filterAll", { defaultValue: "Alle" })}
-      </button>
+      </FilterPill>
       {labels.map((label) => {
-        const active = activeId === label.id
         const colors = getLabelColor(label.color)
 
         return (
-          <button
+          <FilterPill
             key={label.id}
-            type="button"
+            active={activeId === label.id}
             onClick={() => onChange(label.id)}
-            aria-pressed={active}
-            className={clsx(
-              "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold outline-2 -outline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-              active
-                ? clsx(colors.bg, colors.text, "outline-[var(--color-primary)]")
-                : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
-            )}
+            activeClassName={clsx(colors.bg, colors.text)}
           >
             {label.name}
-          </button>
+          </FilterPill>
         )
       })}
     </div>
