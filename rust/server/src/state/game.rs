@@ -12,7 +12,7 @@ use uuid::Uuid;
 use rand::Rng;
 use tracing::warn;
 
-use super::GAME_EVICTION_TTL_MS;
+use super::{GAME_EVICTION_TTL_MS, get_now_ms};
 
 /// In-memory game state, wrapping the engine's GameState.
 #[derive(Debug)]
@@ -294,6 +294,11 @@ impl Game {
         now_ms.saturating_sub(self.last_activity_ms) > GAME_EVICTION_TTL_MS
     }
 
+    /// Update last_activity_ms to current time — prevents C4 reaper eviction of active games
+    pub fn touch(&mut self) {
+        self.last_activity_ms = get_now_ms();
+    }
+
     /// Cancel any pending auto-advance task (mirrors Node's clearAuto).
     pub fn clear_auto_advance(&mut self) {
         if let Some(task) = self.auto_advance_task.take() {
@@ -360,6 +365,7 @@ impl Game {
         self.players.push(player.clone());
         // Also add to engine's players list
         self.engine.players.push(player.clone());
+        self.touch();
         Ok(player)
     }
 }
