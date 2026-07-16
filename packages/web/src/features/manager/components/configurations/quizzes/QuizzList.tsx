@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
@@ -49,16 +49,33 @@ type QuizzListProps = Pick<
 }
 
 const OverflowMenu = ({ actions }: { actions: ListRowAction[] }) => {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const handleClose = () => {
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      handleClose()
+    }
+  }
 
   return (
     <div className="relative shrink-0">
       <Button
+        ref={triggerRef}
         variant="ghost"
         size="icon"
         type="button"
         onClick={() => setOpen(!open)}
-        aria-label="Weitere Optionen"
+        aria-label={t("manager:quizz.moreActions")}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="shrink-0 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
       >
         <MoreVertical className="size-5" aria-hidden />
@@ -68,17 +85,23 @@ const OverflowMenu = ({ actions }: { actions: ListRowAction[] }) => {
         <>
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             aria-hidden
           />
-          <div className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md">
+          <div
+            ref={menuRef}
+            role="menu"
+            onKeyDown={handleKeyDown}
+            className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+          >
             {actions.map(({ key, icon: Icon, label, onClick, disabled, destructive }) => (
               <button
                 key={key}
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   onClick()
-                  setOpen(false)
+                  handleClose()
                 }}
                 disabled={disabled}
                 aria-label={label}

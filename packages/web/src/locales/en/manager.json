@@ -79,7 +79,8 @@
     "bulkDelete": "Delete",
     "bulkDeleteTitle": "Delete quizzes",
     "bulkDeleteConfirm": "{{count}} selected quizzes will be permanently deleted.",
-    "selectQuiz": "Select “{{name}}”"
+    "selectQuiz": "Select “{{name}}”",
+    "moreActions": "More options"
   },
   "result": {
     "delete": "Delete result",
