@@ -26,7 +26,7 @@ export default function LabelFilterPills({
           "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold outline-2 -outline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           activeId === null
             ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)] outline-[var(--color-primary)]"
-            : "bg-surface-3 text-ink-medium hover:bg-surface-4",
+            : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
         )}
       >
         {t("manager:labels.filterAll", { defaultValue: "Alle" })}
@@ -45,7 +45,7 @@ export default function LabelFilterPills({
               "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold outline-2 -outline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
               active
                 ? clsx(colors.bg, colors.text, "outline-[var(--color-primary)]")
-                : "bg-surface-3 text-ink-medium hover:bg-surface-4",
+                : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
             )}
           >
             {label.name}
