@@ -359,14 +359,14 @@ const ConfigTheme = () => {
           variant="secondary"
           type="button"
           onClick={handleReset}
-          className="rounded-xl"
+          className="rounded-[var(--radius-theme)]"
         >
           <RotateCcw className="size-4" aria-hidden />
           {t("manager:theme.reset")}
         </Button>
         <Button
           variant="primary"
-          className="flex-1 rounded-xl sm:flex-none"
+          className="flex-1 rounded-[var(--radius-theme)] sm:flex-none"
           onClick={handleSave}
         >
           {t("manager:theme.save")}
