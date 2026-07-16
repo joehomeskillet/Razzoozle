@@ -221,13 +221,17 @@ fn broadcast_status(io: socketioxide::SocketIo, registry: std::sync::Arc<tokio::
                 })
                 .collect();
 
-            io
-                .to(manager_socket_id)
-                .emit(
-                    constants::display::STATUS,
-                    &serde_json::json!({ "displays": display_list }),
-                )
-                .ok();
+            // Emit STATUS directly to the manager via get_socket (manager_socket_id is not auto-joined to its SID room)
+            if let Ok(sid) = manager_socket_id.parse() {
+                if let Some(manager_socket) = io.get_socket(sid) {
+                    manager_socket
+                        .emit(
+                            constants::display::STATUS,
+                            &serde_json::json!({ "displays": display_list }),
+                        )
+                        .ok();
+                }
+            }
         }
     });
 }

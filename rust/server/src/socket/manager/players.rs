@@ -28,6 +28,7 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
+                        warn!("manager control denied: event=kickPlayer check=require_user");
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();
@@ -69,9 +70,11 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                                 };
                                 (Some(game.players.len()), cancel)
                             } else {
+                                warn!("manager control failed: event=kickPlayer gameId={} playerId={} check=player_not_found", game_id, player_id);
                                 (None, None)
                             }
                         } else {
+                            warn!("manager control failed: event=kickPlayer gameId={} check=game_not_found", game_id);
                             (None, None)
                         }
                     };
@@ -83,14 +86,19 @@ fn register_kick_player(socket: &SocketRef, ctx: HandlerCtx) {
                     }
 
                     if let Some(total) = removed_count {
-                        ctx.io
-                            .to(player_id.clone())
-                            .emit(constants::game::RESET, "errors:game.kickedByManager")
-                            .ok();
-                        ctx.io
-                            .to(socket.id)
+                        // Emit RESET directly to the kicked player via get_socket
+                        if let Ok(sid) = player_id.parse() {
+                            if let Some(player_socket) = ctx.io.get_socket(sid) {
+                                player_socket
+                                    .emit(constants::game::RESET, "errors:game.kickedByManager")
+                                    .ok();
+                            }
+                        }
+                        // Emit PLAYER_KICKED directly to the manager (the socket parameter is the manager)
+                        socket
                             .emit(constants::manager::PLAYER_KICKED, &player_id)
                             .ok();
+                        // Broadcast TOTAL_PLAYERS to all players in the game room
                         ctx.io
                             .to(game_id)
                             .emit(constants::game::TOTAL_PLAYERS, &(total as i32))
