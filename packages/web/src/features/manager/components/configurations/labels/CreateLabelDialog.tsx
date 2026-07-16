@@ -40,9 +40,9 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
     <Dialog.Root open={open} onOpenChange={handleClose}>
       <Portal>
         <Overlay className="fixed inset-0 z-40 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg" role="alertdialog">
+        <Dialog.Content aria-labelledby="create-label-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-lg font-semibold text-[var(--ink)]">
+            <Dialog.Title id="create-label-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:labels.createTitle")}
             </Dialog.Title>
             <Dialog.Close asChild>
