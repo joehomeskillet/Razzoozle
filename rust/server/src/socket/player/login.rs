@@ -120,7 +120,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     game.selected_modes.team_mode.unwrap_or(false)
                                 };
 
-                                let (game_id_ret, manager_socket_id, player, total_players) = {
+                                let (game_id_ret, manager_socket_id, player, total_players, ghost_old_socket_id) = {
                                     let mut game = game_ref.lock().unwrap();
 
                                     // #2: Check if game has finished (engine phase Finished)
@@ -139,6 +139,20 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         socket.emit(constants::game::ERROR_MESSAGE, "errors:game.locked").ok();
                                         return;
                                     }
+
+                                    // #83/#84 follow-up: a lobby tab closed earlier left a
+                                    // connected=false ghost row (mark_player_disconnected's
+                                    // keep-slot grace). Drop it here so this fresh login
+                                    // doesn't hit add_player's client_id dup-guard. A
+                                    // connected=true match is a real duplicate (two tabs) —
+                                    // take_over_ghost_slot leaves it alone and add_player
+                                    // rejects as before. Mid-game re-join uses player:reconnect,
+                                    // not login, so this is ShowRoom-only.
+                                    let ghost_old_socket_id = if already_joined && game.engine.phase == GamePhase::ShowRoom {
+                                        game.take_over_ghost_slot(&client_id)
+                                    } else {
+                                        None
+                                    };
 
                                     // H — per-game player cap
                                     if game.players.len() >= crate::state::MAX_PLAYERS_PER_GAME {
@@ -165,7 +179,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     let manager_socket_id = game.manager_socket_id.clone();
                                     let total_players = game.players.len();
 
-                                    (game_id, manager_socket_id, player, total_players)
+                                    (game_id, manager_socket_id, player, total_players, ghost_old_socket_id)
                                 };
 
                                 // O(1) socket_id -> game_id index (state.rs) — keeps
@@ -173,6 +187,9 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 // off the old full-scan path for this connection.
                                 {
                                     let mut registry = registry.write().await;
+                                    if let Some(ref old_socket_id) = ghost_old_socket_id {
+                                        registry.deindex_player_socket(old_socket_id);
+                                    }
                                     registry.index_player_socket(socket_id.clone(), game_id_ret.clone());
                                 }
 
@@ -209,6 +226,17 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     team_mode: Some(team_mode),
                                 });
                                 socket.emit(constants::game::STATUS, &wait_status).ok();
+
+                                // Ghost takeover: drop the stale roster row BEFORE NEW_PLAYER
+                                // paints the fresh one, else the manager briefly shows two
+                                // tiles for the same human.
+                                if let Some(old_socket_id) = ghost_old_socket_id {
+                                    if let Ok(sid) = manager_socket_id.parse() {
+                                        if let Some(mgr) = io_handle.get_socket(sid) {
+                                            mgr.emit(constants::manager::REMOVE_PLAYER, &old_socket_id).ok();
+                                        }
+                                    }
+                                }
 
                                 if let Ok(sid) = manager_socket_id.parse() {
                                     if let Some(mgr) = io_handle.get_socket(sid) {

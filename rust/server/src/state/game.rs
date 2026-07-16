@@ -301,6 +301,28 @@ impl Game {
         }
     }
 
+    /// Lobby ghost takeover (#83/#84 follow-up): mark_player_disconnected's
+    /// keep-slot grace leaves a `connected=false` row behind when a lobby
+    /// tab closes. A fresh login (new socket, same client_id) must be able
+    /// to displace that ghost instead of hitting add_player's dup-guard.
+    /// Only removes the entry when it's still disconnected — call site
+    /// gates on ShowRoom phase; a connected=true match is a real duplicate
+    /// (two tabs), left untouched for add_player to reject as before.
+    /// Returns the ghost's OLD socket id so the caller can tell the manager
+    /// to drop that roster row.
+    pub fn take_over_ghost_slot(&mut self, client_id: &str) -> Option<String> {
+        let idx = self
+            .players
+            .iter()
+            .position(|p| p.client_id == client_id && !p.connected)?;
+        let old_socket_id = self.players[idx].id.clone();
+        self.players.remove(idx);
+        self.engine.players.retain(|p| p.client_id != client_id);
+        self.engine.current_answers.remove(client_id);
+        self.engine.answer_order.retain(|cid| cid != client_id);
+        Some(old_socket_id)
+    }
+
     /// Add a player to the game and return their player data.
     /// Rejects a clientId that's already connected (parity with Node's
     /// player-manager.ts join(): `findByClientId` dup-guard —
