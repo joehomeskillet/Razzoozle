@@ -117,7 +117,7 @@ const ClassList = ({
                         onFetchStudents?.(classObj.id)
                       }
                     }}
-                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={
                       expandedClassId === classObj.id
                         ? t("common:collapse")
@@ -139,7 +139,7 @@ const ClassList = ({
                         {classObj.name}
                       </p>
                       {classObj.ownerName && (
-                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-subtle)]">
+                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
                           {classObj.ownerName}
                         </span>
                       )}
@@ -157,7 +157,7 @@ const ClassList = ({
                     onClick={() =>
                       onEditClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.editClass")}
                     aria-label={t("manager:classes.editClass")}
                   >
@@ -169,7 +169,7 @@ const ClassList = ({
                     onClick={() =>
                       onDeleteClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.deleteClass")}
                     aria-label={t("manager:classes.deleteClass")}
                   >
@@ -265,7 +265,7 @@ const ClassList = ({
                                 birthdate: student.birthdate,
                               })
                             }
-                            className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.editStudent")}
                             aria-label={t("manager:classes.editStudent")}
                           >
@@ -280,7 +280,7 @@ const ClassList = ({
                                 displayName: student.displayName,
                               })
                             }
-                            className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.deleteStudent")}
                             aria-label={t("manager:classes.deleteStudent")}
                           >

@@ -267,7 +267,7 @@ const ConfigKlassen = () => {
               value={editStudentBirthdate}
               max={todayIso}
               onChange={(e) => setEditStudentBirthdate(e.target.value)}
-              className="focus-visible:ring-[var(--color-primary)] mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none focus-visible:ring-2"
+              className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
             />
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setIsEditStudentDialogOpen(false)}>
