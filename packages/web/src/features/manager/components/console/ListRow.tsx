@@ -28,6 +28,8 @@ export interface ListRowProps {
   onClick?: () => void
   /** Used as the row body's accessible name when `onClick` is set. */
   bodyLabel?: string
+  /** Optional full-width second line inside the card (labels/assign row, spec D22c). */
+  footer?: ReactNode
   className?: string
 }
 
@@ -58,6 +60,7 @@ const ListRow = ({
   actions,
   onClick,
   bodyLabel,
+  footer,
   className,
 }: ListRowProps) => {
   const body = (
@@ -82,47 +85,51 @@ const ListRow = ({
   return (
     <div
       className={clsx(
-        "flex min-h-11 items-center gap-3 rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
+        "flex flex-col rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
         className,
       )}
     >
-      {onClick ? (
-        <button
-          type="button"
-          onClick={onClick}
-          aria-label={bodyLabel}
-          className={clsx(
-            "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--surface-2)]",
-            "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
-          )}
-        >
-          {body}
-        </button>
-      ) : (
-        <div className="flex min-w-0 flex-1 items-center gap-3">{body}</div>
-      )}
+      <div className="flex min-h-11 items-center gap-3">
+        {onClick ? (
+          <button
+            type="button"
+            onClick={onClick}
+            aria-label={bodyLabel}
+            className={clsx(
+              "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--surface-2)]",
+              "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
+            )}
+          >
+            {body}
+          </button>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3">{body}</div>
+        )}
 
-      {actions && actions.length > 0 && (
-        <div className="flex shrink-0 items-center gap-1">
-          {actions.map(
-            ({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
-              <Button
-                key={key}
-                variant="ghost"
-                size="icon"
-                type="button"
-                onClick={act}
-                disabled={disabled}
-                aria-label={label}
-                title={label}
-                className={actionClasses(destructive)}
-              >
-                <Icon className="size-5" aria-hidden />
-              </Button>
-            ),
-          )}
-        </div>
-      )}
+        {actions && actions.length > 0 && (
+          <div className="flex shrink-0 items-center gap-1">
+            {actions.map(
+              ({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
+                <Button
+                  key={key}
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={act}
+                  disabled={disabled}
+                  aria-label={label}
+                  title={label}
+                  className={actionClasses(destructive)}
+                >
+                  <Icon className="size-5" aria-hidden />
+                </Button>
+              ),
+            )}
+          </div>
+        )}
+      </div>
+
+      {footer && <div className="mt-3 w-full">{footer}</div>}
     </div>
   )
 }
