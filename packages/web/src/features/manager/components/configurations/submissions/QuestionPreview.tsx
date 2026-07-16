@@ -65,7 +65,8 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
                     : "opacity-90",
                 )}
               >
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[var(--surface-2)] text-xs font-bold">
+                {/* token-ok: answer-label-overlay, legibility on answer colors */}
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/20 text-xs font-bold">
                   {ANSWERS_LABELS[ai % ANSWERS_LABELS.length]}
                 </span>
                 <span className="min-w-0 flex-1 break-words">{answer}</span>
@@ -108,7 +109,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
             {t("quizz:slider.max")}: {question.max}
             {unit}
           </span>
-          <span className="rounded-lg bg-[var(--state-correct)] px-3 py-1.5 font-semibold text-[var(--answer-text)]">
+          <span className="rounded-lg bg-[var(--status-online-bg)] px-3 py-1.5 font-semibold text-[var(--status-online-text)]">
             {t("manager:result.slider.correctAnswer")} {question.correct}
             {unit}
           </span>
