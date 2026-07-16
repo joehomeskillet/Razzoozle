@@ -30,7 +30,8 @@ const ActionFooter = ({ children, className }: ActionFooterProps) => (
       // (it abuts the nav rail).
       "sticky -bottom-4 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-bottom-6 sm:-mb-6",
       // Surface — fully opaque so scrolled content never bleeds through.
-      "border-t border-gray-200 bg-white",
+      // Token-only: use CSS variables for theme flexibility
+      "border-t border-[var(--line)] bg-[var(--surface)]",
       // Shadow lifting it off the content.
       "shadow-[0_-2px_8px_rgba(0,0,0,0.08)]",
       // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area

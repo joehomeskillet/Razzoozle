@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { SelectedModes } from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
+import { ActionFooter } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -137,51 +138,51 @@ const ConfigSelectQuizz = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <motion.div
-        role="radiogroup"
-        aria-label={t("manager:quizz.startGame")}
-        className="min-h-0 flex-1 space-y-3 p-0.5 pb-6"
-        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={
-          reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-        }
-      >
-        {list.map((quizz, index) => (
-          <motion.div
-            key={quizz.id}
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={
-              reducedMotion
-                ? undefined
-                : {
-                    duration: 0.28,
-                    ease: "easeOut",
-                    delay: Math.min(index, 8) * 0.04,
-                  }
-            }
-          >
-            <SelectableRow
-              data-testid={`quizz-row-${quizz.id}`}
-              title={quizz.subject}
-              meta={
-                quizz.questionCount != null
-                  ? t("manager:selectQuizz.meta.questions", {
-                      defaultValue: "{{count}} Fragen",
-                      count: quizz.questionCount,
-                    })
-                  : undefined
+    <>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <motion.div
+          role="radiogroup"
+          aria-label={t("manager:quizz.startGame")}
+          className="min-h-0 flex-1 space-y-3 p-0.5 pb-20"
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={
+            reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+          }
+        >
+          {list.map((quizz, index) => (
+            <motion.div
+              key={quizz.id}
+              initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={
+                reducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.28,
+                      ease: "easeOut",
+                      delay: Math.min(index, 8) * 0.04,
+                    }
               }
-              selected={selected === quizz.id}
-              onClick={handleSelect(quizz.id)}
-            />
-          </motion.div>
-        ))}
-      </motion.div>
+            >
+              <SelectableRow
+                data-testid={`quizz-row-${quizz.id}`}
+                title={quizz.subject}
+                meta={
+                  quizz.questionCount != null
+                    ? t("manager:selectQuizz.meta.questions", {
+                        defaultValue: "{{count}} Fragen",
+                        count: quizz.questionCount,
+                      })
+                    : undefined
+                }
+                selected={selected === quizz.id}
+                onClick={handleSelect(quizz.id)}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
 
-      <div className="shrink-0 space-y-3 pt-4">
         {selected && (
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, y: -8 }}
@@ -189,7 +190,7 @@ const ConfigSelectQuizz = () => {
             transition={
               reducedMotion ? undefined : { duration: 0.2, ease: "easeOut" }
             }
-            className="space-y-2 rounded-lg bg-[var(--surface-2)] p-3"
+            className="shrink-0 space-y-2 rounded-lg bg-[var(--surface-2)] p-3"
           >
             {config.scoringMode !== undefined && (
               <ToggleField
@@ -254,12 +255,14 @@ const ConfigSelectQuizz = () => {
             )}
           </motion.div>
         )}
+      </div>
 
+      <ActionFooter>
         <Button
           data-testid="quizz-start-btn"
           variant="primary"
           size="lg"
-          className="w-full rounded-[var(--radius-theme)]"
+          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
           onClick={handleSubmit}
           disabled={!selected}
           title={selected ? undefined : t("manager:quizz.pleaseSelect")}
@@ -271,7 +274,7 @@ const ConfigSelectQuizz = () => {
           variant="secondary"
           size="lg"
           type="button"
-          className="w-full rounded-[var(--radius-theme)]"
+          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
           onClick={() => {
             void handleCopySoloLink()
           }}
@@ -285,8 +288,8 @@ const ConfigSelectQuizz = () => {
             })}
           </span>
         </Button>
-      </div>
-    </div>
+      </ActionFooter>
+    </>
   )
 }
 
