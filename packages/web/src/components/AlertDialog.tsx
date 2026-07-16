@@ -41,7 +41,7 @@ const AlertDialog = ({
             {title}
           </RadixAlertDialog.Title>
 
-          <RadixAlertDialog.Description className="mt-2 text-gray-500">
+          <RadixAlertDialog.Description className="mt-2 whitespace-pre-line text-gray-500">
             {description}
           </RadixAlertDialog.Description>
 
