@@ -154,7 +154,7 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
           return (
             <li
               key={slot}
-              className="flex flex-col gap-2 rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-gray-200 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-[var(--border-hairline)] sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[var(--ink-muted)]">
@@ -226,7 +226,7 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
 
               {error && (
                 <p
-                  className="w-full text-sm font-semibold text-red-600"
+                  className="w-full text-sm font-semibold text-[var(--state-wrong)]"
                   role="alert"
                 >
                   {error}

@@ -37,7 +37,7 @@ const MockCard = ({
   animated?: { speed: number; intensity: number; iconCount: number; color: string } | null
   children: ReactNode
 }) => (
-  <div className="overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-gray-200">
+  <div className="overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
     <p className="bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-subtle)]">
       {label}
     </p>
@@ -138,7 +138,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
       {/* Reflect the editor's custom backdrop CSS inside the preview. Manager-
           trusted CSS, same trust model as the skeleton custom CSS. */}
       {customCss && <style>{customCss}</style>}
-      <div className="relative isolate overflow-hidden rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-gray-200">
+      <div className="relative isolate overflow-hidden rounded-2xl bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
         <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
@@ -174,7 +174,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                 {appTitle ?? "Razzoozle"}
               </p>
             )}
-            <div className="rounded-md bg-white/90 px-3 py-1 text-sm font-bold tracking-widest text-[var(--ink)]">
+            <div className="rounded-md bg-[var(--surface)]/90 px-3 py-1 text-sm font-bold tracking-widest text-[var(--ink)]">
               123 456
             </div>
             <span
@@ -209,7 +209,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                 : null
             }
           >
-            <p className="w-full rounded-md bg-white/90 px-2 py-1 text-center text-xs font-bold text-[var(--ink)]">
+            <p className="w-full rounded-md bg-[var(--surface)]/90 px-2 py-1 text-center text-xs font-bold text-[var(--ink)]">
               {MOCK_QUESTION}
             </p>
             <div className="grid w-full grid-cols-2 gap-1.5">
@@ -260,7 +260,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                   {rank === 1 ? (
                     <Trophy className="size-3.5 shrink-0" aria-hidden />
                   ) : (
-                    <span className="grid size-4 shrink-0 place-items-center rounded-full bg-white/25 text-[10px]">
+                    <span className="grid size-4 shrink-0 place-items-center rounded-full bg-[var(--surface)]/25 text-[10px]">
                       {rank}
                     </span>
                   )}

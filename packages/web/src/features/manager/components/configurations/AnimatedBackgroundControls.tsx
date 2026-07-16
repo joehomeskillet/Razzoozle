@@ -168,12 +168,12 @@ const AnimatedBackgroundControls = ({
                     )
                   }
                   className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                    animatedOn ? "bg-[var(--color-primary)]" : "bg-gray-300"
+                    animatedOn ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
                   }`}
                 >
                   <span
                     aria-hidden
-                    className={`inline-block size-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    className={`inline-block size-5 transform rounded-full bg-[var(--surface)] shadow-sm transition-transform ${
                       animatedOn ? "translate-x-[22px]" : "translate-x-0.5"
                     }`}
                   />

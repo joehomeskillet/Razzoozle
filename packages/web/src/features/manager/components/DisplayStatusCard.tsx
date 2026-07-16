@@ -88,7 +88,7 @@ const DisplayStatusCard = () => {
         aria-controls="display-status-popover"
         aria-label={t("manager:display.status.title")}
         className={clsx("min-h-11", {
-          "border-green-200 bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-200":
+          "border-[var(--state-correct)]/30 bg-[var(--state-correct)]/15 text-[var(--state-correct)] hover:bg-[var(--state-correct)]/25 active:bg-[var(--state-correct)]/25":
             onlineCount > 0,
         })}
       >
@@ -103,7 +103,7 @@ const DisplayStatusCard = () => {
           id="display-status-popover"
           role="region"
           aria-label={t("manager:display.status.title")}
-          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-white p-3 text-left text-black shadow-xl"
+          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[var(--surface)] p-3 text-left text-[var(--ink-muted)] shadow-xl"
         >
           <p className="text-sm font-bold">
             {t("manager:display.status.title")}
@@ -142,7 +142,7 @@ const DisplayStatusCard = () => {
                         "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
                         stale
                           ? "bg-[var(--surface-4)] text-[var(--ink-medium)]"
-                          : "bg-green-100 text-green-800",
+                          : "bg-[var(--state-correct)]/15 text-[var(--state-correct)]",
                       )}
                     >
                       {stale
