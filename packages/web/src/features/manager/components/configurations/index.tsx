@@ -173,6 +173,7 @@ const BUILTIN_TABS: TabDef[] = [
     icon: UserCog,
     component: ConfigUsers,
     roleGate: "admin",
+    gated: "klassenEnabled",
   },
   {
     key: "design",
