@@ -14,6 +14,13 @@
  *                       filled icons/checks stay AA-legible even when the themed
  *                       primary is a light color (e.g. #ff9900 ~2.6:1 on white).
  *                       Spec §3 "Contrast fix".
+ *
+ *   Status-token family (D3): semantic colour pairs for player/game state badges.
+ *   --status-online-bg / --status-online-text : player present (WCAG AA ≥4.5:1).
+ *   --status-offline-bg / --status-offline-text : player absent (WCAG AA ≥4.5:1).
+ *   --status-pending-bg / --status-pending-text : session initializing (WCAG AA ≥4.5:1).
+ *   Consumed via `bg-[var(--status-online-bg)] text-[var(--status-online-text)]` etc.
+ *   Note: --state-wrong-soft (used in D4 destructive hover) is pinned in index.css:71.
  */
 :root {
   --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
@@ -22,6 +29,12 @@
     color-mix(in srgb, var(--color-primary), black 34%),
     #1f2937 12%
   );
+  --status-online-bg: #dcfce7;
+  --status-online-text: #166534;
+  --status-offline-bg: #fee2e2;
+  --status-offline-text: #991b1b;
+  --status-pending-bg: #fef3c7;
+  --status-pending-text: #92400e;
 }
 
 /*
@@ -43,4 +56,10 @@
     color-mix(in srgb, var(--color-primary), black 34%),
     #1f2937 12%
   );
+  --status-online-bg: #dcfce7;
+  --status-online-text: #166534;
+  --status-offline-bg: #fee2e2;
+  --status-offline-text: #991b1b;
+  --status-pending-bg: #fef3c7;
+  --status-pending-text: #92400e;
 }
