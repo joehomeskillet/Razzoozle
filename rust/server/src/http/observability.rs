@@ -507,6 +507,28 @@ fn authorize_observability(
     query_token: Option<&str>,
 ) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
     let key = dev_api_key();
+
+    // Check Authorization: Bearer header first
+    if let Some(auth_header) = headers.get("authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if let Some(token) = auth_str.strip_prefix("Bearer ") {
+                match authorize_dev_request(is_dev_mode(), key.as_deref(), Some(token), None) {
+                    DevAuthorization::Authorized => return Ok(()),
+                    DevAuthorization::NotFound => {
+                        return Err(json_error_response(StatusCode::NOT_FOUND, "not found"))
+                    }
+                    DevAuthorization::Unauthorized => {
+                        return Err(json_error_response(
+                            StatusCode::UNAUTHORIZED,
+                            "unauthorized",
+                        ))
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback to X-Manager-Token header and query token
     let header_token = headers
         .get("x-manager-token")
         .map(|value| value.to_str().unwrap_or(""));
@@ -520,7 +542,6 @@ fn authorize_observability(
         )),
     }
 }
-
 pub async fn handle_observability_events(
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,

@@ -211,8 +211,9 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 /// Fail-closed contract for the log downloads (Node `requireKey: true`):
 /// - dev mode off            → 404 "not found" (do not reveal the route)
 /// - dev on, NO DEV_API_KEY  → 401 "unauthorized" (never serve logs key-less)
-/// - dev on, key configured  → token from X-Manager-Token header OR ?token=
-///   query, constant-time compared → 401 on mismatch.
+/// - dev on, key configured  → token from Authorization: Bearer header,
+///   X-Manager-Token header, or ?token= query, constant-time compared
+///   → 401 on mismatch.
 fn authorize_log_download(
     headers: &HeaderMap,
     query_token: Option<&str>,
@@ -226,7 +227,18 @@ fn authorize_log_download(
         _ => return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized")),
     };
 
-    // Header takes precedence over the query param (Node: header ?? query ?? "").
+    // Check Authorization: Bearer header first
+    if let Some(auth_header) = headers.get("authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if let Some(token) = auth_str.strip_prefix("Bearer ") {
+                if constant_time_eq(token.as_bytes(), expected.as_bytes()) {
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    // Fallback to X-Manager-Token header, then query param (Node: header ?? query ?? "").
     let presented = headers
         .get("x-manager-token")
         .and_then(|v| v.to_str().ok())
@@ -239,6 +251,7 @@ fn authorize_log_download(
 
     Ok(())
 }
+
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 

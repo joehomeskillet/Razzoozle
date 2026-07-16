@@ -144,6 +144,11 @@ pub async fn authorize_admin_request(
 /// `DEV_API_KEY`. When the key is set, require constant-time match on
 /// `X-Manager-Token`. Registry is accepted for call-site parity with
 /// `authorize_manager_request` (not used for session lookup here).
+/// Dev-route auth for `/metrics` (and similar): fail-closed on missing
+/// `DEV_API_KEY`. When the key is set, require constant-time match on
+/// `Authorization: Bearer <key>` or `X-Manager-Token`. Registry is accepted
+/// for call-site parity with `authorize_manager_request` (not used for session
+/// lookup here).
 pub async fn authorize_dev_request(
     headers: &HeaderMap,
     _registry: Arc<RwLock<GameRegistry>>,
@@ -152,6 +157,17 @@ pub async fn authorize_dev_request(
         // No key configured → reject (fail closed; never serve metrics open).
         return false;
     };
+
+    // Check Authorization: Bearer header first
+    if let Some(auth_header) = headers.get("authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if let Some(token) = auth_str.strip_prefix("Bearer ") {
+                return constant_time_eq(token.as_bytes(), key.as_bytes());
+            }
+        }
+    }
+
+    // Fallback to X-Manager-Token header for backward compatibility
     let token = headers
         .get("x-manager-token")
         .and_then(|v| v.to_str().ok())
