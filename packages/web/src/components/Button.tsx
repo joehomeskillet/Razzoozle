@@ -35,10 +35,11 @@ const variantClasses: Record<ButtonVariant, string> = {
     "bg-[var(--surface)] text-[var(--ink-muted)] border border-[var(--border-hairline)] shadow-sm " +
     "hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)] " +
     "focus-visible:outline-[var(--color-primary)]",
-  // Destructive — reject/delete. White text on red-600 (AA). White ring.
+  // Destructive — reject/delete. White text on --danger-bg (#d73d3d,
+  // derived from --state-wrong via color-mix for AA contrast). White ring.
   danger:
-    "bg-red-600 text-white shadow-sm " +
-    "hover:bg-red-700 active:bg-red-800 " +
+    "bg-[var(--danger-bg)] text-white shadow-sm " +
+    "hover:brightness-90 active:brightness-75 " +
     "focus-visible:outline-white",
   // Subtle / tertiary — transparent until interaction. gray-600 text (AA on
   // light backgrounds). Ring uses the runtime accent.

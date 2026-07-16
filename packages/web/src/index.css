@@ -70,6 +70,7 @@
   --state-correct: #22c55e;  --state-wrong: #ef4444;
   --state-correct-soft: color-mix(in srgb, var(--state-correct), transparent 78%);
   --state-wrong-soft:   color-mix(in srgb, var(--state-wrong),   transparent 78%);
+  --danger-bg: color-mix(in srgb, var(--state-wrong), black 10%);
 
   /* Rank delta + soft tints. */
   --rank-up: #10b981;  --rank-down: #f43f5e;
