@@ -143,8 +143,19 @@ export const useManagerStore = create<ManagerStore<StatusDataMap>>((set) => {
     },
 
     reset: () => {
-      set(initialState)
-      persistAuthState({ token: null, role: null, username: null })
+      // Reset game state only; preserve auth (token/role/username).
+      // Only logout() should clear auth. This prevents accidental logout when
+      // ending a game.
+      const current = loadAuthState()
+      set({
+        config: initialState.config,
+        gameId: initialState.gameId,
+        inviteCode: initialState.inviteCode,
+        status: initialState.status,
+        players: initialState.players,
+        password: initialState.password,
+      })
+      persistAuthState(current)
     },
   }
 })
