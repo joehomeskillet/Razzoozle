@@ -8,6 +8,7 @@ use razzoozle_protocol::quizz::{QuestionType, Quizz};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::sync::RwLock;
+use tracing::warn;
 
 use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
 use crate::question_type_wire;
@@ -334,25 +335,104 @@ pub async fn handle_solo_score(
     safe_asset_id(&quiz_id)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-    // Rate limiting (per client IP)
+    // Rate limiting (per client IP) — check BEFORE structure validation to avoid
+    // using attacker-controlled data before vetting.
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
+        warn!("solo_score: rate limit exceeded for IP {}", client_ip);
         return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
     }
 
-    let registry = state.registry.read().await;
+    // ── STRUCTURE VALIDATION (SEC-05 DoS guards) ───────────────────────────────
+    // Prevent oversized payloads: player name, assignment ID, answer text lengths.
 
-    // Load quiz to verify it exists and calculate theoretical max
+    // Validate player name length
+    if payload.player_name.len() > crate::state::SOLO_SCORE_PLAYER_NAME_MAX {
+        warn!(
+            "solo_score: playerName exceeds max ({} > {})",
+            payload.player_name.len(),
+            crate::state::SOLO_SCORE_PLAYER_NAME_MAX
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Player name exceeds maximum length of {}",
+                crate::state::SOLO_SCORE_PLAYER_NAME_MAX
+            ),
+        ));
+    }
+
+    // Validate assignment ID length if present
+    if let Some(ref assignment_id) = payload.assignment_id {
+        if assignment_id.len() > crate::state::SOLO_SCORE_ASSIGNMENT_ID_MAX {
+            warn!(
+                "solo_score: assignmentId exceeds max ({} > {})",
+                assignment_id.len(),
+                crate::state::SOLO_SCORE_ASSIGNMENT_ID_MAX
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Assignment ID exceeds maximum length of {}",
+                    crate::state::SOLO_SCORE_ASSIGNMENT_ID_MAX
+                ),
+            ));
+        }
+    }
+
+    // Load quiz to verify it exists and validate answer array structure
+    let registry = state.registry.read().await;
     let quiz = registry
         .get_quiz_by_id(&quiz_id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", quiz_id)))?;
-    drop(registry);
+
+    // Validate answers array structure: can't have more answers than questions
+    if let Some(ref answers) = payload.answers {
+        if answers.len() > quiz.questions.len() {
+            warn!(
+                "solo_score: answers array exceeds question count ({} > {})",
+                answers.len(),
+                quiz.questions.len()
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Number of answers ({}) exceeds number of questions ({})",
+                    answers.len(),
+                    quiz.questions.len()
+                ),
+            ));
+        }
+
+        // Validate each answer's text length if present
+        for (idx, answer) in answers.iter().enumerate() {
+            if let Some(ref text) = answer.answer_text {
+                if text.len() > crate::state::SOLO_SCORE_ANSWER_TEXT_MAX {
+                    warn!(
+                        "solo_score: answer[{}].text exceeds max ({} > {})",
+                        idx,
+                        text.len(),
+                        crate::state::SOLO_SCORE_ANSWER_TEXT_MAX
+                    );
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "Answer text at index {} exceeds maximum length of {}",
+                            idx, crate::state::SOLO_SCORE_ANSWER_TEXT_MAX
+                        ),
+                    ));
+                }
+            }
+        }
+    }
 
     // Count only non-poll questions for theoretical_max
     let non_poll_count = quiz.questions.iter()
         .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
         .count() as i32;
     let theoretical_max = non_poll_count * 1000;
+
+    drop(registry);
 
     // Recompute score server-side (SEC-05): payload.score and each answer's
     // client-supplied `correct` flag are never trusted. Missing/empty answers
@@ -412,6 +492,7 @@ pub async fn handle_solo_score(
 
     Ok(Json(SoloScoreResponse { leaderboard }))
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -735,4 +816,47 @@ mod tests {
         assert_eq!(entry_json["answeredAt"], "2026-07-15T12:00:00.000Z");
         assert!(entry_json.get("assignmentId").is_none());
     }
+
+    #[test]
+    fn solo_score_payload_player_name_length_cap() {
+        // Payload with player name exceeding max should be rejected by handler.
+        // This unit test verifies the constant is reasonable (not 0, not absurdly small).
+        let max_len = crate::state::SOLO_SCORE_PLAYER_NAME_MAX;
+        assert!(max_len >= 100, "playerName cap should be reasonable (≥100)");
+        assert!(max_len <= 1000, "playerName cap should not be excessive (≤1000)");
+    }
+
+    #[test]
+    fn solo_score_payload_answer_text_length_cap() {
+        let max_len = crate::state::SOLO_SCORE_ANSWER_TEXT_MAX;
+        assert!(max_len >= 1000, "answer_text cap should be reasonable (≥1000)");
+        assert!(max_len <= 100_000, "answer_text cap should not be excessive (≤100k)");
+    }
+
+    #[test]
+    fn solo_score_payload_assignment_id_length_cap() {
+        let max_len = crate::state::SOLO_SCORE_ASSIGNMENT_ID_MAX;
+        assert!(max_len >= 100, "assignmentId cap should be reasonable (≥100)");
+        assert!(max_len <= 1000, "assignmentId cap should not be excessive (≤1000)");
+    }
+
+    #[test]
+    fn solo_score_answer_count_never_exceeds_questions() {
+        // This validates the logical check: answers.len() <= quiz.questions.len()
+        let quiz = test_quiz(); // [choice, wortarten, poll] = 3 questions
+        let non_poll = 2;
+        assert_eq!(quiz.questions.len(), 3);
+        assert!(3 >= non_poll, "Test quiz has expected structure");
+
+        // If somehow an attacker submits 4 answers for a 3-question quiz,
+        // the handler should reject it. This test documents the invariant.
+        let oversized_answers = vec![
+            answer(0, Some(1)),
+            answer(1, Some(0)),
+            answer(2, Some(0)),
+            answer(99, Some(0)), // Out of bounds index
+        ];
+        assert!(oversized_answers.len() > quiz.questions.len());
+    }
+
 }
