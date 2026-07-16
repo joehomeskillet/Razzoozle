@@ -857,7 +857,8 @@
     "deleteConfirmTitle": "Delete user?",
     "deleteConfirmDescription": "{{name}} will be permanently deleted. This cannot be undone.",
     "deleteConfirmCascade": "Warning: All classes and students of this teacher will also be deleted.",
-    "deleted": "{{name}} was deleted"
+    "deleted": "{{name}} was deleted",
+    "deleteFailed": "Delete failed"
   },
   "schueler": {
     "title": "Student Management",

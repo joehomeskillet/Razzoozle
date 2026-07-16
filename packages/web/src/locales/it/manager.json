@@ -818,7 +818,8 @@
     "deleteConfirmTitle": "Eliminare l'utente?",
     "deleteConfirmDescription": "{{name}} verrà eliminato definitivamente. Questa azione non può essere annullata.",
     "deleteConfirmCascade": "Avvertenza: Tutte le classi e gli studenti di questo insegnante verranno eliminati.",
-    "deleted": "{{name}} è stato eliminato"
+    "deleted": "{{name}} è stato eliminato",
+    "deleteFailed": "Eliminazione non riuscita"
   },
   "profile": {
     "intro": "Il tuo profilo e le tue impostazioni personali.",

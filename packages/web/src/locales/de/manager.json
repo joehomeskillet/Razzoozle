@@ -818,7 +818,8 @@
     "deleteConfirmTitle": "Benutzer löschen?",
     "deleteConfirmDescription": "{{name}} wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
     "deleteConfirmCascade": "Achtung: Alle Klassen und Schüler dieser Lehrkraft werden ebenfalls gelöscht.",
-    "deleted": "{{name}} wurde gelöscht"
+    "deleted": "{{name}} wurde gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen"
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",
