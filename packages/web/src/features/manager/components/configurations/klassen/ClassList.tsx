@@ -79,7 +79,7 @@ const OverflowMenu = ({ actions }: { actions: ListRowAction[] }) => {
         size="icon"
         type="button"
         onClick={() => setOpen(!open)}
-        aria-label={t("manager:moreActions")}
+        aria-label={t("manager:quizz.moreActions")}
         aria-expanded={open}
         aria-haspopup="menu"
         className="shrink-0 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
