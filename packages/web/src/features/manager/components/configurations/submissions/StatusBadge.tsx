@@ -8,7 +8,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
 
   if (status === "approved") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]">
         <CheckCircle2 className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.approved", {
           defaultValue: "Angenommen",
@@ -19,7 +19,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
 
   if (status === "rejected") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-offline-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-offline-text)]">
         <XCircle className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.rejected", {
           defaultValue: "Abgelehnt",
@@ -29,7 +29,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-pending-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-pending-text)]">
       <Inbox className="size-3.5" aria-hidden />
       {t("manager:submissions.statusFilter.pending", {
         defaultValue: "Offen",

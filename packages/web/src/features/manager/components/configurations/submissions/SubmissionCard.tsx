@@ -86,7 +86,7 @@ const SubmissionCard = ({
 
   return (
     <motion.div
-      className="rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-gray-200"
+      className="rounded-xl bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]"
       initial={reducedMotion ? false : { opacity: 0, y: 10 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       transition={
@@ -108,7 +108,7 @@ const SubmissionCard = ({
               <StatusBadge status={s.status} />
               {/* WP-17 — surface the moderator note on rejected cards. */}
               {s.status === "rejected" && rejRecord?.rejectionReason && (
-                <p className="text-sm text-red-700">
+                <p className="text-sm text-[var(--ink)]">
                   {t("manager:submissions.rejectedBecause", {
                     reason: rejRecord?.rejectionReason,
                     defaultValue: "Abgelehnt: {{reason}}",
@@ -234,7 +234,7 @@ const SubmissionCard = ({
               type="checkbox"
               checked={approveToCatalog}
               onChange={(event) => setApproveToCatalog(event.target.checked)}
-              className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="accent-[var(--color-primary)] focus-visible:outline-[var(--color-primary)] size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             />
             <span>{t("manager:catalog.approveToCatalog")}</span>
           </label>
@@ -306,7 +306,7 @@ const SubmissionCard = ({
               placeholder={t("manager:submissions.rejectReason.placeholder", {
                 defaultValue: "Warum wird diese Frage abgelehnt?",
               })}
-              className="focus-visible:outline-primary w-full resize-y rounded-lg bg-white px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="focus-visible:outline-[var(--color-primary)] w-full resize-y rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:-outline-offset-2"
             />
           </div>
 
@@ -325,7 +325,7 @@ const SubmissionCard = ({
               onChange={(event) =>
                 setRejectCategory(event.target.value as SubmissionCategory | "")
               }
-              className="focus-visible:outline-primary min-h-11 w-full rounded-lg bg-white px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="focus-visible:outline-[var(--color-primary)] min-h-11 w-full rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:-outline-offset-2"
             >
               <option value="">—</option>
               {SUBMISSION_CATEGORIES.map((cat) => (
