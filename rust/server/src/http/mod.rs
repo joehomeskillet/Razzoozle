@@ -18,7 +18,7 @@ mod users;
 use axum::{
     extract::Path,
     http::{HeaderMap, StatusCode},
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use lazy_static::lazy_static;
@@ -207,6 +207,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/health", get(handle_health))
         .route("/api/login", post(login::handle_login))
         .route("/api/users", get(users::list).post(users::create))
+        .route("/api/users/:id", delete(users::delete_user_handler))
         .route("/api/users/:id/disable", post(users::disable))
         .route("/api/users/:id/enable", post(users::enable))
         .route("/api/users/:id/reset-password", post(users::reset_password))

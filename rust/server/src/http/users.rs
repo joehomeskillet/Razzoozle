@@ -8,6 +8,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use tracing::{info, warn};
 
 use crate::db;
 use super::{AppState, json_error_response};
@@ -188,6 +189,54 @@ pub async fn enable(
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to enable user: {}", e)))?;
 
     Ok(StatusCode::OK)
+}
+
+/// DELETE /api/users/:id — permanently delete a user (admin only).
+/// Guards: an admin can never delete their own account (self-delete), and the
+/// last remaining active admin can never be deleted (last-admin), both 400.
+pub async fn delete_user_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    // Verify admin
+    let admin = match require_admin_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+    };
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    // Self-delete guard: an admin can never delete their own account.
+    if admin.user_id == id {
+        warn!("user delete denied: check=self_delete user={}", id);
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete your own account"));
+    }
+
+    // Load + last-admin-check + delete all happen inside a single DB
+    // transaction (delete_user_guarded) to close the TOCTOU race a separate
+    // count-then-delete pair has: two admins deleting each other concurrently
+    // could each read count=2 before either commits.
+    match db::users::delete_user_guarded(pool, id).await {
+        Ok(db::users::DeleteUserOutcome::Deleted) => {
+            info!("user deleted: id={}", id);
+            Ok(StatusCode::OK)
+        }
+        Ok(db::users::DeleteUserOutcome::NotFound) => {
+            Err(json_error_response(StatusCode::NOT_FOUND, "User not found"))
+        }
+        Ok(db::users::DeleteUserOutcome::LastActiveAdmin) => {
+            warn!("user delete denied: check=last_admin user={}", id);
+            Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete the last active admin"))
+        }
+        Err(e) => Err(json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to delete user: {}", e),
+        )),
+    }
 }
 
 #[derive(Debug, Deserialize)]
