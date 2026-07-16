@@ -13,6 +13,7 @@ import {
   Copy,
   Download,
   ListChecks,
+  MoreVertical,
   Plus,
   SearchX,
   SquarePen,
@@ -20,12 +21,13 @@ import {
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 
 import type { useQuizzManager } from "./useQuizzManager"
+import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 
 type QuizzListProps = Pick<
   ReturnType<typeof useQuizzManager>,
@@ -44,6 +46,60 @@ type QuizzListProps = Pick<
   | "setShowArchived"
 > & {
   labels: Label[]
+}
+
+const OverflowMenu = ({ actions }: { actions: ListRowAction[] }) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative shrink-0">
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-label="Weitere Optionen"
+        className="shrink-0 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
+      >
+        <MoreVertical className="size-5" aria-hidden />
+      </Button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md">
+            {actions.map(({ key, icon: Icon, label, onClick, disabled, destructive }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  onClick()
+                  setOpen(false)
+                }}
+                disabled={disabled}
+                aria-label={label}
+                data-testid={key}
+                className={`flex w-full items-center gap-3 px-3 py-2 text-sm transition-colors ${
+                  disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[var(--surface-3)] cursor-pointer"
+                } ${
+                  destructive
+                    ? "text-[var(--state-wrong)] hover:bg-[var(--state-wrong-soft)]"
+                    : "text-[var(--ink-muted)]"
+                }`}
+              >
+                <Icon className="size-5 flex-shrink-0" aria-hidden />
+                <span className="flex-1 text-left">{label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 const QuizzList = ({
@@ -67,6 +123,15 @@ const QuizzList = ({
   const { klassenEnabled } = useConfig()
   const reducedMotion = useReducedMotion()
   const [assigningLabelTo, setAssigningLabelTo] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 600 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 600)
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const handleLabelAssign = (quizzId: string, labelIds: number[]) => {
     socket.emit(EVENTS.LABEL.ASSIGN, {
@@ -80,6 +145,57 @@ const QuizzList = ({
   const getLabelMap = (q: QuizzMeta) => {
     const assigned = new Map(labels.map((l: Label) => [l.id, l]))
     return (q.labelIds ?? []).map((id: number) => assigned.get(id)).filter((l: Label | undefined) => l) as Label[]
+  }
+
+  const buildActions = (q: QuizzMeta): ListRowAction[] => [
+    {
+      key: "edit",
+      icon: SquarePen,
+      label: t("manager:quizz.edit", { name: q.subject }),
+      onClick: () => {
+        void navigate({
+          to: "/manager/quizz/$quizzId",
+          params: { quizzId: q.id },
+        })
+      },
+    },
+    {
+      key: "duplicate",
+      icon: Copy,
+      label: t("manager:quizz.duplicate", { name: q.subject }),
+      onClick: () =>
+        setPendingDuplicate({ id: q.id, subject: q.subject }),
+    },
+    {
+      key: "export",
+      icon: Download,
+      label: t("manager:quizz.export", { name: q.subject }),
+      onClick: () => handleExport(q.id),
+    },
+    {
+      key: "archive",
+      icon: Archive,
+      label: t("manager:quizz.archive"),
+      onClick: () => handleArchived(q.id, true),
+    },
+    {
+      key: "delete",
+      icon: Trash2,
+      label: t("manager:quizz.delete"),
+      destructive: true,
+      onClick: () =>
+        setPendingDelete({ id: q.id, subject: q.subject }),
+    },
+  ]
+
+  const getPrimaryActions = (actions: ListRowAction[]): ListRowAction[] => {
+    if (!isMobile) return actions
+    return actions.filter((a) => a.key === "edit" || a.key === "delete")
+  }
+
+  const getOverflowActions = (actions: ListRowAction[]): ListRowAction[] => {
+    if (!isMobile) return []
+    return actions.filter((a) => a.key !== "edit" && a.key !== "delete")
   }
 
   return quizz.length === 0 ? (
@@ -118,6 +234,9 @@ const QuizzList = ({
       {activeQuizz.map((q, index) => {
         const assignedLabels = getLabelMap(q)
         const availableLabels = labels.filter((l: Label) => !assignedLabels.some((al: Label) => al.id === l.id))
+        const allActions = buildActions(q)
+        const visibleActions = getPrimaryActions(allActions)
+        const overflowActions = getOverflowActions(allActions)
 
         return (
           <motion.div
@@ -158,47 +277,11 @@ const QuizzList = ({
                       ? t("manager:catalog.count", { count: q.questionCount })
                       : undefined
                   }
-                  actions={[
-                    {
-                      key: "edit",
-                      icon: SquarePen,
-                      label: t("manager:quizz.edit", { name: q.subject }),
-                      onClick: () => {
-                        void navigate({
-                          to: "/manager/quizz/$quizzId",
-                          params: { quizzId: q.id },
-                        })
-                      },
-                    },
-                    {
-                      key: "duplicate",
-                      icon: Copy,
-                      label: t("manager:quizz.duplicate", { name: q.subject }),
-                      onClick: () =>
-                        setPendingDuplicate({ id: q.id, subject: q.subject }),
-                    },
-                    {
-                      key: "export",
-                      icon: Download,
-                      label: t("manager:quizz.export", { name: q.subject }),
-                      onClick: () => handleExport(q.id),
-                    },
-                    {
-                      key: "archive",
-                      icon: Archive,
-                      label: t("manager:quizz.archive"),
-                      onClick: () => handleArchived(q.id, true),
-                    },
-                    {
-                      key: "delete",
-                      icon: Trash2,
-                      label: t("manager:quizz.delete"),
-                      destructive: true,
-                      onClick: () =>
-                        setPendingDelete({ id: q.id, subject: q.subject }),
-                    },
-                  ]}
+                  actions={visibleActions}
                 />
+                {isMobile && overflowActions.length > 0 && (
+                  <OverflowMenu actions={overflowActions} />
+                )}
               </div>
 
               {klassenEnabled && (assignedLabels.length > 0 || availableLabels.length > 0) && (
