@@ -130,7 +130,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           )}
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            <Badge className="inline-flex items-center rounded-full bg-[var(--surface-4)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
+            <Badge>
               {t(`manager:media.category.${item.category}`)}
             </Badge>
             <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">

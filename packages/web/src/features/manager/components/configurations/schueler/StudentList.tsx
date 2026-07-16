@@ -1,4 +1,5 @@
 import * as Select from "@radix-ui/react-select"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
 import { KeyRound, Plus, Trash2, X } from "lucide-react"
@@ -105,9 +106,9 @@ const StudentList = ({
             )}
 
             {student.classes.map((c) => (
-              <span
+              <Badge
                 key={c.id}
-                className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-muted)]"
+                className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
               >
                 {c.name}
                 <button
@@ -125,7 +126,7 @@ const StudentList = ({
                 >
                   <X className="size-3" />
                 </button>
-              </span>
+              </Badge>
             ))}
 
             {availableClasses.length > 0 && (
