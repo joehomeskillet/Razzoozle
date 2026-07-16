@@ -227,7 +227,7 @@ const QuizzList = ({
                           defaultValue: "Label zuweisen",
                         })}
                         onPointerDown={(e) => e.stopPropagation()}
-                        className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                        className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                       >
                         <Plus className="size-3" />
                         <Select.Value
@@ -248,7 +248,7 @@ const QuizzList = ({
                               <Select.Item
                                 key={label.id}
                                 value={String(label.id)}
-                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
                               >
                                 <Select.ItemText>{label.name}</Select.ItemText>
                               </Select.Item>
