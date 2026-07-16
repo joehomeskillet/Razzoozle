@@ -170,7 +170,7 @@ async function runKickRosterTest() {
     await waitForTestIdPrefix(managerPage, 'roster-card-');
 
     // Verify that a roster card with username="KickMe" is present before we kick.
-    const kickMeCardExists = await managerPage.evaluate((sel, attr, val) => {
+    const kickMeCardExists = await managerPage.evaluate(({ sel, attr, val }) => {
       const cards = document.querySelectorAll(sel);
       for (const card of cards) {
         if (card.getAttribute(attr) === val) {
@@ -178,7 +178,11 @@ async function runKickRosterTest() {
         }
       }
       return false;
-    }, testIdPrefixSel('roster-card-'), 'data-username', 'KickMe');
+    }, {
+      sel: testIdPrefixSel('roster-card-'),
+      attr: 'data-username',
+      val: 'KickMe',
+    });
 
     if (!kickMeCardExists) {
       throw new Error('Roster card with data-username="KickMe" was not found on the manager page');
@@ -189,7 +193,7 @@ async function runKickRosterTest() {
     // ============ MANAGER: CLICK KICK BUTTON FOR "KickMe" PLAYER ============
     // Contract: kick button is data-testid="kick-btn-${player.id}" and is located within
     // or next to the roster card. Find the kick button by searching within the card.
-    const playerId = await managerPage.evaluate((sel, attr, val) => {
+    const playerId = await managerPage.evaluate(({ sel, attr, val }) => {
       const cards = document.querySelectorAll(sel);
       for (const card of cards) {
         if (card.getAttribute(attr) === val) {
@@ -199,7 +203,11 @@ async function runKickRosterTest() {
         }
       }
       return null;
-    }, testIdPrefixSel('roster-card-'), 'data-username', 'KickMe');
+    }, {
+      sel: testIdPrefixSel('roster-card-'),
+      attr: 'data-username',
+      val: 'KickMe',
+    });
 
     if (!playerId) {
       throw new Error('Could not extract player ID from roster card');
@@ -222,7 +230,7 @@ async function runKickRosterTest() {
       state: 'attached',
       timeout: 5_000,
     });
-    const cardStillPresent = await managerPage.evaluate((sel, attr, val) => {
+    const cardStillPresent = await managerPage.evaluate(({ sel, attr, val }) => {
       const cards = document.querySelectorAll(sel);
       for (const card of cards) {
         if (card.getAttribute(attr) === val) {
@@ -230,7 +238,11 @@ async function runKickRosterTest() {
         }
       }
       return false;
-    }, testIdPrefixSel('roster-card-'), 'data-username', 'KickMe');
+    }, {
+      sel: testIdPrefixSel('roster-card-'),
+      attr: 'data-username',
+      val: 'KickMe',
+    });
 
     if (cardStillPresent) {
       throw new Error('Roster card for "KickMe" should have been removed but is still present on manager page');
