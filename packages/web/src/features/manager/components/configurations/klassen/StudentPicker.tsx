@@ -96,7 +96,7 @@ const StudentPicker = ({
                   type="button"
                   disabled={alreadyIn}
                   onClick={() => onSelect(student.id, classId)}
-                  className="focus-visible:outline-primary flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-[var(--surface-2)]"
+                  className="focus-visible:outline-[var(--color-primary)] flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:bg-[var(--surface-3)] enabled:hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   <span className="min-w-0 truncate text-[var(--ink)]">
                     {student.displayName}

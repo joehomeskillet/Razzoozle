@@ -117,7 +117,7 @@ const ClassList = ({
                         onFetchStudents?.(classObj.id)
                       }
                     }}
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={
                       expandedClassId === classObj.id
                         ? t("common:collapse")
@@ -139,7 +139,7 @@ const ClassList = ({
                         {classObj.name}
                       </p>
                       {classObj.ownerName && (
-                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
+                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-subtle)]">
                           {classObj.ownerName}
                         </span>
                       )}
@@ -157,7 +157,7 @@ const ClassList = ({
                     onClick={() =>
                       onEditClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.editClass")}
                     aria-label={t("manager:classes.editClass")}
                   >
@@ -169,7 +169,7 @@ const ClassList = ({
                     onClick={() =>
                       onDeleteClass({ id: classObj.id, name: classObj.name })
                     }
-                    className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     title={t("manager:classes.deleteClass")}
                     aria-label={t("manager:classes.deleteClass")}
                   >
@@ -204,7 +204,7 @@ const ClassList = ({
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.assignTitle")}
-                        className="focus-visible:outline-primary flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                        className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
                         onClick={() => setPendingLabelPickerId(classObj.id)}
                       >
                         <Plus className="size-3" />
@@ -265,7 +265,7 @@ const ClassList = ({
                                 birthdate: student.birthdate,
                               })
                             }
-                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.editStudent")}
                             aria-label={t("manager:classes.editStudent")}
                           >
@@ -280,7 +280,7 @@ const ClassList = ({
                                 displayName: student.displayName,
                               })
                             }
-                            className="focus-visible:outline-primary flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.deleteStudent")}
                             aria-label={t("manager:classes.deleteStudent")}
                           >
@@ -300,7 +300,7 @@ const ClassList = ({
                   <button
                     type="button"
                     onClick={() => onAddStudent(classObj.id)}
-                    className="focus-visible:outline-primary flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-primary)] hover:bg-purple-50 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="focus-visible:outline-[var(--color-primary)] flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--accent-tint)] focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     <Plus className="size-4" />
                     {t("manager:classes.addStudent")}
