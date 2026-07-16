@@ -104,10 +104,10 @@ const QuizGenSection = ({
           </p>
         )}
         {!generating && generated && (
-          <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-[var(--state-correct-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--state-correct)]">
+          <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]">
             <CheckCircle2 className="size-3.5" aria-hidden />
             {t("manager:ai.generate.generated")}
-            <span className="font-medium text-[var(--state-correct)]">
+            <span className="font-medium text-[var(--status-online-text)]">
               {t("manager:ai.generate.openInEditor")}
             </span>
           </span>

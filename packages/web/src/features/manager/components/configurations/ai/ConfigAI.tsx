@@ -262,7 +262,7 @@ const ConfigAI = () => {
     off: {
       label: t("manager:ai.status.off", { defaultValue: "Aus" }),
       pill: "bg-[var(--surface-3)] text-[var(--ink-medium)]",
-      dot: "bg-[var(--surface-muted)]",
+      dot: "bg-[var(--ink-faint)]",
     },
     ready: {
       label: t("manager:ai.status.ready", { defaultValue: "Bereit" }),

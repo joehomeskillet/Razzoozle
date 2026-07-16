@@ -110,7 +110,7 @@ const TextProviderSection = ({
                   "flex items-start gap-2 rounded-lg p-3 text-sm",
                   privacy.external
                     ? "bg-[var(--status-pending-bg)] text-[var(--status-pending-text)] outline-1 -outline-offset-1 outline-[var(--status-pending-text)]"
-                    : "bg-[var(--state-correct-soft)] text-[var(--state-correct)] outline-1 -outline-offset-1 outline-[var(--state-correct)]",
+                    : "bg-[var(--status-online-bg)] text-[var(--status-online-text)] outline-1 -outline-offset-1 outline-[var(--status-online-text)]",
                 )}
               >
                 {privacy.external ? (
@@ -278,17 +278,17 @@ const TextProviderSection = ({
             <p className="text-sm text-[var(--ink-subtle)]">{t("manager:ai.testing")}</p>
           )}
           {!testing && lastTest === "ok" && (
-            <div className="flex items-start gap-2 rounded-lg bg-[var(--state-correct-soft)] p-3 outline-1 -outline-offset-1 outline-[var(--state-correct)]">
+            <div className="flex items-start gap-2 rounded-lg bg-[var(--status-online-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-online-text)]">
               <CheckCircle2
-                className="mt-0.5 size-5 shrink-0 text-[var(--state-correct)]"
+                className="mt-0.5 size-5 shrink-0 text-[var(--status-online-text)]"
                 aria-hidden
               />
               <div>
-                <p className="text-sm font-semibold text-[var(--state-correct)]">
+                <p className="text-sm font-semibold text-[var(--status-online-text)]">
                   {t("manager:ai.testOk")}
                 </p>
                 {lastTestMessage && (
-                  <p className="text-sm text-[var(--state-correct)]">{lastTestMessage}</p>
+                  <p className="text-sm text-[var(--status-online-text)]">{lastTestMessage}</p>
                 )}
               </div>
             </div>
@@ -296,18 +296,18 @@ const TextProviderSection = ({
           {!testing && lastTest === "failed" && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg bg-[var(--state-wrong-soft)] p-3 outline-1 -outline-offset-1 outline-[var(--state-wrong)]"
+              className="flex items-start gap-2 rounded-lg bg-[var(--status-offline-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-offline-text)]"
             >
               <XCircle
-                className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"
+                className="mt-0.5 size-5 shrink-0 text-[var(--status-offline-text)]"
                 aria-hidden
               />
               <div>
-                <p className="text-sm font-semibold text-[var(--state-wrong)]">
+                <p className="text-sm font-semibold text-[var(--status-offline-text)]">
                   {t("manager:ai.testFailed")}
                 </p>
                 {lastTestMessage && (
-                  <p className="text-sm text-[var(--state-wrong)]">{lastTestMessage}</p>
+                  <p className="text-sm text-[var(--status-offline-text)]">{lastTestMessage}</p>
                 )}
               </div>
             </div>
