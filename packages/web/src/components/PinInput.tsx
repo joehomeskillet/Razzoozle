@@ -103,7 +103,7 @@ const PinInput = ({
           onChange={handleChange(i)}
           onKeyDown={handleKeyDown(i)}
           onPaste={handlePaste}
-          className="focus:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 min-h-11 w-10 min-w-0 flex-1 rounded-lg border-2 border-[var(--border-hairline)] p-2 text-center text-lg font-semibold outline-none focus-visible:outline-none"
+          className="focus:border-[var(--color-primary)] focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 min-h-11 w-10 min-w-0 flex-1 rounded-lg border-2 border-[var(--border-hairline)] p-2 text-center text-lg font-semibold outline-none focus-visible:outline-none"
         />
       ))}
     </div>

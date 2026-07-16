@@ -11,7 +11,7 @@ const LabelColorPicker = ({ value, onChange }: LabelColorPickerProps) => {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-900 mb-2">
+      <label className="block text-sm font-medium text-[var(--ink)] mb-2">
         {t("manager:labels.colorLabel")}
       </label>
       <div className="flex flex-wrap gap-2">
