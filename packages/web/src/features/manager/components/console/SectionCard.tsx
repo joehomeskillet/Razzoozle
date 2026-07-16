@@ -42,7 +42,7 @@ const SectionCard = ({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-[var(--ink)]">{title}</h3>
+        <h2 className="text-base font-semibold text-[var(--ink)]">{title}</h2>
         {description && <p className="text-sm text-[var(--ink-subtle)]">{description}</p>}
       </div>
       {actions && <div className="shrink-0">{actions}</div>}
