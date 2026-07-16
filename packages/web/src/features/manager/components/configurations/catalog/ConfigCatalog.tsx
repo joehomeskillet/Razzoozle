@@ -273,9 +273,9 @@ const ConfigCatalog = () => {
                         <Badge>
                           {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
                         </Badge>
-                        <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
+                        <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
                           {t(`manager:catalog.source.${source}`)}
-                        </span>
+                        </Badge>
                         {klassenEnabled && entryLabelIds.length > 0 && (
                           <>
                             {labels
@@ -286,12 +286,12 @@ const ConfigCatalog = () => {
                           </>
                         )}
                         {(entry.tags ?? []).map((tag, tagIndex) => (
-                          <span
+                          <Badge
                             key={`${tag}-${tagIndex}`}
-                            className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-medium)]"
+                            className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
                           >
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </span>
                       <span className="text-xs text-[var(--ink-subtle)]">

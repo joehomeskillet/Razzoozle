@@ -392,11 +392,11 @@ const ConfigUsers = () => {
               meta={
                 <span className="flex flex-wrap items-center gap-2">
                   <Badge>{getRoleLabel(user.role)}</Badge>
-                  <span
+                  <Badge
                     className={
                       user.active
-                        ? "inline-flex items-center rounded-full bg-[var(--status-online-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-online-text)]"
-                        : "inline-flex items-center rounded-full bg-[var(--status-offline-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-offline-text)]"
+                        ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+                        : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
                     }
                   >
                     {user.active
@@ -404,7 +404,7 @@ const ConfigUsers = () => {
                       : t("manager:users.disabledStatus", {
                           defaultValue: "Deaktiviert",
                         })}
-                  </span>
+                  </Badge>
                 </span>
               }
               actions={[
