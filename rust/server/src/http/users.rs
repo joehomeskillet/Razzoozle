@@ -8,6 +8,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use tracing::{info, warn};
 
 use crate::db;
 use super::{AppState, json_error_response};
@@ -187,6 +188,69 @@ pub async fn enable(
         .await
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to enable user: {}", e)))?;
 
+    Ok(StatusCode::OK)
+}
+
+/// DELETE /api/users/:id — permanently delete a user (admin only).
+/// Guards: an admin can never delete their own account (self-delete), and the
+/// last remaining active admin can never be deleted (last-admin), both 400.
+pub async fn delete_user_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    // Verify admin
+    let admin = match require_admin_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+    };
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    // Self-delete guard: an admin can never delete their own account.
+    if admin.user_id == id {
+        warn!("user delete denied: check=self_delete user={}", id);
+        return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete your own account"));
+    }
+
+    // Load target user's role/active state
+    let target = db::users::get_user_role_active(pool, id)
+        .await
+        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load user: {}", e)))?;
+    let (role, active) = match target {
+        Some(v) => v,
+        None => return Err(json_error_response(StatusCode::NOT_FOUND, "User not found")),
+    };
+
+    // Last-admin guard: never delete the last remaining active admin.
+    if role == "admin" && active {
+        let active_admins = db::users::count_active_admins(pool)
+            .await
+            .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to count admins: {}", e)))?;
+        if active_admins <= 1 {
+            warn!("user delete denied: check=last_admin user={}", id);
+            return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete the last active admin"));
+        }
+    }
+
+    // Revoke sessions before delete — self-documenting order, even though a
+    // FK CASCADE (if configured) would clean these up anyway.
+    db::users::revoke_user_sessions(pool, id, None)
+        .await
+        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to revoke sessions: {}", e)))?;
+
+    let deleted = db::users::delete_user(pool, id)
+        .await
+        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete user: {}", e)))?;
+
+    if !deleted {
+        return Err(json_error_response(StatusCode::NOT_FOUND, "User not found"));
+    }
+
+    info!("user deleted: id={}", id);
     Ok(StatusCode::OK)
 }
 

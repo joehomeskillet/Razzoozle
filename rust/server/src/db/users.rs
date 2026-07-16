@@ -325,6 +325,42 @@ pub async fn set_user_active(pool: &PgPool, user_id: i64, active: bool) -> Resul
     Ok(())
 }
 
+/// Count active admins (role='admin' AND active=true). Used by the
+/// last-admin delete guard so the final active admin can never be removed.
+pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query_as::<_, (i64,)>(
+        "SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = true"
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(result.0)
+}
+
+/// Get (role, active) for a user id. None if the user does not exist.
+pub async fn get_user_role_active(pool: &PgPool, user_id: i64) -> Result<Option<(String, bool)>, sqlx::Error> {
+    let result = sqlx::query_as::<_, (String, bool)>(
+        "SELECT role, active FROM users WHERE id = $1"
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result)
+}
+
+/// Permanently delete a user row. Returns true if a row was deleted, false if
+/// no user with that id existed. Callers are responsible for revoking
+/// sessions and enforcing self-delete/last-admin guards before calling this.
+pub async fn delete_user(pool: &PgPool, user_id: i64) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
 /// Admin password reset — hash and store a new password for the given user.
 pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Result<(), String> {
     // Hash password using argon2 (same pattern as create_user).
