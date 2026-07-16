@@ -133,7 +133,13 @@
     "profile": "Il mio profilo",
     "users": "Gestione utenti",
     "schueler": "Gestione studenti",
-    "labels": "Etichette"
+    "labels": "Etichette",
+    "groups": {
+      "operations": "Operazioni",
+      "content": "Contenuti",
+      "school": "Scuola",
+      "system": "Sistema"
+    }
   },
   "plugins": {
     "title": "Plugin",
@@ -262,7 +268,9 @@
     "confirm": "Rimuovi"
   },
   "aria": {
-    "passwordLabel": "Password"
+    "passwordLabel": "Password",
+    "openNav": "Apri navigazione",
+    "navTitle": "Navigazione"
   },
   "theme": {
     "branding": "Branding",

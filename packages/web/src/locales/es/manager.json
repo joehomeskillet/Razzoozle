@@ -4,7 +4,9 @@
     "subtitle": "Inicia sesión para gestionar tu partida."
   },
   "aria": {
-    "passwordLabel": "Contraseña"
+    "passwordLabel": "Contraseña",
+    "openNav": "Abrir navegación",
+    "navTitle": "Navegación"
   },
   "configurationsTitle": "Configuraciones",
   "kickPlayer": {
@@ -142,7 +144,13 @@
     "profile": "Mi perfil",
     "users": "Gestión de usuarios",
     "schueler": "Gestión de estudiantes",
-    "labels": "Etiquetas"
+    "labels": "Etiquetas",
+    "groups": {
+      "operations": "Operaciones",
+      "content": "Contenido",
+      "school": "Escuela",
+      "system": "Sistema"
+    }
   },
   "plugins": {
     "title": "Complementos",

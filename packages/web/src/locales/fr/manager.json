@@ -4,7 +4,9 @@
     "subtitle": "Connecte-toi pour gérer ta partie."
   },
   "aria": {
-    "passwordLabel": "Mot de passe"
+    "passwordLabel": "Mot de passe",
+    "openNav": "Ouvrir la navigation",
+    "navTitle": "Navigation"
   },
   "configurationsTitle": "Configurations",
   "kickPlayer": {
@@ -142,7 +144,13 @@
     "profile": "Mon profil",
     "users": "Gestion des utilisateurs",
     "schueler": "Gestion des élèves",
-    "labels": "Libellés"
+    "labels": "Libellés",
+    "groups": {
+      "operations": "Opérations",
+      "content": "Contenu",
+      "school": "École",
+      "system": "Système"
+    }
   },
   "plugins": {
     "title": "Extensions",
