@@ -86,7 +86,7 @@ const TextProviderSection = ({
             id="ai-text-provider"
             value={settings.text.activeProvider}
             onChange={(event) => setActiveProvider(event.target.value)}
-            className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+            className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           >
             <option value={AI_PROVIDER_OFF}>{t("manager:ai.off")}</option>
             {settings.text.providers.map((provider) => (
@@ -109,8 +109,8 @@ const TextProviderSection = ({
                 className={clsx(
                   "flex items-start gap-2 rounded-lg p-3 text-sm",
                   privacy.external
-                    ? "bg-amber-50 text-amber-800 outline-1 -outline-offset-1 outline-amber-200"
-                    : "bg-green-50 text-green-800 outline-1 -outline-offset-1 outline-green-200",
+                    ? "bg-[var(--status-pending-bg)] text-[var(--status-pending-text)] outline-1 -outline-offset-1 outline-[var(--status-pending-text)]"
+                    : "bg-[var(--status-online-bg)] text-[var(--status-online-text)] outline-1 -outline-offset-1 outline-[var(--status-online-text)]",
                 )}
               >
                 {privacy.external ? (
@@ -278,17 +278,17 @@ const TextProviderSection = ({
             <p className="text-sm text-[var(--ink-subtle)]">{t("manager:ai.testing")}</p>
           )}
           {!testing && lastTest === "ok" && (
-            <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 outline-1 -outline-offset-1 outline-green-200">
+            <div className="flex items-start gap-2 rounded-lg bg-[var(--status-online-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-online-text)]">
               <CheckCircle2
-                className="mt-0.5 size-5 shrink-0 text-green-600"
+                className="mt-0.5 size-5 shrink-0 text-[var(--status-online-text)]"
                 aria-hidden
               />
               <div>
-                <p className="text-sm font-semibold text-green-800">
+                <p className="text-sm font-semibold text-[var(--status-online-text)]">
                   {t("manager:ai.testOk")}
                 </p>
                 {lastTestMessage && (
-                  <p className="text-sm text-green-700">{lastTestMessage}</p>
+                  <p className="text-sm text-[var(--status-online-text)]">{lastTestMessage}</p>
                 )}
               </div>
             </div>
@@ -296,18 +296,18 @@ const TextProviderSection = ({
           {!testing && lastTest === "failed" && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg bg-red-50 p-3 outline-1 -outline-offset-1 outline-red-200"
+              className="flex items-start gap-2 rounded-lg bg-[var(--status-offline-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-offline-text)]"
             >
               <XCircle
-                className="mt-0.5 size-5 shrink-0 text-red-600"
+                className="mt-0.5 size-5 shrink-0 text-[var(--status-offline-text)]"
                 aria-hidden
               />
               <div>
-                <p className="text-sm font-semibold text-red-800">
+                <p className="text-sm font-semibold text-[var(--status-offline-text)]">
                   {t("manager:ai.testFailed")}
                 </p>
                 {lastTestMessage && (
-                  <p className="text-sm text-red-700">{lastTestMessage}</p>
+                  <p className="text-sm text-[var(--status-offline-text)]">{lastTestMessage}</p>
                 )}
               </div>
             </div>
