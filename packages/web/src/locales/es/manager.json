@@ -651,7 +651,7 @@
     "klassenEnabled": "Modo de clase habilitado",
     "klassenDisabled": "Modo de clase deshabilitado",
     "endScreenTitle": "Opciones de Pantalla Final",
-    "endScreenDescription": "Elija qué opciones de pantalla final están disponibles para los maestros. Lista separada por comas: full, top3, private.",
+    "endScreenDescription": "Selecciona qué opciones de pantalla final deben estar disponibles para el docente.",
     "endScreenModes": "Modos disponibles",
     "endScreenModesHint": "Separado por comas: full, top3, private",
     "endScreenModesUpdated": "Opciones de pantalla final actualizadas",
@@ -670,7 +670,12 @@
     "scoringDescription": "Elija cómo se calculan los puntos. La velocidad tiene en cuenta el tiempo de respuesta, la precisión cuenta solo respuestas correctas o incorrectas.",
     "scoringMode": "Modo de puntuación",
     "speedMode": "Velocidad",
-    "accuracyMode": "Precisión"
+    "accuracyMode": "Precisión",
+    "endScreenMode": {
+      "full": "Completo",
+      "top3": "Top 3",
+      "private": "Privado"
+    }
   },
   "achievementsConfig": {
     "title": "Configurar logros",

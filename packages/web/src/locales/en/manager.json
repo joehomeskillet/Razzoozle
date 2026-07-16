@@ -660,7 +660,7 @@
     "klassenEnabled": "Class mode enabled",
     "klassenDisabled": "Class mode disabled",
     "endScreenTitle": "End Screen Options",
-    "endScreenDescription": "Choose which end-screen display options are available to teachers. Comma-separated list: full, top3, private.",
+    "endScreenDescription": "Select which end screen display options should be available to the teacher.",
     "endScreenModes": "Available modes",
     "endScreenModesHint": "Comma-separated: full, top3, private",
     "endScreenModesUpdated": "End screen options updated",
@@ -679,7 +679,12 @@
     "scoringDescription": "Choose how points are calculated. Speed takes answer time into account, accuracy counts only correct or incorrect answers.",
     "scoringMode": "Scoring mode",
     "speedMode": "Speed",
-    "accuracyMode": "Accuracy"
+    "accuracyMode": "Accuracy",
+    "endScreenMode": {
+      "full": "Full",
+      "top3": "Top 3",
+      "private": "Private"
+    }
   },
   "achievementsConfig": {
     "title": "Configure Achievements",

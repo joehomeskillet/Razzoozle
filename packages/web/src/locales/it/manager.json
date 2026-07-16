@@ -651,7 +651,7 @@
     "klassenEnabled": "Modalità classe abilitata",
     "klassenDisabled": "Modalità classe disabilitata",
     "endScreenTitle": "Opzioni Schermata Finale",
-    "endScreenDescription": "Scegli quali opzioni di schermata finale sono disponibili per gli insegnanti. Elenco separato da virgole: full, top3, private.",
+    "endScreenDescription": "Seleziona quali opzioni di visualizzazione della schermata finale devono essere disponibili per l'insegnante.",
     "endScreenModes": "Modalità disponibili",
     "endScreenModesHint": "Separato da virgole: full, top3, private",
     "endScreenModesUpdated": "Opzioni schermata finale aggiornate",
@@ -670,7 +670,12 @@
     "scoringDescription": "Scegli come vengono calcolati i punti. La velocità tiene conto del tempo di risposta, l'accuratezza conta solo risposte corrette o errate.",
     "scoringMode": "Modalità punteggio",
     "speedMode": "Velocità",
-    "accuracyMode": "Precisione"
+    "accuracyMode": "Precisione",
+    "endScreenMode": {
+      "full": "Completo",
+      "top3": "Top 3",
+      "private": "Privato"
+    }
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",

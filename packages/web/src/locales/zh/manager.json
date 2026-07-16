@@ -651,7 +651,7 @@
     "klassenEnabled": "班级模式已启用",
     "klassenDisabled": "班级模式已禁用",
     "endScreenTitle": "结束画面选项",
-    "endScreenDescription": "选择教师可用的结束画面选项。逗号分隔的列表：full、top3、private。",
+    "endScreenDescription": "选择教师可用的终端屏幕显示选项。",
     "endScreenModes": "可用模式",
     "endScreenModesHint": "逗号分隔：full、top3、private",
     "endScreenModesUpdated": "结束画面选项已更新",
@@ -670,7 +670,12 @@
     "scoringDescription": "选择如何计算分数。速度考虑答题时间，准确度仅计算正确或错误的答案。",
     "scoringMode": "评分模式",
     "speedMode": "速度",
-    "accuracyMode": "准确度"
+    "accuracyMode": "准确度",
+    "endScreenMode": {
+      "full": "完整",
+      "top3": "前三名",
+      "private": "私密"
+    }
   },
   "achievementsConfig": {
     "title": "配置成就",

@@ -673,7 +673,7 @@
     "klassenEnabled": "Klassen-Modus verfügbar",
     "klassenDisabled": "Klassen-Modus deaktiviert",
     "endScreenTitle": "Endbildschirm-Optionen",
-    "endScreenDescription": "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen. Kommagetrennte Liste: full, top3, private.",
+    "endScreenDescription": "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen.",
     "endScreenModes": "Verfügbare Modi",
     "endScreenModesHint": "Kommagetrennt: full, top3, private",
     "endScreenModesUpdated": "Endbildschirm-Optionen aktualisiert",
@@ -692,7 +692,12 @@
     "scoringDescription": "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
     "scoringMode": "Wertungsmodus",
     "speedMode": "Geschwindigkeit",
-    "accuracyMode": "Genauigkeit"
+    "accuracyMode": "Genauigkeit",
+    "endScreenMode": {
+      "full": "Vollständig",
+      "top3": "Top 3",
+      "private": "Privat"
+    }
   },
   "achievements": {
     "active": "aktiv"
