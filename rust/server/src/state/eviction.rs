@@ -1,5 +1,8 @@
 use razzoozle_protocol::player::Player;
+use razzoozle_engine::state::GamePhase;
 use socketioxide::SocketIo;
+use razzoozle_protocol::constants;
+use tracing::warn;
 
 use super::{get_now_ms, GameRegistry};
 
@@ -16,48 +19,80 @@ impl GameRegistry {
     /// started yet). Connectivity is only checked once is_stale is already
     /// true, keeping the common (not-stale) path cheap. Manager-less games are
     /// the empty-grace reaper's job, handled separately (cleanup_empty_games).
+    ///
+    /// #128 — Additionally, games in RUNNING phase with an unresolvable manager
+    /// socket are evicted immediately once stale, without waiting for all players
+    /// to disconnect. This prevents crashed manager sessions from leaving zombies
+    /// (the manager dies mid-game, never sends LEAVE, so empty_grace never triggers).
+    /// RESET is emitted to the room before removal so connected players are notified.
     pub fn evict_stale_games(&mut self, io: &SocketIo) {
         let now = get_now_ms();
 
-        let stale_games: Vec<String> = self
-            .games_by_id
-            .values()
-            .filter_map(|game_ref| {
-                let game = Self::lock_game_recover(game_ref);
-                if !game.is_stale(now) {
-                    return None;
-                }
-                if game.has_connected_players() {
-                    return None;
-                }
-                let manager_alive = game
-                    .manager_socket_id
-                    .parse()
-                    .ok()
-                    .and_then(|sid| io.get_socket(sid))
-                    .is_some();
-                if manager_alive {
-                    return None;
-                }
-                Some(game.invite_code.clone())
-            })
-            .collect();
+        // Track abandoned RUNNING games separately so we can emit RESET before removal
+        let mut stale_games: Vec<String> = Vec::new();
+        let mut abandoned_running_games: Vec<String> = Vec::new(); // game_ids
 
+        for game_ref in self.games_by_id.values() {
+            let game = Self::lock_game_recover(game_ref);
+            if !game.is_stale(now) {
+                continue;
+            }
+
+            let manager_alive = game
+                .manager_socket_id
+                .parse()
+                .ok()
+                .and_then(|sid| io.get_socket(sid))
+                .is_some();
+
+            // #128: Check if this is a RUNNING game with an unresolvable manager.
+            // If so, evict immediately — don't wait for has_connected_players to clear.
+            let is_running = game.engine.phase != GamePhase::ShowRoom
+                && game.engine.phase != GamePhase::Finished;
+
+            if is_running && !manager_alive {
+                warn!(
+                    "Evicting abandoned RUNNING game: gameId={}, inviteCode={}, phase={:?}, \
+                     manager_socket_id={}, last_activity_ms={}, now_ms={}",
+                    game.game_id, game.invite_code, game.engine.phase,
+                    game.manager_socket_id, game.last_activity_ms, now
+                );
+                abandoned_running_games.push(game.game_id.clone());
+            } else if game.has_connected_players() {
+                // Original #85 Guard: skip if players still connected
+                continue;
+            } else if manager_alive {
+                // Original #85 Guard: skip if manager still alive
+                continue;
+            } else {
+                // Stale with no connected players and no manager: normal eviction
+                stale_games.push(game.invite_code.clone());
+            }
+        }
+
+        // Handle normal stale games (no players, no manager, not RUNNING)
         for invite_code in stale_games {
-            // Remove by invite code (which removes from games_by_code)
             if let Some(game_ref) = self.games_by_code.remove(&invite_code) {
                 let game = Self::lock_game_recover(&game_ref);
-                // Remove from games_by_id as well
                 self.games_by_id.remove(&game.game_id);
-                // Drop this evicted game's players from the socket_id index —
-                // otherwise those entries would linger forever pointing at a
-                // game_id that no longer exists.
                 for player in &game.players {
                     self.socket_to_game.remove(&player.id);
                 }
-                // Drop the evicted game's metrics ring as well
                 crate::socket::metrics::clear_room(&game.game_id);
             }
+        }
+
+        // Handle abandoned RUNNING games: emit RESET to room before removal
+        // (same pattern as register_end_game, ensuring all registry indices are cleaned)
+        for game_id in abandoned_running_games {
+            // Emit RESET to notify any still-connected players
+            io.to(game_id.clone())
+                .emit(constants::game::RESET, "errors:game.managerDisconnected")
+                .ok();
+
+            // Remove via canonical path (cleans all indices: games_by_id, games_by_code,
+            // socket_to_game for players + manager, metrics, and empty_games)
+            self.remove_game(&game_id);
         }
     }
     /// Remove a game from the registry by game_id. Returns true if the game was found and removed,
