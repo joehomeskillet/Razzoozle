@@ -1,8 +1,8 @@
 import * as Select from "@radix-ui/react-select"
-import Badge from "@razzoozle/web/components/manager/Badge"
+import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
-import { KeyRound, Plus, Trash2, X } from "lucide-react"
+import { KeyRound, Plus, Trash2, Users, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { SchuelerStudent, StudentClassRef } from "./useSchuelerManager"
@@ -97,14 +97,14 @@ const StudentList = ({
 
         const title = composedName
 
-        const meta = (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {student.birthdate && (
-              <span className="text-xs font-normal text-[var(--ink-faint)]">
-                {formatBirthdate(student.birthdate)}
-              </span>
-            )}
+        const meta = student.birthdate && (
+          <span className="text-xs text-[var(--ink-subtle)]">
+            {formatBirthdate(student.birthdate)}
+          </span>
+        )
 
+        const footer = (student.classes.length > 0 || availableClasses.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5">
             {student.classes.map((c) => (
               <Badge
                 key={c.id}
@@ -142,7 +142,7 @@ const StudentList = ({
               >
                 <Select.Trigger
                   aria-label={t("manager:schueler.addToClass")}
-                  className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                  className={assignTriggerClass}
                 >
                   <Plus className="size-3" />
                   <Select.Value placeholder={t("manager:schueler.addToClass")} />
@@ -174,8 +174,10 @@ const StudentList = ({
         return (
           <ListRow
             key={student.id}
+            leading={<Users className="size-5 shrink-0 text-[var(--ink-muted)]" />}
             title={title}
             meta={meta}
+            footer={footer}
             actions={actions}
           />
         )
