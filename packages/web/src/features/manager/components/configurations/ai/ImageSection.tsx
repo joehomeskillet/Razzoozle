@@ -40,7 +40,7 @@ const ImageSection = ({
             {settings.image.providers.map((provider) => (
               <div
                 key={provider.id}
-                className="rounded-lg bg-white p-3 outline-1 -outline-offset-1 outline-gray-200"
+                className="rounded-lg bg-[var(--surface)] p-3 outline-1 -outline-offset-1 outline-[var(--line)]"
               >
                 <p className="font-semibold text-[var(--ink)]">{provider.label}</p>
                 {provider.baseUrl && (
@@ -66,7 +66,7 @@ const ImageSection = ({
                           resolution: Number(event.target.value),
                         })
                       }
-                      className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:border-primary focus-visible:outline-none"
+                      className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                     >
                       {IMAGE_RESOLUTIONS.map((size) => (
                         <option key={size} value={size}>

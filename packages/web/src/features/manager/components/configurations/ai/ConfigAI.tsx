@@ -262,17 +262,17 @@ const ConfigAI = () => {
     off: {
       label: t("manager:ai.status.off", { defaultValue: "Aus" }),
       pill: "bg-[var(--surface-3)] text-[var(--ink-medium)]",
-      dot: "bg-gray-400",
+      dot: "bg-[var(--surface-muted)]",
     },
     ready: {
       label: t("manager:ai.status.ready", { defaultValue: "Bereit" }),
-      pill: "bg-green-100 text-green-700",
-      dot: "bg-green-500",
+      pill: "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
+      dot: "bg-[var(--state-correct)]",
     },
     error: {
       label: t("manager:ai.status.error", { defaultValue: "Fehler" }),
-      pill: "bg-red-100 text-red-700",
-      dot: "bg-red-500",
+      pill: "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]",
+      dot: "bg-[var(--state-wrong)]",
     },
   }[textStatus]
 
@@ -323,7 +323,7 @@ const ConfigAI = () => {
         <Button
           variant="primary"
           type="button"
-          className="flex-1 rounded-xl sm:flex-none"
+          className="flex-1 rounded-[var(--radius-theme)] sm:flex-none"
           onClick={saveSettings}
         >
           {t("manager:ai.save")}
