@@ -37,7 +37,7 @@ const MockCard = ({
   animated?: { speed: number; intensity: number; iconCount: number; color: string } | null
   children: ReactNode
 }) => (
-  <div className="overflow-hidden rounded-[var(--radius-theme)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
+  <div className="overflow-hidden rounded-[var(--radius-theme)] outline-2 -outline-offset-2 outline-[var(--line)]">
     <p className="bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-subtle)]">
       {label}
     </p>
@@ -138,7 +138,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
       {/* Reflect the editor's custom backdrop CSS inside the preview. Manager-
           trusted CSS, same trust model as the skeleton custom CSS. */}
       {customCss && <style>{customCss}</style>}
-      <div className="relative isolate overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--border-hairline)]">
+      <div className="relative isolate overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--line)]">
         <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
