@@ -843,3 +843,191 @@ async fn test_keep_slot_player_still_findable_by_client_id() {
         assert_eq!(player.connected, false, "player should be marked disconnected");
     }
 }
+
+#[tokio::test]
+async fn test_evict_running_abandoned_game_with_stale_last_activity() {
+    // W1-1b: RUNNING game with dead manager + stale activity should be evicted
+    // by new logic (currently RED on origin/main — fix not yet implemented).
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket-dead".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        // Move to RUNNING phase (SelectAnswer)
+        game.add_player(
+            "player-socket-1".to_string(),
+            "player-client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+        // Mark as stale (>5 min old)
+        game.last_activity_ms = 0;
+    }
+
+    let io = make_socket_io();
+    registry.evict_stale_games(&io);
+
+    assert!(
+        registry.get_game_by_id(&game_id).is_none(),
+        "RUNNING game with dead manager and stale activity should be evicted"
+    );
+}
+
+#[tokio::test]
+async fn test_dont_evict_running_game_with_fresh_activity() {
+    // W1-1b: RUNNING game with dead manager but fresh activity should NOT be evicted
+    // (should GREEN on origin/main — is_stale check blocks eviction).
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket-dead".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        // Move to RUNNING phase
+        game.add_player(
+            "player-socket-1".to_string(),
+            "player-client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+        // Keep activity fresh (recent timestamp)
+        game.last_activity_ms = get_now_ms();
+    }
+
+    let io = make_socket_io();
+    registry.evict_stale_games(&io);
+
+    assert!(
+        registry.get_game_by_id(&game_id).is_some(),
+        "RUNNING game with fresh activity should not be evicted even if manager is dead"
+    );
+}
+
+#[tokio::test]
+async fn test_dont_evict_running_game_if_activity_fresh() {
+    // W1-1b: RUNNING game with fresh activity should NOT be evicted
+    // (should GREEN on origin/main — is_stale blocks eviction regardless of manager).
+    // This demonstrates the existing fresh-activity protection works.
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket-dead".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        // Move to RUNNING phase
+        game.add_player(
+            "player-socket-1".to_string(),
+            "player-client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+        // Keep activity fresh
+        game.last_activity_ms = get_now_ms();
+    }
+
+    let io = make_socket_io();
+    registry.evict_stale_games(&io);
+
+    assert!(
+        registry.get_game_by_id(&game_id).is_some(),
+        "RUNNING game with fresh activity is protected by is_stale check"
+    );
+}
+
+#[tokio::test]
+async fn test_evict_running_abandoned_even_with_connected_players() {
+    // W1-1b: RUNNING game with dead manager + stale activity should be evicted
+    // even if players are still connected (new logic overrides has_connected_players).
+    // Should be RED on origin/main — fix not yet implemented.
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket-dead".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        // Move to RUNNING phase with connected players
+        game.add_player(
+            "player-socket-1".to_string(),
+            "player-client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.add_player(
+            "player-socket-2".to_string(),
+            "player-client-2".to_string(),
+            "Bob".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+        // Mark as stale
+        game.last_activity_ms = 0;
+        // Both players still connected (default from add_player)
+        assert!(game.has_connected_players(), "setup: should have connected players");
+    }
+
+    let io = make_socket_io();
+    registry.evict_stale_games(&io);
+
+    assert!(
+        registry.get_game_by_id(&game_id).is_none(),
+        "RUNNING game with dead manager and stale activity should be evicted \
+         even if players are still connected (new eviction logic override)"
+    );
+}
