@@ -133,9 +133,9 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             <Badge>
               {t(`manager:media.category.${item.category}`)}
             </Badge>
-            <span className="inline-flex items-center rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-medium)]">
+            <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
               {t(`manager:media.source.${item.source}`)}
-            </span>
+            </Badge>
           </div>
 
           <p className="mt-3 text-sm text-[var(--ink-subtle)]">
