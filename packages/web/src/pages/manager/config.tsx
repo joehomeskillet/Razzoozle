@@ -12,12 +12,28 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 const ManagerConfigPage = () => {
   const { isConnected } = useSocket()
-  const { setGameId, setInviteCode, setStatus, setConfig, config } =
-    useManagerStore()
+  const {
+    setGameId,
+    setInviteCode,
+    setStatus,
+    setConfig,
+    patchQuizzLabels,
+    config,
+  } = useManagerStore()
   const navigate = useNavigate()
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)
+  })
+
+  // #145: patch config.quizz in the store directly on the assign/remove ack —
+  // the source of truth for `Configurations`' `data` prop — instead of a
+  // component-local copy that a view remount (tab switch) racing ahead of the
+  // next CONFIG refresh could silently drop back to the stale value.
+  useEvent(EVENTS.LABEL.ASSIGNED, ({ entityType, entityId, labelIds }) => {
+    if (entityType === "quizz") {
+      patchQuizzLabels(entityId, labelIds)
+    }
   })
 
   useEvent(EVENTS.MANAGER.GAME_CREATED, ({ gameId, inviteCode }) => {

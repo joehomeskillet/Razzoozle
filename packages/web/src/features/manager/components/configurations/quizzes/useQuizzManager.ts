@@ -7,7 +7,7 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -41,26 +41,6 @@ export const useQuizzManager = () => {
   // Multi-select state keyed by quiz id (indices would break under filter/sort).
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-  // Patch labels on quizzes when LABEL.ASSIGNED is received; allows immediate
-  // UI update without waiting for a full config refresh. Map: quizId → labelIds.
-  const [labelPatches, setLabelPatches] = useState<Map<string, number[]>>(new Map())
-
-  // Listen for label assignment acks from the server and patch the local state.
-  useEvent(
-    EVENTS.LABEL.ASSIGNED,
-    useCallback(
-      (payload: {
-        entityType: string
-        entityId: string
-        labelIds: number[]
-      }) => {
-        if (payload.entityType === "quizz") {
-          setLabelPatches((prev) => new Map(prev).set(payload.entityId, payload.labelIds))
-        }
-      },
-      [],
-    ),
-  )
 
   // Live search + sort applied to both the active and archived sections.
   const { activeQuizz, archivedQuizz, hasMatches } = useMemo(() => {
@@ -83,16 +63,10 @@ export const useQuizzManager = () => {
       return sortKey === "count-asc" ? countA - countB : countB - countA
     }
 
-        // Apply label patches to quizz data for immediate UI update.
-    const patchedQuizz = quizz.map((q) => ({
-      ...q,
-      labelIds: labelPatches.has(q.id) ? labelPatches.get(q.id) : q.labelIds,
-    }))
-
-    const active = patchedQuizz
+    const active = quizz
       .filter((q) => !q.archived && matchesSearch(q.subject))
       .sort(sortFn)
-    const archived = patchedQuizz
+    const archived = quizz
       .filter((q) => q.archived && matchesSearch(q.subject))
       .sort(sortFn)
 
@@ -101,7 +75,7 @@ export const useQuizzManager = () => {
       archivedQuizz: archived,
       hasMatches: active.length > 0 || archived.length > 0,
     }
-  }, [quizz, search, sortKey, labelPatches])
+  }, [quizz, search, sortKey])
 
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
     toast.error(t(message))

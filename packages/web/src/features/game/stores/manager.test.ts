@@ -121,6 +121,35 @@ describe("useManagerStore", () => {
     })
   })
 
+  describe("patchQuizzLabels()", () => {
+    it("updates labelIds for the matching quiz only, leaving others untouched", () => {
+      const store = useManagerStore.getState()
+
+      store.setConfig({
+        quizz: [
+          { id: "q1", subject: "Quiz 1", labelIds: [1] },
+          { id: "q2", subject: "Quiz 2", labelIds: [2] },
+        ],
+        results: [],
+        submissions: [],
+      })
+
+      store.patchQuizzLabels("q1", [1, 3])
+
+      const { config } = useManagerStore.getState()
+      expect(config?.quizz.find((q) => q.id === "q1")?.labelIds).toEqual([1, 3])
+      expect(config?.quizz.find((q) => q.id === "q2")?.labelIds).toEqual([2])
+    })
+
+    it("is a no-op when config is not yet loaded", () => {
+      const store = useManagerStore.getState()
+
+      expect(useManagerStore.getState().config).toBeNull()
+      expect(() => store.patchQuizzLabels("q1", [1])).not.toThrow()
+      expect(useManagerStore.getState().config).toBeNull()
+    })
+  })
+
   describe("logout()", () => {
     it("clears all auth state", () => {
       const store = useManagerStore.getState()
