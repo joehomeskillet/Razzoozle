@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next"
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  "w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] placeholder-[var(--ink-faint)] outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+  "w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] placeholder-[var(--ink-faint)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
 
 // ---------------------------------------------------------------------------
 // Achievement badge editor card
