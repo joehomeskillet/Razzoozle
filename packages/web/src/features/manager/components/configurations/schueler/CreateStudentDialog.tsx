@@ -63,7 +63,7 @@ const CreateStudentDialog = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={handleClose} />
-      <div className="relative w-full max-w-lg rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
+      <div className="relative w-full max-w-lg rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
         <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:schueler.createTitle")}
         </h2>
@@ -75,14 +75,14 @@ const CreateStudentDialog = ({
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder={t("manager:schueler.firstNamePlaceholder")}
-          className="mt-4 min-h-11 w-full rounded-xl"
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
         <Input
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           placeholder={t("manager:schueler.lastNamePlaceholder")}
-          className="mt-3 min-h-11 w-full rounded-xl"
+          className="mt-3 min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
         <label
@@ -97,7 +97,7 @@ const CreateStudentDialog = ({
           value={birthdate}
           max={todayIso}
           onChange={(e) => setBirthdate(e.target.value)}
-          className="focus-visible:border-primary mt-1 min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-none"
+          className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
         />
 
         <p className="mt-4 text-sm font-medium text-[var(--ink-muted)]">
@@ -108,7 +108,7 @@ const CreateStudentDialog = ({
             {t("manager:schueler.noClasses")}
           </p>
         ) : (
-          <div className="mt-1 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-[var(--border-hairline)] p-2">
+          <div className="mt-1 max-h-40 space-y-1 overflow-y-auto rounded-[var(--radius-theme)] border border-[var(--border-hairline)] p-2">
             {classes.map((c) => (
               <label
                 key={c.id}
@@ -118,7 +118,7 @@ const CreateStudentDialog = ({
                   type="checkbox"
                   checked={selectedClassIds.includes(c.id)}
                   onChange={() => toggleClass(c.id)}
-                  className="focus-visible:outline-primary size-4 rounded border-[var(--border-hairline)]"
+                  className="size-4 rounded border-[var(--border-hairline)] focus-visible:outline-[var(--color-primary)]"
                 />
                 {c.name}
               </label>

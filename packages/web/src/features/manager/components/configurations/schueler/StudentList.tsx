@@ -77,7 +77,7 @@ const StudentRow = ({
   const composedName = getComposedName(student)
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-3">
+    <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-[var(--ink)]">
           {composedName}
@@ -107,7 +107,7 @@ const StudentRow = ({
                 })
               }
               aria-label={t("manager:schueler.removeFromClassTitle")}
-              className="focus-visible:outline-primary flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)]"
+              className="focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)]"
             >
               <X className="size-3" />
             </button>
@@ -124,7 +124,7 @@ const StudentRow = ({
           >
             <Select.Trigger
               aria-label={t("manager:schueler.addToClass")}
-              className="focus-visible:outline-primary flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+              className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
             >
               <Plus className="size-3" />
               <Select.Value placeholder={t("manager:schueler.addToClass")} />
@@ -133,7 +133,7 @@ const StudentRow = ({
               <Select.Content
                 position="popper"
                 sideOffset={4}
-                className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                className="z-50 min-w-32 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
               >
                 <Select.Viewport className="p-1">
                   {availableClasses.map((c) => (
@@ -157,7 +157,7 @@ const StudentRow = ({
         onClick={() => onShowPin(student.id)}
         title={t("manager:schueler.showPin")}
         aria-label={t("manager:schueler.showPin")}
-        className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
+        className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
       >
         <KeyRound className="size-4" />
       </button>
@@ -169,7 +169,7 @@ const StudentRow = ({
         }
         title={t("manager:schueler.deleteTitle")}
         aria-label={t("manager:schueler.deleteTitle")}
-        className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-red-50 hover:text-red-600"
+        className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] text-[var(--ink-subtle)] hover:bg-[var(--status-offline-bg)] hover:text-[var(--status-offline-text)]"
       >
         <Trash2 className="size-4" />
       </button>

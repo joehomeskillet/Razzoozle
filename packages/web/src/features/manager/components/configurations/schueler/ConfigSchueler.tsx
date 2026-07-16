@@ -49,7 +49,7 @@ const ConfigSchueler = () => {
         </div>
         <Button
           variant="primary"
-          className="shrink-0 rounded-xl"
+          className="shrink-0 rounded-[var(--radius-theme)]"
           onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="size-4" />
@@ -68,7 +68,7 @@ const ConfigSchueler = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("manager:schueler.searchPlaceholder")}
-              className="min-h-11 w-full rounded-xl"
+              className="min-h-11 w-full rounded-[var(--radius-theme)]"
             />
           </div>
 
@@ -82,7 +82,7 @@ const ConfigSchueler = () => {
           />
         </>
       ) : (
-        <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
+        <div className="flex flex-1 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
           <p className="text-sm text-[var(--ink-subtle)]">
             {t("manager:schueler.empty")}
           </p>
