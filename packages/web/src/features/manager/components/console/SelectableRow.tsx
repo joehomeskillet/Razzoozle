@@ -66,7 +66,7 @@ const SelectableRow = ({
       className={clsx(
         "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
         selected
-          ? "border-[var(--accent-contrast)] bg-[var(--accent-contrast)] text-[var(--ink)]"
+          ? "border-[var(--accent-contrast)] bg-[var(--accent-contrast)] text-white" // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
           : "border-[var(--line)] bg-[var(--surface)]",
       )}
     >

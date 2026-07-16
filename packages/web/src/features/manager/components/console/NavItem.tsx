@@ -99,7 +99,7 @@ const NavItem = ({
         className={clsx(
           "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
           active
-            ? "bg-[var(--accent-contrast)] text-[var(--ink)]"
+            ? "bg-[var(--accent-contrast)] text-white" // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
             : "bg-[var(--surface-4)] text-[var(--ink-muted)] group-hover:bg-[var(--surface-4)]",
           !isVertical && "absolute -top-0.5 -right-0.5 sm:static",
           !hasBadge && "sr-only",

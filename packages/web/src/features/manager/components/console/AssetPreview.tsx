@@ -157,7 +157,7 @@ const AssetPreview = ({
           <label
             aria-disabled={uploading || disabled}
             className={clsx(
-              "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold text-[var(--ink)] shadow-sm transition-colors",
+              "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold text-white shadow-sm transition-colors", // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
               compact ? "min-h-9 px-2 text-xs" : "min-h-11 px-3 text-sm",
               "bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]",
               "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-primary)]",
