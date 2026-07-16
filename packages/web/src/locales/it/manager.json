@@ -735,7 +735,8 @@
     "takeOver": "Prendi il controllo",
     "end": "Termina",
     "endConfirm": "Terminare davvero la partita \"{{name}}\"?",
-    "ended": "Partita terminata."
+    "ended": "Partita terminata.",
+    "goToPlayTab": "Vai alla scheda Gioca"
   },
   "auto": {
     "nextIn": "Avanti tra {{seconds}}s",

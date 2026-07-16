@@ -735,7 +735,8 @@
     "takeOver": "Reprendre",
     "end": "Terminer",
     "endConfirm": "Vraiment terminer la partie \"{{name}}\" ?",
-    "ended": "Partie terminée."
+    "ended": "Partie terminée.",
+    "goToPlayTab": "Aller à l'onglet Jouer"
   },
   "auto": {
     "nextIn": "Suite dans {{seconds}}s",

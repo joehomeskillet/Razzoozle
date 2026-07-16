@@ -13,6 +13,7 @@ import {
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
 import { useActiveConsoleTab } from "@razzoozle/web/features/manager/contexts/active-console-tab"
+import { useSelectConsoleTab } from "@razzoozle/web/features/manager/contexts/select-console-tab"
 import { useNavigate } from "@tanstack/react-router"
 import { LogIn, RefreshCw, Radio, Square } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -27,6 +28,7 @@ import { useTranslation } from "react-i18next"
 const RunningGamesSection = () => {
   const { socket, isConnected } = useSocket()
   const { setGameId, setInviteCode } = useManagerStore()
+  const selectConsoleTab = useSelectConsoleTab()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const activeTab = useActiveConsoleTab()
@@ -106,6 +108,10 @@ const RunningGamesSection = () => {
           icon={Radio}
           headline={t("manager:runningGames.emptyHeadline")}
           hint={t("manager:runningGames.emptyHint")}
+          action={{
+            label: t("manager:runningGames.goToPlayTab"),
+            onClick: () => selectConsoleTab("play"),
+          }}
         />
       ) : (
         <div className="space-y-3">
