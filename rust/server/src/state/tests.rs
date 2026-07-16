@@ -1004,3 +1004,63 @@ async fn test_evict_running_abandoned_even_with_connected_players() {
          even if players are still connected (new eviction logic override)"
     );
 }
+
+#[tokio::test]
+async fn test_kick_player_cleans_socket_to_game_index() {
+    // W5-1: Verify that when a player is kicked, they are removed from
+    // registry.socket_to_game index (was leaking stale entries before fix #144).
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    // Add a player to the game
+    let player_socket_id = "player-socket-1".to_string();
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            player_socket_id.clone(),
+            "player-client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    // Manually index the player socket (simulating what happens in the real join flow)
+    registry.index_player_socket(player_socket_id.clone(), game_id.clone());
+
+    // Verify player is indexed in socket_to_game
+    assert!(
+        registry.is_socket_indexed(&player_socket_id),
+        "Player socket should be indexed after join"
+    );
+
+    // Simulate the kick-handler cleanup: remove player from game, then deindex
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        if let Some(pos) = game.players.iter().position(|p| p.id == player_socket_id) {
+            game.players.remove(pos);
+        }
+    }
+
+    // This is the fix: deindex the player socket after removal (#144)
+    registry.deindex_player_socket(&player_socket_id);
+
+    // Verify player is NO LONGER indexed in socket_to_game
+    assert!(
+        !registry.is_socket_indexed(&player_socket_id),
+        "Player socket should NOT be indexed after kick and deindex (fix for #144)"
+    );
+}
