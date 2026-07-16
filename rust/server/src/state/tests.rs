@@ -519,7 +519,6 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
     let mut registry = GameRegistry::new(&None, quiz.clone()).await;
     seed_quiz(&mut registry, "test-quiz", quiz);
 
-    // Create a game with a known invite_code
     let (game_id, invite_code, _) = registry
         .create_game(
             "manager-socket".to_string(),
@@ -530,7 +529,6 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
         )
         .unwrap();
 
-    // Add a player so the game gets saved to snapshot (empty games are filtered out)
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let mut game = game_ref.lock().unwrap();
@@ -543,18 +541,14 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
         .unwrap();
     }
 
-    // Verify the game is findable by both code and ID before snapshot
     assert!(registry.get_game_by_code(&invite_code).is_some());
     assert!(registry.get_game_by_id(&game_id).is_some());
 
-    // Save the snapshot
     registry.save_snapshot().await;
 
-    // Create a fresh registry and load the snapshot
     let mut fresh_registry = GameRegistry::new(&None, test_quiz()).await;
     fresh_registry.load_snapshot().await;
 
-    // Verify the game is restored and findable by BOTH invite_code and game_id
     assert!(
         fresh_registry.get_game_by_code(&invite_code).is_some(),
         "Restored game should be findable by invite_code"
@@ -563,4 +557,240 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
         fresh_registry.get_game_by_id(&game_id).is_some(),
         "Restored game should be findable by game_id"
     );
+}
+
+#[tokio::test]
+async fn test_showroom_transport_disconnect_keeps_slot() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    let result = registry.mark_player_disconnected("player-socket", false);
+    assert!(result.is_some(), "mark_player_disconnected should return Some");
+
+    let (ret_game_id, ret_manager_socket_id, removed_socket_id, total_players, removed) =
+        result.unwrap();
+
+    assert_eq!(ret_game_id, game_id, "game_id should match");
+    assert_eq!(ret_manager_socket_id, "manager-socket", "manager_socket_id should match");
+    assert_eq!(removed_socket_id, "player-socket", "third element should be player socket_id");
+    assert_eq!(total_players, 1, "player should still be in roster");
+    assert_eq!(removed, false, "removed flag should be false for keep-slot disconnect");
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let game = game_ref.lock().unwrap();
+        assert_eq!(game.players.len(), 1, "player should still be in players list");
+        assert_eq!(game.players[0].connected, false, "player should be marked disconnected");
+        assert_eq!(
+            game.players[0].id, "player-socket",
+            "player socket_id should match"
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_showroom_leave_hard_removes() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    let result = registry.mark_player_disconnected("player-socket", true);
+    assert!(result.is_some(), "mark_player_disconnected should return Some");
+
+    let (ret_game_id, ret_manager_socket_id, removed_socket_id, total_players, removed) =
+        result.unwrap();
+
+    assert_eq!(ret_game_id, game_id, "game_id should match");
+    assert_eq!(ret_manager_socket_id, "manager-socket", "manager_socket_id should match");
+    assert_eq!(
+        removed_socket_id, "player-socket",
+        "third element should be player SOCKET id, not client_id (regression test #84)"
+    );
+    assert_ne!(removed_socket_id, "player-client", "must not be client_id");
+    assert_eq!(total_players, 0, "player should be removed from roster");
+    assert_eq!(removed, true, "removed flag should be true for hard remove");
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let game = game_ref.lock().unwrap();
+        assert_eq!(game.players.len(), 0, "player should be removed from players list");
+    }
+}
+
+#[tokio::test]
+async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.phase = GamePhase::SelectAnswer;
+    }
+
+    let result = registry.mark_player_disconnected("player-socket", true);
+    assert!(result.is_some(), "mark_player_disconnected should return Some");
+
+    let (_ret_game_id, _ret_manager_socket_id, _removed_socket_id, total_players, removed) =
+        result.unwrap();
+
+    assert_eq!(total_players, 1, "player should still be in roster");
+    assert_eq!(
+        removed, false,
+        "removed should be false because we're mid-game, not ShowRoom"
+    );
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let game = game_ref.lock().unwrap();
+        assert_eq!(game.players.len(), 1, "player should still be in players list");
+        assert_eq!(game.players[0].connected, false, "player should be marked disconnected");
+    }
+}
+
+#[tokio::test]
+async fn test_disconnect_cleans_socket_index() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    registry.mark_player_disconnected("player-socket", false);
+
+    let game_ref = registry.get_game_by_id(&game_id).unwrap();
+    let game = game_ref.lock().unwrap();
+    assert_eq!(game.players.len(), 1, "player slot kept after keep-slot disconnect");
+    assert_eq!(game.players[0].connected, false, "player marked disconnected");
+}
+
+#[tokio::test]
+async fn test_keep_slot_player_still_findable_by_client_id() {
+    let quiz = test_quiz();
+    let mut registry = GameRegistry::new(&None, quiz.clone()).await;
+    seed_quiz(&mut registry, "test-quiz", quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-socket".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player(
+            "player-socket".to_string(),
+            "player-client".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+    }
+
+    registry.mark_player_disconnected("player-socket", false);
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let game = game_ref.lock().unwrap();
+        let player = game
+            .players
+            .iter()
+            .find(|p| p.client_id == "player-client");
+        assert!(
+            player.is_some(),
+            "player should be findable by client_id after keep-slot disconnect"
+        );
+        let player = player.unwrap();
+        assert_eq!(player.id, "player-socket", "socket_id should still match");
+        assert_eq!(player.connected, false, "player should be marked disconnected");
+    }
 }
