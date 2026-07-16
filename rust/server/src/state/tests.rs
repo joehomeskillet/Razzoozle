@@ -242,11 +242,53 @@ fn test_evict_stale_games_recovers_poisoned_mutex() {
     }
 
     // Must NOT panic — that's the whole point of the fix.
-    registry.evict_stale_games();
+    registry.evict_stale_games(&make_socket_io());
 
     assert!(
         registry.get_game_by_id(&game_id).is_none(),
         "poisoned-but-stale game should still be evicted, not leaked forever"
+    );
+}
+
+#[test]
+fn test_evict_stale_games_skips_game_with_connected_player() {
+    // #85 — a connected lobby player who never joins/answers/reveals leaves
+    // last_activity_ms untouched, so is_stale can go true under a perfectly
+    // live game. evict_stale_games must not reap it out from under them.
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz.clone()));
+    seed_quiz(&mut registry, "test-quiz", empty_quiz);
+
+    let (game_id, _, _) = registry
+        .create_game(
+            "manager-1".to_string(),
+            Some("test-quiz".to_string()),
+            "manager-client-1".to_string(),
+            None, false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
+        .unwrap();
+
+    {
+        let game_ref = registry.get_game_by_id(&game_id).unwrap();
+        let mut game = game_ref.lock().unwrap();
+        game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None).unwrap();
+        // add_player always sets connected=true — this player is still there,
+        // just idle in the lobby.
+        game.last_activity_ms = 0; // force is_stale true
+    }
+
+    registry.evict_stale_games(&make_socket_io());
+
+    assert!(
+        registry.get_game_by_id(&game_id).is_some(),
+        "stale game with a connected player must not be evicted"
     );
 }
 
@@ -273,12 +315,18 @@ fn test_game_eviction_clears_players() {
         )
         .unwrap();
 
-    // Add players to the game
+    // Add players to the game, then disconnect them — #85: a stale game
+    // with a still-connected player is no longer evicted (see
+    // test_evict_stale_games_skips_game_with_connected_player), so this
+    // "abandoned" fixture must have nobody connected.
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let mut game = game_ref.lock().unwrap();
         game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None).unwrap();
         game.add_player("socket-2".to_string(), "client-2".to_string(), "Bob".to_string(), None).unwrap();
+        for p in game.players.iter_mut() {
+            p.connected = false;
+        }
     }
 
     // Verify 2 players are in the game
@@ -286,6 +334,7 @@ fn test_game_eviction_clears_players() {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
         assert_eq!(game.players.len(), 2, "Should have 2 players");
+        assert!(!game.has_connected_players(), "setup: both players must be disconnected");
     }
 
     // Mark game as stale by setting old activity timestamp
@@ -296,7 +345,7 @@ fn test_game_eviction_clears_players() {
     }
 
     // Evict stale games (should remove the game and its players)
-    registry.evict_stale_games();
+    registry.evict_stale_games(&make_socket_io());
 
     // Verify game is gone
     assert!(registry.get_game_by_id(&game_id).is_none(), "Game should be evicted");

@@ -330,6 +330,7 @@ async fn main() {
     // (closes the memory leak from finished/inactive games)
     {
         let registry_clone = Arc::clone(&registry);
+        let io_evict = io.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(60));
             loop {
@@ -343,7 +344,7 @@ async fn main() {
                 // poisoned Game mutex; this is the second line of defence for
                 // any other panic.
                 if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    reg.evict_stale_games();
+                    reg.evict_stale_games(&io_evict);
                 })) {
                     tracing::error!("game eviction reaper tick panicked (continuing): {:?}", e);
                 }

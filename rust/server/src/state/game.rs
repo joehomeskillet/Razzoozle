@@ -294,6 +294,15 @@ impl Game {
         now_ms.saturating_sub(self.last_activity_ms) > GAME_EVICTION_TTL_MS
     }
 
+    /// #85 — a connected player sitting quietly in the lobby (no
+    /// join/answer/reveal activity) never touches last_activity_ms, so
+    /// is_stale can go true under them. The reaper needs this second
+    /// signal before reaping: any live player slot means the game is not
+    /// actually abandoned.
+    pub fn has_connected_players(&self) -> bool {
+        self.players.iter().any(|p| p.connected)
+    }
+
     /// Update last_activity_ms to current time — prevents C4 reaper eviction of active games
     pub fn touch(&mut self) {
         self.last_activity_ms = get_now_ms();
