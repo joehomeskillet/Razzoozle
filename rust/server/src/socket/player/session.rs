@@ -21,15 +21,14 @@ pub(super) fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 // hard-remove, started = keep the slot + mark disconnected) —
                 // exactly the split Node's handlePlayerLeave implements
                 // (game.ts:54-66: !game.started -> removePlayer, else
-                // setPlayerDisconnected). Reusing it here instead of
-                // remove_player_by_socket_id puts an intentional LEAVE and a
-                // transport disconnect on the same state-mutation path.
+                // setPlayerDisconnected). Intentional LEAVE keeps
+                // lobby_hard_remove=true (unlike transport disconnect, #83).
                 let result = {
                     let mut registry = registry.write().await;
-                    registry.mark_player_disconnected(&socket_id)
+                    registry.mark_player_disconnected(&socket_id, true)
                 };
 
-                if let Some((game_id, manager_socket_id, removed_player_id, total_players, removed)) = result {
+                if let Some((game_id, manager_socket_id, removed_player_socket_id, total_players, removed)) = result {
                     // Node's setPlayerDisconnected/removePlayer both always
                     // broadcast TOTAL_PLAYERS regardless of phase.
                     io_handle
@@ -39,10 +38,12 @@ pub(super) fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
 
                     // Lobby hard-remove only: mirror Node's removePlayer, which
                     // additionally tells the manager to drop this roster row.
+                    // #84: manager roster keys players by socket id — send that,
+                    // not client_id.
                     if removed {
                         if let Ok(sid) = manager_socket_id.parse() {
                             if let Some(mgr) = io_handle.get_socket(sid) {
-                                mgr.emit(constants::manager::REMOVE_PLAYER, &removed_player_id).ok();
+                                mgr.emit(constants::manager::REMOVE_PLAYER, &removed_player_socket_id).ok();
                             }
                         }
                     }
