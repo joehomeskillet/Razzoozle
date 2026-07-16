@@ -41,7 +41,7 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
+      <div className="relative w-full max-w-lg rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
         <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:schueler.pinTitle")}
         </h2>
@@ -55,7 +55,7 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
               <div
                 role="img"
                 aria-label={data.labels[i] ?? emoji}
-                className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-[var(--ink)]"
+                className="flex size-16 min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] text-5xl text-[var(--ink)]"
               >
                 {emoji}
               </div>
@@ -69,13 +69,13 @@ const PinDialog = ({ data, onClose, onRequestRegen }: PinDialogProps) => {
         <div className="mt-6 flex items-center justify-between gap-2">
           <Button
             variant="secondary"
-            className="rounded-xl"
+            className="rounded-[var(--radius-theme)]"
             onClick={() => onRequestRegen(data.studentId)}
           >
             <RefreshCw className="size-4" />
             {t("manager:schueler.regenPin")}
           </Button>
-          <Button variant="primary" className="rounded-xl" onClick={onClose}>
+          <Button variant="primary" className="rounded-[var(--radius-theme)]" onClick={onClose}>
             {t("common:close")}
           </Button>
         </div>
