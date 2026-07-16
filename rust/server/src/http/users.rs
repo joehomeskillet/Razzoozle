@@ -266,24 +266,14 @@ pub async fn reset_password(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
     };
 
-    db::users::set_password(pool, id, &req.newPassword)
+    // SEC-M1: atomically update password and revoke all sessions (admin reset).
+    // Both operations commit together — there's no window for old tokens to work.
+    db::users::set_password_and_revoke(pool, id, &req.newPassword, None)
         .await
         .map_err(|e| {
             json_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to reset password: {}", e),
-            )
-        })?;
-
-    // SEC-M1: an admin-issued reset invalidates every existing session for
-    // the target user — the old password is now unusable, so old bearer
-    // tokens shouldn't remain valid until they naturally expire.
-    db::users::revoke_user_sessions(pool, id, None)
-        .await
-        .map_err(|e| {
-            json_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to revoke sessions: {}", e),
+                format!("Failed to reset password and revoke sessions: {}", e),
             )
         })?;
 
@@ -345,25 +335,15 @@ pub async fn change_password(
         return Err(json_error_response(StatusCode::FORBIDDEN, "Current password is incorrect"));
     }
 
-    // Set the new password — session_user.user_id comes from server session, not client request
-    db::users::set_password(pool, session_user.user_id, &req.newPassword)
+    // SEC-M1: atomically update password and revoke other sessions (self-service change).
+    // Both operations commit together — there's no window for old tokens to work.
+    // The current session is preserved via keep_token.
+    db::users::set_password_and_revoke(pool, session_user.user_id, &req.newPassword, Some(current_token))
         .await
         .map_err(|e| {
             json_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to change password: {}", e),
-            )
-        })?;
-
-    // SEC-M1: invalidate every OTHER session for this user — the old password
-    // is now unusable elsewhere. The session making this request is kept
-    // alive so the user isn't logged out by their own change.
-    db::users::revoke_user_sessions(pool, session_user.user_id, Some(current_token))
-        .await
-        .map_err(|e| {
-            json_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to revoke sessions: {}", e),
+                format!("Failed to change password and revoke sessions: {}", e),
             )
         })?;
 

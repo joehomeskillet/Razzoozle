@@ -240,6 +240,11 @@ pub async fn delete_session(pool: &PgPool, token: &str) -> Result<(), String> {
 /// role downgrade — so old bearer tokens stop working immediately instead of
 /// remaining valid until they naturally expire.
 ///
+/// **For password changes, prefer set_password_and_revoke() which atomically
+/// updates the password and revokes sessions in a single transaction, closing
+/// a race condition where an attacker could use an old token between the two
+/// operations.**
+///
 /// `keep_token`, when Some, is the raw token of the session making the change
 /// (e.g. a self-service password change) — that one session is preserved so
 /// the caller isn't logged out by their own request. When None, ALL sessions
@@ -441,7 +446,10 @@ pub async fn delete_user_guarded(pool: &PgPool, user_id: i64) -> Result<DeleteUs
     Ok(DeleteUserOutcome::Deleted)
 }
 
-/// Admin password reset — hash and store a new password for the given user.
+/// Hash and store a new password for the given user.
+///
+/// **For password changes followed by session revocation, prefer
+/// set_password_and_revoke() which performs both operations atomically.**
 pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Result<(), String> {
     // Hash password using argon2 (same pattern as create_user).
     let salt = SaltString::generate(rand::thread_rng());
@@ -457,6 +465,73 @@ pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Re
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Atomically update a user's password and revoke their sessions in a single transaction.
+/// This closes the race condition where an attacker could use an old session token
+/// between the password update and the session revocation.
+///
+/// SEC-M1: Both admin password resets and self-service password changes must
+/// update the password and revoke conflicting sessions atomically.
+///
+/// When `keep_token` is Some (self-service change), the raw token of the session
+/// making the request is preserved so the caller isn't logged out by their own
+/// password change. When None (admin reset), all existing sessions are revoked.
+///
+/// Returns Ok(()) on success (transaction committed), Err on failure (rolled back).
+pub async fn set_password_and_revoke(
+    pool: &PgPool,
+    user_id: i64,
+    new_password: &str,
+    keep_token: Option<&str>,
+) -> Result<(), String> {
+    // Hash password using argon2 (same pattern as set_password and create_user).
+    let salt = SaltString::generate(rand::thread_rng());
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(new_password.as_bytes(), &salt)
+        .map_err(|e| format!("Failed to hash password: {}", e))?
+        .to_string();
+
+    // Begin transaction
+    let mut tx = pool.begin()
+        .await
+        .map_err(|e| format!("Failed to begin transaction: {}", e))?;
+
+    // Update password_hash for the user
+    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
+        .bind(&password_hash)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to update password: {}", e))?;
+
+    // Revoke sessions (keeping one if specified)
+    match keep_token {
+        Some(token) => {
+            let keep_hash = hash_token(token);
+            sqlx::query("DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2")
+                .bind(user_id)
+                .bind(&keep_hash)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Failed to revoke sessions: {}", e))?;
+        }
+        None => {
+            sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Failed to revoke sessions: {}", e))?;
+        }
+    }
+
+    // Commit transaction
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
     Ok(())
 }
