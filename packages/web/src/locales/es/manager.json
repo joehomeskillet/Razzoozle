@@ -72,7 +72,8 @@
     "bulkDelete": "Eliminar",
     "bulkDeleteTitle": "Eliminar cuestionarios",
     "bulkDeleteConfirm": "Se eliminarán permanentemente {{count}} cuestionarios seleccionados.",
-    "selectQuiz": "Seleccionar «{{name}}»"
+    "selectQuiz": "Seleccionar «{{name}}»",
+    "moreActions": "Más opciones"
   },
   "result": {
     "aria": {

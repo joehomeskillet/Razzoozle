@@ -61,7 +61,8 @@
     "bulkDelete": "Elimina",
     "bulkDeleteTitle": "Elimina quiz",
     "bulkDeleteConfirm": "{{count}} quiz selezionati verranno eliminati definitivamente.",
-    "selectQuiz": "Seleziona «{{name}}»"
+    "selectQuiz": "Seleziona «{{name}}»",
+    "moreActions": "Altre opzioni"
   },
   "result": {
     "delete": "Elimina risultato",

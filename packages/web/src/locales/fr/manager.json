@@ -72,7 +72,8 @@
     "bulkDelete": "Supprimer",
     "bulkDeleteTitle": "Supprimer les quizz",
     "bulkDeleteConfirm": "{{count}} quizz sélectionnés seront définitivement supprimés.",
-    "selectQuiz": "Sélectionner « {{name}} »"
+    "selectQuiz": "Sélectionner « {{name}} »",
+    "moreActions": "Plus d'options"
   },
   "result": {
     "aria": {

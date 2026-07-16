@@ -72,7 +72,8 @@
     "bulkDelete": "删除",
     "bulkDeleteTitle": "删除测验",
     "bulkDeleteConfirm": "已选择的 {{count}} 个测验将被永久删除。",
-    "selectQuiz": "选择“{{name}}”"
+    "selectQuiz": "选择“{{name}}”",
+    "moreActions": "更多选项"
   },
   "result": {
     "delete": "删除结果",
