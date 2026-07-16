@@ -249,6 +249,9 @@ const ConfigCatalog = () => {
             const type = entry.question.type ?? "choice"
             const source = entry.source ?? "manual"
             const entryLabelIds = entry.labelIds ?? []
+            const entryTags = entry.tags ?? []
+            const hasFooter =
+              entryTags.length > 0 || (klassenEnabled && entryLabelIds.length > 0)
 
             return (
               <motion.div
@@ -266,26 +269,34 @@ const ConfigCatalog = () => {
                 }
               >
                 <ListRow
+                  leading={
+                    <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                  }
                   title={entry.question.question}
                   meta={
-                    <span className="flex flex-col gap-2 whitespace-normal">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge>
+                        {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+                      </Badge>
+                      <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
+                        {t(`manager:catalog.source.${source}`)}
+                      </Badge>
+                      <span className="text-xs text-[var(--ink-subtle)]">
+                        {formatDate(entry.addedAt)}
+                      </span>
+                    </span>
+                  }
+                  footer={
+                    hasFooter && (
                       <span className="flex flex-wrap gap-2">
-                        <Badge>
-                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-                        </Badge>
-                        <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
-                          {t(`manager:catalog.source.${source}`)}
-                        </Badge>
-                        {klassenEnabled && entryLabelIds.length > 0 && (
-                          <>
-                            {labels
-                              .filter((label) => entryLabelIds.includes(label.id))
-                              .map((label) => (
-                                <LabelChip key={label.id} label={label} />
-                              ))}
-                          </>
-                        )}
-                        {(entry.tags ?? []).map((tag, tagIndex) => (
+                        {klassenEnabled &&
+                          entryLabelIds.length > 0 &&
+                          labels
+                            .filter((label) => entryLabelIds.includes(label.id))
+                            .map((label) => (
+                              <LabelChip key={label.id} label={label} />
+                            ))}
+                        {entryTags.map((tag, tagIndex) => (
                           <Badge
                             key={`${tag}-${tagIndex}`}
                             className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
@@ -294,10 +305,7 @@ const ConfigCatalog = () => {
                           </Badge>
                         ))}
                       </span>
-                      <span className="text-xs text-[var(--ink-subtle)]">
-                        {formatDate(entry.addedAt)}
-                      </span>
-                    </span>
+                    )
                   }
                   actions={[
                     {
