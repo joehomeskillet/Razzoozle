@@ -1,4 +1,6 @@
 import * as Select from "@radix-ui/react-select"
+import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
+import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
 import { KeyRound, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -43,140 +45,6 @@ const getComposedName = (student: SchuelerStudent): string => {
   return student.displayName
 }
 
-interface StudentRowProps {
-  student: SchuelerStudent
-  classes: StudentClassRef[]
-  onShowPin: (studentId: number) => void
-  onDelete: (student: { id: number; displayName: string }) => void
-  onRemoveFromClass: (data: {
-    studentId: number
-    displayName: string
-    classId: number
-    className: string
-  }) => void
-  onAddToClass: (studentId: number, classId: number) => void
-}
-
-const StudentRow = ({
-  student,
-  classes,
-  onShowPin,
-  onDelete,
-  onRemoveFromClass,
-  onAddToClass,
-}: StudentRowProps) => {
-  const { t } = useTranslation()
-  // Reset to "" right after firing so the trigger always shows the "+ Klasse"
-  // placeholder again — this is an action menu, not a persistent selection.
-  const [pendingClassId, setPendingClassId] = useState("")
-
-  const availableClasses = classes.filter(
-    (c) => !student.classes.some((sc) => sc.id === c.id),
-  )
-
-  const composedName = getComposedName(student)
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[var(--ink)]">
-          {composedName}
-          {student.birthdate && (
-            <span className="ml-2 text-xs font-normal text-[var(--ink-faint)]">
-              {formatBirthdate(student.birthdate)}
-            </span>
-          )}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5">
-        {student.classes.map((c) => (
-          <span
-            key={c.id}
-            className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-muted)]"
-          >
-            {c.name}
-            <button
-              type="button"
-              onClick={() =>
-                onRemoveFromClass({
-                  studentId: student.id,
-                  displayName: composedName,
-                  classId: c.id,
-                  className: c.name,
-                })
-              }
-              aria-label={t("manager:schueler.removeFromClassTitle")}
-              className="focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)]"
-            >
-              <X className="size-3" />
-            </button>
-          </span>
-        ))}
-
-        {availableClasses.length > 0 && (
-          <Select.Root
-            value={pendingClassId}
-            onValueChange={(val) => {
-              onAddToClass(student.id, Number(val))
-              setPendingClassId("")
-            }}
-          >
-            <Select.Trigger
-              aria-label={t("manager:schueler.addToClass")}
-              className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
-            >
-              <Plus className="size-3" />
-              <Select.Value placeholder={t("manager:schueler.addToClass")} />
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content
-                position="popper"
-                sideOffset={4}
-                className="z-50 min-w-32 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
-              >
-                <Select.Viewport className="p-1">
-                  {availableClasses.map((c) => (
-                    <Select.Item
-                      key={c.id}
-                      value={String(c.id)}
-                      className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
-                    >
-                      <Select.ItemText>{c.name}</Select.ItemText>
-                    </Select.Item>
-                  ))}
-                </Select.Viewport>
-              </Select.Content>
-            </Select.Portal>
-          </Select.Root>
-        )}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onShowPin(student.id)}
-        title={t("manager:schueler.showPin")}
-        aria-label={t("manager:schueler.showPin")}
-        className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]"
-      >
-        <KeyRound className="size-4" />
-      </button>
-
-      <button
-        type="button"
-        onClick={() =>
-          onDelete({ id: student.id, displayName: composedName })
-        }
-        title={t("manager:schueler.deleteTitle")}
-        aria-label={t("manager:schueler.deleteTitle")}
-        className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] text-[var(--ink-subtle)] hover:bg-[var(--status-offline-bg)] hover:text-[var(--status-offline-text)]"
-      >
-        <Trash2 className="size-4" />
-      </button>
-    </div>
-  )
-}
-
 const StudentList = ({
   students,
   classes,
@@ -186,6 +54,11 @@ const StudentList = ({
   onAddToClass,
 }: StudentListProps) => {
   const { t } = useTranslation()
+  // Reset to "" right after firing so the trigger always shows the "+ Klasse"
+  // placeholder again — this is an action menu, not a persistent selection.
+  const [pendingClassIdByStudentId, setPendingClassIdByStudentId] = useState<
+    Record<number, string>
+  >({})
 
   if (students.length === 0) {
     return (
@@ -197,17 +70,115 @@ const StudentList = ({
 
   return (
     <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
-      {students.map((student) => (
-        <StudentRow
-          key={student.id}
-          student={student}
-          classes={classes}
-          onShowPin={onShowPin}
-          onDelete={onDelete}
-          onRemoveFromClass={onRemoveFromClass}
-          onAddToClass={onAddToClass}
-        />
-      ))}
+      {students.map((student) => {
+        const composedName = getComposedName(student)
+        const availableClasses = classes.filter(
+          (c) => !student.classes.some((sc) => sc.id === c.id),
+        )
+        const pendingClassId = pendingClassIdByStudentId[student.id] ?? ""
+
+        const actions: ListRowAction[] = [
+          {
+            key: "show-pin",
+            icon: KeyRound,
+            label: t("manager:schueler.showPin"),
+            onClick: () => onShowPin(student.id),
+          },
+          {
+            key: "delete",
+            icon: Trash2,
+            label: t("manager:schueler.deleteTitle"),
+            onClick: () =>
+              onDelete({ id: student.id, displayName: composedName }),
+            destructive: true,
+          },
+        ]
+
+        const title = composedName
+
+        const meta = (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {student.birthdate && (
+              <span className="text-xs font-normal text-[var(--ink-faint)]">
+                {formatBirthdate(student.birthdate)}
+              </span>
+            )}
+
+            {student.classes.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-muted)]"
+              >
+                {c.name}
+                <button
+                  type="button"
+                  onClick={() =>
+                    onRemoveFromClass({
+                      studentId: student.id,
+                      displayName: composedName,
+                      classId: c.id,
+                      className: c.name,
+                    })
+                  }
+                  aria-label={t("manager:schueler.removeFromClassTitle")}
+                  className="relative focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)] before:absolute before:-inset-3 before:content-['']"
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+
+            {availableClasses.length > 0 && (
+              <Select.Root
+                value={pendingClassId}
+                onValueChange={(val) => {
+                  onAddToClass(student.id, Number(val))
+                  setPendingClassIdByStudentId((prev) => ({
+                    ...prev,
+                    [student.id]: "",
+                  }))
+                }}
+              >
+                <Select.Trigger
+                  aria-label={t("manager:schueler.addToClass")}
+                  className="focus-visible:outline-[var(--color-primary)] flex min-h-11 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                >
+                  <Plus className="size-3" />
+                  <Select.Value placeholder={t("manager:schueler.addToClass")} />
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Content
+                    position="popper"
+                    sideOffset={4}
+                    className="z-50 min-w-32 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                  >
+                    <Select.Viewport className="p-1">
+                      {availableClasses.map((c) => (
+                        <Select.Item
+                          key={c.id}
+                          value={String(c.id)}
+                          className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                        >
+                          <Select.ItemText>{c.name}</Select.ItemText>
+                        </Select.Item>
+                      ))}
+                    </Select.Viewport>
+                  </Select.Content>
+                </Select.Portal>
+              </Select.Root>
+            )}
+          </div>
+        )
+
+        return (
+          <ListRow
+            key={student.id}
+            title={title}
+            meta={meta}
+            actions={actions}
+          />
+        )
+      })}
     </div>
   )
 }
