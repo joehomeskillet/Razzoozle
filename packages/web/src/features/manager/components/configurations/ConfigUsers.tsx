@@ -476,7 +476,7 @@ const ConfigUsers = () => {
       {resetPasswordId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="rounded-lg bg-[var(--surface)] p-6 shadow-lg">
-            <h2 className="mb-4 text-base font-semibold text-[var(--ink)]">
+            <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">
               {t("manager:users.resetPasswordTitle", {
                 defaultValue: "Passwort zurücksetzen",
               })}
