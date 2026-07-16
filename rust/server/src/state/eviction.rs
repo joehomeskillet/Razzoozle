@@ -1,4 +1,5 @@
 use razzoozle_protocol::player::Player;
+use socketioxide::SocketIo;
 
 use super::{get_now_ms, GameRegistry};
 
@@ -6,7 +7,16 @@ impl GameRegistry {
     /// C4 — Game eviction: remove stale/finished games and clear their player sessions.
     /// Call periodically to prevent memory leaks. Clears player entries to prevent
     /// "resume reconnect" from keeping sessions forever.
-    pub fn evict_stale_games(&mut self) {
+    ///
+    /// #85 — the staleness touch heuristic (last_activity_ms) never moves while
+    /// a connected lobby player just sits there (no join/answer/reveal event),
+    /// so is_stale alone can misfire on a perfectly live game. Abandoned means
+    /// stale AND nobody connected: skip a stale game if any player is still
+    /// connected, or if the manager's socket is still alive (they just haven't
+    /// started yet). Connectivity is only checked once is_stale is already
+    /// true, keeping the common (not-stale) path cheap. Manager-less games are
+    /// the empty-grace reaper's job, handled separately (cleanup_empty_games).
+    pub fn evict_stale_games(&mut self, io: &SocketIo) {
         let now = get_now_ms();
 
         let stale_games: Vec<String> = self
@@ -14,11 +24,22 @@ impl GameRegistry {
             .values()
             .filter_map(|game_ref| {
                 let game = Self::lock_game_recover(game_ref);
-                if game.is_stale(now) {
-                    Some(game.invite_code.clone())
-                } else {
-                    None
+                if !game.is_stale(now) {
+                    return None;
                 }
+                if game.has_connected_players() {
+                    return None;
+                }
+                let manager_alive = game
+                    .manager_socket_id
+                    .parse()
+                    .ok()
+                    .and_then(|sid| io.get_socket(sid))
+                    .is_some();
+                if manager_alive {
+                    return None;
+                }
+                Some(game.invite_code.clone())
             })
             .collect();
 
