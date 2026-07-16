@@ -6,7 +6,7 @@ use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use serde_json::json;
-use tracing::warn;
+use tracing::{warn, info};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list_games(socket, ctx.clone());
@@ -151,15 +151,17 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Ownership: require is_game_host check (W0-A3 with admin bypass + legacy fallback)
-                let (owns_game, is_started) = {
+                // Also check if game is finished to handle explicit end
+                let (owns_game, is_started, is_finished) = {
                     let registry = ctx.registry.read().await;
                     if let Some(game_ref) = registry.get_game_by_id(&game_id) {
                         let game = game_ref.lock().unwrap();
                         let owns = is_game_host(&game, &payload, &ctx.client_id, Some(&user));
                         let started = game.engine.phase != razzoozle_engine::state::GamePhase::ShowRoom;
-                        (owns, started)
+                        let finished = game.engine.phase == razzoozle_engine::state::GamePhase::Finished;
+                        (owns, started, finished)
                     } else {
-                        (false, false)
+                        (false, false, false)
                     }
                 };
 
@@ -182,7 +184,22 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                // Started game: park in empty-grace; cleanup reaper RESET+removes after 5 min
+                // If game is FINISHED: end it immediately (W4-2: prevent zombie games)
+                if is_finished {
+                    info!("LEAVE on finished game: ending immediately (game={}, client_id={})", game_id, ctx.client_id);
+                    ctx.io
+                        .to(game_id.clone())
+                        .emit(constants::game::RESET, "errors:game.managerDisconnected")
+                        .ok();
+
+                    {
+                        let mut registry = ctx.registry.write().await;
+                        registry.remove_game(&game_id);
+                    }
+                    return;
+                }
+
+                // Started game (but not finished): park in empty-grace; cleanup reaper RESET+removes after 5 min
                 {
                     let mut registry = ctx.registry.write().await;
                     registry.mark_game_as_empty(game_id);
