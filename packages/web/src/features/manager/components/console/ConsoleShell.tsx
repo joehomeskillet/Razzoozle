@@ -148,7 +148,7 @@ const ConsoleShell = ({
           <div className="flex min-w-0 items-center gap-2 font-bold text-[var(--ink)]">
             {brand}
           </div>
-          <span aria-hidden className="hidden h-5 w-px bg-gray-300 sm:block" />
+          <span aria-hidden className="hidden h-5 w-px bg-[var(--line)] sm:block" />
           <h1 className="hidden truncate text-lg font-semibold text-[var(--ink-muted)] sm:block">
             {title}
           </h1>

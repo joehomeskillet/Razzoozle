@@ -10,9 +10,9 @@
 
   /* Ink/Surface/Line Mapping (Manager-neutral gray consolidation, T-0 contract)
      text-gray-500→text-ink-subtle | text-gray-900→text-ink | text-gray-700→text-ink-muted | text-gray-600→text-ink-medium | text-gray-400→text-ink-faint | text-gray-800→text-ink
-     bg-gray-50→bg-surface-2 | bg-gray-100→bg-surface-3 | bg-gray-200→bg-surface-4
+     bg-gray-50→bg-surface-2 | bg-gray-100→bg-surface-3 | bg-gray-200→bg-surface-4 | bg-gray-300→bg-surface-5
      border-gray-200/300→border-line | divide-gray-200→divide-line | ring-white/80→ring-selected
-     Edge cases (<1%, batch-WP decides): text-gray-100/300, bg-gray-300/400/900, border-gray-100
+     Edge cases (<1%, batch-WP decides): text-gray-100/300, bg-gray-400/900, border-gray-100
      Coverage: 390/411 (94.9%) */
 
   --ink: #111827;
@@ -23,6 +23,7 @@
   --surface-2: #f9fafb;
   --surface-3: #f3f4f6;
   --surface-4: #e5e7eb;
+  --surface-5: #d1d5db;
   --line: #e5e7eb;
   --ring-selected: rgb(255 255 255 / 0.8);
 }

@@ -30,7 +30,7 @@ const SectionCard = ({
 }: SectionCardProps) => (
   <section
     className={clsx(
-      "space-y-4 rounded-2xl bg-white p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--line)]",
+      "space-y-4 rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm outline-2 -outline-offset-2 outline-[var(--line)]",
       className,
     )}
   >

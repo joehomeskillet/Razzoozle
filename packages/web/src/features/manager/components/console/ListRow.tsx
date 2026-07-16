@@ -39,7 +39,7 @@ const actionClasses = (destructive?: boolean) =>
   clsx(
     "shrink-0 text-[var(--ink-faint)]",
     destructive
-      ? "hover:bg-red-50 hover:text-red-600"
+      ? "hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)]"
       : "hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]",
   )
 
@@ -82,7 +82,7 @@ const ListRow = ({
   return (
     <div
       className={clsx(
-        "flex min-h-11 items-center gap-3 rounded-xl bg-white p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
+        "flex min-h-11 items-center gap-3 rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
         className,
       )}
     >
