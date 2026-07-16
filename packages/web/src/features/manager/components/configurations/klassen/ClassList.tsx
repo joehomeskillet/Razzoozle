@@ -1,6 +1,7 @@
 import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
+import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import {
   EmptyState,
 } from "@razzoozle/web/features/manager/components/console"
@@ -103,82 +104,64 @@ const ClassList = ({
             (l) => !(classObj.labelIds ?? []).includes(l.id)
           )
 
+          const handleToggleExpand = () => {
+            const newId = expandedClassId === classObj.id ? null : classObj.id
+            setExpandedClassId(newId)
+            if (newId !== null && (!classObj.students || classObj.students.length === 0)) {
+              onFetchStudents?.(classObj.id)
+            }
+          }
+
           return (
             <div key={classObj.id} className="space-y-1">
-              {/* Class Row */}
-              <div className="flex flex-col rounded-xl bg-[var(--surface)] px-4 py-3 border border-[var(--border-hairline)] gap-3">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newId = expandedClassId === classObj.id ? null : classObj.id
-                      setExpandedClassId(newId)
-                      if (newId !== null && (!classObj.students || classObj.students.length === 0)) {
-                        onFetchStudents?.(classObj.id)
-                      }
-                    }}
-                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2"
-                    aria-label={
-                      expandedClassId === classObj.id
-                        ? t("common:collapse")
-                        : t("common:expand")
-                    }
-                  >
-                    {expandedClassId === classObj.id ? (
-                      <ChevronDown className="size-5" />
-                    ) : (
-                      <ChevronRight className="size-5" />
+              <ListRow
+                leading={<GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                title={classObj.name}
+                meta={
+                  <div className="flex items-center gap-x-2">
+                    {classObj.ownerName && (
+                      <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
+                        {classObj.ownerName}
+                      </span>
                     )}
-                  </button>
-
-                  <GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <p className="text-sm font-semibold text-[var(--ink)]">
-                        {classObj.name}
-                      </p>
-                      {classObj.ownerName && (
-                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
-                          {classObj.ownerName}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[var(--ink-subtle)]">
+                    <span className="text-xs text-[var(--ink-subtle)]">
                       {expandedClassId === classObj.id
                         ? (classObj.students ?? []).length
                         : classObj.studentCount ?? 0}{" "}
                       {t("manager:classes.studentCount")}
-                    </p>
+                    </span>
                   </div>
+                }
+                actions={[
+                  {
+                    key: `expand-${classObj.id}`,
+                    icon: expandedClassId === classObj.id ? ChevronDown : ChevronRight,
+                    label: expandedClassId === classObj.id
+                      ? t("common:collapse")
+                      : t("common:expand"),
+                    onClick: handleToggleExpand,
+                  },
+                  {
+                    key: `edit-${classObj.id}`,
+                    icon: SquarePen,
+                    label: t("manager:classes.editClass"),
+                    onClick: () =>
+                      onEditClass({ id: classObj.id, name: classObj.name }),
+                  },
+                  {
+                    key: `delete-${classObj.id}`,
+                    icon: Trash2,
+                    label: t("manager:classes.deleteClass"),
+                    onClick: () =>
+                      onDeleteClass({ id: classObj.id, name: classObj.name }),
+                    destructive: true,
+                  },
+                ]}
+              />
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onEditClass({ id: classObj.id, name: classObj.name })
-                    }
-                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
-                    title={t("manager:classes.editClass")}
-                    aria-label={t("manager:classes.editClass")}
-                  >
-                    <SquarePen className="size-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onDeleteClass({ id: classObj.id, name: classObj.name })
-                    }
-                    className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
-                    title={t("manager:classes.deleteClass")}
-                    aria-label={t("manager:classes.deleteClass")}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-
-                {/* Labels row */}
-                <div className="flex flex-wrap items-center gap-1.5 pl-10">
+              {/* Labels row */}
+              {(classLabels.length > 0 || labels.length > 0) && (
+                <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-[var(--surface)] rounded-lg ml-10">
                   {classLabels.map((label) => (
                     <LabelChip
                       key={label.id}
@@ -238,11 +221,11 @@ const ClassList = ({
                     </Select.Root>
                   )}
                 </div>
-              </div>
+              )}
 
               {/* Expanded Students List */}
               {expandedClassId === classObj.id && (
-                <div className="space-y-1 pl-10">
+                <div className="space-y-1 ml-10">
                   {(classObj.students ?? []).length > 0 ? (
                     <>
                       {classObj.students?.map((student) => (
