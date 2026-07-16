@@ -248,9 +248,14 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
                 exit={{ opacity: 0, scale: 0.6 }}
                 transition={reveal.tween()}
               >
-                <div className="lobby-bob" style={{ animationDelay: `${(i % 7) * -0.7}s` }}>
+                <div
+                  className="lobby-bob"
+                  data-testid={`roster-card-${player.id}`}
+                  data-username={player.username}
+                  style={{ animationDelay: `${(i % 7) * -0.7}s` }}>
                   <button
                     type="button"
+                    data-testid={`kick-btn-${player.id}`}
                     onClick={() => setKickTarget(player)}
                     aria-label={t("manager:kickPlayer.aria", { name: player.username })}
                     className="pointer-events-auto flex cursor-pointer flex-col items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
@@ -302,6 +307,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
               <AlertDialog.Action asChild>
                 <button
                   type="button"
+                  data-testid="kick-confirm-btn"
                   onClick={() => {
                     if (kickTarget) kickPlayer(kickTarget.id)
                   }}
