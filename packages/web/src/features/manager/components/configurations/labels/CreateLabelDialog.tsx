@@ -39,14 +39,14 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
   return (
     <Dialog.Root open={open} onOpenChange={handleClose}>
       <Portal>
-        <Overlay className="fixed inset-0 z-40 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--border-hairline)] bg-white p-6 shadow-lg" role="alertdialog">
+        <Overlay className="fixed inset-0 z-40 bg-black/40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg" role="alertdialog">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold text-[var(--ink)]">
               {t("manager:labels.createTitle")}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]">
+              <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
                 <X className="size-5" />
               </button>
             </Dialog.Close>
@@ -62,7 +62,7 @@ const CreateLabelDialog = ({ open, onClose, onCreate }: CreateLabelDialogProps) 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("manager:labels.namePlaceholder")}
-                className="mt-2 w-full rounded-lg"
+                className="mt-2 w-full rounded-[var(--radius-theme)]"
                 autoFocus
               />
             </div>
