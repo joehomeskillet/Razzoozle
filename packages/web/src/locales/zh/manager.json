@@ -653,7 +653,6 @@
     "endScreenTitle": "结束画面选项",
     "endScreenDescription": "选择教师可用的终端屏幕显示选项。",
     "endScreenModes": "可用模式",
-    "endScreenModesHint": "逗号分隔：full、top3、private",
     "endScreenModesUpdated": "结束画面选项已更新",
     "lobbyTitle": "大厅锁定",
     "lobbyDescription": "启用后，新玩家无法再加入大厅。现有玩家及其重新连接不受影响。",
@@ -675,7 +674,8 @@
       "full": "完整",
       "top3": "前三名",
       "private": "私密"
-    }
+    },
+    "endScreenSelectTitle": "结束画面"
   },
   "achievementsConfig": {
     "title": "配置成就",

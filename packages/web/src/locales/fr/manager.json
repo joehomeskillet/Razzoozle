@@ -653,7 +653,6 @@
     "endScreenTitle": "Options d'Écran Final",
     "endScreenDescription": "Sélectionnez les options d'écran final disponibles pour l'enseignant.",
     "endScreenModes": "Modes disponibles",
-    "endScreenModesHint": "Séparé par des virgules : full, top3, private",
     "endScreenModesUpdated": "Options d'écran final mises à jour",
     "lobbyTitle": "Verrouillage du Vestibule",
     "lobbyDescription": "Lorsque cette option est activée, les nouveaux joueurs ne peuvent plus rejoindre le vestibule. Les joueurs existants et leurs reconnexions ne sont pas affectés.",
@@ -675,7 +674,8 @@
       "full": "Complet",
       "top3": "Top 3",
       "private": "Privé"
-    }
+    },
+    "endScreenSelectTitle": "Écran de fin"
   },
   "achievementsConfig": {
     "title": "Configurer les succès",

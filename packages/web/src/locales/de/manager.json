@@ -675,7 +675,6 @@
     "endScreenTitle": "Endbildschirm-Optionen",
     "endScreenDescription": "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen.",
     "endScreenModes": "Verfügbare Modi",
-    "endScreenModesHint": "Kommagetrennt: full, top3, private",
     "endScreenModesUpdated": "Endbildschirm-Optionen aktualisiert",
     "lobbyTitle": "Lobby-Sperre",
     "lobbyDescription": "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
@@ -697,7 +696,8 @@
       "full": "Vollständig",
       "top3": "Top 3",
       "private": "Privat"
-    }
+    },
+    "endScreenSelectTitle": "Endbildschirm"
   },
   "achievements": {
     "active": "aktiv"

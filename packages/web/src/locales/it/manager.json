@@ -653,7 +653,6 @@
     "endScreenTitle": "Opzioni Schermata Finale",
     "endScreenDescription": "Seleziona quali opzioni di visualizzazione della schermata finale devono essere disponibili per l'insegnante.",
     "endScreenModes": "Modalità disponibili",
-    "endScreenModesHint": "Separato da virgole: full, top3, private",
     "endScreenModesUpdated": "Opzioni schermata finale aggiornate",
     "lobbyTitle": "Blocco della Lobby",
     "lobbyDescription": "Se abilitato, i nuovi giocatori non possono più unirsi alla lobby. I giocatori esistenti e i loro ricollegamenti non sono interessati.",
@@ -675,7 +674,8 @@
       "full": "Completo",
       "top3": "Top 3",
       "private": "Privato"
-    }
+    },
+    "endScreenSelectTitle": "Schermata finale"
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",

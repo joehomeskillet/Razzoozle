@@ -653,7 +653,6 @@
     "endScreenTitle": "Opciones de Pantalla Final",
     "endScreenDescription": "Selecciona qué opciones de pantalla final deben estar disponibles para el docente.",
     "endScreenModes": "Modos disponibles",
-    "endScreenModesHint": "Separado por comas: full, top3, private",
     "endScreenModesUpdated": "Opciones de pantalla final actualizadas",
     "lobbyTitle": "Bloqueo de Vestíbulo",
     "lobbyDescription": "Cuando está habilitado, los nuevos jugadores no pueden unirse al vestíbulo. Los jugadores existentes y sus reconexiones no se ven afectados.",
@@ -675,7 +674,8 @@
       "full": "Completo",
       "top3": "Top 3",
       "private": "Privado"
-    }
+    },
+    "endScreenSelectTitle": "Pantalla final"
   },
   "achievementsConfig": {
     "title": "Configurar logros",
