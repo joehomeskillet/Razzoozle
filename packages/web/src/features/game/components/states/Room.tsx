@@ -105,8 +105,8 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
     setPlayerList((prev) => prev.filter((p) => p.id !== playerId))
   })
 
-  useEvent(EVENTS.MANAGER.PLAYER_RECONNECTED, ({ id, username }) => {
-    setPlayerList((prev) => prev.map((p) => p.username === username ? { ...p, id } : p))
+  useEvent(EVENTS.MANAGER.PLAYER_RECONNECTED, ({ id, oldId }) => {
+    setPlayerList((prev) => prev.map((p) => p.id === oldId ? { ...p, id } : p))
   })
 
   useEvent(EVENTS.GAME.TOTAL_PLAYERS, (total) => {

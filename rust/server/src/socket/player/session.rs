@@ -300,6 +300,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                 if let Some(mgr) = io_handle.get_socket(sid) {
                                     mgr.emit(constants::manager::PLAYER_RECONNECTED, &serde_json::json!({
                                         "id": socket_id,
+                                        "oldId": old_socket_id,
                                         "username": reconnect_payload.player.username,
                                     })).ok();
                                 }
