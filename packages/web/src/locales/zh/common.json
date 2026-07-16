@@ -27,5 +27,6 @@
   "expand": "展开",
   "collapse": "折叠",
   "create": "创建",
-  "add": "添加"
+  "add": "添加",
+  "removeLabelNamed": "移除{{name}}"
 }

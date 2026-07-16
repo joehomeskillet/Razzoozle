@@ -399,7 +399,9 @@
       "label": "图片分辨率",
       "help": "生成图片的边长",
       "option": "{{size}} × {{size}}"
-    }
+    },
+    "imageResolution": "图片分辨率",
+    "imageSizeLong": "生成图片的边长"
   },
   "satellite": {
     "title": "卫星显示屏",

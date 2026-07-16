@@ -399,7 +399,9 @@
       "label": "Bildauflösung",
       "help": "Kantenlänge des generierten Bildes",
       "option": "{{size}} × {{size}}"
-    }
+    },
+    "imageResolution": "Bildauflösung",
+    "imageSizeLong": "Kantenlänge des generierten Bildes"
   },
   "satellite": {
     "title": "Satelliten-Anzeige",

@@ -627,7 +627,9 @@
       "label": "Résolution d’image",
       "help": "Longueur du bord de l’image générée",
       "option": "{{size}} × {{size}}"
-    }
+    },
+    "imageResolution": "Résolution d'image",
+    "imageSizeLong": "Longueur du bord de l'image générée"
   },
   "selectQuizz": {
     "copySoloLink": "Copier le lien solo",
