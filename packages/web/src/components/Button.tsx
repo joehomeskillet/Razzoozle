@@ -32,8 +32,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   // Neutral actions — paper-white surface, gray border, gray-700 text (AA).
   // Ring uses the runtime accent so it reads against the light surface.
   secondary:
-    "bg-white text-gray-700 border border-[var(--border-hairline)] shadow-sm " +
-    "hover:bg-gray-50 active:bg-gray-100 " +
+    "bg-[var(--surface)] text-[var(--ink-muted)] border border-[var(--border-hairline)] shadow-sm " +
+    "hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)] " +
     "focus-visible:outline-[var(--color-primary)]",
   // Destructive — reject/delete. White text on red-600 (AA). White ring.
   danger:
@@ -43,8 +43,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   // Subtle / tertiary — transparent until interaction. gray-600 text (AA on
   // light backgrounds). Ring uses the runtime accent.
   ghost:
-    "bg-transparent text-gray-600 " +
-    "hover:bg-gray-100 active:bg-gray-200 " +
+    "bg-transparent text-[var(--ink-medium)] " +
+    "hover:bg-[var(--surface-3)] active:bg-[var(--surface-4)] " +
     "focus-visible:outline-[var(--color-primary)]",
 }
 
