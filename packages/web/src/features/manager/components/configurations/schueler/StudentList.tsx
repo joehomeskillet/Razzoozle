@@ -121,7 +121,7 @@ const StudentList = ({
                     })
                   }
                   aria-label={t("manager:schueler.removeFromClassTitle")}
-                  className="focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)]"
+                  className="relative focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)] before:absolute before:-inset-3 before:content-['']"
                 >
                   <X className="size-3" />
                 </button>
