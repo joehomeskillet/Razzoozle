@@ -81,7 +81,7 @@ const ConfigTheme = () => {
               aria-label={t("manager:theme.preview.openWindow", {
                 defaultValue: "Live-Vorschau öffnen",
               })}
-              className="absolute inset-0 z-20 flex items-end justify-center rounded-[var(--radius-theme)] bg-transparent p-4 transition-colors hover:bg-[var(--ink)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              className="absolute inset-0 z-20 flex items-end justify-center rounded-[var(--radius-theme)] bg-transparent p-4 transition-colors hover:bg-[var(--ink)]/5 hover:outline-2 hover:outline-offset-2 hover:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               <span className="rounded-lg bg-[var(--surface)]/90 px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] shadow-sm outline-1 -outline-offset-1 outline-[var(--line)]">
                 {t("manager:theme.preview.openWindow", {

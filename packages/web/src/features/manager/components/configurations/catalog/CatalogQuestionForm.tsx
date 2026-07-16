@@ -185,10 +185,10 @@ export const CatalogQuestionForm = ({
                           key={label.id}
                           type="button"
                           onClick={() => handleLabelToggle(label.id)}
-                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity ${
+                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                             isSelected
                               ? "opacity-100 ring-2 ring-offset-2 ring-[var(--color-primary)]"
-                              : "opacity-50 hover:opacity-75"
+                              : "opacity-100 border border-[var(--line)] hover:border-[var(--ink-medium)]"
                           }`}
                         >
                           <LabelChip label={label} />
