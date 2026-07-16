@@ -13,8 +13,7 @@
  * (aria-live="polite") so screen readers announce the award label, winner, and
  * value. Advancing is driven by a real, focusable "Weiter" button; the
  * click-anywhere layer is a non-essential, aria-hidden enhancement on top. The
- * auto-advance timer can be paused/resumed (WCAG 2.2.2) and is paused while the
- * region is hovered or focused.
+ * auto-advance timer can be paused/resumed via the explicit Pause button (WCAG 2.2.2).
  *
  * Reduced-motion safe via `useReveal` (opacity-only fallback, no fabricated
  * motion). Pure presentation: no socket / store writes — labels come from i18n
@@ -167,20 +166,18 @@ const RecapSequence = ({
   // Held in one index so click + timer share a single source.
   const total = cards.length
   const [step, setStep] = useState(0)
-  // User-controlled pause + transient pause while hovered/focused (WCAG 2.2.2).
+  // User-controlled pause via the explicit Pause button (WCAG 2.2.2).
   const [paused, setPaused] = useState(false)
-  const [interacting, setInteracting] = useState(false)
 
   const isFinalCue = step >= total
-  const autoStopped = paused || interacting
+  const autoStopped = paused
 
   const advance = useCallback(() => {
     setStep((s) => Math.min(s + 1, total))
   }, [total])
 
   // Auto-advance through the cards; the final cue holds briefly then completes.
-  // Halted while paused or while the user is hovering/focusing the region;
-  // manual advance via the Weiter button / click layer always still works.
+  // Halted while paused; manual advance via the Weiter button / click layer always still works.
   useEffect(() => {
     if (total === 0) {
       onComplete?.()
@@ -245,10 +242,6 @@ const RecapSequence = ({
       role="region"
       aria-label={awardsTitle}
       aria-live="polite"
-      onMouseEnter={() => setInteracting(true)}
-      onMouseLeave={() => setInteracting(false)}
-      onFocus={() => setInteracting(true)}
-      onBlur={() => setInteracting(false)}
       className="absolute inset-0 z-40 flex w-full flex-col items-center justify-center gap-8 px-6 text-center"
     >
       {/* Click-anywhere-to-advance — non-essential enhancement, hidden from AT
