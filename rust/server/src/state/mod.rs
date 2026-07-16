@@ -108,3 +108,8 @@ impl QuizFixture {
     }
 }
 
+
+// ── Solo-score payload structure caps ─────────────────────────────────────
+pub const SOLO_SCORE_PLAYER_NAME_MAX: usize = 255;      // Max player name length
+pub const SOLO_SCORE_ANSWER_TEXT_MAX: usize = 10_000;   // Max single answer text
+pub const SOLO_SCORE_ASSIGNMENT_ID_MAX: usize = 255;    // Max assignment ID length
