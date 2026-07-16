@@ -23,13 +23,13 @@ const ResultModalTable = () => {
       {/* Privacy toggle — masks player names as "Spieler N" across the table and
           answer breakdown. Default OFF; the manager opts in to reveal real
           names. role=switch so screen readers announce the on/off state. */}
-      <div className="flex items-center justify-end border-b border-gray-100 px-5 py-2">
+      <div className="flex items-center justify-end border-b border-[var(--line)] px-5 py-2">
         <button
           type="button"
           role="switch"
           aria-checked={showNames}
           onClick={toggleShowNames}
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-[var(--ink-medium)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-[var(--ink-medium)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           {showNames ? (
             <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
@@ -43,12 +43,12 @@ const ResultModalTable = () => {
             aria-hidden
             className={clsx(
               "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-              showNames ? "bg-[var(--color-primary)]" : "bg-gray-300",
+              showNames ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]",
             )}
           >
             <span
               className={clsx(
-                "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                "inline-block size-4 rounded-full bg-[var(--surface)] shadow-sm transition-transform",
                 showNames ? "translate-x-4" : "translate-x-0.5",
               )}
             />
@@ -69,7 +69,7 @@ const ResultModalTable = () => {
           </th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-gray-100">
+      <tbody className="divide-y divide-[var(--line)]">
         {questionResult.playerAnswers.map((pa) => {
           const isSlider = questionResult.type === "slider"
           const isPoll = questionResult.type === "poll"
@@ -96,7 +96,7 @@ const ResultModalTable = () => {
                         <span
                           key={id}
                           className={clsx(
-                            "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white",
+                            "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--ink)]",
                             answerColor(id),
                           )}
                         >
@@ -120,7 +120,7 @@ const ResultModalTable = () => {
                 ) : label ? (
                   <span
                     className={clsx(
-                      "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white",
+                      "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--ink)]",
                       answerColor(pa.answerId),
                     )}
                   >
@@ -137,12 +137,12 @@ const ResultModalTable = () => {
                 {isPoll ? (
                   <span className="text-[var(--ink-faint)]">—</span>
                 ) : isCorrect ? (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-[var(--state-correct)]">
                     <Check className="size-3.5" />{" "}
                     {t("manager:result.table.correct")}
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-red-500">
+                  <span className="flex items-center gap-1 text-[var(--state-wrong)]">
                     <X className="size-3.5" />{" "}
                     {t("manager:result.table.incorrect")}
                   </span>

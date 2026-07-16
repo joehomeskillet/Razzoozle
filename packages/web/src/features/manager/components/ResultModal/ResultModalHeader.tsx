@@ -84,7 +84,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.export.csv", { defaultValue: "CSV" })}
           title={t("manager:result.export.csv", { defaultValue: "CSV" })}
           onClick={handleExportCsv}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <Download className="size-5" />
         </button>
@@ -97,7 +97,7 @@ const ResultModalHeader = () => {
             defaultValue: "Fragen-CSV",
           })}
           onClick={handleExportQuestionsCsv}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <FileText className="size-5" />
         </button>
@@ -108,7 +108,7 @@ const ResultModalHeader = () => {
           })}
           title={t("manager:result.export.json", { defaultValue: "JSON" })}
           onClick={handleExportJson}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
           <FileJson className="size-5" />
         </button>
@@ -117,7 +117,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.prevQuestion")}
           disabled={questionIndex === 0}
           onClick={goPrev}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:opacity-30"
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -126,7 +126,7 @@ const ResultModalHeader = () => {
           aria-label={t("manager:result.aria.nextQuestion")}
           disabled={questionIndex === total - 1}
           onClick={goNext}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:opacity-30"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:opacity-30"
         >
           <ChevronRight className="size-5" />
         </button>
@@ -136,7 +136,7 @@ const ResultModalHeader = () => {
           <button
             type="button"
             aria-label={t("manager:result.aria.close")}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded ml-1 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded ml-1 text-[var(--ink-faint)] hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           >
             <X className="size-5" />
           </button>

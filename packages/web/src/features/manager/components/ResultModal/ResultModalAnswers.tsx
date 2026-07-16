@@ -132,8 +132,8 @@ const ResultModalAnswers = () => {
   ]
 
   return (
-    <div className="flex flex-col border-b border-gray-100 md:flex-row">
-      <div className="flex shrink-0 flex-row items-center gap-4 border-b border-gray-100 bg-[var(--surface-2)] p-4 md:w-66 md:flex-col md:justify-center md:border-r md:border-b-0">
+    <div className="flex flex-col border-b border-[var(--line)] md:flex-row">
+      <div className="flex shrink-0 flex-row items-center gap-4 border-b border-[var(--line)] bg-[var(--surface-2)] p-4 md:w-66 md:flex-col md:justify-center md:border-r md:border-b-0">
         <MediaPreview media={questionResult.media} />
         <div className="flex items-center gap-1.5 text-xs text-[var(--ink-subtle)]">
           <Clock className="size-3.5" />
@@ -156,7 +156,7 @@ const ResultModalAnswers = () => {
               {(questionResult.acceptedAnswers ?? []).map((a) => (
                 <span
                   key={a}
-                  className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700"
+                  className="rounded-full bg-[var(--status-online-bg)] px-3 py-1 text-sm font-semibold text-[var(--status-online-text)]"
                 >
                   {a}
                 </span>
@@ -167,12 +167,12 @@ const ResultModalAnswers = () => {
             {textBuckets.map(({ display, count, isMatch }) => (
               <div
                 key={display}
-                className="flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-2"
+                className="flex items-center gap-3 rounded-lg border border-[var(--line)] px-3 py-2"
               >
                 {isMatch ? (
-                  <Check className="size-4 shrink-0 text-green-500" />
+                  <Check className="size-4 shrink-0 text-[var(--state-correct)]" />
                 ) : (
-                  <X className="size-4 shrink-0 text-red-400" />
+                  <X className="size-4 shrink-0 text-[var(--state-wrong)]" />
                 )}
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--ink)]">
                   {display}
@@ -216,14 +216,14 @@ const ResultModalAnswers = () => {
               {row.color && row.answerLabel ? (
                 <div
                   className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white",
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" {/* token-ok: answer-badge-white-on-color */,
                     row.color,
                   )}
                 >
                   {row.answerLabel}
                 </div>
               ) : (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-white">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)]">
                   <X className="size-3 text-[var(--ink-faint)]" />
                 </div>
               )}
@@ -239,12 +239,12 @@ const ResultModalAnswers = () => {
               {!isPoll && (
                 <div className="shrink-0">
                   {row.isCorrect ? (
-                    <Check className="size-5 text-green-500" />
+                    <Check className="size-5 text-[var(--state-correct)]" />
                   ) : (
                     <X
                       className={clsx(
                         "size-5",
-                        row.color ? "text-red-500" : "text-red-400",
+                        row.color ? "text-[var(--state-wrong)]" : "text-[var(--state-wrong)]",
                       )}
                     />
                   )}

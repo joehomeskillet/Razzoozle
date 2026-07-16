@@ -31,11 +31,11 @@ const ResultModal = ({ result, onClose }: Props) => (
     }}
   >
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-60 bg-black/50" />
+      <RadixDialog.Overlay className="fixed inset-0 z-60 bg-black/40" />
       <RadixDialog.Content
         aria-labelledby={RESULT_MODAL_TITLE_ID}
         aria-describedby={undefined}
-        className="fixed top-1/2 left-1/2 z-60 flex max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow-2xl focus:outline-none"
+        className="fixed top-1/2 left-1/2 z-60 flex max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-[var(--surface)] shadow-2xl focus:outline-none"
       >
         <ResultModalProvider result={result} onClose={onClose}>
           <ResultModalHeader />

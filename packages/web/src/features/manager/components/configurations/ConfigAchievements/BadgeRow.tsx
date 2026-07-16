@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next"
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  "w-full rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-sm text-[var(--ink)] placeholder-gray-400 outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+  "w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] placeholder-[var(--ink-faint)] outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
 
 // ---------------------------------------------------------------------------
 // Achievement badge editor card
@@ -65,8 +65,8 @@ const BadgeRow = ({
       initial={{ opacity: 0, y: reduced ? 0 : 6 }}
       animate={{ opacity: state.enabled ? 1 : 0.6, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`rounded-xl px-3 py-2.5 outline-2 -outline-offset-2 transition-colors ${
-        state.enabled ? "bg-white outline-gray-200" : "bg-[var(--surface-2)] outline-gray-100"
+      className={`rounded-lg px-3 py-2.5 outline-2 -outline-offset-2 transition-colors ${
+        state.enabled ? "bg-[var(--surface)] outline-[var(--line)]" : "bg-[var(--surface-2)] outline-[var(--line)]"
       }`}
     >
       {/* Header: medal + name/description + enable toggle */}
@@ -86,11 +86,11 @@ const BadgeRow = ({
             aria-label={t("manager:achievementsConfig.enabled")}
             onClick={() => onChange(id, { enabled: !state.enabled })}
             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-              state.enabled ? "bg-[var(--color-primary)]" : "bg-gray-300"
+              state.enabled ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
             }`}
           >
             <span
-              className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+              className={`inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform ${
                 state.enabled ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
