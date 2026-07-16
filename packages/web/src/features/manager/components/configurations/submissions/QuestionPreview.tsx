@@ -61,11 +61,11 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
                   ANSWERS_COLORS[ai % ANSWERS_COLORS.length],
                   correct
-                    ? "outline-2 -outline-offset-2 outline-green-600"
+                    ? "outline-2 -outline-offset-2 outline-[var(--state-correct)]"
                     : "opacity-90",
                 )}
               >
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-black/20 text-xs font-bold">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[var(--surface-2)] text-xs font-bold">
                   {ANSWERS_LABELS[ai % ANSWERS_LABELS.length]}
                 </span>
                 <span className="min-w-0 flex-1 break-words">{answer}</span>
@@ -88,7 +88,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
             {(question.acceptedAnswers ?? []).map((a) => (
               <span
                 key={a}
-                className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700"
+                className="rounded-full bg-[var(--status-online-bg)] px-3 py-1 text-sm font-semibold text-[var(--status-online-text)]"
               >
                 {a}
               </span>
@@ -100,15 +100,15 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
       {/* Slider: min / max / correct */}
       {isSlider && (
         <div className="flex flex-wrap gap-2 text-sm">
-          <span className="rounded-lg bg-white px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-gray-200">
+          <span className="rounded-lg bg-[var(--surface)] px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-[var(--line)]">
             {t("quizz:slider.min")}: {question.min}
             {unit}
           </span>
-          <span className="rounded-lg bg-white px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-gray-200">
+          <span className="rounded-lg bg-[var(--surface)] px-3 py-1.5 text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-[var(--line)]">
             {t("quizz:slider.max")}: {question.max}
             {unit}
           </span>
-          <span className="rounded-lg bg-green-100 px-3 py-1.5 font-semibold text-green-700">
+          <span className="rounded-lg bg-[var(--state-correct)] px-3 py-1.5 font-semibold text-[var(--answer-text)]">
             {t("manager:result.slider.correctAnswer")} {question.correct}
             {unit}
           </span>
