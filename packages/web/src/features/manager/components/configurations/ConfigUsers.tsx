@@ -1,3 +1,4 @@
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
@@ -9,7 +10,7 @@ import {
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { Ban, CheckCircle2, UserPlus, Users as UsersIcon, Key } from "lucide-react"
+import { Ban, CheckCircle2, UserPlus, Users as UsersIcon, Key, Trash2 } from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -51,6 +52,12 @@ const ConfigUsers = () => {
   const [resetPasswordId, setResetPasswordId] = useState<number | null>(null)
   const [resetNewPassword, setResetNewPassword] = useState("")
   const [resettingPassword, setResettingPassword] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: number
+    username: string
+    role: string
+  } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -191,6 +198,44 @@ const ConfigUsers = () => {
     }
   }
 
+  const handleDelete = async () => {
+    if (!pendingDelete || deleting) return
+
+    setDeleting(true)
+    try {
+      const response = await fetchWithAuth(`/api/users/${pendingDelete.id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        toast.error(
+          (await parseErrorMessage(response)) ??
+            t("manager:users.deleteFailed", {
+              defaultValue: "Löschen fehlgeschlagen",
+            }),
+        )
+        return
+      }
+
+      toast.success(
+        t("manager:users.deleted", {
+          name: pendingDelete.username,
+          defaultValue: "Nutzer {{name}} gelöscht",
+        }),
+      )
+      setPendingDelete(null)
+      await loadUsers()
+    } catch {
+      toast.error(
+        t("manager:users.toggleFailed", {
+          defaultValue: "Aktion fehlgeschlagen",
+        }),
+      )
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const getRoleLabel = (roleValue: string) => {
     switch (roleValue) {
       case "admin":
@@ -201,6 +246,24 @@ const ConfigUsers = () => {
       default:
         return t("manager:users.role.user", { defaultValue: "Nutzer" })
     }
+  }
+
+  const getDeleteDescription = () => {
+    if (!pendingDelete) return ""
+
+    const baseDesc = t("manager:users.deleteConfirmDescription", {
+      name: pendingDelete.username,
+      defaultValue: "Nutzer {{name}} wird endgueltig geloescht und kann nicht rueckgaengig gemacht werden.",
+    })
+
+    if (pendingDelete.role === "lehrkraft") {
+      const cascadeWarning = t("manager:users.deleteConfirmCascade", {
+        defaultValue: "Alle Klassen und Schueler dieser Lehrkraft werden ebenfalls geloescht.",
+      })
+      return `${baseDesc}\n\n${cascadeWarning}`
+    }
+
+    return baseDesc
   }
 
   return (
@@ -351,7 +414,7 @@ const ConfigUsers = () => {
                   label: t("manager:users.resetPassword", {
                     defaultValue: "Passwort zurücksetzen",
                   }),
-                  disabled: pendingId === user.id || resettingPassword === true,
+                  disabled: pendingId === user.id || resettingPassword === true || deleting,
                   onClick: () => {
                     setResetPasswordId(user.id)
                     setResetNewPassword("")
@@ -364,9 +427,25 @@ const ConfigUsers = () => {
                     ? t("manager:users.disable", { defaultValue: "Deaktivieren" })
                     : t("manager:users.enable", { defaultValue: "Aktivieren" }),
                   destructive: user.active,
-                  disabled: pendingId === user.id || resettingPassword === true,
+                  disabled: pendingId === user.id || resettingPassword === true || deleting,
                   onClick: () => {
                     void handleToggleActive(user)
+                  },
+                },
+                {
+                  key: "delete",
+                  icon: Trash2,
+                  label: t("manager:users.delete", {
+                    defaultValue: "Löschen",
+                  }),
+                  destructive: true,
+                  disabled: pendingId === user.id || resettingPassword === true || deleting,
+                  onClick: () => {
+                    setPendingDelete({
+                      id: user.id,
+                      username: user.username,
+                      role: user.role,
+                    })
                   },
                 },
               ]}
@@ -374,6 +453,24 @@ const ConfigUsers = () => {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null)
+          }
+        }}
+        title={t("manager:users.deleteConfirmTitle", {
+          defaultValue: "Benutzer löschen?",
+        })}
+        description={getDeleteDescription()}
+        confirmLabel={t("manager:users.delete", {
+          defaultValue: "Löschen",
+        })}
+        onConfirm={handleDelete}
+      />
 
       {/* Reset Password Dialog */}
       {resetPasswordId !== null && (
