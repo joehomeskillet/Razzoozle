@@ -130,7 +130,7 @@ const ConfigDisplay = () => {
       >
         <h3
           id="satellite-trouble-heading"
-          className="flex items-center gap-2 text-sm font-bold text-[var(--ink-muted)]"
+          className="flex items-center gap-2 text-sm font-semibold text-[var(--ink-muted)]"
         >
           <CircleHelp className="size-4 shrink-0 text-[var(--color-accent)]" aria-hidden />
           {t("manager:satellite.troubleTitle", {

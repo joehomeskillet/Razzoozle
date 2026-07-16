@@ -142,9 +142,9 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
         <div className="relative z-10">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
-          <h3 className="font-semibold text-[var(--ink)]">
+          <h2 className="text-base font-semibold text-[var(--ink)]">
             {t("manager:theme.preview.title", { defaultValue: "Vorschau" })}
-          </h3>
+          </h2>
         </div>
 
         <div className="flex flex-col gap-3">
