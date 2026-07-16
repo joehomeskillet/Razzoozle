@@ -37,7 +37,7 @@ const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
         {enabledCount}/{totalCount}{" "}
         {t("manager:achievements.active", { defaultValue: "aktiv" })}
       </span>
-      <div className="flex-1 border-t border-gray-100" />
+      <div className="flex-1 border-t border-[var(--line)]" />
     </div>
   )
 }

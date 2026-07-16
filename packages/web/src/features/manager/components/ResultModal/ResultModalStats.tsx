@@ -20,7 +20,7 @@ const ResultModalStats = () => {
                 cy="18"
                 r="15"
                 fill="none"
-                stroke="#e5e7eb"
+                stroke="var(--line)"
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${94 - correctPct * 0.94 - 2} 94`}
