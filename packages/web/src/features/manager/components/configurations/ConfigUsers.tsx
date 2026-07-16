@@ -364,7 +364,7 @@ const ConfigUsers = () => {
           <Button type="submit" disabled={creating} className="shrink-0">
             {creating
               ? t("common:loading", { defaultValue: "Wird geladen…" })
-              : t("manager:users.create", { defaultValue: "Anlegen" })}
+              : t("manager:users.create", { defaultValue: "Create" })}
           </Button>
         </form>
       </SectionCard>
