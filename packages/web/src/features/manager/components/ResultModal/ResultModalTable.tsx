@@ -43,7 +43,7 @@ const ResultModalTable = () => {
             aria-hidden
             className={clsx(
               "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-              showNames ? "bg-[var(--color-primary)]" : "bg-[var(--surface-4)]",
+              showNames ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]",
             )}
           >
             <span
@@ -137,12 +137,12 @@ const ResultModalTable = () => {
                 {isPoll ? (
                   <span className="text-[var(--ink-faint)]">—</span>
                 ) : isCorrect ? (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-[var(--state-correct)]">
                     <Check className="size-3.5" />{" "}
                     {t("manager:result.table.correct")}
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-red-500">
+                  <span className="flex items-center gap-1 text-[var(--state-wrong)]">
                     <X className="size-3.5" />{" "}
                     {t("manager:result.table.incorrect")}
                   </span>

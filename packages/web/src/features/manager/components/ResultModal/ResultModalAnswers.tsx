@@ -170,9 +170,9 @@ const ResultModalAnswers = () => {
                 className="flex items-center gap-3 rounded-lg border border-[var(--line)] px-3 py-2"
               >
                 {isMatch ? (
-                  <Check className="size-4 shrink-0 text-green-500" />
+                  <Check className="size-4 shrink-0 text-[var(--state-correct)]" />
                 ) : (
-                  <X className="size-4 shrink-0 text-red-400" />
+                  <X className="size-4 shrink-0 text-[var(--state-wrong)]" />
                 )}
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--ink)]">
                   {display}
@@ -216,7 +216,7 @@ const ResultModalAnswers = () => {
               {row.color && row.answerLabel ? (
                 <div
                   className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white",
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" {/* token-ok: answer-badge-white-on-color */,
                     row.color,
                   )}
                 >
@@ -239,12 +239,12 @@ const ResultModalAnswers = () => {
               {!isPoll && (
                 <div className="shrink-0">
                   {row.isCorrect ? (
-                    <Check className="size-5 text-green-500" />
+                    <Check className="size-5 text-[var(--state-correct)]" />
                   ) : (
                     <X
                       className={clsx(
                         "size-5",
-                        row.color ? "text-red-500" : "text-red-400",
+                        row.color ? "text-[var(--state-wrong)]" : "text-[var(--state-wrong)]",
                       )}
                     />
                   )}
