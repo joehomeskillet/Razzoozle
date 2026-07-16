@@ -128,6 +128,11 @@ pub(super) fn register_selected_answer(socket: &SocketRef, ctx: HandlerCtx) {
                                 answer_text_opt,
                             );
 
+                            // Touch activity on successful answer
+                            if result.is_ok() {
+                                game.touch();
+                            }
+
                             // Capture low_latency flag for later use outside the lock
                             (result, game.low_latency)
                         };

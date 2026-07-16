@@ -327,6 +327,11 @@ async fn run_lifecycle_from(
         info!("Question cooldown resolved: gameId={}, revealing", game_id);
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
+        // Touch activity on reveal (phase transition)
+        {
+            game_ref.lock().unwrap().touch();
+        }
+
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
         // before the leaderboard. The abort Notify was armed BEFORE the reveal
         // above, so no showLeaderboard signal can be lost in the reveal window.
