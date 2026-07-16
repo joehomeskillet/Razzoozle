@@ -242,7 +242,7 @@ const ConfigSelectQuizz = () => {
                 <select
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
@@ -259,7 +259,7 @@ const ConfigSelectQuizz = () => {
           data-testid="quizz-start-btn"
           variant="primary"
           size="lg"
-          className="w-full rounded-xl"
+          className="w-full rounded-[var(--radius-theme)]"
           onClick={handleSubmit}
           disabled={!selected}
           title={selected ? undefined : t("manager:quizz.pleaseSelect")}
@@ -271,7 +271,7 @@ const ConfigSelectQuizz = () => {
           variant="secondary"
           size="lg"
           type="button"
-          className="w-full rounded-xl"
+          className="w-full rounded-[var(--radius-theme)]"
           onClick={() => {
             void handleCopySoloLink()
           }}

@@ -77,7 +77,7 @@ const ConfigManageQuizz = () => {
       <div className="mb-4 flex shrink-0 gap-2">
         <Button
           variant="primary"
-          className="flex-1 rounded-xl"
+          className="flex-1 rounded-[var(--radius-theme)]"
           onClick={() => navigate({ to: "/manager/quizz" })}
         >
           {t("manager:quizz.create")}
@@ -85,7 +85,7 @@ const ConfigManageQuizz = () => {
         <Button
           variant="secondary"
           size="icon"
-          className="rounded-xl"
+          className="rounded-[var(--radius-theme)]"
           onClick={() => fileInputRef.current?.click()}
           title={t("manager:quizz.import")}
           aria-label={t("manager:quizz.import")}
@@ -114,7 +114,7 @@ const ConfigManageQuizz = () => {
               placeholder={t("manager:quizz.searchPlaceholder", {
                 defaultValue: "Nach Thema suchen …",
               })}
-              className="min-h-11 w-full rounded-xl"
+              className="min-h-11 w-full rounded-[var(--radius-theme)]"
             />
           </div>
           <div className="shrink-0">
@@ -128,7 +128,7 @@ const ConfigManageQuizz = () => {
               aria-label={t("manager:quizz.sort", {
                 defaultValue: "Sortieren",
               })}
-              className="focus-visible:border-primary min-h-11 w-full rounded-xl border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-none sm:w-auto"
+              className="focus-visible:border-[var(--color-primary)] min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-none sm:w-auto"
             >
               <option value="name-asc">
                 {t("manager:quizz.sortNameAsc", {
@@ -167,7 +167,7 @@ const ConfigManageQuizz = () => {
             count: selectionCount,
             defaultValue: "{{count}} ausgewählt",
           })}
-          className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-2)] p-2 pl-3"
+          className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
         >
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -175,7 +175,7 @@ const ConfigManageQuizz = () => {
               onClick={clearSelection}
               aria-label={t("common:cancel")}
               title={t("common:cancel")}
-              className="focus-visible:outline-primary flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="focus-visible:outline-[var(--color-primary)] flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <X className="size-5" aria-hidden />
             </button>

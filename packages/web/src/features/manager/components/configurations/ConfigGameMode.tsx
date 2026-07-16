@@ -9,10 +9,10 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 const TEAM_COLOR_MAP: Record<string, string> = {
-  red: "bg-red-500",
-  blue: "bg-blue-500",
-  green: "bg-green-500",
-  yellow: "bg-yellow-400",
+  red: "bg-[var(--team-red)]",
+  blue: "bg-[var(--team-blue)]",
+  green: "bg-[var(--team-green)]",
+  yellow: "bg-[var(--team-yellow)]",
 }
 
 const VALID_END_SCREEN_MODES = ["full", "top3", "private"] as const

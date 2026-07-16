@@ -345,7 +345,7 @@ const ConfigUsers = () => {
                 }
               }}
               disabled={creating}
-              className="min-h-11 rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:border-primary focus-visible:outline-none"
+              className="min-h-11 rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
             >
               <option value="user">
                 {t("manager:users.role.user", { defaultValue: "Nutzer" })}
@@ -395,8 +395,8 @@ const ConfigUsers = () => {
                   <span
                     className={
                       user.active
-                        ? "inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700"
-                        : "inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700"
+                        ? "inline-flex items-center rounded-full bg-[var(--status-online-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-online-text)]"
+                        : "inline-flex items-center rounded-full bg-[var(--status-offline-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-offline-text)]"
                     }
                   >
                     {user.active
@@ -474,8 +474,8 @@ const ConfigUsers = () => {
 
       {/* Reset Password Dialog */}
       {resetPasswordId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="rounded-lg bg-white p-6 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-lg bg-[var(--surface)] p-6 shadow-lg">
             <h3 className="mb-4 text-lg font-semibold text-[var(--ink)]">
               {t("manager:users.resetPasswordTitle", {
                 defaultValue: "Passwort zurücksetzen",
@@ -509,7 +509,7 @@ const ConfigUsers = () => {
                   setResetNewPassword("")
                 }}
                 disabled={resettingPassword}
-                className="bg-[var(--surface-4)] text-[var(--ink)] hover:bg-gray-300"
+                className="bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
               >
                 {t("common:cancel", { defaultValue: "Abbrechen" })}
               </Button>

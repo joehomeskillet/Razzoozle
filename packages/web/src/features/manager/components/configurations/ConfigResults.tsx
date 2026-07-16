@@ -130,7 +130,7 @@ const ConfigResults = () => {
                 placeholder={t("manager:result.searchPlaceholder", {
                   defaultValue: "Ergebnisse durchsuchen",
                 })}
-                className="min-h-11 w-full rounded-xl pl-10"
+                className="min-h-11 w-full rounded-[var(--radius-theme)] pl-10"
               />
             </div>
             <div className="sm:w-52">
@@ -147,7 +147,7 @@ const ConfigResults = () => {
                 aria-label={t("manager:result.dateFilter", {
                   defaultValue: "Nach Datum filtern",
                 })}
-                className="min-h-11 w-full rounded-xl"
+                className="min-h-11 w-full rounded-[var(--radius-theme)]"
               />
             </div>
           </div>
