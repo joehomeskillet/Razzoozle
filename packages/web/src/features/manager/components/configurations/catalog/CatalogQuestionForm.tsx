@@ -107,7 +107,7 @@ export const CatalogQuestionForm = ({
         <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-6 xl:gap-y-4">
           <section className="flex flex-col gap-2">
             <QuestionEditorTitle />
-            <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
+            <div className="mt-2 rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm">
               <QuestionEditorType />
             </div>
           </section>
@@ -119,19 +119,19 @@ export const CatalogQuestionForm = ({
             >
               {t("manager:catalog.tags")}
             </label>
-            <div className="rounded-2xl bg-white p-4 shadow-sm">
+            <div className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm">
               <Input
                 id="catalog-tags"
                 value={tagsValue}
                 onChange={(e) => onTagsChange(e.target.value)}
                 placeholder={t("manager:catalog.tagsPlaceholder")}
-                className="min-h-11 w-full rounded-xl"
+                className="min-h-11 w-full rounded-[var(--radius-theme)]"
               />
             </div>
           </section>
 
           <section className="flex flex-col gap-2">
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full [&>div]:min-h-0">
+            <div className="overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] shadow-sm [&_audio]:max-w-full [&_img]:max-w-full [&_video]:max-w-full [&>div]:min-h-0">
               <QuestionEditorMedia />
             </div>
           </section>
@@ -161,7 +161,7 @@ export const CatalogQuestionForm = ({
           )}
 
           <section className="flex flex-col gap-2">
-            <div className="rounded-2xl bg-white p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
+            <div className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm [&>aside]:m-0 [&>aside]:w-full [&>aside]:overflow-visible [&>aside]:rounded-none [&>aside]:bg-transparent [&>aside]:p-0 [&>aside]:shadow-none">
               <QuestionEditorConfig />
             </div>
           </section>
@@ -171,7 +171,7 @@ export const CatalogQuestionForm = ({
               <label className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
                 {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
               </label>
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <div className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm">
                 <div className="flex flex-wrap gap-2">
                   {labels.length === 0 ? (
                     <p className="text-sm text-[var(--ink-subtle)]">
@@ -203,7 +203,7 @@ export const CatalogQuestionForm = ({
         </div>
       </div>
 
-      <footer className="flex shrink-0 justify-end gap-2 border-t border-[var(--line)] bg-white px-4 py-3 sm:px-6">
+      <footer className="flex shrink-0 justify-end gap-2 border-t border-[var(--line)] bg-[var(--surface)] px-4 py-3 sm:px-6">
         <Button type="button" variant="secondary" onClick={onClose}>
           {t("common:cancel")}
         </Button>
