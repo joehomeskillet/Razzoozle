@@ -8,6 +8,7 @@ use super::config_helper;
 use crate::db;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
+use tracing::warn;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_get_config(socket, ctx.clone());
@@ -104,9 +105,38 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     patch["klassenEnabled"] = serde_json::json!(klassen_enabled);
                 }
 
-                // Pass through endScreenModes if provided (CSV string)
+                // Whitelist endScreenModes: split, trim, validate against {"full","top3","private"},
+                // deduplicate, restore canonical order (full→top3→private), rejoin.
+                // Trust boundary: Socket client input may contain arbitrary strings.
+                // Downstream: ConfigSelectQuizz splits on "," to construct UI mode selector.
                 if let Some(end_screen_modes) = payload.get("endScreenModes").and_then(|v| v.as_str()) {
-                    patch["endScreenModes"] = serde_json::json!(end_screen_modes);
+                    let raw_value = end_screen_modes.to_string();
+                    let mut modes: std::collections::HashSet<&str> = end_screen_modes
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .filter(|s| matches!(*s, "full" | "top3" | "private"))
+                        .collect();
+
+                    if !modes.is_empty() {
+                        // Canonical order: full, top3, private
+                        let mut ordered_modes = Vec::new();
+                        for canonical in &["full", "top3", "private"] {
+                            if modes.contains(canonical) {
+                                ordered_modes.push(*canonical);
+                            }
+                        }
+                        let validated = ordered_modes.join(",");
+                        patch["endScreenModes"] = serde_json::json!(validated);
+                    } else {
+                        // Invalid input: skip patching (preserve existing config value)
+                        let truncated = if raw_value.len() > 64 {
+                            format!("{}…", &raw_value[..64])
+                        } else {
+                            raw_value
+                        };
+                        warn!("endScreenModes: rejected invalid input: {}", truncated);
+                    }
                 }
 
                 // If no recognized fields, silent no-op (consistent with Node)
