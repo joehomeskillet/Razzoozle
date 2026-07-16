@@ -63,44 +63,19 @@ impl GameRegistry {
     }
 
 
-    pub fn remove_player_by_socket_id(
-        &mut self,
-        socket_id: &str,
-    ) -> Option<(String, String, String, usize)> {
-        for game_ref in self.socket_lookup_candidates(socket_id) {
-            let mut game = game_ref.lock().unwrap();
-
-            if let Some(player_index) = game
-                .players
-                .iter()
-                .position(|player| player.id == socket_id)
-            {
-                let removed_player_id = game.players[player_index].client_id.clone();
-                game.players.remove(player_index);
-                game.engine.players.retain(|player| player.id != socket_id);
-                game.engine.current_answers.remove(&removed_player_id);
-                game.engine
-                    .answer_order
-                    .retain(|client_id| client_id != &removed_player_id);
-
-                let result = (
-                    game.game_id.clone(),
-                    game.manager_socket_id.clone(),
-                    removed_player_id,
-                    game.players.len(),
-                );
-                drop(game);
-                self.socket_to_game.remove(socket_id);
-                return Some(result);
-            }
-        }
-
-        None
-    }
-
+    /// `lobby_hard_remove`: caller-controlled override for the ShowRoom
+    /// branch. Transport disconnects (#83) pass false — a flaky connection
+    /// must keep the roster slot in the lobby too, not just mid-game.
+    /// Intentional player:leave still passes true (Node parity: lobby leave
+    /// = removePlayer). Non-ShowRoom phases always keep the slot regardless.
+    ///
+    /// Third tuple element is the player's SOCKET id (not client_id) — the
+    /// manager roster (#84) keys players by socket id, and REMOVE_PLAYER
+    /// must carry the same id the roster was built with.
     pub fn mark_player_disconnected(
         &mut self,
         socket_id: &str,
+        lobby_hard_remove: bool,
     ) -> Option<(String, String, String, usize, bool)> {
         for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
@@ -110,21 +85,21 @@ impl GameRegistry {
                 .iter()
                 .position(|player| player.id == socket_id)
             {
-                let removed_player_id = game.players[player_index].client_id.clone();
+                let removed_player_socket_id = game.players[player_index].id.clone();
+                let client_id = game.players[player_index].client_id.clone();
 
-                // Phase-aware keep-on-disconnect:
-                // If lobby (ShowRoom), remove; if started, mark disconnected only
-                let removed = if game.engine.phase == razzoozle_engine::state::GamePhase::ShowRoom {
-                    // Lobby: hard remove
+                let removed = if game.engine.phase == razzoozle_engine::state::GamePhase::ShowRoom
+                    && lobby_hard_remove
+                {
                     game.players.remove(player_index);
                     game.engine.players.retain(|player| player.id != socket_id);
-                    game.engine.current_answers.remove(&removed_player_id);
+                    game.engine.current_answers.remove(&client_id);
                     game.engine
                         .answer_order
-                        .retain(|client_id| client_id != &removed_player_id);
+                        .retain(|cid| cid != &client_id);
                     true
                 } else {
-                    // Mid-game: keep slot, just mark disconnected
+                    // Keep slot: mid-game, or lobby transport-disconnect grace (#83).
                     game.players[player_index].connected = false;
                     if let Some(eng_pos) = game.engine.players.iter().position(|p| p.id == socket_id) {
                         game.engine.players[eng_pos].connected = false;
@@ -135,7 +110,7 @@ impl GameRegistry {
                 let result = (
                     game.game_id.clone(),
                     game.manager_socket_id.clone(),
-                    removed_player_id,
+                    removed_player_socket_id,
                     game.players.len(),
                     removed,
                 );

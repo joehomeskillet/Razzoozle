@@ -186,15 +186,18 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
         tokio::spawn(async move {
             let removed_player = {
                 let mut registry = registry.write().await;
-                registry.mark_player_disconnected(&socket_id)
+                // #83: transport disconnect is never a lobby hard-remove — a
+                // flaky connection must keep the roster slot for reconnect
+                // even in ShowRoom, same grace mid-game already had.
+                registry.mark_player_disconnected(&socket_id, false)
             };
 
-            if let Some((game_id, manager_socket_id, removed_player_id, total_players, removed)) =
+            if let Some((game_id, manager_socket_id, removed_player_socket_id, total_players, removed)) =
                 removed_player
             {
                 info!(
-                    "Player disconnected: gameId={}, clientId={}, totalPlayers={}",
-                    game_id, removed_player_id, total_players
+                    "Player disconnected: gameId={}, socketId={}, totalPlayers={}",
+                    game_id, removed_player_socket_id, total_players
                 );
 
                 io_handle
@@ -206,7 +209,7 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Ok(sid) = manager_socket_id.parse() {
                         if let Some(manager_socket) = io_handle.get_socket(sid) {
                             manager_socket
-                                .emit(constants::manager::REMOVE_PLAYER, &removed_player_id)
+                                .emit(constants::manager::REMOVE_PLAYER, &removed_player_socket_id)
                                 .ok();
                         }
                     }
