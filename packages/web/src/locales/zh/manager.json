@@ -7,7 +7,9 @@
   "logout": "退出登录",
   "passwordPlaceholder": "密码",
   "aria": {
-    "passwordLabel": "密码"
+    "passwordLabel": "密码",
+    "openNav": "打开导航",
+    "navTitle": "导航"
   },
   "kickPlayer": {
     "aria": "将 {{name}} 移出游戏",
@@ -142,7 +144,13 @@
     "profile": "我的资料",
     "users": "用户管理",
     "schueler": "学生管理",
-    "labels": "标签"
+    "labels": "标签",
+    "groups": {
+      "operations": "运营",
+      "content": "内容",
+      "school": "学校",
+      "system": "系统"
+    }
   },
   "plugins": {
     "title": "插件",

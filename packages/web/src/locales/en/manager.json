@@ -16,7 +16,9 @@
   "logout": "Logout",
   "passwordPlaceholder": "Password",
   "aria": {
-    "passwordLabel": "Password"
+    "passwordLabel": "Password",
+    "openNav": "Open navigation",
+    "navTitle": "Navigation"
   },
   "kickPlayer": {
     "aria": "Remove {{name}} from the game",
@@ -151,7 +153,13 @@
     "klassen": "Classes",
     "users": "User Management",
     "schueler": "Student management",
-    "labels": "Labels"
+    "labels": "Labels",
+    "groups": {
+      "operations": "Operations",
+      "content": "Content",
+      "school": "School",
+      "system": "System"
+    }
   },
   "plugins": {
     "title": "Plugins",

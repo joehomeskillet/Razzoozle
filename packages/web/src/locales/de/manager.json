@@ -4,7 +4,9 @@
     "subtitle": "Melde dich an, um dein Spiel zu verwalten."
   },
   "aria": {
-    "passwordLabel": "Passwort"
+    "passwordLabel": "Passwort",
+    "openNav": "Navigation öffnen",
+    "navTitle": "Navigation"
   },
   "configurationsTitle": "Konfigurationen",
   "kickPlayer": {
@@ -142,7 +144,13 @@
     "profile": "Mein Profil",
     "users": "Nutzerverwaltung",
     "schueler": "Schülerverwaltung",
-    "labels": "Fächer"
+    "labels": "Fächer",
+    "groups": {
+      "operations": "Spielbetrieb",
+      "content": "Inhalte",
+      "school": "Schule",
+      "system": "System"
+    }
   },
   "plugins": {
     "title": "Plugins",
