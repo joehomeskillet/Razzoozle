@@ -199,7 +199,7 @@ const ConfigUsers = () => {
   }
 
   const handleDelete = async () => {
-    if (!pendingDelete) return
+    if (!pendingDelete || deleting) return
 
     setDeleting(true)
     try {
