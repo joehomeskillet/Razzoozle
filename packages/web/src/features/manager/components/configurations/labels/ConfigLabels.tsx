@@ -32,7 +32,7 @@ const ConfigLabels = () => {
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">
+          <h2 className="text-base font-semibold text-[var(--ink)]">
             {t("manager:labels.title")}
           </h2>
           <p className="mt-2 text-sm text-[var(--ink-medium)]">
@@ -51,7 +51,7 @@ const ConfigLabels = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("manager:labels.namePlaceholder")}
-                className="min-h-11 w-full rounded-xl"
+                className="min-h-11 w-full rounded-[var(--radius-theme)]"
               />
             </div>
 
@@ -93,7 +93,7 @@ const ConfigLabels = () => {
             </div>
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
+          <div className="flex flex-1 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
             <p className="text-sm text-[var(--ink-subtle)]">
               {t("manager:labels.emptyState")}
             </p>
