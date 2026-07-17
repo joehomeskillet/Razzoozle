@@ -1,5 +1,5 @@
 import clsx from "clsx"
-import type { InputHTMLAttributes, ReactNode } from "react"
+import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react"
 import { forwardRef } from "react"
 import { twMerge } from "tailwind-merge"
 
@@ -24,7 +24,7 @@ const Radio = forwardRef<HTMLInputElement, Props>(
     const inputClasses = twMerge(
       clsx(
         "size-5 accent-[var(--color-primary)] cursor-pointer",
-        "disabled:opacity-60",
+        "disabled:cursor-not-allowed disabled:opacity-60",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
         className,
       ),
@@ -39,7 +39,12 @@ const Radio = forwardRef<HTMLInputElement, Props>(
     }
 
     return (
-      <label className="flex items-center gap-3 min-h-11 cursor-pointer">
+      <label
+        className={clsx(
+          "flex items-center gap-3 min-h-11",
+          otherProps.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+        )}
+      >
         {input}
         <span className="text-sm font-medium text-[var(--ink)]">{label}</span>
       </label>
@@ -68,23 +73,24 @@ export interface RadioGroupOption {
   disabled?: boolean
 }
 
-export interface RadioGroupProps {
+export interface RadioGroupProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "role" | "onChange"> {
   name: string
   value: string
   onChange: (value: string) => void
   options: RadioGroupOption[]
-  className?: string
 }
 
 export const RadioGroup = forwardRef<
   HTMLDivElement,
   RadioGroupProps
 >(
-  ({ name, value, onChange, options, className }, ref) => (
+  ({ name, value, onChange, options, className, ...rest }, ref) => (
     <div
       ref={ref}
       role="radiogroup"
       className={twMerge(clsx("flex flex-col gap-2", className))}
+      {...rest}
     >
       {options.map((option) => (
         <Radio

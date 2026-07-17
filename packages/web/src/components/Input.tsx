@@ -17,9 +17,11 @@ const Input = ({
     ref={ref}
     type={type}
     className={clsx(
-      // Use a real border (in-flow) not an outline: a full-width input's outline
-      // bleeds past its box and gets clipped by an overflow-auto/hidden ancestor
-      // (cut off at the left/right edge on mobile). border-box keeps the size.
+      // Focus uses the design-system D7 outline (outline-2/offset-2/primary),
+      // unified with every other control. ponytail: prior code used a border-only
+      // focus because a full-width input's outline can be clipped by an
+      // overflow-hidden ancestor on mobile edges — verify on narrow viewports; if
+      // it clips, move this + the input primitives to a non-bleeding ring together.
       "rounded-lg border-2 border-[var(--border-hairline)] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
       variant === "md" && "p-2 text-lg",
       variant === "sm" && "px-3 py-2 text-sm",

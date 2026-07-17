@@ -37,7 +37,14 @@ const Checkbox = forwardRef<HTMLInputElement, Props>(
 
     if (label) {
       return (
-        <label className="flex items-center gap-3 min-h-11 cursor-pointer">
+        <label
+          className={clsx(
+            "flex items-center gap-3 min-h-11",
+            otherProps.disabled
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer",
+          )}
+        >
           {input}
           <span className="text-sm">{label}</span>
         </label>

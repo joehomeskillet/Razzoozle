@@ -3,7 +3,7 @@ import type { InputHTMLAttributes } from "react"
 import { forwardRef } from "react"
 import { twMerge } from "tailwind-merge"
 
-type Props = InputHTMLAttributes<HTMLInputElement> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   className?: string
 }
 
