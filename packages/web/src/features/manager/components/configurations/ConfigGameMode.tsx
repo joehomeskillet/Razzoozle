@@ -488,9 +488,17 @@ const ConfigGameMode = () => {
             "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
         })}
       >
-        <div className="space-y-2">
-          <label className="flex items-center gap-3 cursor-pointer">
+        <fieldset
+          role="radiogroup"
+          aria-label={t("manager:gameMode.scoringTitle", { defaultValue: "Wertung" })}
+          className="space-y-2"
+        >
+          <label
+            htmlFor="scoring-speed"
+            className="flex min-h-11 cursor-pointer items-center gap-3"
+          >
             <input
+              id="scoring-speed"
               type="radio"
               name="scoring"
               value="speed"
@@ -505,8 +513,12 @@ const ConfigGameMode = () => {
               })}
             </span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label
+            htmlFor="scoring-accuracy"
+            className="flex min-h-11 cursor-pointer items-center gap-3"
+          >
             <input
+              id="scoring-accuracy"
               type="radio"
               name="scoring"
               value="accuracy"
@@ -521,7 +533,7 @@ const ConfigGameMode = () => {
               })}
             </span>
           </label>
-        </div>
+        </fieldset>
       </FormSection>
 
       <FormSection

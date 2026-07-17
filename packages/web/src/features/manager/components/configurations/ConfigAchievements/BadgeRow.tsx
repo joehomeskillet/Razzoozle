@@ -78,14 +78,17 @@ const BadgeRow = ({
           </p>
           <p className="text-xs leading-snug text-[var(--ink-subtle)]">{defaultDesc}</p>
         </div>
-        <div className="flex min-h-11 shrink-0 items-center">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={state.enabled}
-            aria-label={t("manager:achievementsConfig.enabled")}
-            onClick={() => onChange(id, { enabled: !state.enabled })}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+        <button
+          type="button"
+          role="switch"
+          aria-checked={state.enabled}
+          aria-label={t("manager:achievementsConfig.enabled")}
+          onClick={() => onChange(id, { enabled: !state.enabled })}
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+        >
+          <span
+            aria-hidden="true"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               state.enabled ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
             }`}
           >
@@ -94,8 +97,8 @@ const BadgeRow = ({
                 state.enabled ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
 
       {/* Compact name + description override inputs */}
