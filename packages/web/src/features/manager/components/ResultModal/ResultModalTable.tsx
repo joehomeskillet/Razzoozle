@@ -48,7 +48,7 @@ const ResultModalTable = () => {
           >
             <span
               className={clsx(
-                "inline-block size-4 rounded-full bg-[var(--surface)] shadow-sm transition-transform",
+                "inline-block size-4 rounded-full bg-[var(--surface)] shadow-[var(--shadow-flat)] transition-transform",
                 showNames ? "translate-x-4" : "translate-x-0.5",
               )}
             />
@@ -57,7 +57,7 @@ const ResultModalTable = () => {
       </div>
 
       <table className="w-full text-sm">
-      <thead className="sticky top-0 shadow-sm">
+      <thead className="sticky top-0 shadow-[var(--shadow-flat)]">
         <tr className="border-b border-[var(--line)] bg-[var(--surface-2)] text-left text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
           <th className="px-5 py-2.5">{t("manager:result.table.player")}</th>
           <th className="px-4 py-2.5">{t("manager:result.table.answered")}</th>

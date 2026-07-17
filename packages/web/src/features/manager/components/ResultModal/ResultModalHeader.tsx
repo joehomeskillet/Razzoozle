@@ -65,7 +65,7 @@ const ResultModalHeader = () => {
       <RadixDialog.Title asChild>
         <h2
           id={RESULT_MODAL_TITLE_ID}
-          className="flex-1 truncate text-base font-bold text-[var(--ink)]"
+          className="flex-1 truncate text-base font-semibold text-[var(--ink)]"
         >
           {result.subject}
         </h2>
