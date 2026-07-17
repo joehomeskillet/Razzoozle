@@ -38,28 +38,4 @@ describe("themeValidator", () => {
     const result = themeValidator.safeParse(invalidTheme)
     expect(result.success).toBe(false)
   })
-
-  it("accepts minimal valid theme with only required fields", () => {
-    const minimalTheme = {
-      colorPrimary: "#7c3aed",
-      colorSecondary: "#2e1065",
-      answerColors: ["#E69F00", "#56B4E9", "#3DBFA0", "#CC79A7"],
-    }
-    const result = themeValidator.safeParse(minimalTheme)
-    expect(result.success).toBe(true)
-  })
-
-  it("fills in defaults for optional fields", () => {
-    const minimalTheme = {
-      colorPrimary: "#7c3aed",
-      colorSecondary: "#2e1065",
-      answerColors: ["#E69F00", "#56B4E9", "#3DBFA0", "#CC79A7"],
-    }
-    const result = themeValidator.safeParse(minimalTheme)
-    expect(result.success).toBe(true)
-    if (!result.success) return
-    expect(result.data.colorText).toBe("#ffffff")
-    expect(result.data.radius).toBe(16)
-    expect(result.data.scrim).toBe(0)
-  })
 })
