@@ -6,6 +6,7 @@ import {
 } from "@razzoozle/web/components/manager/popover"
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
+import { EmptyState } from "@razzoozle/web/features/manager/components/console"
 import { KeyRound, Plus, Trash2, Users, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -67,9 +68,10 @@ const StudentList = ({
 
   if (students.length === 0) {
     return (
-      <p className="rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-subtle)]">
-        {t("manager:schueler.noResults")}
-      </p>
+      <EmptyState
+        icon={Users}
+        headline={t("manager:schueler.noResults")}
+      />
     )
   }
 
