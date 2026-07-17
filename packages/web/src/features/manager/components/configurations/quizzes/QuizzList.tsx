@@ -1,5 +1,6 @@
 import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import type { Label } from "@razzoozle/web/components/labels/LabelChip"
 import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
@@ -206,11 +207,9 @@ const QuizzList = ({
                       defaultValue: '„{{name}}" auswählen',
                     })}
                   </span>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selected.has(q.id)}
                     onChange={() => toggleSelect(q.id)}
-                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   />
                 </label>
               }
