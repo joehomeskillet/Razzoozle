@@ -1,6 +1,7 @@
 import { BONUS_MAX, type AchievementId } from "@razzoozle/common/achievements"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import Button from "@razzoozle/web/components/Button"
+import NumberInput from "@razzoozle/web/components/NumberInput"
 import { type AchievementTier } from "@razzoozle/web/features/game/utils/achievements"
 import { type RowState } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
 import { motion } from "motion/react"
@@ -130,12 +131,11 @@ const BadgeRow = ({
       {hasThreshold && state.threshold !== null && (
         <div className="mt-2">
           <div className="flex items-center gap-2">
-            <input
+            <NumberInput
               id={threshId}
-              type="number"
               min={thresholdMin}
               max={thresholdMax}
-              className={`${inputCls} max-w-28 tabular-nums`}
+              className="max-w-28 tabular-nums"
               aria-label={
                 thresholdHint ?? t("manager:achievementsConfig.threshold")
               }
@@ -175,12 +175,11 @@ const BadgeRow = ({
       {/* Bonus points awarded when the badge unlocks — shown for every badge */}
       <div className="mt-2">
         <div className="flex items-center gap-2">
-          <input
+          <NumberInput
             id={bonusId}
-            type="number"
             min={0}
             max={BONUS_MAX}
-            className={`${inputCls} max-w-28 tabular-nums`}
+            className="max-w-28 tabular-nums"
             aria-label={t("manager:achievementsConfig.bonus")}
             value={state.bonus}
             onChange={(e) => {
