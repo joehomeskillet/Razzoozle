@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { SelectedModes } from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -26,12 +27,24 @@ const ConfigSelectQuizz = () => {
   const [teamMode, setTeamMode] = useState(false)
   const [klassenMode, setKlassenMode] = useState(false)
   const [endScreen, setEndScreen] = useState<string>("full")
+  const [search, setSearch] = useState("")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const list = useMemo(
     () => quizzList.filter((q) => !q.archived),
     [quizzList],
   )
+  // Same live-search matching as the Quiz tab (QuizzList/useQuizzManager):
+  // case-insensitive substring match on subject. Filtered list only feeds
+  // rendering — `list` (unfiltered) still drives the selection-reset effect
+  // below, so filtering a selected quiz out of view doesn't clear it.
+  const filteredList = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    return query.length === 0
+      ? list
+      : list.filter((q) => q.subject.toLowerCase().includes(query))
+  }, [list, search])
 
   useEffect(() => {
     if (selected && !list.some((q) => q.id === selected)) {
@@ -140,6 +153,23 @@ const ConfigSelectQuizz = () => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mb-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <label htmlFor="play-quizz-search" className="sr-only">
+              {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
+            </label>
+            <Input
+              id="play-quizz-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t("manager:quizz.searchPlaceholder", {
+                defaultValue: "Nach Thema suchen …",
+              })}
+              className="min-h-11 w-full rounded-[var(--radius-theme)]"
+            />
+          </div>
+        </div>
+
         <motion.div
           role="radiogroup"
           aria-label={t("manager:quizz.startGame")}
@@ -150,7 +180,7 @@ const ConfigSelectQuizz = () => {
             reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
           }
         >
-          {list.map((quizz, index) => (
+          {filteredList.map((quizz, index) => (
             <motion.div
               key={quizz.id}
               initial={reducedMotion ? false : { opacity: 0, y: 10 }}
