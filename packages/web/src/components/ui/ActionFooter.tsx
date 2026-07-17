@@ -32,11 +32,8 @@ const ActionFooter = ({ children, className }: ActionFooterProps) => (
       // Surface — fully opaque so scrolled content never bleeds through.
       // Token-only: use CSS variables for theme flexibility
       "border-t border-[var(--line)] bg-[var(--surface)]",
-      // Shadow lifting it off the content. Second shadow (20px 0 0
-      // var(--surface)) paints over the vertical scrollbar's gap on the
-      // right so no background shows before the card's rounded corner;
-      // harmless overshoot is clipped by the card's overflow-hidden.
-      "shadow-[0_-2px_8px_rgba(0,0,0,0.08),20px_0_0_0_var(--surface)]",
+      // Shadow lifting the bar off scrolled content.
+      "shadow-[0_-2px_8px_rgba(0,0,0,0.08)]",
       // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area
       "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
       // Button row: right-aligned on ≥sm, stacked full-width below sm
