@@ -16,7 +16,7 @@ export const chipBase =
 // Uniform "assign" trigger optics — one dedicated pill style for opening the
 // label/class assignment control everywhere it appears (spec D22c).
 export const assignTriggerClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)] focus-visible:outline-[var(--color-primary)]"
+  "inline-flex min-h-11 items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
 
 const defaultTone = "bg-[var(--surface-4)] text-[var(--ink-muted)]"
 
