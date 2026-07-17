@@ -293,7 +293,7 @@ const ConsoleShell = ({
           // `console-shell` pins the brand tokens to fixed values (tokens.css) so an
           // active skeleton/theme never recolors the admin console — it stays a
           // stable workspace regardless of the player-facing theme.
-          "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[var(--surface-2)] shadow-lg sm:m-3",
+          "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface-2)] shadow-lg sm:m-3",
           className,
         )}
       >
@@ -326,7 +326,7 @@ const ConsoleShell = ({
               aria-hidden
               className="hidden h-5 w-px bg-[var(--line)] sm:block"
             />
-            <h1 className="hidden truncate text-lg font-semibold text-[var(--ink-muted)] sm:block">
+            <h1 className="hidden truncate text-lg font-bold text-[var(--ink-muted)] sm:block">
               {title}
             </h1>
           </div>
@@ -336,7 +336,7 @@ const ConsoleShell = ({
             </div>
           )}
           {/* Mobile: title sits on its own line under the brand. */}
-          <h1 className="w-full truncate text-base font-semibold text-[var(--ink-muted)] sm:hidden">
+          <h1 className="w-full truncate text-lg font-bold text-[var(--ink-muted)] sm:hidden">
             {title}
           </h1>
         </header>
