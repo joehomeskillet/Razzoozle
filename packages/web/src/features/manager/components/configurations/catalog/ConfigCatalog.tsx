@@ -7,6 +7,7 @@ import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
+import { ActionFooter } from "@razzoozle/web/components/ui"
 import {
   useEvent,
   useSocket,
@@ -156,204 +157,208 @@ const ConfigCatalog = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-4 flex shrink-0 flex-col gap-3">
-        <PageHeader
-          title={t("manager:catalog.title")}
-          subtitle={t("manager:catalog.intro")}
-          action={
-            <Button
-              type="button"
-              variant="primary"
-              className="shrink-0 rounded-[var(--radius-theme)]"
-              onClick={openAddModal}
-            >
-              <BookOpen className="size-5" aria-hidden />
-              {t("manager:catalog.addManual")}
-            </Button>
-          }
-        />
+    <>
+      <div className="flex min-h-0 flex-1 flex-col pb-20">
+        <div className="mb-4 flex shrink-0 flex-col gap-3">
+          <PageHeader
+            title={t("manager:catalog.title")}
+            subtitle={t("manager:catalog.intro")}
+          />
 
-        <label htmlFor="catalog-search" className="sr-only">
-          {t("manager:catalog.search")}
-        </label>
-        <Input
-          id="catalog-search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t("manager:catalog.searchPlaceholder")}
-          className="min-h-11 w-full rounded-[var(--radius-theme)]"
-        />
+          <label htmlFor="catalog-search" className="sr-only">
+            {t("manager:catalog.search")}
+          </label>
+          <Input
+            id="catalog-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("manager:catalog.searchPlaceholder")}
+            className="min-h-11 w-full rounded-[var(--radius-theme)]"
+          />
 
-        <div
-          role="group"
-          aria-label={t("manager:catalog.scope.label", {
-            defaultValue: "Sichtbarkeit",
-          })}
-          className="flex flex-wrap items-center gap-2"
-        >
-          {(
-            [
-              { key: "own", label: t("manager:catalog.scope.own", { defaultValue: "Eigene" }) },
-              { key: "global", label: t("manager:catalog.scope.global", { defaultValue: "Global" }) },
-              { key: "all", label: t("manager:catalog.scope.all", { defaultValue: "Alle" }) },
-            ] as const
-          ).map((entry) => (
-            <FilterPill
-              key={entry.key}
-              active={scope === entry.key}
-              onClick={() => setScope(entry.key)}
-            >
-              {entry.label}
-            </FilterPill>
-          ))}
+          <div
+            role="group"
+            aria-label={t("manager:catalog.scope.label", {
+              defaultValue: "Sichtbarkeit",
+            })}
+            className="flex flex-wrap items-center gap-2"
+          >
+            {(
+              [
+                { key: "own", label: t("manager:catalog.scope.own", { defaultValue: "Eigene" }) },
+                { key: "global", label: t("manager:catalog.scope.global", { defaultValue: "Global" }) },
+                { key: "all", label: t("manager:catalog.scope.all", { defaultValue: "Alle" }) },
+              ] as const
+            ).map((entry) => (
+              <FilterPill
+                key={entry.key}
+                active={scope === entry.key}
+                onClick={() => setScope(entry.key)}
+              >
+                {entry.label}
+              </FilterPill>
+            ))}
+          </div>
+
+          {klassenEnabled && (
+            <LabelFilterPills
+              labels={labels}
+              activeId={selectedLabelId}
+              onChange={setSelectedLabelId}
+            />
+          )}
         </div>
 
-        {klassenEnabled && (
-          <LabelFilterPills
-            labels={labels}
-            activeId={selectedLabelId}
-            onChange={setSelectedLabelId}
+        {entries.length === 0 ? (
+          <div className="flex min-h-0 flex-1 flex-col justify-center">
+            <EmptyState
+              icon={Library}
+              headline={t("manager:catalog.emptyHeadline")}
+              hint={t("manager:catalog.empty")}
+              action={{
+                label: t("manager:catalog.addManual"),
+                onClick: openAddModal,
+              }}
+            />
+          </div>
+        ) : filteredEntries.length === 0 ? (
+          <EmptyState
+            icon={SearchX}
+            headline={t("manager:catalog.noResults")}
+            hint={t("manager:catalog.search")}
           />
+        ) : (
+          <motion.div
+            className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
+            initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={
+              reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
+            }
+          >
+            {filteredEntries.map((entry, index) => {
+              const type = entry.question.type ?? "choice"
+              const source = entry.source ?? "manual"
+              const entryLabelIds = entry.labelIds ?? []
+              const entryTags = entry.tags ?? []
+              const hasFooter =
+                entryTags.length > 0 || (klassenEnabled && entryLabelIds.length > 0)
+
+              return (
+                <motion.div
+                  key={entry.id}
+                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={
+                    reducedMotion
+                      ? undefined
+                      : {
+                          duration: 0.28,
+                          ease: "easeOut",
+                          delay: Math.min(index, 8) * 0.04,
+                        }
+                  }
+                >
+                  <ListRow
+                    leading={
+                      <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                    }
+                    title={entry.question.question}
+                    meta={
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge>
+                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+                        </Badge>
+                        <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
+                          {t(`manager:catalog.source.${source}`)}
+                        </Badge>
+                        <span className="text-xs text-[var(--ink-subtle)]">
+                          {formatDate(entry.addedAt)}
+                        </span>
+                      </span>
+                    }
+                    footer={
+                      hasFooter && (
+                        <span className="flex flex-wrap gap-2">
+                          {klassenEnabled &&
+                            entryLabelIds.length > 0 &&
+                            labels
+                              .filter((label) => entryLabelIds.includes(label.id))
+                              .map((label) => (
+                                <LabelChip key={label.id} label={label} />
+                              ))}
+                          {entryTags.map((tag, tagIndex) => (
+                            <Badge
+                              key={`${tag}-${tagIndex}`}
+                              className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </span>
+                      )
+                    }
+                    actions={[
+                      {
+                        key: "edit",
+                        icon: Pencil,
+                        label: t("manager:catalog.edit"),
+                        onClick: () => openEditModal(entry),
+                      },
+                      {
+                        key: "delete",
+                        icon: Trash2,
+                        label: t("manager:catalog.delete"),
+                        destructive: true,
+                        onClick: () =>
+                          setPendingDelete({
+                            id: entry.id,
+                            question: entry.question.question,
+                          }),
+                      },
+                    ]}
+                  />
+                </motion.div>
+              )
+            })}
+          </motion.div>
         )}
+
+        <CatalogQuestionModal
+          open={modalOpen}
+          mode={modalMode}
+          editingEntry={editingEntry}
+          onClose={closeModal}
+          onSaveStart={setPendingOp}
+        />
+
+        <AlertDialog
+          open={pendingDelete !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPendingDelete(null)
+            }
+          }}
+          title={t("manager:catalog.delete")}
+          description={t("manager:catalog.deleteConfirm")}
+          confirmLabel={t("common:delete")}
+          onConfirm={handleDelete}
+        />
       </div>
 
-      {entries.length === 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <EmptyState
-            icon={Library}
-            headline={t("manager:catalog.emptyHeadline")}
-            hint={t("manager:catalog.empty")}
-            action={{
-              label: t("manager:catalog.addManual"),
-              onClick: openAddModal,
-            }}
-          />
-        </div>
-      ) : filteredEntries.length === 0 ? (
-        <EmptyState
-          icon={SearchX}
-          headline={t("manager:catalog.noResults")}
-          hint={t("manager:catalog.search")}
-        />
-      ) : (
-        <motion.div
-          className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
-          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={
-            reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-          }
+      <ActionFooter>
+        <Button
+          data-testid="catalog-create-btn"
+          variant="primary"
+          size="lg"
+          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+          onClick={openAddModal}
         >
-          {filteredEntries.map((entry, index) => {
-            const type = entry.question.type ?? "choice"
-            const source = entry.source ?? "manual"
-            const entryLabelIds = entry.labelIds ?? []
-            const entryTags = entry.tags ?? []
-            const hasFooter =
-              entryTags.length > 0 || (klassenEnabled && entryLabelIds.length > 0)
-
-            return (
-              <motion.div
-                key={entry.id}
-                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={
-                  reducedMotion
-                    ? undefined
-                    : {
-                        duration: 0.28,
-                        ease: "easeOut",
-                        delay: Math.min(index, 8) * 0.04,
-                      }
-                }
-              >
-                <ListRow
-                  leading={
-                    <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
-                  }
-                  title={entry.question.question}
-                  meta={
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Badge>
-                        {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-                      </Badge>
-                      <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
-                        {t(`manager:catalog.source.${source}`)}
-                      </Badge>
-                      <span className="text-xs text-[var(--ink-subtle)]">
-                        {formatDate(entry.addedAt)}
-                      </span>
-                    </span>
-                  }
-                  footer={
-                    hasFooter && (
-                      <span className="flex flex-wrap gap-2">
-                        {klassenEnabled &&
-                          entryLabelIds.length > 0 &&
-                          labels
-                            .filter((label) => entryLabelIds.includes(label.id))
-                            .map((label) => (
-                              <LabelChip key={label.id} label={label} />
-                            ))}
-                        {entryTags.map((tag, tagIndex) => (
-                          <Badge
-                            key={`${tag}-${tagIndex}`}
-                            className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </span>
-                    )
-                  }
-                  actions={[
-                    {
-                      key: "edit",
-                      icon: Pencil,
-                      label: t("manager:catalog.edit"),
-                      onClick: () => openEditModal(entry),
-                    },
-                    {
-                      key: "delete",
-                      icon: Trash2,
-                      label: t("manager:catalog.delete"),
-                      destructive: true,
-                      onClick: () =>
-                        setPendingDelete({
-                          id: entry.id,
-                          question: entry.question.question,
-                        }),
-                    },
-                  ]}
-                />
-              </motion.div>
-            )
-          })}
-        </motion.div>
-      )}
-
-      <CatalogQuestionModal
-        open={modalOpen}
-        mode={modalMode}
-        editingEntry={editingEntry}
-        onClose={closeModal}
-        onSaveStart={setPendingOp}
-      />
-
-      <AlertDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingDelete(null)
-          }
-        }}
-        title={t("manager:catalog.delete")}
-        description={t("manager:catalog.deleteConfirm")}
-        confirmLabel={t("common:delete")}
-        onConfirm={handleDelete}
-      />
-    </div>
+          <BookOpen className="size-5" aria-hidden />
+          <span>{t("manager:catalog.addManual")}</span>
+        </Button>
+      </ActionFooter>
+    </>
   )
 }
 
