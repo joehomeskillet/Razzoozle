@@ -465,12 +465,13 @@ const ConfigUsers = () => {
                   })}
                 </Dialog.Title>
                 <Dialog.Close asChild>
-                  <button
-                    className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label={t("common:close")}
                   >
                     <X className="size-5" />
-                  </button>
+                  </Button>
                 </Dialog.Close>
               </div>
 
@@ -548,12 +549,13 @@ const ConfigUsers = () => {
                   })}
                 </Dialog.Title>
                 <Dialog.Close asChild>
-                  <button
-                    className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label={t("common:close")}
                   >
                     <X className="size-5" />
-                  </button>
+                  </Button>
                 </Dialog.Close>
               </div>
 
