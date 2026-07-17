@@ -371,35 +371,35 @@ const ConfigUsers = () => {
               : []
 
             return (
-              <div key={user.id} className="flex items-center gap-2">
-                <ListRow
-                  leading={<UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />}
-                  title={user.username}
-                  meta={
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Badge>{getRoleLabel(user.role)}</Badge>
-                      <Badge
-                        className={
-                          user.active
-                            ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
-                            : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
-                        }
-                      >
-                        {user.active
-                          ? t("manager:users.active", { defaultValue: "Aktiv" })
-                          : t("manager:users.disabledStatus", {
-                              defaultValue: "Deaktiviert",
-                            })}
-                      </Badge>
-                    </span>
-                  }
-                  actions={visibleActions}
-                  className="min-w-0 flex-1"
-                />
-                {isMobile && overflowActions.length > 0 && (
-                  <OverflowMenu actions={overflowActions} />
-                )}
-              </div>
+              <ListRow
+                key={user.id}
+                leading={<UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                title={user.username}
+                meta={
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Badge>{getRoleLabel(user.role)}</Badge>
+                    <Badge
+                      className={
+                        user.active
+                          ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+                          : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
+                      }
+                    >
+                      {user.active
+                        ? t("manager:users.active", { defaultValue: "Aktiv" })
+                        : t("manager:users.disabledStatus", {
+                            defaultValue: "Deaktiviert",
+                          })}
+                    </Badge>
+                  </span>
+                }
+                actions={visibleActions}
+                overflow={
+                  isMobile && overflowActions.length > 0 ? (
+                    <OverflowMenu actions={overflowActions} />
+                  ) : undefined
+                }
+              />
             )
           })}
         </div>
