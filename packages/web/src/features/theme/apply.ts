@@ -62,6 +62,12 @@ export const applyTheme = (theme: Theme) => {
   if (typeof document !== "undefined") {
     document.title = t.appTitle?.trim() ?? "Razzoozle"
 
+    // The app renders a single flat style. Keep a stable, constant
+    // data-theme-style="flat" on <html> so a skeleton's theme.css can still
+    // gate on [data-theme-style="flat"] (the documented flat selector), matching
+    // the constant the skeleton demo/doc emit.
+    document.documentElement.dataset.themeStyle = "flat"
+
     // Skeleton CSS override — idempotent <link> keyed by id, version-busted so a
     // skeletonVersion bump reloads the file. Removed when disabled.
     const ensureLink = (enabled: boolean, v: number) => {
