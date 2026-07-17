@@ -3,6 +3,7 @@ import {
   answerLabel,
 } from "@razzoozle/web/features/game/utils/answers"
 import { useResultModal } from "@razzoozle/web/features/manager/contexts/result-modal-context"
+import Button from "@razzoozle/web/components/Button"
 import clsx from "clsx"
 import { Check, Eye, EyeOff, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -24,12 +25,14 @@ const ResultModalTable = () => {
           answer breakdown. Default OFF; the manager opts in to reveal real
           names. role=switch so screen readers announce the on/off state. */}
       <div className="flex items-center justify-end border-b border-[var(--line)] px-5 py-2">
-        <button
+        <Button
           type="button"
           role="switch"
           aria-checked={showNames}
           onClick={toggleShowNames}
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-[var(--ink-medium)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          variant="secondary"
+          size="sm"
+          className="px-2 py-1 min-h-11 text-[var(--ink-medium)] font-medium"
         >
           {showNames ? (
             <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
@@ -53,7 +56,7 @@ const ResultModalTable = () => {
               )}
             />
           </span>
-        </button>
+        </Button>
       </div>
 
       <table className="w-full text-sm">
