@@ -1,5 +1,6 @@
 import * as Select from "@radix-ui/react-select"
 import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import Button from "@razzoozle/web/components/Button"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -117,7 +118,9 @@ const StudentList = ({
                 className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
               >
                 {c.name}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   type="button"
                   onClick={() =>
                     onRemoveFromClass({
@@ -128,10 +131,10 @@ const StudentList = ({
                     })
                   }
                   aria-label={t("manager:schueler.removeFromClassTitle")}
-                  className="relative focus-visible:outline-[var(--color-primary)] flex size-4 items-center justify-center rounded-full hover:bg-[var(--surface-4)] before:absolute before:-inset-3 before:content-['']"
+                  className="relative rounded-full before:absolute before:-inset-3 before:content-['']"
                 >
                   <X className="size-3" />
-                </button>
+                </Button>
               </Badge>
             ))}
 
