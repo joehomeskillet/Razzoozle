@@ -513,11 +513,6 @@
       "confirmRestore": "恢复此版本？当前版本将另存为一个新版本。",
       "savedAt": "保存于 {{when}}"
     },
-    "style": {
-      "label": "风格",
-      "flat": "扁平",
-      "glass": "玻璃"
-    },
     "animation": {
       "title": "动画",
       "description": "微调游戏手感——弹簧强度、时长和出现错峰。",

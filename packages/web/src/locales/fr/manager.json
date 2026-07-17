@@ -339,11 +339,6 @@
       "confirmRestore": "Restaurer cette version ? L’actuelle sera enregistrée comme nouvelle version.",
       "savedAt": "Enregistrée {{when}}"
     },
-    "style": {
-      "label": "Style",
-      "flat": "Plat",
-      "glass": "Verre"
-    },
     "animation": {
       "title": "Animation",
       "description": "Affinez le ressenti en jeu — force du ressort, durée et décalage des apparitions.",

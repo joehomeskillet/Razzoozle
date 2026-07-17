@@ -339,11 +339,6 @@
       "confirmRestore": "¿Restaurar esta versión? La actual se guardará como una nueva versión.",
       "savedAt": "Guardada {{when}}"
     },
-    "style": {
-      "label": "Estilo",
-      "flat": "Plano",
-      "glass": "Cristal"
-    },
     "animation": {
       "title": "Animación",
       "description": "Ajusta la sensación del juego: fuerza del resorte, duración y desfase de aparición.",

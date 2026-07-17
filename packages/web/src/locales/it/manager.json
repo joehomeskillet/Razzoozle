@@ -339,11 +339,6 @@
       "confirmRestore": "Ripristinare questa versione? Quella attuale verrà salvata come nuova versione.",
       "savedAt": "Salvata {{when}}"
     },
-    "style": {
-      "label": "Stile",
-      "flat": "Piatto",
-      "glass": "Vetro"
-    },
     "animation": {
       "title": "Animazione",
       "description": "Regola la sensazione di gioco — forza della molla, durata e sfasamento delle comparse.",

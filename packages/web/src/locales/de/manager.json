@@ -513,11 +513,6 @@
       "confirmRestore": "Diese Version wiederherstellen? Die aktuelle wird als neue Version gesichert.",
       "savedAt": "Gespeichert {{when}}"
     },
-    "style": {
-      "label": "Stil",
-      "flat": "Flach",
-      "glass": "Glas"
-    },
     "animation": {
       "title": "Animation",
       "description": "Feinabstimmung des Spielgefühls — Federkraft, Dauer und Versatz der Einblendungen.",

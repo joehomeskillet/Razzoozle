@@ -522,11 +522,6 @@
       "confirmRestore": "Restore this version? The current one will be saved as a new version.",
       "savedAt": "Saved {{when}}"
     },
-    "style": {
-      "label": "Style",
-      "flat": "Flat",
-      "glass": "Glass"
-    },
     "animation": {
       "title": "Animation",
       "description": "Fine-tune the in-game feel — spring force, duration and reveal stagger.",
