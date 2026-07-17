@@ -93,11 +93,11 @@ const NAV_GROUPS: { labelKey: string; keys: readonly string[] }[] = [
   },
   {
     labelKey: "manager:tabs.groups.school",
-    keys: ["klassen", "schueler", "users", "labels"],
+    keys: ["klassen", "schueler", "labels"],
   },
   {
     labelKey: "manager:tabs.groups.system",
-    keys: ["design", "gamemode", "ki", "satellite", "profile", "dev"],
+    keys: ["design", "gamemode", "ki", "satellite", "users", "profile", "dev"],
   },
 ]
 
