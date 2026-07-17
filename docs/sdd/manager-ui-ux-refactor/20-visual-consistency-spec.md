@@ -98,6 +98,26 @@ grep -rn 'rounded-\(md\|xl\|2xl\)' packages/web/src/features/manager --include=*
 ```
 Run in the wave gate alongside `pnpm verify` + `check-locales.sh`.
 
+## 6b. Deferred — `Input` primitive form-field reconciliation (accepted-open)
+
+The browser lane measured a genuine same-type divergence the source lanes missed:
+`Input.tsx` renders `rounded-lg`/`text-lg`/`p-2`/`border-2` (8px, 18px) while its
+sibling form primitives `DateInput`/`NumberInput`/`Select` render
+`--radius-theme`/`px-4 py-3`/`border` (16px, 16px) — and design.md **D-Input**
+spec is `px-4 py-3 rounded-[var(--radius-theme)] border` (the siblings follow it;
+`Input` violates it).
+
+**Not fixed in this task, on purpose.** `Input` has **48 callsites across game +
+submission + quizz + manager**, including the player-facing join screen
+(`features/game/components/join/Username.tsx`) and `SubmitPage`. Reconciling it to
+spec is the right change but (a) exceeds Task-5's manager-console scope, (b) is
+player-facing, and (c) carries a font-size judgment (`text-lg` may be a deliberate
+big-tap-target choice for PIN/name entry, not specified by D-Input). It therefore
+warrants its **own change with join/submit browser verification**, not an
+autonomous restyle buried in a manager wave. **Recommendation:** a follow-up WP
+aligns `Input` radius+padding+border to D-Input (keep or decide `text-lg`
+separately), verified on join + submit + manager at all viewports.
+
 ## 7. Evidence
 
 Before/after screenshots at 5 viewports (1536×960, 1280×800, 1024×768,

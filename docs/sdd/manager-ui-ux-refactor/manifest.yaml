@@ -36,18 +36,31 @@ reviews:
 
 visual_consistency:   # Task 5 — rendered consistency (docs 20/21), 2026-07-17
   base: d8562d39e
-  audit_lanes: {codex_code_cause: done, grok_visual_matrix: done, browser_geometry: FAILED-api-stall-partial}
+  audit_lanes: {codex_code_cause: done, grok_visual_matrix: done, browser_geometry: done-on-retry (measured Input/StatusBadge divergence source lanes missed)}
   spec: 20-visual-consistency-spec.md
   audit: 21-visual-element-audit.md
   verdict: ~85% consistent; drift = radius-scale + internal-value overrides (not dup)
   adjudications:
     - "Button base rounded-lg KEPT (reject Codex VIS-RADIUS-1) — all buttons already uniform; D9 large-button = surface not size token"
     - "Badge tone via className (reject tone-enum prop) — host anti-over-abstraction; chipBase owns structure"
-  work_packages:
-    - {id: WP-A, title: radius D9 2-level normalization (9 files), status: planned}
-    - {id: WP-B, title: ResultModalTable internal-override + chip radius, status: planned}
-    - {id: WP-C, title: badge structural unification (4 inline pills -> Badge className), status: planned}
-  non_goals: [Button radius change, Badge tone enum, useCrudManager, gap standardization, NavItem count badge, slider/switch/dot rounded-full]
+  waves:
+    - wave: 1
+      commit: 2cde3a5ac
+      lane: local-coder-ov (cloud lanes stalling on stream-idle -> local for reliability)
+      wps:
+        - {id: WP-A, title: radius D9 normalization (9 files), status: merged}
+        - {id: WP-B, title: ResultModalTable internal-override removal + chip radius, status: merged}
+        - {id: WP-D, title: StatusBadge -> chipBase pill (fixes Dev-tab divergence), status: merged}
+    - wave: 2
+      commit: e5f00a55a
+      lanes: [grok-build (WP-C), antigravity-agy (WP-F)]
+      wps:
+        - {id: WP-C, title: 4 inline pills -> Badge primitive, status: merged}
+        - {id: WP-F, title: BadgeRow raw-input->Input + ResultModalAnswers radius + StudentList icons, status: merged}
+  deferred:
+    - {id: VIS-FORMFIELD, title: Input primitive vs DateInput/NumberInput/Select divergence, status: accepted-open, why: "48 callsites incl. player-facing join/submit; exceeds manager scope + needs game-context browser test; recommend follow-up (see 20 §6b)"}
+  gate: {pnpm_verify: green, tests: "171 (150 web + 21 common)", manager_tokens: 0, d9_radius: OK}
+  non_goals: [Button radius change, Badge tone enum, useCrudManager, gap standardization, NavItem count badge, slider/switch/dot rounded-full, Input app-wide restyle]
 
 accepted_open:  # documented, non-blocking, NOT introduced by this work
   - "pre-existing repo lint/type debt (stale tsc-b-cache-masked) in untouched files: e2e/stagehand/*.spec.ts, ConfigUsers.tsx, pages/manager/config.tsx, game/stores/manager.test.ts, scripts/locale-sync.mjs — full pnpm verify stays red on these; follow-up = separate lint-debt pass"
