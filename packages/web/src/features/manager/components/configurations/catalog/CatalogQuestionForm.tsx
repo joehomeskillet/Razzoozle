@@ -130,18 +130,21 @@ export const CatalogQuestionForm = ({
                     labels.map((label) => {
                       const isSelected = selectedLabelIds.includes(label.id)
                       return (
-                        <button
+                        <Button
                           key={label.id}
                           type="button"
+                          variant="ghost"
+                          size="md"
                           onClick={() => handleLabelToggle(label.id)}
-                          className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                          className={`rounded-full px-3 py-1.5 text-xs ${
                             isSelected
-                              ? "opacity-100 ring-2 ring-offset-2 ring-[var(--color-primary)]"
-                              : "opacity-100 border border-[var(--line)] hover:border-[var(--ink-medium)]"
+                              ? "ring-2 ring-offset-2 ring-[var(--color-primary)]"
+                              : "border border-[var(--line)] hover:border-[var(--ink-medium)]"
                           }`}
+                          classNameContent="gap-1.5"
                         >
                           <LabelChip label={label} />
-                        </button>
+                        </Button>
                       )
                     })
                   )}
