@@ -1,4 +1,5 @@
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
 import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
 import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
@@ -293,16 +294,16 @@ const ConfigGameMode = () => {
           <div className="flex flex-wrap gap-2">
             {["red", "blue", "green", "yellow"].map((team) => {
               return (
-                <span
+                <Badge
                   key={team}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-3)] px-3 py-1 text-sm font-semibold text-[var(--ink-muted)]"
+                  className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
                 >
                   <span
                     className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
                     aria-hidden
                   />
                   {teamLabelMap[team]}
-                </span>
+                </Badge>
               )
             })}
           </div>

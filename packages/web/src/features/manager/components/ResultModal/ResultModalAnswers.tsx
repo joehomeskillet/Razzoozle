@@ -29,7 +29,7 @@ const MediaPreview = ({ media }: { media?: QuestionMedia }) => {
       <img
         src={media.url}
         alt=""
-        className="h-16 w-auto rounded-md object-contain md:h-full"
+        className="h-16 w-auto rounded-lg object-contain md:h-full"
       />
     )
   }
@@ -224,7 +224,7 @@ const ResultModalAnswers = () => {
                   {row.answerLabel}
                 </div>
               ) : (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)]">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)]">
                   <X className="size-3 text-[var(--ink-faint)]" />
                 </div>
               )}

@@ -5,6 +5,7 @@ import {
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import Button from "@razzoozle/web/components/Button"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import clsx from "clsx"
 import { Monitor } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -137,9 +138,9 @@ const DisplayStatusCard = () => {
                         })}
                       </p>
                     </div>
-                    <span
+                    <Badge
                       className={clsx(
-                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
+                        "shrink-0",
                         stale
                           ? "bg-[var(--surface-4)] text-[var(--ink-medium)]"
                           : "bg-[var(--state-correct)]/15 text-[var(--state-correct)]",
@@ -148,7 +149,7 @@ const DisplayStatusCard = () => {
                       {stale
                         ? t("manager:display.status.stale")
                         : t("manager:display.status.online")}
-                    </span>
+                    </Badge>
                   </li>
                 )
               })}

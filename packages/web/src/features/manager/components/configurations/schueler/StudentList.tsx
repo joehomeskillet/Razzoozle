@@ -133,7 +133,7 @@ const StudentList = ({
                   aria-label={t("manager:schueler.removeFromClassTitle")}
                   className="relative rounded-full before:absolute before:-inset-3 before:content-['']"
                 >
-                  <X className="size-3" />
+                  <X className="size-4" />
                 </Button>
               </Badge>
             ))}
@@ -153,7 +153,7 @@ const StudentList = ({
                   aria-label={t("manager:schueler.addToClass")}
                   className={assignTriggerClass}
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-4" />
                   <Select.Value placeholder={t("manager:schueler.addToClass")} />
                 </Select.Trigger>
                 <Select.Portal>

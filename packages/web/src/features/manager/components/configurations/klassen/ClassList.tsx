@@ -1,6 +1,6 @@
 import * as Select from "@radix-ui/react-select"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
-import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import {
   popoverContentClass,
@@ -228,9 +228,9 @@ const ClassList = ({
                 meta={
                   <div className="flex items-center gap-x-2">
                     {classObj.ownerName && (
-                      <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-subtle)]">
+                      <Badge className="shrink-0 bg-[var(--surface-3)] text-[var(--ink-subtle)]">
                         {classObj.ownerName}
-                      </span>
+                      </Badge>
                     )}
                     <span className="text-xs text-[var(--ink-subtle)]">
                       {expandedClassId === classObj.id

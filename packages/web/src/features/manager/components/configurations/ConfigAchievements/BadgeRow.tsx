@@ -1,19 +1,13 @@
 import { BONUS_MAX, type AchievementId } from "@razzoozle/common/achievements"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import NumberInput from "@razzoozle/web/components/NumberInput"
 import { type AchievementTier } from "@razzoozle/web/features/game/utils/achievements"
 import { type RowState } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
 import { motion } from "motion/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-
-// ---------------------------------------------------------------------------
-// Input style shared across rows
-// ---------------------------------------------------------------------------
-
-const inputCls =
-  "w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] placeholder-[var(--ink-faint)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
 
 // ---------------------------------------------------------------------------
 // Achievement badge editor card
@@ -107,19 +101,19 @@ const BadgeRow = ({
 
       {/* Compact name + description override inputs */}
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        <input
+        <Input
           id={nameId}
           type="text"
-          className={inputCls}
+          variant="sm"
           placeholder={defaultName}
           aria-label={t("manager:achievementsConfig.name")}
           value={state.name}
           onChange={(e) => onChange(id, { name: e.target.value })}
         />
-        <input
+        <Input
           id={descId}
           type="text"
-          className={inputCls}
+          variant="sm"
           placeholder={defaultDesc || "—"}
           aria-label={t("manager:achievementsConfig.description")}
           value={state.description}

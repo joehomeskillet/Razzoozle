@@ -86,12 +86,12 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
           </p>
           <div className="flex flex-wrap gap-2">
             {(question.acceptedAnswers ?? []).map((a) => (
-              <span
+              <Badge
                 key={a}
-                className="rounded-full bg-[var(--status-online-bg)] px-3 py-1 text-sm font-semibold text-[var(--status-online-text)]"
+                className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
               >
                 {a}
-              </span>
+              </Badge>
             ))}
           </div>
         </div>
