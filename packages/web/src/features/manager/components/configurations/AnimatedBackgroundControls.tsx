@@ -15,6 +15,11 @@ import { useTranslation } from "react-i18next"
 
 type SlotKey = keyof ThemeBackgrounds["animated"]
 
+// Default animated background color. Must be a hex string (not CSS var)
+// because it's passed to <input type="color">, which does not accept
+// CSS custom properties — only literal hex values.
+const DEFAULT_ANIMATED_BG_COLOR = "#7c3aed"
+
 export interface AnimatedBackgroundControlsProps {
   /** The draft's per-slot animated-background config (draft.backgrounds.animated). */
   value: ThemeBackgrounds["animated"]
@@ -198,7 +203,7 @@ const AnimatedBackgroundControls = ({
                     label={t("manager:theme.animatedBg.color", {
                       defaultValue: "Farbe",
                     })}
-                    value={config.color || "#7c3aed"}
+                    value={config.color || DEFAULT_ANIMATED_BG_COLOR}
                     onChange={setField(slot.key, "color")}
                   />
                   {SLIDERS.map(({ key, min, max, step, labelKey, fallback }) => {
