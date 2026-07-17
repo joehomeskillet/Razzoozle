@@ -11,7 +11,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
@@ -56,14 +55,10 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.node.yml up -d   # Node backend → http://127.0.0.1:3010
-# or
-docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3011
+docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
 ```
 
-Each file is self-contained (app + its own Postgres) and independent, so you can run both side by side. Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname.
-
-No database wanted? Set `DATABASE_MODE=file` to run without Postgres. Without Docker: `pnpm install && pnpm build && pnpm start` (needs Node 22+ and pnpm 11+).
+The stack is self-contained (the Rust server + its own Postgres). Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname.
 
 ---
 
@@ -80,7 +75,8 @@ No database wanted? Set `DATABASE_MODE=file` to run without Postgres. Without Do
 | 🥇 | **End-game awards recap** — an animated superlatives sequence (fastest finger, biggest climber, longest streak, comeback kid…) showing each winner's avatar + name, auto-paced in autoplay. |
 | 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
-| ✍️ | **More question types** — multiple-select, type-the-answer and slider, on top of classic single choice. |
+| 🏫 | **Class mode for schools** — an optional teacher mode: create classes, manage a student roster (add students, move them between classes, remove), give each student their own PIN, and assign a quiz to a whole class with a deadline, an attempt limit and privacy-first pseudonymous result tracking. |
+| ✍️ | **Nine question types** — single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input and word-types (Wortarten), on top of the classic colored-tile answers. |
 | 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
 | 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
 | 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
@@ -92,9 +88,9 @@ Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a
 
 ---
 
-## Backends
+## Rust server
 
-Razzoozle ships **two interchangeable backends** speaking the same socket.io protocol over one shared Postgres database — switch per client in the manager UI or with `VITE_DEFAULT_BACKEND`. The **Rust** server (`axum` + `socketioxide`, memory-safe and low-footprint) covers all gameplay, manager, player and display flows. The **Node.js** server (`packages/socket`) is fully featured and the self-contained default in `compose.node.yml`. A few peripheral HTTP endpoints (Prometheus metrics, client telemetry, social-share unfurl, the OpenAPI doc) are Node-only.
+Razzoozle's server was **ported from Node.js to Rust** — the **Rust** server (`axum` + `socketioxide`, memory-safe and low-footprint) is now the sole backend, covering all gameplay, manager, player and display flows and speaking socket.io to the unchanged React client. State is persisted entirely in **PostgreSQL**; there is no file-based persistence.
 
 **→ Rust internals, build & tests: [`rust/README.md`](rust/README.md)**
 

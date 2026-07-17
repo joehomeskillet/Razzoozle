@@ -11,7 +11,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
@@ -56,14 +55,10 @@ Razzoozle 是一款自托管、实时的**测验游戏**，适用于教室、活
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.node.yml up -d   # Node backend → http://127.0.0.1:3010
-# or
-docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3011
+docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
 ```
 
-每个文件都是自包含的（应用 + 各自的 Postgres）且相互独立，因此可以并行运行两者。打开应用，进入 `/manager`，并**修改默认的管理员密码**。在前面放置一个反向代理（Caddy/Traefik/nginx）以获得 TLS 和公共主机名。
-
-不需要数据库？设置 `DATABASE_MODE=file` 即可在不使用 Postgres 的情况下运行。不使用 Docker：`pnpm install && pnpm build && pnpm start`（需要 Node 22+ 和 pnpm 11+）。
+整个栈是自包含的（Rust 服务器 + 自己的 Postgres）。打开应用，进入 `/manager`，并**修改默认的管理员密码**。在前面放置一个反向代理（Caddy/Traefik/nginx）以获得 TLS 和公共主机名。
 
 ---
 
@@ -80,7 +75,8 @@ docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3
 | 🥇 | **赛末颁奖回顾** —— 动画式的最佳表现序列（手速最快、最大逆袭者、最长连胜、逆转之王……），展示每位获胜者的头像 + 名字，在自动播放中自动节奏。 |
 | 👥 | **团队模式** —— 红 / 蓝 / 绿 / 黄队伍，配有实时团队排行榜。 |
 | 📱 | **单人游戏** —— 通过分享链接单独练习任意测验，并拥有独立的得分历史。 |
-| ✍️ | **更多题型** —— 在经典单选之外，还有多选、输入答案和滑块。 |
+| 🏫 | **学校班级模式** —— 可选的教师模式：创建班级、管理学生名册（添加学生、在班级间移动、移除）、为每位学生设置专属 PIN，并将测验整班布置，支持截止日期、作答次数限制以及隐私优先的假名成绩追踪。 |
+| ✍️ | **九种题型** —— 单选、判断、投票、滑块、多选、输入答案、句子拼接、数学输入和词类（Wortarten），基于经典彩色方块答案。 |
 | 📳 | **移动触觉反馈** —— 玩家手机上可选的振动反馈（倒计时、答题），支持减弱动效。 |
 | 🔗 | **可分享的结果** —— 丰富的按结果链接预览（Open Graph 展开）、带"自己来玩 / 主持你自己的"行动号召的结果页，以及可下载的获胜者贴纸。 |
 | 🤝 | **社区题目** —— 带管理员审核队列的公开提交页面，以及可复用的题目目录和测验存档。 |
@@ -92,9 +88,9 @@ docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3
 
 ---
 
-## 后端
+## Rust 服务器
 
-Razzoozle 提供**两个可互换的后端**，它们通过同一个共享的 Postgres 数据库使用相同的 socket.io 协议 —— 在管理员界面中按客户端切换，或通过 `VITE_DEFAULT_BACKEND` 切换。**Rust** 服务器（`axum` + `socketioxide`，内存安全且占用低）涵盖所有游戏、管理、玩家和显示流程。**Node.js** 服务器（`packages/socket`）功能完整，是 `compose.node.yml` 中的自包含默认后端。少数外围 HTTP 端点（Prometheus 指标、客户端遥测、社交分享预览、OpenAPI 文档）仅在 Node 上可用。
+Razzoozle 的服务器已**从 Node.js 移植到 Rust** —— **Rust** 服务器（`axum` + `socketioxide`，内存安全且占用低）现为唯一后端，涵盖所有游戏、管理、玩家和显示流程，并通过 socket.io 与未改动的 React 客户端通信。状态完全持久化在 **PostgreSQL** 中；不再有基于文件的持久化。
 
 **→ Rust 内部实现、构建与测试：[`rust/README.md`](rust/README.md)**
 

@@ -11,7 +11,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
@@ -56,14 +55,10 @@ Razzoozle è un **quiz game** in tempo reale e self-hosted per aule, eventi e se
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.node.yml up -d   # Node backend → http://127.0.0.1:3010
-# or
-docker compose -f compose.rust.yml up -d   # Rust backend → http://127.0.0.1:3011
+docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
 ```
 
-Ogni file è autonomo (app + il proprio Postgres) e indipendente, quindi puoi eseguirli entrambi affiancati. Apri l'app, vai su `/manager` e **cambia la password predefinita del moderatore**. Metti un reverse proxy (Caddy/Traefik/nginx) davanti per il TLS e un hostname pubblico.
-
-Non vuoi un database? Imposta `DATABASE_MODE=file` per eseguire senza Postgres. Senza Docker: `pnpm install && pnpm build && pnpm start` (richiede Node 22+ e pnpm 11+).
+Lo stack è autonomo (il server Rust + il proprio Postgres). Apri l'app, vai su `/manager` e **cambia la password predefinita del moderatore**. Metti un reverse proxy (Caddy/Traefik/nginx) davanti per il TLS e un hostname pubblico.
 
 ---
 
@@ -80,7 +75,8 @@ Non vuoi un database? Imposta `DATABASE_MODE=file` per eseguire senza Postgres. 
 | 🥇 | **Riepilogo dei premi di fine partita** — una sequenza animata di superlativi (dito più veloce, maggior scalatore, serie più lunga, comeback kid…) che mostra l'avatar + il nome di ogni vincitore, con ritmo automatico in autoplay. |
 | 👥 | **Modalità squadre** — squadre rossa / blu / verde / gialla con una classifica di squadra live. |
 | 📱 | **Gioco in solitaria** — esercitati su qualsiasi quiz da solo tramite un link di condivisione, con la propria cronologia dei punteggi. |
-| ✍️ | **Più tipi di domande** — selezione multipla, digita-la-risposta e cursore, oltre alla classica scelta singola. |
+| 🏫 | **Modalità classe per le scuole** — una modalità opzionale per insegnanti: creare classi, gestire un elenco studenti (aggiungere, spostare tra classi, rimuovere), dare a ogni studente il proprio PIN e assegnare un quiz a un'intera classe con scadenza, limite di tentativi e tracciamento dei risultati pseudonimo orientato alla privacy. |
+| ✍️ | **Nove tipi di domande** — scelta singola, vero/falso, sondaggio, cursore, selezione multipla, digita-la-risposta, costruttore di frasi, input matematico e tipi di parole (Wortarten), oltre alle classiche caselle di risposta colorate. |
 | 📳 | **Feedback aptico mobile** — feedback di vibrazione opzionale sui telefoni dei giocatori (conto alla rovescia, risposte), attento al reduced-motion. |
 | 🔗 | **Risultati condivisibili** — anteprime di link ricche per risultato (Open Graph unfurl), una pagina di risultato con call-to-action "giocalo tu stesso / ospita la tua" e sticker del vincitore scaricabili. |
 | 🤝 | **Domande della community** — una pagina pubblica di invio con una coda di moderazione del moderatore, più un catalogo di domande riutilizzabile e un archivio di quiz. |
@@ -92,9 +88,9 @@ Supportato da **oltre 592 test automatizzati**, un pass di sicurezza path-traver
 
 ---
 
-## Backend
+## Server Rust
 
-Razzoozle offre **due backend intercambiabili** che parlano lo stesso protocollo socket.io su un unico database Postgres condiviso — cambia per client nell'interfaccia del moderatore o con `VITE_DEFAULT_BACKEND`. Il server **Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) copre tutti i flussi di gioco, moderatore, giocatore e display. Il server **Node.js** (`packages/socket`) è completo ed è l'impostazione predefinita autonoma in `compose.node.yml`. Alcuni endpoint HTTP periferici (metriche Prometheus, telemetria client, anteprima di condivisione social, il documento OpenAPI) sono solo Node.
+Il server di Razzoozle è stato **portato da Node.js a Rust** — il server **Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) è ora l'unico backend, copre tutti i flussi di gioco, moderatore, giocatore e display e parla socket.io con il client React invariato. Lo stato è interamente persistito in **PostgreSQL**; non esiste persistenza basata su file.
 
 **→ Dettagli interni Rust, build e test: [`rust/README.md`](rust/README.md)**
 

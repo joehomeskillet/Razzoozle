@@ -13,6 +13,7 @@
 - Host on a big screen, players join from phones with a PIN, fastest correct answers score most.
 - Kahoot-faithful game screens: colored answer tiles with shape icons (▲ ◆ ● ■), a circular countdown, an animated podium.
 - Gamification (achievements, medals, confetti), team mode, solo play, 6 languages, installable PWA.
+- Class mode (Klassen-Modus) for teachers: create classes, manage a student roster with per-student PINs, and assign quizzes to a class with deadlines and attempt limits.
 - Manager-driven theming (violet liquid-glass preset + a flat default), local AI image generation (ComfyUI), an MCP server for AI-tool control.
 
 > Razzoozle is an independent open-source project, not affiliated with Kahoot!® or any commercial quiz platform.
