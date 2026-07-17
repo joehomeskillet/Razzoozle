@@ -9,6 +9,8 @@ export interface CatalogEntry {
   tags?: string[]
   source?: CatalogSource
   addedAt: string
+  // Assigned label ids (klassenEnabled only) — parity with QuizzMeta.labelIds.
+  labelIds?: number[]
 }
 
 // Lightweight list shape for the picker/management grid (no full question body

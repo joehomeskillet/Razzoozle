@@ -1,160 +1,73 @@
-import { EVENTS } from "@razzoozle/common/constants"
+import * as Select from "@radix-ui/react-select"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
-import Badge from "@razzoozle/web/components/manager/Badge"
+import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import {
+  popoverContentClass,
+  popoverItemClass,
+} from "@razzoozle/web/components/manager/popover"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import {
-  useEvent,
-  useSocket,
-} from "@razzoozle/web/features/game/contexts/socket-context"
-import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
 import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
-import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
-import { BookOpen, Library, Pencil, SearchX, Trash2 } from "lucide-react"
+import {
+  BookOpen,
+  Library,
+  Pencil,
+  Plus,
+  SearchX,
+  Trash2,
+  X,
+} from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
-import { CatalogQuestionModal } from "./CatalogQuestionModal"
 import { TYPE_LABEL_KEY } from "./constants"
-import type { CatalogEntry, CatalogModalMode } from "./types"
+import { useCatalogManager } from "./useCatalogManager"
 import { formatDate } from "./utils"
-
-type CatalogScope = "own" | "global" | "all"
+import { CatalogQuestionModal } from "./CatalogQuestionModal"
 
 const ConfigCatalog = () => {
-  const { socket } = useSocket()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
-  const [entries, setEntries] = useState<CatalogEntry[]>([])
-  const [search, setSearch] = useState("")
-  const [scope, setScope] = useState<CatalogScope>("all")
-  const [selectedLabelId, setSelectedLabelId] = useState<number | null>(null)
-  const [modalMode, setModalMode] = useState<CatalogModalMode>("add")
-  const [editingEntry, setEditingEntry] = useState<CatalogEntry | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [pendingOp, setPendingOp] = useState<CatalogModalMode | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<{
-    id: string
-    question: string
-  } | null>(null)
-
   const { labels } = useLabelManager()
-  const klassenEnabled = useManagerStore((s) => s.config?.klassenEnabled ?? false)
 
-  const requestCatalog = useCallback(() => {
-    socket.emit(EVENTS.CATALOG.LIST, { scope })
-  }, [socket, scope])
-
-  useEffect(() => {
-    requestCatalog()
-  }, [requestCatalog])
-
-  useEvent(
-    EVENTS.CATALOG.DATA,
-    useCallback((nextEntries: CatalogEntry[]) => {
-      setEntries(nextEntries)
-    }, []),
-  )
-
-  useEvent(
-    EVENTS.CATALOG.ERROR,
-    useCallback(
-      (message: string) => {
-        setPendingOp(null)
-        toast.error(t(message))
-      },
-      [t],
-    ),
-  )
-
-  useEvent(
-    EVENTS.CATALOG.ADD_SUCCESS,
-    useCallback(() => {
-      setModalOpen(false)
-      setEditingEntry(null)
-      toast.success(
-        t(
-          pendingOp === "edit"
-            ? "manager:catalog.updated"
-            : "manager:catalog.saved",
-        ),
-      )
-      setPendingOp(null)
-      requestCatalog()
-    }, [pendingOp, requestCatalog, t]),
-  )
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useEvent(EVENTS.LABEL.ASSIGNED as any, useCallback((payload: any) => {
-    if (payload.entityType === "catalog") {
-      requestCatalog()
-    }
-  }, [requestCatalog]))
-
-  const filteredEntries = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    let results = entries
-
-    // Filter by search text
-    if (q) {
-      results = results.filter((entry) => {
-        const question = entry.question.question.toLowerCase()
-        const tags = entry.tags ?? []
-        return (
-          question.includes(q) ||
-          tags.some((tag) => tag.toLowerCase().includes(q))
-        )
-      })
-    }
-
-    // Filter by selected label
-    if (selectedLabelId !== null && klassenEnabled) {
-      results = results.filter((entry) => {
-        const entryLabelIds = entry.labelIds ?? []
-        return entryLabelIds.includes(selectedLabelId)
-      })
-    }
-
-    return results
-  }, [entries, search, selectedLabelId, klassenEnabled])
-
-  const openAddModal = () => {
-    setModalMode("add")
-    setEditingEntry(null)
-    setModalOpen(true)
-  }
-
-  const openEditModal = (entry: CatalogEntry) => {
-    setModalMode("edit")
-    setEditingEntry(entry)
-    setModalOpen(true)
-  }
-
-  const closeModal = useCallback(() => {
-    setModalOpen(false)
-    setEditingEntry(null)
-    setPendingOp(null)
-  }, [])
-
-  const handleDelete = () => {
-    if (!pendingDelete) {
-      return
-    }
-
-    socket.emit(EVENTS.CATALOG.DELETE, { id: pendingDelete.id })
-    toast.success(t("manager:catalog.deleted"))
-    setPendingDelete(null)
-    requestCatalog()
-  }
+  const {
+    search,
+    setSearch,
+    scope,
+    setScope,
+    selectedLabelId,
+    setSelectedLabelId,
+    klassenEnabled,
+    modalMode,
+    editingEntry,
+    modalOpen,
+    pendingDelete,
+    setPendingDelete,
+    selected,
+    bulkDeleteOpen,
+    setBulkDeleteOpen,
+    selectionCount,
+    selectionActive,
+    entries,
+    filteredEntries,
+    openAddModal,
+    openEditModal,
+    closeModal,
+    handleDelete,
+    clearSelection,
+    toggleSelect,
+    handleBulkDelete,
+    handleLabelAssign,
+    setPendingOp,
+  } = useCatalogManager()
 
   return (
     <>
@@ -209,6 +122,48 @@ const ConfigCatalog = () => {
           )}
         </div>
 
+        {selectionActive && (
+          <div
+            role="toolbar"
+            aria-label={t("manager:catalog.bulkSelected", {
+              count: selectionCount,
+              defaultValue: "{{count}} ausgewählt",
+            })}
+            className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                onClick={clearSelection}
+                aria-label={t("common:cancel")}
+                title={t("common:cancel")}
+              >
+                <X className="size-5" aria-hidden />
+              </Button>
+              <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
+                {t("manager:catalog.bulkSelected", {
+                  count: selectionCount,
+                  defaultValue: "{{count}} ausgewählt",
+                })}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="danger"
+              className="rounded-lg"
+              onClick={() => setBulkDeleteOpen(true)}
+              classNameContent="min-w-0 gap-1"
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">
+                {t("manager:catalog.bulkDelete", { defaultValue: "Löschen" })}
+              </span>
+            </Button>
+          </div>
+        )}
+
         {entries.length === 0 ? (
           <div className="flex min-h-0 flex-1 flex-col justify-center">
             <EmptyState
@@ -241,12 +196,21 @@ const ConfigCatalog = () => {
               const source = entry.source ?? "manual"
               const entryLabelIds = entry.labelIds ?? []
               const entryTags = entry.tags ?? []
-              const hasFooter =
-                entryTags.length > 0 || (klassenEnabled && entryLabelIds.length > 0)
+              const assignedLabels = labels.filter((label) =>
+                entryLabelIds.includes(label.id),
+              )
+              const availableLabels = labels.filter(
+                (label) => !entryLabelIds.includes(label.id),
+              )
+              const hasLabelFooter =
+                klassenEnabled &&
+                (assignedLabels.length > 0 || availableLabels.length > 0)
+              const hasFooter = entryTags.length > 0 || hasLabelFooter
 
               return (
                 <motion.div
                   key={entry.id}
+                  data-testid={`catalog-row-${entry.id}`}
                   initial={reducedMotion ? false : { opacity: 0, y: 10 }}
                   animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
                   transition={
@@ -260,10 +224,32 @@ const ConfigCatalog = () => {
                   }
                 >
                   <ListRow
+                    selection={
+                      <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
+                        <span className="sr-only">
+                          {t("manager:catalog.selectEntry", {
+                            name: entry.question.question,
+                            defaultValue: '„{{name}}" auswählen',
+                          })}
+                        </span>
+                        <input
+                          type="checkbox"
+                          data-testid={`catalog-checkbox-${entry.id}`}
+                          checked={selected.has(entry.id)}
+                          onChange={() => toggleSelect(entry.id)}
+                          className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                        />
+                      </label>
+                    }
                     leading={
                       <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
                     }
                     title={entry.question.question}
+                    onClick={() => openEditModal(entry)}
+                    bodyLabel={t("manager:catalog.editEntry", {
+                      name: entry.question.question,
+                      defaultValue: '„{{name}}" bearbeiten',
+                    })}
                     meta={
                       <span className="flex flex-wrap items-center gap-2">
                         <Badge>
@@ -279,14 +265,72 @@ const ConfigCatalog = () => {
                     }
                     footer={
                       hasFooter && (
-                        <span className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {klassenEnabled &&
-                            entryLabelIds.length > 0 &&
-                            labels
-                              .filter((label) => entryLabelIds.includes(label.id))
-                              .map((label) => (
-                                <LabelChip key={label.id} label={label} />
-                              ))}
+                            assignedLabels.map((label) => (
+                              <LabelChip
+                                key={label.id}
+                                label={label}
+                                onRemove={() => {
+                                  handleLabelAssign(
+                                    entry.id,
+                                    entryLabelIds.filter(
+                                      (id) => id !== label.id,
+                                    ),
+                                  )
+                                }}
+                              />
+                            ))}
+
+                          {klassenEnabled && availableLabels.length > 0 && (
+                            <Select.Root
+                              value=""
+                              onValueChange={(val: string) => {
+                                handleLabelAssign(entry.id, [
+                                  ...entryLabelIds,
+                                  Number(val),
+                                ])
+                              }}
+                            >
+                              <Select.Trigger
+                                aria-label={t("manager:labels.assignLabel", {
+                                  defaultValue: "Label zuweisen",
+                                })}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                className={assignTriggerClass}
+                              >
+                                <Plus className="size-3" />
+                                <Select.Value
+                                  placeholder={t("manager:labels.assignTitle", {
+                                    defaultValue: "+ Fach",
+                                  })}
+                                />
+                              </Select.Trigger>
+                              <Select.Portal>
+                                <Select.Content
+                                  position="popper"
+                                  sideOffset={4}
+                                  onCloseAutoFocus={(e) => e.preventDefault()}
+                                  className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
+                                >
+                                  <Select.Viewport className="p-1">
+                                    {availableLabels.map((label) => (
+                                      <Select.Item
+                                        key={label.id}
+                                        value={String(label.id)}
+                                        className={popoverItemClass}
+                                      >
+                                        <Select.ItemText>
+                                          {label.name}
+                                        </Select.ItemText>
+                                      </Select.Item>
+                                    ))}
+                                  </Select.Viewport>
+                                </Select.Content>
+                              </Select.Portal>
+                            </Select.Root>
+                          )}
+
                           {entryTags.map((tag, tagIndex) => (
                             <Badge
                               key={`${tag}-${tagIndex}`}
@@ -295,7 +339,7 @@ const ConfigCatalog = () => {
                               {tag}
                             </Badge>
                           ))}
-                        </span>
+                        </div>
                       )
                     }
                     actions={[
@@ -343,6 +387,21 @@ const ConfigCatalog = () => {
           description={t("manager:catalog.deleteConfirm")}
           confirmLabel={t("common:delete")}
           onConfirm={handleDelete}
+        />
+
+        <AlertDialog
+          open={bulkDeleteOpen}
+          onOpenChange={setBulkDeleteOpen}
+          title={t("manager:catalog.bulkDeleteTitle", {
+            defaultValue: "Fragen löschen",
+          })}
+          description={t("manager:catalog.bulkDeleteConfirm", {
+            count: selectionCount,
+            defaultValue:
+              "{{count}} ausgewählte Fragen werden dauerhaft aus dem Katalog entfernt.",
+          })}
+          confirmLabel={t("common:delete")}
+          onConfirm={handleBulkDelete}
         />
       </div>
 
