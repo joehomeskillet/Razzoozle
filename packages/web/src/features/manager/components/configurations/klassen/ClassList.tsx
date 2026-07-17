@@ -221,35 +221,30 @@ const ClassList = ({
 
           return (
             <div key={classObj.id} className="space-y-1">
-              <div className="flex items-start gap-2">
-                <ListRow
-                  leading={<GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />}
-                  title={classObj.name}
-                  meta={
-                    <div className="flex items-center gap-x-2">
-                      {classObj.ownerName && (
-                        <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
-                          {classObj.ownerName}
-                        </span>
-                      )}
-                      <span className="text-xs text-[var(--ink-subtle)]">
-                        {expandedClassId === classObj.id
-                          ? (classObj.students ?? []).length
-                          : classObj.studentCount ?? 0}{" "}
-                        {t("manager:classes.studentCount")}
+              <ListRow
+                leading={<GraduationCap className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                title={classObj.name}
+                meta={
+                  <div className="flex items-center gap-x-2">
+                    {classObj.ownerName && (
+                      <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
+                        {classObj.ownerName}
                       </span>
-                    </div>
-                  }
-                  footer={footer}
-                  actions={visibleActions}
-                  className="min-w-0 flex-1"
-                />
-                {isMobile && overflowActions.length > 0 && (
-                  <div className="mt-4">
-                    <OverflowMenu actions={overflowActions} />
+                    )}
+                    <span className="text-xs text-[var(--ink-subtle)]">
+                      {expandedClassId === classObj.id
+                        ? (classObj.students ?? []).length
+                        : classObj.studentCount ?? 0}{" "}
+                      {t("manager:classes.studentCount")}
+                    </span>
                   </div>
-                )}
-              </div>
+                }
+                footer={footer}
+                actions={visibleActions}
+                overflow={
+                  overflowActions.length > 0 && <OverflowMenu actions={overflowActions} />
+                }
+              />
 
               {/* Expanded Students List */}
               {expandedClassId === classObj.id && (
