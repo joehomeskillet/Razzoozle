@@ -265,15 +265,16 @@ const ConfigSelectQuizz = () => {
 
             {endScreenModesList.length > 1 && (
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-[var(--ink-muted)]">
+                <label htmlFor="endscreen-select" className="text-sm font-medium text-[var(--ink-muted)]">
                   {t("manager:gameMode.endScreenSelectTitle", {
                     defaultValue: "Endbildschirm",
                   })}
                 </label>
                 <select
+                  id="endscreen-select"
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  className="min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
