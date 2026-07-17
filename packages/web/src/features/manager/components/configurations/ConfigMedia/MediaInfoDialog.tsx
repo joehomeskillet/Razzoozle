@@ -1,6 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { MediaMeta } from "@razzoozle/common/types/media"
-import Badge from "@razzoozle/web/components/manager/Badge"
+import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -14,6 +14,7 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useLabelManager } from "../labels/useLabelManager"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
+import clsx from "clsx"
 import { Info, Plus } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -111,7 +112,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
         <Dialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-[var(--surface)] p-6 shadow-xl"
+          className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-[var(--surface)] p-6 shadow-[var(--shadow-flat)]"
         >
           <Dialog.Title className="truncate text-lg font-semibold text-[var(--ink)]">
             {item.filename}
@@ -171,7 +172,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.addLabel")}
-                        className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] flex min-h-8 cursor-pointer items-center gap-1 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-xs font-medium text-[var(--ink-medium)] hover:bg-[var(--surface-2)]"
+                        className={clsx(assignTriggerClass, "cursor-pointer py-0.5")}
                       >
                         <Plus className="size-3" />
                         <Select.Value
