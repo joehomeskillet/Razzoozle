@@ -20,8 +20,8 @@ const LanguageSwitcher = () => {
       value={normalizedLanguage}
       onValueChange={(lang) => i18n.changeLanguage(lang)}
     >
-      <Select.Trigger className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-semibold text-gray-600 hover:border-gray-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]">
-        <Globe className="size-4 text-gray-500" />
+      <Select.Trigger className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] px-2 py-1.5 text-sm font-semibold text-[var(--answer-text)] hover:border-[var(--border-hairline)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]">
+        <Globe className="size-4 text-[var(--answer-text)]" />
         <Select.Value>{normalizedLanguage.toUpperCase()}</Select.Value>
       </Select.Trigger>
 
@@ -29,14 +29,14 @@ const LanguageSwitcher = () => {
         <Select.Content
           position="popper"
           sideOffset={4}
-          className="z-50 min-w-32 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md"
+          className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-[var(--shadow-flat)]"
         >
           <Select.Viewport className="p-1">
             {LANGUAGES.map((l) => (
               <Select.Item
                 key={l.code}
                 value={l.code}
-                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-gray-700 outline-none hover:bg-gray-100 focus:bg-gray-100 data-[state=checked]:font-semibold"
+                className="flex min-h-11 cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--answer-text)] outline-none hover:bg-[color-mix(in_srgb,white_95%,black)] focus:bg-[color-mix(in_srgb,white_95%,black)] data-[state=checked]:font-semibold"
               >
                 <Select.ItemText>{t(l.label)}</Select.ItemText>
               </Select.Item>
