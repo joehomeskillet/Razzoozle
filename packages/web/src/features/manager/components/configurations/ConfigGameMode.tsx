@@ -1,5 +1,6 @@
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
+import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
 import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -248,6 +249,26 @@ const ConfigGameMode = () => {
     [endScreenModes],
   )
 
+  const scoringOptions = useMemo<RadioGroupOption[]>(
+    () => [
+      {
+        value: "speed",
+        label: t("manager:gameMode.speedMode", {
+          defaultValue: "Geschwindigkeit",
+        }),
+        disabled: scoringModeToggle.saving,
+      },
+      {
+        value: "accuracy",
+        label: t("manager:gameMode.accuracyMode", {
+          defaultValue: "Genauigkeit",
+        }),
+        disabled: scoringModeToggle.saving,
+      },
+    ],
+    [t, scoringModeToggle.saving],
+  )
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <FormSection
@@ -366,54 +387,15 @@ const ConfigGameMode = () => {
             "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
         })}
       >
-        <fieldset
-          role="radiogroup"
+        <RadioGroup
+          name="scoring"
+          value={scoringMode}
+          onChange={handleScoringModeChange}
+          options={scoringOptions}
           aria-label={t("manager:gameMode.scoringTitle", {
             defaultValue: "Wertung",
           })}
-          className="space-y-2"
-        >
-          <label
-            htmlFor="scoring-speed"
-            className="flex min-h-11 cursor-pointer items-center gap-3"
-          >
-            <input
-              id="scoring-speed"
-              type="radio"
-              name="scoring"
-              value="speed"
-              checked={scoringMode === "speed"}
-              onChange={() => handleScoringModeChange("speed")}
-              disabled={scoringModeToggle.saving}
-              className="h-4 w-4"
-            />
-            <span className="text-sm font-medium text-[var(--ink)]">
-              {t("manager:gameMode.speedMode", {
-                defaultValue: "Geschwindigkeit",
-              })}
-            </span>
-          </label>
-          <label
-            htmlFor="scoring-accuracy"
-            className="flex min-h-11 cursor-pointer items-center gap-3"
-          >
-            <input
-              id="scoring-accuracy"
-              type="radio"
-              name="scoring"
-              value="accuracy"
-              checked={scoringMode === "accuracy"}
-              onChange={() => handleScoringModeChange("accuracy")}
-              disabled={scoringModeToggle.saving}
-              className="h-4 w-4"
-            />
-            <span className="text-sm font-medium text-[var(--ink)]">
-              {t("manager:gameMode.accuracyMode", {
-                defaultValue: "Genauigkeit",
-              })}
-            </span>
-          </label>
-        </fieldset>
+        />
       </FormSection>
 
       <FormSection
