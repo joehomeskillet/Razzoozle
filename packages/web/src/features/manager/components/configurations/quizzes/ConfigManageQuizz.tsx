@@ -1,5 +1,6 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus, Trash2, Upload, X } from "lucide-react"
@@ -104,14 +105,13 @@ const ConfigManageQuizz = () => {
               <label htmlFor="quizz-sort" className="sr-only">
                 {t("manager:quizz.sort", { defaultValue: "Sortieren" })}
               </label>
-              <select
+              <Select
                 id="quizz-sort"
                 value={sortKey}
                 onChange={(event) => setSortKey(event.target.value as SortKey)}
                 aria-label={t("manager:quizz.sort", {
                   defaultValue: "Sortieren",
                 })}
-                className="min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] sm:w-auto"
               >
                 <option value="name-asc">
                   {t("manager:quizz.sortNameAsc", {
@@ -128,7 +128,7 @@ const ConfigManageQuizz = () => {
                     defaultValue: "Wenigste Fragen",
                   })}
                 </option>
-              </select>
+              </Select>
             </div>
           </div>
         )}
