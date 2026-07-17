@@ -1,4 +1,5 @@
 import type { SubmissionStatus } from "@razzoozle/common/types/submission"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { CheckCircle2, Inbox, XCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
@@ -8,32 +9,32 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
 
   if (status === "approved") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]">
+      <Badge className="gap-1.5 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
         <CheckCircle2 className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.approved", {
           defaultValue: "Angenommen",
         })}
-      </span>
+      </Badge>
     )
   }
 
   if (status === "rejected") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-offline-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-offline-text)]">
+      <Badge className="gap-1.5 bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]">
         <XCircle className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.rejected", {
           defaultValue: "Abgelehnt",
         })}
-      </span>
+      </Badge>
     )
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--status-pending-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-pending-text)]">
+    <Badge className="gap-1.5 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
       <Inbox className="size-3.5" aria-hidden />
       {t("manager:submissions.statusFilter.pending", {
         defaultValue: "Offen",
       })}
-    </span>
+    </Badge>
   )
 }

@@ -306,7 +306,7 @@ const SubmissionCard = ({
               placeholder={t("manager:submissions.rejectReason.placeholder", {
                 defaultValue: "Warum wird diese Frage abgelehnt?",
               })}
-              className="focus-visible:outline-[var(--color-primary)] w-full resize-y rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="w-full resize-y rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
           </div>
 
