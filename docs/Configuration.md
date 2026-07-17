@@ -42,6 +42,10 @@ Build quizzes in the manager's editor (recommended) or as JSON files.
 - **boolean** — true/false (`answers: ["True", "False"]`).
 - **slider** — numeric guess (`min`, `max`, `correct`, `step`).
 - **type-answer** — free-text, matched against accepted answers.
+- **poll** — opinion poll, no correct answer (results shown as a distribution).
+- **sentence-builder** — players tap shuffled word chunks to rebuild a sentence in the correct order.
+- **mathematik** — math input; the answer is evaluated numerically.
+- **wortarten** — grammar word-types (parts of speech) tagging.
 
 ## AI provider
 Configured in the manager **AI** tab (Off / local ComfyUI / cloud). API keys are stored server-side in `config/` and never sent to clients.
