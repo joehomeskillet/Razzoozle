@@ -1,14 +1,16 @@
+import * as Dialog from "@radix-ui/react-dialog"
+import { Portal, Overlay } from "@radix-ui/react-dialog"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
+import { ActionFooter } from "@razzoozle/web/components/ui"
 import { fetchWithAuth } from "@razzoozle/web/lib/api"
 import {
   EmptyState,
   ListRow,
-  SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
@@ -20,6 +22,7 @@ import {
   Users as UsersIcon,
   Key,
   Trash2,
+  X,
 } from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
@@ -54,6 +57,7 @@ const ConfigUsers = () => {
   const config = useConfig()
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<"user" | "admin" | "lehrkraft">("user")
@@ -137,6 +141,7 @@ const ConfigUsers = () => {
       setUsername("")
       setPassword("")
       setRole("user")
+      setIsCreateDialogOpen(false)
       await loadUsers()
     } catch {
       toast.error(
@@ -286,7 +291,8 @@ const ConfigUsers = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <>
+    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
       <div>
         <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:users.title", { defaultValue: "Nutzerverwaltung" })}
@@ -297,96 +303,6 @@ const ConfigUsers = () => {
           })}
         </p>
       </div>
-
-      <SectionCard
-        icon={<UserPlus className="size-5" />}
-        title={t("manager:users.createTitle", {
-          defaultValue: "Neue Lehrkraft anlegen",
-        })}
-      >
-        <form
-          onSubmit={(event) => {
-            void handleCreate(event)
-          }}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap"
-        >
-          <div className="min-w-40 flex-1">
-            <label
-              htmlFor="new-user-username"
-              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
-            >
-              {t("manager:users.usernameLabel", {
-                defaultValue: "Benutzername",
-              })}
-            </label>
-            <Input
-              id="new-user-username"
-              autoComplete="off"
-              className="w-full"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              disabled={creating}
-            />
-          </div>
-
-          <div className="min-w-40 flex-1">
-            <label
-              htmlFor="new-user-password"
-              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
-            >
-              {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
-            </label>
-            <Input
-              id="new-user-password"
-              type="password"
-              autoComplete="new-password"
-              className="w-full"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={creating}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="new-user-role"
-              className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
-            >
-              {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
-            </label>
-            <select
-              id="new-user-role"
-              value={role}
-              onChange={(event) => {
-                const val = event.target.value
-                if (val === "admin" || val === "lehrkraft" || val === "user") {
-                  setRole(val)
-                }
-              }}
-              disabled={creating}
-              className="min-h-11 rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-            >
-              <option value="user">
-                {t("manager:users.role.user", { defaultValue: "Nutzer" })}
-              </option>
-              <option value="admin">
-                {t("manager:users.role.admin", { defaultValue: "Admin" })}
-              </option>
-              {config?.klassenEnabled && (
-                <option value="lehrkraft">
-                  {t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })}
-                </option>
-              )}
-            </select>
-          </div>
-
-          <Button type="submit" disabled={creating} className="shrink-0">
-            {creating
-              ? t("common:loading", { defaultValue: "Wird geladen…" })
-              : t("manager:users.create", { defaultValue: "Create" })}
-          </Button>
-        </form>
-      </SectionCard>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
@@ -566,7 +482,151 @@ const ConfigUsers = () => {
           </div>
         </div>
       )}
+
+      {/* Create User Dialog */}
+      <Dialog.Root open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Portal>
+          <Overlay className="fixed inset-0 z-40 bg-black/40" />
+          <Dialog.Content
+            aria-labelledby="create-user-dialog-title"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <Dialog.Title
+                id="create-user-dialog-title"
+                className="text-lg font-semibold text-[var(--ink)]"
+              >
+                {t("manager:users.createTitle", {
+                  defaultValue: "Neue Lehrkraft anlegen",
+                })}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]"
+                  aria-label={t("common:close")}
+                >
+                  <X className="size-5" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                void handleCreate(event)
+              }}
+              className="mt-4 flex flex-col gap-3"
+            >
+              <div>
+                <label
+                  htmlFor="new-user-username"
+                  className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
+                >
+                  {t("manager:users.usernameLabel", {
+                    defaultValue: "Benutzername",
+                  })}
+                </label>
+                <Input
+                  id="new-user-username"
+                  autoComplete="off"
+                  className="w-full"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  disabled={creating}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="new-user-password"
+                  className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
+                >
+                  {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
+                </label>
+                <Input
+                  id="new-user-password"
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={creating}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="new-user-role"
+                  className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
+                >
+                  {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
+                </label>
+                <select
+                  id="new-user-role"
+                  value={role}
+                  onChange={(event) => {
+                    const val = event.target.value
+                    if (val === "admin" || val === "lehrkraft" || val === "user") {
+                      setRole(val)
+                    }
+                  }}
+                  disabled={creating}
+                  className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                >
+                  <option value="user">
+                    {t("manager:users.role.user", { defaultValue: "Nutzer" })}
+                  </option>
+                  <option value="admin">
+                    {t("manager:users.role.admin", { defaultValue: "Admin" })}
+                  </option>
+                  {config?.klassenEnabled && (
+                    <option value="lehrkraft">
+                      {t("manager:users.role.lehrkraft", {
+                        defaultValue: "Lehrkraft",
+                      })}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <div className="mt-2 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  disabled={creating}
+                >
+                  {t("common:cancel")}
+                </Button>
+                <Button type="submit" disabled={creating}>
+                  {creating
+                    ? t("common:loading", { defaultValue: "Wird geladen…" })
+                    : t("manager:users.create", { defaultValue: "Create" })}
+                </Button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Portal>
+      </Dialog.Root>
     </div>
+
+    <ActionFooter>
+      <Button
+        data-testid="user-create-btn"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+        onClick={() => setIsCreateDialogOpen(true)}
+      >
+        <UserPlus className="size-5" aria-hidden strokeWidth={2.5} />
+        <span>
+          {t("manager:users.createTitle", {
+            defaultValue: "Neue Lehrkraft anlegen",
+          })}
+        </span>
+      </Button>
+    </ActionFooter>
+    </>
   )
 }
 
