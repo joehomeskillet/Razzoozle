@@ -3,6 +3,7 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { Activity, KeyRound, PlugZap, ScrollText } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
@@ -30,9 +31,9 @@ export const ApiExplorerCard = ({
       description={t("dev.redactionNotice")}
       actions={
         apiInfo !== null && apiInfo.valid ? (
-          <span className="inline-flex items-center rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]">
+          <Badge className="py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
             {t("dev.api.schemaValid")}
-          </span>
+          </Badge>
         ) : undefined
       }
     >
