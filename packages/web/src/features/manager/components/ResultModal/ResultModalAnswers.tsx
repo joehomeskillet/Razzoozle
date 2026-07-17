@@ -1,6 +1,7 @@
 import { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { QuestionMedia } from "@razzoozle/common/types/game"
 import Markdown from "@razzoozle/web/components/Markdown"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import {
   answerColor,
   answerLabel,
@@ -145,7 +146,7 @@ const ResultModalAnswers = () => {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden px-4 py-3 md:gap-2 md:px-5 md:py-4">
-        <p className="text-md mb-1 font-semibold text-[var(--ink)]">
+        <p className="mb-1 text-base font-semibold text-[var(--ink)]">
           <Markdown>{questionResult.question}</Markdown>
         </p>
 
@@ -154,12 +155,12 @@ const ResultModalAnswers = () => {
             {/* Accepted answers legend */}
             <div className="mb-2 flex flex-wrap gap-2">
               {(questionResult.acceptedAnswers ?? []).map((a) => (
-                <span
+                <Badge
                   key={a}
-                  className="rounded-full bg-[var(--status-online-bg)] px-3 py-1 text-sm font-semibold text-[var(--status-online-text)]"
+                  className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
                 >
                   {a}
-                </span>
+                </Badge>
               ))}
             </div>
 
