@@ -153,15 +153,16 @@ const ConfigManageQuizz = () => {
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
           >
             <div className="flex min-w-0 items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
                 onClick={clearSelection}
                 aria-label={t("common:cancel")}
                 title={t("common:cancel")}
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
               >
                 <X className="size-5" aria-hidden />
-              </button>
+              </Button>
               <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
                 {t("manager:quizz.bulkSelected", {
                   count: selectionCount,

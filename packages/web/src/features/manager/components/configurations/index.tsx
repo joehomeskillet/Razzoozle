@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { ManagerConfig } from "@razzoozle/common/types/manager"
+import Button from "@razzoozle/web/components/Button"
 import LanguageSwitcher from "@razzoozle/web/components/LanguageSwitcher"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
@@ -327,15 +328,16 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
       headerActions={
         <>
           <LanguageSwitcher />
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
-            className="focus-visible:outline-[var(--color-primary)] inline-flex size-11 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
             onClick={handleLogout}
             title={t("manager:logout")}
             aria-label={t("manager:logout")}
           >
             <LogOut className="size-5" />
-          </button>
+          </Button>
         </>
       }
     >
