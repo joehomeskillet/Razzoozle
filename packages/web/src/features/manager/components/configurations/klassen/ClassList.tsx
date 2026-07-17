@@ -227,7 +227,7 @@ const ClassList = ({
                 meta={
                   <div className="flex items-center gap-x-2">
                     {classObj.ownerName && (
-                      <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-subtle)]">
+                      <span className="shrink-0 rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-subtle)]">
                         {classObj.ownerName}
                       </span>
                     )}
