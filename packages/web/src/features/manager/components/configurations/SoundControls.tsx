@@ -52,6 +52,8 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
   >({})
   // A single shared <audio> so a new test-play stops the previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  // Map of slot to file input ref for triggering upload dialogs
+  const fileInputRefs = useRef<Partial<Record<SoundSlot, HTMLInputElement | null>>>({})
 
   const setSlotError = (slot: SoundSlot, message: string | null) =>
     setSlotErrors((prev) => {
@@ -180,17 +182,12 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
                   {t("manager:theme.sounds.test")}
                 </Button>
 
-                {/*
-                  Button-look <label> + hidden input — mirrors AssetPreview's
-                  upload surface with an AA focus ring; the native control
-                  keeps a11y. min-h-11 = 44px touch target.
-                */}
-                <label
-                  aria-disabled={uploading}
-                  className={
-                    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--accent-contrast)] px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:brightness-[1.05] active:brightness-[0.95] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white " + // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
-                    (uploading ? "cursor-not-allowed opacity-60" : "")
-                  }
+                <Button
+                  variant="primary"
+                  size="md"
+                  type="button"
+                  onClick={() => fileInputRefs.current[slot]?.click()}
+                  disabled={uploading}
                 >
                   {uploading ? (
                     <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
@@ -198,17 +195,21 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
                     <Upload className="size-4" aria-hidden />
                   )}
                   {t("manager:theme.sounds.upload")}
-                  <input
-                    type="file"
-                    accept={ACCEPT_AUDIO}
-                    className="sr-only"
-                    disabled={uploading}
-                    aria-label={`${t("manager:theme.sounds.upload")} — ${t(
-                      `manager:theme.sounds.slots.${slot}`,
-                    )}`}
-                    onChange={handleUpload(slot)}
-                  />
-                </label>
+                </Button>
+
+                <input
+                  ref={(el) => {
+                    if (el) fileInputRefs.current[slot] = el
+                  }}
+                  type="file"
+                  accept={ACCEPT_AUDIO}
+                  className="sr-only"
+                  disabled={uploading}
+                  aria-label={`${t("manager:theme.sounds.upload")} — ${t(
+                    `manager:theme.sounds.slots.${slot}`,
+                  )}`}
+                  onChange={handleUpload(slot)}
+                />
 
                 {override && (
                   <Button
