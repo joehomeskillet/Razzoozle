@@ -35,7 +35,7 @@ const LabelRow = ({
         <LabelTag
           {...(htmlFor ? { htmlFor } : {})}
           className={clsx(
-            "min-h-11 shrink-0 text-sm font-medium text-gray-700 sm:w-40 sm:py-2.5",
+            "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40 sm:py-2.5",
             "flex items-center",
             htmlFor && "cursor-pointer",
           )}
@@ -49,7 +49,7 @@ const LabelRow = ({
       </div>
 
       {description && (
-        <p className="text-xs text-gray-500 sm:pl-44">{description}</p>
+        <p className="text-xs text-[var(--ink-subtle)] sm:pl-44">{description}</p>
       )}
     </div>
   )

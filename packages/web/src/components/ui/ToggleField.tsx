@@ -29,7 +29,7 @@ const ToggleField = ({
     <div className="flex min-h-11 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
       <span
         className={clsx(
-          "shrink-0 text-sm font-medium text-gray-700 sm:w-40",
+          "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40",
           "flex items-center",
         )}
       >
@@ -48,12 +48,12 @@ const ToggleField = ({
             "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full",
             "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
             "disabled:cursor-wait",
-            checked ? "bg-[var(--color-primary)]" : "bg-gray-300",
+            checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]",
           )}
         >
           <span
             className={clsx(
-              "inline-block size-5 rounded-full bg-white shadow transition-transform",
+              "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
               checked ? "translate-x-6" : "translate-x-1",
             )}
           />
@@ -62,7 +62,7 @@ const ToggleField = ({
     </div>
 
     {description && (
-      <p className="text-xs text-gray-500 sm:pl-44">{description}</p>
+      <p className="text-xs text-[var(--ink-subtle)] sm:pl-44">{description}</p>
     )}
   </div>
 )
