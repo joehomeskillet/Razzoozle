@@ -25,7 +25,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
           "w-full min-h-11 px-4 py-3",
           "rounded-[var(--radius-theme)]",
           "bg-[var(--surface)] text-[var(--ink)]",
-          "border border-[var(--line)]",
+          "border border-[var(--border-hairline)]",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
           "disabled:cursor-not-allowed disabled:opacity-60",
           className,

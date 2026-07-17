@@ -18,7 +18,7 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
  */
 const baseClasses =
   "w-full min-h-11 px-4 py-3 rounded-[var(--radius-theme)] " +
-  "bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] " +
+  "bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-hairline)] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 " +
   "focus-visible:outline-[var(--color-primary)] " +
   "disabled:cursor-not-allowed disabled:opacity-60"
