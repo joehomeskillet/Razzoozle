@@ -1,4 +1,5 @@
 import Button from "@razzoozle/web/components/Button"
+import { RadioGroup } from "@razzoozle/web/components/Radio"
 import StatusBadge from "@razzoozle/web/components/StatusBadge"
 import { getGameBackend } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
@@ -77,6 +78,19 @@ const BackendPanel = () => {
 
   const currentBackend = getGameBackend()
 
+  const backendOptions = [
+    {
+      value: "node",
+      label: t("dev.backend.node", { defaultValue: "Node (/)" }),
+      disabled: isApplying,
+    },
+    {
+      value: "rust",
+      label: t("dev.backend.rust", { defaultValue: "Rust (/_rust/)" }),
+      disabled: isApplying,
+    },
+  ]
+
   return (
     <SectionCard
       icon={<Server className="size-5" />}
@@ -104,36 +118,13 @@ const BackendPanel = () => {
           <p className="text-sm font-medium text-[var(--ink-muted)]">
             {t("dev.backend.choice", { defaultValue: "Backend wählen:" })}
           </p>
-          <div className="space-y-1">
-            <label className="flex items-center gap-3 min-h-11">
-              <input
-                type="radio"
-                name="backend"
-                value="node"
-                checked={choice === "node"}
-                onChange={(e) => setChoice(e.target.value as "node")}
-                disabled={isApplying}
-                className="cursor-pointer"
-              />
-              <span className="text-sm">
-                {t("dev.backend.node", { defaultValue: "Node (/)" })}
-              </span>
-            </label>
-            <label className="flex items-center gap-3 min-h-11">
-              <input
-                type="radio"
-                name="backend"
-                value="rust"
-                checked={choice === "rust"}
-                onChange={(e) => setChoice(e.target.value as "rust")}
-                disabled={isApplying}
-                className="cursor-pointer"
-              />
-              <span className="text-sm">
-                {t("dev.backend.rust", { defaultValue: "Rust (/_rust/)" })}
-              </span>
-            </label>
-          </div>
+          <RadioGroup
+            name="backend"
+            value={choice}
+            onChange={(v) => setChoice(v as "node" | "rust")}
+            options={backendOptions}
+            className="gap-1"
+          />
 
           {choice !== currentBackend && (
             <Button
