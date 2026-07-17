@@ -1,5 +1,9 @@
 import * as Select from "@radix-ui/react-select"
 import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import {
+  popoverContentClass,
+  popoverItemClass,
+} from "@razzoozle/web/components/manager/popover"
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
 import { KeyRound, Plus, Trash2, Users, X } from "lucide-react"
@@ -151,14 +155,14 @@ const StudentList = ({
                   <Select.Content
                     position="popper"
                     sideOffset={4}
-                    className="z-50 min-w-32 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                    className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
                   >
                     <Select.Viewport className="p-1">
                       {availableClasses.map((c) => (
                         <Select.Item
                           key={c.id}
                           value={String(c.id)}
-                          className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                          className={popoverItemClass}
                         >
                           <Select.ItemText>{c.name}</Select.ItemText>
                         </Select.Item>
