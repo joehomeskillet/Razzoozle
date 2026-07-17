@@ -5,6 +5,7 @@ const QuestionEditorMathe = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
 
+  // oxlint-disable-next-line typescript/no-explicit-any -- generic field setter forwards any Question value to updateQuestion
   const updateField = (field: string, value: any) => {
     updateQuestion(currentIndex, { [field]: value })
   }
@@ -23,8 +24,13 @@ const QuestionEditorMathe = () => {
           type="number"
           step="0.01"
           value={correct}
-          onChange={(e) => updateField("correct", e.target.value === "" ? undefined : Number(e.target.value))}
-          className="rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          onChange={(e) =>
+            updateField(
+              "correct",
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
+          className="focus-visible:border-primary focus-visible:ring-primary/30 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
           placeholder="0"
         />
       </div>
@@ -37,8 +43,13 @@ const QuestionEditorMathe = () => {
           type="number"
           step="0.01"
           value={tolerance}
-          onChange={(e) => updateField("tolerance", e.target.value === "" ? undefined : Number(e.target.value))}
-          className="rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          onChange={(e) =>
+            updateField(
+              "tolerance",
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
+          className="focus-visible:border-primary focus-visible:ring-primary/30 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
           placeholder="0.1"
         />
       </div>
@@ -52,8 +63,13 @@ const QuestionEditorMathe = () => {
           min="0"
           max="10"
           value={decimals}
-          onChange={(e) => updateField("decimals", e.target.value === "" ? undefined : Number(e.target.value))}
-          className="rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          onChange={(e) =>
+            updateField(
+              "decimals",
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
+          className="focus-visible:border-primary focus-visible:ring-primary/30 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
           placeholder="2"
         />
       </div>

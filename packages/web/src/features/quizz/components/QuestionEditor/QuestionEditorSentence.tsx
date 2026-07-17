@@ -73,7 +73,7 @@ const QuestionEditorSentence = () => {
             type="text"
             value={localSentence}
             onChange={(e) => setLocalSentence(e.target.value)}
-            className="flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="focus-visible:border-primary focus-visible:ring-primary/30 flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
             placeholder={t("quizz:sentenceBuilder.sentencePlaceholder", {
               defaultValue: "Type the correct sentence...",
             })}
@@ -82,7 +82,7 @@ const QuestionEditorSentence = () => {
             type="button"
             onClick={handleAutoGenerate}
             disabled={!localSentence.trim()}
-            className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+            className="bg-primary hover:bg-primary/90 focus-visible:ring-primary/30 flex shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-2 font-semibold text-white transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
           >
             {t("quizz:sentenceBuilder.autoGenerate", {
               defaultValue: "Auto-generate",
@@ -105,7 +105,7 @@ const QuestionEditorSentence = () => {
             aria-label={t("quizz:sentenceBuilder.addChunk", {
               defaultValue: "Add chunk",
             })}
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+            className="focus-visible:ring-primary/30 flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
           >
             <Plus className="size-5" />
           </button>
@@ -121,7 +121,7 @@ const QuestionEditorSentence = () => {
                 aria-label={t("quizz:sentenceBuilder.moveUp", {
                   defaultValue: "Move up",
                 })}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+                className="focus-visible:ring-primary/30 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               >
                 <ArrowUp className="size-4" />
               </button>
@@ -132,12 +132,12 @@ const QuestionEditorSentence = () => {
                 aria-label={t("quizz:sentenceBuilder.moveDown", {
                   defaultValue: "Move down",
                 })}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+                className="focus-visible:ring-primary/30 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               >
                 <ArrowDown className="size-4" />
               </button>
               <input
-                className="flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+                className="focus-visible:border-primary focus-visible:ring-primary/30 flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
                 placeholder={t("quizz:sentenceBuilder.chunkPlaceholder", {
                   defaultValue: "Chunk",
                 })}
@@ -152,7 +152,7 @@ const QuestionEditorSentence = () => {
                   index: i + 1,
                   defaultValue: "Remove chunk",
                 })}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-40"
+                className="focus-visible:ring-primary/30 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               >
                 <Minus className="size-5" />
               </button>

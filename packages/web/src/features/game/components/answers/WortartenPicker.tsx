@@ -22,8 +22,8 @@ export interface WortartenValue {
 interface Props extends AnswerViewProps<WortartenValue> {
   /** Source sentence (markdown). Server-provided, optional. */
   sentence?: string
-  /** Whitespace tokens of the sentence — server-split, NEVER re-split here
-   * (emoji/grapheme safety — see memory `emoji_grapheme_vs16`). */
+  // Whitespace tokens of the sentence — server-split, NEVER re-split here
+  // (emoji/grapheme safety — see memory `emoji_grapheme_vs16`).
   tokens?: string[]
   /** Fixed POS label set the player picks from. */
   posSet?: string[]
@@ -122,7 +122,7 @@ export default function WortartenPicker({
                   !isSolo && "disabled:opacity-50",
                   isDisabled
                     ? isSolo
-                      ? "opacity-40 cursor-not-allowed"
+                      ? "cursor-not-allowed opacity-40"
                       : "opacity-40"
                     : !disabled && PRESS_FEEDBACK,
                   choice && !isDisabled && "ring-2 ring-[var(--color-accent)]",
@@ -171,7 +171,7 @@ export default function WortartenPicker({
         onClick={onSubmit}
         disabled={submitDisabled}
         className={clsx(
-          "bg-[var(--color-primary)] mx-auto rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+          "mx-auto rounded-xl bg-[var(--color-primary)] px-8 py-3 text-xl font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
           !isSolo && PRESS_FEEDBACK,
         )}
       >

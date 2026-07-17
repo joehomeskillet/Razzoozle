@@ -25,7 +25,7 @@ const parseModes = (str: string): Set<string> => {
     str
       .split(",")
       .map((m) => m.trim())
-      .filter((m) => VALID_END_SCREEN_MODES.includes(m as any)),
+      .filter((m) => (VALID_END_SCREEN_MODES as readonly string[]).includes(m)),
   )
 }
 

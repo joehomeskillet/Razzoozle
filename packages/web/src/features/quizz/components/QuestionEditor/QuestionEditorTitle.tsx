@@ -15,7 +15,7 @@ const QuestionEditorTitle = () => {
   // markdown that renders differently from the raw input (bold/italic/code/
   // link/strikethrough/heading). Plain text — incl. "5 - 3?" or "a | b" — shows
   // just the single input, so the field no longer looks doubled.
-  const hasMarkdown = /[*_`\[\]~#]/.test(currentQuestion.question)
+  const hasMarkdown = /[*_`[\]~#]/.test(currentQuestion.question)
 
   return (
     <div className="focus-within:outline-primary z-10 rounded-2xl bg-white shadow-sm focus-within:outline-2 focus-within:-outline-offset-2">

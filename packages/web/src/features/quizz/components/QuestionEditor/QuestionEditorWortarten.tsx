@@ -28,7 +28,12 @@ const samePosSet = (a: string[] | undefined, b: string[]): boolean =>
   !!a && a.length === b.length && a.every((v, i) => v === b[i])
 
 const QuestionEditorWortarten = () => {
-  const { currentQuestion, currentIndex, updateQuestion, silentUpdateQuestion } = useQuizzEditor()
+  const {
+    currentQuestion,
+    currentIndex,
+    updateQuestion,
+    silentUpdateQuestion,
+  } = useQuizzEditor()
   const { t } = useTranslation()
   const [toastError, setToastError] = useState<string>("")
 
@@ -56,7 +61,9 @@ const QuestionEditorWortarten = () => {
     }
 
     // Filter out disabled indices that are >= tokens.length
-    const validDisabledTokens = disabledTokens.filter((idx) => idx < tokens.length)
+    const validDisabledTokens = disabledTokens.filter(
+      (idx) => idx < tokens.length,
+    )
     if (validDisabledTokens.length !== disabledTokens.length) {
       patch.disabledTokens = validDisabledTokens
     }
@@ -103,7 +110,12 @@ const QuestionEditorWortarten = () => {
       // Check if this is the last active token
       const activeCount = tokens.length - disabledTokens.length
       if (activeCount === 1) {
-        setToastError(t("quizz:wortarten.allTokensDisabledError", "Mindestens ein Wort muss aktiv sein"))
+        setToastError(
+          t(
+            "quizz:wortarten.allTokensDisabledError",
+            "Mindestens ein Wort muss aktiv sein",
+          ),
+        )
         setTimeout(() => setToastError(""), 3000)
         return
       }
@@ -130,7 +142,7 @@ const QuestionEditorWortarten = () => {
           value={sentence}
           onChange={handleSentenceChange}
           placeholder={t("quizz:wortarten.sentencePlaceholder")}
-          className="rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-[var(--game-fg)] outline-none placeholder:text-[var(--surface-muted)] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          className="focus-visible:border-primary focus-visible:ring-primary/30 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-[var(--game-fg)] outline-none placeholder:text-[var(--surface-muted)] focus-visible:ring-2"
           rows={3}
         />
         <button
@@ -174,7 +186,9 @@ const QuestionEditorWortarten = () => {
                 >
                   <span
                     className={`min-w-0 flex-1 truncate font-semibold ${
-                      isDisabled ? "text-[var(--surface-muted)]" : "text-[var(--game-fg)]"
+                      isDisabled
+                        ? "text-[var(--surface-muted)]"
+                        : "text-[var(--game-fg)]"
                     }`}
                   >
                     {token}
@@ -185,7 +199,7 @@ const QuestionEditorWortarten = () => {
                     onChange={(e) => handlePosChange(i, Number(e.target.value))}
                     aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
                     disabled={isDisabled}
-                    className={`rounded-lg border border-[var(--border-hairline)] bg-white px-2 py-2 text-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                    className={`focus-visible:border-primary focus-visible:ring-primary/30 rounded-lg border border-[var(--border-hairline)] bg-white px-2 py-2 text-sm outline-none focus-visible:ring-2 ${
                       isDisabled
                         ? "cursor-not-allowed text-[var(--surface-muted)]"
                         : "text-[var(--game-fg)]"
@@ -205,27 +219,27 @@ const QuestionEditorWortarten = () => {
                       isDisabled
                         ? t(
                             "quizz:wortarten.enableTokenLabel",
-                            "Wort aktivieren"
+                            "Wort aktivieren",
                           )
                         : t(
                             "quizz:wortarten.disableTokenLabel",
-                            "Wort deaktivieren"
+                            "Wort deaktivieren",
                           )
                     }
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-hairline)] text-sm font-semibold outline-none transition-colors ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-hairline)] text-sm font-semibold transition-colors outline-none ${
                       isDisabled
                         ? "bg-[var(--surface-muted)] text-white hover:opacity-80"
                         : "bg-white text-[var(--game-fg)] hover:bg-[var(--surface)]"
-                    } focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30`}
+                    } focus-visible:border-primary focus-visible:ring-primary/30 focus-visible:ring-2`}
                     title={
                       isDisabled
                         ? t(
                             "quizz:wortarten.enableTokenLabel",
-                            "Wort aktivieren"
+                            "Wort aktivieren",
                           )
                         : t(
                             "quizz:wortarten.disableTokenLabel",
-                            "Wort deaktivieren"
+                            "Wort deaktivieren",
                           )
                     }
                   >

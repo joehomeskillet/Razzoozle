@@ -75,7 +75,7 @@ const QuestionEditorAnswers = () => {
             onClick={removeAnswer}
             disabled={answers.length <= 2}
             aria-label={t("quizz:removeAnswerCountLabel")}
-            className="flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+            className="focus-visible:outline-primary flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
           >
             <Minus className="size-4" />
           </button>
@@ -84,7 +84,7 @@ const QuestionEditorAnswers = () => {
             onClick={addAnswer}
             disabled={answers.length >= 4}
             aria-label={t("quizz:addAnswerCountLabel")}
-            className="flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+            className="focus-visible:outline-primary flex size-9 items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
           >
             <Plus className="size-4" />
           </button>

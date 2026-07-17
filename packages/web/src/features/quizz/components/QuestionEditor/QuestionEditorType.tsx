@@ -104,7 +104,8 @@ interface QuestionEditorTypeProps {
 const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
-  const type: QuestionTypeKey = (currentQuestion.type ?? "choice") as QuestionTypeKey
+  const type: QuestionTypeKey = (currentQuestion.type ??
+    "choice") as QuestionTypeKey
 
   // Gate Mathematik, Wortarten, and Vokabelliste visibility on klassenEnabled
   const config = useManagerStore((s) => s.config)
@@ -118,7 +119,7 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
           tp.key !== "mathematik" &&
           tp.key !== "wortarten" &&
           tp.key !== "vokabelliste" &&
-          !excludeTypes.includes(tp.key)
+          !excludeTypes.includes(tp.key),
       )
 
   // Clear fields that don't belong to the target type (avoid stale data).
@@ -214,7 +215,16 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         type: "wortarten",
         sentence: "",
         tokens: [],
-        posSet: ["Nomen", "Verb", "Adjektiv", "Artikel", "Pronomen", "Adverb", "Präposition", "Konjunktion"],
+        posSet: [
+          "Nomen",
+          "Verb",
+          "Adjektiv",
+          "Artikel",
+          "Pronomen",
+          "Adverb",
+          "Präposition",
+          "Konjunktion",
+        ],
         answers: undefined,
         solutions: undefined,
         acceptedAnswers: undefined,
@@ -229,6 +239,7 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
     } else if (next === "vokabelliste") {
       // Vokabelliste is a pseudo-type for bulk editing; set a marker type
       updateQuestion(currentIndex, {
+        // oxlint-disable-next-line typescript/no-explicit-any -- vokabelliste is a UI-only pseudo-type, not in the persisted Question union
         type: "vokabelliste" as any,
         question: "",
         answers: undefined,
@@ -266,7 +277,8 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
     e.preventDefault()
     const currentIdx = availableTypes.findIndex((tp) => tp.key === type)
     const fallbackIdx = currentIdx === -1 ? 0 : currentIdx
-    const nextIdx = (fallbackIdx + delta + availableTypes.length) % availableTypes.length
+    const nextIdx =
+      (fallbackIdx + delta + availableTypes.length) % availableTypes.length
     setType(availableTypes[nextIdx].key)
   }
 
@@ -333,7 +345,9 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
                 />
                 {t(tp.labelKey, {
                   defaultValue:
-                    tp.key === "sentence-builder" ? "Sentence builder" : undefined,
+                    tp.key === "sentence-builder"
+                      ? "Sentence builder"
+                      : undefined,
                 })}
               </span>
               <span className="text-xs text-gray-500">
@@ -367,7 +381,8 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
               onChange={togglePractice}
               className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             />
-            <span aria-hidden="true">🎯</span> {t("quizz:type.practiceQuestion")}
+            <span aria-hidden="true">🎯</span>{" "}
+            {t("quizz:type.practiceQuestion")}
           </label>
         </div>
       )}

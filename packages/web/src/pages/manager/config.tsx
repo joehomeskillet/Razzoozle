@@ -73,6 +73,7 @@ export const Route = createFileRoute("/manager/config")({
     const { token } = useManagerStore.getState()
 
     if (!token) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router redirect() is thrown by design
       throw redirect({ to: "/manager", replace: true })
     }
   },

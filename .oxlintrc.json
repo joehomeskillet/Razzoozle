@@ -42,7 +42,10 @@
         "typescript/no-unsafe-assignment": "off",
         "typescript/no-unsafe-return": "off",
         "typescript/no-unsafe-argument": "off",
-        "typescript/no-unnecessary-condition": "off"
+        "typescript/no-unnecessary-condition": "off",
+        "typescript/no-explicit-any": "off",
+        "typescript/no-misused-spread": "off",
+        "@stylistic/semi": "off"
       }
     },
     {
@@ -364,6 +367,7 @@
   },
   "ignorePatterns": [
     "spikes/**",
-    "rust/**"
+    "rust/**",
+    "e2e/**"
   ]
 }

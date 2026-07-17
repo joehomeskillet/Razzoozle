@@ -65,7 +65,7 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
-  const isVokabelliste = (currentQuestion.type as any) === "vokabelliste"
+  const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
@@ -82,11 +82,16 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
           </Reveal>
         )}
 
-        {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && !isVokabelliste && (
-          <Reveal index={2}>
-            <QuestionEditorAnswers />
-          </Reveal>
-        )}
+        {!isSlider &&
+          !isTypeAnswer &&
+          !isSentenceBuilder &&
+          !isMathematik &&
+          !isWortarten &&
+          !isVokabelliste && (
+            <Reveal index={2}>
+              <QuestionEditorAnswers />
+            </Reveal>
+          )}
         {isTypeAnswer && (
           <Reveal index={2}>
             <QuestionEditorAcceptedAnswers />
