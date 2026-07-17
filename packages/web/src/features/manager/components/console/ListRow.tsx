@@ -20,6 +20,13 @@ export interface ListRowProps {
   title: ReactNode
   /** Optional secondary meta line. */
   meta?: ReactNode
+  /**
+   * Optional selection control (e.g. a checkbox), rendered as the very first
+   * item of the card's inner row — left of `leading`. Unlike `leading` this
+   * slot is interactive, so it is never wrapped in `aria-hidden` (spec D27).
+   * Pixel-neutral when unset.
+   */
+  selection?: ReactNode
   /** Optional leading icon/marker slot. */
   leading?: ReactNode
   /** Trailing icon-button cluster (each gets aria-label + focus ring). */
@@ -58,6 +65,7 @@ const actionClasses = (destructive?: boolean) =>
 const ListRow = ({
   title,
   meta,
+  selection,
   leading,
   actions,
   onClick,
@@ -69,15 +77,22 @@ const ListRow = ({
   const body = (
     <>
       {leading && (
-        <span className="flex shrink-0 items-center text-[var(--ink-faint)]" aria-hidden>
+        <span
+          className="flex shrink-0 items-center text-[var(--ink-faint)]"
+          aria-hidden
+        >
           {leading}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold text-[var(--ink)]">{title}</span>
+        <span className="truncate font-semibold text-[var(--ink)]">
+          {title}
+        </span>
         {meta &&
           (typeof meta === "string" ? (
-            <span className="truncate text-sm text-[var(--ink-subtle)]">{meta}</span>
+            <span className="truncate text-sm text-[var(--ink-subtle)]">
+              {meta}
+            </span>
           ) : (
             <span className="text-sm text-[var(--ink-subtle)]">{meta}</span>
           ))}
@@ -93,6 +108,7 @@ const ListRow = ({
       )}
     >
       <div className="flex min-h-11 items-center gap-3">
+        {selection}
         {onClick ? (
           <button
             type="button"
@@ -100,7 +116,7 @@ const ListRow = ({
             aria-label={bodyLabel}
             className={clsx(
               "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--surface-2)]",
-              "focus-visible:outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:-outline-offset-2",
+              "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]",
             )}
           >
             {body}
@@ -112,7 +128,14 @@ const ListRow = ({
         {((actions && actions.length > 0) || overflow) && (
           <div className="flex shrink-0 items-center gap-1">
             {actions?.map(
-              ({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
+              ({
+                key,
+                icon: Icon,
+                label,
+                onClick: act,
+                disabled,
+                destructive,
+              }) => (
                 <Button
                   key={key}
                   variant="ghost"

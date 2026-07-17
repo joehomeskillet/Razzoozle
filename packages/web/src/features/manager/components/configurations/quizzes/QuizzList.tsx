@@ -86,7 +86,9 @@ const QuizzList = ({
 
   const getLabelMap = (q: QuizzMeta) => {
     const assigned = new Map(labels.map((l: Label) => [l.id, l]))
-    return (q.labelIds ?? []).map((id: number) => assigned.get(id)).filter((l: Label | undefined) => l) as Label[]
+    return (q.labelIds ?? [])
+      .map((id: number) => assigned.get(id))
+      .filter((l: Label | undefined) => l) as Label[]
   }
 
   const buildActions = (q: QuizzMeta): ListRowAction[] => [
@@ -105,8 +107,7 @@ const QuizzList = ({
       key: "duplicate",
       icon: Copy,
       label: t("manager:quizz.duplicate", { name: q.subject }),
-      onClick: () =>
-        setPendingDuplicate({ id: q.id, subject: q.subject }),
+      onClick: () => setPendingDuplicate({ id: q.id, subject: q.subject }),
     },
     {
       key: "export",
@@ -125,8 +126,7 @@ const QuizzList = ({
       icon: Trash2,
       label: t("manager:quizz.delete"),
       destructive: true,
-      onClick: () =>
-        setPendingDelete({ id: q.id, subject: q.subject }),
+      onClick: () => setPendingDelete({ id: q.id, subject: q.subject }),
     },
   ]
 
@@ -175,7 +175,9 @@ const QuizzList = ({
     >
       {activeQuizz.map((q, index) => {
         const assignedLabels = getLabelMap(q)
-        const availableLabels = labels.filter((l: Label) => !assignedLabels.some((al: Label) => al.id === l.id))
+        const availableLabels = labels.filter(
+          (l: Label) => !assignedLabels.some((al: Label) => al.id === l.id),
+        )
         const allActions = buildActions(q)
         const visibleActions = getPrimaryActions(allActions)
         const overflowActions = getOverflowActions(allActions)
@@ -195,99 +197,110 @@ const QuizzList = ({
                   }
             }
           >
-            <div className="flex items-center gap-2">
-              <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
-                <span className="sr-only">
-                  {t("manager:quizz.selectQuiz", {
-                    name: q.subject,
-                    defaultValue: '„{{name}}" auswählen',
-                  })}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={selected.has(q.id)}
-                  onChange={() => toggleSelect(q.id)}
-                  className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                />
-              </label>
-              <ListRow
-                leading={<ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />}
-                title={q.subject}
-                className="min-w-0 flex-1"
-                meta={
-                  q.questionCount != null ? (
-                    <span className="text-xs text-[var(--ink-subtle)]">
-                      {t("manager:catalog.count", { count: q.questionCount })}
-                    </span>
-                  ) : undefined
-                }
-                actions={visibleActions}
-                footer={
-                  klassenEnabled && (assignedLabels.length > 0 || availableLabels.length > 0) ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {assignedLabels.map((label: Label) => (
-                        <LabelChip
-                          key={label.id}
-                          label={label}
-                          onRemove={() => {
-                            const newLabelIds = (q.labelIds ?? []).filter((id: number) => id !== label.id)
-                            handleLabelAssign(q.id, newLabelIds)
-                          }}
-                        />
-                      ))}
+            <ListRow
+              selection={
+                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
+                  <span className="sr-only">
+                    {t("manager:quizz.selectQuiz", {
+                      name: q.subject,
+                      defaultValue: '„{{name}}" auswählen',
+                    })}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(q.id)}
+                    onChange={() => toggleSelect(q.id)}
+                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  />
+                </label>
+              }
+              leading={
+                <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
+              }
+              title={q.subject}
+              meta={
+                q.questionCount != null ? (
+                  <span className="text-xs text-[var(--ink-subtle)]">
+                    {t("manager:catalog.count", { count: q.questionCount })}
+                  </span>
+                ) : undefined
+              }
+              actions={visibleActions}
+              overflow={
+                overflowActions.length > 0 ? (
+                  <OverflowMenu actions={overflowActions} />
+                ) : undefined
+              }
+              footer={
+                klassenEnabled &&
+                (assignedLabels.length > 0 || availableLabels.length > 0) ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {assignedLabels.map((label: Label) => (
+                      <LabelChip
+                        key={label.id}
+                        label={label}
+                        onRemove={() => {
+                          const newLabelIds = (q.labelIds ?? []).filter(
+                            (id: number) => id !== label.id,
+                          )
+                          handleLabelAssign(q.id, newLabelIds)
+                        }}
+                      />
+                    ))}
 
-                      {availableLabels.length > 0 && (
-                        <Select.Root
-                          value={assigningLabelTo === q.id ? "" : ""}
-                          onValueChange={(val: string) => {
-                            const newLabelIds = [...(q.labelIds ?? []), Number(val)]
-                            handleLabelAssign(q.id, newLabelIds)
-                          }}
+                    {availableLabels.length > 0 && (
+                      <Select.Root
+                        value={assigningLabelTo === q.id ? "" : ""}
+                        onValueChange={(val: string) => {
+                          const newLabelIds = [
+                            ...(q.labelIds ?? []),
+                            Number(val),
+                          ]
+                          handleLabelAssign(q.id, newLabelIds)
+                        }}
+                      >
+                        <Select.Trigger
+                          aria-label={t("manager:labels.assignLabel", {
+                            defaultValue: "Label zuweisen",
+                          })}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className={assignTriggerClass}
                         >
-                          <Select.Trigger
-                            aria-label={t("manager:labels.assignLabel", {
-                              defaultValue: "Label zuweisen",
+                          <Plus className="size-3" />
+                          <Select.Value
+                            placeholder={t("manager:labels.assignTitle", {
+                              defaultValue: "+ Fach",
                             })}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            className={assignTriggerClass}
+                          />
+                        </Select.Trigger>
+                        <Select.Portal>
+                          <Select.Content
+                            position="popper"
+                            sideOffset={4}
+                            onCloseAutoFocus={(e) => e.preventDefault()}
+                            className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
                           >
-                            <Plus className="size-3" />
-                            <Select.Value
-                              placeholder={t("manager:labels.assignTitle", {
-                                defaultValue: "+ Fach",
-                              })}
-                            />
-                          </Select.Trigger>
-                          <Select.Portal>
-                            <Select.Content
-                              position="popper"
-                              sideOffset={4}
-                              onCloseAutoFocus={(e) => e.preventDefault()}
-                              className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
-                            >
-                              <Select.Viewport className="p-1">
-                                {availableLabels.map((label: Label) => (
-                                  <Select.Item
-                                    key={label.id}
-                                    value={String(label.id)}
-                                    className={popoverItemClass}
-                                  >
-                                    <Select.ItemText>{label.name}</Select.ItemText>
-                                  </Select.Item>
-                                ))}
-                              </Select.Viewport>
-                            </Select.Content>
-                          </Select.Portal>
-                        </Select.Root>
-                      )}
-                    </div>
-                  ) : undefined
-                }
-              />
-              {overflowActions.length > 0 && (
-                <OverflowMenu actions={overflowActions} />
-              )}
-            </div>
+                            <Select.Viewport className="p-1">
+                              {availableLabels.map((label: Label) => (
+                                <Select.Item
+                                  key={label.id}
+                                  value={String(label.id)}
+                                  className={popoverItemClass}
+                                >
+                                  <Select.ItemText>
+                                    {label.name}
+                                  </Select.ItemText>
+                                </Select.Item>
+                              ))}
+                            </Select.Viewport>
+                          </Select.Content>
+                        </Select.Portal>
+                      </Select.Root>
+                    )}
+                  </div>
+                ) : undefined
+              }
+            />
           </motion.div>
         )
       })}
@@ -379,7 +392,9 @@ const QuizzList = ({
                 >
                   <div className="flex items-center gap-2">
                     <ListRow
-                      leading={<ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />}
+                      leading={
+                        <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                      }
                       title={q.subject}
                       meta={
                         <span className="text-xs text-[var(--ink-subtle)]">
