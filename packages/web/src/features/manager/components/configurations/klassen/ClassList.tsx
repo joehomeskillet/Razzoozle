@@ -22,6 +22,7 @@ import {
 import { useTranslation } from "react-i18next"
 import { useState, useEffect } from "react"
 import { useLabelManager } from "../labels/useLabelManager"
+import Button from "@razzoozle/web/components/Button"
 
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 
@@ -262,8 +263,10 @@ const ClassList = ({
                             </p>
                           </div>
 
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon"
                             onClick={() =>
                               onEditStudent({
                                 id: student.id,
@@ -271,27 +274,27 @@ const ClassList = ({
                                 birthdate: student.birthdate,
                               })
                             }
-                            className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.editStudent")}
                             aria-label={t("manager:classes.editStudent")}
                           >
                             <SquarePen className="size-3.5" />
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button
                             type="button"
+                            variant="danger"
+                            size="icon"
                             onClick={() =>
                               onDeleteStudent({
                                 id: student.id,
                                 displayName: student.displayName,
                               })
                             }
-                            className="focus-visible:outline-[var(--color-primary)] flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                             title={t("manager:classes.deleteStudent")}
                             aria-label={t("manager:classes.deleteStudent")}
                           >
                             <X className="size-3.5" />
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </>
@@ -303,14 +306,16 @@ const ClassList = ({
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="md"
                     onClick={() => onAddStudent(classObj.id)}
-                    className="focus-visible:outline-[var(--color-primary)] flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--accent-tint)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="w-full"
                   >
                     <Plus className="size-4" />
                     {t("manager:classes.addStudent")}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
