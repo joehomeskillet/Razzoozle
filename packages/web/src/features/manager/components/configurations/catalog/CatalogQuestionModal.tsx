@@ -1,4 +1,5 @@
 import type { QuizzWithId } from "@razzoozle/common/types/game"
+import Button from "@razzoozle/web/components/Button"
 import { QuizzEditorProvider } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import { X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -132,15 +133,16 @@ export const CatalogQuestionModal = ({
                 : t("manager:catalog.addManual")}
             </h2>
           </div>
-          <button
+          <Button
             ref={closeButtonRef}
+            variant="ghost"
+            size="icon"
             type="button"
             onClick={onClose}
             aria-label={t("common:cancel")}
-            className="flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-subtle)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           >
             <X className="size-5" aria-hidden />
-          </button>
+          </Button>
         </header>
 
         <QuizzEditorProvider key={providerKey} initialData={initialData}>
