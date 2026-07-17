@@ -4,6 +4,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import clsx from "clsx"
@@ -118,14 +119,14 @@ const DisplayControl = () => {
               setOpen(false)
             }
           }}
-          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[var(--surface)] p-3 text-left text-[var(--ink)] shadow-xl"
+          className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-lg bg-[var(--surface)] p-3 text-left text-[var(--ink)] shadow-[var(--shadow-flat)]"
         >
           <p className="text-sm font-bold">{t("manager:satellite.title")}</p>
           <p className="mt-1 text-xs leading-snug text-[var(--ink-medium)]">
             {t("manager:satellite.howto")}
           </p>
           <div className="mt-2 flex gap-2">
-            <input
+            <Input
               ref={inputRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -133,16 +134,17 @@ const DisplayControl = () => {
               placeholder={t("manager:satellite.codePlaceholder")}
               aria-label={t("manager:satellite.codeLabel")}
               maxLength={6}
-              className="w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-center font-mono text-lg font-bold tracking-widest uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              variant="md"
             />
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={pair}
               disabled={!gameId || code.trim().length === 0}
-              className={"shrink-0 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]" /* token-ok: white-on-primary, AA per design.md */}
             >
               {t("manager:satellite.pair")}
-            </button>
+            </Button>
           </div>
           {paired && (
             <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[var(--status-online-text)]">
