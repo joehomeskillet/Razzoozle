@@ -257,7 +257,7 @@ const SharePage = ({ id }: Props) => {
   const winner = result.players?.[0]
 
   return (
-    <Background field="cream">
+    <Background field="cream" align="top">
       {result && !reducedMotion && (
         <Suspense fallback={null}>
           <ReactConfetti
@@ -284,7 +284,7 @@ const SharePage = ({ id }: Props) => {
 
       <div
         className={clsx(
-          "z-10 flex w-full max-w-3xl flex-col items-center px-4 pt-6 pb-20 transition-opacity",
+          "z-10 flex min-h-0 w-full max-w-3xl flex-1 flex-col items-center overflow-y-auto px-4 pt-6 pb-20 transition-opacity",
           { "opacity-0": hasRecap && !recapDone },
         )}
       >
