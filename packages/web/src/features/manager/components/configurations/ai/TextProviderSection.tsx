@@ -6,6 +6,7 @@ import type {
 import clsx from "clsx"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import {
   SectionCard,
@@ -77,11 +78,10 @@ const TextProviderSection = ({
       {/* Group: Provider-Auswahl */}
       <FormSection title={t("manager:ai.provider")}>
         <LabelRow label={t("manager:ai.provider")} htmlFor="ai-text-provider">
-          <select
+          <Select
             id="ai-text-provider"
             value={settings.text.activeProvider}
             onChange={(event) => setActiveProvider(event.target.value)}
-            className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           >
             <option value={AI_PROVIDER_OFF}>{t("manager:ai.off")}</option>
             {settings.text.providers.map((provider) => (
@@ -89,7 +89,7 @@ const TextProviderSection = ({
                 {provider.label}
               </option>
             ))}
-          </select>
+          </Select>
         </LabelRow>
       </FormSection>
 
