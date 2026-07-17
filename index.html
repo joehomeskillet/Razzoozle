@@ -625,7 +625,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
         <div class="section-head center">
           <p class="kicker" data-i18n="rust.kicker">Powered by Rust</p>
           <h2 id="rust-title" data-i18n="rust.title">A memory-safe game engine</h2>
-          <p data-i18n="rust.sub">The Rust server is now the default backend. It shares a single Postgres database with the Node server and speaks the exact same socket.io protocol — no client changes needed.</p>
+          <p data-i18n="rust.sub">Razzoozle's server was ported from Node.js to Rust — and Rust is now the sole backend. It persists everything in a single Postgres database and speaks socket.io to the unchanged React client.</p>
         </div>
 
         <div class="rust-grid">
@@ -634,14 +634,14 @@ html.js [data-reveal].in{opacity:1;transform:none}
               <div class="ico">🦀</div>
               <div class="rust-item-text">
                 <h3 data-i18n="rust.f1.t">Complete gameplay parity</h3>
-                <p data-i18n="rust.f1.d">Full scored multi-question games, all 7 question types, player reconnect, manager auth, quiz disk loading, AI media and a real-game CI gate that plays 100-player games on every deploy.</p>
+                <p data-i18n="rust.f1.d">Full scored multi-question games, all 9 question types, player reconnect, manager auth, AI media and a real-game CI gate that plays 100-player games on every deploy.</p>
               </div>
             </div>
             <div class="rust-item">
               <div class="ico">🔐</div>
               <div class="rust-item-text">
-                <h3 data-i18n="rust.f2.t">Twin architecture</h3>
-                <p data-i18n="rust.f2.d">Node and Rust backends run side-by-side, share one Postgres database as the source of truth, and are client-selectable. Rust is now the global default.</p>
+                <h3 data-i18n="rust.f2.t">Rust-only backend</h3>
+                <p data-i18n="rust.f2.d">The Node.js server has been retired — Rust is now the only backend, with Postgres as the single source of truth for every game, quiz and result.</p>
               </div>
             </div>
             <div class="rust-item">
@@ -685,7 +685,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
         <div class="section-head">
           <p class="kicker" data-i18n="stack.kicker">Under the hood</p>
           <h2 id="stack-title" data-i18n="stack.title">A modern, typed stack</h2>
-          <p data-i18n="stack.sub">A pnpm monorepo — React + Vite + Tailwind on the front, dual backend (Node.js or Rust), shared Zod-validated types, shipped as a single Docker image.</p>
+          <p data-i18n="stack.sub">A pnpm monorepo — React + Vite + Tailwind on the front, a Rust server on the back, shared Zod-validated types, shipped as a single Docker image.</p>
         </div>
 
         <div class="stack-group">
@@ -832,6 +832,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       <div class="section-head center">
         <p class="kicker" data-i18n="modes.kicker">However you play</p>
         <h2 id="modes-title" data-i18n="modes.title">Modes &amp; question types</h2>
+        <p data-i18n="modes.alltypes">Nine question types: single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input and word-types.</p>
       </div>
 
       <div class="modes-grid">
@@ -886,7 +887,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
             <span data-i18n="cta.btn">Get it on GitHub</span>
           </a>
         </div>
-        <code class="code-hint">git clone …/Razzoozle &amp;&amp; cd Razzoozle &amp;&amp; docker compose -f compose.node.yml up -d</code>
+        <code class="code-hint">git clone …/Razzoozle &amp;&amp; cd Razzoozle &amp;&amp; docker compose -f compose.rust.yml up -d</code>
       </div>
     </div>
   </section>
@@ -932,11 +933,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "Powered by Rust",
       "rust.title": "A memory-safe game engine",
-      "rust.sub": "The Rust server is now the default backend. It shares a single Postgres database with the Node server and speaks the exact same socket.io protocol — no client changes needed.",
+      "rust.sub": "Razzoozle's server was ported from Node.js to Rust — and Rust is now the sole backend. It persists everything in a single Postgres database and speaks socket.io to the unchanged React client.",
       "rust.f1.t": "Complete gameplay parity",
-      "rust.f1.d": "Full scored multi-question games, all 7 question types, player reconnect, manager auth, quiz disk loading, AI media and a real-game CI gate that plays 100-player games on every deploy.",
-      "rust.f2.t": "Twin architecture",
-      "rust.f2.d": "Node and Rust backends run side-by-side, share one Postgres database as the source of truth, and are client-selectable. Rust is now the global default.",
+      "rust.f1.d": "Full scored multi-question games, all 9 question types, player reconnect, manager auth, AI media and a real-game CI gate that plays 100-player games on every deploy.",
+      "rust.f2.t": "Rust-only backend",
+      "rust.f2.d": "The Node.js server has been retired — Rust is now the only backend, with Postgres as the single source of truth for every game, quiz and result.",
       "rust.f3.t": "Compile-checked game state",
       "rust.f3.d": "The game's state machine (Lobby → Round → Reveal → Scoreboard) is compile-time-checked. Single static binary, no runtime overhead, easier to ship as a Tauri desktop app.",
       "rust.f4.t": "Typed wire protocol",
@@ -944,7 +945,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "Three crates, one binary",
       "stack.kicker": "Under the hood",
       "stack.title": "A modern, typed stack",
-      "stack.sub": "A pnpm monorepo — React + Vite + Tailwind on the front, dual backend (Node.js or Rust), shared Zod-validated types, shipped as a single Docker image.",
+      "stack.sub": "A pnpm monorepo — React + Vite + Tailwind on the front, a Rust server on the back, shared Zod-validated types, shipped as a single Docker image.",
       "stack.frontend": "Frontend",
       "stack.backend": "Backend (dual)",
       "stack.tooling": "Tooling & delivery",
@@ -979,6 +980,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "A new question type — players tap shuffled word chunks to rebuild a sentence in the right order, great for languages, definitions and sequences.",
       "modes.kicker": "However you play",
       "modes.title": "Modes & question types",
+      "modes.alltypes": "Nine question types: single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input and word-types.",
       "modes.m1.t": "Classic",
       "modes.m1.d": "Host on the big screen.",
       "modes.m2.t": "Team",
@@ -1069,11 +1071,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "Angetrieben von Rust",
       "rust.title": "Ein speichersicheres Spiel-Backend",
-      "rust.sub": "Der Rust-Server ist jetzt das Standard-Backend. Er teilt sich eine Postgres-Datenbank mit dem Node-Server und spricht das gleiche socket.io-Protokoll — keine Client-Änderungen nötig.",
+      "rust.sub": "Der Razzoozle-Server wurde von Node.js nach Rust portiert — und Rust ist jetzt das alleinige Backend. Es speichert alles in einer einzigen Postgres-Datenbank und spricht socket.io mit dem unveränderten React-Client.",
       "rust.f1.t": "Vollständige Gameplay-Parität",
-      "rust.f1.d": "Vollwertige Multi-Fragen-Spiele, alle 7 Fragetypen, Player-Reconnect, Manager-Auth, Quiz-Laden von der Festplatte, KI-Medien und ein Real-Game-CI-Gate, das bei jedem Deploy 100-Player-Spiele spielt.",
-      "rust.f2.t": "Zwillingsarchitektur",
-      "rust.f2.d": "Node- und Rust-Backends laufen nebeneinander, teilen sich eine Postgres-Datenbank als Single Source of Truth und sind per Client wählbar. Rust ist jetzt der globale Standard.",
+      "rust.f1.d": "Vollwertige Multi-Fragen-Spiele, alle 9 Fragetypen, Player-Reconnect, Manager-Auth, KI-Medien und ein Real-Game-CI-Gate, das bei jedem Deploy 100-Player-Spiele spielt.",
+      "rust.f2.t": "Reines Rust-Backend",
+      "rust.f2.d": "Der Node.js-Server wurde abgeschaltet — Rust ist jetzt das einzige Backend, mit Postgres als Single Source of Truth für jedes Spiel, Quiz und Ergebnis.",
       "rust.f3.t": "Compile-Zeit-geprüfter Spielzustand",
       "rust.f3.d": "Die State Machine des Spiels (Lobby → Round → Reveal → Scoreboard) wird zur Compile-Zeit überprüft. Ein einziger statischer Binary, kein Runtime-Overhead, leichter als Tauri-Desktop-App zu versenden.",
       "rust.f4.t": "Typsicheres Wire-Protokoll",
@@ -1081,7 +1083,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "Drei Crates, ein Binary",
       "stack.kicker": "Unter der Haube",
       "stack.title": "Ein moderner, typsicherer Stack",
-      "stack.sub": "Ein pnpm-Monorepo — React + Vite + Tailwind im Frontend, duales Backend (Node.js oder Rust), geteilte Zod-validierte Typen, ausgeliefert als ein einziges Docker-Image.",
+      "stack.sub": "Ein pnpm-Monorepo — React + Vite + Tailwind im Frontend, ein Rust-Server im Backend, geteilte Zod-validierte Typen, ausgeliefert als ein einziges Docker-Image.",
       "stack.frontend": "Frontend",
       "stack.backend": "Backend (dual)",
       "stack.tooling": "Tooling & Auslieferung",
@@ -1101,7 +1103,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f6.t": "Lokale KI-Bilder",
       "feat.f6.d": "Erzeuge Bilder für Fragen und Themes direkt auf dem Gerät über ComfyUI (Z-Image), oder binde einen Cloud-Anbieter ein — die Schlüssel bleiben serverseitig.",
       "feat.f7.t": "Teilbare Ergebnisse",
-      "feat.f7.d": "Schöne Open-Graph-Link-Vorschauen, eine Ergebnisseite mit „Selbst spielen"-CTAs und herunterladbare Gewinner-Sticker.",
+      "feat.f7.d": "Schöne Open-Graph-Link-Vorschauen, eine Ergebnisseite mit „Selbst spielen“-CTAs und herunterladbare Gewinner-Sticker.",
       "feat.f8.t": "Beamer-Kiosk & Zuverlässigkeit",
       "feat.f8.d": "Eine /display-Projektoransicht, Modus mit geringer Latenz, Absturz-Wiederherstellung und Reconnect sowie ein MCP-Server zur Steuerung durch KI-Tools — gehärtet und lastgetestet bis 600 Spielende.",
       "feat.f9.t": "Spieler-Avatare",
@@ -1116,6 +1118,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "Ein neuer Fragetyp — Spielende tippen auf durchmischte Wort-Chunks, um einen Satz in der richtigen Reihenfolge zu rekonstruieren, toll für Sprachen, Definitionen und Reihenfolgen.",
       "modes.kicker": "Wie auch immer du spielst",
       "modes.title": "Modi & Fragetypen",
+      "modes.alltypes": "Neun Fragetypen: Einzelauswahl, Richtig/Falsch, Umfrage, Schieberegler, Mehrfachauswahl, Freitext-Antwort, Satz-Builder, Mathematik-Eingabe und Wortarten.",
       "modes.m1.t": "Klassisch",
       "modes.m1.d": "Hoste auf dem großen Bildschirm.",
       "modes.m2.t": "Team",
@@ -1207,11 +1210,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "由 Rust 驱动",
       "rust.title": "内存安全的游戏引擎",
-      "rust.sub": "Rust 服务器现在是默认后端。它与 Node 服务器共享单个 Postgres 数据库，并使用完全相同的 socket.io 协议 —— 无需修改客户端。",
+      "rust.sub": "Razzoozle 服务器已从 Node.js 移植到 Rust —— 现在 Rust 是唯一的后端。它将所有数据持久化到单个 Postgres 数据库，并通过 socket.io 与未改动的 React 客户端通信。",
       "rust.f1.t": "完整的游戏对等",
-      "rust.f1.d": "完整的多题游戏、全部 7 种题型、玩家断线重连、管理员认证、从磁盘加载测验、AI 媒体，以及在每次部署时都运行 100 名玩家游戏的实际游戏 CI 门。",
-      "rust.f2.t": "双服务器架构",
-      "rust.f2.d": "Node 和 Rust 后端并行运行，共享一个 Postgres 数据库作为唯一数据源，并且可由客户端选择。Rust 现在是全局默认值。",
+      "rust.f1.d": "完整的多题游戏、全部 9 种题型、玩家断线重连、管理员认证、AI 媒体，以及在每次部署时都运行 100 名玩家游戏的实际游戏 CI 门。",
+      "rust.f2.t": "纯 Rust 后端",
+      "rust.f2.d": "Node.js 服务器已退役 —— Rust 现在是唯一后端，Postgres 作为每个游戏、测验和结果的唯一数据源。",
       "rust.f3.t": "编译时检查的游戏状态",
       "rust.f3.d": "游戏的状态机（Lobby → Round → Reveal → Scoreboard）在编译时被检查。单一静态二进制文件，无运行时开销，更易于作为 Tauri 桌面应用程序交付。",
       "rust.f4.t": "类型安全的 Wire 协议",
@@ -1219,7 +1222,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "三个 Crate，一个二进制",
       "stack.kicker": "技术内核",
       "stack.title": "现代、类型安全的技术栈",
-      "stack.sub": "一个 pnpm monorepo —— 前端是 React + Vite + Tailwind，双后端（Node.js 或 Rust），共享 Zod 校验的类型，以单个 Docker 镜像交付。",
+      "stack.sub": "一个 pnpm monorepo —— 前端是 React + Vite + Tailwind，后端是 Rust 服务器，共享 Zod 校验的类型，以单个 Docker 镜像交付。",
       "stack.frontend": "前端",
       "stack.backend": "后端（双）",
       "stack.tooling": "工具与交付",
@@ -1239,7 +1242,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f6.t": "本地 AI 图像",
       "feat.f6.d": "通过 ComfyUI（Z-Image）在本地设备上生成题目和主题图像，或接入云端服务商 —— 密钥始终留在服务端。",
       "feat.f7.t": "可分享的结果",
-      "feat.f7.d": "精美的 Open Graph 链接预览、带"自己来玩"行动号召的结果页和可下载的获胜者贴纸。",
+      "feat.f7.d": "精美的 Open Graph 链接预览、带“自己来玩”行动号召的结果页和可下载的获胜者贴纸。",
       "feat.f8.t": "投影仪 kiosk 与可靠性",
       "feat.f8.d": "一个 /display 投影仪视图、低延迟模式、崩溃恢复与断线重连，以及一个用于 AI 工具控制的 MCP 服务器 —— 经过加固并完成 600 名玩家的负载测试。",
       "feat.f9.t": "玩家头像",
@@ -1254,6 +1257,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "全新题型——玩家点击打乱的词块来重新组织句子的正确顺序，非常适合语言学习、定义和序列问题。",
       "modes.kicker": "无论你怎么玩",
       "modes.title": "模式与题型",
+      "modes.alltypes": "九种题型：单选、判断、投票、滑块、多选、填空、造句、数学输入和词性。",
       "modes.m1.t": "经典",
       "modes.m1.d": "在大屏幕上主持。",
       "modes.m2.t": "团队",
@@ -1345,11 +1349,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "Impulsado por Rust",
       "rust.title": "Un motor de juego seguro en memoria",
-      "rust.sub": "El servidor Rust ahora es el backend predeterminado. Comparte una sola base de datos Postgres con el servidor Node y utiliza el protocolo socket.io exacto — sin cambios de cliente necesarios.",
+      "rust.sub": "El servidor de Razzoozle se portó de Node.js a Rust — y Rust es ahora el único backend. Persiste todo en una sola base de datos Postgres y habla socket.io con el cliente React sin cambios.",
       "rust.f1.t": "Paridad de juego completa",
-      "rust.f1.d": "Juegos completos de múltiples preguntas, todos los 7 tipos de preguntas, reconexión de jugadores, autenticación del administrador, carga de cuestionarios desde disco, medios de IA y una puerta de CI de juego real que juega partidas de 100 jugadores en cada implementación.",
-      "rust.f2.t": "Arquitectura gemela",
-      "rust.f2.d": "Los backends de Node y Rust se ejecutan lado a lado, comparten una base de datos Postgres como fuente única de verdad y son seleccionables por cliente. Rust es ahora el valor predeterminado global.",
+      "rust.f1.d": "Juegos completos de múltiples preguntas, todos los 9 tipos de preguntas, reconexión de jugadores, autenticación del administrador, medios de IA y una puerta de CI de juego real que juega partidas de 100 jugadores en cada implementación.",
+      "rust.f2.t": "Backend solo en Rust",
+      "rust.f2.d": "El servidor Node.js ha sido retirado — Rust es ahora el único backend, con Postgres como la única fuente de verdad para cada juego, cuestionario y resultado.",
       "rust.f3.t": "Estado del juego verificado en tiempo de compilación",
       "rust.f3.d": "La máquina de estado del juego (Lobby → Round → Reveal → Scoreboard) se verifica en tiempo de compilación. Un único binario estático, sin sobrecarga en tiempo de ejecución, más fácil de enviar como aplicación Tauri de escritorio.",
       "rust.f4.t": "Protocolo de cable tipado",
@@ -1357,7 +1361,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "Tres crates, un binario",
       "stack.kicker": "Bajo el capó",
       "stack.title": "Un stack moderno y tipado",
-      "stack.sub": "Un monorepo de pnpm — React + Vite + Tailwind en el front, backend dual (Node.js o Rust), tipos compartidos validados con Zod y todo entregado como una única imagen de Docker.",
+      "stack.sub": "Un monorepo de pnpm — React + Vite + Tailwind en el front, un servidor Rust en el back, tipos compartidos validados con Zod y todo entregado como una única imagen de Docker.",
       "stack.frontend": "Frontend",
       "stack.backend": "Backend (dual)",
       "stack.tooling": "Herramientas y despliegue",
@@ -1392,6 +1396,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "Un nuevo tipo de pregunta — los jugadores tocan fragmentos de palabras barajados para reconstruir una frase en el orden correcto, excelente para idiomas, definiciones y secuencias.",
       "modes.kicker": "Como prefieras jugar",
       "modes.title": "Modos y tipos de pregunta",
+      "modes.alltypes": "Nueve tipos de pregunta: opción única, verdadero/falso, encuesta, deslizador, selección múltiple, respuesta escrita, constructor de oraciones, entrada matemática y tipos de palabra.",
       "modes.m1.t": "Clásico",
       "modes.m1.d": "Presenta en la pantalla grande.",
       "modes.m2.t": "Equipo",
@@ -1483,11 +1488,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "Propulsé par Rust",
       "rust.title": "Un moteur de jeu sûr en mémoire",
-      "rust.sub": "Le serveur Rust est maintenant le backend par défaut. Il partage une seule base de données Postgres avec le serveur Node et utilise le protocole socket.io exact — aucun changement de client requis.",
+      "rust.sub": "Le serveur de Razzoozle a été porté de Node.js vers Rust — et Rust est désormais le seul backend. Il persiste tout dans une seule base de données Postgres et parle socket.io au client React inchangé.",
       "rust.f1.t": "Parité de jeu complète",
-      "rust.f1.d": "Jeux multi-questions complets, tous les 7 types de questions, reconnexion des joueurs, authentification du gestionnaire, chargement de quiz depuis le disque, médias IA et une porte CI de jeu réel qui joue des parties de 100 joueurs à chaque déploiement.",
-      "rust.f2.t": "Architecture jumelle",
-      "rust.f2.d": "Les backends Node et Rust s'exécutent côte à côte, partagent une seule base de données Postgres comme source unique de vérité et sont sélectionnables par le client. Rust est maintenant le paramètre par défaut global.",
+      "rust.f1.d": "Jeux multi-questions complets, tous les 9 types de questions, reconnexion des joueurs, authentification du gestionnaire, médias IA et une porte CI de jeu réel qui joue des parties de 100 joueurs à chaque déploiement.",
+      "rust.f2.t": "Backend uniquement en Rust",
+      "rust.f2.d": "Le serveur Node.js a été retiré — Rust est désormais le seul backend, avec Postgres comme unique source de vérité pour chaque partie, quiz et résultat.",
       "rust.f3.t": "État du jeu vérifié au moment de la compilation",
       "rust.f3.d": "La machine d'état du jeu (Lobby → Round → Reveal → Scoreboard) est vérifiée au moment de la compilation. Un seul binaire statique, aucune surcharge d'exécution, plus facile à déployer sous forme d'application Tauri de bureau.",
       "rust.f4.t": "Protocole filaire typé",
@@ -1495,7 +1500,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "Trois crates, un binaire",
       "stack.kicker": "Sous le capot",
       "stack.title": "Une stack moderne et typée",
-      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind côté front, backend dual (Node.js ou Rust), des types partagés validés par Zod, le tout livré sous forme d'une seule image Docker.",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind côté front, un serveur Rust côté back, des types partagés validés par Zod, le tout livré sous forme d'une seule image Docker.",
       "stack.frontend": "Frontend",
       "stack.backend": "Backend (dual)",
       "stack.tooling": "Outils et déploiement",
@@ -1530,6 +1535,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "Un nouveau type de question — les joueurs appuient sur des fragments de mots mélangés pour reconstruire une phrase dans le bon ordre, parfait pour les langues, les définitions et les séquences.",
       "modes.kicker": "Quelle que soit votre façon de jouer",
       "modes.title": "Modes et types de questions",
+      "modes.alltypes": "Neuf types de questions : choix unique, vrai/faux, sondage, curseur, sélection multiple, réponse saisie, constructeur de phrases, saisie mathématique et types de mots.",
       "modes.m1.t": "Classique",
       "modes.m1.d": "Animez sur grand écran.",
       "modes.m2.t": "Équipe",
@@ -1621,11 +1627,11 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "hero.mockTimer": "00:18",
       "rust.kicker": "Alimentato da Rust",
       "rust.title": "Un motore di gioco sicuro in memoria",
-      "rust.sub": "Il server Rust è ora il backend predefinito. Condivide un singolo database Postgres con il server Node e utilizza il protocollo socket.io esatto — nessun cambio al client necessario.",
+      "rust.sub": "Il server di Razzoozle è stato portato da Node.js a Rust — e Rust è ora l'unico backend. Persiste tutto in un singolo database Postgres e parla socket.io con il client React invariato.",
       "rust.f1.t": "Parità di gioco completa",
-      "rust.f1.d": "Giochi completi multi-domande, tutti i 7 tipi di domanda, riconnessione del giocatore, autenticazione del gestore, caricamento del quiz da disco, media IA e un gate CI di gioco reale che gioca partite con 100 giocatori ad ogni implementazione.",
-      "rust.f2.t": "Architettura gemella",
-      "rust.f2.d": "I backend Node e Rust vengono eseguiti affiancati, condividono un singolo database Postgres come fonte unica della verità e sono selezionabili per client. Rust è ora l'impostazione predefinita globale.",
+      "rust.f1.d": "Giochi completi multi-domande, tutti i 9 tipi di domanda, riconnessione del giocatore, autenticazione del gestore, media IA e un gate CI di gioco reale che gioca partite con 100 giocatori ad ogni implementazione.",
+      "rust.f2.t": "Backend solo Rust",
+      "rust.f2.d": "Il server Node.js è stato ritirato — Rust è ora l'unico backend, con Postgres come unica fonte di verità per ogni partita, quiz e risultato.",
       "rust.f3.t": "Stato del gioco controllato in fase di compilazione",
       "rust.f3.d": "La macchina di stato del gioco (Lobby → Round → Reveal → Scoreboard) viene controllata in fase di compilazione. Un singolo binario statico, nessun sovraccarico in fase di esecuzione, più facile da distribuire come app Tauri desktop.",
       "rust.f4.t": "Protocollo cablato tipizzato",
@@ -1633,7 +1639,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "rust.archTitle": "Tre crate, un binario",
       "stack.kicker": "Sotto il cofano",
       "stack.title": "Uno stack moderno e tipizzato",
-      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind sul front, backend dual (Node.js o Rust), tipi condivisi validati con Zod, il tutto distribuito come una singola immagine Docker.",
+      "stack.sub": "Un monorepo pnpm — React + Vite + Tailwind sul front, un server Rust sul back, tipi condivisi validati con Zod, il tutto distribuito come una singola immagine Docker.",
       "stack.frontend": "Frontend",
       "stack.backend": "Backend (dual)",
       "stack.tooling": "Strumenti e distribuzione",
@@ -1668,6 +1674,7 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f13.d": "Un nuovo tipo di domanda — i giocatori toccano frammenti di parole mescolati per ricostruire una frase nell'ordine corretto, perfetto per lingue, definizioni e sequenze.",
       "modes.kicker": "Comunque tu voglia giocare",
       "modes.title": "Modalità e tipi di domanda",
+      "modes.alltypes": "Nove tipi di domanda: scelta singola, vero/falso, sondaggio, cursore, selezione multipla, risposta digitata, costruttore di frasi, input matematico e parti del discorso.",
       "modes.m1.t": "Classica",
       "modes.m1.d": "Conduci sul grande schermo.",
       "modes.m2.t": "Squadra",
