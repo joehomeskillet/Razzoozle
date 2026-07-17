@@ -2,6 +2,7 @@ import { THEME_TOKENS } from "@razzoozle/common/theme-tokens"
 import { DEFAULT_THEME } from "@razzoozle/common/types/theme"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
 import ActionFooter from "@razzoozle/web/components/ui/ActionFooter"
 import ColorPickerField from "@razzoozle/web/components/ui/ColorPickerField"
@@ -124,14 +125,12 @@ const ConfigTheme = () => {
                   label={t("manager:theme.showFooter")}
                   htmlFor="theme-show-branding"
                 >
-                  <input
+                  <Checkbox
                     id="theme-show-branding"
-                    type="checkbox"
                     checked={draft.showBranding}
                     onChange={(e) =>
                       preview({ ...draft, showBranding: e.target.checked })
                     }
-                    className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   />
                 </LabelRow>
               </FormSection>
