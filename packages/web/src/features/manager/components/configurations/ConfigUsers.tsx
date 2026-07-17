@@ -4,6 +4,7 @@ import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import Loader from "@razzoozle/web/components/Loader"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import { ActionFooter } from "@razzoozle/web/components/ui"
@@ -612,7 +613,7 @@ const ConfigUsers = () => {
                   >
                     {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
                   </label>
-                  <select
+                  <Select
                     id="new-user-role"
                     value={role}
                     onChange={(event) => {
@@ -626,7 +627,6 @@ const ConfigUsers = () => {
                       }
                     }}
                     disabled={creating}
-                    className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   >
                     <option value="user">
                       {t("manager:users.role.user", { defaultValue: "Nutzer" })}
@@ -641,7 +641,7 @@ const ConfigUsers = () => {
                         })}
                       </option>
                     )}
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="mt-2 flex justify-end gap-2">
