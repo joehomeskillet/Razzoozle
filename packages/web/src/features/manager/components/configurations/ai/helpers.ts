@@ -5,8 +5,8 @@ export const clampQuizCount = (value: number) =>
 
 export const providerStatusClass = (configured: boolean) =>
   configured
-    ? "rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]"
-    : "rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-medium)]"
+    ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+    : "bg-[var(--surface-3)] text-[var(--ink-medium)]"
 
 // Static privacy/help copy per provider. Local stays on-host; the cloud
 // providers transmit topic + question text to an external service. Custom
