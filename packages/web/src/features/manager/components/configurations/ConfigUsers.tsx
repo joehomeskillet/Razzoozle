@@ -424,15 +424,41 @@ const ConfigUsers = () => {
       />
 
       {/* Reset Password Dialog */}
-      {resetPasswordId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-lg bg-[var(--surface)] p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">
-              {t("manager:users.resetPasswordTitle", {
-                defaultValue: "Passwort zurücksetzen",
-              })}
-            </h2>
-            <div className="mb-4">
+      <Dialog.Root
+        open={resetPasswordId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordId(null)
+            setResetNewPassword("")
+          }
+        }}
+      >
+        <Portal>
+          <Overlay className="fixed inset-0 z-40 bg-black/40" />
+          <Dialog.Content
+            aria-labelledby="reset-password-dialog-title"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <Dialog.Title
+                id="reset-password-dialog-title"
+                className="text-lg font-semibold text-[var(--ink)]"
+              >
+                {t("manager:users.resetPasswordTitle", {
+                  defaultValue: "Passwort zurücksetzen",
+                })}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]"
+                  aria-label={t("common:close")}
+                >
+                  <X className="size-5" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <div className="mt-4">
               <label
                 htmlFor="reset-password-input"
                 className="mb-2 block text-sm font-semibold text-[var(--ink-muted)]"
@@ -452,7 +478,7 @@ const ConfigUsers = () => {
                 })}
               />
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="mt-4 flex justify-end gap-3">
               <Button
                 type="button"
                 onClick={() => {
@@ -479,9 +505,9 @@ const ConfigUsers = () => {
                   : t("common:confirm", { defaultValue: "Bestätigen" })}
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </Dialog.Content>
+        </Portal>
+      </Dialog.Root>
 
       {/* Create User Dialog */}
       <Dialog.Root open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
