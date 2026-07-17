@@ -97,7 +97,11 @@ const SLIDER_FIELDS: Array<{
   { field: "step", labelKey: "quizz:slider.step" },
 ]
 
-const QuestionEditorType = () => {
+interface QuestionEditorTypeProps {
+  excludeTypes?: QuestionTypeKey[]
+}
+
+const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation()
   const type: QuestionTypeKey = (currentQuestion.type ?? "choice") as QuestionTypeKey
@@ -105,13 +109,16 @@ const QuestionEditorType = () => {
   // Gate Mathematik, Wortarten, and Vokabelliste visibility on klassenEnabled
   const config = useManagerStore((s) => s.config)
   const klassenEnabled = config?.klassenEnabled ?? false
+
+  // First apply klassenEnabled filter, then apply excludeTypes filter
   const availableTypes = klassenEnabled
-    ? TYPES
+    ? TYPES.filter((tp) => !excludeTypes.includes(tp.key))
     : TYPES.filter(
         (tp) =>
           tp.key !== "mathematik" &&
           tp.key !== "wortarten" &&
-          tp.key !== "vokabelliste"
+          tp.key !== "vokabelliste" &&
+          !excludeTypes.includes(tp.key)
       )
 
   // Clear fields that don't belong to the target type (avoid stale data).
