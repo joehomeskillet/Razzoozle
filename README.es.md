@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Demo en vivo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentación](docs/)** · **[🖥️ App de escritorio](https://github.com/joehomeskillet/razzoozle-desktop)** · **[Reportar un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Demo en vivo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentación](docs/)** · **[Reportar un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -118,13 +118,6 @@ Los humanos revisan e integran cada commit. La IA mejora la velocidad y la calid
 ## Configuración y documentación
 
 Los datos de ejecución viven en el volumen `config`, inicializado en el primer arranque. Los ajustes de la partida están en `config/game.json`; los cuestionarios se crean en el editor del moderador o como `config/quizz/*.json`. Consulta **[docs/](docs/)**: [Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md).
-
----
-
-## Apps y complementos
-
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — una app nativa de Windows para alojar y gestionar partidas sin navegador.
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un servicio de descubrimiento ligero (nunca retransmite la partida).
 
 ---
 

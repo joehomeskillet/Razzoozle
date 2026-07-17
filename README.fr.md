@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentation](docs/)** · **[🖥️ Application Desktop](https://github.com/joehomeskillet/razzoozle-desktop)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *dérivé de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Démo en direct](https://razzoozle.joelduss.xyz)** · **[🌐 Vitrine](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentation](docs/)** · **[Signaler un problème](https://github.com/joehomeskillet/Razzoozle/issues)** · *dérivé de [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -118,13 +118,6 @@ Les humains examinent et fusionnent chaque commit. L'IA améliore la vitesse et 
 ## Configuration et documentation
 
 Les données d'exécution résident dans le volume `config`, initialisées au premier démarrage. Les paramètres de jeu se trouvent dans `config/game.json` ; les quiz sont créés dans l'éditeur du manager ou en tant que `config/quizz/*.json`. Voir **[docs/](docs/)** : [Auto-hébergement](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Thématisation](docs/Theming.md) · [Mode faible latence](docs/LOW-LATENCY-MODE.md).
-
----
-
-## Applications et compagnons
-
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Bêta)** — une application Windows native pour héberger et gérer des parties sans navigateur.
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un service de découverte léger (il ne relaie jamais le jeu).
 
 ---
 

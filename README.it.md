@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Demo live](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentazione](docs/)** · **[🖥️ App desktop](https://github.com/joehomeskillet/razzoozle-desktop)** · **[Segnala un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork di [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Demo live](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Documentazione](docs/)** · **[Segnala un problema](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork di [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -118,13 +118,6 @@ Gli umani revisionano e uniscono ogni commit. L'IA migliora la velocità e la qu
 ## Configurazione e documentazione
 
 I dati di runtime risiedono nel volume `config`, inizializzato al primo avvio. Le impostazioni di partita sono in `config/game.json`; i quiz si creano nell'editor del moderatore o come `config/quizz/*.json`. Vedi **[docs/](docs/)**: [Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md).
-
----
-
-## App e companion
-
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — un'app Windows nativa per ospitare e gestire partite senza browser.
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — un servizio di discovery leggero (non inoltra mai il gameplay).
 
 ---
 
