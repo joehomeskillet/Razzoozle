@@ -626,7 +626,7 @@ const ConfigUsers = () => {
                       }
                     }}
                     disabled={creating}
-                    className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
+                    className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] px-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   >
                     <option value="user">
                       {t("manager:users.role.user", { defaultValue: "Nutzer" })}
