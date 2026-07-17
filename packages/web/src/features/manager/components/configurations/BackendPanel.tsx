@@ -1,4 +1,5 @@
 import Button from "@razzoozle/web/components/Button"
+import StatusBadge from "@razzoozle/web/components/StatusBadge"
 import { getGameBackend } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   ListRow,
@@ -57,24 +58,20 @@ const BackendPanel = () => {
     if (isUp === null) {
       return <span className="text-xs text-[var(--ink-subtle)]">—</span>
     }
-    return (
-      <div className="flex items-center gap-1">
-        {isUp ? (
-          <>
-            <CheckCircle2 className="size-4 text-[var(--state-correct)]" />
-            <span className="text-xs text-[var(--state-correct)]">
-              {t("dev.backend.up", { defaultValue: "Online" })}
-            </span>
-          </>
-        ) : (
-          <>
-            <XCircle className="size-4 text-[var(--state-wrong)]" />
-            <span className="text-xs text-[var(--state-wrong)]">
-              {t("dev.backend.down", { defaultValue: "Offline" })}
-            </span>
-          </>
-        )}
-      </div>
+    return isUp ? (
+      <StatusBadge
+        status="online"
+        icon={<CheckCircle2 className="size-4" />}
+      >
+        {t("dev.backend.up", { defaultValue: "Online" })}
+      </StatusBadge>
+    ) : (
+      <StatusBadge
+        status="offline"
+        icon={<XCircle className="size-4" />}
+      >
+        {t("dev.backend.down", { defaultValue: "Offline" })}
+      </StatusBadge>
     )
   }
 
