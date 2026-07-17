@@ -22,8 +22,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 // Below this remaining fraction the timer enters its "urgent" state: the ring +
 // number shift to a warning red and (motion permitting) breathe with a pulse.
 const URGENT_FRACTION = 0.25
-// Theme-agnostic urgency colour. Reads on both flat cream and glass
-// (Razzoozle) themes; not tied to `--color-accent` so the shift is unmistakable.
+// Theme-agnostic urgency colour. Reads on the flat cream theme; not tied to
+// `--color-accent` so the shift is unmistakable.
 const URGENT_STROKE = "var(--timer-urgent)"
 
 /**
@@ -46,8 +46,7 @@ const URGENT_STROKE = "var(--timer-urgent)"
  * — but the colour shift remains, so the warning is never lost.
  *
  * Theme-agnostic: the foreground uses `var(--color-accent)` over a translucent
- * white track, so it reads correctly on both the flat cream and glass
- * (Razzoozle) themes.
+ * white track, so it reads correctly on the flat cream theme.
  */
 const CircularTimer = ({ seconds, total, size = 88, className }: Props) => {
   const { t } = useTranslation()

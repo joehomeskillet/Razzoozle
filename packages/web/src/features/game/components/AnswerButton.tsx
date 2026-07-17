@@ -14,8 +14,8 @@ import {
  * Kahoot-style filled shape, mapped by answer color index (modulo-safe):
  * 0 = triangle, 1 = diamond (square rotated 45deg), 2 = circle, 3 = square.
  * Rendered as an inline SVG filled with `currentColor`, so it inherits the
- * tile's `var(--answer-text)` and stays legible on every answer color in both
- * the flat cream and glass (Razzoozle) themes.
+ * tile's `var(--answer-text)` and stays legible on every answer color in the
+ * flat cream theme.
  */
 const ShapeIcon = ({ colorIndex }: { colorIndex: number }) => {
   const shape = colorIndex % 4

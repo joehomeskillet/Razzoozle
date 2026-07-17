@@ -1,7 +1,7 @@
 /**
  * RoundRecapCard — one compact award card for the per-round recap strip.
  * A smaller sibling of the end-game `RecapSequence` card:
- * same white liquid-glass surface, emoji medal disc, ink label/name, and value
+ * same white card surface, emoji medal disc, ink label/name, and value
  * pill, but tighter padding for a horizontal strip.
  *
  * Motion: this card is a `motion.div` ONLY so it can own an optional re-emphasis
