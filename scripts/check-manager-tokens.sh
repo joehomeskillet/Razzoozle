@@ -3,7 +3,10 @@
 # Token-class grep gate for manager package design tokens (D1/D2/D10).
 # Enforces design system token constraints before W1 migration completes.
 # Usage: check-manager-tokens.sh [path]
-# Defaults to packages/web/src/features/manager if no path given.
+# Defaults to packages/web/src/features/manager plus the shared component
+# dirs (components/ui, components/manager, components/labels) if no path
+# given. Passing an explicit path scans only that single root (unchanged
+# override behavior).
 #
 # Performance: grep-based single-pass (~25ms full tree).
 # Output: file:line:TAG 'full-match' format. Matches counted, not lines.
@@ -11,16 +14,29 @@
 
 set -euo pipefail
 
-SCAN_ROOT="${1:-packages/web/src/features/manager}"
-
-if [[ ! -d "$SCAN_ROOT" ]]; then
-  echo "Error: scan root '$SCAN_ROOT' does not exist" >&2
-  exit 1
+if [[ $# -ge 1 ]]; then
+  SCAN_ROOTS=("$1")
+else
+  SCAN_ROOTS=(
+    "packages/web/src/features/manager"
+    "packages/web/src/components/ui"
+    "packages/web/src/components/manager"
+    "packages/web/src/components/labels"
+  )
 fi
+
+for root in "${SCAN_ROOTS[@]}"; do
+  if [[ ! -d "$root" ]]; then
+    echo "Error: scan root '$root' does not exist" >&2
+    exit 1
+  fi
+done
 
 TMPFILE=$(mktemp)
 EXCLUDE=$(mktemp)
 trap "rm -f '$TMPFILE' '$EXCLUDE'" EXIT
+
+for SCAN_ROOT in "${SCAN_ROOTS[@]}"; do
 
 # Build exclusion list: file:line pairs with token-ok: comments.
 grep -rn 'token-ok:' --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
@@ -55,6 +71,8 @@ grep -rnoE 'bg-black/[0-9]+' \
   grep -vF -f "$EXCLUDE" | \
   grep -v ':bg-black/40$' | \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D10 SCRIM opacity '\2' invalid (only bg-black\/40 allowed)/" >>"$TMPFILE" || true
+
+done
 
 # Output findings. Each line is one match (matches counted, not lines).
 # Lines with token-ok: comments in source are excluded via pre-filter list.
