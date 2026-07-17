@@ -1,6 +1,6 @@
 import clsx from "clsx"
 import { Image as ImageIcon, LoaderCircle, Upload } from "lucide-react"
-import { type ChangeEvent, type ReactNode, useEffect, useState } from "react"
+import { type ChangeEvent, type ReactNode, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import Button from "@razzoozle/web/components/Button"
 
@@ -70,6 +70,7 @@ const AssetPreview = ({
   hideLabel = false,
 }: AssetPreviewProps) => {
   const { t } = useTranslation()
+  const inputRef = useRef<HTMLInputElement>(null)
   // Swap to the placeholder when the hosted file fails to load (e.g. 404).
   const [imageFailed, setImageFailed] = useState(false)
   // Local oversize guard message, separate from the parent's `error`.
@@ -149,20 +150,12 @@ const AssetPreview = ({
           {hint && <p className="truncate text-sm text-[var(--ink-subtle)]">{hint}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/*
-            Button-look <label> + hidden input — mirrors the shared
-            <Button variant="primary"> surface (accent-contrast clears AA on
-            white) with an AA focus ring; the native control keeps a11y.
-          */}
-          <label
-            aria-disabled={uploading || disabled}
-            className={clsx(
-              "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold text-white shadow-sm transition-colors", // token-ok: white-on-accent-contrast, AA per tokens.css §design.md
-              compact ? "min-h-9 px-2 text-xs" : "min-h-11 px-3 text-sm",
-              "bg-[var(--accent-contrast)] hover:brightness-[1.05] active:brightness-[0.95]",
-              "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-primary)]",
-              (uploading || disabled) && "cursor-not-allowed opacity-60",
-            )}
+          <Button
+            variant="primary"
+            size="md"
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading || disabled}
           >
             {uploading ? (
               <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -170,14 +163,15 @@ const AssetPreview = ({
               <Upload className="size-4" aria-hidden="true" />
             )}
             {t("manager:theme.upload")}
-            <input
-              type="file"
-              accept={accept}
-              className="sr-only"
-              disabled={uploading || disabled}
-              onChange={handleChange}
-            />
-          </label>
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={accept}
+            className="sr-only"
+            disabled={uploading || disabled}
+            onChange={handleChange}
+          />
           {onReset && value != null && (
             <Button
               variant="secondary"
