@@ -57,7 +57,7 @@ const OverflowMenu = ({ actions }: OverflowMenuProps) => {
           <div
             ref={menuRef}
             role="menu"
-            className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+            className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-[var(--shadow-flat)]"
           >
             {actions.map(({ key, icon: Icon, label, onClick, disabled, destructive }) => (
               <button
@@ -71,7 +71,7 @@ const OverflowMenu = ({ actions }: OverflowMenuProps) => {
                 disabled={disabled}
                 aria-label={label}
                 data-testid={key}
-                className={`flex w-full items-center gap-3 px-3 py-2 text-sm transition-colors ${
+                className={`flex w-full min-h-11 items-center gap-3 px-3 py-2 text-sm transition-colors ${
                   disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[var(--surface-3)] cursor-pointer"
                 } ${
                   destructive
