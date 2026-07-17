@@ -4,6 +4,10 @@ import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import type { Label } from "@razzoozle/web/components/labels/LabelChip"
 import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
+import {
+  popoverContentClass,
+  popoverItemClass,
+} from "@razzoozle/web/components/manager/popover"
 import type { QuizzMeta } from "@razzoozle/common/types/game"
 import {
   EmptyState,
@@ -259,14 +263,14 @@ const QuizzList = ({
                               position="popper"
                               sideOffset={4}
                               onCloseAutoFocus={(e) => e.preventDefault()}
-                              className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                              className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
                             >
                               <Select.Viewport className="p-1">
                                 {availableLabels.map((label: Label) => (
                                   <Select.Item
                                     key={label.id}
                                     value={String(label.id)}
-                                    className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                                    className={popoverItemClass}
                                   >
                                     <Select.ItemText>{label.name}</Select.ItemText>
                                   </Select.Item>

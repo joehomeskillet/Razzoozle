@@ -1,6 +1,10 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import Badge from "@razzoozle/web/components/manager/Badge"
+import {
+  popoverContentClass,
+  popoverItemClass,
+} from "@razzoozle/web/components/manager/popover"
 import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import {
@@ -180,14 +184,14 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
                         <Select.Content
                           position="popper"
                           sideOffset={4}
-                          className="z-50 min-w-32 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-md"
+                          className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
                         >
                           <Select.Viewport className="p-1">
                             {availableLabels.map((label) => (
                               <Select.Item
                                 key={label.id}
                                 value={String(label.id)}
-                                className="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--ink-muted)] outline-none hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]"
+                                className={popoverItemClass}
                               >
                                 <Select.ItemText>{label.name}</Select.ItemText>
                               </Select.Item>
