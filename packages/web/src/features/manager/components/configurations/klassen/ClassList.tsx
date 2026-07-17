@@ -1,5 +1,4 @@
 import * as Select from "@radix-ui/react-select"
-import Button from "@razzoozle/web/components/Button"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
@@ -108,16 +107,6 @@ const ClassList = ({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-4 flex shrink-0">
-        <Button
-          variant="primary"
-          className="flex-1 rounded-xl"
-          onClick={onCreateClass}
-        >
-          {t("manager:classes.create")}
-        </Button>
-      </div>
-
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
         {classes.map((classObj) => {
           const classLabels = (classObj.labelIds ?? [])

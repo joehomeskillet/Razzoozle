@@ -3,7 +3,8 @@ import { Portal, Overlay } from "@radix-ui/react-dialog"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Input from "@razzoozle/web/components/Input"
 import Button from "@razzoozle/web/components/Button"
-import { X } from "lucide-react"
+import { ActionFooter } from "@razzoozle/web/components/ui"
+import { Plus, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useState } from "react"
 
@@ -103,7 +104,8 @@ const ConfigKlassen = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
+    <div className="flex min-h-0 flex-1 flex-col pb-20">
       {classes.length > 0 && (
         <div className="mb-4 flex shrink-0">
           <label htmlFor="classes-search" className="sr-only">
@@ -342,6 +344,20 @@ const ConfigKlassen = () => {
         onConfirm={handleDeleteStudent}
       />
     </div>
+
+    <ActionFooter>
+      <Button
+        data-testid="klassen-create-btn"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+        onClick={handleOpenCreateDialog}
+      >
+        <Plus className="size-5" aria-hidden strokeWidth={2.5} />
+        <span>{t("manager:classes.create")}</span>
+      </Button>
+    </ActionFooter>
+    </>
   )
 }
 
