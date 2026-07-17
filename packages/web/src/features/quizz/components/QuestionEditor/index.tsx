@@ -1,3 +1,4 @@
+import type { QuestionType } from "@razzoozle/common/types/game"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
 import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAnswers"
@@ -11,6 +12,8 @@ import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/Qu
 import QuestionEditorVokabel from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorVokabel"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode } from "react"
+
+type QuestionTypeKey = QuestionType | "vokabelliste"
 
 interface RevealProps {
   children: ReactNode
@@ -39,6 +42,10 @@ const Reveal = ({ children, index }: RevealProps) => {
   )
 }
 
+interface QuestionEditorProps {
+  excludeTypes?: QuestionTypeKey[]
+}
+
 /**
  * The editor body: the question canvas (`<main>`) plus the per-question config.
  *
@@ -51,7 +58,7 @@ const Reveal = ({ children, index }: RevealProps) => {
  * The shared sub-components (Title/Type/Media/Answers/Config) are reused as-is —
  * /submit wraps the same components, so their markup stays untouched here.
  */
-const QuestionEditor = () => {
+const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const { currentQuestion } = useQuizzEditor()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
@@ -108,7 +115,7 @@ const QuestionEditor = () => {
 
         <Reveal index={3}>
           <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <QuestionEditorType />
+            <QuestionEditorType excludeTypes={excludeTypes} />
           </div>
         </Reveal>
       </main>
