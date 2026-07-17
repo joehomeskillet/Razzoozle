@@ -7,7 +7,9 @@ import type {
 } from "@razzoozle/common/types/submission"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import clsx from "clsx"
 import { Check, ChevronDown } from "lucide-react"
 import { motion } from "motion/react"
@@ -230,11 +232,9 @@ const SubmissionCard = ({
       {isPending && approvingId === s.id && (
         <div className="mt-3 space-y-2 rounded-lg bg-[var(--surface-2)] p-3">
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--ink-muted)]">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={approveToCatalog}
               onChange={(event) => setApproveToCatalog(event.target.checked)}
-              className="accent-[var(--color-primary)] focus-visible:outline-[var(--color-primary)] size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             />
             <span>{t("manager:catalog.approveToCatalog")}</span>
           </label>
@@ -319,13 +319,13 @@ const SubmissionCard = ({
                 defaultValue: "Kategorie",
               })}
             </label>
-            <select
+            <Select
               id={`reject-category-${s.id}`}
               value={rejectCategory}
               onChange={(event) =>
                 setRejectCategory(event.target.value as SubmissionCategory | "")
               }
-              className="focus-visible:outline-[var(--color-primary)] min-h-11 w-full rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:-outline-offset-2"
+              className="text-sm"
             >
               <option value="">—</option>
               {SUBMISSION_CATEGORIES.map((cat) => (
@@ -335,7 +335,7 @@ const SubmissionCard = ({
                   })}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="flex flex-wrap gap-2">
