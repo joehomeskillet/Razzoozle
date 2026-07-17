@@ -11,6 +11,7 @@ import {
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
 import { LabelRow } from "@razzoozle/web/components/ui"
+import Select from "@razzoozle/web/components/Select"
 import { ImagePlus } from "lucide-react"
 import type { TFunction } from "i18next"
 
@@ -58,7 +59,7 @@ const ImageSection = ({
                       defaultValue: "Kantenlänge des generierten Bildes",
                     })}
                   >
-                    <select
+                    <Select
                       id={`ai-resolution-${provider.id}`}
                       value={provider.resolution ?? IMAGE_RESOLUTION_DEFAULT}
                       onChange={(event) =>
@@ -66,7 +67,6 @@ const ImageSection = ({
                           resolution: Number(event.target.value),
                         })
                       }
-                      className="min-h-11 w-full rounded-lg border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                     >
                       {IMAGE_RESOLUTIONS.map((size) => (
                         <option key={size} value={size}>
@@ -76,7 +76,7 @@ const ImageSection = ({
                           })}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </LabelRow>
                 </div>
               </div>
