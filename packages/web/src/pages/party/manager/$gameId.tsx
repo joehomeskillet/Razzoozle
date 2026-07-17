@@ -148,7 +148,7 @@ const ManagerGamePage = () => {
       onNext={handleSkip}
       // Exit (LogOut) button opens the confirm dialog instead of leaving
       // immediately; performExit runs after the host confirms.
-      onBack={status.name === STATUS.SHOW_ROOM ? () => setConfirmExit(true) : undefined}
+      onBack={status.name === STATUS.FINISHED ? undefined : () => setConfirmExit(true)}
       manager
     >
       <AutoAdvanceCountdown ms={autoAdvanceMs} />
