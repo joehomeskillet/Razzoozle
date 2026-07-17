@@ -1,6 +1,7 @@
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -37,24 +38,15 @@ const ConfigSchueler = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">
-            {t("manager:schueler.title")}
-          </h2>
-          <p className="mt-2 text-sm text-[var(--ink-medium)]">
-            {t("manager:schueler.description")}
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          className="shrink-0 rounded-[var(--radius-theme)]"
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          <Plus className="size-4" />
-          {t("manager:schueler.create")}
-        </Button>
+    <>
+    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
+      <div>
+        <h2 className="text-lg font-semibold text-[var(--ink)]">
+          {t("manager:schueler.title")}
+        </h2>
+        <p className="mt-2 text-sm text-[var(--ink-medium)]">
+          {t("manager:schueler.description")}
+        </p>
       </div>
 
       {hasStudents ? (
@@ -149,6 +141,19 @@ const ConfigSchueler = () => {
         onConfirm={handleRegenPin}
       />
     </div>
+
+    <ActionFooter>
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+        onClick={() => setIsCreateDialogOpen(true)}
+      >
+        <Plus className="size-5" aria-hidden strokeWidth={2.5} />
+        <span>{t("manager:schueler.create")}</span>
+      </Button>
+    </ActionFooter>
+    </>
   )
 }
 
