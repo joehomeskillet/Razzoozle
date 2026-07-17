@@ -6,6 +6,7 @@ import {
   ListRow,
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { Activity, Gamepad2, PlugZap, ScrollText } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
@@ -46,11 +47,11 @@ export const ObservabilityCard = ({
       title={t("dev.observability.title")}
       description={t("dev.observability.description")}
       actions={
-        <span
+        <Badge
           className={
             isConnected
-              ? "inline-flex items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]"
-              : "inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-subtle)]"
+              ? "gap-1.5 py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+              : "gap-1.5 py-1 bg-[var(--surface-3)] text-[var(--ink-subtle)]"
           }
         >
           <span
@@ -62,7 +63,7 @@ export const ObservabilityCard = ({
             }
           />
           {t("dev.observability.serverHealth")}
-        </span>
+        </Badge>
       }
     >
       <div className="space-y-4">
