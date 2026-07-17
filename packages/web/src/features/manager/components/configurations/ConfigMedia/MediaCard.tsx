@@ -66,7 +66,7 @@ const MediaCard = ({
           defaultValue: "{{name}} auswählen",
         })}
         onClick={handleCardSelect(item.id)}
-        className="absolute top-0 left-0 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-tl-xl focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+        className="absolute top-0 left-0 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-tl-[var(--radius-theme)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]"
       >
         <span
           className={clsx(
