@@ -155,7 +155,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             <div className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-[var(--ink)]">
-                  {t("manager:labels.assignLabel", { defaultValue: "Fächer" })}
+                  {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
                 </label>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {itemLabels.map((label) => (
