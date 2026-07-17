@@ -5,10 +5,12 @@ import {
   TIER_TEXT,
   type AchievementTier,
 } from "@razzoozle/web/features/game/utils/achievements"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { useTranslation } from "react-i18next"
+import clsx from "clsx"
 
 // ---------------------------------------------------------------------------
-// Tier section header — gradient strip with label + enabled-count badge
+// Tier section header — gradient pill with label + enabled-count badge
 // ---------------------------------------------------------------------------
 
 interface TierHeaderProps {
@@ -26,12 +28,17 @@ const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
 
   return (
     <div className="flex items-center gap-3">
-      {/* Gradient pill */}
-      <span
-        className={`inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r px-3 py-1 text-xs font-bold tracking-wide ring-2 ${gradient} ${textCls} ${ringCls}`}
+      {/* Gradient pill — layers gradient + text + ring on chipBase structure */}
+      <Badge
+        className={clsx(
+          "bg-gradient-to-r px-3 py-1 font-bold tracking-wide ring-2",
+          gradient,
+          textCls,
+          ringCls,
+        )}
       >
         {label}
-      </span>
+      </Badge>
       {/* Enabled count */}
       <span className="tabular-nums text-xs font-semibold text-[var(--ink-subtle)]">
         {enabledCount}/{totalCount}{" "}
