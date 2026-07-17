@@ -30,6 +30,7 @@ tsconfig.tsbuildinfo
 test-results/
 playwright-report/
 **/*-snapshots/
+/artifacts/
 /live-*.png
 /smoke-*.png
 /mockup-*.png
