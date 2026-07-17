@@ -63,7 +63,7 @@ const ColorPickerField = ({
       <label
         htmlFor={inputId}
         className={clsx(
-          "shrink-0 cursor-pointer text-sm font-medium text-gray-700 sm:w-40",
+          "shrink-0 cursor-pointer text-sm font-medium text-[var(--ink-muted)] sm:w-40",
           "flex min-h-11 items-center",
         )}
       >
@@ -78,7 +78,7 @@ const ColorPickerField = ({
           className="relative cursor-pointer"
         >
           <span
-            className="block size-11 rounded-lg border border-gray-200 shadow-sm"
+            className="block size-11 rounded-lg border border-[var(--line)] shadow-sm"
             style={{ backgroundColor: value }}
           />
           <input
@@ -91,7 +91,7 @@ const ColorPickerField = ({
           />
         </label>
 
-        <span className="font-mono text-xs tracking-tight text-gray-500 uppercase tabular-nums">
+        <span className="font-mono text-xs tracking-tight text-[var(--ink-subtle)] uppercase tabular-nums">
           {value}
         </span>
 

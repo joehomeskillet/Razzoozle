@@ -23,9 +23,9 @@ const FormSection = ({
 }: FormSectionProps) => (
   <section className={clsx("mb-6", className)}>
     <div className="mb-4">
-      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+      <h3 className="text-sm font-semibold text-[var(--ink)]">{title}</h3>
       {description && (
-        <p className="mt-0.5 text-sm text-gray-500">{description}</p>
+        <p className="mt-0.5 text-sm text-[var(--ink-subtle)]">{description}</p>
       )}
     </div>
     <div className="space-y-4">{children}</div>
