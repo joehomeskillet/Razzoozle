@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { SelectedModes } from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -270,18 +271,17 @@ const ConfigSelectQuizz = () => {
                     defaultValue: "Endbildschirm",
                   })}
                 </label>
-                <select
+                <Select
                   id="endscreen-select"
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
                       {mode}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           </motion.div>
