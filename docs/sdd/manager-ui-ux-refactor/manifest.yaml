@@ -2,24 +2,27 @@
 # status: open | plan-reviewed | in-progress | merged | verified | accepted-open
 meta:
   date: 2026-07-17
-  branch: refactor/manager-ui-ux-design-system
+  result: ACCEPTED
+  head: 4be431444
+  deployed: "live on rust.razzoozle.xyz (.rust-cd-deployed-sha=4be431444, healthz 200)"
   scope: finish-real-deltas + lean SDD + deep glass plumbing removal
   base_note: "console already Cream-only + token-clean (#86, 2026-07-16); glass toggle already inert"
 
 findings:
-  - {id: GLASS-A1, what: dead [data-theme-style=glass] CSS block (index.css ~351-483, 0 live consumers), wp: WP-B, severity: medium, status: open}
-  - {id: GLASS-A2, what: theme validator style enum flat|glass, wp: WP-A, severity: medium, status: open}
-  - {id: GLASS-A3, what: DEFAULT_THEME style flat, wp: WP-A, severity: low, status: open}
-  - {id: GLASS-A4, what: apply.ts dataset.themeStyle write, wp: WP-A, severity: low, status: open}
-  - {id: GLASS-A5-A6, what: skeleton-doc/-demo emit glass + theme.style (contract-sensitive), wp: WP-A, severity: high, status: open, note: "emit constant data-theme-style=flat; preserve skeleton-author contract"}
-  - {id: GLASS-A7, what: stale glass comments in 3 game components, wp: WP-D, severity: low, status: open}
-  - {id: PROFILE-P1, what: "Mein Profil left-nav system tab must move to header left of Logout", wp: WP-C, severity: high, status: open}
+  - {id: GLASS-A1, what: dead [data-theme-style=glass] CSS block (index.css ~137L), wp: WP-B, severity: medium, status: resolved, commit: 7368e1227}
+  - {id: GLASS-A2, what: theme validator style enum flat|glass, wp: WP-A, severity: medium, status: resolved, commit: 293bdc6ef}
+  - {id: GLASS-A3, what: DEFAULT_THEME style flat, wp: WP-A, severity: low, status: resolved, commit: 293bdc6ef}
+  - {id: GLASS-A4, what: apply.ts dataset.themeStyle write -> kept as constant flat (author hook), wp: WP-A+fix, severity: low, status: resolved, commit: 339cca682}
+  - {id: GLASS-A5-A6, what: skeleton-doc/-demo now emit constant data-theme-style=flat; glass docs removed, wp: WP-A, severity: high, status: resolved, commit: 293bdc6ef}
+  - {id: GLASS-A7, what: stale glass comments in 3 game components, wp: WP-D, severity: low, status: resolved, commit: 8973393c7}
+  - {id: GLASS-A8, what: dead manager.theme.style (flat/glass) picker labels in 6 locales, wp: cleanup, severity: low, status: resolved, commit: 8ddd6a4a6}
+  - {id: PROFILE-P1, what: "Mein Profil moved from left-nav to header left of Logout", wp: WP-C, severity: high, status: resolved-live-verified, commit: 215cedee4}
 
 work_packages:
-  - {id: WP-A, title: theme style-field removal end-to-end, lane: codex-gpt5, status: open}
-  - {id: WP-B, title: delete dead glass CSS, lane: css/free, status: open}
-  - {id: WP-C, title: profile -> header relocation, lane: quality, status: open}
-  - {id: WP-D, title: stale glass comments, lane: local-quickfix, status: open}
+  - {id: WP-A, title: theme style-field removal end-to-end, lane: codex-gpt5, status: merged+verified}
+  - {id: WP-B, title: delete dead glass CSS, lane: css-bugfixer, status: merged+verified}
+  - {id: WP-C, title: profile -> header relocation, lane: grok-build, status: merged+live-verified}
+  - {id: WP-D, title: stale glass comments, lane: local-quickfix, status: merged+verified}
 
 wave2: none   # Codex DUP-RESIDUALS: NONE; --border-hairline vs --line intentional (no speculative dup work)
 
@@ -27,5 +30,11 @@ reviews:
   grok_primary: done         # 09-grok-primary-review.md
   codex_primary: done        # 10-codex-primary-review.md
   cross_review: done         # 12-adjudication-log.md (orthogonal domains, no conflict)
-  diff_review: pending       # cross-vendor diff review pre-merge
-  final_review: pending      # 14-final-review.md
+  diff_review: done          # Gemini cross-vendor: REVIEW FINDINGS(1) approved-for-merge
+  browser_verify: PASS       # browser-qa on live rust twin, 6/6 criteria
+  final_review: done         # 14-final-review.md -> ACCEPTED
+
+accepted_open:  # documented, non-blocking, NOT introduced by this work
+  - "pre-existing repo lint/type debt (stale tsc-b-cache-masked) in untouched files: e2e/stagehand/*.spec.ts, ConfigUsers.tsx, pages/manager/config.tsx, game/stores/manager.test.ts, scripts/locale-sync.mjs — full pnpm verify stays red on these; follow-up = separate lint-debt pass"
+  - "github mirror deferred (github-mirror unconfigured + direct push forbidden); changes safe on Gitea origin + deployed"
+  - "design.md gitignored -> glass-removal doc update lives in working tree only (project convention)"
