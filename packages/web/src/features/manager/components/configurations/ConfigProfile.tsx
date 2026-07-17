@@ -15,6 +15,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { CheckCircle2, KeyRound, Lock, Trash2, XCircle } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
@@ -157,17 +158,12 @@ const ConfigProfile = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--ink)]">
-          {t("manager:profile.welcome", { defaultValue: "Willkommen" })}
-          {username && `, ${username}`}
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
-          {t("manager:profile.intro", {
-            defaultValue: "Dein Profil und deine persönlichen Einstellungen.",
-          })}
-        </p>
-      </div>
+      <PageHeader
+        title={`${t("manager:profile.welcome", { defaultValue: "Willkommen" })}${username ? `, ${username}` : ""}`}
+        subtitle={t("manager:profile.intro", {
+          defaultValue: "Dein Profil und deine persönlichen Einstellungen.",
+        })}
+      />
 
       <SectionCard
         icon={<Lock className="size-5" aria-hidden />}
