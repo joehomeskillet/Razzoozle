@@ -24,6 +24,8 @@ export interface ListRowProps {
   leading?: ReactNode
   /** Trailing icon-button cluster (each gets aria-label + focus ring). */
   actions?: ListRowAction[]
+  /** Optional trailing overflow-menu trigger, rendered as the last item of the action cluster inside the card (spec D27). */
+  overflow?: ReactNode
   /** Makes the whole row activatable (e.g. open). When set, the row body is a button. */
   onClick?: () => void
   /** Used as the row body's accessible name when `onClick` is set. */
@@ -61,6 +63,7 @@ const ListRow = ({
   onClick,
   bodyLabel,
   footer,
+  overflow,
   className,
 }: ListRowProps) => {
   const body = (
@@ -106,9 +109,9 @@ const ListRow = ({
           <div className="flex min-w-0 flex-1 items-center gap-3">{body}</div>
         )}
 
-        {actions && actions.length > 0 && (
+        {((actions && actions.length > 0) || overflow) && (
           <div className="flex shrink-0 items-center gap-1">
-            {actions.map(
+            {actions?.map(
               ({ key, icon: Icon, label, onClick: act, disabled, destructive }) => (
                 <Button
                   key={key}
@@ -125,6 +128,7 @@ const ListRow = ({
                 </Button>
               ),
             )}
+            {overflow}
           </div>
         )}
       </div>
