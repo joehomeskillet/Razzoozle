@@ -15,6 +15,7 @@ describe("themeValidator", () => {
     }
     const result = themeValidator.safeParse(oldThemeWithGlass)
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect("style" in result.data).toBe(false)
   })
 
@@ -25,6 +26,7 @@ describe("themeValidator", () => {
     }
     const result = themeValidator.safeParse(oldThemeWithGlass)
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.data).not.toHaveProperty("style")
   })
 
@@ -55,6 +57,7 @@ describe("themeValidator", () => {
     }
     const result = themeValidator.safeParse(minimalTheme)
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.data.colorText).toBe("#ffffff")
     expect(result.data.radius).toBe(16)
     expect(result.data.scrim).toBe(0)
