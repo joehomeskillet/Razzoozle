@@ -314,17 +314,17 @@ button:not(:disabled),
 /*
  * Console scroll surfaces (admin /config). The ConsoleShell tabpanel and the
  * nav rail/tablist are scroll owners; this themes their scrollbars to track
- * the runtime accent instead of the default OS chrome. `scrollbar-gutter:
- * stable` reserves the gutter so content doesn't shift when it starts/stops
- * overflowing — only applied to the tabpanel, not the narrow nav rail.
+ * the runtime accent instead of the default OS chrome. The tabpanel
+ * intentionally does NOT reserve a scrollbar gutter — reserving it left a
+ * permanent 10px strip on the right that the sticky ActionFooter (scoped to
+ * the scroller's content-box) could not fill, showing a gap at the card edge.
+ * Trade-off: content shifts by the scrollbar width when a list starts/stops
+ * overflowing.
  */
 .console-scroll,
 .nav-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--accent-tint) transparent;
-}
-.console-scroll {
-  scrollbar-gutter: stable;
 }
 .console-scroll::-webkit-scrollbar,
 .nav-scroll::-webkit-scrollbar {
