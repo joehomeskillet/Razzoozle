@@ -1,0 +1,31 @@
+# Manifest — Manager UI/UX Refactor
+# status: open | plan-reviewed | in-progress | merged | verified | accepted-open
+meta:
+  date: 2026-07-17
+  branch: refactor/manager-ui-ux-design-system
+  scope: finish-real-deltas + lean SDD + deep glass plumbing removal
+  base_note: "console already Cream-only + token-clean (#86, 2026-07-16); glass toggle already inert"
+
+findings:
+  - {id: GLASS-A1, what: dead [data-theme-style=glass] CSS block (index.css ~351-483, 0 live consumers), wp: WP-B, severity: medium, status: open}
+  - {id: GLASS-A2, what: theme validator style enum flat|glass, wp: WP-A, severity: medium, status: open}
+  - {id: GLASS-A3, what: DEFAULT_THEME style flat, wp: WP-A, severity: low, status: open}
+  - {id: GLASS-A4, what: apply.ts dataset.themeStyle write, wp: WP-A, severity: low, status: open}
+  - {id: GLASS-A5-A6, what: skeleton-doc/-demo emit glass + theme.style (contract-sensitive), wp: WP-A, severity: high, status: open, note: "emit constant data-theme-style=flat; preserve skeleton-author contract"}
+  - {id: GLASS-A7, what: stale glass comments in 3 game components, wp: WP-D, severity: low, status: open}
+  - {id: PROFILE-P1, what: "Mein Profil left-nav system tab must move to header left of Logout", wp: WP-C, severity: high, status: open}
+
+work_packages:
+  - {id: WP-A, title: theme style-field removal end-to-end, lane: codex-gpt5, status: open}
+  - {id: WP-B, title: delete dead glass CSS, lane: css/free, status: open}
+  - {id: WP-C, title: profile -> header relocation, lane: quality, status: open}
+  - {id: WP-D, title: stale glass comments, lane: local-quickfix, status: open}
+
+wave2: none   # Codex DUP-RESIDUALS: NONE; --border-hairline vs --line intentional (no speculative dup work)
+
+reviews:
+  grok_primary: done         # 09-grok-primary-review.md
+  codex_primary: done        # 10-codex-primary-review.md
+  cross_review: done         # 12-adjudication-log.md (orthogonal domains, no conflict)
+  diff_review: pending       # cross-vendor diff review pre-merge
+  final_review: pending      # 14-final-review.md
