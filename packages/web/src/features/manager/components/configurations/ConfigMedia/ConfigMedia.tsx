@@ -3,6 +3,7 @@ import type { MediaMeta } from "@razzoozle/common/types/media"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   useEvent,
@@ -211,25 +212,15 @@ const ConfigMedia = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
-          {sourceFilters.map((entry) => {
-            const active = sourceFilter === entry.key
-
-            return (
-              <button
-                key={entry.key}
-                type="button"
-                onClick={() => setSourceFilter(entry.key)}
-                aria-pressed={active}
-                className={
-                  active
-                    ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                }
-              >
-                {entry.label}
-              </button>
-            )
-          })}
+          {sourceFilters.map((entry) => (
+            <FilterPill
+              key={entry.key}
+              active={sourceFilter === entry.key}
+              onClick={() => setSourceFilter(entry.key)}
+            >
+              {entry.label}
+            </FilterPill>
+          ))}
         </div>
 
         <div
@@ -239,25 +230,15 @@ const ConfigMedia = () => {
           })}
           className="flex flex-wrap items-center gap-2"
         >
-          {scopeFilters.map((entry) => {
-            const active = scope === entry.key
-
-            return (
-              <button
-                key={entry.key}
-                type="button"
-                onClick={() => setScope(entry.key)}
-                aria-pressed={active}
-                className={
-                  active
-                    ? "inline-flex min-h-11 items-center rounded-full bg-[var(--accent-tint)] px-3 text-sm font-semibold text-[var(--accent-contrast)] outline-2 -outline-offset-2 outline-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                    : "inline-flex min-h-11 items-center rounded-full bg-[var(--surface-3)] px-3 text-sm font-semibold text-[var(--ink-medium)] hover:bg-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-                }
-              >
-                {entry.label}
-              </button>
-            )
-          })}
+          {scopeFilters.map((entry) => (
+            <FilterPill
+              key={entry.key}
+              active={scope === entry.key}
+              onClick={() => setScope(entry.key)}
+            >
+              {entry.label}
+            </FilterPill>
+          ))}
         </div>
 
         {config.klassenEnabled && labels.length > 0 && (
