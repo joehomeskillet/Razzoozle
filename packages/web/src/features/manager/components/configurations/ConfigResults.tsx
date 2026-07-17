@@ -1,6 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { GameResult } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import DateInput from "@razzoozle/web/components/DateInput"
 import Input from "@razzoozle/web/components/Input"
 import {
   useEvent,
@@ -139,15 +140,13 @@ const ConfigResults = () => {
                   defaultValue: "Nach Datum filtern",
                 })}
               </label>
-              <Input
+              <DateInput
                 id="results-date"
-                type="date"
                 value={dateFilter}
                 onChange={(event) => setDateFilter(event.target.value)}
                 aria-label={t("manager:result.dateFilter", {
                   defaultValue: "Nach Datum filtern",
                 })}
-                className="min-h-11 w-full rounded-[var(--radius-theme)]"
               />
             </div>
           </div>
