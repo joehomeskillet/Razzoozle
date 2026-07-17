@@ -12,22 +12,12 @@ describe("GameWrapper button resilience", () => {
   it("re-enables the Next button after 5s timeout if no new status arrives", () => {
     // Simulate the button disabled state and timeout logic
     let isDisabled = false
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
 
     const handleNext = () => {
       isDisabled = true
-      timeoutId = setTimeout(() => {
+      setTimeout(() => {
         isDisabled = false
-        timeoutId = null
       }, 5000)
-    }
-
-    const handleStatusChange = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
-      }
-      isDisabled = false
     }
 
     // Initial state: button is enabled

@@ -53,7 +53,6 @@ import {
   User,
   UserCog,
   Users,
-  icons as lucideIcons,
 } from "lucide-react"
 import {
   type ComponentType,
@@ -207,16 +206,6 @@ const BUILTIN_TABS: TabDef[] = [
     component: ConfigDev,
   },
 ]
-
-/**
- * Resolve a manifest icon name to a LucideIcon. Lucide's `icons` aggregate is
- * keyed by PascalCase names (e.g. "Award", "Puzzle"); an unknown / missing name
- * falls back to the generic Puzzle mark so a typo never crashes the nav.
- */
-const resolveIcon = (name: string): LucideIcon => {
-  const found = (lucideIcons as Record<string, LucideIcon | undefined>)[name]
-  return found ?? Puzzle
-}
 
 /**
  * Visibility gate for builtins based on role, dev mode, and klassenEnabled.

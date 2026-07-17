@@ -252,7 +252,7 @@ function animationsCss(): string {
 const SYSTEM_FONT =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"'
 
-/** Structural + glass CSS shared by every demo page. */
+/** Structural CSS shared by every demo page. */
 function baseStyle(theme: Theme): string {
   return `${rootVars(theme)}
 
@@ -588,7 +588,7 @@ function lobbyHtml(theme: Theme): string {
   }`
 
   const body = `  <div class="lobby">
-    <div class="join glass panel anim-pop" style="padding: 26px 30px;">
+    <div class="join panel anim-pop" style="padding: 26px 30px;">
       <div class="pin-block">
         <span class="pin-label">Beitreten mit PIN</span>
         <span class="pin">123 456</span>
