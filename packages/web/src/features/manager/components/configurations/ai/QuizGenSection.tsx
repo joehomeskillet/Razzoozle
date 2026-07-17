@@ -1,6 +1,7 @@
 import { AI } from "@razzoozle/common/constants"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import { SectionCard } from "@razzoozle/web/features/manager/components/console"
 import { LabelRow } from "@razzoozle/web/components/ui"
 import { CheckCircle2, Sparkles } from "lucide-react"
@@ -104,13 +105,13 @@ const QuizGenSection = ({
           </p>
         )}
         {!generating && generated && (
-          <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-[var(--status-online-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--status-online-text)]">
+          <Badge className="flex-wrap gap-1.5 py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
             <CheckCircle2 className="size-3.5" aria-hidden />
             {t("manager:ai.generate.generated")}
             <span className="font-medium text-[var(--status-online-text)]">
               {t("manager:ai.generate.openInEditor")}
             </span>
-          </span>
+          </Badge>
         )}
       </div>
     </SectionCard>

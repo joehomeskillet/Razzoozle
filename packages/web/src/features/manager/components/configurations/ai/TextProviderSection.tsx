@@ -6,6 +6,7 @@ import type {
 import clsx from "clsx"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import {
   SectionCard,
   SubGroup,
@@ -64,19 +65,13 @@ const TextProviderSection = ({
       title={t("manager:ai.text.title")}
       description={t("manager:ai.text.description")}
       actions={
-        <span
-          className={clsx(
-            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-            textStatusBadge.pill,
-          )}
-          aria-label={textStatusBadge.label}
-        >
+        <Badge className={clsx("gap-1.5 py-1", textStatusBadge.pill)}>
           <span
             className={clsx("size-2 rounded-full", textStatusBadge.dot)}
             aria-hidden
           />
           {textStatusBadge.label}
-        </span>
+        </Badge>
       }
     >
       {/* Group: Provider-Auswahl */}
@@ -211,7 +206,7 @@ const TextProviderSection = ({
               >
                 <SubGroup className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
+                    <Badge
                       className={providerStatusClass(
                         selectedProvider.keyConfigured,
                       )}
@@ -219,10 +214,10 @@ const TextProviderSection = ({
                       {selectedProvider.keyConfigured
                         ? t("manager:ai.keyConfigured")
                         : t("manager:ai.keyNotConfigured")}
-                    </span>
-                    <span className="rounded-full bg-[var(--surface-3)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-medium)]">
+                    </Badge>
+                    <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
                       {t(`manager:ai.kind.${selectedProvider.kind}`)}
-                    </span>
+                    </Badge>
                   </div>
                   <LabelRow
                     label={t("manager:ai.apiKey")}
