@@ -276,6 +276,13 @@ const ConsoleShell = ({
   )
 
   const showRail = isDesktop && !drawerOpen
+  // Tabs mount only in the active surface (rail or open drawer). Radix Dialog
+  // unmounts portal content when closed, so mobile+closed has no tab nodes —
+  // fall back to aria-label so aria-labelledby never points at a missing id.
+  const activeTabId = `${baseId}-tab-${activeKey}`
+  const tabsMounted = showRail || drawerOpen
+  const activeTabLabel =
+    orderedNav.find((item) => item.key === activeKey)?.label ?? title
 
   return (
     <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -356,7 +363,8 @@ const ConsoleShell = ({
             ref={panelRef}
             role="tabpanel"
             id={`${baseId}-panel`}
-            aria-labelledby={`${baseId}-tab-${activeKey}`}
+            aria-labelledby={tabsMounted ? activeTabId : undefined}
+            aria-label={tabsMounted ? undefined : activeTabLabel}
             tabIndex={0}
             className={clsx(
               "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
