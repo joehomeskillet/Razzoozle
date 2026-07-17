@@ -268,7 +268,7 @@ const ConfigKlassen = () => {
             value={editStudentBirthdate}
             max={todayIso}
             onChange={(e) => setEditStudentBirthdate(e.target.value)}
-            className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
+            className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           />
         </div>
         <div className="mt-6 flex justify-end gap-2">
