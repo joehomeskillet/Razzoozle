@@ -280,14 +280,15 @@ const ConfigMedia = () => {
               <Trash2 className="size-4" aria-hidden />
               {t("manager:media.bulk.delete", { defaultValue: "Löschen" })}
             </Button>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={clearSelection}
               aria-label={t("common:cancel")}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--surface-4)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             >
               <X className="size-4" aria-hidden />
-            </button>
+            </Button>
           </div>
         )}
       </div>
