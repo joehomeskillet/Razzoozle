@@ -5,7 +5,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import Button from "@razzoozle/web/components/Button"
-import Input from "@razzoozle/web/components/Input"
+import NumberInput from "@razzoozle/web/components/NumberInput"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
 import clsx from "clsx"
@@ -98,10 +98,9 @@ const SimControl = () => {
             <label className="sr-only" htmlFor="sim-control-count">
               {t("manager:sim.count")}
             </label>
-            <Input
+            <NumberInput
               id="sim-control-count"
               ref={inputRef}
-              type="number"
               min={1}
               max={50}
               value={count}
@@ -114,7 +113,6 @@ const SimControl = () => {
                   addBots()
                 }
               }}
-              variant="md"
             />
             <Button
               type="button"
