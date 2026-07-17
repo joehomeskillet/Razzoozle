@@ -1,10 +1,9 @@
-import * as Dialog from "@radix-ui/react-dialog"
-import { Portal, Overlay } from "@radix-ui/react-dialog"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Input from "@razzoozle/web/components/Input"
 import Button from "@razzoozle/web/components/Button"
+import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { ActionFooter } from "@razzoozle/web/components/ui"
-import { Plus, X } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useState } from "react"
 
@@ -139,94 +138,72 @@ const ConfigKlassen = () => {
       />
 
       {/* Create Class Dialog */}
-      <Dialog.Root open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <Portal>
-          <Overlay className="fixed inset-0 z-40 bg-black/40" />
-          <Dialog.Content aria-labelledby="create-class-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <Dialog.Title id="create-class-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
-                {t("manager:classes.createTitle")}
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
-                  <X className="size-5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <p className="mt-2 text-sm text-[var(--ink-subtle)]">
-              {t("manager:classes.createDescription")}
-            </p>
-            <Input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder={t("manager:classes.classNamePlaceholder")}
-              className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
-              autoFocus
-            />
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsCreateDialogOpen(false)}>
-                {t("common:cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  handleCreateClass(createName)
-                  setIsCreateDialogOpen(false)
-                }}
-              >
-                {t("common:create")}
-              </Button>
-            </div>
-          </Dialog.Content>
-        </Portal>
-      </Dialog.Root>
+      <DialogPanel
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        titleId="create-class-dialog-title"
+        title={t("manager:classes.createTitle")}
+      >
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
+          {t("manager:classes.createDescription")}
+        </p>
+        <Input
+          value={createName}
+          onChange={(e) => setCreateName(e.target.value)}
+          placeholder={t("manager:classes.classNamePlaceholder")}
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
+          autoFocus
+        />
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setIsCreateDialogOpen(false)}>
+            {t("common:cancel")}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              handleCreateClass(createName)
+              setIsCreateDialogOpen(false)
+            }}
+          >
+            {t("common:create")}
+          </Button>
+        </div>
+      </DialogPanel>
 
       {/* Edit Class Dialog */}
-      <Dialog.Root open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <Portal>
-          <Overlay className="fixed inset-0 z-40 bg-black/40" />
-          <Dialog.Content aria-labelledby="edit-class-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <Dialog.Title id="edit-class-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
-                {t("manager:classes.editTitle")}
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
-                  <X className="size-5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <p className="mt-2 text-sm text-[var(--ink-subtle)]">
-              {t("manager:classes.editDescription")}
-            </p>
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              placeholder={t("manager:classes.classNamePlaceholder")}
-              className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
-              autoFocus
-            />
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>
-                {t("common:cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (editingClass) {
-                    handleUpdateClass(editingClass.id, editName)
-                    setIsEditDialogOpen(false)
-                  }
-                }}
-              >
-                {t("common:save")}
-              </Button>
-            </div>
-          </Dialog.Content>
-        </Portal>
-      </Dialog.Root>
+      <DialogPanel
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        titleId="edit-class-dialog-title"
+        title={t("manager:classes.editTitle")}
+      >
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
+          {t("manager:classes.editDescription")}
+        </p>
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          placeholder={t("manager:classes.classNamePlaceholder")}
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
+          autoFocus
+        />
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>
+            {t("common:cancel")}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (editingClass) {
+                handleUpdateClass(editingClass.id, editName)
+                setIsEditDialogOpen(false)
+              }
+            }}
+          >
+            {t("common:save")}
+          </Button>
+        </div>
+      </DialogPanel>
 
       {/* Delete Class Dialog */}
       <AlertDialog
@@ -256,77 +233,66 @@ const ConfigKlassen = () => {
       />
 
       {/* Edit Student Dialog */}
-      <Dialog.Root open={isEditStudentDialogOpen} onOpenChange={setIsEditStudentDialogOpen}>
-        <Portal>
-          <Overlay className="fixed inset-0 z-40 bg-black/40" />
-          <Dialog.Content aria-labelledby="edit-student-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <Dialog.Title id="edit-student-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
-                {t("manager:classes.editStudentTitle")}
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
-                  <X className="size-5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <p className="mt-2 text-sm text-[var(--ink-subtle)]">
-              {t("manager:classes.editStudentDescription")}
-            </p>
-            <Input
-              value={editStudentFirstName}
-              onChange={(e) => setEditStudentFirstName(e.target.value)}
-              placeholder={t("manager:schueler.firstNamePlaceholder")}
-              className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
-              autoFocus
-            />
-            <Input
-              value={editStudentLastName}
-              onChange={(e) => setEditStudentLastName(e.target.value)}
-              placeholder={t("manager:schueler.lastNamePlaceholder")}
-              className="mt-3 min-h-11 w-full rounded-[var(--radius-theme)]"
-            />
-            <div>
-              <label
-                htmlFor="klassen-edit-student-birthdate"
-                className="mt-4 block text-sm font-medium text-[var(--ink-muted)]"
-              >
-                {t("manager:schueler.birthdateLabel")}
-              </label>
-              <input
-                id="klassen-edit-student-birthdate"
-                type="date"
-                value={editStudentBirthdate}
-                max={todayIso}
-                onChange={(e) => setEditStudentBirthdate(e.target.value)}
-                className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
-              />
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsEditStudentDialogOpen(false)}>
-                {t("common:cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (editingStudent) {
-                    handleUpdateStudent(
-                      editingStudent.id,
-                      editStudentFirstName,
-                      editStudentLastName || undefined,
-                      editStudentBirthdate || undefined,
-                    )
-                    setIsEditStudentDialogOpen(false)
-                  }
-                }}
-              >
-                {t("common:save")}
-              </Button>
-            </div>
-          </Dialog.Content>
-        </Portal>
-      </Dialog.Root>
+      <DialogPanel
+        open={isEditStudentDialogOpen}
+        onOpenChange={setIsEditStudentDialogOpen}
+        titleId="edit-student-dialog-title"
+        title={t("manager:classes.editStudentTitle")}
+      >
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
+          {t("manager:classes.editStudentDescription")}
+        </p>
+        <Input
+          value={editStudentFirstName}
+          onChange={(e) => setEditStudentFirstName(e.target.value)}
+          placeholder={t("manager:schueler.firstNamePlaceholder")}
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-theme)]"
+          autoFocus
+        />
+        <Input
+          value={editStudentLastName}
+          onChange={(e) => setEditStudentLastName(e.target.value)}
+          placeholder={t("manager:schueler.lastNamePlaceholder")}
+          className="mt-3 min-h-11 w-full rounded-[var(--radius-theme)]"
+        />
+        <div>
+          <label
+            htmlFor="klassen-edit-student-birthdate"
+            className="mt-4 block text-sm font-medium text-[var(--ink-muted)]"
+          >
+            {t("manager:schueler.birthdateLabel")}
+          </label>
+          <input
+            id="klassen-edit-student-birthdate"
+            type="date"
+            value={editStudentBirthdate}
+            max={todayIso}
+            onChange={(e) => setEditStudentBirthdate(e.target.value)}
+            className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:border-[var(--color-primary)] focus-visible:outline-none"
+          />
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setIsEditStudentDialogOpen(false)}>
+            {t("common:cancel")}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (editingStudent) {
+                handleUpdateStudent(
+                  editingStudent.id,
+                  editStudentFirstName,
+                  editStudentLastName || undefined,
+                  editStudentBirthdate || undefined,
+                )
+                setIsEditStudentDialogOpen(false)
+              }
+            }}
+          >
+            {t("common:save")}
+          </Button>
+        </div>
+      </DialogPanel>
 
       {/* Delete Student Dialog */}
       <AlertDialog
