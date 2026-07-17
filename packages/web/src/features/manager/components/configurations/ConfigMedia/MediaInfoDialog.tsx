@@ -99,14 +99,16 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           type="button"
           aria-label={detailsLabel}
           title={detailsLabel}
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--ink-medium)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="shrink-0 text-[var(--ink-faint)]"
         >
           <Info className="size-4" aria-hidden />
-        </button>
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
