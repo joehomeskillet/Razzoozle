@@ -116,7 +116,7 @@ const ConfigKlassen = () => {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("manager:classes.searchPlaceholder")}
-            className="min-h-11 w-full rounded-xl"
+            className="min-h-11 w-full"
           />
         </div>
       )}

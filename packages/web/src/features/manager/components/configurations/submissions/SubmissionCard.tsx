@@ -88,7 +88,7 @@ const SubmissionCard = ({
 
   return (
     <motion.div
-      className="rounded-xl bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]"
+      className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]"
       initial={reducedMotion ? false : { opacity: 0, y: 10 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       transition={

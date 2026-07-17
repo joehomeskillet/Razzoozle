@@ -73,7 +73,7 @@ const MediaCard = ({
       >
         <span
           className={clsx(
-            "flex size-7 items-center justify-center rounded-md border-2 transition-colors",
+            "flex size-7 items-center justify-center rounded-lg border-2 transition-colors",
             isSelected
               ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white" /* token-ok: white-on-accent-contrast, AA per tokens.css */
               : "border-[var(--line)] bg-[var(--surface)]/90 text-transparent group-hover:border-[var(--ink-faint)]",

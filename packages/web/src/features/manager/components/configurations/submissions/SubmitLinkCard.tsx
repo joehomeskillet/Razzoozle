@@ -15,7 +15,7 @@ const SubmitLinkCard = () => {
 
   if (!submitToken) {
     return (
-      <div className="mx-auto w-full max-w-sm space-y-1 rounded-xl bg-[var(--surface-2)] p-4 text-center">
+      <div className="mx-auto w-full max-w-sm space-y-1 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-4 text-center">
         <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
           {t("manager:submissions.submitLinkHint", {
             defaultValue: "Öffentlicher Einreichungs-Link",
@@ -43,7 +43,7 @@ const SubmitLinkCard = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-sm space-y-2 rounded-xl bg-[var(--surface-2)] p-4 text-center">
+    <div className="mx-auto w-full max-w-sm space-y-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-4 text-center">
       <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
         {t("manager:submissions.submitLinkHint", {
           defaultValue: "Öffentlicher Einreichungs-Link",

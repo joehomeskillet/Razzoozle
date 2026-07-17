@@ -262,7 +262,7 @@ const ConfigMedia = () => {
               count: selected.size,
               defaultValue: "{{count}} ausgewählt",
             })}
-            className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+            className="flex flex-wrap items-center gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <span className="text-sm font-semibold text-[var(--ink-muted)]">
               {t("manager:media.bulk.selected", {

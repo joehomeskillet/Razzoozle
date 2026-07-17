@@ -101,7 +101,7 @@ const ThemeTemplatesCard = ({
               <p className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
                 {template.name}
               </p>
-              <div className="flex h-6 overflow-hidden rounded-md outline-1 -outline-offset-1 outline-[var(--border-hairline)]">
+              <div className="flex h-6 overflow-hidden rounded-lg outline-1 -outline-offset-1 outline-[var(--border-hairline)]">
                 {[
                   template.theme.colorPrimary,
                   template.theme.accentColor,

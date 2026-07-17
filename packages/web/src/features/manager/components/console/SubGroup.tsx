@@ -14,7 +14,7 @@ export interface SubGroupProps {
 const SubGroup = ({ children, className }: SubGroupProps) => (
   <div
     className={clsx(
-      "rounded-xl bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-[var(--line)]",
+      "rounded-lg bg-[var(--surface-2)] p-3 outline-1 -outline-offset-1 outline-[var(--line)]",
       className,
     )}
   >

@@ -31,8 +31,8 @@ const ResultModalTable = () => {
           aria-checked={showNames}
           onClick={toggleShowNames}
           variant="secondary"
-          size="sm"
-          className="px-2 py-1 min-h-11 text-[var(--ink-medium)] font-medium"
+          size="md"
+          className="text-[var(--ink-medium)] font-medium"
         >
           {showNames ? (
             <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
@@ -88,7 +88,7 @@ const ResultModalTable = () => {
               <td className="px-4 py-2.5">
                 {pa.answerText != null ? (
                   // Type-answer: render the submitted free-text
-                  <span className="inline-block max-w-32 truncate rounded-md bg-[var(--surface-3)] px-2 py-1 text-xs font-medium text-[var(--ink-muted)]">
+                  <span className="inline-block max-w-32 truncate rounded-lg bg-[var(--surface-3)] px-2 py-1 text-xs font-medium text-[var(--ink-muted)]">
                     {pa.answerText}
                   </span>
                 ) : pa.answerIds != null ? (
@@ -99,7 +99,7 @@ const ResultModalTable = () => {
                         <span
                           key={id}
                           className={clsx(
-                            "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--ink)]",
+                            "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-[var(--ink)]",
                             answerColor(id),
                           )}
                         >
@@ -116,14 +116,14 @@ const ResultModalTable = () => {
                 ) : pa.answerId === null ? (
                   <span className="text-xs text-[var(--ink-faint)]">—</span>
                 ) : isSlider ? (
-                  <span className="inline-flex items-center rounded-md bg-[var(--surface-3)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)] tabular-nums">
+                  <span className="inline-flex items-center rounded-lg bg-[var(--surface-3)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)] tabular-nums">
                     {pa.answerId}
                     {questionResult.unit ? ` ${questionResult.unit}` : ""}
                   </span>
                 ) : label ? (
                   <span
                     className={clsx(
-                      "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--ink)]",
+                      "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-[var(--ink)]",
                       answerColor(pa.answerId),
                     )}
                   >
