@@ -1,6 +1,7 @@
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus } from "lucide-react"
 import { useState } from "react"
@@ -40,14 +41,10 @@ const ConfigSchueler = () => {
   return (
     <>
     <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--ink)]">
-          {t("manager:schueler.title")}
-        </h2>
-        <p className="mt-2 text-sm text-[var(--ink-medium)]">
-          {t("manager:schueler.description")}
-        </p>
-      </div>
+      <PageHeader
+        title={t("manager:schueler.title")}
+        subtitle={t("manager:schueler.description")}
+      />
 
       {hasStudents ? (
         <>
