@@ -14,6 +14,7 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
+import Button from "@razzoozle/web/components/Button"
 import NavItem from "@razzoozle/web/features/manager/components/console/NavItem"
 import SubGroup from "@razzoozle/web/features/manager/components/console/SubGroup"
 import "@razzoozle/web/features/manager/components/console/tokens.css"
@@ -314,15 +315,17 @@ const ConsoleShell = ({
         >
           {!isDesktop && (
             <Dialog.Trigger asChild>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 aria-label={t("manager:aria.openNav", {
                   defaultValue: "Open navigation",
                 })}
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                className="text-[var(--ink-subtle)] hover:text-[var(--ink)]"
               >
                 <Menu className="size-5" aria-hidden />
-              </button>
+              </Button>
             </Dialog.Trigger>
           )}
           <div className="flex min-w-0 items-center gap-3">
@@ -388,13 +391,15 @@ const ConsoleShell = ({
               {t("manager:aria.navTitle", { defaultValue: "Navigation" })}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 aria-label={t("common:close")}
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-3)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                className="text-[var(--ink-subtle)] hover:text-[var(--ink)]"
               >
                 <X className="size-5" aria-hidden />
-              </button>
+              </Button>
             </Dialog.Close>
           </div>
           {renderNavSections(handleDrawerSelect)}
