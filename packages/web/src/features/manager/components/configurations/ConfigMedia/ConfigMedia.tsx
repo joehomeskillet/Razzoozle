@@ -210,7 +210,13 @@ const ConfigMedia = () => {
           className="min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={t("manager:media.filters.label", {
+            defaultValue: "Quelle",
+          })}
+          className="flex flex-wrap items-center gap-2"
+        >
           <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
           {sourceFilters.map((entry) => (
             <FilterPill

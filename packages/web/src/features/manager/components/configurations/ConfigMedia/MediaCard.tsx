@@ -38,6 +38,7 @@ const MediaCard = ({
   return (
     <motion.article
       key={item.id}
+      role="option"
       aria-selected={isSelected}
       className={clsx(
         "group relative flex flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",

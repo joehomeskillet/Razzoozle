@@ -185,7 +185,7 @@ export const CatalogQuestionForm = ({
                           key={label.id}
                           type="button"
                           onClick={() => handleLabelToggle(label.id)}
-                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                          className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
                             isSelected
                               ? "opacity-100 ring-2 ring-offset-2 ring-[var(--color-primary)]"
                               : "opacity-100 border border-[var(--line)] hover:border-[var(--ink-medium)]"

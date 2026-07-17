@@ -108,7 +108,7 @@ const BackendPanel = () => {
             {t("dev.backend.choice", { defaultValue: "Backend wählen:" })}
           </p>
           <div className="space-y-1">
-            <label className="flex items-center gap-3">
+            <label className="flex items-center gap-3 min-h-11">
               <input
                 type="radio"
                 name="backend"
@@ -122,7 +122,7 @@ const BackendPanel = () => {
                 {t("dev.backend.node", { defaultValue: "Node (/)" })}
               </span>
             </label>
-            <label className="flex items-center gap-3">
+            <label className="flex items-center gap-3 min-h-11">
               <input
                 type="radio"
                 name="backend"
