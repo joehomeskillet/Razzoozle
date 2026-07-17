@@ -1,8 +1,6 @@
-import * as Dialog from "@radix-ui/react-dialog"
-import { Portal, Overlay } from "@radix-ui/react-dialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
-import { X } from "lucide-react"
+import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { StudentClassRef } from "./useSchuelerManager"
@@ -61,22 +59,13 @@ const CreateStudentDialog = ({
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleClose}>
-      <Portal>
-        <Overlay className="fixed inset-0 z-40 bg-black/40" />
-        <Dialog.Content aria-labelledby="create-student-dialog-title" className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <Dialog.Title id="create-student-dialog-title" className="text-lg font-semibold text-[var(--ink)]">
-              {t("manager:schueler.createTitle")}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button className="flex min-h-11 min-w-11 items-center justify-center text-[var(--ink-faint)] hover:text-[var(--ink-medium)]" aria-label={t('common:close')}>
-                <X className="size-5" />
-              </button>
-            </Dialog.Close>
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+    <DialogPanel
+      open={open}
+      onOpenChange={handleClose}
+      titleId="create-student-dialog-title"
+      title={t("manager:schueler.createTitle")}
+    >
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <p className="text-sm text-[var(--ink-subtle)]">
               {t("manager:schueler.createDescription")}
             </p>
@@ -150,9 +139,7 @@ const CreateStudentDialog = ({
               </Button>
             </div>
           </form>
-        </Dialog.Content>
-      </Portal>
-    </Dialog.Root>
+    </DialogPanel>
   )
 }
 
