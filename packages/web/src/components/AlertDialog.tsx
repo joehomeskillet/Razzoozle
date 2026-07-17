@@ -36,7 +36,7 @@ const AlertDialog = ({
       <RadixAlertDialog.Portal>
         <RadixAlertDialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
 
-        <RadixAlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-[var(--shadow-flat)]">
+        <RadixAlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-[var(--shadow-flat)]">
           <RadixAlertDialog.Title className="text-lg font-semibold text-[var(--ink)]">
             {title}
           </RadixAlertDialog.Title>

@@ -61,7 +61,7 @@ const StudentPicker = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
+      <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6">
         <h2 className="text-lg font-semibold text-[var(--ink)]">
           {t("manager:classes.pickerTitle")}
         </h2>
@@ -74,7 +74,7 @@ const StudentPicker = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("manager:classes.pickerSearchPlaceholder")}
-            className="mt-4 min-h-11 w-full shrink-0 rounded-xl"
+            className="mt-4 min-h-11 w-full shrink-0 rounded-[var(--radius-theme)]"
           />
         )}
 
@@ -118,7 +118,7 @@ const StudentPicker = ({
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button variant="primary" className="rounded-xl" onClick={onClose}>
+          <Button variant="primary" className="rounded-[var(--radius-theme)]" onClick={onClose}>
             {t("common:close")}
           </Button>
         </div>
