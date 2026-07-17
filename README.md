@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[🖥️ Desktop app](https://github.com/joehomeskillet/razzoozle-desktop)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -118,13 +118,6 @@ Humans review and merge every commit. AI augments speed and quality, not replace
 ## Configuration & docs
 
 Runtime data lives in the `config` volume, seeded on first boot. Game settings are in `config/game.json`; quizzes are authored in the manager editor or as `config/quizz/*.json`. See **[docs/](docs/)**: [Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md).
-
----
-
-## Apps & companions
-
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop) (Beta)** — a native Windows app to host and manage games without a browser.
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** — a lightweight discovery service (it never relays gameplay).
 
 ---
 

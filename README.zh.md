@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[🌐 展示页](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 文档](docs/)** · **[🖥️ 桌面应用](https://github.com/joehomeskillet/razzoozle-desktop)** · **[报告问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ 在线演示](https://razzoozle.joelduss.xyz)** · **[🌐 展示页](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 文档](docs/)** · **[报告问题](https://github.com/joehomeskillet/Razzoozle/issues)** · *fork 自 [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -118,13 +118,6 @@ Razzoozle 几乎完全由 AI 编码智能体开发，由人类监督协调。由
 ## 配置与文档
 
 运行时数据位于 `config` 卷中，在首次启动时初始化。游戏设置在 `config/game.json` 中；测验在管理员编辑器中编写，或作为 `config/quizz/*.json`。参见 **[docs/](docs/)**：[Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md)。
-
----
-
-## 应用与配套
-
-- **[Razzoozle Desktop](https://github.com/joehomeskillet/razzoozle-desktop)（Beta）** —— 原生 Windows 应用，无需浏览器即可主持和管理游戏。
-- **[Razzoozle Gateway](https://github.com/joehomeskillet/razzloo-gateway)** —— 轻量级发现服务（从不转发游戏流量）。
 
 ---
 
