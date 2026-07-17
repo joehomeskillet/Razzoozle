@@ -8,6 +8,7 @@ import {
   popoverItemClass,
 } from "@razzoozle/web/components/manager/popover"
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
@@ -232,12 +233,10 @@ const ConfigCatalog = () => {
                             defaultValue: '„{{name}}" auswählen',
                           })}
                         </span>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           data-testid={`catalog-checkbox-${entry.id}`}
                           checked={selected.has(entry.id)}
                           onChange={() => toggleSelect(entry.id)}
-                          className="size-5 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                         />
                       </label>
                     }
