@@ -290,19 +290,6 @@ function baseStyle(theme: Theme): string {
     border: 1px solid transparent;
   }
 
-  /* ---- glass treatment (only when html[data-theme-style="glass"]) ---- */
-  html[data-theme-style="glass"] .panel {
-    background: color-mix(in srgb, var(--surface-muted) 55%, transparent);
-    backdrop-filter: blur(16px) saturate(1.6);
-    -webkit-backdrop-filter: blur(16px) saturate(1.6);
-    border: 1px solid color-mix(in srgb, #ffffff 22%, transparent);
-  }
-  html[data-theme-style="glass"] .glass {
-    background: color-mix(in srgb, var(--color-secondary) 45%, transparent);
-    backdrop-filter: blur(16px) saturate(1.6);
-    -webkit-backdrop-filter: blur(16px) saturate(1.6);
-    border: 1px solid color-mix(in srgb, #ffffff 22%, transparent);
-  }
 
   .muted { color: color-mix(in srgb, var(--color-text) 65%, transparent); }
   .stack { display: flex; flex-direction: column; }
@@ -318,7 +305,7 @@ function htmlShell(
   body: string,
 ): string {
   return `<!doctype html>
-<html lang="de" data-theme-style="${esc(theme.style)}">
+<html lang="de" data-theme-style="flat">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />

@@ -31,7 +31,6 @@ const animatedBg = z
   .default({ type: "creamBackdrop", speed: 1, intensity: 1, iconCount: 12, color: "" })
 
 export const themeValidator = z.object({
-  style: z.enum(["flat", "glass"]).default("flat"),
   colorPrimary: hexColor,
   colorSecondary: hexColor,
   colorText: hexColor.default("#ffffff"),

@@ -75,15 +75,10 @@ export function renderSkeletonCss(theme: Theme): string {
 
    Current theme variables (reference — set values via skeleton.json):
 ${reference}
-   [data-theme-style] = "${theme.style}"
+   [data-theme-style] = "flat"
    ============================================================ */
 
 /* --- your custom override rules below --- */
-/* Example:
-[data-theme-style="glass"] .leaderboard-row {
-  backdrop-filter: blur(10px) saturate(1.4);
-}
-*/
 `
 }
 
@@ -127,7 +122,7 @@ export function renderSkeletonDoc(theme: Theme): string {
   }).join("\n")
 
   // Bespoke originals — kept hand-written (not in THEME_TOKENS) because they are
-  // not 1:1 hex CSS vars (radius px, scrim /100, style attr, answer array, …).
+  // not 1:1 hex CSS vars (radius px, scrim /100, answer array, …).
   const bespokeRows = [
     [
       "`--color-primary`",
@@ -195,12 +190,6 @@ export function renderSkeletonDoc(theme: Theme): string {
       "Background scrim opacity (0–100, applied /100).",
       fmt(theme.scrim),
     ],
-    [
-      "`[data-theme-style]`",
-      "`style`",
-      "Visual style: `flat` or `glass`.",
-      fmt(theme.style),
-    ],
     ["—", "`appTitle`", "App title override (or null).", fmt(theme.appTitle)],
     ["—", "`logo`", "Brand logo asset path (or null).", fmt(theme.logo)],
     [
@@ -236,7 +225,7 @@ them.
 
 A **skeleton** is a ZIP that restyles the entire Razzoozle game. It can carry:
 
-- **theme tokens** (\`skeleton.json\`) — the JSON theme (colors, radius, style…),
+- **theme tokens** (\`skeleton.json\`) — the JSON theme (colors, radius…),
 - a free-form **\`theme.css\`** override (full CSS, runs after the base styles),
 - a free-form **\`theme.js\`** script that runs on **every connected client**,
 - **\`animations.css\`** — the in-game motion vocabulary as CSS tokens + keyframes,
@@ -296,9 +285,7 @@ ${bespokeRows}
 override anything. Useful selectors a skeleton can target:
 
 - \`:root { --team-gold: #...; }\` — override any token var from §2 directly.
-- \`[data-theme-style="flat"]\` / \`[data-theme-style="glass"]\` — style variant
-  on the document; gate rules per style.
-- \`.glass\`, \`.glass-panel\` (and other \`.glass*\` surfaces) — frosted panels.
+- \`[data-theme-style="flat"]\` — style gate on the document.
 - Answer button classes — the per-answer tiles (use the \`--answer-1..4\` vars
   rather than re-hardcoding).
 - Leaderboard / podium class names — banners, medals, climber/faller chips
@@ -380,7 +367,7 @@ and cyan accents, gold podium, high-contrast answer tiles">.
 Rules:
 - Every color value MUST be a hex string (#rgb or #rrggbb).
 - Keep the same theme shape and field names as the current theme exactly.
-- "style" is "flat" or "glass". "radius" is 0–40. "scrim" is 0–100.
+- "radius" is 0–40. "scrim" is 0–100.
 - Pick team colors (red/blue/green/yellow) that read as those names but match the
   skin. Tier colors (bronze/silver/gold/diamant) should feel metallic/gem-like.
 - Leave logo and backgrounds as their current values (or null) unless I provide
