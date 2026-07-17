@@ -390,7 +390,7 @@ const ConfigGameMode = () => {
         <RadioGroup
           name="scoring"
           value={scoringMode}
-          onChange={handleScoringModeChange}
+          onChange={(v) => handleScoringModeChange(v as "speed" | "accuracy")}
           options={scoringOptions}
           aria-label={t("manager:gameMode.scoringTitle", {
             defaultValue: "Wertung",
