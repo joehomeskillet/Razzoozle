@@ -1,5 +1,6 @@
 import { BONUS_MAX, type AchievementId } from "@razzoozle/common/achievements"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
+import Button from "@razzoozle/web/components/Button"
 import { type AchievementTier } from "@razzoozle/web/features/game/utils/achievements"
 import { type RowState } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
 import { motion } from "motion/react"
@@ -78,13 +79,15 @@ const BadgeRow = ({
           </p>
           <p className="text-xs leading-snug text-[var(--ink-subtle)]">{defaultDesc}</p>
         </div>
-        <button
+        <Button
           type="button"
           role="switch"
           aria-checked={state.enabled}
           aria-label={t("manager:achievementsConfig.enabled")}
           onClick={() => onChange(id, { enabled: !state.enabled })}
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          variant="ghost"
+          size="icon"
+          className="rounded-full shrink-0"
         >
           <span
             aria-hidden="true"
@@ -98,7 +101,7 @@ const BadgeRow = ({
               }`}
             />
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Compact name + description override inputs */}
