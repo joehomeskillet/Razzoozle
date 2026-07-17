@@ -1,3 +1,4 @@
+import Button from "@razzoozle/web/components/Button"
 import { getGameBackend } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   ListRow,
@@ -62,14 +63,14 @@ const BackendPanel = () => {
           <>
             <CheckCircle2 className="size-4 text-[var(--state-correct)]" />
             <span className="text-xs text-[var(--state-correct)]">
-              {t("dev.backend.up", { defaultValue: "up" })}
+              {t("dev.backend.up", { defaultValue: "Online" })}
             </span>
           </>
         ) : (
           <>
             <XCircle className="size-4 text-[var(--state-wrong)]" />
             <span className="text-xs text-[var(--state-wrong)]">
-              {t("dev.backend.down", { defaultValue: "down" })}
+              {t("dev.backend.down", { defaultValue: "Offline" })}
             </span>
           </>
         )}
@@ -85,7 +86,7 @@ const BackendPanel = () => {
       title={t("dev.backend.title", { defaultValue: "Backend" })}
       description={t("dev.backend.description", {
         defaultValue:
-          "Switch between Node and Rust backends. Default is set via VITE_DEFAULT_BACKEND at build time, and localStorage overrides it.",
+          "Wechsle zwischen Node- und Rust-Backend. Der Standard wird beim Build über VITE_DEFAULT_BACKEND festgelegt, localStorage überschreibt ihn.",
       })}
     >
       <div className="space-y-4">
@@ -104,7 +105,7 @@ const BackendPanel = () => {
         {/* Backend selector */}
         <div className="space-y-2 border-t pt-4">
           <p className="text-sm font-medium text-[var(--ink-muted)]">
-            {t("dev.backend.choice", { defaultValue: "Choose backend:" })}
+            {t("dev.backend.choice", { defaultValue: "Backend wählen:" })}
           </p>
           <div className="space-y-1">
             <label className="flex items-center gap-3">
@@ -138,19 +139,22 @@ const BackendPanel = () => {
           </div>
 
           {choice !== currentBackend && (
-            <button
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
               onClick={handleApply}
               disabled={isApplying}
-              className="mt-3 rounded-md bg-[var(--color-primary)] px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50" // token-ok: white-on-primary AA (D6)
+              className="mt-3"
             >
               {isApplying
                 ? t("dev.backend.applying", {
-                    defaultValue: "Applying...",
+                    defaultValue: "Wird angewendet …",
                   })
                 : t("dev.backend.apply", {
-                    defaultValue: "Apply",
+                    defaultValue: "Übernehmen",
                   })}
-            </button>
+            </Button>
           )}
         </div>
       </div>
