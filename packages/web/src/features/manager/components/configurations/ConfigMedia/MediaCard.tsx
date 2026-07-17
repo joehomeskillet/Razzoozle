@@ -58,7 +58,7 @@ const MediaCard = ({
             }
       }
     >
-      <button
+      <Button
         type="button"
         role="checkbox"
         aria-checked={isSelected}
@@ -67,7 +67,9 @@ const MediaCard = ({
           defaultValue: "{{name}} auswählen",
         })}
         onClick={handleCardSelect(item.id)}
-        className="absolute top-0 left-0 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-tl-[var(--radius-theme)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+        variant="ghost"
+        size="icon"
+        className="absolute top-0 left-0 z-10 rounded-tl-[var(--radius-theme)] focus-visible:-outline-offset-2"
       >
         <span
           className={clsx(
@@ -79,7 +81,7 @@ const MediaCard = ({
         >
           <Check className="size-4" aria-hidden />
         </span>
-      </button>
+      </Button>
 
       <div className="flex aspect-video items-center justify-center bg-[var(--surface-2)]">
         {item.type === "audio" ? (
