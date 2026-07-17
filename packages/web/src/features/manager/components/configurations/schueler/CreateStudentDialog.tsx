@@ -1,4 +1,6 @@
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
+import DateInput from "@razzoozle/web/components/DateInput"
 import Input from "@razzoozle/web/components/Input"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { useState } from "react"
@@ -92,13 +94,12 @@ const CreateStudentDialog = ({
               >
                 {t("manager:schueler.birthdateLabel")}
               </label>
-              <input
+              <DateInput
                 id="schueler-create-birthdate"
-                type="date"
                 value={birthdate}
                 max={todayIso}
                 onChange={(e) => setBirthdate(e.target.value)}
-                className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                className="mt-1"
               />
             </div>
 
@@ -117,11 +118,9 @@ const CreateStudentDialog = ({
                       key={c.id}
                       className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-sm text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedClassIds.includes(c.id)}
                         onChange={() => toggleClass(c.id)}
-                        className="size-4 rounded border-[var(--border-hairline)] focus-visible:outline-[var(--color-primary)]"
                       />
                       {c.name}
                     </label>
