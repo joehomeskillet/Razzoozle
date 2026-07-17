@@ -1,6 +1,7 @@
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Input from "@razzoozle/web/components/Input"
 import Button from "@razzoozle/web/components/Button"
+import DateInput from "@razzoozle/web/components/DateInput"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus } from "lucide-react"
@@ -262,13 +263,12 @@ const ConfigKlassen = () => {
           >
             {t("manager:schueler.birthdateLabel")}
           </label>
-          <input
+          <DateInput
             id="klassen-edit-student-birthdate"
-            type="date"
             value={editStudentBirthdate}
             max={todayIso}
             onChange={(e) => setEditStudentBirthdate(e.target.value)}
-            className="mt-1 min-h-11 w-full rounded-[var(--radius-theme)] border-2 border-[var(--border-hairline)] p-2 text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            className="mt-1 text-lg font-semibold"
           />
         </div>
         <div className="mt-6 flex justify-end gap-2">
