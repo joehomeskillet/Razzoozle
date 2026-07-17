@@ -3,6 +3,7 @@ import {
   useReveal,
 } from "@razzoozle/web/features/game/animation/presets"
 import { SectionCard } from "@razzoozle/web/features/manager/components/console"
+import Button from "@razzoozle/web/components/Button"
 import LabelRow from "@razzoozle/web/components/ui/LabelRow"
 import { Gauge, RefreshCw } from "lucide-react"
 import { motion } from "motion/react"
@@ -116,14 +117,16 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
             defaultValue: "Vorschau",
           })}
         </span>
-        <button
+        <Button
+          variant="secondary"
+          size="md"
           type="button"
           onClick={() => setReplayKey((k) => k + 1)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--color-primary)] outline-1 -outline-offset-1 outline-[var(--border-hairline)] transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          className="text-[var(--color-primary)] outline-1 -outline-offset-1 outline-[var(--border-hairline)]"
         >
           <RefreshCw className="size-4" aria-hidden />
           {t("manager:theme.animation.replay", { defaultValue: "Abspielen" })}
-        </button>
+        </Button>
       </div>
 
       <motion.ul
