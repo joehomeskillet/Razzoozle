@@ -91,12 +91,13 @@ const StudentPicker = ({
             filtered.map((student) => {
               const alreadyIn = student.classes.some((c) => c.id === classId)
               return (
-                <button
+                <Button
                   key={student.id}
-                  type="button"
+                  variant="secondary"
+                  size="md"
                   disabled={alreadyIn}
                   onClick={() => onSelect(student.id, classId)}
-                  className="focus-visible:outline-[var(--color-primary)] flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="w-full justify-between text-left text-sm px-3 py-2"
                 >
                   <span className="min-w-0 truncate text-[var(--ink)]">
                     {student.displayName}
@@ -111,7 +112,7 @@ const StudentPicker = ({
                       {t("manager:classes.pickerAlreadyIn")}
                     </span>
                   )}
-                </button>
+                </Button>
               )
             })
           )}
