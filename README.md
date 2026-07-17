@@ -75,6 +75,7 @@ The stack is self-contained (the Rust server + its own Postgres). Open the app, 
 | 🥇 | **End-game awards recap** — an animated superlatives sequence (fastest finger, biggest climber, longest streak, comeback kid…) showing each winner's avatar + name, auto-paced in autoplay. |
 | 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
+| 🏫 | **Class mode for schools** — an optional teacher mode: create classes, manage a student roster (add students, move them between classes, remove), give each student their own PIN, and assign a quiz to a whole class with a deadline, an attempt limit and privacy-first pseudonymous result tracking. |
 | ✍️ | **Nine question types** — single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input and word-types (Wortarten), on top of the classic colored-tile answers. |
 | 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
 | 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |

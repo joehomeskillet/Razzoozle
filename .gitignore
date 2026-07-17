@@ -58,6 +58,5 @@ ds-bundle/
 .design-sync/
 
 # local tooling + CI mirror, not part of the published repo (2026-07-17)
-.gitea/workflows/
 .stagehand-cache/
 .vscode/

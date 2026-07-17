@@ -75,6 +75,7 @@ Der Stack ist in sich geschlossen (Rust-Server + eigene Postgres-Instanz). App �
 | 🥇 | **Auszeichnungs-Recap am Spielende** — eine animierte Superlativ-Sequenz (schnellster Finger, größter Aufsteiger, längste Serie, Comeback-Kid…), die Avatar + Name jedes Gewinners zeigt, im Autoplay automatisch getaktet. |
 | 👥 | **Team-Modus** — Teams in Rot / Blau / Grün / Gelb mit einer Live-Team-Rangliste. |
 | 📱 | **Einzelspiel** — jedes Quiz allein über einen Freigabelink üben, mit eigener Punkte-Historie. |
+| 🏫 | **Klassen-Modus für Schulen** — optionaler Lehrermodus: Klassen anlegen, Schülerliste verwalten (Schüler hinzufügen, zwischen Klassen verschieben, entfernen), jedem Schüler eine eigene PIN geben und ein Quiz einer ganzen Klasse zuweisen — mit Frist, Versuchslimit und datenschutzfreundlicher pseudonymer Ergebnisverfolgung. |
 | ✍️ | **Neun Fragetypen** — Einfachauswahl, Richtig/Falsch, Umfrage, Schieberegler, Mehrfachauswahl, Textantwort, Satzbau, Mathe-Eingabe und Wortarten, zusätzlich zu den klassischen farbigen Antwortkacheln. |
 | 📳 | **Mobile Haptik** — optionales Vibrations-Feedback auf Spieler-Handys (Countdown, Antworten), reduced-motion-bewusst. |
 | 🔗 | **Teilbare Ergebnisse** — reichhaltige Link-Vorschauen pro Ergebnis (Open-Graph-Unfurl), eine Ergebnisseite mit „selbst spielen / eigenes hosten"-Calls-to-Action und herunterladbare Gewinner-Sticker. |

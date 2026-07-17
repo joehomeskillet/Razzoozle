@@ -75,6 +75,7 @@ Lo stack è autonomo (il server Rust + il proprio Postgres). Apri l'app, vai su 
 | 🥇 | **Riepilogo dei premi di fine partita** — una sequenza animata di superlativi (dito più veloce, maggior scalatore, serie più lunga, comeback kid…) che mostra l'avatar + il nome di ogni vincitore, con ritmo automatico in autoplay. |
 | 👥 | **Modalità squadre** — squadre rossa / blu / verde / gialla con una classifica di squadra live. |
 | 📱 | **Gioco in solitaria** — esercitati su qualsiasi quiz da solo tramite un link di condivisione, con la propria cronologia dei punteggi. |
+| 🏫 | **Modalità classe per le scuole** — una modalità opzionale per insegnanti: creare classi, gestire un elenco studenti (aggiungere, spostare tra classi, rimuovere), dare a ogni studente il proprio PIN e assegnare un quiz a un'intera classe con scadenza, limite di tentativi e tracciamento dei risultati pseudonimo orientato alla privacy. |
 | ✍️ | **Nove tipi di domande** — scelta singola, vero/falso, sondaggio, cursore, selezione multipla, digita-la-risposta, costruttore di frasi, input matematico e tipi di parole (Wortarten), oltre alle classiche caselle di risposta colorate. |
 | 📳 | **Feedback aptico mobile** — feedback di vibrazione opzionale sui telefoni dei giocatori (conto alla rovescia, risposte), attento al reduced-motion. |
 | 🔗 | **Risultati condivisibili** — anteprime di link ricche per risultato (Open Graph unfurl), una pagina di risultato con call-to-action "giocalo tu stesso / ospita la tua" e sticker del vincitore scaricabili. |
