@@ -297,7 +297,9 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
     logout()
   }
 
-  const nav: ConsoleNavItem[] = allowedTabs.map((tab) => ({
+  const nav: ConsoleNavItem[] = allowedTabs
+    .filter((tab) => tab.key !== "profile")
+    .map((tab) => ({
     key: tab.key,
     label: t(tab.nameKey, { defaultValue: tab.nameKey }),
     icon: tab.icon,
@@ -327,6 +329,17 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
       headerActions={
         <>
           <LanguageSwitcher />
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={() => onSelect("profile")}
+            title={t("manager:tabs.profile")}
+            aria-label={t("manager:tabs.profile")}
+            className={active.key === "profile" ? "bg-[var(--accent-tint)]" : undefined}
+          >
+            <User className="size-5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
