@@ -34,6 +34,21 @@ reviews:
   browser_verify: PASS       # browser-qa on live rust twin, 6/6 criteria
   final_review: done         # 14-final-review.md -> ACCEPTED
 
+visual_consistency:   # Task 5 — rendered consistency (docs 20/21), 2026-07-17
+  base: d8562d39e
+  audit_lanes: {codex_code_cause: done, grok_visual_matrix: done, browser_geometry: FAILED-api-stall-partial}
+  spec: 20-visual-consistency-spec.md
+  audit: 21-visual-element-audit.md
+  verdict: ~85% consistent; drift = radius-scale + internal-value overrides (not dup)
+  adjudications:
+    - "Button base rounded-lg KEPT (reject Codex VIS-RADIUS-1) — all buttons already uniform; D9 large-button = surface not size token"
+    - "Badge tone via className (reject tone-enum prop) — host anti-over-abstraction; chipBase owns structure"
+  work_packages:
+    - {id: WP-A, title: radius D9 2-level normalization (9 files), status: planned}
+    - {id: WP-B, title: ResultModalTable internal-override + chip radius, status: planned}
+    - {id: WP-C, title: badge structural unification (4 inline pills -> Badge className), status: planned}
+  non_goals: [Button radius change, Badge tone enum, useCrudManager, gap standardization, NavItem count badge, slider/switch/dot rounded-full]
+
 accepted_open:  # documented, non-blocking, NOT introduced by this work
   - "pre-existing repo lint/type debt (stale tsc-b-cache-masked) in untouched files: e2e/stagehand/*.spec.ts, ConfigUsers.tsx, pages/manager/config.tsx, game/stores/manager.test.ts, scripts/locale-sync.mjs — full pnpm verify stays red on these; follow-up = separate lint-debt pass"
   - "github mirror deferred (github-mirror unconfigured + direct push forbidden); changes safe on Gitea origin + deployed"
