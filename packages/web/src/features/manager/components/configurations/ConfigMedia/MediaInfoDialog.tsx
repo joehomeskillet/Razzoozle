@@ -105,7 +105,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
           type="button"
           aria-label={detailsLabel}
           title={detailsLabel}
-          className="shrink-0 text-[var(--ink-faint)]"
+          className="shrink-0 text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
         >
           <Info className="size-4" aria-hidden />
         </Button>
