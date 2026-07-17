@@ -817,11 +817,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
         </article>
 
         <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h6m6 0h6M12 3v6m0 6v6"/><circle cx="12" cy="12" r="10"/></svg></div>
-          <h3 data-i18n="feat.f13.t">Sentence-builder questions</h3>
-          <p data-i18n="feat.f13.d">A new question type — players tap shuffled word chunks to rebuild a sentence in the right order, great for languages, definitions and sequences.</p>
-        </article>
-        <article class="feature">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 3 6 3s6-2 6-3v-5"/></svg></div>
           <h3 data-i18n="feat.f14.t">Class mode for schools</h3>
           <p data-i18n="feat.f14.d">An optional teacher mode: create classes, manage a student roster, give each student their own PIN, and assign quizzes to a class with deadlines, attempt limits and privacy-first pseudonymous results.</p>
@@ -875,6 +870,12 @@ html.js [data-reveal].in{opacity:1;transform:none}
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><circle cx="14" cy="12" r="3"/></svg></div>
           <h3 data-i18n="modes.q3.t">Slider</h3>
           <p data-i18n="modes.q3.d">Drag to the closest number.</p>
+        </article>
+
+        <article class="mode-card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h6m6 0h6M12 3v6m0 6v6"/><circle cx="12" cy="12" r="10"/></svg></div>
+          <h3 data-i18n="modes.q4.t">Sentence builder</h3>
+          <p data-i18n="modes.q4.d">Tap word chunks into the right order.</p>
         </article>
       </div>
     </div>
@@ -981,8 +982,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Author quizzes in the manager: multiple question types, a media picker for images, and an importable quiz catalog — no JSON wrangling required.",
       "feat.f12.t": "Speaks your language",
       "feat.f12.d": "Full UI in English, German, Chinese, Spanish, French and Italian with an instant switch — players and hosts each get their own language.",
-      "feat.f13.t": "Sentence-builder questions",
-      "feat.f13.d": "A new question type — players tap shuffled word chunks to rebuild a sentence in the right order, great for languages, definitions and sequences.",
       "feat.f14.t": "Class mode for schools",
       "feat.f14.d": "An optional teacher mode: create classes, manage a student roster, give each student their own PIN, and assign quizzes to a class with deadlines, attempt limits and privacy-first pseudonymous results.",
       "modes.kicker": "However you play",
@@ -1000,6 +999,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "Spell it out on your keyboard.",
       "modes.q3.t": "Slider",
       "modes.q3.d": "Drag to the closest number.",
+      "modes.q4.t": "Sentence builder",
+      "modes.q4.d": "Tap word chunks into the right order.",
       "cta.title": "Self-host it in two commands",
       "cta.sub": "Clone the repo and run it with Docker Compose. Your data stays in a local config volume — put it behind your own reverse proxy for TLS and a public name.",
       "cta.btn": "Get it on GitHub",
@@ -1121,8 +1122,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Erstelle Quizze direkt im Manager: mehrere Fragetypen, ein Medien-Picker für Bilder und ein importierbarer Fragenkatalog — kein JSON-Gebastel nötig.",
       "feat.f12.t": "Spricht deine Sprache",
       "feat.f12.d": "Vollständige Oberfläche auf Englisch, Deutsch, Chinesisch, Spanisch, Französisch und Italienisch mit sofortigem Umschalten — Spielende und Gastgeber bekommen jeweils ihre eigene Sprache.",
-      "feat.f13.t": "Satz-Builder-Fragen",
-      "feat.f13.d": "Ein neuer Fragetyp — Spielende tippen auf durchmischte Wort-Chunks, um einen Satz in der richtigen Reihenfolge zu rekonstruieren, toll für Sprachen, Definitionen und Reihenfolgen.",
       "feat.f14.t": "Klassen-Modus für Schulen",
       "feat.f14.d": "Optionaler Lehrermodus: Klassen anlegen, Schülerlisten verwalten, jedem Schüler eine eigene PIN geben und Quizze einer Klasse zuweisen — mit Fristen, Versuchslimits und datenschutzfreundlichen pseudonymen Ergebnissen.",
       "modes.kicker": "Wie auch immer du spielst",
@@ -1140,6 +1139,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "Tippe sie auf deiner Tastatur ein.",
       "modes.q3.t": "Slider",
       "modes.q3.d": "Zieh ihn auf die passendste Zahl.",
+      "modes.q4.t": "Satz-Builder",
+      "modes.q4.d": "Tippe Wortschnipsel in die richtige Reihenfolge.",
       "cta.title": "Selbst hosten mit zwei Befehlen",
       "cta.sub": "Klone das Repo und starte es mit Docker Compose. Deine Daten bleiben in einem lokalen Config-Volume — stell es hinter deinen eigenen Reverse-Proxy für TLS und einen öffentlichen Namen.",
       "cta.btn": "Auf GitHub holen",
@@ -1262,8 +1263,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "在管理员中编写测验：多种题型、用于图片的媒体选择器，以及可导入的测验目录 —— 无需手动折腾 JSON。",
       "feat.f12.t": "会说你的语言",
       "feat.f12.d": "界面完整支持英语、德语、中文、西班牙语、法语和意大利语，可即时切换 —— 玩家和主持人各自使用自己的语言。",
-      "feat.f13.t": "造句题",
-      "feat.f13.d": "全新题型——玩家点击打乱的词块来重新组织句子的正确顺序，非常适合语言学习、定义和序列问题。",
       "feat.f14.t": "面向学校的班级模式",
       "feat.f14.d": "可选的教师模式：创建班级、管理学生名册、为每位学生分配专属 PIN，并向班级布置测验，支持截止时间、作答次数限制以及隐私优先的化名成绩追踪。",
       "modes.kicker": "无论你怎么玩",
@@ -1281,6 +1280,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "用键盘把答案拼出来。",
       "modes.q3.t": "滑块",
       "modes.q3.d": "拖到最接近的数字。",
+      "modes.q4.t": "造句",
+      "modes.q4.d": "点按词块排出正确顺序。",
       "cta.title": "两条命令即可自托管",
       "cta.sub": "克隆仓库并用 Docker Compose 运行。你的数据保存在本地 config 卷中 —— 把它放在你自己的反向代理后面以获得 TLS 和公开域名。",
       "cta.btn": "前往 GitHub 获取",
@@ -1403,8 +1404,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Crea cuestionarios desde el panel: varios tipos de pregunta, un selector de medios para imágenes y un catálogo de cuestionarios importable — sin tener que pelearte con JSON.",
       "feat.f12.t": "Habla tu idioma",
       "feat.f12.d": "Interfaz completa en inglés, alemán, chino, español, francés e italiano con cambio instantáneo — cada jugador y anfitrión usa su propio idioma.",
-      "feat.f13.t": "Preguntas de constructor de frases",
-      "feat.f13.d": "Un nuevo tipo de pregunta — los jugadores tocan fragmentos de palabras barajados para reconstruir una frase en el orden correcto, excelente para idiomas, definiciones y secuencias.",
       "feat.f14.t": "Modo clase para escuelas",
       "feat.f14.d": "Un modo opcional para docentes: crea clases, gestiona la lista de estudiantes, da a cada alumno su propio PIN y asigna cuestionarios a una clase con plazos, límites de intentos y resultados seudónimos orientados a la privacidad.",
       "modes.kicker": "Como prefieras jugar",
@@ -1422,6 +1421,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "Escríbela con tu teclado.",
       "modes.q3.t": "Deslizador",
       "modes.q3.d": "Arrastra hasta el número más cercano.",
+      "modes.q4.t": "Constructor de frases",
+      "modes.q4.d": "Toca fragmentos de palabras en el orden correcto.",
       "cta.title": "Autoalójalo en dos comandos",
       "cta.sub": "Clona el repositorio y ejecútalo con Docker Compose. Tus datos se quedan en un volumen de configuración local — ponlo detrás de tu propio proxy inverso para tener TLS y un nombre público.",
       "cta.btn": "Conséguelo en GitHub",
@@ -1544,8 +1545,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Créez des quiz dans le manager : plusieurs types de questions, un sélecteur de médias pour les images et un catalogue de quiz importable — sans avoir à bricoler du JSON.",
       "feat.f12.t": "Parle votre langue",
       "feat.f12.d": "Interface complète en anglais, allemand, chinois, espagnol, français et italien avec un changement instantané — chaque joueur et animateur a sa propre langue.",
-      "feat.f13.t": "Questions de constructeur de phrases",
-      "feat.f13.d": "Un nouveau type de question — les joueurs appuient sur des fragments de mots mélangés pour reconstruire une phrase dans le bon ordre, parfait pour les langues, les définitions et les séquences.",
       "feat.f14.t": "Mode classe pour les écoles",
       "feat.f14.d": "Un mode enseignant optionnel : créez des classes, gérez la liste des élèves, donnez à chaque élève son propre code PIN et assignez des quiz à une classe avec échéances, limites de tentatives et résultats pseudonymes respectueux de la vie privée.",
       "modes.kicker": "Quelle que soit votre façon de jouer",
@@ -1563,6 +1562,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "Tapez-la sur votre clavier.",
       "modes.q3.t": "Curseur",
       "modes.q3.d": "Glissez jusqu'au nombre le plus proche.",
+      "modes.q4.t": "Constructeur de phrases",
+      "modes.q4.d": "Touchez les fragments de mots dans le bon ordre.",
       "cta.title": "Auto-hébergez-le en deux commandes",
       "cta.sub": "Clonez le dépôt et lancez-le avec Docker Compose. Vos données restent dans un volume de configuration local — placez-le derrière votre propre reverse proxy pour le TLS et un nom public.",
       "cta.btn": "Obtenez-le sur GitHub",
@@ -1685,8 +1686,6 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "feat.f11.d": "Crea quiz nel manager: diversi tipi di domanda, un selettore di media per le immagini e un catalogo di quiz importabile — senza dover smanettare con il JSON.",
       "feat.f12.t": "Parla la tua lingua",
       "feat.f12.d": "Interfaccia completa in inglese, tedesco, cinese, spagnolo, francese e italiano con cambio istantaneo — ogni giocatore e conduttore usa la propria lingua.",
-      "feat.f13.t": "Domande di costruzione di frasi",
-      "feat.f13.d": "Un nuovo tipo di domanda — i giocatori toccano frammenti di parole mescolati per ricostruire una frase nell'ordine corretto, perfetto per lingue, definizioni e sequenze.",
       "feat.f14.t": "Modalità classe per le scuole",
       "feat.f14.d": "Una modalità insegnante opzionale: crea classi, gestisci l'elenco degli studenti, assegna a ogni studente un proprio PIN e assegna quiz a una classe con scadenze, limiti di tentativi e risultati pseudonimi basati sulla privacy.",
       "modes.kicker": "Comunque tu voglia giocare",
@@ -1704,6 +1703,8 @@ html.js [data-reveal].in{opacity:1;transform:none}
       "modes.q2.d": "Scrivila con la tastiera.",
       "modes.q3.t": "Cursore",
       "modes.q3.d": "Trascina fino al numero più vicino.",
+      "modes.q4.t": "Costruttore di frasi",
+      "modes.q4.d": "Tocca i frammenti di parole nell'ordine giusto.",
       "cta.title": "Fai self-hosting in due comandi",
       "cta.sub": "Clona il repository ed eseguilo con Docker Compose. I tuoi dati restano in un volume di configurazione locale — mettilo dietro il tuo reverse proxy per avere TLS e un nome pubblico.",
       "cta.btn": "Scaricalo da GitHub",
