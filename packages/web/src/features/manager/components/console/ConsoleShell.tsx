@@ -244,7 +244,7 @@ const ConsoleShell = ({
       aria-label={title}
       aria-orientation="vertical"
       onKeyDown={handleKeyDown}
-      className="flex flex-col gap-3 overflow-y-auto"
+      className="flex flex-col gap-3 overflow-y-auto nav-scroll"
     >
       {sections.map((section, index) => (
         <SubGroup
@@ -346,7 +346,7 @@ const ConsoleShell = ({
           {showRail && (
             <nav
               aria-label={title}
-              className="w-56 shrink-0 overflow-y-auto border-r border-[var(--line)] bg-[var(--surface-2)] p-2"
+              className="w-56 shrink-0 overflow-y-auto nav-scroll border-r border-[var(--line)] bg-[var(--surface-2)] p-2"
             >
               {renderNavSections(onSelect)}
             </nav>
