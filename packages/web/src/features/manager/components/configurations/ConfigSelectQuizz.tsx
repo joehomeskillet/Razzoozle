@@ -107,9 +107,6 @@ const ConfigSelectQuizz = () => {
 
     if (config.klassenEnabled === true) {
       selectedModes.klassen = klassenMode
-      if (klassenMode && classId) {
-        selectedModes.classId = parseInt(classId, 10)
-      }
       hasCustomModes = true
     }
 
@@ -124,6 +121,7 @@ const ConfigSelectQuizz = () => {
       socket.emit(EVENTS.GAME.CREATE, {
         quizzId: selected,
         selectedModes,
+        classId: klassenMode && classId ? parseInt(classId, 10) : undefined,
       })
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
