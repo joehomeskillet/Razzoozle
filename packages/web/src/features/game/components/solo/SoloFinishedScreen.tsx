@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
+import Button from "@razzoozle/web/components/Button"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
 
@@ -64,14 +65,15 @@ const FinishedScreen = ({
         </div>
 
         <div className="flex flex-col gap-3 pb-10 sm:flex-row">
-          <button
+          <Button
             data-testid="solo-finished-restart"
             type="button"
             onClick={onReplay}
-            className="bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/40 rounded-full px-10 py-3 text-xl font-bold text-white hover:brightness-110 active:scale-95 transition-all"
+            variant="primary"
+            size="lg"
           >
             {t("game:solo.replay")}
-          </button>
+          </Button>
           <a
             href="/trophies"
             className="flex items-center justify-center rounded-full border border-[var(--border-hairline)] bg-white px-10 py-3 text-xl font-bold text-[color:var(--color-field-ink)] transition-colors hover:bg-gray-50"

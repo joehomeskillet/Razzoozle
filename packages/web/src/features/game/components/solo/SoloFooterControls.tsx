@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
+import Button from "@razzoozle/web/components/Button"
 
 // ---------------------------------------------------------------------------
 // Result-phase footer controls: auto-advance toggle + next/finish button
@@ -57,21 +58,25 @@ const SoloFooterControls = ({
             : t("game:controls.autoOff", { defaultValue: "aus" })}
         </span>
       </button>
-      <motion.button
-        type="button"
-        onClick={nextQuestion}
+      <motion.div
         animate={reduced ? undefined : { scale: [1, 1.05, 1] }}
         transition={
           reduced
             ? undefined
             : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
         }
-        className="rounded-lg bg-gradient-to-r from-primary to-purple-500 px-5 py-2 text-base font-bold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110 active:scale-95"
       >
-        {currentIndex + 1 < questions.length
-          ? t("game:solo.next")
-          : t("game:solo.finish")}
-      </motion.button>
+        <Button
+          type="button"
+          onClick={nextQuestion}
+          variant="primary"
+          size="md"
+        >
+          {currentIndex + 1 < questions.length
+            ? t("game:solo.next")
+            : t("game:solo.finish")}
+        </Button>
+      </motion.div>
     </div>
   )
 }
