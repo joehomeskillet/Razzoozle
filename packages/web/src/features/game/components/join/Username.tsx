@@ -149,7 +149,7 @@ const Username = () => {
     }
   })
 
-  useEvent(EVENTS.GAME.ERROR_MESSAGE, (message: string) => {
+  useEvent(EVENTS.GAME.ERROR_MESSAGE, (_message: string) => {
     if (klassen) {
       // For class mode, show the non-specific error message
       // A7: Keep name and PIN prefilled on retry
