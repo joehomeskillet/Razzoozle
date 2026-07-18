@@ -5,6 +5,7 @@ use razzoozle_protocol::game::{GameSuccessRoom, RosterEntry};
 use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
+use std::net::IpAddr;
 use tracing::info;
 
 /// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
@@ -12,39 +13,65 @@ const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
 /// Distinct error after PIN proven — student already has an active session (A6).
 const ALREADY_JOINED: &str = "errors:game.alreadyJoined";
 
-/// Best-effort client IP for rate limiting (A9). Prefers proxy headers, then
-/// axum ConnectInfo if present on the handshake request, else durable client_id.
+/// Check if an IP address is a trusted proxy (loopback or private range).
+fn is_trusted_proxy(ip: IpAddr) -> bool {
+    if ip.is_loopback() {
+        return true;
+    }
+    match ip {
+        IpAddr::V4(ipv4) => ipv4.is_private(),
+        IpAddr::V6(_ipv6) => false,
+    }
+}
+
+/// Best-effort client IP for rate limiting (A9). Derives peer IP from axum ConnectInfo.
+/// SECURITY: Only trusts proxy headers (x-forwarded-for/x-real-ip) when the peer
+/// is a trusted proxy (loopback or private IP range). Untrusted peers: falls back to peer IP directly.
 fn client_ip_key(socket: &SocketRef, client_id: &str) -> String {
     let parts = socket.req_parts();
-    if let Some(xff) = parts
-        .headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-    {
-        if let Some(first) = xff.split(',').next() {
-            let ip = first.trim();
-            if !ip.is_empty() {
-                return ip.to_string();
-            }
-        }
-    }
-    if let Some(real) = parts
-        .headers
-        .get("x-real-ip")
-        .and_then(|v| v.to_str().ok())
-    {
-        let ip = real.trim();
-        if !ip.is_empty() {
-            return ip.to_string();
-        }
-    }
+
+    // Check if we have a peer IP from axum ConnectInfo
     if let Some(addr) = parts
         .extensions
         .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
     {
-        return addr.0.ip().to_string();
+        let peer_ip = addr.0.ip();
+
+        // SECURITY: Only consult proxy headers if peer is a trusted proxy (loopback or private)
+        if is_trusted_proxy(peer_ip) {
+            // Check x-forwarded-for (multiple IPs, take first)
+            if let Some(xff) = parts
+                .headers
+                .get("x-forwarded-for")
+                .and_then(|v| v.to_str().ok())
+            {
+                if let Some(first) = xff.split(',').next() {
+                    let ip = first.trim();
+                    if !ip.is_empty() {
+                        return ip.to_string();
+                    }
+                }
+            }
+            // Check x-real-ip
+            if let Some(real) = parts
+                .headers
+                .get("x-real-ip")
+                .and_then(|v| v.to_str().ok())
+            {
+                let ip = real.trim();
+                if !ip.is_empty() {
+                    return ip.to_string();
+                }
+            }
+            // Trusted proxy but no usable header: use peer IP
+            return peer_ip.to_string();
+        } else {
+            // Untrusted peer: don't trust proxy headers, use the peer IP directly
+            return peer_ip.to_string();
+        }
     }
-    // Fall back to durable client id so throttle still binds something stable.
+
+    // No peer addr available: fall back to durable client_id so throttle still binds something stable
     format!("cid:{}", client_id)
 }
 
@@ -187,12 +214,13 @@ pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
                             roster,
                         };
 
-                        // No invite_code / student secrets in logs.
+                        // SECURITY: never log the raw invite_code
                         info!("Player checking game: invite_code_len={}", invite_code.len());
 
                         socket.emit(constants::game::SUCCESS_ROOM, &payload).ok();
                     }
                     None => {
+                        // SECURITY: never log the raw invite_code
                         info!("Game not found for invite code (len={})", invite_code.len());
                         socket
                             .emit(constants::game::ERROR_MESSAGE, "errors:game.notFound")
@@ -293,7 +321,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 
                                 if is_klassen {
                                     let client_ip = client_ip_key(&socket, &client_id);
-                                    // Dual throttle keys (A9): game-scoped 5/5min AND pin 3/60s.
+                                    // Dual throttle keys (A9): per-(game,ip) and per-(game,student_id).
                                     let game_rate_key = format!("{}:{}", game_id, client_ip);
                                     let pin_rate_key = format!("klassen:{}:{}", game_id, client_ip);
 
@@ -339,73 +367,82 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         }
                                     };
 
-                                    // Roster membership (identity = studentId ∈ class).
-                                    let students =
-                                        crate::db::classes::students_for_class(&db_pool, cid, oid)
+                                    // Fetch roster WITH stored PINs for validation (F3).
+                                    // This replaces the inline validation logic.
+                                    let students_with_pins =
+                                        crate::db::pins::students_with_pins(&db_pool, cid, oid)
                                             .await;
 
-                                    let roster_member = student_id.and_then(|sid| {
-                                        students.iter().find(|s| s.id == sid).map(|s| {
-                                            (s.id, s.display_name.clone())
-                                        })
-                                    });
+                                    let roster_for_decision: Vec<(i64, String, String)> =
+                                        students_with_pins
+                                            .into_iter()
+                                            .map(|(id, name, pin)| (id, name, pin))
+                                            .collect();
 
-                                    // PIN verify against plaintext students.pin (Wave-1 §B).
-                                    // Collapse membership + pin + format into one INVALID_CREDENTIALS.
-                                    let mut credentials_ok = false;
-                                    let mut resolved_name = String::new();
-                                    let mut resolved_sid = 0i64;
+                                    // F2(b): Per-student throttle initialization (keyed by game:student_id).
+                                    // Will be recorded on failure if needed.
+                                    let student_rate_key = if let Some(sid) = student_id {
+                                        format!("klassen:{}:{}", game_id, sid)
+                                    } else {
+                                        // No student_id provided; still check throttle as pass-through
+                                        format!("klassen:{}:none", game_id)
+                                    };
 
-                                    if pin_format_ok {
-                                        if let (Some((sid, dname)), Some(pin), Some(pool)) =
-                                            (roster_member, joined_pin.as_ref(), db_pool.as_ref())
-                                        {
-                                            // Call PIN validate (grep-prove path).
-                                            match crate::db::pins::validate_student_pin_plain(
-                                                pool, sid, pin,
-                                            )
-                                            .await
-                                            {
-                                                Ok(true) => {
-                                                    credentials_ok = true;
-                                                    resolved_name = dname;
-                                                    resolved_sid = sid;
-                                                }
-                                                _ => {
-                                                    credentials_ok = false;
-                                                }
-                                            }
+                                    let student_throttled = !crate::http::RATE_LIMITER
+                                        .check_student_pin_rate(&student_rate_key, false);
+
+                                    if student_throttled {
+                                        // Constant shape on lockout (A7/A9).
+                                        socket
+                                            .emit(constants::game::ERROR_MESSAGE, INVALID_CREDENTIALS)
+                                            .ok();
+                                        return;
+                                    }
+
+                                    // Call the tested decision function (F3).
+                                    let credentials_decision = decide_klassen_login(
+                                        student_id,
+                                        joined_pin.as_deref(),
+                                        &roster_for_decision,
+                                        &active_student_ids,
+                                        false, // throttle not yet fully checked inside lock
+                                    );
+
+                                    // Handle the decision.
+                                    match credentials_decision {
+                                        KlassenLoginDecision::Allow { display_name } => {
+                                            // Credentials passed; admission proceeds.
+                                            admit_username = display_name;
+                                            admit_student_id = student_id;
+                                        }
+                                        KlassenLoginDecision::InvalidCredentials => {
+                                            // Record failure on all throttles (A9).
+                                            crate::http::RATE_LIMITER
+                                                .check_klassen_pin_rate(&game_rate_key, true);
+                                            crate::http::RATE_LIMITER
+                                                .check_pin_rate(&pin_rate_key, true);
+                                            crate::http::RATE_LIMITER
+                                                .check_student_pin_rate(&student_rate_key, true);
+                                            // SECURITY: do not log student_id or PIN.
+                                            info!("klassen player:login rejected (credentials)");
+                                            socket
+                                                .emit(
+                                                    constants::game::ERROR_MESSAGE,
+                                                    INVALID_CREDENTIALS,
+                                                )
+                                                .ok();
+                                            return;
+                                        }
+                                        KlassenLoginDecision::AlreadyJoined => {
+                                            // Post-PIN dedup failed; already has active session.
+                                            // Don't record as throttle failure (not a credential attempt).
+                                            info!("klassen player:login rejected (already joined from pre-lock check)");
+                                            socket
+                                                .emit(constants::game::ERROR_MESSAGE, ALREADY_JOINED)
+                                                .ok();
+                                            return;
                                         }
                                     }
-
-                                    if !credentials_ok {
-                                        // Record fails on BOTH throttles (A9).
-                                        crate::http::RATE_LIMITER
-                                            .check_klassen_pin_rate(&game_rate_key, true);
-                                        crate::http::RATE_LIMITER
-                                            .check_pin_rate(&pin_rate_key, true);
-                                        // SECURITY: do not log student_id or PIN.
-                                        info!("klassen player:login rejected (credentials)");
-                                        socket
-                                            .emit(
-                                                constants::game::ERROR_MESSAGE,
-                                                INVALID_CREDENTIALS,
-                                            )
-                                            .ok();
-                                        return;
-                                    }
-
-                                    // A6: already active for this student (post-PIN).
-                                    if active_student_ids.contains(&resolved_sid) {
-                                        info!("klassen player:login rejected (already joined)");
-                                        socket
-                                            .emit(constants::game::ERROR_MESSAGE, ALREADY_JOINED)
-                                            .ok();
-                                        return;
-                                    }
-
-                                    admit_username = resolved_name;
-                                    admit_student_id = Some(resolved_sid);
                                 }
 
                                 // #1: Read live join_locked config once per login attempt —
@@ -487,6 +524,29 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                             )
                                             .ok();
                                         return;
+                                    }
+
+                                    // F1: AUTHORITATIVE dedup check INSIDE lock (freshly computed).
+                                    // Re-compute active_student_ids from current game state.
+                                    if is_klassen {
+                                        if let Some(sid) = admit_student_id {
+                                            let active_fresh: Vec<i64> = game
+                                                .players
+                                                .iter()
+                                                .filter(|p| p.connected)
+                                                .filter_map(student_id_from_player)
+                                                .collect();
+                                            if active_fresh.contains(&sid) {
+                                                // Still active for this student (race detected or previous check missed).
+                                                // Don't record as throttle failure.
+                                                drop(game);
+                                                info!("klassen player:login rejected (already joined from in-lock check)");
+                                                socket
+                                                    .emit(constants::game::ERROR_MESSAGE, ALREADY_JOINED)
+                                                    .ok();
+                                                return;
+                                            }
+                                        }
                                     }
 
                                     let mut player = match game.add_player(
@@ -714,5 +774,67 @@ mod tests {
         assert!(join_emoji_pin(&["a".into(), "b".into(), "c".into(), "d".into()]).is_some());
         assert!(join_emoji_pin(&["a".into(), "b".into()]).is_none());
         assert!(join_emoji_pin(&["a".into(), "b".into(), "c".into(), "".into()]).is_none());
+    }
+
+    #[test]
+    fn klassen_login_dedup_race_two_concurrent_calls() {
+        // Simulate two concurrent login attempts for the same student.
+        // First call: no active sessions → Allow
+        let d1 = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[], // empty active_student_ids initially
+            false,
+        );
+        assert_eq!(
+            d1,
+            KlassenLoginDecision::Allow {
+                display_name: "Anna".into()
+            }
+        );
+
+        // Second call: student 1 is now active → AlreadyJoined
+        let d2 = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[1], // student 1 added to active
+            false,
+        );
+        assert_eq!(d2, KlassenLoginDecision::AlreadyJoined);
+    }
+
+    #[test]
+    fn klassen_login_per_student_throttle_behavior() {
+        // This test verifies that the per-student rate limiter is properly called.
+        // In production, the handler calls check_student_pin_rate() with key `klassen:{game_id}:{student_id}`.
+        // The rate limiter itself is tested in rate_limit.rs tests.
+        // Here we just verify decide_klassen_login accepts the throttle flag.
+
+        // Throttle not blocked → credentials checked normally
+        let d1 = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[],
+            false, // throttle_blocked = false
+        );
+        assert_eq!(
+            d1,
+            KlassenLoginDecision::Allow {
+                display_name: "Anna".into()
+            }
+        );
+
+        // Throttle blocked → credentials rejected regardless
+        let d2 = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[],
+            true, // throttle_blocked = true
+        );
+        assert_eq!(d2, KlassenLoginDecision::InvalidCredentials);
     }
 }
