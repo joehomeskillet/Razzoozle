@@ -1,6 +1,6 @@
 import Avatar from "@razzoozle/web/components/Avatar"
 import StatusBadge from "@razzoozle/web/components/StatusBadge"
-import type { RosterEntry } from "@razzoozle/common"
+import type { RosterEntry } from "@razzoozle/common/types/game/socket"
 import clsx from "clsx"
 import { type ChangeEvent, type KeyboardEvent, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
