@@ -11,6 +11,7 @@ import {
   SelectableRow,
 } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useClassManager } from "@razzoozle/web/features/manager/components/configurations/klassen/useClassManager"
 import { useNavigate } from "@tanstack/react-router"
 import { Copy, ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -23,10 +24,12 @@ const ConfigSelectQuizz = () => {
   const { quizz: quizzList } = useConfig()
   const config = useConfig()
   const navigate = useNavigate()
+  const { classes } = useClassManager()
   const [selected, setSelected] = useState<string | null>(null)
   const [scoringMode, setScoringMode] = useState<"speed" | "accuracy">("speed")
   const [teamMode, setTeamMode] = useState(false)
   const [klassenMode, setKlassenMode] = useState(false)
+  const [classId, setClassId] = useState<string>("")
   const [endScreen, setEndScreen] = useState<string>("full")
   const [search, setSearch] = useState("")
   const { t } = useTranslation()
@@ -65,11 +68,26 @@ const ConfigSelectQuizz = () => {
     }
   }, [config.endScreenModes])
 
+  // Reset classId when klassenMode is toggled off
+  useEffect(() => {
+    if (!klassenMode) {
+      setClassId("")
+    }
+  }, [klassenMode])
+
   const handleSelect = (id: string) => () =>
     setSelected((current) => (current === id ? null : id))
 
   const handleSubmit = useCallback(() => {
     if (!selected) {
+      return
+    }
+
+    // Check if klassenMode is on but no class is selected
+    if (klassenMode && !classId) {
+      toast.error(t("manager:selectQuizz.klassenModeNeedsClass", {
+        defaultValue: "Bitte wähle eine Klasse aus",
+      }))
       return
     }
 
@@ -103,11 +121,12 @@ const ConfigSelectQuizz = () => {
       socket.emit(EVENTS.GAME.CREATE, {
         quizzId: selected,
         selectedModes,
+        classId: klassenMode && classId ? parseInt(classId, 10) : undefined,
       })
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
     }
-  }, [socket, selected, config, scoringMode, teamMode, klassenMode, endScreen])
+  }, [socket, selected, config, scoringMode, teamMode, klassenMode, classId, endScreen, t])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -252,16 +271,52 @@ const ConfigSelectQuizz = () => {
             )}
 
             {config.klassenEnabled === true && (
-              <ToggleField
-                label={t("manager:gameMode.klassenMode", {
-                  defaultValue: "Klassen-Modus",
-                })}
-                description={t("manager:selectQuizz.modeSelector.klassenModeHint", {
-                  defaultValue: "Klassen-Beitritte aktivieren",
-                })}
-                checked={klassenMode}
-                onChange={setKlassenMode}
-              />
+              <>
+                <ToggleField
+                  label={t("manager:gameMode.klassenMode", {
+                    defaultValue: "Klassen-Modus",
+                  })}
+                  description={t("manager:selectQuizz.modeSelector.klassenModeHint", {
+                    defaultValue: "Klassen-Beitritte aktivieren",
+                  })}
+                  checked={klassenMode}
+                  onChange={setKlassenMode}
+                />
+
+                {klassenMode && (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="class-select" className="text-sm font-medium text-[var(--ink-muted)]">
+                      {t("manager:selectQuizz.selectClass", {
+                        defaultValue: "Klasse wählen",
+                      })}
+                    </label>
+                    <Select
+                      id="class-select"
+                      value={classId}
+                      onChange={(e) => setClassId(e.target.value)}
+                      data-testid="class-select"
+                    >
+                      <option value="">
+                        {t("manager:selectQuizz.chooseClass", {
+                          defaultValue: "Klasse auswählen …",
+                        })}
+                      </option>
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={String(cls.id)}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </Select>
+                    {!classId && klassenMode && (
+                      <p className="text-xs text-[var(--state-wrong)] mt-1">
+                        {t("manager:selectQuizz.klassenModeNeedsClass", {
+                          defaultValue: "Bitte wähle eine Klasse aus",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             {endScreenModesList.length > 1 && (
@@ -295,8 +350,16 @@ const ConfigSelectQuizz = () => {
           size="lg"
           className="w-full rounded-[var(--radius-theme)] sm:w-auto"
           onClick={handleSubmit}
-          disabled={!selected}
-          title={selected ? undefined : t("manager:quizz.pleaseSelect")}
+          disabled={!selected || (klassenMode && !classId)}
+          title={
+            !selected
+              ? t("manager:quizz.pleaseSelect")
+              : klassenMode && !classId
+                ? t("manager:selectQuizz.klassenModeNeedsClass", {
+                    defaultValue: "Bitte wähle eine Klasse aus",
+                  })
+                : undefined
+          }
         >
           <Play className="size-5" aria-hidden strokeWidth={2.5} />
           <span>{t("manager:quizz.startGame")}</span>

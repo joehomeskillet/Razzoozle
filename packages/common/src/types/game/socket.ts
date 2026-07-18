@@ -389,7 +389,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   // Manager actions
-  [EVENTS.GAME.CREATE]: (_payload: string | { quizzId: string; selectedModes?: SelectedModes }) => void
+  [EVENTS.GAME.CREATE]: (_payload: string | { quizzId: string; selectedModes?: SelectedModes; classId?: number }) => void
   [EVENTS.MANAGER.AUTH]: (_password: string) => void
   [EVENTS.MANAGER.RECONNECT]: (_message: { gameId: string }) => void
   [EVENTS.MANAGER.LEAVE]: (_message: { gameId: string }) => void
