@@ -635,7 +635,10 @@
       "scoringModeHint": "Tener en cuenta la velocidad de respuesta",
       "teamModeHint": "Los jugadores eligen equipos",
       "klassenModeHint": "Activar la inscripción por clases"
-    }
+    },
+    "selectClass": "Seleccionar clase",
+    "chooseClass": "Selecciona una clase …",
+    "klassenModeNeedsClass": "Por favor, elige una clase"
   },
   "gameMode": {
     "title": "Modo de juego",

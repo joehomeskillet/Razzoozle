@@ -26,7 +26,9 @@
     "playerAlreadyConnected": "Spieler bereits verbunden",
     "serverBusy": "Server ausgelastet, bitte später erneut versuchen",
     "locked": "Die Lobby ist gesperrt — es können keine neuen Spieler beitreten.",
-    "playerNotFound": "Spiel oder Spieler nicht gefunden — bitte neu beitreten"
+    "playerNotFound": "Spiel oder Spieler nicht gefunden — bitte neu beitreten",
+    "invalidCredentials": "Name oder PIN stimmen nicht mit der Klasse überein.",
+    "alreadyJoined": "Dieser Name ist schon beigetreten."
   },
   "manager": {
     "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",

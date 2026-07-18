@@ -289,5 +289,30 @@
     "solo": "Solo",
     "assignment": "Compito"
   },
-  "correctAnswer": "Corretto!"
+  "correctAnswer": "Corretto!",
+  "classJoin": {
+    "heading": "Scegli il tuo nome",
+    "subheading": "Trovati nella lista della classe",
+    "selectName": "Scegli il tuo nome",
+    "submit": "Unisciti",
+    "submitAs": "Unisciti come {{name}}",
+    "error": "Il nome o il PIN non corrispondono — riprova"
+  },
+  "emojiPin": {
+    "label": "Conferma con il tuo PIN",
+    "wrapperAria": "Inserimento PIN emoji",
+    "slotAria": "Campo PIN {{slot}} di 4: {{emoji}}",
+    "pickerLabel": "Selettore emoji",
+    "searchPlaceholder": "Cerca per nome …",
+    "loading": "Caricamento …",
+    "noResults": "Nessun emoji trovato"
+  },
+  "nameSelect": {
+    "searchLabel": "Trova il tuo nome",
+    "searchPlaceholder": "Digita per trovarti",
+    "rosterLabel": "Lista della classe",
+    "alreadyJoined": "Unito",
+    "selectStudent": "Seleziona {{name}}",
+    "empty": "Nessuno studente trovato. Chiedi al tuo insegnante."
+  }
 }

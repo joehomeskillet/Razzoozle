@@ -289,5 +289,30 @@
     "solo": "Solo",
     "assignment": "Aufgabe"
   },
-  "correctAnswer": "Richtig!"
+  "correctAnswer": "Richtig!",
+  "classJoin": {
+    "heading": "Wähle deinen Namen",
+    "subheading": "Finde dich in der Klassenliste",
+    "selectName": "Wähle deinen Namen",
+    "submit": "Beitreten",
+    "submitAs": "Beitreten als {{name}}",
+    "error": "Name oder PIN stimmen nicht — versuch es nochmal"
+  },
+  "emojiPin": {
+    "label": "Bestätige mit deiner PIN",
+    "wrapperAria": "Emoji-PIN-Eingabe",
+    "slotAria": "PIN-Feld {{slot}} von 4: {{emoji}}",
+    "pickerLabel": "Emoji-Auswahl",
+    "searchPlaceholder": "Nach Namen suchen …",
+    "loading": "Lädt …",
+    "noResults": "Kein Emoji gefunden"
+  },
+  "nameSelect": {
+    "searchLabel": "Finde deinen Namen",
+    "searchPlaceholder": "Tippe, um dich zu finden",
+    "rosterLabel": "Klassenliste",
+    "alreadyJoined": "Beigetreten",
+    "selectStudent": "{{name}} auswählen",
+    "empty": "Keine Schülerin oder Schüler gefunden. Frag deine Lehrkraft."
+  }
 }

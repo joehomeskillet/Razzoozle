@@ -635,7 +635,10 @@
       "scoringModeHint": "计入答题速度",
       "teamModeHint": "玩家选择队伍",
       "klassenModeHint": "启用班级加入"
-    }
+    },
+    "selectClass": "选择班级",
+    "chooseClass": "选择一个班级 …",
+    "klassenModeNeedsClass": "请选择一个班级"
   },
   "gameMode": {
     "title": "游戏模式",

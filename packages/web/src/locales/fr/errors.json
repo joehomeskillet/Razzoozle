@@ -21,7 +21,9 @@
     "playerAlreadyConnected": "Ce joueur est déjà connecté",
     "serverBusy": "Serveur occupé, réessayez plus tard",
     "locked": "Cette partie est verrouillée — aucun nouveau joueur ne peut rejoindre.",
-    "playerNotFound": "Partie ou joueur introuvable — veuillez rejoindre à nouveau"
+    "playerNotFound": "Partie ou joueur introuvable — veuillez rejoindre à nouveau",
+    "invalidCredentials": "Le nom ou le PIN ne correspond pas à la classe.",
+    "alreadyJoined": "Ce nom a déjà rejoint."
   },
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",
