@@ -93,3 +93,26 @@ pub async fn validate_student_pin(
         _ => Err("validation_failed".to_string()),
     }
 }
+
+/// Wave-1 live join: verify emoji PIN against plaintext `students.pin`.
+/// No assignment gate — identity is (student_id ∈ class roster) enforced by the caller.
+/// Constant-shape: Ok(false) for mismatch / missing student; Err only on DB failure.
+/// NEVER log `pin` or student_id values at call sites (security audit gate).
+pub async fn validate_student_pin_plain(
+    pool: &PgPool,
+    student_id: i64,
+    pin: &str,
+) -> Result<bool, String> {
+    let stored_pin = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT pin FROM students WHERE id = $1",
+    )
+    .bind(student_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| "validation_failed".to_string())?;
+
+    match stored_pin.flatten() {
+        Some(stored) => Ok(stored == pin),
+        None => Ok(false),
+    }
+}

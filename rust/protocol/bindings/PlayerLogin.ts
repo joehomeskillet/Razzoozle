@@ -3,4 +3,12 @@
 /**
  * player:login payload (C2S)
  */
-export type PlayerLogin = { username: string, avatar?: string, identifier?: string, };
+export type PlayerLogin = { username: string, avatar?: string, identifier?: string, 
+/**
+ * Class-mode identity (Wave-1 §B). Optional; non-klassen logins omit it.
+ */
+studentId?: bigint, 
+/**
+ * Class-mode emoji PIN as 4 symbols copied from `EMOJI_PIN_SET` (A2).
+ */
+emojiPin?: Array<string>, };

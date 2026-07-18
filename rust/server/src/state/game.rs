@@ -28,7 +28,11 @@ pub struct Game {
     // W0-A3: Owner user ID (from authenticated creator). `None` for legacy games
     // created before this field existed or when created without auth.
     // Used with admin bypass for ownership checks via is_game_host.
+    // Wave-1 §B calls this `owner_id` (same field — ownership of the game/class).
     pub owner_user_id: Option<i64>,
+    // Wave-1 §B: class bound when klassen mode is on. `None` = free-join.
+    // `klassen_mode()` is true iff this is Some.
+    pub class_id: Option<i64>,
     pub host_token: String,
     pub players: Vec<Player>,
     pub engine: GameState,
@@ -118,6 +122,18 @@ pub struct Game {
 }
 
 impl Game {
+    /// Wave-1 §B: klassen mode is active when a class is bound to this game.
+    #[inline]
+    pub fn klassen_mode(&self) -> bool {
+        self.class_id.is_some()
+    }
+
+    /// Alias for Wave-1 contract wording (`owner_id` == `owner_user_id`).
+    #[inline]
+    pub fn owner_id(&self) -> Option<i64> {
+        self.owner_user_id
+    }
+
     pub fn new(
         game_id: String,
         invite_code: String,
@@ -139,6 +155,7 @@ impl Game {
             manager_socket_id,
             manager_client_id: None,
             owner_user_id: None,
+            class_id: None,
             host_token,
             players: Vec::new(),
             engine: GameState::new(quiz, Vec::new()),

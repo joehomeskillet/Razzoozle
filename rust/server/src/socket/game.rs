@@ -21,16 +21,16 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             // Parse payload — handle both legacy string and new CreateGamePayload
-            let (quizz_id, selected_modes) = match create_payload {
+            let (quizz_id, selected_modes, requested_class_id) = match create_payload {
                 GameCreate::Legacy(id) => {
                     // Old client: bare quizzId string → no mode selection
                     let qid = if id.is_empty() { None } else { Some(id) };
-                    (qid, None)
+                    (qid, None, None)
                 },
                 GameCreate::CreatePayload(payload) => {
-                    // New client: extract quizzId + validate modes
+                    // New client: extract quizzId + validate modes + optional class
                     let qid = if payload.quizz_id.is_empty() { None } else { Some(payload.quizz_id) };
-                    (qid, payload.selected_modes)
+                    (qid, payload.selected_modes, payload.class_id)
                 }
             };
 
@@ -111,6 +111,27 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                     (scoring, team, klassen, end_screen)
                 };
 
+                // Wave-1 §B / A10: klassen games MUST bind a class_id.
+                // Klassen requested but disabled by global config → treat as free-join.
+                // Klassen enabled+requested without class_id → reject (incomplete create).
+                let bound_class_id = if validated_klassen {
+                    match requested_class_id {
+                        Some(cid) if cid > 0 => Some(cid),
+                        _ => {
+                            tracing::warn!(
+                                "game:create denied: klassen requested without class_id (user_id={})",
+                                user.user_id
+                            );
+                            socket
+                                .emit(constants::game::ERROR_MESSAGE, "errors:game.invalidPayload")
+                                .ok();
+                            return;
+                        }
+                    }
+                } else {
+                    None
+                };
+
                 // Fetch achievements config for this game (N3 requirement)
                 let ach_rows = crate::db::get_achievements(&ctx.db_pool).await;
 
@@ -138,6 +159,9 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             g.engine.set_achievements_config(cfg);
                             g.engine.set_randomize_answers(randomize_answers.unwrap_or(false));
                             g.engine.set_scoring_mode(validated_scoring_mode);
+
+                            // Wave-1: bind class for klassen mode
+                            g.class_id = bound_class_id;
 
                             // Snapshot per-game mode selection
                             g.selected_modes = SelectedModes {

@@ -218,6 +218,50 @@ pub async fn add_student(
     Ok(student_id)
 }
 
+/// Minimal roster row for Wave-1 live join (no PIN, no extra PII).
+#[derive(Debug, Clone)]
+pub struct ClassStudentBrief {
+    pub id: i64,
+    pub display_name: String,
+}
+
+/// Wave-1 §B: students in `class_id` scoped to `owner_id` (class.owner_id).
+/// Returns `[{id, displayName}]` shape via `ClassStudentBrief` — never PIN.
+pub async fn students_for_class(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    owner_id: i64,
+) -> Vec<ClassStudentBrief> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return vec![],
+    };
+
+    let rows: Vec<(i64, String)> = match sqlx::query_as(
+        "SELECT s.id, s.display_name FROM students s \
+         INNER JOIN class_students cs ON s.id = cs.student_id \
+         INNER JOIN classes c ON cs.class_id = c.id \
+         WHERE cs.class_id = $1 AND c.owner_id = $2 \
+         ORDER BY s.display_name ASC",
+    )
+    .bind(class_id)
+    .bind(owner_id)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            // Do not log class/owner identifiers as secrets, but failures are ops-relevant.
+            tracing::warn!("students_for_class query failed: {}", e);
+            return vec![];
+        }
+    };
+
+    rows.into_iter()
+        .map(|(id, display_name)| ClassStudentBrief { id, display_name })
+        .collect()
+}
+
 /// Get all students in a class via junction table.
 /// `me`: None = unfiltered (admin); Some(id) = only if user owns the class.
 pub async fn get_students(pool: &Option<PgPool>, class_id: i64, me: Option<i64>) -> Vec<serde_json::Value> {
