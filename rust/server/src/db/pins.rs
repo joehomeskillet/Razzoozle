@@ -116,3 +116,35 @@ pub async fn validate_student_pin_plain(
         None => Ok(false),
     }
 }
+
+/// Wave-1 §B: Fetch students in a class WITH stored PINs for klassen login validation.
+/// Returns (id, display_name, stored_pin) tuples. PINs are required for credential checking.
+/// Scoped to class_id + owner_id (class.owner_id) for authorization.
+pub async fn students_with_pins(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    owner_id: i64,
+) -> Vec<(i64, String, String)> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return vec![],
+    };
+
+    let rows: Vec<(i64, String, String)> = match sqlx::query_as(
+        "SELECT s.id, s.display_name, COALESCE(s.pin, '') FROM students s \
+         INNER JOIN class_students cs ON s.id = cs.student_id \
+         INNER JOIN classes c ON cs.class_id = c.id \
+         WHERE cs.class_id = $1 AND c.owner_id = $2 \
+         ORDER BY s.display_name ASC",
+    )
+    .bind(class_id)
+    .bind(owner_id)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(r) => r,
+        Err(_) => return vec![],
+    };
+
+    rows
+}
