@@ -644,7 +644,10 @@
       "scoringModeHint": "Take answer speed into account",
       "teamModeHint": "Players choose teams",
       "klassenModeHint": "Enable class joins"
-    }
+    },
+    "selectClass": "Select class",
+    "chooseClass": "Choose a class …",
+    "klassenModeNeedsClass": "Please select a class"
   },
   "gameMode": {
     "title": "Game mode",

@@ -289,5 +289,30 @@
     "solo": "Solo",
     "assignment": "任务"
   },
-  "correctAnswer": "正确！"
+  "correctAnswer": "正确！",
+  "classJoin": {
+    "heading": "选择你的名字",
+    "subheading": "在班级名单中找到自己",
+    "selectName": "选择你的名字",
+    "submit": "加入",
+    "submitAs": "以 {{name}} 身份加入",
+    "error": "姓名或 PIN 不匹配 — 请再试一次"
+  },
+  "emojiPin": {
+    "label": "用你的 PIN 确认",
+    "wrapperAria": "Emoji PIN 输入",
+    "slotAria": "PIN 第 {{slot}} 位，共 4 位：{{emoji}}",
+    "pickerLabel": "Emoji 选择",
+    "searchPlaceholder": "按名称搜索 …",
+    "loading": "加载中 …",
+    "noResults": "未找到 emoji"
+  },
+  "nameSelect": {
+    "searchLabel": "找到你的名字",
+    "searchPlaceholder": "输入以查找自己",
+    "rosterLabel": "班级名单",
+    "alreadyJoined": "已加入",
+    "selectStudent": "选择 {{name}}",
+    "empty": "未找到学生。请询问你的老师。"
+  }
 }

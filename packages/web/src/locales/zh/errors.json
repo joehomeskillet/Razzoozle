@@ -26,7 +26,9 @@
     "playerAlreadyConnected": "玩家已连接",
     "serverBusy": "服务器繁忙，请稍后再试",
     "locked": "房间已被锁定 — 新玩家无法加入",
-    "playerNotFound": "游戏或玩家未找到 — 请重新加入"
+    "playerNotFound": "游戏或玩家未找到 — 请重新加入",
+    "invalidCredentials": "姓名或 PIN 与班级不匹配。",
+    "alreadyJoined": "这个名字已经加入了。"
   },
   "manager": {
     "failedToReadConfig": "读取游戏配置失败",

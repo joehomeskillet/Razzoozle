@@ -26,7 +26,9 @@
     "playerAlreadyConnected": "Player already connected",
     "serverBusy": "Server busy, please try again later",
     "locked": "This game is locked — no new players can join.",
-    "playerNotFound": "Game or player not found — please rejoin"
+    "playerNotFound": "Game or player not found — please rejoin",
+    "invalidCredentials": "Name or PIN doesn't match the class.",
+    "alreadyJoined": "This name has already joined."
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",

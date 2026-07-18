@@ -289,5 +289,30 @@
     "solo": "Solo",
     "assignment": "Assignment"
   },
-  "correctAnswer": "Correct!"
+  "correctAnswer": "Correct!",
+  "classJoin": {
+    "heading": "Choose your name",
+    "subheading": "Find yourself on the class list",
+    "selectName": "Choose your name",
+    "submit": "Join",
+    "submitAs": "Join as {{name}}",
+    "error": "Name or PIN doesn't match — try again"
+  },
+  "emojiPin": {
+    "label": "Confirm with your PIN",
+    "wrapperAria": "Emoji PIN entry",
+    "slotAria": "PIN field {{slot}} of 4: {{emoji}}",
+    "pickerLabel": "Emoji picker",
+    "searchPlaceholder": "Search by name …",
+    "loading": "Loading …",
+    "noResults": "No emoji found"
+  },
+  "nameSelect": {
+    "searchLabel": "Find your name",
+    "searchPlaceholder": "Type to find yourself",
+    "rosterLabel": "Class list",
+    "alreadyJoined": "Joined",
+    "selectStudent": "Select {{name}}",
+    "empty": "No students found. Ask your teacher."
+  }
 }

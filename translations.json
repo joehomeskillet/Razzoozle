@@ -1,0 +1,162 @@
+{
+  "en": {
+    "game": {
+      "classJoin.heading": "Choose your name",
+      "classJoin.subheading": "Find yourself on the class list",
+      "classJoin.selectName": "Choose your name",
+      "classJoin.submit": "Join",
+      "classJoin.submitAs": "Join as {{name}}",
+      "classJoin.error": "Name or PIN doesn't match — try again",
+      "emojiPin.label": "Confirm with your PIN",
+      "emojiPin.wrapperAria": "Emoji PIN entry",
+      "emojiPin.slotAria": "PIN field {{slot}} of 4: {{emoji}}",
+      "emojiPin.pickerLabel": "Emoji picker",
+      "emojiPin.searchPlaceholder": "Search by name …",
+      "emojiPin.loading": "Loading …",
+      "emojiPin.noResults": "No emoji found",
+      "nameSelect.searchLabel": "Find your name",
+      "nameSelect.searchPlaceholder": "Type to find yourself",
+      "nameSelect.rosterLabel": "Class list",
+      "nameSelect.alreadyJoined": "Joined",
+      "nameSelect.selectStudent": "Select {{name}}",
+      "nameSelect.empty": "No students found. Ask your teacher."
+    },
+    "manager": {
+      "selectQuizz.selectClass": "Select class",
+      "selectQuizz.chooseClass": "Choose a class …",
+      "selectQuizz.klassenModeNeedsClass": "Please select a class"
+    },
+    "errors": {
+      "game.invalidCredentials": "Name or PIN doesn't match the class.",
+      "game.alreadyJoined": "This name has already joined."
+    }
+  },
+  "es": {
+    "game": {
+      "classJoin.heading": "Elige tu nombre",
+      "classJoin.subheading": "Encuéntrate en la lista de la clase",
+      "classJoin.selectName": "Elige tu nombre",
+      "classJoin.submit": "Unirse",
+      "classJoin.submitAs": "Unirse como {{name}}",
+      "classJoin.error": "El nombre o el PIN no coinciden — inténtalo de nuevo",
+      "emojiPin.label": "Confirma con tu PIN",
+      "emojiPin.wrapperAria": "Entrada de PIN con emoji",
+      "emojiPin.slotAria": "Campo PIN {{slot}} de 4: {{emoji}}",
+      "emojiPin.pickerLabel": "Selector de emoji",
+      "emojiPin.searchPlaceholder": "Buscar por nombre …",
+      "emojiPin.loading": "Cargando …",
+      "emojiPin.noResults": "No se ha encontrado ningún emoji",
+      "nameSelect.searchLabel": "Encuentra tu nombre",
+      "nameSelect.searchPlaceholder": "Escribe para encontrarte",
+      "nameSelect.rosterLabel": "Lista de la clase",
+      "nameSelect.alreadyJoined": "Unido",
+      "nameSelect.selectStudent": "Seleccionar a {{name}}",
+      "nameSelect.empty": "No se ha encontrado ningún estudiante. Pregunta a tu profesor o profesora."
+    },
+    "manager": {
+      "selectQuizz.selectClass": "Seleccionar clase",
+      "selectQuizz.chooseClass": "Selecciona una clase …",
+      "selectQuizz.klassenModeNeedsClass": "Por favor, elige una clase"
+    },
+    "errors": {
+      "game.invalidCredentials": "El nombre o el PIN no coinciden con la clase.",
+      "game.alreadyJoined": "Este nombre ya se ha unido."
+    }
+  },
+  "fr": {
+    "game": {
+      "classJoin.heading": "Choisis ton nom",
+      "classJoin.subheading": "Trouve-toi dans la liste de la classe",
+      "classJoin.selectName": "Choisis ton nom",
+      "classJoin.submit": "Rejoindre",
+      "classJoin.submitAs": "Rejoindre en tant que {{name}}",
+      "classJoin.error": "Le nom ou le PIN ne correspond pas — réessaie",
+      "emojiPin.label": "Confirme avec ton PIN",
+      "emojiPin.wrapperAria": "Saisie du PIN emoji",
+      "emojiPin.slotAria": "Champ PIN {{slot}} sur 4 : {{emoji}}",
+      "emojiPin.pickerLabel": "Sélecteur d'emoji",
+      "emojiPin.searchPlaceholder": "Rechercher par nom …",
+      "emojiPin.loading": "Chargement …",
+      "emojiPin.noResults": "Aucun emoji trouvé",
+      "nameSelect.searchLabel": "Trouve ton nom",
+      "nameSelect.searchPlaceholder": "Tape pour te trouver",
+      "nameSelect.rosterLabel": "Liste de la classe",
+      "nameSelect.alreadyJoined": "Rejoint",
+      "nameSelect.selectStudent": "Sélectionner {{name}}",
+      "nameSelect.empty": "Aucun élève trouvé. Demande à ton enseignant."
+    },
+    "manager": {
+      "selectQuizz.selectClass": "Choisir la classe",
+      "selectQuizz.chooseClass": "Sélectionne une classe …",
+      "selectQuizz.klassenModeNeedsClass": "Choisis une classe"
+    },
+    "errors": {
+      "game.invalidCredentials": "Le nom ou le PIN ne correspond pas à la classe.",
+      "game.alreadyJoined": "Ce nom a déjà rejoint."
+    }
+  },
+  "it": {
+    "game": {
+      "classJoin.heading": "Scegli il tuo nome",
+      "classJoin.subheading": "Trovati nella lista della classe",
+      "classJoin.selectName": "Scegli il tuo nome",
+      "classJoin.submit": "Unisciti",
+      "classJoin.submitAs": "Unisciti come {{name}}",
+      "classJoin.error": "Il nome o il PIN non corrispondono — riprova",
+      "emojiPin.label": "Conferma con il tuo PIN",
+      "emojiPin.wrapperAria": "Inserimento PIN emoji",
+      "emojiPin.slotAria": "Campo PIN {{slot}} di 4: {{emoji}}",
+      "emojiPin.pickerLabel": "Selettore emoji",
+      "emojiPin.searchPlaceholder": "Cerca per nome …",
+      "emojiPin.loading": "Caricamento …",
+      "emojiPin.noResults": "Nessun emoji trovato",
+      "nameSelect.searchLabel": "Trova il tuo nome",
+      "nameSelect.searchPlaceholder": "Digita per trovarti",
+      "nameSelect.rosterLabel": "Lista della classe",
+      "nameSelect.alreadyJoined": "Unito",
+      "nameSelect.selectStudent": "Seleziona {{name}}",
+      "nameSelect.empty": "Nessuno studente trovato. Chiedi al tuo insegnante."
+    },
+    "manager": {
+      "selectQuizz.selectClass": "Seleziona classe",
+      "selectQuizz.chooseClass": "Scegli una classe …",
+      "selectQuizz.klassenModeNeedsClass": "Seleziona una classe"
+    },
+    "errors": {
+      "game.invalidCredentials": "Il nome o il PIN non corrispondono alla classe.",
+      "game.alreadyJoined": "Questo nome si è già unito."
+    }
+  },
+  "zh": {
+    "game": {
+      "classJoin.heading": "选择你的名字",
+      "classJoin.subheading": "在班级名单中找到自己",
+      "classJoin.selectName": "选择你的名字",
+      "classJoin.submit": "加入",
+      "classJoin.submitAs": "以 {{name}} 身份加入",
+      "classJoin.error": "姓名或 PIN 不匹配 — 请再试一次",
+      "emojiPin.label": "用你的 PIN 确认",
+      "emojiPin.wrapperAria": "Emoji PIN 输入",
+      "emojiPin.slotAria": "PIN 第 {{slot}} 位，共 4 位：{{emoji}}",
+      "emojiPin.pickerLabel": "Emoji 选择",
+      "emojiPin.searchPlaceholder": "按名称搜索 …",
+      "emojiPin.loading": "加载中 …",
+      "emojiPin.noResults": "未找到 emoji",
+      "nameSelect.searchLabel": "找到你的名字",
+      "nameSelect.searchPlaceholder": "输入以查找自己",
+      "nameSelect.rosterLabel": "班级名单",
+      "nameSelect.alreadyJoined": "已加入",
+      "nameSelect.selectStudent": "选择 {{name}}",
+      "nameSelect.empty": "未找到学生。请询问你的老师。"
+    },
+    "manager": {
+      "selectQuizz.selectClass": "选择班级",
+      "selectQuizz.chooseClass": "选择一个班级 …",
+      "selectQuizz.klassenModeNeedsClass": "请选择一个班级"
+    },
+    "errors": {
+      "game.invalidCredentials": "姓名或 PIN 与班级不匹配。",
+      "game.alreadyJoined": "这个名字已经加入了。"
+    }
+  }
+}

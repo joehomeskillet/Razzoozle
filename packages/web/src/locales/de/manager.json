@@ -635,7 +635,10 @@
       "scoringModeHint": "Geschwindigkeit berücksichtigen",
       "teamModeHint": "Spieler wählen Teams",
       "klassenModeHint": "Klassen-Beitritte aktivieren"
-    }
+    },
+    "selectClass": "Klasse wählen",
+    "chooseClass": "Klasse auswählen …",
+    "klassenModeNeedsClass": "Bitte wähle eine Klasse aus"
   },
   "achievementsConfig": {
     "title": "Achievements konfigurieren",
