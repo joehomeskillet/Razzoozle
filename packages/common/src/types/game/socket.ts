@@ -57,6 +57,7 @@ export interface SelectedModes {
   scoringMode?: 'speed' | 'accuracy'
   teamMode?: boolean
   klassen?: boolean
+  classId?: number
   endScreen?: EndScreen
 }
 
