@@ -1,17 +1,129 @@
 use super::HandlerCtx;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::game::{GameSuccessRoom, RosterEntry};
 use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
 
+/// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
+const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
+/// Distinct error after PIN proven — student already has an active session (A6).
+const ALREADY_JOINED: &str = "errors:game.alreadyJoined";
+
+/// Best-effort client IP for rate limiting (A9). Prefers proxy headers, then
+/// axum ConnectInfo if present on the handshake request, else durable client_id.
+fn client_ip_key(socket: &SocketRef, client_id: &str) -> String {
+    let parts = socket.req_parts();
+    if let Some(xff) = parts
+        .headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+    {
+        if let Some(first) = xff.split(',').next() {
+            let ip = first.trim();
+            if !ip.is_empty() {
+                return ip.to_string();
+            }
+        }
+    }
+    if let Some(real) = parts
+        .headers
+        .get("x-real-ip")
+        .and_then(|v| v.to_str().ok())
+    {
+        let ip = real.trim();
+        if !ip.is_empty() {
+            return ip.to_string();
+        }
+    }
+    if let Some(addr) = parts
+        .extensions
+        .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
+    {
+        return addr.0.ip().to_string();
+    }
+    // Fall back to durable client id so throttle still binds something stable.
+    format!("cid:{}", client_id)
+}
+
+/// Pure klassen-login decision used by the handler and unit tests.
+/// SECURITY: never takes/log raw PIN beyond comparison; callers must not trace student_id/PIN.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum KlassenLoginDecision {
+    Allow { display_name: String },
+    InvalidCredentials,
+    AlreadyJoined,
+}
+
+/// Evaluate class-mode login against roster + pin + active set (no I/O).
+/// `emoji_pin_joined` is the client array joined into the stored plaintext form.
+/// `roster` is (student_id, display_name, stored_pin).
+/// `active_student_ids` are student_ids of currently connected players.
+pub(crate) fn decide_klassen_login(
+    student_id: Option<i64>,
+    emoji_pin_joined: Option<&str>,
+    roster: &[(i64, String, String)],
+    active_student_ids: &[i64],
+    throttle_blocked: bool,
+) -> KlassenLoginDecision {
+    if throttle_blocked {
+        return KlassenLoginDecision::InvalidCredentials;
+    }
+    let Some(sid) = student_id else {
+        return KlassenLoginDecision::InvalidCredentials;
+    };
+    let Some(pin) = emoji_pin_joined else {
+        return KlassenLoginDecision::InvalidCredentials;
+    };
+    if pin.is_empty() {
+        return KlassenLoginDecision::InvalidCredentials;
+    }
+
+    let member = roster.iter().find(|(id, _, _)| *id == sid);
+    let Some((_, display_name, stored_pin)) = member else {
+        // Non-rostered — same shape as wrong PIN (A7).
+        return KlassenLoginDecision::InvalidCredentials;
+    };
+    if stored_pin != pin {
+        return KlassenLoginDecision::InvalidCredentials;
+    }
+    // A6: post-PIN dedup — active session for this student.
+    if active_student_ids.iter().any(|id| *id == sid) {
+        return KlassenLoginDecision::AlreadyJoined;
+    }
+    KlassenLoginDecision::Allow {
+        display_name: display_name.clone(),
+    }
+}
+
+/// Join four emoji symbols (client wire shape A2) into stored PIN form.
+pub(crate) fn join_emoji_pin(symbols: &[String]) -> Option<String> {
+    if symbols.len() != 4 {
+        return None;
+    }
+    if symbols.iter().any(|s| s.is_empty()) {
+        return None;
+    }
+    Some(symbols.join(""))
+}
+
+/// Parse student_id stored on a player for klassen dedup (identifier_hash).
+fn student_id_from_player(p: &razzoozle_protocol::player::Player) -> Option<i64> {
+    p.identifier_hash
+        .as_ref()
+        .and_then(|s| s.parse::<i64>().ok())
+}
+
 pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::player::JOIN, {
         let registry = ctx.registry.clone();
+        let db_pool = ctx.db_pool.clone();
 
         move |socket: SocketRef, Data::<String>(invite_code)| {
             let registry = registry.clone();
+            let db_pool = db_pool.clone();
 
             tokio::spawn(async move {
                 // #11: Validate invite code is exactly 6 characters
@@ -22,25 +134,66 @@ pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 }
 
-                let registry = registry.read().await;
-                let game_opt = registry.get_game_by_code(&invite_code);
+                let game_opt = {
+                    let registry = registry.read().await;
+                    registry.get_game_by_code(&invite_code)
+                };
 
                 match game_opt {
-                    Some(game) => {
-                        let game_data = game.lock().unwrap();
-                        // #12: Read live game config for requireIdentifier flag (TODO: parity - currently returns None)
-                        let payload = razzoozle_protocol::game::GameSuccessRoom {
-                            game_id: game_data.game_id.clone(),
-                            require_identifier: Some(false), // TODO(parity): read from live config file
+                    Some(game_ref) => {
+                        let (game_id, klassen, class_id, owner_id, active_student_ids) = {
+                            let game_data = game_ref.lock().unwrap();
+                            let active: Vec<i64> = game_data
+                                .players
+                                .iter()
+                                .filter(|p| p.connected)
+                                .filter_map(student_id_from_player)
+                                .collect();
+                            (
+                                game_data.game_id.clone(),
+                                game_data.klassen_mode(),
+                                game_data.class_id,
+                                game_data.owner_user_id,
+                                active,
+                            )
                         };
-                        drop(game_data);
 
-                        info!("Player checking game: invite_code={}", invite_code);
+                        let (klassen_flag, roster) = if klassen {
+                            if let (Some(cid), Some(oid)) = (class_id, owner_id) {
+                                let students =
+                                    crate::db::classes::students_for_class(&db_pool, cid, oid)
+                                        .await;
+                                let roster: Vec<RosterEntry> = students
+                                    .into_iter()
+                                    .map(|s| RosterEntry {
+                                        student_id: s.id,
+                                        display_name: s.display_name,
+                                        already_joined: active_student_ids.contains(&s.id),
+                                    })
+                                    .collect();
+                                (Some(true), Some(roster))
+                            } else {
+                                // class_id set without owner — treat as free-join for safety
+                                (None, None)
+                            }
+                        } else {
+                            (None, None)
+                        };
+
+                        let payload = GameSuccessRoom {
+                            game_id,
+                            require_identifier: Some(false),
+                            klassen: klassen_flag,
+                            roster,
+                        };
+
+                        // No invite_code / student secrets in logs.
+                        info!("Player checking game: invite_code_len={}", invite_code.len());
 
                         socket.emit(constants::game::SUCCESS_ROOM, &payload).ok();
                     }
                     None => {
-                        info!("Game not found: invite_code={}", invite_code);
+                        info!("Game not found for invite code (len={})", invite_code.len());
                         socket
                             .emit(constants::game::ERROR_MESSAGE, "errors:game.notFound")
                             .ok();
@@ -68,20 +221,31 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 
             tokio::spawn(async move {
                 let game_id_opt = payload.get("gameId").and_then(|v| v.as_str());
-                let username_opt = payload
-                    .get("data")
+                let data = payload.get("data");
+                let username_opt = data
                     .and_then(|v| v.get("username"))
                     .and_then(|v| v.as_str());
-                let avatar = payload
-                    .get("data")
+                let avatar = data
                     .and_then(|v| v.get("avatar"))
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
                 // #12: Extract identifier from payload (for identifierHash computation)
-                let _identifier = payload
-                    .get("data")
+                let _identifier = data
                     .and_then(|v| v.get("identifier"))
                     .and_then(|v| v.as_str());
+
+                // Wave-1: optional class-mode fields (serde camelCase on wire)
+                let student_id = data
+                    .and_then(|v| v.get("studentId"))
+                    .and_then(|v| v.as_i64());
+                let emoji_pin_symbols: Option<Vec<String>> = data
+                    .and_then(|v| v.get("emojiPin"))
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                            .collect()
+                    });
 
                 match (game_id_opt, username_opt) {
                     (Some(game_id), Some(username)) => {
@@ -105,38 +269,195 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 
                         match game_opt {
                             Some(game_ref) => {
+                                // Snapshot klassen / owner / class without holding lock across await.
+                                let (is_klassen, class_id, owner_id, active_student_ids) = {
+                                    let game = game_ref.lock().unwrap();
+                                    let active: Vec<i64> = game
+                                        .players
+                                        .iter()
+                                        .filter(|p| p.connected)
+                                        .filter_map(student_id_from_player)
+                                        .collect();
+                                    (
+                                        game.klassen_mode(),
+                                        game.class_id,
+                                        game.owner_user_id,
+                                        active,
+                                    )
+                                };
+
+                                // Resolved display name + student_id for admission.
+                                // Non-klassen: username from client; klassen: server roster name.
+                                let mut admit_username = username.to_string();
+                                let mut admit_student_id: Option<i64> = None;
+
+                                if is_klassen {
+                                    let client_ip = client_ip_key(&socket, &client_id);
+                                    // Dual throttle keys (A9): game-scoped 5/5min AND pin 3/60s.
+                                    let game_rate_key = format!("{}:{}", game_id, client_ip);
+                                    let pin_rate_key = format!("klassen:{}:{}", game_id, client_ip);
+
+                                    // MUST call RATE_LIMITER (known past bug: wired but never invoked).
+                                    let throttled = !crate::http::RATE_LIMITER
+                                        .check_klassen_pin_rate(&game_rate_key, false)
+                                        || !crate::http::RATE_LIMITER
+                                            .check_pin_rate(&pin_rate_key, false);
+
+                                    if throttled {
+                                        // Constant shape on lockout (A7/A9).
+                                        socket
+                                            .emit(constants::game::ERROR_MESSAGE, INVALID_CREDENTIALS)
+                                            .ok();
+                                        return;
+                                    }
+
+                                    let joined_pin = emoji_pin_symbols
+                                        .as_ref()
+                                        .and_then(|syms| join_emoji_pin(syms));
+
+                                    // Format check without leaking pin contents.
+                                    let pin_format_ok = joined_pin
+                                        .as_ref()
+                                        .map(|p| crate::http::emoji_pin::is_valid_pin(p))
+                                        .unwrap_or(false);
+
+                                    let (cid, oid) = match (class_id, owner_id) {
+                                        (Some(c), Some(o)) => (c, o),
+                                        _ => {
+                                            // klassen_mode without class/owner — treat as invalid
+                                            crate::http::RATE_LIMITER
+                                                .check_klassen_pin_rate(&game_rate_key, true);
+                                            crate::http::RATE_LIMITER
+                                                .check_pin_rate(&pin_rate_key, true);
+                                            socket
+                                                .emit(
+                                                    constants::game::ERROR_MESSAGE,
+                                                    INVALID_CREDENTIALS,
+                                                )
+                                                .ok();
+                                            return;
+                                        }
+                                    };
+
+                                    // Roster membership (identity = studentId ∈ class).
+                                    let students =
+                                        crate::db::classes::students_for_class(&db_pool, cid, oid)
+                                            .await;
+
+                                    let roster_member = student_id.and_then(|sid| {
+                                        students.iter().find(|s| s.id == sid).map(|s| {
+                                            (s.id, s.display_name.clone())
+                                        })
+                                    });
+
+                                    // PIN verify against plaintext students.pin (Wave-1 §B).
+                                    // Collapse membership + pin + format into one INVALID_CREDENTIALS.
+                                    let mut credentials_ok = false;
+                                    let mut resolved_name = String::new();
+                                    let mut resolved_sid = 0i64;
+
+                                    if pin_format_ok {
+                                        if let (Some((sid, dname)), Some(pin), Some(pool)) =
+                                            (roster_member, joined_pin.as_ref(), db_pool.as_ref())
+                                        {
+                                            // Call PIN validate (grep-prove path).
+                                            match crate::db::pins::validate_student_pin_plain(
+                                                pool, sid, pin,
+                                            )
+                                            .await
+                                            {
+                                                Ok(true) => {
+                                                    credentials_ok = true;
+                                                    resolved_name = dname;
+                                                    resolved_sid = sid;
+                                                }
+                                                _ => {
+                                                    credentials_ok = false;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if !credentials_ok {
+                                        // Record fails on BOTH throttles (A9).
+                                        crate::http::RATE_LIMITER
+                                            .check_klassen_pin_rate(&game_rate_key, true);
+                                        crate::http::RATE_LIMITER
+                                            .check_pin_rate(&pin_rate_key, true);
+                                        // SECURITY: do not log student_id or PIN.
+                                        info!("klassen player:login rejected (credentials)");
+                                        socket
+                                            .emit(
+                                                constants::game::ERROR_MESSAGE,
+                                                INVALID_CREDENTIALS,
+                                            )
+                                            .ok();
+                                        return;
+                                    }
+
+                                    // A6: already active for this student (post-PIN).
+                                    if active_student_ids.contains(&resolved_sid) {
+                                        info!("klassen player:login rejected (already joined)");
+                                        socket
+                                            .emit(constants::game::ERROR_MESSAGE, ALREADY_JOINED)
+                                            .ok();
+                                        return;
+                                    }
+
+                                    admit_username = resolved_name;
+                                    admit_student_id = Some(resolved_sid);
+                                }
+
                                 // #1: Read live join_locked config once per login attempt —
                                 // cheap (one login per player), same idiom as the low_latency
                                 // snapshot read in game.rs's CREATE handler. Node reads this
                                 // once at Game construction (this.joinLocked); Rust's Game
                                 // doesn't cache config, so a per-login DB read is the
                                 // cheapest correct source available today.
-                                let (_, _, join_locked_opt, _, _, _, _, _) = crate::db::get_game_config(&db_pool).await;
+                                let (_, _, join_locked_opt, _, _, _, _, _) =
+                                    crate::db::get_game_config(&db_pool).await;
                                 let join_locked = join_locked_opt.unwrap_or(false);
-                                
+
                                 // W1-M2: Read team_mode from per-game snapshot
                                 let team_mode = {
                                     let game = game_ref.lock().unwrap();
                                     game.selected_modes.team_mode.unwrap_or(false)
                                 };
 
-                                let (game_id_ret, manager_socket_id, player, total_players, ghost_old_socket_id) = {
+                                let (
+                                    game_id_ret,
+                                    manager_socket_id,
+                                    player,
+                                    total_players,
+                                    ghost_old_socket_id,
+                                ) = {
                                     let mut game = game_ref.lock().unwrap();
 
                                     // #2: Check if game has finished (engine phase Finished)
                                     if game.engine.phase == GamePhase::Finished {
                                         drop(game);
-                                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.gameEnded").ok();
+                                        socket
+                                            .emit(
+                                                constants::game::ERROR_MESSAGE,
+                                                "errors:game.gameEnded",
+                                            )
+                                            .ok();
                                         return;
                                     }
 
                                     // #1: Reject NEW players while the lobby is locked; an
                                     // existing player (reconnect-via-login) is unaffected
                                     // (Node player-manager.ts join(): getJoinLocked() && !existing).
-                                    let already_joined = game.players.iter().any(|p| p.client_id == client_id);
+                                    let already_joined =
+                                        game.players.iter().any(|p| p.client_id == client_id);
                                     if join_locked && !already_joined {
                                         drop(game);
-                                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.locked").ok();
+                                        socket
+                                            .emit(
+                                                constants::game::ERROR_MESSAGE,
+                                                "errors:game.locked",
+                                            )
+                                            .ok();
                                         return;
                                     }
 
@@ -148,7 +469,9 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     // take_over_ghost_slot leaves it alone and add_player
                                     // rejects as before. Mid-game re-join uses player:reconnect,
                                     // not login, so this is ShowRoom-only.
-                                    let ghost_old_socket_id = if already_joined && game.engine.phase == GamePhase::ShowRoom {
+                                    let ghost_old_socket_id = if already_joined
+                                        && game.engine.phase == GamePhase::ShowRoom
+                                    {
                                         game.take_over_ghost_slot(&client_id)
                                     } else {
                                         None
@@ -157,14 +480,19 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     // H — per-game player cap
                                     if game.players.len() >= crate::state::MAX_PLAYERS_PER_GAME {
                                         drop(game);
-                                        socket.emit(constants::game::ERROR_MESSAGE, "errors:game.gameFull").ok();
+                                        socket
+                                            .emit(
+                                                constants::game::ERROR_MESSAGE,
+                                                "errors:game.gameFull",
+                                            )
+                                            .ok();
                                         return;
                                     }
 
-                                    let player = match game.add_player(
+                                    let mut player = match game.add_player(
                                         socket_id.clone(),
                                         client_id.clone(),
-                                        username.to_string(),
+                                        admit_username.clone(),
                                         avatar,
                                     ) {
                                         Ok(p) => p,
@@ -175,11 +503,37 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         }
                                     };
 
+                                    // Bind student identity for klassen dedup (A6) + roster alreadyJoined.
+                                    // Stored in identifier_hash (server-side tracking key, Wave-1).
+                                    if let Some(sid) = admit_student_id {
+                                        let sid_str = sid.to_string();
+                                        if let Some(p) =
+                                            game.players.iter_mut().find(|p| p.id == player.id)
+                                        {
+                                            p.identifier_hash = Some(sid_str.clone());
+                                        }
+                                        if let Some(p) = game
+                                            .engine
+                                            .players
+                                            .iter_mut()
+                                            .find(|p| p.id == player.id)
+                                        {
+                                            p.identifier_hash = Some(sid_str.clone());
+                                        }
+                                        player.identifier_hash = Some(sid_str);
+                                    }
+
                                     let game_id = game.game_id.clone();
                                     let manager_socket_id = game.manager_socket_id.clone();
                                     let total_players = game.players.len();
 
-                                    (game_id, manager_socket_id, player, total_players, ghost_old_socket_id)
+                                    (
+                                        game_id,
+                                        manager_socket_id,
+                                        player,
+                                        total_players,
+                                        ghost_old_socket_id,
+                                    )
                                 };
 
                                 // O(1) socket_id -> game_id index (state.rs) — keeps
@@ -190,12 +544,14 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     if let Some(ref old_socket_id) = ghost_old_socket_id {
                                         registry.deindex_player_socket(old_socket_id);
                                     }
-                                    registry.index_player_socket(socket_id.clone(), game_id_ret.clone());
+                                    registry
+                                        .index_player_socket(socket_id.clone(), game_id_ret.clone());
                                 }
 
+                                // SECURITY: username only (no student_id / PIN).
                                 info!(
                                     "Player joined game: gameId={}, username={}",
-                                    game_id_ret, username
+                                    game_id_ret, admit_username
                                 );
 
                                 socket.join(game_id_ret.clone()).ok();
@@ -233,7 +589,11 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 if let Some(old_socket_id) = ghost_old_socket_id {
                                     if let Ok(sid) = manager_socket_id.parse() {
                                         if let Some(mgr) = io_handle.get_socket(sid) {
-                                            mgr.emit(constants::manager::REMOVE_PLAYER, &old_socket_id).ok();
+                                            mgr.emit(
+                                                constants::manager::REMOVE_PLAYER,
+                                                &old_socket_id,
+                                            )
+                                            .ok();
                                         }
                                     }
                                 }
@@ -266,4 +626,93 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
             });
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn roster() -> Vec<(i64, String, String)> {
+        vec![
+            (1, "Anna".into(), "🐱🐶🐭🐹".into()),
+            (2, "Ben".into(), "🍕📚🎮🌸".into()),
+        ]
+    }
+
+    #[test]
+    fn klassen_login_rostered_correct_pin_success() {
+        let d = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[],
+            false,
+        );
+        assert_eq!(
+            d,
+            KlassenLoginDecision::Allow {
+                display_name: "Anna".into()
+            }
+        );
+    }
+
+    #[test]
+    fn klassen_login_wrong_pin_invalid_credentials() {
+        let d = decide_klassen_login(
+            Some(1),
+            Some("🍕📚🎮🌸"),
+            &roster(),
+            &[],
+            false,
+        );
+        assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
+    }
+
+    #[test]
+    fn klassen_login_non_rostered_invalid_credentials_no_oracle() {
+        // Unknown student_id → same shape as wrong PIN (A7).
+        let d = decide_klassen_login(
+            Some(99),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[],
+            false,
+        );
+        assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
+
+        // Missing student_id
+        let d2 = decide_klassen_login(None, Some("🐱🐶🐭🐹"), &roster(), &[], false);
+        assert_eq!(d2, KlassenLoginDecision::InvalidCredentials);
+    }
+
+    #[test]
+    fn klassen_login_second_active_session_already_joined() {
+        let d = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[1],
+            false,
+        );
+        assert_eq!(d, KlassenLoginDecision::AlreadyJoined);
+    }
+
+    #[test]
+    fn klassen_login_throttle_lockout_invalid_credentials() {
+        let d = decide_klassen_login(
+            Some(1),
+            Some("🐱🐶🐭🐹"),
+            &roster(),
+            &[],
+            true,
+        );
+        assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
+    }
+
+    #[test]
+    fn join_emoji_pin_requires_four_symbols() {
+        assert!(join_emoji_pin(&["a".into(), "b".into(), "c".into(), "d".into()]).is_some());
+        assert!(join_emoji_pin(&["a".into(), "b".into()]).is_none());
+        assert!(join_emoji_pin(&["a".into(), "b".into(), "c".into(), "".into()]).is_none());
+    }
 }

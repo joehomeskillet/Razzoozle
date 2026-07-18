@@ -59,6 +59,10 @@ pub struct CreateGamePayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub selected_modes: Option<SelectedModes>,
+    /// Class bound to this game when klassen mode is on (A10 / Wave-1 §B).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub class_id: Option<i64>,
 }
 
 /// Per-game mode selection snapshot (host's choices at game creation)
@@ -105,6 +109,25 @@ pub struct PlayerLogin {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub identifier: Option<String>,
+    /// Class-mode identity (Wave-1 §B). Optional; non-klassen logins omit it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub student_id: Option<i64>,
+    /// Class-mode emoji PIN as 4 symbols copied from `EMOJI_PIN_SET` (A2).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub emoji_pin: Option<Vec<String>>,
+}
+
+/// Roster row returned in `game:successRoom` for klassen games (A5).
+/// Never carries PINs or extra PII.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct RosterEntry {
+    pub student_id: i64,
+    pub display_name: String,
+    pub already_joined: bool,
 }
 
 /// player:reconnect payload (C2S)
@@ -175,6 +198,14 @@ pub struct GameSuccessRoom {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub require_identifier: Option<bool>,
+    /// True when this game is class-mode (class_id is set). Omitted for free-join.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub klassen: Option<bool>,
+    /// Class roster (post game-PIN join only — A8). Never includes PINs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub roster: Option<Vec<RosterEntry>>,
 }
 
 /// game:successJoin payload (S2C) — mirrors node's player-manager.ts join():
@@ -244,11 +275,27 @@ mod tests {
             username: "Alice".to_string(),
             avatar: Some("avatar-url".to_string()),
             identifier: None,
+            student_id: Some(42),
+            emoji_pin: Some(vec!["🐱".into(), "🐶".into(), "🐭".into(), "🐹".into()]),
         };
         let json = serde_json::to_value(&login).unwrap();
+        assert_eq!(json["studentId"], 42);
+        assert_eq!(json["emojiPin"].as_array().unwrap().len(), 4);
         let re_parsed: PlayerLogin = serde_json::from_value(json).unwrap();
         assert_eq!(re_parsed.username, "Alice");
         assert_eq!(re_parsed.avatar, Some("avatar-url".to_string()));
+        assert_eq!(re_parsed.student_id, Some(42));
+        assert_eq!(re_parsed.emoji_pin.as_ref().unwrap().len(), 4);
+    }
+
+    #[test]
+    fn test_player_login_legacy_without_klassen_fields() {
+        // Back-compat: old clients omit studentId/emojiPin → default None.
+        let json = json!({"username": "Bob", "avatar": null});
+        let re_parsed: PlayerLogin = serde_json::from_value(json).unwrap();
+        assert_eq!(re_parsed.username, "Bob");
+        assert!(re_parsed.student_id.is_none());
+        assert!(re_parsed.emoji_pin.is_none());
     }
 
     #[test]
@@ -256,11 +303,19 @@ mod tests {
         let room = GameSuccessRoom {
             game_id: "room-456".to_string(),
             require_identifier: Some(true),
+            klassen: Some(true),
+            roster: Some(vec![RosterEntry {
+                student_id: 1,
+                display_name: "Anna".to_string(),
+                already_joined: false,
+            }]),
         };
         let json = serde_json::to_value(&room).unwrap();
         let re_parsed: GameSuccessRoom = serde_json::from_value(json).unwrap();
         assert_eq!(re_parsed.game_id, "room-456");
         assert_eq!(re_parsed.require_identifier, Some(true));
+        assert_eq!(re_parsed.klassen, Some(true));
+        assert_eq!(re_parsed.roster.as_ref().unwrap()[0].student_id, 1);
     }
 
     #[test]
@@ -331,8 +386,10 @@ mod tests {
                 klassen: Some(false),
                 end_screen: Some(EndScreen::Top3),
             }),
+            class_id: Some(7),
         };
         let json = serde_json::to_value(&payload).unwrap();
+        assert_eq!(json["classId"], 7);
         let parsed: GameCreate = serde_json::from_value(json).unwrap();
         assert!(matches!(parsed, GameCreate::CreatePayload(_)));
     }

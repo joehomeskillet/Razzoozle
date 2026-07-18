@@ -238,6 +238,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))
         .route("/api/assignment/:id/validate-pin", post(assignments::handle_validate_pin))
+        // A4: curated emoji set for class-mode PIN picker (single source: emoji_pin.rs)
+        .route("/api/emoji-pin-set", get(emoji_pin::handle_emoji_pin_set))
         .route("/api/skeleton/export", get(skeleton::handle_skeleton_export))
         .route(
             "/api/skeleton/import",

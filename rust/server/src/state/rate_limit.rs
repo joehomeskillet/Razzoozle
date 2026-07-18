@@ -6,6 +6,7 @@ use super::{
     SUBMISSION_GLOBAL_MAX, SUBMISSION_GLOBAL_WINDOW_MS, SUBMISSION_RATE_MAX_PER_CLIENT,
     SUBMISSION_RATE_WINDOW_MS, PIN_RATE_MAX_PER_CLIENT, PIN_RATE_WINDOW_MS,
     GAME_CREATE_RATE_MAX_PER_USER, GAME_CREATE_RATE_WINDOW_MS,
+    KLASSEN_PIN_RATE_MAX, KLASSEN_PIN_RATE_WINDOW_MS,
 };
 
 #[derive(Debug, Clone)]
@@ -39,6 +40,8 @@ pub struct RateLimiter {
     submission_by_key: Mutex<HashMap<String, RateState>>,
     submission_global: Mutex<RateState>,
     pin_by_key: Mutex<HashMap<String, RateState>>,
+    /// A9: per-(game, client_ip) 5 fails / 5 min for klassen live-join.
+    klassen_pin_by_key: Mutex<HashMap<String, RateState>>,
     game_create_by_key: Mutex<HashMap<String, RateState>>,
 }
 
@@ -50,6 +53,7 @@ impl RateLimiter {
             submission_by_key: Mutex::new(HashMap::new()),
             submission_global: Mutex::new(RateState::new()),
             pin_by_key: Mutex::new(HashMap::new()),
+            klassen_pin_by_key: Mutex::new(HashMap::new()),
             game_create_by_key: Mutex::new(HashMap::new()),
         }
     }
@@ -238,6 +242,39 @@ impl RateLimiter {
         }
     }
 
+    /// A9 dual throttle (game-scoped): 5 failed PIN attempts / 5 min per (game, client_ip).
+    /// Same semantics as `check_pin_rate`: increments only when `failed=true`.
+    /// Returns false if rate-limited, true if allowed.
+    pub fn check_klassen_pin_rate(&self, key: &str, failed: bool) -> bool {
+        let now = get_now_ms();
+        if let Ok(mut map) = self.klassen_pin_by_key.lock() {
+            let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
+
+            if now.saturating_sub(entry.window_start_ms) > KLASSEN_PIN_RATE_WINDOW_MS {
+                entry.count = 0;
+                entry.window_start_ms = now;
+            }
+
+            if failed {
+                entry.count += 1;
+            }
+
+            // A9: 5 fails/5min → blocked (count >= max after the 5th fail).
+            let is_limited = entry.count >= KLASSEN_PIN_RATE_MAX;
+
+            if map.len() > 10000 {
+                let now = get_now_ms();
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= KLASSEN_PIN_RATE_WINDOW_MS
+                });
+            }
+
+            !is_limited
+        } else {
+            true
+        }
+    }
+
     /// SEC-03: Check if a game-create is allowed for the given user.
     /// Returns true if allowed, false if rate-limited (10 per hour per user).
     /// Note: window reset is inlined (not via maybe_reset) to use the 1-hour window.
@@ -292,6 +329,31 @@ mod tests {
         assert!(
             !limiter.check_game_create_rate(key),
             "11th create should be denied (rate limited)"
+        );
+    }
+
+    #[test]
+    fn test_klassen_pin_rate_5_fails_then_blocked() {
+        let limiter = RateLimiter::new();
+        let key = "game-abc:10.0.0.1";
+
+        // Peek allowed while under threshold
+        assert!(limiter.check_klassen_pin_rate(key, false));
+
+        // Record 4 fails — still under lockout (peek still allowed)
+        for i in 0..4 {
+            let _ = limiter.check_klassen_pin_rate(key, true);
+            assert!(
+                limiter.check_klassen_pin_rate(key, false),
+                "after {} fails, peek should still be allowed",
+                i + 1
+            );
+        }
+        // 5th fail reaches the cap
+        let _ = limiter.check_klassen_pin_rate(key, true);
+        assert!(
+            !limiter.check_klassen_pin_rate(key, false),
+            "after 5 fails, further attempts must be blocked"
         );
     }
 

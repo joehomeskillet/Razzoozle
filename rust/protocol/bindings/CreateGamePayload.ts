@@ -4,4 +4,8 @@ import type { SelectedModes } from "./SelectedModes";
 /**
  * Game creation payload with optional mode selection
  */
-export type CreateGamePayload = { quizzId: string, selectedModes?: SelectedModes, };
+export type CreateGamePayload = { quizzId: string, selectedModes?: SelectedModes, 
+/**
+ * Class bound to this game when klassen mode is on (A10 / Wave-1 §B).
+ */
+classId?: bigint, };

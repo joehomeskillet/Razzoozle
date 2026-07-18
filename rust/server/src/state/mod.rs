@@ -80,6 +80,10 @@ pub const SUBMISSION_GLOBAL_WINDOW_MS: u64 = 60_000; // 60 seconds
 pub const PIN_RATE_MAX_PER_CLIENT: i32 = 3; // max 3 failed PIN attempts/60s per assignment+IP
 pub const PIN_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
 
+// ── Klassen live-join PIN throttle (A9 dual: game-scoped 5 fails / 5 min) ─────
+pub const KLASSEN_PIN_RATE_MAX: i32 = 5; // max 5 failed PIN attempts / 5 min per (game, client_ip)
+pub const KLASSEN_PIN_RATE_WINDOW_MS: u64 = 300_000; // 5 minutes
+
 // ── Game-create rate limiting (per-authenticated-user) ──────────────────────────
 /// SEC-03: max game-creates per authenticated user per window.
 pub const GAME_CREATE_RATE_MAX_PER_USER: i32 = 10; // 10 creates/hour

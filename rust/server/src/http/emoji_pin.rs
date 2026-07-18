@@ -1,4 +1,6 @@
+use axum::Json;
 use rand::seq::SliceRandom;
+use serde::Serialize;
 
 pub const EMOJI_PIN_SET: &[(&str, &str)] = &[
     ("🐱", "katze"), ("🐶", "hund"), ("🐭", "maus"), ("🐹", "hamster"), 
@@ -169,6 +171,26 @@ pub fn symbols_of(pin: &str) -> Option<Vec<&'static str>> {
 /// Validate that a PIN string contains exactly 4 symbols from the set.
 pub fn is_valid_pin(pin: &str) -> bool {
     symbols_of(pin).is_some()
+}
+
+/// Wire row for `GET /api/emoji-pin-set` (A4).
+#[derive(Debug, Clone, Serialize)]
+pub struct EmojiPinSetEntry {
+    pub emoji: &'static str,
+    pub label: &'static str,
+}
+
+/// A4 / Wave-1 §B: return the curated emoji set for the client picker.
+/// Cached static data — no auth required (public picker catalog, no secrets).
+pub async fn handle_emoji_pin_set() -> Json<Vec<EmojiPinSetEntry>> {
+    let entries: Vec<EmojiPinSetEntry> = EMOJI_PIN_SET
+        .iter()
+        .map(|(emoji, label)| EmojiPinSetEntry {
+            emoji,
+            label,
+        })
+        .collect();
+    Json(entries)
 }
 
 #[cfg(test)]
