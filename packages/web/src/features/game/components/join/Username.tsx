@@ -212,7 +212,7 @@ const Username = () => {
               <EmojiPinInput
                 value={emojiPin}
                 onChange={setEmojiPin}
-                error={klassError ? klassError : undefined}
+                error={klassError || undefined}
                 disabled={false}
               />
             </div>
