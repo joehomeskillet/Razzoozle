@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import Button from "@razzoozle/web/components/Button"
 
 // ---------------------------------------------------------------------------
 // Name entry screen
@@ -82,12 +83,13 @@ const NameScreen = ({ subject, onStart }: NameScreenProps) => {
               </p>
             )}
           </div>
-          <button
+          <Button
             type="submit"
-            className="bg-gradient-to-r from-primary to-purple-500 hover:brightness-110 shadow-lg shadow-primary/40 hover:scale-105 active:scale-95 transition-all rounded-2xl px-8 py-4 text-2xl font-black text-white"
+            variant="primary"
+            size="lg"
           >
             {t("game:startGame")}
-          </button>
+          </Button>
         </form>
       </motion.div>
     </section>
