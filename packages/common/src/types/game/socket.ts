@@ -60,6 +60,19 @@ export interface SelectedModes {
   endScreen?: EndScreen
 }
 
+// ---- Class-mode LIVE join types (Wave 1B) ----
+
+export interface RosterEntry {
+  studentId: number
+  displayName: string
+  alreadyJoined: boolean
+}
+
+export interface EmojiPinSetEntry {
+  emoji: string
+  label: string
+}
+
 export interface CreateStudentPayload {
   displayName?: string;
   firstName?: string;
@@ -183,7 +196,7 @@ export interface ServerToClientEvents {
     name: Status
     data: StatusDataMap[Status]
   }) => void
-  [EVENTS.GAME.SUCCESS_ROOM]: (_data: { gameId: string; requireIdentifier?: boolean }) => void
+  [EVENTS.GAME.SUCCESS_ROOM]: (_data: { gameId: string; requireIdentifier?: boolean; klassen?: boolean; roster?: RosterEntry[] }) => void
   [EVENTS.GAME.SUCCESS_JOIN]: (_data: {gameId: string; playerToken?: string}) => void
   [EVENTS.GAME.TOTAL_PLAYERS]: (_count: number) => void
   [EVENTS.GAME.ERROR_MESSAGE]: (_message: string) => void
@@ -536,6 +549,12 @@ export interface ClientToServerEvents {
       // Client supplies raw identifier string; server computes salted SHA-256 hash
       // IF the game config requireIdentifier is true. OPTIONAL — absent for guest play.
       identifier?: string
+      // Wave 1B — Class-mode login (klassen). Student ID and emoji PIN for classroom roster join.
+      // OPTIONAL — absent for non-klassen games. studentId identifies the student within the
+      // class roster; emojiPin is a 4-element array of emoji strings copied verbatim from
+      // the server-provided EMOJI_PIN_SET (never client-constructed).
+      studentId?: number
+      emojiPin?: string[]
     }>,
   ) => void
   // Player avatar selection/upload (generic id or data URL)
