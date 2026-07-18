@@ -1,0 +1,58 @@
+sdd: game-solo-multiplayer-refactor
+title: Razzoozle Game — UI/UX + Modularisierung + visuelle Konsistenz + Klassenmodus-Join
+started: 2026-07-18
+adjudicator: claude
+method: grok (UX/visual/a11y) + codex (arch/security/dup) primary → cross-review → claude adjudication → wave impl
+deploy: auto-per-gated-wave -> rust.razzoozle.xyz + smoke
+status: sdd-frozen — wave-1-ready
+baseline: green @ dbf2a319c (pnpm verify + rust gate GO)
+
+docs:
+  # Part 1 — UI/UX + SDD
+  - { id: "00", file: 00-charter.md,                       owner: claude,        status: done }
+  - { id: "01", file: 01-current-game-architecture.md,     owner: phase0,        status: done }
+  - { id: "02", file: 02-flow-inventory.md,                owner: phase0,        status: done }
+  - { id: "03", file: 03-solo-ux-audit.md,                 owner: grok,          status: done }
+  - { id: "04", file: 04-multiplayer-ux-audit.md,          owner: grok,          status: done }
+  - { id: "05", file: 05-class-mode-join-spec.md,          owner: phase0+claude, status: done }   # TARGET -> 16 §B
+  - { id: "06", file: 06-security-and-identity.md,         owner: phase0+codex,  status: done }
+  - { id: "07", file: 07-state-machine-and-events.md,      owner: phase0,        status: done }
+  - { id: "08", file: 08-api-and-data-contracts.md,        owner: phase0,        status: done }
+  - { id: "09", file: 09-error-and-reconnect-behaviour.md, owner: phase0,        status: done }
+  - { id: "10", file: 10-accessibility.md,                 owner: grok,          status: done }
+  - { id: "11", file: 11-implementation-plan.md,           owner: claude,        status: done }   # authoritative (superseded auto-draft)
+  - { id: "12", file: 12-test-plan.md,                     owner: claude+codex,  status: pending }
+  - { id: "13", file: 13-grok-primary-review.md,           owner: grok,          status: done }
+  - { id: "14", file: 14-codex-primary-review.md,          owner: codex,         status: done }
+  - { id: "15", file: 15-cross-review.md,                  owner: grok+codex,    status: done }   # authoritative (superseded fabricated draft)
+  - { id: "16", file: 16-adjudication-log.md,              owner: claude,        status: done }   # FROZEN — source of truth for contracts
+  - { id: "17", file: 17-implementation-report.md,         owner: claude,        status: pending }
+  - { id: "18", file: 18-final-review.md,                  owner: grok+codex,    status: pending }
+  # Part 2 — Modularisierung
+  - { id: "19", file: 19-game-component-inventory.md,      owner: phase0,        status: done }
+  - { id: "20", file: 20-game-state-and-event-inventory.md,owner: phase0,        status: done }
+  - { id: "21", file: 21-game-modularization-plan.md,      owner: codex+claude,  status: done }   # draft; A12 refinements at Wave 3
+  - { id: "22", file: 22-game-component-api-guidelines.md, owner: claude,        status: pending } # authored at Wave 3
+  - { id: "23", file: 23-class-mode-module-spec.md,        owner: claude,        status: pending } # authored with Wave 1
+  # Part 3 — Visuelle Konsistenz
+  - { id: "24", file: 24-game-visual-consistency-spec.md,  owner: grok+claude,   status: pending } # Wave 4
+  - { id: "25", file: 25-game-element-audit.md,            owner: phase0,        status: done }
+  - { id: "26", file: 26-game-icon-and-layout-rules.md,    owner: claude,        status: pending } # Wave 4
+  - { id: "27", file: 27-class-mode-join-visual-spec.md,   owner: grok+claude,   status: pending } # authored with Wave 1 UI
+
+extra_docs:  # agent-produced supplementary phase-0 detail (kept, non-canonical)
+  - 02b-server-side-flows.md
+  - 02-SUMMARY.md
+  - 02-CHECKLIST.md
+  - phase0-gaps-and-duplication.md   # consolidated gaps G1..G20 + dup D01..D20 (canonical map)
+
+artifacts:
+  visual: artifacts/game-visual-consistency/{baseline,target,diff,contact-sheets}
+
+waves:
+  - { id: 1,  name: klassenmodus-live-join,      status: ready }
+  - { id: 1b, name: a11y-criticals-solo,         status: planned }
+  - { id: 2,  name: solo-assignment-security,    status: planned }
+  - { id: 3,  name: modularization,              status: planned }
+  - { id: 4,  name: visual-consistency,          status: planned }
+  - { id: 5,  name: cleanup-endreview,           status: planned }
