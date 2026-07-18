@@ -168,7 +168,6 @@ const EmojiPinInput = ({ value, onChange, error, disabled = false }: Props) => {
     if (e.key === "Enter" && filteredEmoji.length > 0) {
       e.preventDefault()
       handleEmojiSelect(filteredEmoji[0].emoji)
-      return
     }
   }
 
@@ -201,7 +200,6 @@ const EmojiPinInput = ({ value, onChange, error, disabled = false }: Props) => {
         const currentOption = e.currentTarget
         const prevOption = currentOption.previousElementSibling as HTMLDivElement
         prevOption?.focus()
-        return
       }
     }
 
