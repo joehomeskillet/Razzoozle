@@ -45,7 +45,7 @@ const ToggleField = ({
           disabled={disabled}
           onClick={() => onChange(!checked)}
           className={clsx(
-            "relative inline-flex h-11 w-14 shrink-0 cursor-pointer items-center rounded-full",
+            "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full",
             "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
             "disabled:cursor-wait",
             checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]",
@@ -53,8 +53,8 @@ const ToggleField = ({
         >
           <span
             className={clsx(
-              "inline-block size-6 rounded-full bg-[var(--surface)] shadow transition-transform",
-              checked ? "translate-x-8" : "translate-x-1",
+              "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
+              checked ? "translate-x-6" : "translate-x-1",
             )}
           />
         </button>
