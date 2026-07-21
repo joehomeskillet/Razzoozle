@@ -26,17 +26,5 @@ const EMPTY_ROW: RowState = {
   bonus: 0,
 }
 
-// German fallback explanations of what each threshold value controls — keyed by
-// the registry threshold key. Overridable per locale via
-// manager:achievementsConfig.thresholdHint.<key>.
-const THRESHOLD_HINTS: Record<string, string> = {
-  lastPercent: "Richtig in den letzten X % des Zeitfensters",
-  maxMs: "Maximale Antwortzeit in Millisekunden",
-  streak: "Anzahl richtiger Antworten in Folge",
-  minAccuracyPct: "Mindest-Genauigkeit beim Schieberegler (%)",
-  minRanksUp: "Plätze, die man in der Rangliste hochklettern muss",
-  minPointsAhead: "Punktevorsprung der überholten Person",
-}
-
 export type { LocalState, RowState }
-export { EMPTY_ROW, THRESHOLD_HINTS }
+export { EMPTY_ROW }

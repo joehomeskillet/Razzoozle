@@ -55,6 +55,14 @@ const BadgeRow = ({
   const threshId = `ach-thresh-${id}`
   const bonusId = `ach-bonus-${id}`
 
+  // Translate unit if it's an i18n key, otherwise render as-is
+  const getUnitDisplay = (unit?: string): string => {
+    if (!unit) return ""
+    if (unit === "places") return t("manager:achievementsConfig.unitPlaces")
+    if (unit === "points") return t("manager:achievementsConfig.unitPoints")
+    return unit // "%", "×", "ms" etc. render as-is
+  }
+
   return (
     <motion.div
       layout={!reduced}
@@ -157,7 +165,7 @@ const BadgeRow = ({
               }}
             />
             <span className="text-xs font-medium text-[var(--ink-subtle)]">
-              {thresholdUnit}
+              {getUnitDisplay(thresholdUnit)}
             </span>
           </div>
           {thresholdHint && (

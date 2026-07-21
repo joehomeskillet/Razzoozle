@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "Manager",
-    "subtitle": "Connecte-toi pour gérer ta partie."
+    "subtitle": "Connecte-toi pour gérer ta partie.",
+    "username": "Nom d'utilisateur",
+    "usernameLabel": "Nom d'utilisateur",
+    "usernamePlaceholder": "Nom d'utilisateur",
+    "invalidInput": "Le nom d'utilisateur et le mot de passe sont requis",
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
+    "passwordLabel": "Mot de passe",
+    "passwordError": "Mot de passe invalide",
+    "error": "Authentification échouée",
+    "networkError": "Erreur de connexion"
   },
   "aria": {
     "passwordLabel": "Mot de passe",
@@ -554,7 +563,9 @@
       "global": "Global",
       "all": "Toutes",
       "label": "Visibilité"
-    }
+    },
+    "selectEntry": "Sélectionner \"{{name}}\"",
+    "editEntry": "Modifier \"{{name}}\""
   },
   "ai": {
     "title": "Paramètres IA",
@@ -724,7 +735,9 @@
       "minAccuracyPct": "Précision min du curseur (%)",
       "minRanksUp": "Places gagnées au classement",
       "minPointsAhead": "Avance en points du dépassé"
-    }
+    },
+    "unitPlaces": "Places",
+    "unitPoints": "Pts"
   },
   "achievements": {
     "active": "actif"
@@ -880,7 +893,9 @@
       "removed": "Clé supprimée",
       "emptyHeadline": "Aucun fournisseur externe",
       "empty": "L'administrateur n'a pas encore configuré de fournisseur d'IA externe."
-    }
+    },
+    "welcome": "Bienvenue",
+    "description": "Ton profil sera bientôt disponible. Ici, tu pourras configurer tes préférences, tes fournisseurs d'IA et d'autres options."
   },
   "schueler": {
     "title": "Gestion des Élèves",

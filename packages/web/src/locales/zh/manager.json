@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "管理员",
-    "subtitle": "登录以管理你的游戏。"
+    "subtitle": "登录以管理你的游戏。",
+    "username": "用户名",
+    "usernameLabel": "用户名",
+    "usernamePlaceholder": "用户名",
+    "invalidInput": "需要用户名和密码",
+    "invalidCredentials": "用户名或密码无效",
+    "passwordLabel": "密码",
+    "passwordError": "无效的密码",
+    "error": "身份验证失败",
+    "networkError": "连接错误"
   },
   "configurationsTitle": "配置",
   "logout": "退出登录",
@@ -328,7 +337,9 @@
       "global": "全局",
       "all": "所有",
       "label": "可见性"
-    }
+    },
+    "selectEntry": "选择\"{{name}}\"",
+    "editEntry": "编辑\"{{name}}\""
   },
   "ai": {
     "title": "AI 设置",
@@ -724,7 +735,9 @@
       "minAccuracyPct": "滑块最低精确度（%）",
       "minRanksUp": "排行榜上升名次",
       "minPointsAhead": "被超越玩家的分数领先"
-    }
+    },
+    "unitPlaces": "个位置",
+    "unitPoints": "分"
   },
   "achievements": {
     "active": "已启用"
@@ -880,7 +893,9 @@
       "removed": "密钥已删除",
       "emptyHeadline": "无外部提供商",
       "empty": "管理员尚未设置任何外部 AI 提供商。"
-    }
+    },
+    "welcome": "欢迎",
+    "description": "您的个人资料即将可用。之后您可以配置您的设置、AI 提供商和更多选项。"
   },
   "schueler": {
     "title": "学生管理",

@@ -92,12 +92,8 @@ const ResultModalHeader = () => {
         <Button
           variant="ghost"
           size="icon"
-          aria-label={t("manager:result.export.questionsCsv", {
-            defaultValue: "Fragen-CSV",
-          })}
-          title={t("manager:result.export.questionsCsv", {
-            defaultValue: "Fragen-CSV",
-          })}
+          aria-label={t("manager:aria.exportQuestionsCsv")}
+          title={t("manager:aria.exportQuestionsCsv")}
           onClick={handleExportQuestionsCsv}
         >
           <FileText className="size-5" />

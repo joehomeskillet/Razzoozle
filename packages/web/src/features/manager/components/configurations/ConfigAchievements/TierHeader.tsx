@@ -1,6 +1,5 @@
 import {
   TIER_GRADIENT,
-  TIER_LABEL,
   TIER_RING,
   TIER_TEXT,
   type AchievementTier,
@@ -21,7 +20,7 @@ interface TierHeaderProps {
 
 const TierHeader = ({ tier, enabledCount, totalCount }: TierHeaderProps) => {
   const { t } = useTranslation()
-  const label = TIER_LABEL[tier]
+  const label = t(`game:tier.${tier}`)
   const gradient = TIER_GRADIENT[tier]
   const textCls = TIER_TEXT[tier]
   const ringCls = TIER_RING[tier]

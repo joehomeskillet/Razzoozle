@@ -12,7 +12,6 @@ import BadgeRow from "@razzoozle/web/features/manager/components/configurations/
 import TierHeader from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/TierHeader"
 import {
   EMPTY_ROW,
-  THRESHOLD_HINTS,
   type LocalState,
   type RowState,
 } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
@@ -192,12 +191,13 @@ const ConfigAchievements = () => {
                       const thresholdHint = thresholdDef
                         ? t(
                             `manager:achievementsConfig.thresholdHint.${thresholdDef.key}`,
-                            {
-                              defaultValue:
-                                THRESHOLD_HINTS[thresholdDef.key] ?? "",
-                            },
                           )
                         : undefined
+                      const thresholdUnit =
+                        thresholdDef?.unit === "places" ||
+                        thresholdDef?.unit === "points"
+                          ? t(`game:achievements.${thresholdDef.unit}`)
+                          : thresholdDef?.unit
                       return (
                         <BadgeRow
                           key={entry.id}
@@ -206,7 +206,7 @@ const ConfigAchievements = () => {
                           state={local[entry.id as AchievementId] ?? EMPTY_ROW}
                           defaultName={defaultName}
                           defaultDesc={defaultDesc}
-                          thresholdUnit={thresholdDef?.unit}
+                          thresholdUnit={thresholdUnit}
                           thresholdMin={thresholdDef?.min}
                           thresholdMax={thresholdDef?.max}
                           thresholdHint={thresholdHint}
