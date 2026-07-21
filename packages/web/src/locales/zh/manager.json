@@ -229,7 +229,9 @@
       "server": "服务器日志",
       "client": "客户端日志",
       "download": "下载"
-    }
+    },
+    "title": "开发工具",
+    "intro": "开发模式下的诊断、测试数据和 API 工具。"
   },
   "media": {
     "title": "媒体库",
@@ -589,7 +591,9 @@
         "tierGold": "成就 – 金",
         "tierDiamant": "成就 – 钻石"
       }
-    }
+    },
+    "title": "设计",
+    "intro": "为你的学校调整颜色、标志和品牌形象。"
   },
   "submissions": {
     "empty": "没有待处理的建议。",

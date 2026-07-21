@@ -218,7 +218,9 @@
     },
     "animatedCss": {
       "title": "CSS animato"
-    }
+    },
+    "title": "Strumenti di sviluppo",
+    "intro": "Diagnostica, dati di test e strumenti API per la modalità di sviluppo."
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -405,7 +407,9 @@
         "tierGold": "Obiettivo – Oro",
         "tierDiamant": "Obiettivo – Diamante"
       }
-    }
+    },
+    "title": "Design",
+    "intro": "Adatta colori, logo e immagine alla tua scuola."
   },
   "submissions": {
     "empty": "Nessuna proposta in sospeso.",
