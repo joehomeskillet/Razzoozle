@@ -5,6 +5,8 @@ export interface ActionFooterProps {
   /** Action buttons (e.g. Save / Reset). */
   children: ReactNode
   className?: string
+  /** Optional dirty state indicator. When true, applies subtle visual treatment. */
+  dirty?: boolean
 }
 
 /**
@@ -24,9 +26,13 @@ export interface ActionFooterProps {
  * bar scrolls away mid-panel. Working pattern: `className="flex flex-1 flex-col pb-20"`.
  * Broken pattern: `className="flex min-h-0 flex-1 flex-col pb-20"`.
  *
+ * **Dirty state:** When `dirty=true`, the bar applies a subtle opacity reduction
+ * to indicate unsaved changes. Parent component manages the dirty flag and button
+ * states; ActionFooter is purely presentational.
+ *
  * Presentational — children provide the button row.
  */
-const ActionFooter = ({ children, className }: ActionFooterProps) => (
+const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => (
   <div
     className={clsx(
       // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
@@ -46,6 +52,8 @@ const ActionFooter = ({ children, className }: ActionFooterProps) => (
       "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
       // Button row: right-aligned on ≥sm, stacked full-width below sm
       "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
+      // Dirty state indicator: subtle opacity reduction
+      dirty && "opacity-75",
       className,
     )}
   >
