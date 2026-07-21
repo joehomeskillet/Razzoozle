@@ -92,55 +92,100 @@ const QuizzList = ({
       .filter((l: Label | undefined) => l) as Label[]
   }
 
-  const buildActions = (q: QuizzMeta): ListRowAction[] => [
-    {
-      key: "edit",
-      icon: SquarePen,
-      label: t("manager:quizz.edit", { name: q.subject }),
-      onClick: () => {
-        void navigate({
-          to: "/manager/quizz/$quizzId",
-          params: { quizzId: q.id },
-        })
+  // SDD §4.5 active: edit, duplicate visible; export/archive/delete → overflow
+  const buildActiveActions = (
+    q: QuizzMeta,
+  ): { visible: ListRowAction[]; overflow: ListRowAction[] } => {
+    const goEdit = () => {
+      void navigate({
+        to: "/manager/quizz/$quizzId",
+        params: { quizzId: q.id },
+      })
+    }
+    return {
+      visible: [
+        {
+          key: "edit",
+          icon: SquarePen,
+          label: t("manager:quizz.edit", { name: q.subject }),
+          onClick: goEdit,
+        },
+        {
+          key: "duplicate",
+          icon: Copy,
+          label: t("manager:quizz.duplicate", { name: q.subject }),
+          onClick: () => setPendingDuplicate({ id: q.id, subject: q.subject }),
+        },
+      ],
+      overflow: [
+        {
+          key: "export",
+          icon: Download,
+          label: t("manager:quizz.export", { name: q.subject }),
+          onClick: () => handleExport(q.id),
+        },
+        {
+          key: "archive",
+          icon: Archive,
+          label: t("manager:quizz.archive"),
+          onClick: () => handleArchived(q.id, true),
+        },
+        {
+          key: "delete",
+          icon: Trash2,
+          label: t("manager:quizz.delete"),
+          destructive: true,
+          onClick: () => setPendingDelete({ id: q.id, subject: q.subject }),
+        },
+      ],
+    }
+  }
+
+  // SDD §4.5 archived: edit, export, restore visible; delete → overflow
+  const buildArchivedActions = (
+    q: QuizzMeta,
+  ): { visible: ListRowAction[]; overflow: ListRowAction[] } => ({
+    visible: [
+      {
+        key: "edit",
+        icon: SquarePen,
+        label: t("manager:quizz.edit", { name: q.subject }),
+        onClick: () => {
+          void navigate({
+            to: "/manager/quizz/$quizzId",
+            params: { quizzId: q.id },
+          })
+        },
       },
-    },
-    {
-      key: "duplicate",
-      icon: Copy,
-      label: t("manager:quizz.duplicate", { name: q.subject }),
-      onClick: () => setPendingDuplicate({ id: q.id, subject: q.subject }),
-    },
-    {
-      key: "export",
-      icon: Download,
-      label: t("manager:quizz.export", { name: q.subject }),
-      onClick: () => handleExport(q.id),
-    },
-    {
-      key: "archive",
-      icon: Archive,
-      label: t("manager:quizz.archive"),
-      onClick: () => handleArchived(q.id, true),
-    },
-    {
-      key: "delete",
-      icon: Trash2,
-      label: t("manager:quizz.delete"),
-      destructive: true,
-      onClick: () => setPendingDelete({ id: q.id, subject: q.subject }),
-    },
-  ]
+      {
+        key: "export",
+        icon: Download,
+        label: t("manager:quizz.export", { name: q.subject }),
+        onClick: () => handleExport(q.id),
+      },
+      {
+        key: "restore",
+        icon: ArchiveRestore,
+        label: t("manager:quizz.unarchive"),
+        onClick: () => handleArchived(q.id, false),
+      },
+    ],
+    overflow: [
+      {
+        key: "delete",
+        icon: Trash2,
+        label: t("manager:quizz.delete"),
+        destructive: true,
+        onClick: () => setPendingDelete({ id: q.id, subject: q.subject }),
+      },
+    ],
+  })
 
-  // D22d: >3 actions → 2 inline + Shared-OverflowMenu (order preserved,
-  // destructive last), on every viewport — no longer mobile-gated.
-  const ACTION_SPLIT_THRESHOLD = 3
-
-  const getPrimaryActions = (actions: ListRowAction[]): ListRowAction[] =>
-    actions.length > ACTION_SPLIT_THRESHOLD ? actions.slice(0, 2) : actions
-
-  const getOverflowActions = (actions: ListRowAction[]): ListRowAction[] =>
-    actions.length > ACTION_SPLIT_THRESHOLD ? actions.slice(2) : []
-
+  const questionCountMeta = (count: number | null | undefined) => (
+    <span className="text-xs text-[var(--ink-subtle)]">
+      {t("manager:catalog.count", { count: count ?? 0 })}
+    </span>
+  )
   return quizz.length === 0 ? (
     <div className="flex min-h-0 flex-1 flex-col justify-center">
       <EmptyState
@@ -179,9 +224,7 @@ const QuizzList = ({
         const availableLabels = labels.filter(
           (l: Label) => !assignedLabels.some((al: Label) => al.id === l.id),
         )
-        const allActions = buildActions(q)
-        const visibleActions = getPrimaryActions(allActions)
-        const overflowActions = getOverflowActions(allActions)
+        const { visible, overflow } = buildActiveActions(q)
 
         return (
           <motion.div
@@ -214,22 +257,12 @@ const QuizzList = ({
                 </label>
               }
               leading={
-                <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                <ListChecks className="size-5 shrink-0 text-[var(--ink-faint)]" />
               }
               title={q.subject}
-              meta={
-                q.questionCount != null ? (
-                  <span className="text-xs text-[var(--ink-subtle)]">
-                    {t("manager:catalog.count", { count: q.questionCount })}
-                  </span>
-                ) : undefined
-              }
-              actions={visibleActions}
-              overflow={
-                overflowActions.length > 0 ? (
-                  <OverflowMenu actions={overflowActions} />
-                ) : undefined
-              }
+              meta={questionCountMeta(q.questionCount)}
+              actions={visible}
+              overflow={<OverflowMenu actions={overflow} />}
               footer={
                 klassenEnabled &&
                 (assignedLabels.length > 0 || availableLabels.length > 0) ? (
@@ -332,47 +365,16 @@ const QuizzList = ({
 
           {showArchived &&
             archivedQuizz.map((q, index) => {
-              // D22d archived order: edit → export → restore → delete (destructive last).
-              const allActions: ListRowAction[] = [
-                {
-                  key: "edit",
-                  icon: SquarePen,
-                  label: t("manager:quizz.edit", {
-                    name: q.subject,
-                  }),
-                  onClick: () => {
-                    void navigate({
-                      to: "/manager/quizz/$quizzId",
-                      params: { quizzId: q.id },
-                    })
-                  },
-                },
-                {
-                  key: "export",
-                  icon: Download,
-                  label: t("manager:quizz.export", { name: q.subject }),
-                  onClick: () => handleExport(q.id),
-                },
-                {
-                  key: "restore",
-                  icon: ArchiveRestore,
-                  label: t("manager:quizz.unarchive"),
-                  onClick: () => handleArchived(q.id, false),
-                },
-                {
-                  key: "delete",
-                  icon: Trash2,
-                  label: t("manager:quizz.delete"),
-                  destructive: true,
-                  onClick: () =>
-                    setPendingDelete({
-                      id: q.id,
-                      subject: q.subject,
-                    }),
-                },
-              ]
-              const visibleActions = getPrimaryActions(allActions)
-              const overflowActions = getOverflowActions(allActions)
+              const { visible, overflow } = buildArchivedActions(q)
+              // Meta: question count OR "Archiviert" status (no opacity dimmer)
+              const archivedMeta =
+                q.questionCount != null ? (
+                  questionCountMeta(q.questionCount)
+                ) : (
+                  <span className="text-xs text-[var(--ink-subtle)]">
+                    {t("manager:quizz.archived")}
+                  </span>
+                )
 
               return (
                 <motion.div
@@ -389,28 +391,15 @@ const QuizzList = ({
                         }
                   }
                 >
-                  <div className="flex items-center gap-2">
-                    <ListRow
-                      leading={
-                        <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
-                      }
-                      title={q.subject}
-                      meta={
-                        <span className="text-xs text-[var(--ink-subtle)]">
-                          {q.questionCount != null
-                            ? t("manager:catalog.count", {
-                                count: q.questionCount,
-                              })
-                            : t("manager:quizz.archived")}
-                        </span>
-                      }
-                      className="min-w-0 flex-1 opacity-85"
-                      actions={visibleActions}
-                    />
-                    {overflowActions.length > 0 && (
-                      <OverflowMenu actions={overflowActions} />
-                    )}
-                  </div>
+                  <ListRow
+                    leading={
+                      <ListChecks className="size-5 shrink-0 text-[var(--ink-faint)]" />
+                    }
+                    title={q.subject}
+                    meta={archivedMeta}
+                    actions={visible}
+                    overflow={<OverflowMenu actions={overflow} />}
+                  />
                 </motion.div>
               )
             })}
