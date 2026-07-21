@@ -87,22 +87,24 @@ const RunningGamesSection = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <PageHeader
-        title={t("manager:tabs.running")}
-        subtitle={t("manager:runningGames.description")}
-        action={
-          <Button
-            variant="ghost"
-            size="icon"
-            type="button"
-            onClick={refresh}
-            aria-label={t("manager:runningGames.refresh")}
-            title={t("manager:runningGames.refresh")}
-          >
-            <RefreshCw className="size-5" aria-hidden />
-          </Button>
-        }
-      />
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <PageHeader
+          title={t("manager:tabs.running")}
+          subtitle={t("manager:runningGames.description")}
+          action={
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              onClick={refresh}
+              aria-label={t("manager:runningGames.refresh")}
+              title={t("manager:runningGames.refresh")}
+            >
+              <RefreshCw className="size-5" aria-hidden />
+            </Button>
+          }
+        />
+      </div>
 
       {games.length === 0 ? (
         <EmptyState
