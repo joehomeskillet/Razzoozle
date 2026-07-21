@@ -370,6 +370,11 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active.key, activeKey, configHydrated])
 
+  // Profile lives in headerActions (SDD §4.2), not the nav rail. When the
+  // profile route is active the rail correctly has zero selection — the
+  // profile button itself is the single active indicator (SDD §4.3).
+  const isProfileActive = active.key === "profile"
+
   return (
     <ConsoleShell
       brand={<ConsoleBrand />}
@@ -387,9 +392,25 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
             onClick={() => onSelect("profile")}
             title={t("manager:tabs.profile")}
             aria-label={t("manager:tabs.profile")}
-            className={active.key === "profile" ? "bg-[var(--accent-tint)]" : undefined}
+            aria-current={isProfileActive ? "page" : undefined}
+            data-active={isProfileActive ? "true" : undefined}
+            className={
+              isProfileActive
+                ? // Match NavItem active treatment: accent-tint fill + accent-
+                  // contrast ink. Keep tint on hover/active so ghost defaults
+                  // don't erase the selected state. Ring separates the chip
+                  // from the header's own accent-tint gradient wash.
+                  "bg-[var(--accent-tint)] text-[var(--accent-contrast)] " +
+                    "hover:bg-[var(--accent-tint)] active:bg-[var(--accent-tint)] " +
+                    "ring-2 ring-[var(--accent-contrast)]/35"
+                : undefined
+            }
           >
-            <User className="size-5" />
+            <User
+              className="size-5"
+              strokeWidth={isProfileActive ? 2.6 : 2}
+              aria-hidden
+            />
           </Button>
           <Button
             variant="ghost"
