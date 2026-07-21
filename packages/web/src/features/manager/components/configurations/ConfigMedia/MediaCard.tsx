@@ -29,6 +29,7 @@ const MediaCard = ({
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const dialogTriggerRef = useRef<HTMLButtonElement>(null)
 
   const usageCount = item.usage?.length ?? 0
@@ -148,32 +149,19 @@ const MediaCard = ({
           >
             <Info className="size-4" aria-hidden />
           </Button>
-          <AlertDialog
-            trigger={
-              <Button
-                onClick={(e) => e.stopPropagation()}
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 shrink-0 rounded-lg bg-[var(--state-wrong-soft)] text-[var(--state-wrong)] hover:bg-[var(--state-wrong)]/20"
-                aria-label={t("manager:media.delete")}
-              >
-                <Trash2 className="size-4" aria-hidden />
-              </Button>
-            }
-            title={t("manager:media.delete")}
-            description={
-              deleteWarningText
-                ? `${t("manager:media.deleteConfirm", {
-                    name: item.filename,
-                  })}\n\n${deleteWarningText}`
-                : t("manager:media.deleteConfirm", {
-                    name: item.filename,
-                  })
-            }
-            confirmLabel={t("common:delete")}
-            onConfirm={() => handleDelete(item.id)}
-          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 rounded-lg bg-[var(--state-wrong-soft)] text-[var(--state-wrong)] hover:bg-[var(--state-wrong)]/20"
+            aria-label={t("manager:media.delete")}
+            onClick={(e) => {
+              e.stopPropagation()
+              setDeleteOpen(true)
+            }}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </Button>
         </div>
       </div>
 
@@ -192,7 +180,25 @@ const MediaCard = ({
         item={item}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
 
+      {/* Delete confirmation dialog — controlled, sibling to info dialog */}
+      {/* Prevents React Portal event bubbling through thumbnail onClick */}
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t("manager:media.delete")}
+        description={
+          deleteWarningText
+            ? `${t("manager:media.deleteConfirm", {
+                name: item.filename,
+              })}\n\n${deleteWarningText}`
+            : t("manager:media.deleteConfirm", {
+                name: item.filename,
+              })
+        }
+        confirmLabel={t("common:delete")}
+        onConfirm={() => handleDelete(item.id)}
       />
     </motion.article>
   )
