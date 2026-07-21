@@ -217,6 +217,14 @@ async function runMediaUsageTest() {
     if (!mediaTabFound) throw new Error('Media tab not found');
     await page.waitForTimeout(1000);
 
+    // NEW: URL assertion (routes-R2 requirement)
+    console.log('[TEST] Asserting URL contains /manager/config/media...');
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/manager/config/media')) {
+      throw new Error(`Expected URL to contain /manager/config/media, got: ${currentUrl}`);
+    }
+    console.log('  ✓ URL correctly shows /manager/config/media');
+
     await assertUsageBadges(page);
     await assertInfoDialogUsage(page);
     await assertDeleteWarning(page);
@@ -228,6 +236,7 @@ async function runMediaUsageTest() {
     console.log('✓ Info dialog shows usage details');
     console.log('✓ Delete warning displays');
     console.log('✓ B1 regression: no dialog stacking');
+    console.log('✓ URL assertion: /manager/config/media present');
     console.log('============================================================');
   } finally {
     await stagehand.close();
