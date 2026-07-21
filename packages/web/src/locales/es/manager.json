@@ -478,7 +478,8 @@
       "all": "Todos",
       "upload": "Subidos",
       "ai": "IA",
-      "theme": "Diseño"
+      "theme": "Diseño",
+      "label": "Fuente"
     },
     "source": {
       "upload": "Subidos",

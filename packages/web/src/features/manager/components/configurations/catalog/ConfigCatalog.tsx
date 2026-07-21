@@ -1,6 +1,7 @@
 import * as Select from "@radix-ui/react-select"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
@@ -90,18 +91,12 @@ const ConfigCatalog = () => {
             className="min-h-11 w-full rounded-[var(--radius-theme)]"
           />
 
-          <div
-            role="group"
-            aria-label={t("manager:catalog.scope.label", {
-              defaultValue: "Sichtbarkeit",
-            })}
-            className="flex flex-wrap items-center gap-2"
-          >
+          <FilterGroup label={t("manager:catalog.scope.label")}>
             {(
               [
-                { key: "own", label: t("manager:catalog.scope.own", { defaultValue: "Eigene" }) },
-                { key: "global", label: t("manager:catalog.scope.global", { defaultValue: "Global" }) },
-                { key: "all", label: t("manager:catalog.scope.all", { defaultValue: "Alle" }) },
+                { key: "own", label: t("manager:catalog.scope.own") },
+                { key: "global", label: t("manager:catalog.scope.global") },
+                { key: "all", label: t("manager:catalog.scope.all") },
               ] as const
             ).map((entry) => (
               <FilterPill
@@ -112,14 +107,16 @@ const ConfigCatalog = () => {
                 {entry.label}
               </FilterPill>
             ))}
-          </div>
+          </FilterGroup>
 
           {klassenEnabled && (
-            <LabelFilterPills
-              labels={labels}
-              activeId={selectedLabelId}
-              onChange={setSelectedLabelId}
-            />
+            <FilterGroup label={t("manager:tabs.labels")}>
+              <LabelFilterPills
+                labels={labels}
+                activeId={selectedLabelId}
+                onChange={setSelectedLabelId}
+              />
+            </FilterGroup>
           )}
         </div>
 

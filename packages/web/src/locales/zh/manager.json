@@ -252,7 +252,8 @@
       "all": "全部",
       "upload": "已上传",
       "ai": "AI",
-      "theme": "设计"
+      "theme": "设计",
+      "label": "来源"
     },
     "source": {
       "upload": "已上传",

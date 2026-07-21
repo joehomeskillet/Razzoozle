@@ -261,7 +261,8 @@
       "all": "All",
       "upload": "Uploaded",
       "ai": "AI",
-      "theme": "Design"
+      "theme": "Design",
+      "label": "Source"
     },
     "source": {
       "upload": "Uploaded",

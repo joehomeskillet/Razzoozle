@@ -1,5 +1,6 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Select from "@razzoozle/web/components/Select"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
@@ -143,11 +144,13 @@ const ConfigManageQuizz = () => {
 
         {klassenEnabled && labels.length > 0 && (
           <div className="mb-4 flex shrink-0">
-            <LabelFilterPills
-              labels={labels}
-              activeId={activeFilterId}
-              onChange={setActiveFilterId}
-            />
+            <FilterGroup label={t("manager:tabs.labels")}>
+              <LabelFilterPills
+                labels={labels}
+                activeId={activeFilterId}
+                onChange={setActiveFilterId}
+              />
+            </FilterGroup>
           </div>
         )}
 

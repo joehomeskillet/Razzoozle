@@ -478,7 +478,8 @@
       "all": "Tutti",
       "upload": "Caricati",
       "ai": "IA",
-      "theme": "Design"
+      "theme": "Design",
+      "label": "Fonte"
     },
     "source": {
       "upload": "Caricati",

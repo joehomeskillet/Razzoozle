@@ -478,7 +478,8 @@
       "all": "Tous",
       "upload": "Importés",
       "ai": "IA",
-      "theme": "Apparence"
+      "theme": "Apparence",
+      "label": "Source"
     },
     "source": {
       "upload": "Importés",
