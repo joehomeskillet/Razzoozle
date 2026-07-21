@@ -14,8 +14,6 @@ const ConfigLabels = () => {
   const {
     labels,
     hasLabels,
-    search,
-    setSearch,
     pendingDeleteLabel,
     setPendingDeleteLabel,
     handleCreateLabel,
@@ -63,61 +61,46 @@ const ConfigLabels = () => {
         </form>
 
         {hasLabels ? (
-          <>
-            <div className="flex shrink-0">
-              <label htmlFor="labels-search" className="sr-only">
-                {t("manager:labels.filterLabel")}
-              </label>
-              <Input
-                id="labels-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("manager:labels.namePlaceholder")}
-                className="min-h-11 w-full rounded-[var(--radius-theme)]"
-              />
-            </div>
-
-            <div className="flex flex-1 flex-col gap-2 overflow-auto">
-              {labels.map((label) => (
-                <div
-                  key={label.id}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
-                      style={{ backgroundColor: `var(--label-${label.color}, var(--label-gray))` }}
-                    />
-                    <span className="text-sm font-medium text-[var(--ink)]">
-                      {label.name}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-lg"
-                      onClick={() => setPendingEditLabel(label)}
-                      aria-label={t("manager:labels.editLabel")}
-                      title={t("manager:labels.editLabel")}
-                    >
-                      <Edit2 className="size-4" aria-hidden />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-lg"
-                      onClick={() => setPendingDeleteLabel(label)}
-                      aria-label={t("manager:labels.deleteLabel")}
-                      title={t("manager:labels.deleteLabel")}
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                    </Button>
-                  </div>
+          <div className="flex flex-1 flex-col gap-2 overflow-auto">
+            {labels.map((label) => (
+              <div
+                key={label.id}
+                className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
+                    style={{ backgroundColor: `var(--label-${label.color}, var(--label-gray))` }}
+                  />
+                  <span className="text-sm font-medium text-[var(--ink)]">
+                    {label.name}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={() => setPendingEditLabel(label)}
+                    aria-label={t("manager:labels.editLabel")}
+                    title={t("manager:labels.editLabel")}
+                  >
+                    <Edit2 className="size-4" aria-hidden />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={() => setPendingDeleteLabel(label)}
+                    aria-label={t("manager:labels.deleteLabel")}
+                    title={t("manager:labels.deleteLabel")}
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex flex-1 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
             <p className="text-sm text-[var(--ink-subtle)]">

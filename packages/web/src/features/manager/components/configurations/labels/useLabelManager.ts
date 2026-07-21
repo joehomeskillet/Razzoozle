@@ -15,25 +15,14 @@ export const useLabelManager = () => {
   const { t } = useTranslation()
 
   const [labels, setLabels] = useState<Label[]>([])
-  const [search, setSearch] = useState("")
 
   const [pendingDeleteLabel, setPendingDeleteLabel] = useState<Label | null>(
     null,
   )
 
-  const filteredLabels = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (query.length === 0) {
-      return labels
-    }
-    return labels.filter((label) =>
-      label.name.toLowerCase().includes(query),
-    )
-  }, [labels, search])
-
   const sortedLabels = useMemo(
-    () => [...filteredLabels].sort((a, b) => a.name.localeCompare(b.name)),
-    [filteredLabels],
+    () => [...labels].sort((a, b) => a.name.localeCompare(b.name)),
+    [labels],
   )
 
   // ---- Incoming events ----
@@ -69,7 +58,6 @@ export const useLabelManager = () => {
         name: name.trim(),
         ...(color ? { color } : {}),
       })
-      setSearch("")
       return true
     },
     [socket, t],
@@ -103,8 +91,6 @@ export const useLabelManager = () => {
   return {
     labels: sortedLabels,
     hasLabels: labels.length > 0,
-    search,
-    setSearch,
     pendingDeleteLabel,
     setPendingDeleteLabel,
     handleCreateLabel,
