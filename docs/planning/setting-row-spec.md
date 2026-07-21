@@ -60,6 +60,8 @@ export interface SettingRowProps {
 
   /**
    * Optional `id` attribute for the row container (used by sticky form actions to focus/scroll).
+   * IMPORTANT: Must be unique within the entire form to prevent aria-describedby/aria-labelledby collisions.
+   * The control's id should differ from this row id (e.g., row id="setting-team-mode", control id="control-team-mode").
    */
   id?: string
 
@@ -106,6 +108,8 @@ export default SettingRow
 - Control-Wrapper: `flex min-h-11 flex-1 items-center gap-2` (auf SM+)
 - Description/Fehler: `text-xs text-[var(--ink-subtle)] sm:pl-44`
 
+**Responsive Width Note (sm:w-40):** Empirically tested with existing German titles ("Team-Modus", "Low-Latency-Modus", "Klassen-Modus verfügbar" ~23 chars). The 160px width accommodates these at `text-sm font-medium`. Extremely long titles (>30 chars) may wrap; if needed, increase to `sm:w-48` (192px) in consumers.
+
 ---
 
 ## 4. ARIA-Verkabelung
@@ -151,6 +155,7 @@ export default SettingRow
 - Control erhält `aria-labelledby="…-title"` + `aria-describedby="…-desc …-status"` (beide bei Bedarf).
 - Status-Nachricht kriegt `role="status"` + `aria-live="polite"` für Screening-Reader-Ankündigung.
 - Bei `statusMessage.tone === "error"`: `aria-invalid="true"` auf dem Control.
+- **ID Collisions:** Der `id` Prop der SettingRow wird zur Basis für alle Unter-IDs (title, desc, status). Sicherstellen, dass SettingRow-`id` unique pro Formular ist.
 
 ---
 
@@ -162,8 +167,9 @@ export default SettingRow
   - Primary Button "Speichern" (enabled nur wenn `isDirty`).
   - Secondary Button "Verwerfen" oder "Standardwerte" (label je nach Kontext, siehe unten).
 - **Nach Speichern:** `isDirty` auf false setzen; jedes SettingRow kann optional einen kurzen `statusMessage.tone="success"` anzeigen.
+- **ActionFooter API:** Rein presentational (nur children). Parent verwaltet die Button-Callbacks (onClick, disabled state). SettingRow hat keine direkte Abhängigkeit von ActionFooter; nur der Parent koordiniert.
 
-**Reset-Wording (SDD §5.12):**
+**Reset-Wording (Manager-UI/UX-SDD §5.12):**
 - **„Verwerfen"** – unsaved local edits zurücksetzen auf letzten Server-State.
 - **„Voreinstellungen wiederherstellen"** – Presets (z.B. Modus-Templates) laden.
 - **„Auf Standardwerte zurücksetzen"** – factory defaults (die gesamte Anwendung).
@@ -239,34 +245,56 @@ Parent kann `ActionFooter` diese Labels mitgeben; SettingRow hat keine direkte A
 
 **Kandidaten für SettingRow-Migrierung:**
 
-1. `ConfigGameMode.tsx` — 7 `ToggleField` + 1 `RadioGroup` mit Descriptions → 8 SettingRows.
+1. `ConfigGameMode.tsx` — 7 `ToggleField` + 1 `RadioGroup` mit Descriptions → 8 SettingRows (currently wrapped in FormSection groups; WP5 may consolidate these or remove FormSection wrappers).
 2. `ai/TextProviderSection.tsx` — 4 `LabelRow` + `Input` mit Descriptions → 4 SettingRows.
 3. `ConfigDesign.tsx` (TBD) — ähnliches Muster.
 
 **Grep-Ergebnis (aktuell):**
 ```bash
-# LabelRow-Nutzungen im Manager-Scope
-find packages/web/src/features/manager -name "*.tsx" -exec grep -l "LabelRow\|ToggleField" {} \;
-# Ergebnis: ~12 Dateien (nach SDD §3 Audit zu zählen)
-
-# SettingRow-Kandidaten nach Häufigkeit (wird WP0-Audit liefern)
+# LabelRow/ToggleField-Nutzungen im Manager-Scope (verified 2026-07-21)
+# Result: 8 files using LabelRow or ToggleField:
+# - ConfigSelectQuizz.tsx
+# - AnimationControls.tsx
+# - ConfigGameMode.tsx
+# - AnimatedBackgroundControls.tsx
+# - ConfigTheme.tsx
+# - QuizGenSection.tsx
+# - ImageSection.tsx
+# - TextProviderSection.tsx
 ```
 
 **API-Kompatibilität:**
 - `LabelRow` und `ToggleField` bleiben unverändert.
-- SettingRow ist ein **additives** Compositing-Primitive (kombiniert beides).
+- SettingRow ist ein **additives** Compositing-Primitive (kombiniert beides + erweiterte Features wie restartBadge, statusMessage).
 - Keine bestehenden Call-Sites werden gebrochen.
 - Migration kann Seite für Seite erfolgen (erst eine ConfigGameMode-Section, dann nächste).
+- **Integration mit FormSection:** Aktuell wrappen einige Konsumenten ihre ToggleFields/LabelRows in `FormSection` Wrappers (z.B. ConfigGameMode). WP5 Strategy TBD: Either (a) SettingRow replaces the inner control but FormSection wrapper stays, or (b) SettingRow subsumes section-level title + description and FormSection is not used. This spec assumes (a) until WP5 clarifies.
 
 ---
 
-## 8. Design-Konventionen (design.md §8·B)
+## 8. Design-Konventionen (Manager-UI/UX-SDD §8·B)
 
 - **Farben:** `--ink-muted` für Title, `--ink-subtle` für Description (beide existierende Tokens).
 - **Status-Töne:** `success` → `--state-correct` grün; `error` → `--state-wrong` rot; `pending` → `--surface-muted` grau.
 - **Radius:** `rounded-[var(--radius-theme)]` für Status-Badge (falls als Chip gerendert).
 - **Focus:** `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]` auf der Control-Wrapper.
 - **Keine Duplikate:** Bestehende `--shadow-flat`, `--border-hairline`-Tokens nutzen, nicht neu erfinden.
+
+---
+
+## 9. WP5 Implementierungs-Constraints (Basis-Audit)
+
+**Primitives-Regeln (Manager-UI/UX-SDD §6):**
+- ✓ No i18n keys embedded in component (titles/labels come from props).
+- ✓ No direct Socket access (parent manages state, emits changes).
+- ✓ forwardRef required for focus/scroll coordination.
+- ✓ Generic props only (no theme-specific hardcoding).
+- ✓ ARIA chains properly wired (aria-labelledby, aria-describedby, aria-invalid, role="status").
+
+**Not Covered by This Spec (WP5 to decide):**
+- **Disabled reason display:** The `disabledReason` prop is defined but implementation (tooltip vs inline text) is deferred to WP5.
+- **FormSection interaction:** How SettingRow coexists with FormSection title + description wrappers needs WP5 strategy (see §7).
+- **Multi-field forms:** If a single form has 20+ SettingRows, performance/virtualization is out of scope (future optimization).
 
 ---
 
