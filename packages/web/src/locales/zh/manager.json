@@ -339,7 +339,11 @@
       "label": "可见性"
     },
     "selectEntry": "选择\"{{name}}\"",
-    "editEntry": "编辑\"{{name}}\""
+    "editEntry": "编辑\"{{name}}\"",
+    "bulkSelected": "已选择 {{count}} 项",
+    "bulkDelete": "删除",
+    "bulkDeleteTitle": "删除题目",
+    "bulkDeleteConfirm": "已选择的 {{count}} 道题目将从题库中永久移除。"
   },
   "ai": {
     "title": "AI 设置",

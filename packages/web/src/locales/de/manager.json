@@ -338,8 +338,12 @@
       "all": "Alle",
       "label": "Sichtbarkeit"
     },
-    "selectEntry": "Select \"{{name}}\"",
-    "editEntry": "Edit \"{{name}}\""
+    "selectEntry": "„{{name}}“ auswählen",
+    "editEntry": "„{{name}}“ bearbeiten",
+    "bulkSelected": "{{count}} ausgewählt",
+    "bulkDelete": "Löschen",
+    "bulkDeleteTitle": "Fragen löschen",
+    "bulkDeleteConfirm": "{{count}} ausgewählte Fragen werden dauerhaft aus dem Katalog entfernt."
   },
   "ai": {
     "title": "KI-Einstellungen",
