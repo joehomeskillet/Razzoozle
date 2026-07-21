@@ -278,8 +278,14 @@
     },
     "usage": {
       "heading": "使用于",
-      "empty": "尚未使用"
-    }
+      "empty": "尚未使用",
+      "questionLabel": "问题 {{index}}：{{label}}",
+      "deleteWarning": "用于 1 个问题——删除它不会从那里删除它。",
+      "deleteWarning_other": "用于 {{count}} 个问题——删除它不会从那里删除它们。",
+      "count": "用于 1 个问题",
+      "count_other": "用于 {{count}} 个问题"
+    },
+    "usageBadge": "{{count}}×"
   },
   "catalog": {
     "title": "题目题库",

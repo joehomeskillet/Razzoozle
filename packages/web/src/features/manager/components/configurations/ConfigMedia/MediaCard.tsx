@@ -1,11 +1,12 @@
 import type { MediaMeta } from "@razzoozle/common/types/media"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
 import clsx from "clsx"
 import { Check, FileAudio, Film, Info, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import type { MouseEvent } from "react"
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import MediaInfoDialog, { formatSize } from "./MediaInfoDialog"
@@ -29,6 +30,19 @@ const MediaCard = ({
   const reducedMotion = useReducedMotion()
   const [dialogOpen, setDialogOpen] = useState(false)
   const dialogTriggerRef = useRef<HTMLButtonElement>(null)
+
+  const usageCount = item.usage?.length ?? 0
+  const quizTitles = useMemo(() => {
+    if (!item.usage || item.usage.length === 0) return ""
+    return item.usage.map((entry) => entry.quizTitle).join(", ")
+  }, [item.usage])
+
+  const deleteWarningText = useMemo(() => {
+    if (usageCount === 0) return null
+    return t("manager:media.usage.deleteWarning", {
+      count: usageCount,
+    })
+  }, [t, usageCount])
 
   return (
     <motion.article
@@ -81,7 +95,7 @@ const MediaCard = ({
 
       {/* Thumbnail — square, responsive; click opens details dialog */}
       <div
-        className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer"
+        className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer relative"
         onClick={() => setDialogOpen(true)}
       >
         {item.type === "audio" ? (
@@ -95,6 +109,24 @@ const MediaCard = ({
             loading="lazy"
             className="size-full object-cover"
           />
+        )}
+
+        {/* Usage badge — top-right, only when used */}
+        {usageCount > 0 && (
+          <div className="absolute top-2 right-2 z-20" title={quizTitles}>
+            <Badge
+              className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+              aria-label={t("manager:media.usage.count", {
+                count: usageCount,
+                defaultValue: "Used in {{count}} question(s)",
+              })}
+            >
+              {t("manager:media.usageBadge", {
+                count: usageCount,
+                defaultValue: "{{count}}×",
+              })}
+            </Badge>
+          </div>
         )}
 
         {/* Hover overlay — info + delete buttons, hidden by default */}
@@ -126,9 +158,15 @@ const MediaCard = ({
               </Button>
             }
             title={t("manager:media.delete")}
-            description={t("manager:media.deleteConfirm", {
-              name: item.filename,
-            })}
+            description={
+              deleteWarningText
+                ? `${t("manager:media.deleteConfirm", {
+                    name: item.filename,
+                  })}\n\n${deleteWarningText}`
+                : t("manager:media.deleteConfirm", {
+                    name: item.filename,
+                  })
+            }
             confirmLabel={t("common:delete")}
             onConfirm={() => handleDelete(item.id)}
           />

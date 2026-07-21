@@ -501,8 +501,14 @@
     },
     "usage": {
       "heading": "Utilizado en",
-      "empty": "Aún no se utiliza"
-    }
+      "empty": "Aún no se utiliza",
+      "questionLabel": "Pregunta {{index}}: {{label}}",
+      "deleteWarning": "Se utiliza en 1 pregunta — eliminarlo no lo eliminará allí.",
+      "deleteWarning_other": "Se utiliza en {{count}} preguntas — eliminarlo no las eliminará allí.",
+      "count": "Se utiliza en 1 pregunta",
+      "count_other": "Se utiliza en {{count}} preguntas"
+    },
+    "usageBadge": "{{count}}×"
   },
   "catalog": {
     "title": "Catálogo de preguntas",

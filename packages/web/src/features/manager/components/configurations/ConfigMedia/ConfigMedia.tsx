@@ -119,6 +119,25 @@ const ConfigMedia = () => {
     setBulkDeleteOpen,
   } = useMediaSelection({ filtered, items, requestMedia })
 
+  // Compute bulk delete warning: check if any selected item has usage
+  const bulkDeleteWarning = useMemo(() => {
+    const selectedItems = Array.from(selected).map(
+      (id) => items.find((item) => item.id === id),
+    ).filter((item): item is MediaMeta => item !== undefined)
+
+    const itemsWithUsage = selectedItems.filter((item) => (item.usage?.length ?? 0) > 0)
+    if (itemsWithUsage.length === 0) return null
+
+    const totalUsageCount = itemsWithUsage.reduce(
+      (sum, item) => sum + (item.usage?.length ?? 0),
+      0,
+    )
+
+    return t("manager:media.usage.deleteWarning", {
+      count: totalUsageCount,
+    })
+  }, [selected, items, t])
+
   const clearFilters = () => {
     setSearch("")
     setSourceFilter("all")
@@ -349,10 +368,17 @@ const ConfigMedia = () => {
         open={bulkDeleteOpen}
         onOpenChange={setBulkDeleteOpen}
         title={t("manager:media.bulk.delete", { defaultValue: "Löschen" })}
-        description={t("manager:media.bulk.deleteConfirm", {
-          count: selected.size,
-          defaultValue: "{{count}} Medien wirklich löschen?",
-        })}
+        description={
+          bulkDeleteWarning
+            ? `${t("manager:media.bulk.deleteConfirm", {
+                count: selected.size,
+                defaultValue: "{{count}} Medien wirklich löschen?",
+              })}\n\n${bulkDeleteWarning}`
+            : t("manager:media.bulk.deleteConfirm", {
+                count: selected.size,
+                defaultValue: "{{count}} Medien wirklich löschen?",
+              })
+        }
         confirmLabel={t("common:delete")}
         onConfirm={handleBulkDelete}
       />

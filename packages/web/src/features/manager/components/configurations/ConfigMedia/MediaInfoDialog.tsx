@@ -50,9 +50,6 @@ interface MediaInfoDialogProps {
   onOpenChange?: (open: boolean) => void
 }
 
-// Per-card "info" affordance — keeps every card uniform/compact while the full
-// metadata (category, source, exact dimensions + date, larger preview) lives
-// behind a reused Radix dialog, opened from the ℹ button on each card.
 const MediaInfoDialog = ({
   item,
   open: controlledOpen,
@@ -115,7 +112,7 @@ const MediaInfoDialog = ({
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={setOpen}>
-      {/* Only render trigger if not controlled (F8) */}
+      {/* Only render trigger if not controlled */}
       {!isControlled && (
         <Dialog.Trigger asChild>
           <Button
@@ -176,6 +173,32 @@ const MediaInfoDialog = ({
               : ""}
             {` · ${formatDate(item.uploadedAt)}`}
           </p>
+
+          {/* Usage Section — ALWAYS rendered */}
+          <div className="mt-6 flex flex-col gap-3">
+            <label className="text-sm font-semibold text-[var(--ink)]">
+              {t("manager:media.usage.heading", { defaultValue: "Used in" })}
+            </label>
+            {item.usage && item.usage.length > 0 ? (
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {item.usage.map((entry, idx) => (
+                  <div key={idx} className="text-xs text-[var(--ink-muted)]">
+                    <span className="font-medium text-[var(--ink)]">{entry.quizTitle}</span>
+                    {" — "}
+                    {t("manager:media.usage.questionLabel", {
+                      index: entry.questionIndex + 1,
+                      label: entry.questionLabel,
+                      defaultValue: "Question {{index}}: {{label}}",
+                    })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[var(--ink-muted)]">
+                {t("manager:media.usage.empty", { defaultValue: "Not used in any quiz" })}
+              </p>
+            )}
+          </div>
 
           {/* Labels Section */}
           {config.klassenEnabled && (

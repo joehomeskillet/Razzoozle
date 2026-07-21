@@ -287,8 +287,14 @@
     },
     "usage": {
       "heading": "Used in",
-      "empty": "Not used yet"
-    }
+      "empty": "Not used yet",
+      "questionLabel": "Question {{index}}: {{label}}",
+      "deleteWarning": "Used in 1 question — deleting it will not remove it there.",
+      "deleteWarning_other": "Used in {{count}} questions — deleting it will not remove it there.",
+      "count": "Used in 1 question",
+      "count_other": "Used in {{count}} questions"
+    },
+    "usageBadge": "{{count}}×"
   },
   "catalog": {
     "title": "Question catalog",
