@@ -958,7 +958,6 @@
       "gray": "Grigio"
     },
     "editLabel": "Modifica etichetta",
-    "deleteLabel": "Elimina etichetta",
-    "deleteImpact": "Questa azione non può essere annullata. L'etichetta verrà rimossa da tutti i quiz, media e voci di catalogo associati."
+    "deleteLabel": "Elimina etichetta"
   }
 }

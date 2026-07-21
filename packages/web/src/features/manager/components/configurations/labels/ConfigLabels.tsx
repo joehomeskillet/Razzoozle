@@ -2,7 +2,6 @@ import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
-import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus, Trash2, Edit2 } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -26,16 +25,43 @@ const ConfigLabels = () => {
   } = useLabelManager()
 
   const { t } = useTranslation()
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [pendingEditLabel, setPendingEditLabel] = useState<Label | null>(null)
+  const [createInput, setCreateInput] = useState("")
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createInput.trim()) return
+    if (handleCreateLabel(createInput)) {
+      setCreateInput("")
+    }
+  }
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4">
         <PageHeader
           title={t("manager:labels.title")}
           subtitle={t("manager:labels.description")}
         />
+
+        {/* Create Form */}
+        <form onSubmit={handleCreateSubmit} className="flex shrink-0 gap-2">
+          <Input
+            value={createInput}
+            onChange={(e) => setCreateInput(e.target.value)}
+            placeholder={t("manager:labels.namePlaceholder")}
+            className="min-h-11 flex-1 rounded-[var(--radius-theme)]"
+            autoFocus
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            className="shrink-0 rounded-[var(--radius-theme)]"
+          >
+            <Plus className="size-5" aria-hidden strokeWidth={2.5} />
+            <span className="hidden sm:inline">{t("manager:labels.create")}</span>
+          </Button>
+        </form>
 
         {hasLabels ? (
           <>
@@ -101,12 +127,6 @@ const ConfigLabels = () => {
           </div>
         )}
 
-        <CreateLabelDialog
-          open={isCreateDialogOpen}
-          onClose={() => setIsCreateDialogOpen(false)}
-          onCreate={handleCreateLabel}
-        />
-
         <EditLabelDialog
           label={pendingEditLabel}
           onClose={() => setPendingEditLabel(null)}
@@ -122,29 +142,13 @@ const ConfigLabels = () => {
             }
           }}
           title={t("manager:labels.deleteTitle")}
-          description={
-            t("manager:labels.deleteConfirm", {
-              name: pendingDeleteLabel?.name ?? "",
-            }) +
-            "\n\n" +
-            t("manager:labels.deleteImpact")
-          }
+          description={t("manager:labels.deleteConfirm", {
+            name: pendingDeleteLabel?.name ?? "",
+          })}
           confirmLabel={t("common:delete")}
           onConfirm={handleDeleteLabel}
         />
       </div>
-
-      <ActionFooter>
-        <Button
-          variant="primary"
-          size="lg"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-          <span>{t("manager:labels.create")}</span>
-        </Button>
-      </ActionFooter>
     </>
   )
 }

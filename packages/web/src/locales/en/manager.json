@@ -969,7 +969,6 @@
       "gray": "Gray"
     },
     "editLabel": "Edit label",
-    "deleteLabel": "Delete label",
-    "deleteImpact": "This action cannot be undone. The label will be removed from all associated quizzes, media, and catalog entries."
+    "deleteLabel": "Delete label"
   }
 }

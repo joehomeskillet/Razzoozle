@@ -958,7 +958,6 @@
       "gray": "Gris"
     },
     "editLabel": "Editar etiqueta",
-    "deleteLabel": "Eliminar etiqueta",
-    "deleteImpact": "Esta acción no se puede deshacer. La etiqueta se eliminará de todos los cuestionarios, medios y entradas de catálogo asociados."
+    "deleteLabel": "Eliminar etiqueta"
   }
 }
