@@ -1,5 +1,6 @@
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import Badge from "@razzoozle/web/components/manager/Badge"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { FormSection, ToggleField } from "@razzoozle/web/components/ui"
 import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
 import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
@@ -272,6 +273,13 @@ const ConfigGameMode = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="mb-4">
+        <PageHeader
+          title={t("manager:gameMode.title")}
+          subtitle={t("manager:gameMode.description")}
+        />
+      </div>
+
       <FormSection
         title={t("manager:gameMode.title", { defaultValue: "Spielmodus" })}
         description={t("manager:gameMode.description", {

@@ -16,6 +16,7 @@ import {
   type LocalState,
   type RowState,
 } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import Button from "@razzoozle/web/components/Button"
 import { Award, RotateCcw } from "lucide-react"
@@ -142,6 +143,13 @@ const ConfigAchievements = () => {
 
   return (
     <>
+      <div className="mb-4">
+        <PageHeader
+          title={t("manager:achievementsConfig.title")}
+          subtitle={t("manager:achievementsConfig.hint")}
+        />
+      </div>
+
       <div className="flex flex-1 flex-col gap-4 pb-20">
       <SectionCard
         icon={<Award className="size-5" aria-hidden />}

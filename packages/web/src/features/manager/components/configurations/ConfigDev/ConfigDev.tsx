@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next"
 import { ApiExplorerCard } from "./ApiExplorerCard"
 import { LogsCard } from "./LogsCard"
 import { ObservabilityCard } from "./ObservabilityCard"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { useDevTelemetry } from "./useDevTelemetry"
 
 // Dev tab — a read-only "developer console" for the manager. Stacked
@@ -59,7 +60,15 @@ const ConfigDev = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      <div className="mb-4">
+        <PageHeader
+          title={t("dev.title", { defaultValue: "Entwicklung" })}
+          subtitle={t("dev.intro", { defaultValue: "Werkzeuge für Entwickler: API-Explorer, Live-Überwachung und Logs." })}
+        />
+      </div>
+
+      <div className="space-y-4">
       {/* ── Theme overrides (relocated from the Design tab) ─────────────
         ConfigSkeleton is prop-less and self-contained: it brings its own
         SectionCards for the CSS-Override + JavaScript-Override editors. */}
@@ -98,7 +107,8 @@ const ConfigDev = () => {
       />
 
       <LogsCard withToken={withToken} />
-    </div>
+      </div>
+    </>
   )
 }
 

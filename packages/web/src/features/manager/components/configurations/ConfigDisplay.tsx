@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { useTranslation } from "react-i18next"
 
 // The "Satellit" config tab. Pairing itself needs a live game (gameId +
@@ -83,7 +84,15 @@ const ConfigDisplay = () => {
   ]
 
   return (
-    <motion.div
+    <>
+      <div className="mb-4">
+        <PageHeader
+          title={t("manager:satellite.title")}
+          subtitle={t("manager:satellite.description")}
+        />
+      </div>
+
+      <motion.div
       className="flex min-h-0 flex-1 flex-col gap-4 p-0.5"
       initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -152,7 +161,8 @@ const ConfigDisplay = () => {
           ))}
         </ul>
       </section>
-    </motion.div>
+      </motion.div>
+    </>
   )
 }
 
