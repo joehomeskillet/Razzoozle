@@ -1,4 +1,6 @@
 import clsx from "clsx"
+import { forwardRef, type ReactNode } from "react"
+import Badge from "@razzoozle/web/components/manager/Badge"
 
 export interface ToggleFieldProps {
   /** Visible label text. */
@@ -8,63 +10,128 @@ export interface ToggleFieldProps {
   checked: boolean
   onChange: (next: boolean) => void
   disabled?: boolean
+  /** Optional badge signal that the setting requires restart. */
+  restartBadge?: boolean
+  /** Optional status message (validation error, success, pending save). */
+  statusMessage?: {
+    text: string
+    tone: "success" | "error" | "pending"
+  }
+  /** Reason shown in tooltip/aria when disabled. */
+  disabledReason?: string
+  /** Row container ID for aria-describedby chaining. */
+  id?: string
+  /** Additional className for responsive width/padding. */
+  className?: string
 }
 
 /**
  * A label + toggle-switch row.
  *
- * Reuses the exact aria-switch markup and classes from ConfigGameMode:
  * `role="switch"`, `aria-checked`, `≥44px` hit area, `focus-visible` ring.
- * Label sits left, toggle right. Optional description below.
+ * Label sits left, toggle right. Optional description, restartBadge, statusMessage below.
  * Stacks below `sm`.
+ *
+ * Supports ARIA chaining via `id` prop for aria-labelledby/aria-describedby.
+ * Supports forwardRef for focus restoration and scroll coordination.
  */
-const ToggleField = ({
-  label,
-  description,
-  checked,
-  onChange,
-  disabled,
-}: ToggleFieldProps) => (
-  <div className="flex flex-col gap-1">
-    <div className="flex min-h-11 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-      <span
-        className={clsx(
-          "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40",
-          "flex items-center",
-        )}
+const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
+  (
+    {
+      label,
+      description,
+      checked,
+      onChange,
+      disabled,
+      restartBadge,
+      statusMessage,
+      disabledReason,
+      id,
+      className,
+    },
+    ref
+  ) => {
+    const titleId = id ? `${id}-title` : undefined
+    const descId = id && description ? `${id}-desc` : undefined
+    const statusId = id && statusMessage ? `${id}-status` : undefined
+    const describedBy = clsx(descId, statusId)
+
+    return (
+      <div
+        ref={ref}
+        className={clsx("flex flex-col gap-1", className)}
+        id={id}
+        title={disabled && disabledReason ? disabledReason : undefined}
       >
-        {label}
-      </span>
-
-      <div className="flex min-h-11 flex-1 items-center">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={label}
-          disabled={disabled}
-          onClick={() => onChange(!checked)}
-          className={clsx(
-            "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full",
-            "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-            "disabled:cursor-wait",
-            checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]",
-          )}
-        >
+        <div className="flex min-h-11 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <span
+            id={titleId}
             className={clsx(
-              "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
-              checked ? "translate-x-6" : "translate-x-1",
+              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40",
+              "flex items-center gap-2",
+              disabled && "opacity-50"
             )}
-          />
-        </button>
-      </div>
-    </div>
+          >
+            {label}
+            {restartBadge && (
+              <Badge className="shrink-0 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
+                Neustart erforderlich
+              </Badge>
+            )}
+          </span>
 
-    {description && (
-      <p className="text-xs text-[var(--ink-subtle)] sm:pl-44">{description}</p>
-    )}
-  </div>
+          <div className={clsx("flex min-h-11 flex-1 items-center", disabled && "opacity-50")}>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={checked}
+              aria-labelledby={titleId}
+              aria-describedby={describedBy || undefined}
+              aria-invalid={statusMessage?.tone === "error"}
+              disabled={disabled}
+              onClick={() => onChange(!checked)}
+              className={clsx(
+                "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full",
+                "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                "disabled:cursor-wait",
+                checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
+              )}
+            >
+              <span
+                className={clsx(
+                  "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
+                  checked ? "translate-x-6" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+        </div>
+
+        {statusMessage && (
+          <p
+            id={statusId}
+            className={clsx(
+              "text-xs",
+              statusMessage.tone === "error" && "text-[var(--state-wrong)]",
+              statusMessage.tone === "success" && "text-[var(--state-correct)]",
+              statusMessage.tone === "pending" && "text-[var(--ink-subtle)]"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            {statusMessage.text}
+          </p>
+        )}
+
+        {description && (
+          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-44">
+            {description}
+          </p>
+        )}
+      </div>
+    )
+  }
 )
 
+ToggleField.displayName = "ToggleField"
 export default ToggleField
