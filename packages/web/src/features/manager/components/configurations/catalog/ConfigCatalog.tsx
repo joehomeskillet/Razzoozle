@@ -110,11 +110,13 @@ const ConfigCatalog = () => {
           </FilterGroup>
 
           {klassenEnabled && (
-            <LabelFilterPills
-              labels={labels}
-              activeId={selectedLabelId}
-              onChange={setSelectedLabelId}
-            />
+            <FilterGroup label={t("manager:tabs.labels")}>
+              <LabelFilterPills
+                labels={labels}
+                activeId={selectedLabelId}
+                onChange={setSelectedLabelId}
+              />
+            </FilterGroup>
           )}
         </div>
 

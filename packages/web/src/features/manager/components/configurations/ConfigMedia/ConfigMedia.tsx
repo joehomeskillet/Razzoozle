@@ -256,11 +256,13 @@ const ConfigMedia = () => {
         </FilterGroup>
 
         {config.klassenEnabled && labels.length > 0 && (
-          <LabelFilterPills
-            labels={labels}
-            activeId={labelFilter}
-            onChange={setLabelFilter}
-          />
+          <FilterGroup label={t("manager:tabs.labels")}>
+            <LabelFilterPills
+              labels={labels}
+              activeId={labelFilter}
+              onChange={setLabelFilter}
+            />
+          </FilterGroup>
         )}
 
         {selectionActive && (
