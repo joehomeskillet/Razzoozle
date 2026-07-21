@@ -369,8 +369,11 @@ const ConsoleShell = ({
             aria-labelledby={tabsMounted ? activeTabId : undefined}
             aria-label={tabsMounted ? undefined : activeTabLabel}
             tabIndex={0}
+            style={{
+              scrollPaddingBottom: "calc(3.5rem + env(safe-area-inset-bottom))",
+            }}
             className={clsx(
-              "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
+              "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6 pb-[calc(3.5rem+env(safe-area-inset-bottom))]",
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]",
             )}
           >
