@@ -26,9 +26,9 @@ This audit consolidates findings from three independent agents (A=Archaeological
 - All 18 manager sections are BUILTIN_TABS within single /manager/config route (no separate routes)
 - Existing primitives mostly complete; consolidation gaps narrow to a few specific patterns
 - P0 gaps: ConfigLabels a11y (icon labels, usage-count), Nutzerverwaltung self-delete guard, KI-generator gate
-- ListRow adoption: 4 sections in use (results, running, users, schueler partial)
-- FilterPill adoption: 5 sections (catalog, media, results, gamemode, labels)
-- PageHeader actual: 3 sections (media, profile, schueler); not 14 lacking it — scope narrowed
+- ListRow adoption: 8 sections (running, dev, users, results, klassen, catalog, quizz, schueler) — see the per-section audit table below / manager-primitive-usage.tsv for the authoritative list
+- FilterPill adoption: 5 sections (catalog, media, quizz, gamemode, submissions; not results, not labels) — per the table / TSV
+- PageHeader adoption: 4 sections (catalog, media, profile, schueler); the remaining sections lack it — per the table / TSV
 
 ---
 

@@ -42,10 +42,10 @@ Each row represents one manager section (tab). The columns show:
 | **Actual files** | `components/console/RunningGamesSection.tsx` (177) |
 | **Current primitives** | ConsoleShell ListRow EmptyState SectionCard AlertDialog |
 | **Target primitives** | ConsoleShell, PageHeader, ListRow (metadata: quiz, PIN, players, status badge, elapsed time), destructive AlertDialog for "Beenden" |
-| **Required changes** | 1. Add PageHeader. 2. Replace manual card layout with ListRow + status badge. 3. Implement destructive "Beenden" flow (confirm dialog + Portal-safe pattern). 4. Keep "Mirror"/"Display" secondary actions. 5. Use semantic status badges. |
-| **Tests** | E2E #6–7: List games, mirror action, beenden → confirm → cancel restore selection. Visual: row density, status badge, action alignment. Keyboard: focus flows. |
-| **Status** | **TODO** — WP3 (list consolidation) |
-| **Risk** | Medium — Requires Portal-safe AlertDialog pattern (similar to B3 fix). |
+| **Required changes** | Verify only; ListRow + AlertDialog "Beenden" confirm already implemented (RunningGamesSection.tsx:119,159–172); no "Mirror"/"Display" action exists (only takeover + end). |
+| **Tests** | E2E #6–7: List games, takeover action, beenden → confirm → cancel restore selection. Visual: row density, status badge, action alignment. Keyboard: focus flows. |
+| **Status** | **Fixed — verify only** (ListRow + AlertDialog already implemented) |
+| **Risk** | Low — Layout complete; ListRow + Portal-safe AlertDialog already in place. |
 
 ---
 
@@ -102,7 +102,7 @@ Each row represents one manager section (tab). The columns show:
 | **Actual files** | `configurations/catalog/ConfigCatalog.tsx` (423) + CatalogQuestionForm.tsx + CatalogQuestionModal.tsx |
 | **Current primitives** | ConsoleShell PageHeader ListRow EmptyState FilterPill Badge AlertDialog ActionFooter |
 | **Target primitives** | PageHeader (create action), PageToolbar (search + labeled filter groups), ListRow (question preview, type badge, source, labels, usage count, last update) |
-| **Required changes** | 1. Add PageHeader. 2. Add group labels to filters (Scope, Subject/Labels); no bare "Alle" clusters. 3. Replace card with ListRow: question type badge, source, labels, usage count, last update. 4. Consolidate footer actions. 5. Test keyboard through labeled filter groups. |
+| **Required changes** | 1. PageHeader present — verify only (ConfigCatalog.tsx:5,77). 2. Add group labels to filters (Scope, Subject/Labels); no bare "Alle" clusters. 3. Replace card with ListRow: question type badge, source, labels, usage count, last update. 4. Consolidate footer actions. 5. Test keyboard through labeled filter groups. |
 | **Tests** | E2E screenshots + UX validation. Search, filter by type/labels. Keyboard: filter group aria-labels functional. Visual: 1920/1024/390, filter layout. |
 | **Status** | **TODO** — WP3 (list consolidation) |
 | **Risk** | Low — Filter labeling is key (no bare clusters). |
@@ -236,7 +236,7 @@ Each row represents one manager section (tab). The columns show:
 | **Actual files** | `configurations/ai/ConfigAI.tsx` (336) + `TextProviderSection.tsx` (316) + `ImageSection.tsx` + `QuizGenSection.tsx` |
 | **Current primitives** | ConsoleShell EmptyState SectionCard Badge ActionFooter FormSection LabelRow |
 | **Target primitives** | PageHeader (to add), SectionCard (3), EmptyState, ActionFooter, FormSection, LabelRow (3), Badge (2) |
-| **Required changes** | 1. Add PageHeader. 2. Organize by section: Text Provider, Image Provider, Quiz Generator, Connection Test, Secrets Mgmt. 3. Use SettingRow for provider config fields (API key, model selection). 4. Inline provider status badge (online/offline/error, using semantic tokens). 5. Implement connection test flow: Button → Loading spinner → Success/Failure toast + Badge update. 6. Disable quiz generator server-side when text provider unavailable (UI redundant check OK). 7. Secrets must NOT echo back to client. 8. Verify save state (persisted) separate from test state (transient feedback). |
+| **Required changes** | 1. Add PageHeader. 2. Organize by section: Text Provider, Image Provider, Quiz Generator, Connection Test, Secrets Mgmt. 3. Use SettingRow for provider config fields (API key, model selection). 4. Inline provider status badge (online/offline/error, using semantic tokens). 5. Implement connection test flow: Button → Loading spinner → Success/Failure toast + Badge update. 6. **P2 BUG — quiz-generator gate:** QuizGenSection.tsx generate button `disabled={!topic.trim() || generating}` (line 89) omits the `textConfigured` check, so it stays clickable while the text provider is unconfigured. Add `textConfigured` to the disabled condition (client) and enforce server-side. 7. Secrets must NOT echo back to client. 8. Verify save state (persisted) separate from test state (transient feedback). |
 | **Tests** | Connection test UI: Click test → loading spinner → success/failure feedback. E2E: Configure provider, test connection (success/fail), verify state persists. Visual: status badge, test-state indicators. Security: verify API keys not rendered back. |
 | **Status** | **TODO** — WP5 (settings consolidation) after SettingRow established. |
 | **Risk** | Medium — Requires SettingRow abstraction + test-state feedback pattern. |
@@ -309,6 +309,7 @@ Each row represents one manager section (tab). The columns show:
 3. **Nutzerverwaltung self-delete guard (P0):** Server + UI must prevent current user self-deletion. Does not block other lists but is critical for security.
 4. **Dev-Tools security review (WP6 blocker):** Cannot ship until authorized reviewer confirms access control + secret handling.
 5. **Satellit scope decision (WP0 → affects WP5 scope):** Clarify whether device-management features exist; if static, remove from consolidation scope.
+6. **KI-Generator-Gate fix (P2 blocker):** QuizGenSection.tsx generate button `disabled` must include the `textConfigured` check (currently omitted, line 89) — generator is clickable while the text provider is unconfigured; also enforce server-side.
 
 ---
 
