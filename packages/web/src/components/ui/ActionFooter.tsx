@@ -16,6 +16,14 @@ export interface ActionFooterProps {
  * `pb-[calc(0.75rem+env(safe-area-inset-bottom))]` keeps buttons comfortable
  * on iOS notch devices.
  *
+ * **Layout contract (W2-G2 / #234):** This footer must be a *direct flex child*
+ * of the ConsoleShell tabpanel (via fragment siblings is fine). Its content
+ * sibling may use `flex-1` to push the bar down on short pages, but must NOT
+ * use `min-h-0` — that lets the sibling shrink below content size, spills
+ * overflow into the tabpanel scroller, and breaks `position: sticky` so the
+ * bar scrolls away mid-panel. Working pattern: `className="flex flex-1 flex-col pb-20"`.
+ * Broken pattern: `className="flex min-h-0 flex-1 flex-col pb-20"`.
+ *
  * Presentational — children provide the button row.
  */
 const ActionFooter = ({ children, className }: ActionFooterProps) => (

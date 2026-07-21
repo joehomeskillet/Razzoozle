@@ -304,7 +304,8 @@ const ConfigUsers = () => {
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
+      {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
+      <div className="flex flex-1 flex-col gap-4 pb-20">
         <PageHeader
           title={t("manager:users.title", {
             defaultValue: "Nutzerverwaltung",

@@ -374,6 +374,8 @@ const ConsoleShell = ({
             // the sticky element park early when you scroll into the padding zone
             // (W2-G / #234). Content pages use pb-20 above ActionFooter instead.
             // scrollPaddingBottom still keeps focus/scroll-into-view above the bar.
+            // Content siblings of ActionFooter must NOT use min-h-0 (W2-G2) — that
+            // breaks position:sticky so the bar scrolls mid-panel.
             style={{
               scrollPaddingBottom: "calc(3.5rem + env(safe-area-inset-bottom))",
             }}
