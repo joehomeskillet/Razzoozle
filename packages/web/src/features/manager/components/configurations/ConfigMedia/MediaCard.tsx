@@ -148,6 +148,7 @@ const MediaCard = ({
           <AlertDialog
             trigger={
               <Button
+                onClick={(e) => e.stopPropagation()}
                 type="button"
                 variant="ghost"
                 size="icon"
