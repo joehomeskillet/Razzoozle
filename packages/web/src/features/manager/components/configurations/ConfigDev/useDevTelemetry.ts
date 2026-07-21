@@ -22,18 +22,10 @@ export const useDevTelemetry = () => {
   // null whenever no game is live, which lets us tear down stale telemetry.
   const { gameId } = useManagerStore()
 
-  // Get a fetch init object with the dev API token as Authorization header (security hygiene:
-  // header instead of query param so the key doesn't appear in browser history). Kept as a
-  // separate helper for internal fetch calls; withToken() remains unchanged for backward
-  // compat with window.open() in ApiExplorerCard etc.
-  const getTokenHeader = (): RequestInit =>
-    config.devApiKey
-      ? { headers: { Authorization: `Bearer ${config.devApiKey}` } }
-      : {}
-
-  // For components that open URLs in new tabs (window.open), keep the old query param behavior
-  // for now to avoid breaking the UI. In the future, we could switch to a dialog that passes
-  // headers programmatically.
+  // For components that open URLs in new tabs (window.open), keep the query param behavior
+  // for now to avoid breaking the UI. Security hygiene: header would be better (not in browser
+  // history), but window.open can't pass custom headers. In the future, we could switch to
+  // a dialog that passes headers programmatically.
   const withToken = (url: string): string =>
     config.devApiKey
       ? `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(config.devApiKey)}`
