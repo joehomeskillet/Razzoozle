@@ -1,4 +1,5 @@
 import type { MediaCategory } from "@razzoozle/common/constants"
+import type { MediaUsageEntry } from "./media-usage"
 
 // A single media-library item tracked in config/media-manifest.json and shown
 // in the manager Media tab. `url` is same-origin relative (/media/<cat>/<file>).
@@ -15,4 +16,6 @@ export interface MediaMeta {
   height?: number // WP-6 — image-only; absent on audio + on pre-existing manifest rows
   // Label IDs assigned to this media (WP-L0: labels scaffold). Optional for back-compat.
   labelIds?: number[]
+  // Where this media is used in quizzes (WP-L: media-usage-map). Server-side only.
+  usage?: MediaUsageEntry[]
 }

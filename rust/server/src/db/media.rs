@@ -1,4 +1,54 @@
 use sqlx::PgPool;
+use std::collections::HashMap;
+use razzoozle_protocol::media_usage::MediaUsageEntry;
+
+/// Get media usage mapping from all quizzes.
+/// Returns HashMap<media_url, Vec<MediaUsageEntry>> for all questions with media.
+/// Includes archived quizzes. Returns empty map if pool is None or query fails.
+async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageEntry>> {
+    let usage_with_urls: Vec<(String, String, String, i32, String)> = match sqlx::query_as(
+        "SELECT q.id, q.subject, elem->>'question', \
+                (ord - 1)::int4 AS question_index, \
+                elem->'media'->>'url' AS media_url \
+         FROM quizzes q, \
+              jsonb_array_elements(q.questions) WITH ORDINALITY AS elem(obj, ord) \
+         WHERE elem->'media'->>'url' IS NOT NULL \
+         ORDER BY q.id, ord"
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch media usage from quizzes: {}", e);
+            return HashMap::new();
+        }
+    };
+
+    let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
+
+    for (quiz_id, quiz_title, question_label, question_index, media_url) in usage_with_urls {
+        // Truncate question_label to 80 chars using safe UTF-8 iteration
+        let truncated_label: String = question_label
+            .chars()
+            .take(80)
+            .collect();
+
+        let entry = MediaUsageEntry {
+            quiz_id,
+            quiz_title,
+            question_index: question_index as u32,
+            question_label: truncated_label,
+        };
+
+        usage_map
+            .entry(media_url)
+            .or_insert_with(Vec::new)
+            .push(entry);
+    }
+
+    usage_map
+}
 
 /// Load media assets from the database.
 /// Returns a vector of serde_json objects with the shape matching Node's MediaMeta.
@@ -77,6 +127,9 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
     let media_ids: Vec<&str> = rows.iter().map(|(id, _, _, _, _, _, _, _, _, _)| id.as_str()).collect();
     let label_map = super::labels::get_media_label_ids_batch(pool, &media_ids).await;
 
+    // Batch-fetch media usage for all media items in one query
+    let usage_map = get_media_usage_batch(pool_ref).await;
+
     let mut result = Vec::new();
 
     for (id, filename, url, size, media_type, category, source, width, height, uploaded_at) in rows {
@@ -108,6 +161,13 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
         if let Some(labels) = label_map.get(&id) {
             if !labels.is_empty() {
                 media_obj["labelIds"] = serde_json::json!(labels);
+            }
+        }
+
+        // Add usage only if media URL is found in usage map
+        if let Some(usage_entries) = usage_map.get(&url) {
+            if !usage_entries.is_empty() {
+                media_obj["usage"] = serde_json::to_value(usage_entries).unwrap_or(serde_json::Value::Null);
             }
         }
 

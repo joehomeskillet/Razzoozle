@@ -13,4 +13,5 @@ pub mod manager;
 pub mod theme;
 pub mod quizz;
 pub mod media_ai;
+pub mod media_usage;
 pub mod results_display;
