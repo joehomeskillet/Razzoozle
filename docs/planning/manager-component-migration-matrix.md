@@ -247,7 +247,7 @@ Each row represents one manager section. The columns show:
 | Field | Value |
 |---|---|
 | **Route** | `/manager/config/satellite` or deployment-specific |
-| **Current files** | `packages/web/src/features/manager/sections/config/satellite/SatelliteConfigPage.tsx` |
+| **Current files** | `packages/web/src/features/manager/sections/config/satellite/`ConfigDisplay.tsx`` |
 | **Current primitives** | ConsoleShell, PageHeader, SectionCard, Button, Input, long identifiers (no copy affordance) |
 | **Target primitives** | PageHeader, ListRow or compact row (per device), Badge (online/offline/pending status), copy-to-clipboard for identifiers, AlertDialog for pairing/revocation confirmations |
 | **Required changes** | **SCOPE DECISION REQUIRED:** If Satellit is static deployment info (read-only page), classify as out-of-scope for UI consistency consolidation. If user-managed device registry: 1. Add PageHeader. 2. List paired devices in rows (device name, status badge, last-seen, identifier with copy button). 3. Implement pairing action (QR code modal or link copy). 4. Implement revocation action (AlertDialog confirms, then removes device, restores focus). 5. Use semantic status badges (online, offline, pending). 6. Add copy-to-clipboard utility for token IDs. |
@@ -279,7 +279,7 @@ Each row represents one manager section. The columns show:
 | Field | Value |
 |---|---|
 | **Route** | `/manager/admin/dev` |
-| **Current files** | `packages/web/src/features/manager/sections/admin/dev/DevToolsPage.tsx` (400+ LOC unstructured) |
+| **Current files** | `packages/web/src/features/manager/sections/admin/dev/`ConfigDev/` (400+ LOC unstructured)+ LOC unstructured) |
 | **Current primitives** | ConsoleShell, PageHeader (partial), Button, Input, code blocks (no copy affordance), weak visual hierarchy |
 | **Target primitives** | PageHeader, Tabs/Accordions for 6 sections, code blocks with copy-to-clipboard, AlertDialog for destructive actions, danger-zone visual distinction |
 | **Required changes** | 1. Reorganize unstructured page by 6 sections (tabs or accordions): Debug & Diagnostics, Test Data & Simulation, Performance & Metrics, Data Export, Security & Tokens, API & Documentation. 2. Add environment marker (prominent dev/staging/production warning). 3. Create danger-zone section: operations that delete, reset state, rotate credentials, terminate games, expose sensitive diagnostics. Require explicit confirmation. 4. Add copy-to-clipboard UI for code blocks + tokens. 5. Inline success/error feedback for test operations (connection test, export validation). 6. Verify development/admin-only access enforced by existing authorization. 7. Never render secrets in full (redact API keys if shown for copy). 8. Add aria-labels to all code-copy buttons. 9. Security review mandatory (SDD §12). |
