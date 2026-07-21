@@ -73,6 +73,14 @@ async fn require_user_http(headers: &HeaderMap, pool: &Option<PgPool>) -> Option
     db::users::session_user(pool, token).await.ok().flatten()
 }
 
+// ── Self-modification guard ────────────────────────────────────────────────
+
+/// True when the authenticated admin targets their own account.
+/// Authoritative for delete / disable — UI is defensive only.
+pub(crate) fn is_self_target(session_user_id: i64, target_user_id: i64) -> bool {
+    session_user_id == target_user_id
+}
+
 // ── HTTP handlers ──────────────────────────────────────────────────────────
 
 /// GET /api/users — list all users (admin only).
@@ -146,14 +154,28 @@ pub async fn create(
 }
 
 /// POST /api/users/:id/disable — disable a user (set active=false).
+/// Guards: an admin can never disable their own account (self-disable) → 400.
 pub async fn disable(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    let admin = match require_admin_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+    };
+
+    // Self-disable guard: locking yourself out is never allowed.
+    if is_self_target(admin.user_id, id) {
+        warn!(
+            "Attempted self-modification: user={}, action=disable target={}",
+            admin.user_id, id
+        );
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "Cannot disable your own account",
+        ));
     }
 
     let pool = match &state.db_pool {
@@ -211,8 +233,11 @@ pub async fn delete_user_handler(
     };
 
     // Self-delete guard: an admin can never delete their own account.
-    if admin.user_id == id {
-        warn!("user delete denied: check=self_delete user={}", id);
+    if is_self_target(admin.user_id, id) {
+        warn!(
+            "Attempted self-modification: user={}, action=delete target={}",
+            admin.user_id, id
+        );
         return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete your own account"));
     }
 
@@ -348,4 +373,32 @@ pub async fn change_password(
         })?;
 
     Ok(StatusCode::OK)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_self_target;
+
+    #[test]
+    fn test_user_cannot_delete_self() {
+        assert!(
+            is_self_target(42, 42),
+            "same session and target id must be treated as self-modification"
+        );
+    }
+
+    #[test]
+    fn test_user_can_modify_other() {
+        assert!(
+            !is_self_target(42, 7),
+            "distinct ids must not be blocked as self-modification"
+        );
+    }
+
+    #[test]
+    fn test_self_disable_same_guard() {
+        // disable reuses the same predicate as delete
+        assert!(is_self_target(1, 1));
+        assert!(!is_self_target(1, 2));
+    }
 }

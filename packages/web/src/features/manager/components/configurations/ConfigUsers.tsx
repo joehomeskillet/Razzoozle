@@ -9,12 +9,14 @@ import Loader from "@razzoozle/web/components/Loader"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { fetchWithAuth } from "@razzoozle/web/lib/api"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import {
   Ban,
   CheckCircle2,
@@ -58,6 +60,8 @@ const parseErrorMessage = async (
 const ConfigUsers = () => {
   const { t } = useTranslation()
   const config = useConfig()
+  // Store only keeps username (no user id) — match list rows by username.
+  const currentUsername = useManagerStore((s) => s.username)
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -301,16 +305,14 @@ const ConfigUsers = () => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--ink)]">
-            {t("manager:users.title", { defaultValue: "Nutzerverwaltung" })}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-[var(--ink-subtle)]">
-            {t("manager:users.intro", {
-              defaultValue: "Lehrkräfte-Konten anlegen, sperren und freigeben.",
-            })}
-          </p>
-        </div>
+        <PageHeader
+          title={t("manager:users.title", {
+            defaultValue: "Nutzerverwaltung",
+          })}
+          subtitle={t("manager:users.intro", {
+            defaultValue: "Lehrkräfte-Konten anlegen, sperren und freigeben.",
+          })}
+        />
 
         {loading ? (
           <div className="flex flex-1 items-center justify-center">
@@ -329,6 +331,10 @@ const ConfigUsers = () => {
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
             {users.map((user) => {
+              const isSelf =
+                currentUsername != null && user.username === currentUsername
+              const busy =
+                pendingId === user.id || resettingPassword || deleting
               const allActions: ListRowAction[] = [
                 {
                   key: "reset",
@@ -336,8 +342,7 @@ const ConfigUsers = () => {
                   label: t("manager:users.resetPassword", {
                     defaultValue: "Passwort zurücksetzen",
                   }),
-                  disabled:
-                    pendingId === user.id || resettingPassword || deleting,
+                  disabled: busy,
                   onClick: () => {
                     setResetPasswordId(user.id)
                     setResetNewPassword("")
@@ -352,9 +357,20 @@ const ConfigUsers = () => {
                       })
                     : t("manager:users.enable", { defaultValue: "Aktivieren" }),
                   destructive: user.active,
-                  disabled:
-                    pendingId === user.id || resettingPassword || deleting,
+                  disabled: busy || isSelf,
+                  title: isSelf
+                    ? user.active
+                      ? t("manager:users.cannot_deactivate_self", {
+                          defaultValue:
+                            "Dein Konto kann nicht deaktiviert werden",
+                        })
+                      : t("manager:users.cannot_modify_own_account", {
+                          defaultValue:
+                            "Du kannst dein eigenes Konto nicht ändern",
+                        })
+                    : undefined,
                   onClick: () => {
+                    if (isSelf) return
                     void handleToggleActive(user)
                   },
                 },
@@ -365,9 +381,14 @@ const ConfigUsers = () => {
                     defaultValue: "Löschen",
                   }),
                   destructive: true,
-                  disabled:
-                    pendingId === user.id || resettingPassword || deleting,
+                  disabled: busy || isSelf,
+                  title: isSelf
+                    ? t("manager:users.cannot_delete_self", {
+                        defaultValue: "Dein Konto kann nicht gelöscht werden",
+                      })
+                    : undefined,
                   onClick: () => {
+                    if (isSelf) return
                     setPendingDelete({
                       id: user.id,
                       username: user.username,

@@ -11,6 +11,8 @@ export interface ListRowAction {
   label: string
   onClick: () => void
   disabled?: boolean
+  /** Optional tooltip; defaults to `label`. Use for disabled-reason hints. */
+  title?: string
   /** Tints the control red for destructive actions (delete, etc.). */
   destructive?: boolean
 }
@@ -134,6 +136,7 @@ const ListRow = ({
                 label,
                 onClick: act,
                 disabled,
+                title,
                 destructive,
               }) => (
                 <Button
@@ -143,8 +146,8 @@ const ListRow = ({
                   type="button"
                   onClick={act}
                   disabled={disabled}
-                  aria-label={label}
-                  title={label}
+                  aria-label={title ?? label}
+                  title={title ?? label}
                   className={actionClasses(destructive)}
                 >
                   <Icon className="size-5" aria-hidden />

@@ -878,7 +878,10 @@
     "deleteConfirmDescription": "{{name}} will be permanently deleted. This cannot be undone.",
     "deleteConfirmCascade": "Warning: All classes and students of this teacher will also be deleted.",
     "deleted": "{{name}} was deleted",
-    "deleteFailed": "Delete failed"
+    "deleteFailed": "Delete failed",
+    "cannot_modify_own_account": "You cannot modify your own account",
+    "cannot_delete_self": "Your account cannot be deleted",
+    "cannot_deactivate_self": "Your account cannot be deactivated"
   },
   "schueler": {
     "title": "Student Management",

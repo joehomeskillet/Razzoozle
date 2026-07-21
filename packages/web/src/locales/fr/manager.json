@@ -839,7 +839,10 @@
     "deleteConfirmDescription": "{{name}} sera supprimé définitivement. Cette action ne peut pas être annulée.",
     "deleteConfirmCascade": "Attention : Tous les cours et élèves de cet enseignant seront également supprimés.",
     "deleted": "{{name}} a été supprimé",
-    "deleteFailed": "Échec de la suppression"
+    "deleteFailed": "Échec de la suppression",
+    "cannot_modify_own_account": "Tu ne peux pas modifier ton propre compte",
+    "cannot_delete_self": "Ton compte ne peut pas être supprimé",
+    "cannot_deactivate_self": "Ton compte ne peut pas être désactivé"
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",
