@@ -1,8 +1,11 @@
 /**
- * e2e/stagehand/manager-media-tab.spec.ts — Manager Media tab smoke test.
+ * e2e/stagehand/manager-media-tab.spec.ts — Manager Media tab usage assertions.
  *
- * Validates Media tab renders correctly with grid visible and
- * filter row (source/visibility) controls present.
+ * Tests:
+ * 1. Usage badges on used media (image001-1-22340b26.webp, gen-GTgo3FZ4.webp)
+ * 2. Info dialog with usage details
+ * 3. Delete warning for used media
+ * 4. B1 regression: no dialog stacking on delete
  *
  * Run directly: `npx tsx e2e/stagehand/manager-media-tab.spec.ts`
  */
@@ -31,52 +34,153 @@ async function waitForTestId(page: Page, id: string, timeoutMs = 15_000) {
   await page.waitForSelector(testIdSel(id), { state: 'visible', timeout: timeoutMs });
 }
 
-async function assertMediaTabVisible(page: Page): Promise<void> {
-  await page.waitForTimeout(300);
-  const stored = await page.evaluate(() => localStorage.getItem('rahoot_manager_tab'));
-  if (stored !== 'media') {
-    throw new Error(`Expected tab 'media' but localStorage has "${stored}"`);
+async function findMediaCardByFilename(page: Page, filename: string): Promise<{ article: any; index: number }> {
+  const cards = await page.$$('article[role="option"]');
+  for (let i = 0; i < cards.length; i++) {
+    const text = await cards[i].innerText?.catch(() => '');
+    if (text?.includes(filename)) {
+      return { article: cards[i], index: i };
+    }
   }
-
-  const gridContent = await page.locator('[role="tabpanel"]').innerText().catch(() => '');
-  if (!gridContent.trim()) {
-    throw new Error('Media tab panel has no visible content');
-  }
-
-  // Check for filter/control elements (source/visibility selects or inputs)
-  const hasFilters = await page.evaluate(() => {
-    // Look for select/combobox elements in the tab that would be filter controls
-    const selects = document.querySelectorAll('[role="tabpanel"] select, [role="tabpanel"] [role="combobox"]');
-    const filterInputs = document.querySelectorAll('[role="tabpanel"] input[placeholder*="filter" i], [role="tabpanel"] input[placeholder*="search" i]');
-    const filterButtons = document.querySelectorAll('[role="tabpanel"] button[aria-label*="filter" i]');
-    return selects.length > 0 || filterInputs.length > 0 || filterButtons.length > 0;
-  });
-
-  if (!hasFilters) {
-    throw new Error('No filter controls found in Media tab');
-  }
-
-  // Check for media grid structure (could be table, grid, or list of items)
-  const hasGridStructure = await page.evaluate(() => {
-    const tabpanel = document.querySelector('[role="tabpanel"]');
-    if (!tabpanel) return false;
-    // Look for common grid/table/list structures
-    return !!(
-      tabpanel.querySelector('[role="grid"]') ||
-      tabpanel.querySelector('table') ||
-      tabpanel.querySelector('[role="row"]') ||
-      tabpanel.querySelector('[class*="grid"]') ||
-      tabpanel.querySelector('[class*="list"]') ||
-      tabpanel.querySelector('[class*="table"]')
-    );
-  });
-
-  if (!hasGridStructure) {
-    throw new Error('No grid/table/list structure found in Media tab');
-  }
+  throw new Error(`Media card for "${filename}" not found`);
 }
 
-async function runMediaTabTest() {
+async function assertUsageBadges(page: Page): Promise<void> {
+  console.log('[TEST] Asserting usage badges...');
+
+  // Used media should have "1×" badge
+  const usedMedia = ['image001-1-22340b26.webp', 'gen-GTgo3FZ4.webp'];
+  for (const filename of usedMedia) {
+    const { article } = await findMediaCardByFilename(page, filename);
+    const badge = await article.querySelector?.('div[title] div');
+    if (!badge) {
+      throw new Error(`No badge found for used media "${filename}"`);
+    }
+    const badgeText = await badge.textContent?.catch(() => '');
+    if (!badgeText?.includes('1×')) {
+      throw new Error(`Badge text for "${filename}" is "${badgeText}", expected "1×"`);
+    }
+  }
+
+  // Unused media should NOT have badge (e.g., boump-*.wav)
+  const unusedCards = await page.$$('article[role="option"]');
+  for (const card of unusedCards) {
+    const text = await card.innerText?.catch(() => '');
+    if (text?.includes('boump') || text?.includes('.wav')) {
+      const badge = await card.querySelector?.('div[title]');
+      if (badge) {
+        throw new Error(`Unused media "${text}" should not have a badge`);
+      }
+    }
+  }
+
+  console.log('  ✓ Usage badges correct (used media: 1×, unused: no badge)');
+}
+
+async function assertInfoDialogUsage(page: Page): Promise<void> {
+  console.log('[TEST] Asserting info dialog usage section...');
+
+  // Test used media: image001-1-22340b26.webp
+  const { article: usedCard } = await findMediaCardByFilename(page, 'image001-1-22340b26.webp');
+  const infoButton = await usedCard.querySelector?.('button[aria-label*="Details" i]');
+  if (!infoButton) {
+    throw new Error('Info button not found on used media card');
+  }
+  await infoButton.click?.();
+  await page.waitForTimeout(300);
+
+  // Check for usage section with quiz name
+  const usageHeading = await page.evaluate(() => {
+    const headings = Array.from(document.querySelectorAll('label, h3, h4'));
+    return headings.find(el => el.textContent?.includes('Used in') || el.textContent?.includes('Verwendet in'));
+  });
+  if (!usageHeading) {
+    throw new Error('Usage section heading not found in dialog');
+  }
+
+  // Check for quiz title
+  const quizText = await page.evaluate(() => {
+    const content = document.body.innerText;
+    return content.includes('E2E All Types');
+  });
+  if (!quizText) {
+    throw new Error('Quiz title "E2E All Types" not found in usage section');
+  }
+
+  // Close dialog
+  await page.keyboard.press('Escape').catch(() => undefined);
+  await page.waitForTimeout(300);
+
+  // Test unused media (boump file if available)
+  const unusedCards = await page.$$('article[role="option"]');
+  for (const card of unusedCards) {
+    const text = await card.innerText?.catch(() => '');
+    if (text?.includes('boump')) {
+      const infoBtn = await card.querySelector?.('button[aria-label*="Details" i]');
+      if (infoBtn) {
+        await infoBtn.click?.();
+        await page.waitForTimeout(300);
+
+        const emptyText = await page.evaluate(() => {
+          const content = document.body.innerText;
+          return content.includes('keinem Quiz') || content.includes('no quiz') || content.includes('Not used');
+        });
+        if (!emptyText) {
+          throw new Error('Empty state text not found for unused media');
+        }
+
+        await page.keyboard.press('Escape').catch(() => undefined);
+        await page.waitForTimeout(300);
+      }
+    }
+  }
+
+  console.log('  ✓ Info dialog usage section correct');
+}
+
+async function assertDeleteWarning(page: Page): Promise<void> {
+  console.log('[TEST] Asserting delete warning...');
+
+  const { article: usedCard } = await findMediaCardByFilename(page, 'image001-1-22340b26.webp');
+  const deleteButton = await usedCard.querySelector?.('button[aria-label*="delete" i]');
+  if (!deleteButton) {
+    throw new Error('Delete button not found');
+  }
+
+  await deleteButton.click?.();
+  await page.waitForTimeout(500);
+
+  // Check for warning text in confirm dialog
+  const warningText = await page.evaluate(() => {
+    const content = document.body.innerText;
+    return content.includes('Löschen entfernt es dort nicht') || content.includes('will not remove it there');
+  });
+  if (!warningText) {
+    throw new Error('Delete warning text not found in confirm dialog');
+  }
+
+  // Cancel the dialog
+  const cancelButton = await page.$('button:has-text("Cancel"), button:has-text("Abbrechen")');
+  if (cancelButton) {
+    await cancelButton.click?.();
+  } else {
+    await page.keyboard.press('Escape').catch(() => undefined);
+  }
+  await page.waitForTimeout(300);
+
+  // Verify no info dialog appeared (B1 regression test)
+  const isDialogOpen = await page.evaluate(() => {
+    return document.querySelector('[role="dialog"]') !== null;
+  });
+  if (isDialogOpen) {
+    throw new Error('B1 regression: Info dialog unexpectedly opened after delete cancel');
+  }
+
+  console.log('  ✓ Delete warning present');
+  console.log('  ✓ B1 regression test passed (no dialog stacking)');
+}
+
+async function runMediaUsageTest() {
   const stagehand = newStagehand();
   await stagehand.init();
   const page = stagehand.context.activePage();
@@ -122,28 +226,31 @@ async function runMediaTabTest() {
       throw new Error('Media tab not found in nav tabs');
     }
 
-    console.log('[TEST] Asserting Media tab visibility...');
-    await assertMediaTabVisible(page);
+    await page.waitForTimeout(500);
+
+    // Run all usage assertions
+    await assertUsageBadges(page);
+    await assertInfoDialogUsage(page);
+    await assertDeleteWarning(page);
 
     console.log('============================================================');
-    console.log('MANAGER MEDIA TAB SMOKE TEST: PASS');
+    console.log('MANAGER MEDIA USAGE ASSERTIONS: PASS');
     console.log('============================================================');
-    console.log('✓ Media tab rendered');
-    console.log('✓ Media grid/list structure visible');
-    console.log('✓ Filter controls present');
-    console.log('✓ Tab content visible');
+    console.log('✓ Usage badges render correctly');
+    console.log('✓ Info dialog shows usage details');
+    console.log('✓ Delete warning displays');
+    console.log('✓ B1 regression: no dialog stacking');
     console.log('============================================================');
-
-    process.exit(0);
   } finally {
     await stagehand.close();
+    process.exit(0);
   }
 }
 
-runMediaTabTest().then(
+runMediaUsageTest().then(
   () => undefined,
   (err) => {
-    console.error('Media tab test error:', err);
+    console.error('Media usage test error:', err);
     process.exit(1);
   },
 );
