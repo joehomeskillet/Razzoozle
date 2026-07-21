@@ -133,7 +133,7 @@ const MediaCard = ({
         )}
 
         {/* Bottom-gradient scrim — info + delete buttons */}
-        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/45 to-transparent opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100 flex items-end justify-end gap-1 m-1.5">
+        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/45 to-transparent opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100 flex items-end justify-end gap-1 p-1.5">
           <Button
             ref={dialogTriggerRef}
             type="button"
