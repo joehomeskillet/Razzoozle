@@ -7,7 +7,7 @@ use razzoozle_protocol::media_usage::MediaUsageEntry;
 /// Includes archived quizzes. Returns empty map if pool is None or query fails.
 async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageEntry>> {
     let usage_with_urls: Vec<(String, String, String, i32, String)> = match sqlx::query_as(
-        "SELECT q.id, q.subject, COALESCE(obj->>'question',''), \
+        "SELECT q.id, COALESCE(q.subject,''), COALESCE(obj->>'question',''), \
                 (ord - 1)::int4 AS question_index, \
                 obj->'media'->>'url' AS media_url \
          FROM quizzes q, \
@@ -349,6 +349,26 @@ mod tests {
         let empty_label = "";
         let truncated: String = empty_label.chars().take(80).collect();
         assert_eq!(truncated, "");
+    }
+
+    #[test]
+    fn test_media_usage_empty_quiz_title() {
+        // Verify that empty quiz titles (from NULL subject via COALESCE) don't break HashMap fold
+        let empty_title = "";
+        let entry = MediaUsageEntry {
+            quiz_id: "q_null".to_string(),
+            quiz_title: empty_title.to_string(),
+            question_index: 0,
+            question_label: "Q1".to_string(),
+        };
+
+        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
+        let media_url = "/media/test.jpg".to_string();
+        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry);
+
+        assert_eq!(usage_map.len(), 1);
+        assert_eq!(usage_map[&media_url].len(), 1);
+        assert_eq!(usage_map[&media_url][0].quiz_title, "");
     }
 }
 
