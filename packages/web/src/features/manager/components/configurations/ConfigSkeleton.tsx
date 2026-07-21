@@ -10,6 +10,7 @@ import {
   SectionCard,
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
+import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   AlertTriangle,
   Code2,
@@ -40,6 +41,11 @@ const ConfigSkeleton = () => {
   const managerToken = getClientId()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
+  // The server writes skeleton.<kind> and flips custom<Kind>Enabled together, and
+  // reset removes both files — so an asset file exists on disk iff its enable flag
+  // is set. We gate the prefill fetch on the flag (below) to avoid requesting a
+  // disabled/absent asset, which would 404 and log a console error.
+  const { theme } = useThemeStore()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,8 +62,11 @@ const ConfigSkeleton = () => {
   const [importing, setImporting] = useState(false)
   const [resetting, setResetting] = useState(false)
 
-  // Prefill the editors from the live, nginx-served files. A 404 (no skeleton
-  // uploaded yet) leaves the textarea empty rather than erroring.
+  // Prefill each editor from the live, served file — but only when its enable
+  // flag is set, since a disabled asset has no file on disk and fetching it would
+  // 404 (harmless to the logic, but it logs a console error). Depending on the
+  // flags re-runs the prefill if the theme loads or an asset is first enabled
+  // after mount.
   useEffect(() => {
     let cancelled = false
 
@@ -77,13 +86,13 @@ const ConfigSkeleton = () => {
       }
     }
 
-    void load("/theme/skeleton.css", setCssDraft)
-    void load("/theme/skeleton.js", setJsDraft)
+    if (theme.customCssEnabled) void load("/theme/skeleton.css", setCssDraft)
+    if (theme.customJsEnabled) void load("/theme/skeleton.js", setJsDraft)
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [theme.customCssEnabled, theme.customJsEnabled])
 
   useEvent(EVENTS.MANAGER.SET_SKELETON_ASSET_SUCCESS, ({ kind }) => {
     savingKindRef.current = null
