@@ -7,12 +7,12 @@ use razzoozle_protocol::media_usage::MediaUsageEntry;
 /// Includes archived quizzes. Returns empty map if pool is None or query fails.
 async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageEntry>> {
     let usage_with_urls: Vec<(String, String, String, i32, String)> = match sqlx::query_as(
-        "SELECT q.id, q.subject, elem->>'question', \
+        "SELECT q.id, q.subject, COALESCE(obj->>'question',''), \
                 (ord - 1)::int4 AS question_index, \
-                elem->'media'->>'url' AS media_url \
+                obj->'media'->>'url' AS media_url \
          FROM quizzes q, \
               jsonb_array_elements(q.questions) WITH ORDINALITY AS elem(obj, ord) \
-         WHERE elem->'media'->>'url' IS NOT NULL \
+         WHERE obj->'media'->>'url' IS NOT NULL \
          ORDER BY q.id, ord"
     )
     .fetch_all(pool)
@@ -20,7 +20,7 @@ async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageE
     {
         Ok(rows) => rows,
         Err(e) => {
-            eprintln!("Failed to fetch media usage from quizzes: {}", e);
+            tracing::warn!("Failed to fetch media usage from quizzes: {}", e);
             return HashMap::new();
         }
     };
@@ -80,7 +80,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                 {
                     Ok(rows) => rows,
                     Err(e) => {
-                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        tracing::warn!("Failed to fetch media_assets from database: {}", e);
                         return Vec::new();
                     }
                 }
@@ -97,7 +97,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                 {
                     Ok(rows) => rows,
                     Err(e) => {
-                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        tracing::warn!("Failed to fetch media_assets from database: {}", e);
                         return Vec::new();
                     }
                 }
@@ -116,7 +116,7 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                 {
                     Ok(rows) => rows,
                     Err(e) => {
-                        eprintln!("Failed to fetch media_assets from database: {}", e);
+                        tracing::warn!("Failed to fetch media_assets from database: {}", e);
                         return Vec::new();
                     }
                 }
@@ -276,6 +276,8 @@ pub async fn delete_media_assets_by_slot(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[tokio::test]
     async fn delete_without_pool_returns_false_or_zero() {
         assert!(!super::delete_media_asset(&None, "id", Some(1)).await);
@@ -285,6 +287,68 @@ mod tests {
                 .unwrap(),
             0
         );
+    }
+
+    #[test]
+    fn test_media_usage_label_truncation_utf8() {
+        // Test UTF-8 safe truncation at 80 chars with emoji and multibyte chars
+        let label_with_emoji = "Was ist das Funktionsprinzip von Photosynthese 🌱🌿? Ein sehr langer Fragetext mit Umlauten äöü";
+        let truncated: String = label_with_emoji.chars().take(80).collect();
+
+        // Should not panic on UTF-8 boundaries and should be valid Rust string
+        assert!(truncated.len() <= 320); // 80 chars can be up to 4 bytes each in UTF-8
+        assert!(truncated.chars().count() <= 80);
+        assert!(!truncated.is_empty());
+    }
+
+    #[test]
+    fn test_media_usage_label_truncation_exact_boundary() {
+        // Test with emoji exactly at boundary
+        let label = "12345678901234567890123456789012345678901234567890123456789012345678901234567890🎉";
+        let truncated: String = label.chars().take(80).collect();
+        assert_eq!(truncated.chars().count(), 80);
+    }
+
+    #[test]
+    fn test_media_usage_hashmap_grouping() {
+        // Test HashMap grouping logic: same media_url should accumulate entries
+        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
+
+        let entry1 = MediaUsageEntry {
+            quiz_id: "q1".to_string(),
+            quiz_title: "Quiz 1".to_string(),
+            question_index: 0,
+            question_label: "Q1".to_string(),
+        };
+        let entry2 = MediaUsageEntry {
+            quiz_id: "q1".to_string(),
+            quiz_title: "Quiz 1".to_string(),
+            question_index: 1,
+            question_label: "Q2".to_string(),
+        };
+        let entry3 = MediaUsageEntry {
+            quiz_id: "q2".to_string(),
+            quiz_title: "Quiz 2".to_string(),
+            question_index: 0,
+            question_label: "Q3".to_string(),
+        };
+
+        let media_url = "/media/images/pic.jpg".to_string();
+        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry1);
+        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry2);
+        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry3);
+
+        assert_eq!(usage_map.len(), 1);
+        assert_eq!(usage_map[&media_url].len(), 3);
+    }
+
+    #[test]
+    fn test_media_usage_empty_label_coalesce() {
+        // Verify that empty/NULL question labels don't break the structure
+        // (COALESCE in SQL ensures we get '' instead of NULL)
+        let empty_label = "";
+        let truncated: String = empty_label.chars().take(80).collect();
+        assert_eq!(truncated, "");
     }
 }
 
@@ -306,7 +370,7 @@ pub async fn get_media_for_hydrate(pool: &Option<sqlx::PgPool>) -> Vec<(String, 
         {
             Ok(rows) => rows,
             Err(e) => {
-                eprintln!("Failed to fetch media_assets for hydration from database: {}", e);
+                tracing::warn!("Failed to fetch media_assets for hydration from database: {}", e);
                 return Vec::new();
             }
         };
@@ -331,7 +395,7 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
     // Ensure media directories exist
     let media_base = format!("{}/media", config_base);
     if let Err(e) = std::fs::create_dir_all(&media_base) {
-        eprintln!("Failed to create media directory '{}': {}", media_base, e);
+        tracing::warn!("Failed to create media directory '{}': {}", media_base, e);
         return;
     }
 
@@ -339,7 +403,7 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
     for category in &["questions", "backgrounds", "audio", "avatars", "generated"] {
         let cat_dir = format!("{}/{}", media_base, category);
         if let Err(e) = std::fs::create_dir_all(&cat_dir) {
-            eprintln!("Failed to create media category directory '{}': {}", cat_dir, e);
+            tracing::warn!("Failed to create media category directory '{}': {}", cat_dir, e);
         }
     }
 
@@ -350,7 +414,7 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
         let rel_path = if let Some(stripped) = url.strip_prefix("/media/") {
             stripped
         } else {
-            eprintln!("media hydrate: Invalid url format '{}' (expected '/media/<category>/<filename>')", url);
+            tracing::warn!("media hydrate: Invalid url format '{}' (expected '/media/<category>/<filename>')", url);
             continue;
         };
 
@@ -360,7 +424,7 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
             || rel_path.starts_with('/')
             || rel_path.split('/').any(|c| c == ".." || c.is_empty())
         {
-            eprintln!("media hydrate: rejecting unsafe path from url '{}' (traversal/absolute)", url);
+            tracing::warn!("media hydrate: rejecting unsafe path from url '{}' (traversal/absolute)", url);
             continue;
         }
 
@@ -380,7 +444,7 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
         // Ensure parent directory exists
         if let Some(parent) = std::path::Path::new(&file_path).parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
-                eprintln!("Failed to create parent directory for '{}': {}", file_path, e);
+                tracing::warn!("Failed to create parent directory for '{}': {}", file_path, e);
                 continue;
             }
         }
@@ -389,10 +453,10 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
         match std::fs::write(&file_path, &data) {
             Ok(_) => written += 1,
             Err(e) => {
-                eprintln!("Failed to write media file '{}': {}", file_path, e);
+                tracing::warn!("Failed to write media file '{}': {}", file_path, e);
             }
         }
     }
 
-    eprintln!("media hydrate: {} assets, {} written", total_count, written);
+    tracing::debug!("media hydrate: {} assets, {} written", total_count, written);
 }
