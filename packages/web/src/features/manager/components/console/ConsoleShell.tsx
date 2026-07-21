@@ -90,15 +90,15 @@ const NAV_GROUPS: { labelKey: string; keys: readonly string[] }[] = [
   },
   {
     labelKey: "manager:tabs.groups.content",
-    keys: ["quizz", "catalog", "media", "submissions"],
+    keys: ["quiz", "catalog", "media", "submissions"],
   },
   {
     labelKey: "manager:tabs.groups.school",
-    keys: ["klassen", "schueler", "labels"],
+    keys: ["classes", "students", "labels"],
   },
   {
     labelKey: "manager:tabs.groups.system",
-    keys: ["design", "gamemode", "ki", "satellite", "users", "dev"],
+    keys: ["design", "gamemode", "ai", "satellite", "users", "dev"],
   },
 ]
 

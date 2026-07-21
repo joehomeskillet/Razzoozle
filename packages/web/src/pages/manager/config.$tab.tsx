@@ -11,6 +11,7 @@ import Configurations, {
   BUILTIN_TABS,
   isTabAllowed,
   resolveDefaultManagerTab,
+  oldToNewTabKeyMap,
 } from "@razzoozle/web/features/manager/components/configurations"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
@@ -80,6 +81,17 @@ export const Route = createFileRoute("/manager/config/$tab")({
     if (!token) {
       // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router redirect() is thrown by design
       throw redirect({ to: "/manager", replace: true })
+    }
+
+    // Backwards compatibility: redirect old German keys to new English keys
+    const newTab = oldToNewTabKeyMap[params.tab]
+    if (newTab) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router redirect() is thrown by design
+      throw redirect({
+        to: "/manager/config/$tab",
+        params: { tab: newTab },
+        replace: true,
+      })
     }
 
     const knownKeys = BUILTIN_TABS.map((t) => t.key)

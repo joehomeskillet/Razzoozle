@@ -92,7 +92,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigSelectQuizz,
   },
   {
-    key: "quizz",
+    key: "quiz",
     nameKey: "manager:tabs.quizz",
     icon: ListChecks,
     component: ConfigManageQuizz,
@@ -104,14 +104,14 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigCatalog,
   },
   {
-    key: "klassen",
+    key: "classes",
     nameKey: "manager:tabs.klassen",
     icon: GraduationCap,
     component: ConfigKlassen,
     gated: "klassenEnabled",
   },
   {
-    key: "schueler",
+    key: "students",
     nameKey: "manager:tabs.schueler",
     icon: Users,
     component: ConfigSchueler,
@@ -149,7 +149,7 @@ export const BUILTIN_TABS: TabDef[] = [
     roleGate: "admin",
   },
   {
-    key: "ki",
+    key: "ai",
     nameKey: "manager:tabs.ki",
     icon: Sparkles,
     component: ConfigAI,
@@ -236,6 +236,14 @@ export const isTabAllowed = (
 /** localStorage key for last-selected manager tab (reload continuity only). */
 export const TAB_STORAGE_KEY = "rahoot_manager_tab"
 
+// Map old German/alternate tab keys to new English keys for backwards compatibility.
+export const oldToNewTabKeyMap: Record<string, string> = {
+  klassen: "classes",
+  schueler: "students",
+  ki: "ai",
+  quizz: "quiz",
+}
+
 /**
  * Default tab for `/manager/config` redirect: last valid stored tab, else first
  * allowed under current role/config gates. Unregistered/missing storage falls
@@ -256,8 +264,12 @@ export const resolveDefaultManagerTab = (opts?: {
 
   try {
     if (typeof window === "undefined") return fallback
-    const stored = window.localStorage.getItem(TAB_STORAGE_KEY)
+    let stored = window.localStorage.getItem(TAB_STORAGE_KEY)
     if (!stored) return fallback
+    // Backwards compatibility: map old German keys to new English keys
+    if (stored in oldToNewTabKeyMap) {
+      stored = oldToNewTabKeyMap[stored]
+    }
     // Valid = known builtin key AND currently allowed
     if (allowed.some((tab) => tab.key === stored)) return stored
   } catch {
