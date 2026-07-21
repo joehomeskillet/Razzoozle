@@ -169,6 +169,20 @@ Each row represents one manager section (tab). The columns show:
 
 ---
 
+## Section: Profile (User Profile & Account Settings)
+
+| Field | Value |
+|---|---|
+| **Tab key** | profile |
+| **Actual files** | `configurations/ConfigProfile.tsx` (388 LOC) |
+| **Current primitives** | PageHeader, SectionCard, EmptyState |
+| **Target primitives** | PageHeader (title: "Mein Profil"), SectionCard (per settings area), EmptyState (if no data) |
+| **Required changes** | Verify PageHeader + SectionCard usage; ensure settings are grouped per SectionCard pattern; EmptyState only if applicable. Status largely complete per TSV; minimal consolidation needed. |
+| **Tests** | E2E: Open profile tab, verify title + sections load correctly. Visual: section card grouping + spacing. No destructive actions — low test burden. |
+| **Status** | **Mostly complete** — Profile structure already uses target primitives (PageHeader, SectionCard, EmptyState per TSV). Verify only; no major restructuring needed. |
+| **Risk** | Low — Existing structure already aligned; verification-only work. |
+
+---
 ## Section: Fächer/Labels (Subjects)
 
 | Field | Value |
@@ -190,8 +204,8 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | design |
 | **Actual files** | `configurations/theme/ConfigTheme.tsx` (395) + `theme/useConfigTheme.ts` (381) + `configurations/theme-preview/ThemePreviewPanel.tsx` (285) |
-| **Current primitives** | PageHeader, Input, Button, SectionCard, Radix Dialog (color pickers not centralized) |
-| **Target primitives | PageHeader (to add), SectionCard (2 per TSV), EmptyState, AlertDialog (2), ActionFooter, FormSection, LabelRow |, SectionCard (or 2-column layout), collapsible/sticky preview, shared SettingRow pattern, consistent color-field UI |
+| **Current primitives** | SectionCard (2), EmptyState, AlertDialog (2), ActionFooter, FormSection, LabelRow per TSV |
+| **Target primitives** | PageHeader (to add), SectionCard (2), EmptyState, AlertDialog (2), ActionFooter, FormSection, LabelRow |
 | **Required changes** | 1. Decide preview placement: collapsible, sticky, or responsive 2-column (wide screens). 2. Consolidate color-field pattern: ensure all use same picker/UI. 3. Document reset button scope: "Discard changes" vs. "Restore preset" vs. "Restore defaults". 4. Verify no nested scroll containers. 5. Test sticky preview does not cover final form field (390px). 6. Maintain live preview immediacy. |
 | **Tests** | Visual: preview collapsible/sticky at 390/1024/1280/1920 viewports. Form fields not hidden. Color pickers match. Reset buttons labeled per scope. E2E: Adjust setting, verify preview updates, reset/save flows. |
 | **Status** | **TODO** — WP5 (settings consolidation) after SettingRow + reset-scope decision. |
@@ -220,8 +234,8 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | ki |
 | **Actual files** | `configurations/ai/ConfigAI.tsx` (336) + `TextProviderSection.tsx` (316) + `ImageSection.tsx` + `QuizGenSection.tsx` |
-| **Current primitives** | ConsoleShell, PageHeader, SectionCard, Button, Input, status logic (weak feedback), oversized cards |
-| **Target primitives | PageHeader (to add), SectionCard (3 per TSV), EmptyState, ActionFooter, FormSection, LabelRow (3), Badge (2) |, SectionCard (per provider), SettingRow pattern, inline provider status badge, test-in-progress/success/failure feedback, AlertDialog for test failures |
+| **Current primitives** | SectionCard (3), EmptyState, ActionFooter, FormSection, LabelRow (3), Badge (2) per TSV |
+| **Target primitives** | PageHeader (to add), SectionCard (3), EmptyState, ActionFooter, FormSection, LabelRow (3), Badge (2) |
 | **Required changes** | 1. Add PageHeader. 2. Organize by section: Text Provider, Image Provider, Quiz Generator, Connection Test, Secrets Mgmt. 3. Use SettingRow for provider config fields (API key, model selection). 4. Inline provider status badge (online/offline/error, using semantic tokens). 5. Implement connection test flow: Button → Loading spinner → Success/Failure toast + Badge update. 6. Disable quiz generator server-side when text provider unavailable (UI redundant check OK). 7. Secrets must NOT echo back to client. 8. Verify save state (persisted) separate from test state (transient feedback). |
 | **Tests** | Connection test UI: Click test → loading spinner → success/failure feedback. E2E: Configure provider, test connection (success/fail), verify state persists. Visual: status badge, test-state indicators. Security: verify API keys not rendered back. |
 | **Status** | **TODO** — WP5 (settings consolidation) after SettingRow established. |
