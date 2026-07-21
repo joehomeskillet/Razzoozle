@@ -453,12 +453,55 @@
     "submitLinkUnavailable": "Pas encore disponible — votre lien personnel sera activé bientôt."
   },
   "media": {
+    "title": "Bibliothèque de médias",
+    "intro": "Gère images, audio et contenus générés au même endroit.",
+    "empty": "Aucun média pour l'instant.",
+    "emptyHeadline": "La bibliothèque est vide",
+    "upload": "Importer",
+    "uploading": "Envoi…",
+    "uploaded": "Média importé",
+    "delete": "Supprimer",
+    "deleteConfirm": "Veux-tu vraiment supprimer ce média ?",
+    "search": "Rechercher des médias",
+    "searchPlaceholder": "Rechercher des médias…",
+    "noResults": "Aucun média correspondant",
+    "tooLarge": "Le fichier est trop volumineux",
+    "uploadFailed": "Échec de l'envoi",
+    "filters": {
+      "all": "Tous",
+      "upload": "Importés",
+      "ai": "IA",
+      "theme": "Apparence"
+    },
+    "source": {
+      "upload": "Importés",
+      "ai": "IA",
+      "theme": "Apparence"
+    },
+    "category": {
+      "backgrounds": "Arrière-plans",
+      "questions": "Questions",
+      "generated": "Générés",
+      "avatars": "Avatars",
+      "audio": "Audio"
+    },
+    "bulk": {
+      "selected": "{{count}} sélectionnés",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer vraiment {{count}} médias ?",
+      "toggle": "Sélectionner {{name}}"
+    },
+    "dropHint": "Déposez les fichiers ici pour les envoyer",
+    "details": "Détails",
+    "scope": {
+      "own": "Personnelles",
+      "global": "Global",
+      "all": "Toutes",
+      "label": "Visibilité"
+    },
     "usage": {
       "heading": "Utilisé dans",
       "empty": "Pas encore utilisé"
-    },
-    "preview": {
-      "videoPlaceholder": "Aperçu vidéo non disponible"
     }
   },
   "catalog": {

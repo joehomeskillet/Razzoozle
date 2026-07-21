@@ -15,7 +15,7 @@ import { useLabelManager } from "../labels/useLabelManager"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
 import clsx from "clsx"
-import { Film, Info, Plus } from "lucide-react"
+import { Info, Plus } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -72,7 +72,7 @@ const MediaInfoDialog = ({
   // Support both controlled and uncontrolled modes
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onControlledOpenChange || setInternalOpen
-  const activeTriggerRef = triggerRef || internalTriggerRef
+  const isControlled = controlledOpen !== undefined
 
   const detailsLabel = t("manager:media.details", { defaultValue: "Details" })
 
@@ -117,19 +117,22 @@ const MediaInfoDialog = ({
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <Button
-          ref={activeTriggerRef}
-          variant="ghost"
-          size="icon"
-          type="button"
-          aria-label={detailsLabel}
-          title={detailsLabel}
-          className="shrink-0 text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
-        >
-          <Info className="size-4" aria-hidden />
-        </Button>
-      </Dialog.Trigger>
+      {/* Only render trigger if not controlled (F8) */}
+      {!isControlled && (
+        <Dialog.Trigger asChild>
+          <Button
+            ref={internalTriggerRef}
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label={detailsLabel}
+            title={detailsLabel}
+            className="shrink-0 text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+          >
+            <Info className="size-4" aria-hidden />
+          </Button>
+        </Dialog.Trigger>
+      )}
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
@@ -144,17 +147,11 @@ const MediaInfoDialog = ({
           {item.type === "audio" ? (
             <audio controls src={item.url} className="mt-4 w-full" />
           ) : item.type === "video" ? (
-            // Video placeholder (too heavy to load in dialog)
-            <div className="mt-4 flex aspect-video w-full items-center justify-center rounded-lg bg-[var(--surface-2)]">
-              <div className="flex flex-col items-center gap-2 text-[var(--ink-faint)]">
-                <Film className="size-8" aria-hidden />
-                <p className="text-xs font-semibold">
-                  {t("manager:media.preview.videoPlaceholder", {
-                    defaultValue: "Video-Vorschau nicht verfügbar",
-                  })}
-                </p>
-              </div>
-            </div>
+            <video
+              controls
+              src={item.url}
+              className="mt-4 max-h-96 w-full rounded-lg bg-[var(--surface-2)]"
+            />
           ) : (
             <img
               src={item.url}
@@ -181,23 +178,6 @@ const MediaInfoDialog = ({
               : ""}
             {` · ${formatDate(item.uploadedAt)}`}
           </p>
-
-          {/* Usage Section (reserved for follow-up WP) */}
-          <div className="mt-6 flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-[var(--ink)]">
-              {t("manager:media.usage.heading", {
-                defaultValue: "Verwendet in",
-              })}
-            </h3>
-            <p
-              id="media-usage-section"
-              className="text-sm text-[var(--ink-subtle)]"
-            >
-              {t("manager:media.usage.empty", {
-                defaultValue: "Noch nicht verwendet",
-              })}
-            </p>
-          </div>
 
           {/* Labels Section */}
           {config.klassenEnabled && (

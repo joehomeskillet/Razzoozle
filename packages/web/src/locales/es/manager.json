@@ -453,12 +453,55 @@
     "submitLinkUnavailable": "No disponible aún — tu enlace personal se activará pronto."
   },
   "media": {
+    "title": "Biblioteca de medios",
+    "intro": "Gestiona imágenes, audio y contenido generado en un solo lugar.",
+    "empty": "Aún no hay medios.",
+    "emptyHeadline": "La biblioteca está vacía",
+    "upload": "Subir",
+    "uploading": "Subiendo…",
+    "uploaded": "Medio subido",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Seguro que quieres eliminar este medio?",
+    "search": "Buscar medios",
+    "searchPlaceholder": "Buscar medios…",
+    "noResults": "No hay medios que coincidan",
+    "tooLarge": "El archivo es demasiado grande",
+    "uploadFailed": "Error al subir",
+    "filters": {
+      "all": "Todos",
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "source": {
+      "upload": "Subidos",
+      "ai": "IA",
+      "theme": "Diseño"
+    },
+    "category": {
+      "backgrounds": "Fondos",
+      "questions": "Preguntas",
+      "generated": "Generados",
+      "avatars": "Avatares",
+      "audio": "Audio"
+    },
+    "bulk": {
+      "selected": "{{count}} seleccionados",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar realmente {{count}} archivos?",
+      "toggle": "Seleccionar {{name}}"
+    },
+    "dropHint": "Suelta los archivos aquí para subirlos",
+    "details": "Detalles",
+    "scope": {
+      "own": "Propias",
+      "global": "Global",
+      "all": "Todas",
+      "label": "Visibilidad"
+    },
     "usage": {
       "heading": "Utilizado en",
       "empty": "Aún no se utiliza"
-    },
-    "preview": {
-      "videoPlaceholder": "Vista previa de video no disponible"
     }
   },
   "catalog": {

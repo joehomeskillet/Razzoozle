@@ -230,12 +230,55 @@
     }
   },
   "media": {
+    "title": "Medienbibliothek",
+    "intro": "Bilder, Audio und generierte Inhalte an einem Ort verwalten.",
+    "empty": "Noch keine Medien vorhanden.",
+    "emptyHeadline": "Bibliothek ist leer",
+    "upload": "Hochladen",
+    "uploading": "Wird hochgeladen…",
+    "uploaded": "Medium hochgeladen",
+    "delete": "Löschen",
+    "deleteConfirm": "Dieses Medium wirklich löschen?",
+    "search": "Medien durchsuchen",
+    "searchPlaceholder": "Medien durchsuchen…",
+    "noResults": "Keine passenden Medien",
+    "tooLarge": "Datei ist zu gross",
+    "uploadFailed": "Hochladen fehlgeschlagen",
+    "filters": {
+      "all": "Alle",
+      "upload": "Hochgeladen",
+      "ai": "KI",
+      "theme": "Design"
+    },
+    "source": {
+      "upload": "Hochgeladen",
+      "ai": "KI",
+      "theme": "Design"
+    },
+    "category": {
+      "backgrounds": "Hintergründe",
+      "questions": "Fragen",
+      "generated": "Generiert",
+      "avatars": "Avatare",
+      "audio": "Audio"
+    },
+    "bulk": {
+      "selected": "{{count}} ausgewählt",
+      "delete": "Löschen",
+      "deleteConfirm": "{{count}} Medien wirklich löschen?",
+      "toggle": "{{name}} auswählen"
+    },
+    "dropHint": "Dateien hier ablegen zum Hochladen",
+    "details": "Details",
+    "scope": {
+      "own": "Eigene",
+      "global": "Global",
+      "all": "Alle",
+      "label": "Sichtbarkeit"
+    },
     "usage": {
       "heading": "Verwendet in",
       "empty": "Noch nicht verwendet"
-    },
-    "preview": {
-      "videoPlaceholder": "Video-Vorschau nicht verfügbar"
     }
   },
   "catalog": {

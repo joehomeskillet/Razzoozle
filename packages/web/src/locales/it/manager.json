@@ -453,12 +453,55 @@
     "submitLinkUnavailable": "Non ancora disponibile — il tuo link personale sarà attivato presto."
   },
   "media": {
+    "title": "Libreria multimediale",
+    "intro": "Gestisci immagini, audio e contenuti generati in un unico posto.",
+    "empty": "Ancora nessun media.",
+    "emptyHeadline": "La libreria è vuota",
+    "upload": "Carica",
+    "uploading": "Caricamento…",
+    "uploaded": "Media caricato",
+    "delete": "Elimina",
+    "deleteConfirm": "Vuoi davvero eliminare questo media?",
+    "search": "Cerca media",
+    "searchPlaceholder": "Cerca media…",
+    "noResults": "Nessun media corrispondente",
+    "tooLarge": "Il file è troppo grande",
+    "uploadFailed": "Caricamento non riuscito",
+    "filters": {
+      "all": "Tutti",
+      "upload": "Caricati",
+      "ai": "IA",
+      "theme": "Design"
+    },
+    "source": {
+      "upload": "Caricati",
+      "ai": "IA",
+      "theme": "Design"
+    },
+    "category": {
+      "backgrounds": "Sfondi",
+      "questions": "Domande",
+      "generated": "Generati",
+      "avatars": "Avatar",
+      "audio": "Audio"
+    },
+    "bulk": {
+      "selected": "{{count}} selezionati",
+      "delete": "Elimina",
+      "deleteConfirm": "Eliminare davvero {{count}} file?",
+      "toggle": "Seleziona {{name}}"
+    },
+    "dropHint": "Trascina qui i file per caricarli",
+    "details": "Dettagli",
+    "scope": {
+      "own": "Personali",
+      "global": "Globale",
+      "all": "Tutte",
+      "label": "Visibilità"
+    },
     "usage": {
       "heading": "Utilizzato in",
       "empty": "Non ancora utilizzato"
-    },
-    "preview": {
-      "videoPlaceholder": "Anteprima video non disponibile"
     }
   },
   "catalog": {

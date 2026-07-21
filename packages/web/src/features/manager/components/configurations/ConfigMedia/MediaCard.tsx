@@ -1,4 +1,5 @@
 import type { MediaMeta } from "@razzoozle/common/types/media"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import clsx from "clsx"
 import { Check, FileAudio, Film, Info, Trash2 } from "lucide-react"
@@ -35,7 +36,7 @@ const MediaCard = ({
       role="option"
       aria-selected={isSelected}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-lg bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",
+        "group relative flex flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",
         isSelected
           ? "outline-[var(--color-primary)]"
           : "outline-[var(--border-hairline)]",
@@ -64,11 +65,11 @@ const MediaCard = ({
         onClick={handleCardSelect(item.id)}
         variant="ghost"
         size="icon"
-        className="absolute top-0 left-0 z-10 rounded-tl-lg focus-visible:-outline-offset-2"
+        className="absolute top-0 left-0 z-10 rounded-tl-[var(--radius-theme)] focus-visible:-outline-offset-2"
       >
         <span
           className={clsx(
-            "flex size-6 items-center justify-center rounded-md border-2 transition-colors",
+            "flex size-6 items-center justify-center rounded-lg border-2 transition-colors",
             isSelected
               ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white" /* token-ok: white-on-accent-contrast, AA per tokens.css */
               : "border-[var(--line)] bg-[var(--surface)]/90 text-transparent group-hover:border-[var(--ink-faint)]",
@@ -78,12 +79,10 @@ const MediaCard = ({
         </span>
       </Button>
 
-      {/* Thumbnail — square, responsive */}
+      {/* Thumbnail — square, responsive; click opens details dialog */}
       <div
         className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer"
         onClick={() => setDialogOpen(true)}
-        role="button"
-        tabIndex={-1}
       >
         {item.type === "audio" ? (
           <FileAudio className="size-8 text-[var(--ink-faint)]" aria-hidden />
@@ -105,7 +104,7 @@ const MediaCard = ({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-8 shrink-0 rounded-md bg-[var(--surface)]/90 text-[var(--ink)] hover:bg-[var(--surface)]"
+            className="size-8 shrink-0 rounded-lg bg-[var(--surface)]/90 text-[var(--ink)] hover:bg-[var(--surface)]"
             onClick={(e) => {
               e.stopPropagation()
               setDialogOpen(true)
@@ -114,19 +113,25 @@ const MediaCard = ({
           >
             <Info className="size-4" aria-hidden />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0 rounded-md bg-[var(--state-wrong-soft)] text-[var(--state-wrong)] hover:bg-[var(--state-wrong)]/20"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDelete(item.id)
-            }}
-            aria-label={t("manager:media.delete")}
-          >
-            <Trash2 className="size-4" aria-hidden />
-          </Button>
+          <AlertDialog
+            trigger={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0 rounded-lg bg-[var(--state-wrong-soft)] text-[var(--state-wrong)] hover:bg-[var(--state-wrong)]/20"
+                aria-label={t("manager:media.delete")}
+              >
+                <Trash2 className="size-4" aria-hidden />
+              </Button>
+            }
+            title={t("manager:media.delete")}
+            description={t("manager:media.deleteConfirm", {
+              name: item.filename,
+            })}
+            confirmLabel={t("common:delete")}
+            onConfirm={() => handleDelete(item.id)}
+          />
         </div>
       </div>
 
