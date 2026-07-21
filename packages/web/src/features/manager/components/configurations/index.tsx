@@ -237,7 +237,7 @@ export const isTabAllowed = (
 export const TAB_STORAGE_KEY = "rahoot_manager_tab"
 
 // Map old German/alternate tab keys to new English keys for backwards compatibility.
-const oldToNewTabKeyMap: Record<string, string> = {
+export const oldToNewTabKeyMap: Record<string, string> = {
   klassen: "classes",
   schueler: "students",
   ki: "ai",

@@ -11,6 +11,7 @@ import Configurations, {
   BUILTIN_TABS,
   isTabAllowed,
   resolveDefaultManagerTab,
+  oldToNewTabKeyMap,
 } from "@razzoozle/web/features/manager/components/configurations"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
@@ -67,14 +68,6 @@ const ManagerConfigPage = () => {
       <Configurations data={config} />
     </div>
   )
-}
-
-// Map old German/alternate tab keys to new English keys for backwards compatibility.
-const oldToNewTabKeyMap: Record<string, string> = {
-  klassen: "classes",
-  schueler: "students",
-  ki: "ai",
-  quizz: "quiz",
 }
 
 export const Route = createFileRoute("/manager/config/$tab")({
