@@ -40,7 +40,7 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | running |
 | **Actual files** | `components/console/RunningGamesSection.tsx` (177) |
-| **Current primitives** | ConsoleShell, Button (end-game/mirror), manual status representation |
+| **Current primitives | ConsoleShell, PageHeader (none per TSV), ListRow, SectionCard, AlertDialog (per RunningGamesSection.tsx 177 LOC) |
 | **Target primitives** | ConsoleShell, PageHeader, ListRow (metadata: quiz, PIN, players, status badge, elapsed time), destructive AlertDialog for "Beenden" |
 | **Required changes** | 1. Add PageHeader. 2. Replace manual card layout with ListRow + status badge. 3. Implement destructive "Beenden" flow (confirm dialog + Portal-safe pattern). 4. Keep "Mirror"/"Display" secondary actions. 5. Use semantic status badges. |
 | **Tests** | E2E #6–7: List games, mirror action, beenden → confirm → cancel restore selection. Visual: row density, status badge, action alignment. Keyboard: focus flows. |
@@ -188,10 +188,10 @@ Each row represents one manager section (tab). The columns show:
 
 | Field | Value |
 |---|---|
-| **Tab key** | theme |
+| **Tab key** | design |
 | **Actual files** | `configurations/theme/ConfigTheme.tsx` (395) + `theme/useConfigTheme.ts` (381) + `configurations/theme-preview/ThemePreviewPanel.tsx` (285) |
 | **Current primitives** | PageHeader, Input, Button, SectionCard, Radix Dialog (color pickers not centralized) |
-| **Target primitives** | PageHeader, SectionCard (or 2-column layout), collapsible/sticky preview, shared SettingRow pattern, consistent color-field UI |
+| **Target primitives | PageHeader (to add), SectionCard (2 per TSV), EmptyState, AlertDialog (2), ActionFooter, FormSection, LabelRow |, SectionCard (or 2-column layout), collapsible/sticky preview, shared SettingRow pattern, consistent color-field UI |
 | **Required changes** | 1. Decide preview placement: collapsible, sticky, or responsive 2-column (wide screens). 2. Consolidate color-field pattern: ensure all use same picker/UI. 3. Document reset button scope: "Discard changes" vs. "Restore preset" vs. "Restore defaults". 4. Verify no nested scroll containers. 5. Test sticky preview does not cover final form field (390px). 6. Maintain live preview immediacy. |
 | **Tests** | Visual: preview collapsible/sticky at 390/1024/1280/1920 viewports. Form fields not hidden. Color pickers match. Reset buttons labeled per scope. E2E: Adjust setting, verify preview updates, reset/save flows. |
 | **Status** | **TODO** — WP5 (settings consolidation) after SettingRow + reset-scope decision. |
@@ -205,7 +205,7 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | gamemode |
 | **Actual files** | `configurations/ConfigGameMode.tsx` (450) |
-| **Current primitives** | ConsoleShell, PageHeader (partial), SectionCard, Button, Input, Toggle, weak form grouping, restart requirements in body text |
+| **Current primitives** | ConsoleShell, SectionCard, Button, Input, Toggle, weak form grouping, restart requirements in body text |
 | **Target primitives** | PageHeader, shared SettingRow primitive (title, description, control, optional restart badge, status message), StickyFormActions (dirty-state save bar) |
 | **Required changes** | **CRITICAL: Establish SettingRow once, use everywhere.** 1. Define SettingRow: title, description, control (aligned right on wide, stacked on narrow), optional restart badge, optional status message. Forward refs for focus restoration. 2. Migrate Modus sections (8 mode settings) to use SettingRow. 3. Implement StickyFormActions (Reset/Save buttons, dirty-state indicator). 4. Document reset scope. 5. Move restart requirements from body text to restart badge (icon + aria-label). 6. Group related settings under SectionCard. 7. Verify all required states: dependency-disabled, restart-required, saved, dirty, validation-error. |
 | **Tests** | **SettingRow component:** Unit tests for render + focus, variants (toggle/input/select), restart badge, status message. E2E: Modify setting, verify dirty state, reset (undo), save, verify no unsaved on navigate. Keyboard: tab through settings + action buttons. Visual: control alignment, restart badge, status message placement. |
@@ -221,7 +221,7 @@ Each row represents one manager section (tab). The columns show:
 | **Tab key** | ki |
 | **Actual files** | `configurations/ai/ConfigAI.tsx` (336) + `TextProviderSection.tsx` (316) + `ImageSection.tsx` + `QuizGenSection.tsx` |
 | **Current primitives** | ConsoleShell, PageHeader, SectionCard, Button, Input, status logic (weak feedback), oversized cards |
-| **Target primitives** | PageHeader, SectionCard (per provider), SettingRow pattern, inline provider status badge, test-in-progress/success/failure feedback, AlertDialog for test failures |
+| **Target primitives | PageHeader (to add), SectionCard (3 per TSV), EmptyState, ActionFooter, FormSection, LabelRow (3), Badge (2) |, SectionCard (per provider), SettingRow pattern, inline provider status badge, test-in-progress/success/failure feedback, AlertDialog for test failures |
 | **Required changes** | 1. Add PageHeader. 2. Organize by section: Text Provider, Image Provider, Quiz Generator, Connection Test, Secrets Mgmt. 3. Use SettingRow for provider config fields (API key, model selection). 4. Inline provider status badge (online/offline/error, using semantic tokens). 5. Implement connection test flow: Button → Loading spinner → Success/Failure toast + Badge update. 6. Disable quiz generator server-side when text provider unavailable (UI redundant check OK). 7. Secrets must NOT echo back to client. 8. Verify save state (persisted) separate from test state (transient feedback). |
 | **Tests** | Connection test UI: Click test → loading spinner → success/failure feedback. E2E: Configure provider, test connection (success/fail), verify state persists. Visual: status badge, test-state indicators. Security: verify API keys not rendered back. |
 | **Status** | **TODO** — WP5 (settings consolidation) after SettingRow established. |
@@ -250,7 +250,7 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | users |
 | **Actual files** | `configurations/ConfigUsers.tsx` (688) |
-| **Current primitives** | ConsoleShell, PageHeader (partial), Input (search), FilterPill (weak), ListRow, Button (action icons without aria-labels), no self-delete guard in UI |
+| **Current primitives** | ConsoleShell, Input (search), FilterPill (weak), ListRow, Button (action icons without aria-labels), no self-delete guard in UI |
 | **Target primitives** | PageHeader (create action), PageToolbar (search + role/status filter groups), ListRow (name, email, role badge, status, actions), AlertDialog for delete |
 | **Required changes** | **P0 SECURITY GAP:** 1. Align page wording (description says "teachers"; rows contain user/teacher/admin roles). Update to "Users & Roles". 2. Add role filter (User, Teacher, Admin) + status filter (Active, Deactivated). 3. **UI self-delete guard:** If current user matches row, disable delete + deactivate buttons, show inline message "Cannot modify your own account." 4. Ensure server-side permission check authoritative (UI is defensive per §12). 5. Add aria-label to ALL icon-only action buttons (reset key, activate/deactivate, delete). 6. Implement delete confirmation (AlertDialog shows role + consequences). 7. Verify action order: edit/reset-key/activate → delete in overflow. 8. Test keyboard access + filter groups. |
 | **Tests** | **E2E #14 + Security review:** As current admin, attempt to delete self → UI prevents, shows message. As current admin, delete another user → confirm flow works. Reset key action labeled + functional. Filter by role/status. Visual: row density, action alignment. A11Y: icon-label testing. |
@@ -265,7 +265,7 @@ Each row represents one manager section (tab). The columns show:
 |---|---|
 | **Tab key** | dev |
 | **Actual files** | `configurations/ConfigDev/` (ConfigDev.tsx 105 + ApiExplorerCard.tsx + LogsCard.tsx + ObservabilityCard.tsx — **already modular, not "400+ LOC unstructured"**) |
-| **Current primitives** | ConsoleShell, PageHeader (partial), Button, Input, code blocks (no copy UI), weak visual hierarchy |
+| **Current primitives** | ConsoleShell, Button, Input, code blocks (no copy UI), weak visual hierarchy |
 | **Target primitives** | PageHeader, Tabs/Accordions for 6 sections, code blocks with copy-to-clipboard, AlertDialog for destructive actions, danger-zone visual distinction |
 | **Required changes** | 1. Add PageHeader. 2. Organize by 6 functional groups (tabs or accordions): Debug & Diagnostics, Test Data & Simulation, Performance & Metrics, Data Export, Security & Tokens, API & Documentation. 3. Create danger-zone section: operations that delete, reset state, rotate credentials, terminate games, expose diagnostics. Require explicit confirmation. 4. Add copy-to-clipboard UI for code blocks + tokens. 5. Inline success/error feedback for test operations. 6. Verify development/admin-only access enforced by existing authorization. 7. Never render secrets in full (redact API keys if shown for copy). 8. Add aria-labels to all code-copy buttons. 9. Security review mandatory (SDD §12). |
 | **Tests** | **Security review + authorization:** Verify non-admin users cannot access dev tab. Run diagnostic commands, verify output format. Copy code blocks, verify clipboard. Execute destructive action (data export reset) → confirm flow. Visual: danger zone visual distinction (red/warning color), environment marker prominence. |

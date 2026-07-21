@@ -14,7 +14,7 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 **Correction 4 changes:**
 - All primitives re-derived via grep against actual component imports (removes 11+ false PageHeader claims)
-- PageHeader verified in only 3 sections (media, profile, schueler) — not 4
+- PageHeader verified in 4 sections (catalog, media, profile, schueler)
 - Tab keys corrected (quizz, design per BUILTIN_TABS registry)
 - Running-Games: ListRow status fixed (in use, not missing); Mirror/Display fabrication removed
 - KI-Generator-Gate: Flipped from "Verified" to "OPEN BUG" (button.disabled doesn't check textConfigured)
@@ -71,4 +71,4 @@ This audit consolidates findings from three independent agents (A=Archaeological
 **Primitives source:** manager-primitive-usage.tsv (grep-derived, 18 sections)  
 **BUILTIN_TABS count verified:** 18 tabs (not 16–17)  
 **Route structure verified:** /manager (app shell), /manager/config (single page with tab switching), /manager/quizz + /manager/quizz/$quizzId (editor)  
-**PageHeader reality:** 3 sections (media, profile, schueler), not 4, not 14 lacking
+**PageHeader reality:** 4 sections (catalog, media, profile, schueler); 14 sections missing lacking
