@@ -67,7 +67,7 @@ const MediaCard = ({
             }
       }
     >
-      {/* Checkbox overlay — always visible, top-left */}
+      {/* Checkbox overlay — always visible, top-left, enhanced hit area */}
       <Button
         type="button"
         role="checkbox"
@@ -79,7 +79,7 @@ const MediaCard = ({
         onClick={handleCardSelect(item.id)}
         variant="ghost"
         size="icon"
-        className="absolute top-0 left-0 z-10 rounded-tl-[var(--radius-theme)] focus-visible:-outline-offset-2"
+        className="absolute top-0 left-0 z-10 rounded-tl-[var(--radius-theme)] focus-visible:-outline-offset-2 p-1.5"
       >
         <span
           className={clsx(
@@ -95,7 +95,7 @@ const MediaCard = ({
 
       {/* Thumbnail — square, responsive; click opens details dialog */}
       <div
-        className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer relative"
+        className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer relative overflow-hidden"
         onClick={() => setDialogOpen(true)}
       >
         {item.type === "audio" ? (
@@ -107,7 +107,10 @@ const MediaCard = ({
             src={item.url}
             alt={item.filename}
             loading="lazy"
-            className="size-full object-cover"
+            className={clsx(
+              "size-full object-cover transition-transform duration-200 ease-out",
+              !reducedMotion && "group-hover:scale-[1.03]"
+            )}
           />
         )}
 
@@ -129,8 +132,8 @@ const MediaCard = ({
           </div>
         )}
 
-        {/* Hover overlay — info + delete buttons, hidden by default */}
-        <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        {/* Bottom-gradient scrim — info + delete buttons */}
+        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/45 to-transparent opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100 flex items-end justify-end gap-1 p-1.5">
           <Button
             ref={dialogTriggerRef}
             type="button"
