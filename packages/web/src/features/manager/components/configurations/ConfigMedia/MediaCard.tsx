@@ -1,12 +1,10 @@
 import type { MediaMeta } from "@razzoozle/common/types/media"
-import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
-import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { useLabelManager } from "../labels/useLabelManager"
 import clsx from "clsx"
-import { Check, FileAudio, Film, Trash2 } from "lucide-react"
+import { Check, FileAudio, Film, Info, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import type { MouseEvent } from "react"
+import { useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import MediaInfoDialog, { formatSize } from "./MediaInfoDialog"
@@ -28,12 +26,8 @@ const MediaCard = ({
 }) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
-  const config = useConfig()
-  const { labels } = useLabelManager()
-
-  const itemLabels = (item.labelIds ?? [])
-    .map((labelId) => labels.find((l) => l.id === labelId))
-    .filter((l) => l !== undefined)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const dialogTriggerRef = useRef<HTMLButtonElement>(null)
 
   return (
     <motion.article
@@ -41,7 +35,7 @@ const MediaCard = ({
       role="option"
       aria-selected={isSelected}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",
+        "group relative flex flex-col overflow-hidden rounded-lg bg-[var(--surface)] outline-2 -outline-offset-2 transition-colors",
         isSelected
           ? "outline-[var(--color-primary)]"
           : "outline-[var(--border-hairline)]",
@@ -58,6 +52,7 @@ const MediaCard = ({
             }
       }
     >
+      {/* Checkbox overlay — always visible, top-left */}
       <Button
         type="button"
         role="checkbox"
@@ -69,25 +64,31 @@ const MediaCard = ({
         onClick={handleCardSelect(item.id)}
         variant="ghost"
         size="icon"
-        className="absolute top-0 left-0 z-10 rounded-tl-[var(--radius-theme)] focus-visible:-outline-offset-2"
+        className="absolute top-0 left-0 z-10 rounded-tl-lg focus-visible:-outline-offset-2"
       >
         <span
           className={clsx(
-            "flex size-7 items-center justify-center rounded-lg border-2 transition-colors",
+            "flex size-6 items-center justify-center rounded-md border-2 transition-colors",
             isSelected
               ? "border-[var(--color-primary)] bg-[var(--accent-contrast)] text-white" /* token-ok: white-on-accent-contrast, AA per tokens.css */
               : "border-[var(--line)] bg-[var(--surface)]/90 text-transparent group-hover:border-[var(--ink-faint)]",
           )}
         >
-          <Check className="size-4" aria-hidden />
+          <Check className="size-3" aria-hidden />
         </span>
       </Button>
 
-      <div className="flex aspect-video items-center justify-center bg-[var(--surface-2)]">
+      {/* Thumbnail — square, responsive */}
+      <div
+        className="flex aspect-square items-center justify-center bg-[var(--surface-2)] cursor-pointer"
+        onClick={() => setDialogOpen(true)}
+        role="button"
+        tabIndex={-1}
+      >
         {item.type === "audio" ? (
-          <FileAudio className="size-10 text-[var(--ink-faint)]" aria-hidden />
+          <FileAudio className="size-8 text-[var(--ink-faint)]" aria-hidden />
         ) : item.type === "video" ? (
-          <Film className="size-10 text-[var(--ink-faint)]" aria-hidden />
+          <Film className="size-8 text-[var(--ink-faint)]" aria-hidden />
         ) : (
           <img
             src={item.url}
@@ -96,51 +97,56 @@ const MediaCard = ({
             className="size-full object-cover"
           />
         )}
+
+        {/* Hover overlay — info + delete buttons, hidden by default */}
+        <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <Button
+            ref={dialogTriggerRef}
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 rounded-md bg-[var(--surface)]/90 text-[var(--ink)] hover:bg-[var(--surface)]"
+            onClick={(e) => {
+              e.stopPropagation()
+              setDialogOpen(true)
+            }}
+            aria-label={t("manager:media.details", { defaultValue: "Details" })}
+          >
+            <Info className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 rounded-md bg-[var(--state-wrong-soft)] text-[var(--state-wrong)] hover:bg-[var(--state-wrong)]/20"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDelete(item.id)
+            }}
+            aria-label={t("manager:media.delete")}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </Button>
+        </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
-        <p
-          className="truncate text-sm font-semibold text-[var(--ink)]"
-          title={item.filename}
-        >
-          {item.filename}
-        </p>
-
-        {/* At-a-glance meta stays to one line so every card is the
-            same height; the rest lives behind the ℹ info dialog. */}
-        <p className="truncate text-xs text-[var(--ink-subtle)]">
-          {formatSize(item.size)}
+      {/* Compact meta line — ONE line only: filename · size · dims */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 p-2">
+        <p className="truncate text-xs font-semibold text-[var(--ink)]" title={item.filename}>
+          {item.filename} · {formatSize(item.size)}
           {item.type === "image" && item.width && item.height
             ? ` · ${item.width}×${item.height}`
             : ""}
-          {config.klassenEnabled && itemLabels.length > 0
-            ? ` · ${itemLabels.map((l) => l.name).join(", ")}`
-            : ""}
         </p>
-
-        <div className="mt-auto flex items-center gap-2 pt-1">
-          <MediaInfoDialog item={item} />
-          <AlertDialog
-            trigger={
-              <Button
-                type="button"
-                variant="danger"
-                size="md"
-                className="flex-1"
-              >
-                <Trash2 className="size-4" aria-hidden />
-                {t("manager:media.delete")}
-              </Button>
-            }
-            title={t("manager:media.delete")}
-            description={t("manager:media.deleteConfirm", {
-              name: item.filename,
-            })}
-            confirmLabel={t("common:delete")}
-            onConfirm={() => handleDelete(item.id)}
-          />
-        </div>
       </div>
+
+      {/* Info dialog — triggered by click or external state */}
+      <MediaInfoDialog
+        item={item}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        triggerRef={dialogTriggerRef}
+      />
     </motion.article>
   )
 }

@@ -239,51 +239,12 @@
     }
   },
   "media": {
-    "title": "Media library",
-    "intro": "Manage images, audio and generated content in one place.",
-    "empty": "No media yet.",
-    "emptyHeadline": "Library is empty",
-    "upload": "Upload",
-    "uploading": "Uploading…",
-    "uploaded": "Media uploaded",
-    "delete": "Delete",
-    "deleteConfirm": "Really delete this media item?",
-    "search": "Search media",
-    "searchPlaceholder": "Search media…",
-    "noResults": "No matching media",
-    "tooLarge": "File is too large",
-    "uploadFailed": "Upload failed",
-    "filters": {
-      "all": "All",
-      "upload": "Uploaded",
-      "ai": "AI",
-      "theme": "Design"
+    "usage": {
+      "heading": "Used in",
+      "empty": "Not used yet"
     },
-    "source": {
-      "upload": "Uploaded",
-      "ai": "AI",
-      "theme": "Design"
-    },
-    "category": {
-      "backgrounds": "Backgrounds",
-      "questions": "Questions",
-      "generated": "Generated",
-      "avatars": "Avatars",
-      "audio": "Audio"
-    },
-    "bulk": {
-      "selected": "{{count}} selected",
-      "delete": "Delete",
-      "deleteConfirm": "Really delete {{count}} media?",
-      "toggle": "Select {{name}}"
-    },
-    "dropHint": "Drop files here to upload",
-    "details": "Details",
-    "scope": {
-      "own": "Own",
-      "global": "Global",
-      "all": "All",
-      "label": "Visibility"
+    "preview": {
+      "videoPlaceholder": "Video preview not available"
     }
   },
   "catalog": {

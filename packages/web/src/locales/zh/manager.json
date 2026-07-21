@@ -230,51 +230,12 @@
     }
   },
   "media": {
-    "title": "媒体库",
-    "intro": "在一个地方管理图片、音频和生成的内容。",
-    "empty": "暂无媒体。",
-    "emptyHeadline": "媒体库为空",
-    "upload": "上传",
-    "uploading": "上传中…",
-    "uploaded": "媒体已上传",
-    "delete": "删除",
-    "deleteConfirm": "确定要删除此媒体项吗？",
-    "search": "搜索媒体",
-    "searchPlaceholder": "搜索媒体…",
-    "noResults": "无匹配媒体",
-    "tooLarge": "文件太大",
-    "uploadFailed": "上传失败",
-    "filters": {
-      "all": "全部",
-      "upload": "已上传",
-      "ai": "AI",
-      "theme": "设计"
+    "usage": {
+      "heading": "使用于",
+      "empty": "尚未使用"
     },
-    "source": {
-      "upload": "已上传",
-      "ai": "AI",
-      "theme": "设计"
-    },
-    "category": {
-      "backgrounds": "背景",
-      "questions": "题目",
-      "generated": "已生成",
-      "avatars": "头像",
-      "audio": "音频"
-    },
-    "bulk": {
-      "selected": "已选择 {{count}} 项",
-      "delete": "删除",
-      "deleteConfirm": "确定要删除 {{count}} 个媒体吗？",
-      "toggle": "选择 {{name}}"
-    },
-    "dropHint": "将文件拖到此处以上传",
-    "details": "详情",
-    "scope": {
-      "own": "我的",
-      "global": "全局",
-      "all": "所有",
-      "label": "可见性"
+    "preview": {
+      "videoPlaceholder": "视频预览不可用"
     }
   },
   "catalog": {
