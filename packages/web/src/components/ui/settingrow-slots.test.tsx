@@ -177,40 +177,35 @@ describe("ToggleField — SettingRow API", () => {
 })
 
 describe("ActionFooter — SettingRow API", () => {
-  it("accepts backward-compat props (onSave, onCancel, loading)", () => {
+  it("accepts backward-compat props (children, className)", () => {
     const props: ActionFooterProps = {
-      onSave: () => {},
-      onCancel: () => {},
-      loading: false,
+      children: null,
+      className: "custom",
     }
-    expect(typeof props.onSave).toBe("function")
-    expect(typeof props.onCancel).toBe("function")
-    expect(props.loading).toBe(false)
+    expect(props.className).toBe("custom")
   })
 
-  it("accepts new optional prop: dirty", () => {
+  it("accepts new optional prop: dirty (false)", () => {
     const props: ActionFooterProps = {
-      onSave: () => {},
-      onCancel: () => {},
-      loading: false,
+      children: null,
+      dirty: false,
+    }
+    expect(props.dirty).toBe(false)
+  })
+
+  it("accepts new optional prop: dirty (true)", () => {
+    const props: ActionFooterProps = {
+      children: null,
       dirty: true,
     }
     expect(props.dirty).toBe(true)
+  })
 
-    const propsClean: ActionFooterProps = {
-      onSave: () => {},
-      onCancel: () => {},
-      loading: false,
-      dirty: false,
+  it("dirty undefined when not set", () => {
+    const props: ActionFooterProps = {
+      children: null,
     }
-    expect(propsClean.dirty).toBe(false)
-
-    const propsUndefined: ActionFooterProps = {
-      onSave: () => {},
-      onCancel: () => {},
-      loading: false,
-    }
-    expect(propsUndefined.dirty).toBeUndefined()
+    expect(props.dirty).toBeUndefined()
   })
 
   it("dirty prop signals visual state change (opacity-75)", () => {
@@ -224,18 +219,20 @@ describe("ActionFooter — SettingRow API", () => {
     expect(getDirtyClass(undefined)).toBe("")
   })
 
-  it("loading prop prevents interaction", () => {
-    const props: ActionFooterProps = {
-      onSave: () => {
-        throw new Error("Should not save while loading")
-      },
-      onCancel: () => {
-        throw new Error("Should not cancel while loading")
-      },
-      loading: true,
+  it("children can be any ReactNode", () => {
+    const props1: ActionFooterProps = {
+      children: null,
     }
-    // When loading=true, buttons are disabled (no click handlers fire).
-    expect(props.loading).toBe(true)
+    const props2: ActionFooterProps = {
+      children: "button text",
+    }
+    const props3: ActionFooterProps = {
+      children: ["button1", "button2"],
+    }
+
+    expect(props1.children).toBeNull()
+    expect(props2.children).toBe("button text")
+    expect(Array.isArray(props3.children)).toBe(true)
   })
 })
 
@@ -253,15 +250,13 @@ describe("SettingRow integration — backward compatibility", () => {
     }
 
     const actionFooter: ActionFooterProps = {
-      onSave: () => {},
-      onCancel: () => {},
-      loading: false,
+      children: null,
     }
 
     // Verify no new props are required.
     expect(labelRow.label).toBeDefined()
     expect(toggleField.checked).toBeDefined()
-    expect(actionFooter.onSave).toBeDefined()
+    expect(actionFooter.children).toBeDefined()
   })
 })
 
@@ -269,6 +264,7 @@ describe("SettingRow API — ARIA compliance", () => {
   it("statusMessage supplies aria-describedby and role='status' for accessibility", () => {
     const props: LabelRowProps = {
       label: "Power level",
+      children: null,
       id: "power-level",
       statusMessage: {
         text: "Calibrating...",
