@@ -275,6 +275,10 @@
       "global": "全局",
       "all": "所有",
       "label": "可见性"
+    },
+    "usage": {
+      "heading": "使用于",
+      "empty": "尚未使用"
     }
   },
   "catalog": {

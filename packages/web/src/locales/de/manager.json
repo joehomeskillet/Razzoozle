@@ -275,6 +275,10 @@
       "global": "Global",
       "all": "Alle",
       "label": "Sichtbarkeit"
+    },
+    "usage": {
+      "heading": "Verwendet in",
+      "empty": "Noch nicht verwendet"
     }
   },
   "catalog": {

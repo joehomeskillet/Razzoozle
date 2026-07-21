@@ -498,6 +498,10 @@
       "global": "Global",
       "all": "Toutes",
       "label": "Visibilité"
+    },
+    "usage": {
+      "heading": "Utilisé dans",
+      "empty": "Pas encore utilisé"
     }
   },
   "catalog": {

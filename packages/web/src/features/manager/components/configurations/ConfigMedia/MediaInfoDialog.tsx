@@ -16,7 +16,7 @@ import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
 import clsx from "clsx"
 import { Info, Plus } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 const formatDate = (iso: string) => {
@@ -44,16 +44,33 @@ export const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+interface MediaInfoDialogProps {
+  item: MediaMeta
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
 // Per-card "info" affordance — keeps every card uniform/compact while the full
 // metadata (category, source, exact dimensions + date, larger preview) lives
 // behind a reused Radix dialog, opened from the ℹ button on each card.
-const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
+const MediaInfoDialog = ({
+  item,
+  open: controlledOpen,
+  onOpenChange: onControlledOpenChange,
+}: MediaInfoDialogProps) => {
   const { t } = useTranslation()
   const { socket } = useSocket()
   const config = useConfig()
   const { labels } = useLabelManager()
   const [selectedLabelId, setSelectedLabelId] = useState<string>("")
   const [localLabelIds, setLocalLabelIds] = useState<number[]>(item.labelIds ?? [])
+  const [internalOpen, setInternalOpen] = useState(false)
+  const internalTriggerRef = useRef<HTMLButtonElement>(null)
+
+  // Support both controlled and uncontrolled modes
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onControlledOpenChange || setInternalOpen
+  const isControlled = controlledOpen !== undefined
 
   const detailsLabel = t("manager:media.details", { defaultValue: "Details" })
 
@@ -97,19 +114,23 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
   }, [localLabelIds, socket, item.id])
 
   return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          aria-label={detailsLabel}
-          title={detailsLabel}
-          className="shrink-0 text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
-        >
-          <Info className="size-4" aria-hidden />
-        </Button>
-      </Dialog.Trigger>
+    <Dialog.Root open={isOpen} onOpenChange={setOpen}>
+      {/* Only render trigger if not controlled (F8) */}
+      {!isControlled && (
+        <Dialog.Trigger asChild>
+          <Button
+            ref={internalTriggerRef}
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label={detailsLabel}
+            title={detailsLabel}
+            className="shrink-0 text-[var(--ink-faint)] outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+          >
+            <Info className="size-4" aria-hidden />
+          </Button>
+        </Dialog.Trigger>
+      )}
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-fade-in fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
@@ -120,22 +141,24 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             {item.filename}
           </Dialog.Title>
 
+          {/* Media Preview Section */}
           {item.type === "audio" ? (
             <audio controls src={item.url} className="mt-4 w-full" />
           ) : item.type === "video" ? (
             <video
               controls
               src={item.url}
-              className="mt-4 aspect-video w-full rounded-lg bg-[var(--surface-2)]"
+              className="mt-4 max-h-96 w-full rounded-lg bg-[var(--surface-2)]"
             />
           ) : (
             <img
               src={item.url}
-              alt=""
-              className="mt-4 aspect-video w-full rounded-lg bg-[var(--surface-2)] object-contain"
+              alt={item.filename}
+              className="mt-4 max-h-96 max-w-full rounded-lg bg-[var(--surface-2)] object-contain"
             />
           )}
 
+          {/* Metadata Badges */}
           <div className="mt-4 flex flex-wrap gap-1.5">
             <Badge>
               {t(`manager:media.category.${item.category}`)}
@@ -145,6 +168,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             </Badge>
           </div>
 
+          {/* Metadata Details */}
           <p className="mt-3 text-sm text-[var(--ink-subtle)]">
             {formatSize(item.size)}
             {item.type === "image" && item.width && item.height
@@ -153,6 +177,7 @@ const MediaInfoDialog = ({ item }: { item: MediaMeta }) => {
             {` · ${formatDate(item.uploadedAt)}`}
           </p>
 
+          {/* Labels Section */}
           {config.klassenEnabled && (
             <div className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-2">
