@@ -20,6 +20,7 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import TextProviderSection from "./TextProviderSection"
 import ImageSection from "./ImageSection"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import QuizGenSection from "./QuizGenSection"
 
 const ConfigAI = () => {
@@ -278,6 +279,13 @@ const ConfigAI = () => {
 
   return (
     <>
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <PageHeader
+          title={t("manager:ai.title")}
+          subtitle={t("manager:ai.intro")}
+        />
+      </div>
+
       <div className="flex flex-1 flex-col gap-4 pb-20">
         {/* ── Text-Provider ───────────────────────────────────────── */}
         <TextProviderSection

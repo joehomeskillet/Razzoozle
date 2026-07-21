@@ -229,7 +229,9 @@
     },
     "animatedCss": {
       "title": "Animated CSS"
-    }
+    },
+    "title": "Entwicklungswerkzeuge",
+    "intro": "Diagnose, Testdaten und API-Werkzeuge für den Entwicklungsmodus."
   },
   "media": {
     "title": "Medienbibliothek",
@@ -589,7 +591,9 @@
         "tierGold": "Achievement – Gold",
         "tierDiamant": "Achievement – Diamant"
       }
-    }
+    },
+    "title": "Design",
+    "intro": "Passe Farben, Logo und Auftritt an deine Schule an."
   },
   "submissions": {
     "empty": "Keine ausstehenden Vorschläge.",

@@ -86,7 +86,7 @@ const QuizGenSection = ({
       <Button
         type="button"
         onClick={generateQuiz}
-        disabled={!topic.trim() || generating}
+        disabled={!topic.trim() || generating || !textConfigured}
       >
         {generating
           ? t("manager:ai.generate.generating")

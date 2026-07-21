@@ -229,7 +229,9 @@
       "server": "Registros del servidor",
       "client": "Registros del cliente",
       "download": "Descargar"
-    }
+    },
+    "title": "Herramientas de desarrollo",
+    "intro": "Diagnóstico, datos de prueba y herramientas de API para el modo de desarrollo."
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -405,7 +407,9 @@
         "tierGold": "Logro – Oro",
         "tierDiamant": "Logro – Diamante"
       }
-    }
+    },
+    "title": "Diseño",
+    "intro": "Adapta colores, logo y apariencia a tu escuela."
   },
   "submissions": {
     "empty": "No hay sugerencias pendientes.",

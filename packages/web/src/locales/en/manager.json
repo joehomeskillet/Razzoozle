@@ -238,7 +238,9 @@
     },
     "animatedCss": {
       "title": "Animated CSS"
-    }
+    },
+    "title": "Developer tools",
+    "intro": "Diagnostics, test data and API tools for development mode."
   },
   "media": {
     "title": "Media library",
@@ -598,7 +600,9 @@
         "tierGold": "Achievement – Gold",
         "tierDiamant": "Achievement – Diamond"
       }
-    }
+    },
+    "title": "Design",
+    "intro": "Tailor colors, logo and branding to your school."
   },
   "submissions": {
     "empty": "No pending suggestions.",

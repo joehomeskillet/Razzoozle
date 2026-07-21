@@ -16,6 +16,7 @@ import {
 import AnimationControls from "@razzoozle/web/features/manager/components/configurations/AnimationControls"
 import AnimatedBackgroundControls from "@razzoozle/web/features/manager/components/configurations/AnimatedBackgroundControls"
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
 import { Image as ImageIcon, Palette, RotateCcw, Sparkles } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -67,7 +68,14 @@ const ConfigTheme = () => {
         }
       >
         {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
-        <div className="flex flex-col gap-4 pb-20">
+        <div className="mb-4 flex shrink-0 flex-col gap-3">
+            <PageHeader
+              title={t("manager:theme.title", { defaultValue: "Gestaltung" })}
+              subtitle={t("manager:theme.intro", { defaultValue: "Personalisiere das Aussehen deines Quizzes mit Farben, Logos und Animationen." })}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 pb-20">
           {/*
             Top live preview. Static thumbnail by default (pointer-events-none +
             click affordance); clicking switches it to an interactive preview.

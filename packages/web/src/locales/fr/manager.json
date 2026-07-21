@@ -229,7 +229,9 @@
     },
     "animatedCss": {
       "title": "CSS animé"
-    }
+    },
+    "title": "Outils de développement",
+    "intro": "Diagnostic, données de test et outils d'API pour le mode développement."
   },
   "satellite": {
     "title": "Écran satellite",
@@ -405,7 +407,9 @@
         "tierGold": "Succès – Or",
         "tierDiamant": "Succès – Diamant"
       }
-    }
+    },
+    "title": "Design",
+    "intro": "Adapte les couleurs, le logo et l'identité à ton école."
   },
   "submissions": {
     "empty": "Aucune proposition en attente.",
