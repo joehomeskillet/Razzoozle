@@ -1,5 +1,5 @@
 import clsx from "clsx"
-import { forwardRef, type ReactNode } from "react"
+import { forwardRef } from "react"
 import Badge from "@razzoozle/web/components/manager/Badge"
 
 export interface ToggleFieldProps {
