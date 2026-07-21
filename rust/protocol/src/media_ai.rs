@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use crate::media_usage::MediaUsageEntry;
 
 // ============================================================================
 // MEDIA Domain Types
@@ -35,6 +36,9 @@ pub struct MediaMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub height: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub usage: Option<Vec<MediaUsageEntry>>,
 }
 
 /// S2C: media:data — List of all media items.
