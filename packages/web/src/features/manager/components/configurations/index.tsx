@@ -342,18 +342,33 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
     count: tab.key === "submissions" ? pendingCount : undefined,
   }))
 
-  // A tab persisted from a prior role/config (e.g. re-login with a different
-  // role in the same tab) can point at a section the current role/config no
-  // longer allows. Fall back to the first allowed tab whenever that happens.
-  const active = allowedTabs.find((tab) => tab.key === activeKey) ?? allowedTabs[0] ?? tabs[0]
+  // Config hydration signal: klassenEnabled is optional on ManagerConfig and
+  // starts undefined until the server CONFIG event sets it (true/false).
+  // Until then, allowedTabs under-counts (klassen-gated tabs filtered via
+  // Boolean(undefined ?? false)), so falling back to allowedTabs[0] would
+  // incorrectly redirect deep-links like /manager/config/classes → play.
+  const configHydrated = typeof klassenEnabled !== "undefined"
+
+  // Prefer an allowed match. Before hydration, keep the URL tab even if it is
+  // not yet in allowedTabs. Only after hydration fall back to the first allowed.
+  const matchedAllowed = allowedTabs.find((tab) => tab.key === activeKey)
+  const matchedAny = tabs.find((tab) => tab.key === activeKey)
+  const active =
+    matchedAllowed ??
+    (!configHydrated && matchedAny
+      ? matchedAny
+      : (allowedTabs[0] ?? tabs[0]))
   const ActiveComponent = active.component
 
   useEffect(() => {
+    // Pre-hydration mismatches are expected while allowedTabs is incomplete —
+    // do not navigate away from the URL tab until config has arrived.
+    if (!configHydrated) return
     if (active.key !== activeKey) {
       onSelect(active.key)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active.key, activeKey])
+  }, [active.key, activeKey, configHydrated])
 
   return (
     <ConsoleShell
