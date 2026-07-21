@@ -4,7 +4,7 @@ import {
   SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
 import Badge from "@razzoozle/web/components/manager/Badge"
-import { Activity, KeyRound, PlugZap, ScrollText } from "lucide-react"
+import { Activity, KeyRound, ScrollText } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { openEndpoint } from "./helpers"
@@ -26,7 +26,7 @@ export const ApiExplorerCard = ({
 
   return (
     <SectionCard
-      icon={<PlugZap className="size-5" />}
+      icon={<Activity className="size-5" />}
       title={t("dev.api.title")}
       description={t("dev.redactionNotice")}
       actions={
@@ -49,12 +49,6 @@ export const ApiExplorerCard = ({
           </div>
         )}
         <div className="space-y-2">
-          <ListRow
-            title={t("dev.api.openapi")}
-            leading={<PlugZap className="size-5" />}
-            onClick={openEndpoint(withToken("/api/openapi.json"))}
-            bodyLabel={t("dev.api.openapi")}
-          />
           <ListRow
             title={t("dev.api.events")}
             leading={<Activity className="size-5" />}
