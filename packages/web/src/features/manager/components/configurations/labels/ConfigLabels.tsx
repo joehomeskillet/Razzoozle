@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next"
 
 import type { Label } from "./useLabelManager"
 import { useLabelManager } from "./useLabelManager"
-import CreateLabelDialog from "./CreateLabelDialog"
 import EditLabelDialog from "./EditLabelDialog"
 
 const ConfigLabels = () => {
