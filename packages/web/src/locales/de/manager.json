@@ -281,7 +281,9 @@
       "empty": "Noch nicht verwendet",
       "questionLabel": "Frage {{index}}: {{label}}",
       "deleteWarning": "Wird in 1 Frage verwendet — Löschen entfernt es dort nicht automatisch.",
-      "deleteWarning_other": "Wird in {{count}} Fragen verwendet — Löschen entfernt es dort nicht automatisch."
+      "deleteWarning_other": "Wird in {{count}} Fragen verwendet — Löschen entfernt es dort nicht automatisch.",
+      "count": "Wird in 1 Frage verwendet",
+      "count_other": "Wird in {{count}} Fragen verwendet"
     },
     "usageBadge": "{{count}}×"
   },

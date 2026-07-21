@@ -504,7 +504,9 @@
       "empty": "Pas encore utilisé",
       "questionLabel": "Question {{index}}: {{label}}",
       "deleteWarning": "Utilisé dans 1 question — le supprimer ne l'enlèvera pas de là.",
-      "deleteWarning_other": "Utilisé dans {{count}} questions — le supprimer ne les enlèvera pas de là."
+      "deleteWarning_other": "Utilisé dans {{count}} questions — le supprimer ne les enlèvera pas de là.",
+      "count": "Utilisé dans 1 question",
+      "count_other": "Utilisé dans {{count}} questions"
     },
     "usageBadge": "{{count}}×"
   },
