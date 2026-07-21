@@ -14,8 +14,8 @@ This audit consolidates findings from three independent agents (A=Archaeological
 **Key findings:**
 - Large consolidation already shipped in W0–W6 (verified in design.md §8·B)
 - Remaining gaps: ConfigLabels a11y (P0), Nutzerverwaltung self-delete guard (P0), i18n drift, Portal event handling (resolved in T2/B3), sticky-bar mobile overlap
-- Existing primitives sufficient for most sections (no new PageToolbar/SearchField/SettingRow warranted without multi-use evidence)
-- §6.2 candidates (ActionFooter, FormSection, SettingRow) exist as scattered implementations; recommend slot-extension strategy
+- Existing primitives (ActionFooter, FormSection, LabelRow, ToggleField) already exist in `components/ui/` and are widely adopted; refine/extend rather than create new
+- §6.2 candidates require verification + slot-extension strategy, not full reimplementation
 
 ---
 
@@ -35,7 +35,7 @@ This audit consolidates findings from three independent agents (A=Archaeological
 | Schülerverwaltung | `/manager/school/students` | StudentManagementPage.tsx, StudentRow.tsx | PageHeader, Input, FilterPill, Button, ListRow | "+ + Klasse" (§10 malformed text) exists; class assignment as repeated isolated button; inconsistent action order | Fixed (text replaced with "Klasse hinzufügen"); row structure OK | i18n fallback + semantic action placement | Consolidate on ListRow + shared assignment trigger; verify all 6 locales | Medium | E2E #12; i18n:check | P1 |
 | Fächer/Labels | `/manager/config/labels` | ConfigLabels.tsx (147 LOC handgestrickt) | Button, Input (inline submission unguarded), no AlertDialog for delete-when-used | A11Y P0: icon buttons (color picker, delete, reorder) without accessible names; submit button bottom-right detached; no usage warning on delete | Current (not fixed) | UI/A11Y gap: missing aria-label + semantic confirm flow | Add aria-label to all icon buttons; implement delete confirmation with usage warning; consider inline vs. modal creation flow per SDD §5.11 | Medium-High | Accessibility audit required; add color-picker a11y tests | P0 |
 | Design | `/manager/config/design` | DesignPage.tsx (preview + config compete) | ConsoleShell, PageHeader, Input, Button, SectionCard, Radix Dialog | Preview density; nesting; colour-field consistency; reset ambiguity | Partial (structure OK; colour-field wording unclear) | Missing shared collapse/sticky preview pattern | Define whether preview is collapsible, sticky or responsive-column; consolidate colour fields; document reset scope (unsaved/preset/defaults) | Low | Existing structure; document decision | P2 |
-| Modus | `/manager/config/mode` | ModeConfigPage.tsx, ModeSection.tsx (450 LOC) | ConsoleShell, PageHeader, SectionCard, Button, Input, Toggle | Duplicated setting title/label; switches far from descriptions; restart requirements in body text; weak section grouping | Partial (sections exist; form wording unaligned) | Missing SettingRow + restart-badge pattern | Establish shared SettingRow (title, description, control, optional restart badge, optional status); migrate Modus sections; verify all 8 target sections use it | Medium | add SettingRow component tests | P2 |
+| Modus | `/manager/config/mode` | ModeConfigPage.tsx, ModeSection.tsx (450 LOC) | ConsoleShell, PageHeader, SectionCard, Button, Input, Toggle | Duplicated setting title/label; switches far from descriptions; restart requirements in body text; weak section grouping | Partial (sections exist; form wording unaligned) | Missing SettingRow + restart-badge pattern | Extend shared SettingRow (LabelRow/ToggleField) with restart badge + status message slots; migrate Modus sections; verify all 8 target sections use it | Medium | add SettingRow component tests | P2 |
 | KI | `/manager/config/ai` | AIPage.tsx, ProviderSection.tsx (400+ LOC) | ConsoleShell, PageHeader, Button, Input, SectionCard, AlertDialog | Provider status detached from control; connection test weak; generator enabled while provider down; oversized inner cards | Partial (structure OK; semantics weak) | Missing provider status badge + test-state feedback pattern | Inline provider status badge; separate test-in-progress/success/failure states; disable quiz generator server-side when no text provider; consolidate on SettingRow | Medium | AI-provider tests exist; add connection-state tests | P2 |
 | Satellit | `/manager/config/satellite` | SatelliteConfigPage.tsx | ConsoleShell, PageHeader, Button, Input, SectionCard | Long identifiers; token rotation/removal flows; device pairing actions | Partial (structure OK; flows simple) | Minor semantic gaps (copy buttons, confirmation clarity) | Add copy-to-clipboard affordance for token IDs; document pairing/revocation flows; use Badge for online/offline/pending | Low | Existing tests; add copy+revocation tests | P3 |
 | Nutzerverwaltung | `/manager/admin/users` | UserManagementPage.tsx, UserRow.tsx, AdminUserCard.tsx | ConsoleShell, PageHeader, Input, FilterPill, ListRow | Page desc says "teachers" but rows contain user/teacher/admin; missing search/filter; self-admin can delete self (P0 security gap); ambiguous key/block/delete icons | Current | Wording mismatch + missing server-side permission check in UI + missing icon labels | Align wording to "Users & Roles"; add role/status filters; add aria-label to action icons; **require server-side self-delete guard** (UI-guard insufficient per §12); add user-row tests | High | Security review mandatory; E2E #14 insufficient | P0 |
@@ -55,14 +55,16 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 ### §6.2 Components Already Exist (Do Not Create New)
 
+**Agent A's archaeological report confirms:** `ActionFooter`, `FormSection`, `LabelRow`, and `ToggleField` already exist in `components/ui/` and are deployed across the codebase. The task is to **verify, extend, and consolidate usage**, not reimplementation.
+
 | Proposed (SDD §6.2) | Actual Implementation | Recommendation |
 |---|---|---|
 | `PageToolbar` (search + filters + sort) | No one primitive; each page hand-builds | Roll out shared toolbar pattern **organically** as WP2/WP3 consolidate; codify when ≥3 pages share identical structure |
 | `SearchField` | Input + icon handling scattered | Extend Input with `leading` + `trailing` slots if ≥3 consumers need it; not warranted yet |
-| `SettingsSection` | Exists as `SectionCard` + unaligned wording | Reuse SectionCard; recommend "SettingRow" pattern below (title, desc, control, optional badges) |
-| `SettingRow` | Exists scattered as `ToggleField` (mode), `FormSection` (AI), `LabelRow` (labels) | **Establish one shared interface:** title, supporting description, control (on-right/stacked by viewport), optional restart-badge, optional dirty/validation-message. Migrate Modus → KI → Design → Achievements in WP5. **10 consumer sites** across config pages. |
-| `StickyFormActions` | Exists as custom sticky bars (Achievements, Mode, Design) | Consolidate into one reusable primitive: dirty-state indicator, Reset/Save button order, safe-area inset, no double-scroll-container. Apply to all settings pages post-WP2. |
-| `InlineStatus` | Scattered loading/success/error blocks | Not yet warranted; verify with AI provider + dev-tools sections post-WP2 |
+| `SettingsSection` | Already exists as `FormSection` (`components/ui/FormSection.tsx`, 3 files using; title+description+space-y-4 pattern) | Verify existing usage; extend only if ≥2 more call sites emerge. No new component needed. |
+| `SettingRow` | Already exists as `LabelRow` + `ToggleField` (`components/ui/LabelRow.tsx`, `ToggleField.tsx`, 6+2 files using; generic control + switch-specific variants). **Gaps:** missing restart-required badge slot, missing validation/status-message slot per SDD §4.6 spec. | **Consolidate and extend:** Audit existing LabelRow/ToggleField usage across Modus/KI/Design/Achievements; add optional `restartBadge` + `statusMessage` slots; migrate all config pages to consolidated SettingRow API in WP5. **10 consumer sites** across config pages justify priority. |
+| `StickyFormActions` | Already exists as `ActionFooter` (`components/ui/ActionFooter.tsx`, 10 files using; sticky-bleed math, safe-area padding). **Gap:** no structural dirty-state prop (caller-managed today). | **Consolidate and extend:** Audit ActionFooter usage in Achievements/Mode/Design/Theme; add optional `dirty` boolean prop for visual indicator; verify safe-area/overlap behaviour at 390px viewports per G4 finding; apply to all settings pages post-WP2. |
+| `InlineStatus` | Scattered loading/success/error blocks (toast notifications, conditional spinners) | Not yet warranted; verify with AI provider + dev-tools sections post-WP2 |
 | `CodeBlock` + copy UI | Dev tools code blocks have no copy affordance | Add copy-to-clipboard utility + consume in Dev Tools §5.17 |
 | `Tooltip` | Only title attribute in use | Native title sufficient; no new tooltip library needed |
 
@@ -74,7 +76,7 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 3. **Dev-Tab function errors (§5.17):** GET `/api/openapi.json` + `/theme/skeleton.js` return 404. **Verify:** These are intentional mocks or real missing handlers; if real, fix backend routes or document as N/A. **Add to Dev-Tools security review.**
 
-4. **Mobile sticky-bar overlap (layout):** Quiz 390px viewport + sticky-action-bar at bottom = content hidden. **Verified in visual regression:** Affects Achievements, Mode, Design. **Mitigation:** Sticky bars must not cover last form field; test at 390×844.
+4. **Mobile sticky-bar overlap (layout, G4):** Quiz 390px viewport + sticky-action-bar at bottom = content hidden. **Verified in visual regression:** Affects Achievements, Mode, Design. **Mitigation:** Sticky bars (ActionFooter) must not cover last form field; test at 390×844. Audit safe-area inset calculation.
 
 ### i18n Drift (§10)
 
@@ -91,11 +93,11 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 1. **Satellit scope:** SDD §5.15 treats as manager section. Agent A notes "static info page." **Decision:** If Satellit is deployment/documentation only (not user-managed device registry), classify as out-of-scope for consolidation WP. **Recommend:** Document as scope decision in migration matrix; skip from WP3–WP5 unless user requests device management features.
 
-2. **SettingRow universality:** SDD §6.2 warns "only when ≥3 pages repeat". Agents A+C found 10 call sites (Modus, KI, Design, Achievements). **Decision:** Establish SettingRow as shared primitive; justify via evidence; add to WP5 critical path.
+2. **SettingRow implementation:** SDD §6.2 warns "only when ≥3 pages repeat". Agents A+C found 10 call sites (Modus, KI, Design, Achievements) + existing LabelRow/ToggleField in components/ui/. **Decision:** Consolidate existing LabelRow/ToggleField + extend with missing slots; add to WP5 critical path.
 
 3. **PageToolbar necessity:** SDD §6.2 warns "only when ≥3 pages". Agents B+C observe each page hand-builds (search + filter + sort). **Decision:** Codify pattern post-WP2 consolidation; no new component until usage evidence. Recommend functional composition (slots) over monolithic toolbar.
 
-4. **ConfigUsers (688 LOC) + ConfigGameMode (450 LOC):** Agent C flags as split candidates (Barrel pattern like quizzes/klassen). **Decision:** Defer to WP5 cleanup unless they become pain-points during migration. Priority: functional consolidation first, then structural optimization.
+4. **ConfigUsers (688 LOC) + ConfigGameMode (450 LOC):** Agent A flags as exceeding 400-LOC soft nudge; split candidates (Barrel pattern like quizzes/klassen). **Decision:** Defer to WP7 cleanup unless they become pain-points during migration. Priority: functional consolidation first, then structural optimization.
 
 ---
 
@@ -104,9 +106,9 @@ This audit consolidates findings from three independent agents (A=Archaeological
 | Test Suite | Current Status | Required for Completion |
 |---|---|---|
 | E2E (Playwright) | Existing flows #1–20 per SDD §9.2 | Verify all after each WP; add G2 (nav state preservation) |
-| Visual regression | Snapshots exist for key sections | Validate at 390/1024/1280/1440/1920 viewports after WP1, WP3, WP5 |
+| Visual regression | Snapshots exist for key sections | Validate at 390/1024/1280/1440/1920 viewports after WP1, WP3, WP5; audit G4 sticky-bar overlap at 390px |
 | A11Y checks | Keyboard nav + aria tested; some gaps (Labels icon buttons) | Accessibility audit required for Labels (P0); full re-audit post-consolidation |
-| Unit tests | Component coverage varies | Add SettingRow tests; add color-picker a11y; add sticky-bar mobile tests |
+| Unit tests | Component coverage varies | Extend ActionFooter tests (dirty-state prop); extend LabelRow/ToggleField tests (restart-badge + status slots); add color-picker a11y tests |
 | Token gate | Enhanced scope (components/ui, manager, labels scanned) | Run bash scripts/check-manager-tokens.sh after each WP |
 | i18n check | Existing tooling | Run pnpm i18n:check + pnpm i18n:report after each text change |
 
@@ -114,9 +116,9 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 ## Audit Evidence Mapping
 
-**Agent A (Archaeological):** ConfigMedia structure, primitives inventory, W0–W6 baseline from design.md §8·B  
-**Agent B (UX-Live):** Current UI capture against SDD §4–5; screenshot findings vs. implementation; classification (current/fixed/partial/obsolete)  
-**Agent C (Code Duplication):** SettingRow/StickyBar/PageToolbar duplicates; ComponentAPI verification; overabstraction warnings  
+**Agent A (Archaeological):** File inventory, LOC counts, W0–W6 baseline from design.md §8·B, existing primitive locations in components/ui/  
+**Agent B (UX-Live):** Current UI capture (16 sections + 11 global findings G1–G11) against SDD §4–5; screenshot findings vs. implementation; classification (current/fixed/partial/obsolete)  
+**Agent C (Code Duplication):** Semantic duplication pattern audit; ActionFooter/FormSection/LabelRow/ToggleField usage counts; overabstraction risk analysis  
 
 ---
 
@@ -127,7 +129,8 @@ This audit consolidates findings from three independent agents (A=Archaeological
 | Sections to consolidate | 17 | WP1–WP6 priority order: Shell, Toolbars, Lists, Media, Settings, Dev-Tools, Cleanup |
 | P0 blockers | 3 | Nutzerverwaltung self-guard, Labels A11Y, Dev-Tool function gaps |
 | Already fixed (W0–W6) | 5+ | Verified; no regression risk |
-| Shared primitives to establish | 4 | SettingRow, StickyFormActions, consolidated SettingSection; others extend existing |
+| Existing primitives to verify/extend | 4 | ActionFooter, FormSection, LabelRow, ToggleField (DO NOT CREATE NEW) |
+| New primitives warranted | 0 | All §6.2 candidates exist or are not yet justified by usage counts |
 | WP0 deliverable: this audit | 1 | Complete |
 | WP0 deliverable: migration matrix | 1 | See next document |
 
@@ -135,4 +138,5 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 **Document prepared:** 2026-07-21  
 **Reviewed by:** Agents A, B, C  
+**Correction pass:** 2026-07-21 (C, accuracy verification)  
 **Approval gate:** SDD §0.3 source-of-truth order (current repo > screenshots > SDD)
