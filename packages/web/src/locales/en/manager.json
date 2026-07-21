@@ -1004,7 +1004,40 @@
     },
     "js": {
       "confirmTitle": "Save JavaScript?",
-      "confirm": "This code will run on every connected device. Only save trusted code."
+      "confirm": "This code will run on every connected device. Only save trusted code.",
+      "title": "JavaScript override",
+      "description": "Free-form JavaScript executed on every connected device.",
+      "placeholder": "// console.log(window.razzoozle.theme)",
+      "warning": "⚠ This JavaScript runs on every player device — only paste trusted code (stored-XSS risk).",
+      "save": "Save JavaScript"
+    },
+    "transfer": {
+      "title": "Transfer skeleton",
+      "description": "Export the complete design (tokens, CSS, JS, assets) as a ZIP or import a prepared skeleton.",
+      "download": "Download skeleton",
+      "upload": "Upload skeleton (ZIP)",
+      "reset": "Reset to defaults"
+    },
+    "reset": {
+      "title": "Reset to defaults?",
+      "confirm": "Current theme, CSS and JS will be discarded and the default design will be restored.",
+      "confirmLabel": "Reset"
+    },
+    "css": {
+      "title": "CSS override",
+      "description": "Free-form CSS loaded in addition to the theme on all devices.",
+      "placeholder": "/* :root { --team-red: #ff0000 } */",
+      "save": "Save CSS"
+    },
+    "toast": {
+      "cssSaved": "CSS saved",
+      "jsSaved": "JavaScript saved",
+      "reset": "Reset to defaults",
+      "exported": "Skeleton exported",
+      "imported": "Skeleton imported",
+      "exportFailed": "Export failed: {{message}}",
+      "importFailed": "Import failed: {{message}}",
+      "tooLarge": "File too large (max. 512 KB)"
     }
   }
 }

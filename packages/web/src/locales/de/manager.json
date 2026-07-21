@@ -1004,7 +1004,40 @@
     },
     "js": {
       "confirmTitle": "JavaScript speichern?",
-      "confirm": "Dieser Code wird auf jedem verbundenen Gerät ausgeführt. Nur vertrauenswürdigen Code speichern."
+      "confirm": "Dieser Code wird auf jedem verbundenen Gerät ausgeführt. Nur vertrauenswürdigen Code speichern.",
+      "title": "JavaScript-Override",
+      "description": "Freies JavaScript, das auf jedem verbundenen Gerät ausgeführt wird.",
+      "placeholder": "// console.log(window.razzoozle.theme)",
+      "warning": "⚠ Dieses JavaScript läuft auf jedem Spieler-Gerät — nur vertrauenswürdigen Code einfügen (stored-XSS-Risiko).",
+      "save": "JavaScript speichern"
+    },
+    "transfer": {
+      "title": "Skeleton übertragen",
+      "description": "Exportiere das komplette Design (Tokens, CSS, JS, Assets) als ZIP oder importiere ein vorbereitetes Skeleton.",
+      "download": "Skeleton herunterladen",
+      "upload": "Skeleton hochladen (ZIP)",
+      "reset": "Auf Standard zurücksetzen"
+    },
+    "reset": {
+      "title": "Auf Standard zurücksetzen?",
+      "confirm": "Aktuelles Theme, CSS und JS werden verworfen und das Standard-Design wiederhergestellt.",
+      "confirmLabel": "Zurücksetzen"
+    },
+    "css": {
+      "title": "CSS-Override",
+      "description": "Freies CSS, das zusätzlich zum Theme auf allen Geräten geladen wird.",
+      "placeholder": "/* :root { --team-red: #ff0000 } */",
+      "save": "CSS speichern"
+    },
+    "toast": {
+      "cssSaved": "CSS gespeichert",
+      "jsSaved": "JavaScript gespeichert",
+      "reset": "Auf Standard zurückgesetzt",
+      "exported": "Skeleton exportiert",
+      "imported": "Skeleton importiert",
+      "exportFailed": "Export fehlgeschlagen: {{message}}",
+      "importFailed": "Import fehlgeschlagen: {{message}}",
+      "tooLarge": "Datei zu groß (max. 512 KB)"
     }
   }
 }

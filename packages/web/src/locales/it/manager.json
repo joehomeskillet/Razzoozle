@@ -998,13 +998,46 @@
   },
   "skeleton": {
     "import": {
-      "title": "Importare skeleton?",
-      "confirm": "Il tema, CSS e JS attuali verranno sostituiti dal contenuto dello ZIP.",
+      "title": "Importare lo scheletro?",
+      "confirm": "Il tema attuale, CSS e JS verranno sostituiti dal contenuto del ZIP.",
       "confirmLabel": "Scegli ZIP"
     },
     "js": {
       "confirmTitle": "Salvare JavaScript?",
-      "confirm": "Questo codice verrà eseguito su ogni dispositivo connesso. Salva solo codice affidabile."
+      "confirm": "Questo codice verrà eseguito su ogni dispositivo connesso. Salva solo codice attendibile.",
+      "title": "Override JavaScript",
+      "description": "JavaScript libero eseguito su ogni dispositivo connesso.",
+      "placeholder": "// console.log(window.razzoozle.theme)",
+      "warning": "⚠ Questo JavaScript viene eseguito su ogni dispositivo del giocatore — incolla solo codice attendibile (rischio di XSS archiviato).",
+      "save": "Salva JavaScript"
+    },
+    "transfer": {
+      "title": "Trasferisci scheletro",
+      "description": "Esporta il design completo (token, CSS, JS, risorse) come ZIP o importa uno scheletro preparato.",
+      "download": "Scarica scheletro",
+      "upload": "Carica scheletro (ZIP)",
+      "reset": "Ripristina impostazioni predefinite"
+    },
+    "reset": {
+      "title": "Ripristinare le impostazioni predefinite?",
+      "confirm": "Il tema attuale, CSS e JS verranno scartati e verrà ripristinato il design predefinito.",
+      "confirmLabel": "Ripristina"
+    },
+    "css": {
+      "title": "Override CSS",
+      "description": "CSS libero caricato oltre al tema su tutti i dispositivi.",
+      "placeholder": "/* :root { --team-red: #ff0000 } */",
+      "save": "Salva CSS"
+    },
+    "toast": {
+      "cssSaved": "CSS salvato",
+      "jsSaved": "JavaScript salvato",
+      "reset": "Ripristinato alle impostazioni predefinite",
+      "exported": "Scheletro esportato",
+      "imported": "Scheletro importato",
+      "exportFailed": "Esportazione non riuscita: {{message}}",
+      "importFailed": "Importazione non riuscita: {{message}}",
+      "tooLarge": "File troppo grande (max. 512 KB)"
     }
   }
 }
