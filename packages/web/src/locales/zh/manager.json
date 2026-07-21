@@ -194,10 +194,12 @@
   "dev": {
     "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",
     "theme": {
-      "title": "主题覆盖"
+      "title": "主题覆盖",
+      "description": "在所有设备上额外加载的自定义 CSS 与 JavaScript。"
     },
     "animatedCss": {
-      "title": "动态 CSS"
+      "title": "动态 CSS",
+      "description": "动画背景的自定义 CSS。保存会应用当前主题。"
     },
     "api": {
       "title": "API 浏览器",
@@ -240,7 +242,21 @@
       "download": "下载"
     },
     "title": "开发工具",
-    "intro": "开发模式下的诊断、测试数据和 API 工具。"
+    "intro": "开发模式下的诊断、测试数据和 API 工具。",
+    "mode": "开发模式",
+    "section": {
+      "debug": "调试与诊断",
+      "testdata": "测试数据与模拟",
+      "perf": "性能与指标",
+      "export": "数据导出",
+      "security": "安全与令牌",
+      "api": "API 与文档",
+      "theme": "主题开发"
+    },
+    "danger": {
+      "title": "危险操作",
+      "description": "不可逆操作。需要确认。"
+    }
   },
   "media": {
     "title": "媒体库",
@@ -979,5 +995,16 @@
     },
     "editLabel": "编辑标签",
     "deleteLabel": "删除标签"
+  },
+  "skeleton": {
+    "import": {
+      "title": "导入骨架？",
+      "confirm": "当前主题、CSS 和 JS 将被 ZIP 内容替换。",
+      "confirmLabel": "选择 ZIP"
+    },
+    "js": {
+      "confirmTitle": "保存 JavaScript？",
+      "confirm": "此代码将在每个已连接设备上运行。请仅保存可信代码。"
+    }
   }
 }

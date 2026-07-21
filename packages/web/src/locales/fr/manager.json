@@ -234,13 +234,29 @@
       "download": "Télécharger"
     },
     "theme": {
-      "title": "Surcharges de thème"
+      "title": "Surcharges de thème",
+      "description": "CSS et JavaScript libres chargés en plus du thème sur tous les appareils."
     },
     "animatedCss": {
-      "title": "CSS animé"
+      "title": "CSS animé",
+      "description": "CSS personnalisé pour l’arrière-plan animé. Enregistrer applique le thème actuel."
     },
     "title": "Outils de développement",
-    "intro": "Diagnostic, données de test et outils d'API pour le mode développement."
+    "intro": "Diagnostic, données de test et outils d'API pour le mode développement.",
+    "mode": "Mode développement",
+    "section": {
+      "debug": "Debug et diagnostic",
+      "testdata": "Données de test et simulation",
+      "perf": "Performance et métriques",
+      "export": "Export de données",
+      "security": "Sécurité et jetons",
+      "api": "API et docs",
+      "theme": "Développement du thème"
+    },
+    "danger": {
+      "title": "Zone dangereuse",
+      "description": "Actions irréversibles. Confirmation requise."
+    }
   },
   "satellite": {
     "title": "Écran satellite",
@@ -979,5 +995,16 @@
     },
     "editLabel": "Modifier le label",
     "deleteLabel": "Supprimer le label"
+  },
+  "skeleton": {
+    "import": {
+      "title": "Importer le skeleton ?",
+      "confirm": "Le thème, le CSS et le JS actuels seront remplacés par le contenu du ZIP.",
+      "confirmLabel": "Choisir le ZIP"
+    },
+    "js": {
+      "confirmTitle": "Enregistrer le JavaScript ?",
+      "confirm": "Ce code s’exécutera sur chaque appareil connecté. N’enregistrez que du code de confiance."
+    }
   }
 }

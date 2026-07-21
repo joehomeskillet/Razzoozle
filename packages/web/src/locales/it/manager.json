@@ -223,13 +223,29 @@
       "download": "Scarica"
     },
     "theme": {
-      "title": "Sovrascritture del tema"
+      "title": "Sovrascritture del tema",
+      "description": "CSS e JavaScript liberi caricati in aggiunta al tema su tutti i dispositivi."
     },
     "animatedCss": {
-      "title": "CSS animato"
+      "title": "CSS animato",
+      "description": "CSS personalizzato per lo sfondo animato. Salvare applica il tema corrente."
     },
     "title": "Strumenti di sviluppo",
-    "intro": "Diagnostica, dati di test e strumenti API per la modalità di sviluppo."
+    "intro": "Diagnostica, dati di test e strumenti API per la modalità di sviluppo.",
+    "mode": "Modalità sviluppo",
+    "section": {
+      "debug": "Debug e diagnosi",
+      "testdata": "Dati di test e simulazione",
+      "perf": "Prestazioni e metriche",
+      "export": "Esportazione dati",
+      "security": "Sicurezza e token",
+      "api": "API e docs",
+      "theme": "Sviluppo tema"
+    },
+    "danger": {
+      "title": "Zona pericolosa",
+      "description": "Azioni irreversibili. Conferma richiesta."
+    }
   },
   "satellite": {
     "title": "Schermo satellite",
@@ -979,5 +995,16 @@
     },
     "editLabel": "Modifica etichetta",
     "deleteLabel": "Elimina etichetta"
+  },
+  "skeleton": {
+    "import": {
+      "title": "Importare skeleton?",
+      "confirm": "Il tema, CSS e JS attuali verranno sostituiti dal contenuto dello ZIP.",
+      "confirmLabel": "Scegli ZIP"
+    },
+    "js": {
+      "confirmTitle": "Salvare JavaScript?",
+      "confirm": "Questo codice verrà eseguito su ogni dispositivo connesso. Salva solo codice affidabile."
+    }
   }
 }
