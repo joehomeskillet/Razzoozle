@@ -958,7 +958,6 @@
       "gray": "灰色"
     },
     "editLabel": "编辑标签",
-    "deleteLabel": "删除标签",
-    "deleteImpact": "此操作无法撤销。该标签将从所有关联的测验、媒体和目录条目中移除。"
+    "deleteLabel": "删除标签"
   }
 }
