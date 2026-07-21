@@ -42,33 +42,12 @@ export const useDevTelemetry = () => {
   const [games, setGames] = useState<GameSummary[]>([])
   const [displays, setDisplays] = useState<DisplayRow[]>([])
   const [snapshot, setSnapshot] = useState<MetricsHealthSnapshot | null>(null)
-  // A compact one-shot probe of the self-documenting HTTP surface. This tab only
-  // mounts in dev mode, so /api/openapi.json is reachable same-origin. Failures
-  // are swallowed: the banner simply stays hidden rather than rendering an error.
-  const [apiInfo, setApiInfo] = useState<{
-    routes: number
-    version: string
-    valid: boolean
-  } | null>(null)
+  // apiInfo is always null: the /api/openapi.json endpoint was never implemented,
+  // so the banner remains hidden. The route table is available at /api/v1/observability/schema.
+  const apiInfo = null
   // A ticking "now" (epoch seconds) so each display's relative "last seen"
   // re-evaluates every second without a server round-trip.
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
-
-  // Probe the OpenAPI doc once on mount: route count, declared version, and
-  // whether it advertises the OpenAPI 3.1.0 contract. Silent on any failure.
-  useEffect(() => {
-    fetch("/api/openapi.json", getTokenHeader())
-      .then((r) => r.json())
-      .then((doc) => {
-        setApiInfo({
-          routes: Object.keys(doc.paths ?? {}).length,
-          version: doc.info?.version ?? "?",
-          valid: doc.openapi === "3.1.0",
-        })
-      })
-      .catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.devApiKey])
 
   // Request the live game list on mount / reconnect. The server pushes
   // GAMES_DATA back to this socket; re-running on reconnect self-heals a deploy.
