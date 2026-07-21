@@ -73,7 +73,8 @@
     "bulkDeleteTitle": "Eliminar cuestionarios",
     "bulkDeleteConfirm": "Se eliminarán permanentemente {{count}} cuestionarios seleccionados.",
     "selectQuiz": "Seleccionar «{{name}}»",
-    "moreActions": "Más opciones"
+    "moreActions": "Más opciones",
+    "intro": "Crea, edita y organiza cuestionarios."
   },
   "result": {
     "aria": {
@@ -123,7 +124,8 @@
     "export": {
       "csv": "Exportar como CSV",
       "done": "CSV descargado"
-    }
+    },
+    "intro": "Consulta partidas anteriores y comparte resultados."
   },
   "tabs": {
     "play": "Jugar",
@@ -450,7 +452,8 @@
       "technology": "Tecnología",
       "other": "Otros"
     },
-    "submitLinkUnavailable": "No disponible aún — tu enlace personal se activará pronto."
+    "submitLinkUnavailable": "No disponible aún — tu enlace personal se activará pronto.",
+    "intro": "Revisa las preguntas enviadas y apruébalas."
   },
   "media": {
     "title": "Biblioteca de medios",
@@ -648,7 +651,8 @@
     },
     "selectClass": "Seleccionar clase",
     "chooseClass": "Selecciona una clase …",
-    "klassenModeNeedsClass": "Por favor, elige una clase"
+    "klassenModeNeedsClass": "Por favor, elige una clase",
+    "intro": "Elige un cuestionario y empieza una partida."
   },
   "gameMode": {
     "title": "Modo de juego",
@@ -797,7 +801,8 @@
     "pickerEmpty": "Aún no hay estudiantes. Crea nuevos estudiantes en la gestión de estudiantes.",
     "pickerAlreadyIn": "Ya está en esta clase",
     "pickerHint": "Elige los estudiantes que deseas agregar a la clase \"{{className}}\".",
-    "pickerNoResults": "No se encontraron estudiantes"
+    "pickerNoResults": "No se encontraron estudiantes",
+    "intro": "Gestiona clases y asignaciones de alumnos."
   },
   "users": {
     "title": "Gestión de Usuarios",

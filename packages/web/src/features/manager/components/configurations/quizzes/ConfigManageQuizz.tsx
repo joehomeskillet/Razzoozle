@@ -1,5 +1,6 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Select from "@razzoozle/web/components/Select"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
@@ -77,6 +78,13 @@ const ConfigManageQuizz = () => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col pb-20">
+        <div className="mb-4 flex shrink-0 flex-col gap-3">
+          <PageHeader
+            title={t("manager:tabs.quizz")}
+            subtitle={t("manager:quizz.intro")}
+          />
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"

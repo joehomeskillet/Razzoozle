@@ -73,7 +73,8 @@
     "bulkDeleteTitle": "Supprimer les quizz",
     "bulkDeleteConfirm": "{{count}} quizz sélectionnés seront définitivement supprimés.",
     "selectQuiz": "Sélectionner « {{name}} »",
-    "moreActions": "Plus d'options"
+    "moreActions": "Plus d'options",
+    "intro": "Crée, modifie et organise des quiz."
   },
   "result": {
     "aria": {
@@ -123,7 +124,8 @@
     "export": {
       "csv": "Exporter en CSV",
       "done": "CSV téléchargé"
-    }
+    },
+    "intro": "Consulte les parties passées et partage les résultats."
   },
   "tabs": {
     "play": "Jouer",
@@ -450,7 +452,8 @@
       "technology": "Technologie",
       "other": "Autre"
     },
-    "submitLinkUnavailable": "Pas encore disponible — votre lien personnel sera activé bientôt."
+    "submitLinkUnavailable": "Pas encore disponible — votre lien personnel sera activé bientôt.",
+    "intro": "Vérifie les questions proposées et valide-les."
   },
   "media": {
     "title": "Bibliothèque de médias",
@@ -648,7 +651,8 @@
     },
     "selectClass": "Choisir la classe",
     "chooseClass": "Sélectionne une classe …",
-    "klassenModeNeedsClass": "Choisis une classe"
+    "klassenModeNeedsClass": "Choisis une classe",
+    "intro": "Choisis un quiz et lance une partie."
   },
   "gameMode": {
     "title": "Mode de jeu",
@@ -797,7 +801,8 @@
     "pickerEmpty": "Aucun élève pour le moment. Crée de nouveaux élèves dans la gestion des élèves.",
     "pickerAlreadyIn": "Déjà dans cette classe",
     "pickerHint": "Choisis les élèves à ajouter à la classe \"{{className}}\".",
-    "pickerNoResults": "Aucun élève trouvé"
+    "pickerNoResults": "Aucun élève trouvé",
+    "intro": "Gère les classes et les affectations d'élèves."
   },
   "users": {
     "title": "Gestion des Utilisateurs",

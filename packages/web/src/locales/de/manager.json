@@ -73,7 +73,8 @@
     "bulkDeleteTitle": "Quizze löschen",
     "bulkDeleteConfirm": "{{count}} ausgewählte Quizze werden dauerhaft gelöscht.",
     "selectQuiz": "„{{name}}“ auswählen",
-    "moreActions": "Weitere Optionen"
+    "moreActions": "Weitere Optionen",
+    "intro": "Quizze erstellen, bearbeiten und organisieren."
   },
   "result": {
     "delete": "Ergebnis löschen",
@@ -123,7 +124,8 @@
     "export": {
       "csv": "Als CSV exportieren",
       "done": "CSV heruntergeladen"
-    }
+    },
+    "intro": "Vergangene Spiele ansehen und teilen."
   },
   "tabs": {
     "play": "Spielen",
@@ -634,7 +636,8 @@
       "technology": "Technik",
       "other": "Sonstiges"
     },
-    "submitLinkUnavailable": "Noch nicht verfügbar — dein persönlicher Link wird demnächst aktiviert."
+    "submitLinkUnavailable": "Noch nicht verfügbar — dein persönlicher Link wird demnächst aktiviert.",
+    "intro": "Eingereichte Fragen prüfen und freigeben."
   },
   "selectQuizz": {
     "copySoloLink": "Solo-Link kopieren",
@@ -648,7 +651,8 @@
     },
     "selectClass": "Klasse wählen",
     "chooseClass": "Klasse auswählen …",
-    "klassenModeNeedsClass": "Bitte wähle eine Klasse aus"
+    "klassenModeNeedsClass": "Bitte wähle eine Klasse aus",
+    "intro": "Wähle ein Quiz und starte ein Spiel."
   },
   "achievementsConfig": {
     "title": "Achievements konfigurieren",
@@ -797,7 +801,8 @@
     "pickerEmpty": "Noch keine Schüler vorhanden. Lege neue Schüler in der Schülerverwaltung an.",
     "pickerAlreadyIn": "Bereits in dieser Klasse",
     "pickerHint": "Wähle Schüler aus, die der Klasse \"{{className}}\" hinzugefügt werden sollen.",
-    "pickerNoResults": "Keine Schüler gefunden"
+    "pickerNoResults": "Keine Schüler gefunden",
+    "intro": "Klassen und Schülerzuordnungen verwalten."
   },
   "users": {
     "title": "Nutzerverwaltung",
