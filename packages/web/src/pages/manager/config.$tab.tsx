@@ -69,6 +69,14 @@ const ManagerConfigPage = () => {
   )
 }
 
+// Map old German/alternate tab keys to new English keys for backwards compatibility.
+const oldToNewTabKeyMap: Record<string, string> = {
+  klassen: "classes",
+  schueler: "students",
+  ki: "ai",
+  quizz: "quiz",
+}
+
 export const Route = createFileRoute("/manager/config/$tab")({
   // Auth is enforced on the parent `/manager/config` layout. Here we only soft-
   // validate $tab: known-but-disallowed keys redirect to the first allowed tab.
@@ -80,6 +88,17 @@ export const Route = createFileRoute("/manager/config/$tab")({
     if (!token) {
       // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router redirect() is thrown by design
       throw redirect({ to: "/manager", replace: true })
+    }
+
+    // Backwards compatibility: redirect old German keys to new English keys
+    const newTab = oldToNewTabKeyMap[params.tab]
+    if (newTab) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router redirect() is thrown by design
+      throw redirect({
+        to: "/manager/config/$tab",
+        params: { tab: newTab },
+        replace: true,
+      })
     }
 
     const knownKeys = BUILTIN_TABS.map((t) => t.key)
