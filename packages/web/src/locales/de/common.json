@@ -28,5 +28,6 @@
   "collapse": "Einklappen",
   "create": "Erstellen",
   "add": "Hinzufügen",
-  "removeLabelNamed": "{{name}} entfernen"
+  "removeLabelNamed": "{{name}} entfernen",
+  "copy": "Kopieren"
 }

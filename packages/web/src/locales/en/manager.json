@@ -234,13 +234,29 @@
       "download": "Download"
     },
     "theme": {
-      "title": "Theme Overrides"
+      "title": "Theme Overrides",
+      "description": "Free-form CSS and JavaScript loaded in addition to the theme on all devices."
     },
     "animatedCss": {
-      "title": "Animated CSS"
+      "title": "Animated CSS",
+      "description": "Custom CSS for the animated background. Saving applies the current theme."
     },
     "title": "Developer tools",
-    "intro": "Diagnostics, test data and API tools for development mode."
+    "intro": "Diagnostics, test data and API tools for development mode.",
+    "mode": "Development mode",
+    "section": {
+      "debug": "Debug & diagnose",
+      "testdata": "Test data & simulation",
+      "perf": "Performance & metrics",
+      "export": "Data export",
+      "security": "Security & tokens",
+      "api": "API & docs",
+      "theme": "Theme development"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "description": "Irreversible actions. Confirmation required."
+    }
   },
   "media": {
     "title": "Media library",
@@ -979,5 +995,16 @@
     },
     "editLabel": "Edit label",
     "deleteLabel": "Delete label"
+  },
+  "skeleton": {
+    "import": {
+      "title": "Import skeleton?",
+      "confirm": "The current theme, CSS and JS will be replaced by the ZIP contents.",
+      "confirmLabel": "Choose ZIP"
+    },
+    "js": {
+      "confirmTitle": "Save JavaScript?",
+      "confirm": "This code will run on every connected device. Only save trusted code."
+    }
   }
 }

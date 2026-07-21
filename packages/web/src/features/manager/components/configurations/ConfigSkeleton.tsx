@@ -14,6 +14,7 @@ import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   AlertTriangle,
   Code2,
+  Copy,
   Download,
   FileCode,
   RotateCcw,
@@ -262,6 +263,15 @@ const ConfigSkeleton = () => {
     socket.emit(EVENTS.MANAGER.RESET_SKELETON)
   }
 
+  const copyToClipboard = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      toast.success(t("common:copied"))
+    } catch {
+      toast.error(t("common:networkError"))
+    }
+  }
+
   return (
     <motion.div
       className="flex flex-1 flex-col"
@@ -272,7 +282,7 @@ const ConfigSkeleton = () => {
       }
     >
       <div className="flex flex-col gap-6 pb-6">
-        {/* ── Import / Export ──────────────────────────────────────── */}
+        {/* ── Import / Export / Reset (danger-zone) ────────────────── */}
         <SectionCard
           icon={<Download className="size-5" />}
           title={t("manager:skeleton.transfer.title", {
@@ -283,66 +293,89 @@ const ConfigSkeleton = () => {
               "Exportiere das komplette Design (Tokens, CSS, JS, Assets) als ZIP oder importiere ein vorbereitetes Skeleton.",
           })}
         >
-          <SubGroup>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="primary"
-                type="button"
-                onClick={handleDownload}
-                disabled={downloading}
-              >
-                <Download className="size-4" aria-hidden />
-                {t("manager:skeleton.transfer.download", {
-                  defaultValue: "Skeleton herunterladen",
-                })}
-              </Button>
+          <div className="border-l-4 border-[var(--state-wrong-soft)] pl-4">
+            <p className="mb-1 text-sm font-semibold text-[var(--state-wrong)]">
+              {t("manager:dev.danger.title")}
+            </p>
+            <p className="mb-3 text-sm text-[var(--ink-subtle)]">
+              {t("manager:dev.danger.description")}
+            </p>
+            <SubGroup>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={downloading}
+                >
+                  <Download className="size-4" aria-hidden />
+                  {t("manager:skeleton.transfer.download", {
+                    defaultValue: "Skeleton herunterladen",
+                  })}
+                </Button>
 
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={importing}
-              >
-                <Upload className="size-4" aria-hidden />
-                {t("manager:skeleton.transfer.upload", {
-                  defaultValue: "Skeleton hochladen (ZIP)",
-                })}
-              </Button>
+                {/* Import overwrites live theme assets — confirm first. */}
+                <AlertDialog
+                  trigger={
+                    <Button
+                      variant="secondary"
+                      type="button"
+                      disabled={importing}
+                    >
+                      <Upload className="size-4" aria-hidden />
+                      {t("manager:skeleton.transfer.upload", {
+                        defaultValue: "Skeleton hochladen (ZIP)",
+                      })}
+                    </Button>
+                  }
+                  title={t("manager:skeleton.import.title", {
+                    defaultValue: "Skeleton importieren?",
+                  })}
+                  description={t("manager:skeleton.import.confirm", {
+                    defaultValue:
+                      "Das aktuelle Theme, CSS und JS werden durch den ZIP-Inhalt ersetzt.",
+                  })}
+                  confirmLabel={t("manager:skeleton.import.confirmLabel", {
+                    defaultValue: "ZIP wählen",
+                  })}
+                  onConfirm={() => fileInputRef.current?.click()}
+                />
 
-              <AlertDialog
-                trigger={
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    disabled={resetting}
-                  >
-                    <RotateCcw className="size-4" aria-hidden />
-                    {t("manager:skeleton.transfer.reset", {
-                      defaultValue: "Auf Standard zurücksetzen",
-                    })}
-                  </Button>
-                }
-                title={t("manager:skeleton.reset.title", {
-                  defaultValue: "Auf Standard zurücksetzen?",
-                })}
-                description={t("manager:skeleton.reset.confirm", {
-                  defaultValue:
-                    "Aktuelles Theme, CSS und JS werden verworfen und das Standard-Design wiederhergestellt.",
-                })}
-                confirmLabel={t("manager:skeleton.reset.confirmLabel", {
-                  defaultValue: "Zurücksetzen",
-                })}
-                onConfirm={handleReset}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip,application/zip"
-                className="hidden"
-                onChange={handleUpload}
-              />
-            </div>
-          </SubGroup>
+                <AlertDialog
+                  trigger={
+                    <Button
+                      variant="secondary"
+                      type="button"
+                      disabled={resetting}
+                    >
+                      <RotateCcw className="size-4" aria-hidden />
+                      {t("manager:skeleton.transfer.reset", {
+                        defaultValue: "Auf Standard zurücksetzen",
+                      })}
+                    </Button>
+                  }
+                  title={t("manager:skeleton.reset.title", {
+                    defaultValue: "Auf Standard zurücksetzen?",
+                  })}
+                  description={t("manager:skeleton.reset.confirm", {
+                    defaultValue:
+                      "Aktuelles Theme, CSS und JS werden verworfen und das Standard-Design wiederhergestellt.",
+                  })}
+                  confirmLabel={t("manager:skeleton.reset.confirmLabel", {
+                    defaultValue: "Zurücksetzen",
+                  })}
+                  onConfirm={handleReset}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip,application/zip"
+                  className="hidden"
+                  onChange={handleUpload}
+                />
+              </div>
+            </SubGroup>
+          </div>
         </SectionCard>
 
         {/* ── CSS editor ───────────────────────────────────────────── */}
@@ -356,9 +389,24 @@ const ConfigSkeleton = () => {
               "Freies CSS, das zusätzlich zum Theme auf allen Geräten geladen wird.",
           })}
         >
-          <label htmlFor="skeleton-css" className="sr-only">
-            {t("manager:skeleton.css.title", { defaultValue: "CSS-Override" })}
-          </label>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="skeleton-css" className="sr-only">
+              {t("manager:skeleton.css.title", {
+                defaultValue: "CSS-Override",
+              })}
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                void copyToClipboard(cssDraft)
+              }}
+              aria-label={t("common:copy")}
+              title={t("common:copy")}
+              className="ml-auto inline-flex size-9 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            >
+              <Copy className="size-4" aria-hidden />
+            </button>
+          </div>
           <textarea
             id="skeleton-css"
             value={cssDraft}
@@ -395,50 +443,82 @@ const ConfigSkeleton = () => {
               "Freies JavaScript, das auf jedem verbundenen Gerät ausgeführt wird.",
           })}
         >
-          {/* Prominent red warning — this is stored XSS by design (contract §1). */}
-          <div
-            role="alert"
-            className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-[var(--status-offline-bg)] p-3 text-sm font-medium text-[var(--status-offline-text)]"
-          >
-            <AlertTriangle
-              className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"
-              aria-hidden
-            />
-            <span>
-              {t("manager:skeleton.js.warning", {
-                defaultValue:
-                  "⚠ Dieses JavaScript läuft auf jedem Spieler-Gerät — nur vertrauenswürdigen Code einfügen (stored-XSS-Risiko).",
-              })}
-            </span>
-          </div>
-
-          <label htmlFor="skeleton-js" className="sr-only">
-            {t("manager:skeleton.js.title", {
-              defaultValue: "JavaScript-Override",
-            })}
-          </label>
-          <textarea
-            id="skeleton-js"
-            value={jsDraft}
-            onChange={(e) => setJsDraft(e.target.value)}
-            spellCheck={false}
-            rows={12}
-            placeholder={t("manager:skeleton.js.placeholder", {
-              defaultValue: "// console.log(window.razzoozle.theme)",
-            })}
-            className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-          />
-          <div className="flex justify-end">
-            <Button
-              variant="danger"
-              type="button"
-              onClick={handleSaveAsset("js")}
-              disabled={savingKind === "js"}
+          <div className="border-l-4 border-[var(--state-wrong-soft)] space-y-3 pl-4">
+            <p className="text-sm font-semibold text-[var(--state-wrong)]">
+              {t("manager:dev.danger.title")}
+            </p>
+            {/* Prominent red warning — stored XSS by design (contract §1). */}
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-[var(--status-offline-bg)] p-3 text-sm font-medium text-[var(--status-offline-text)]"
             >
-              {t("manager:skeleton.js.save", {
-                defaultValue: "JavaScript speichern",
+              <AlertTriangle
+                className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"
+                aria-hidden
+              />
+              <span>
+                {t("manager:skeleton.js.warning", {
+                  defaultValue:
+                    "⚠ Dieses JavaScript läuft auf jedem Spieler-Gerät — nur vertrauenswürdigen Code einfügen (stored-XSS-Risiko).",
+                })}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  void copyToClipboard(jsDraft)
+                }}
+                aria-label={t("common:copy")}
+                title={t("common:copy")}
+                className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              >
+                <Copy className="size-4" aria-hidden />
+              </button>
+            </div>
+            <label htmlFor="skeleton-js" className="sr-only">
+              {t("manager:skeleton.js.title", {
+                defaultValue: "JavaScript-Override",
               })}
-            </Button>
+            </label>
+            <textarea
+              id="skeleton-js"
+              value={jsDraft}
+              onChange={(e) => setJsDraft(e.target.value)}
+              spellCheck={false}
+              rows={12}
+              placeholder={t("manager:skeleton.js.placeholder", {
+                defaultValue: "// console.log(window.razzoozle.theme)",
+              })}
+              className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+            />
+            <div className="flex justify-end">
+              <AlertDialog
+                trigger={
+                  <Button
+                    variant="danger"
+                    type="button"
+                    disabled={savingKind === "js"}
+                  >
+                    {t("manager:skeleton.js.save", {
+                      defaultValue: "JavaScript speichern",
+                    })}
+                  </Button>
+                }
+                title={t("manager:skeleton.js.confirmTitle", {
+                  defaultValue: "JavaScript speichern?",
+                })}
+                description={t("manager:skeleton.js.confirm", {
+                  defaultValue:
+                    "Dieser Code wird auf jedem verbundenen Gerät ausgeführt. Nur vertrauenswürdigen Code speichern.",
+                })}
+                confirmLabel={t("manager:skeleton.js.save", {
+                  defaultValue: "JavaScript speichern",
+                })}
+                onConfirm={handleSaveAsset("js")}
+              />
+            </div>
           </div>
         </SectionCard>
       </div>

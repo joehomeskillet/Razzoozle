@@ -234,13 +234,29 @@
       "download": "Herunterladen"
     },
     "theme": {
-      "title": "Theme-Overrides"
+      "title": "Theme-Overrides",
+      "description": "Freies CSS und JavaScript, das zusätzlich zum Theme auf allen Geräten geladen wird."
     },
     "animatedCss": {
-      "title": "Animated CSS"
+      "title": "Animated CSS",
+      "description": "Eigenes CSS für den animierten Hintergrund. Speichern überträgt das aktuelle Theme."
     },
     "title": "Entwicklungswerkzeuge",
-    "intro": "Diagnose, Testdaten und API-Werkzeuge für den Entwicklungsmodus."
+    "intro": "Diagnose, Testdaten und API-Werkzeuge für den Entwicklungsmodus.",
+    "mode": "Entwicklungsmodus",
+    "section": {
+      "debug": "Debug & Diagnose",
+      "testdata": "Testdaten & Simulation",
+      "perf": "Performance & Metriken",
+      "export": "Datenexport",
+      "security": "Sicherheit & Tokens",
+      "api": "API & Docs",
+      "theme": "Theme-Entwicklung"
+    },
+    "danger": {
+      "title": "Gefahrenzone",
+      "description": "Irreversible Aktionen. Bestätigung erforderlich."
+    }
   },
   "media": {
     "title": "Medienbibliothek",
@@ -979,5 +995,16 @@
     },
     "editLabel": "Fach bearbeiten",
     "deleteLabel": "Fach löschen"
+  },
+  "skeleton": {
+    "import": {
+      "title": "Skeleton importieren?",
+      "confirm": "Das aktuelle Theme, CSS und JS werden durch den ZIP-Inhalt ersetzt.",
+      "confirmLabel": "ZIP wählen"
+    },
+    "js": {
+      "confirmTitle": "JavaScript speichern?",
+      "confirm": "Dieser Code wird auf jedem verbundenen Gerät ausgeführt. Nur vertrauenswürdigen Code speichern."
+    }
   }
 }

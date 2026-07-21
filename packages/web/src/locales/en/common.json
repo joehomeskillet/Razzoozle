@@ -28,5 +28,6 @@
   "collapse": "Collapse",
   "create": "Create",
   "add": "Add",
-  "removeLabelNamed": "Remove {{name}}"
+  "removeLabelNamed": "Remove {{name}}",
+  "copy": "Copy"
 }

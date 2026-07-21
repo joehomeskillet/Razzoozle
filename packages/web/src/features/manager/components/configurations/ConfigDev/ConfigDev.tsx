@@ -2,29 +2,32 @@ import { EVENTS } from "@razzoozle/common/constants"
 import { SectionCard } from "@razzoozle/web/features/manager/components/console"
 import AnimatedCssEditor from "@razzoozle/web/features/manager/components/configurations/AnimatedCssEditor"
 import ConfigSkeleton from "@razzoozle/web/features/manager/components/configurations/ConfigSkeleton"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
-import { Palette, Sparkles } from "lucide-react"
-import { useState } from "react"
+import { Info, Sparkles } from "lucide-react"
+import { type ReactNode, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { ApiExplorerCard } from "./ApiExplorerCard"
 import { LogsCard } from "./LogsCard"
 import { ObservabilityCard } from "./ObservabilityCard"
-import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { useDevTelemetry } from "./useDevTelemetry"
 
-// Dev tab — a read-only "developer console" for the manager. Stacked
-// SectionCards: theme overrides (skeleton CSS/JS + animated-background CSS)
-// relocated here from the Design tab, an API Explorer that opens the
-// self-documenting HTTP surface, a live Observability panel wired to the
-// existing manager socket events (LIST_GAMES / GAMES_DATA, DISPLAY.STATUS,
-// METRICS.SUBSCRIBE / HEALTH), and a Logs card to download the recent redacted
-// server/client log rings. It only reuses already-shipped contracts and the
-// shared console primitives — it adds neither a new event, a new dep, nor a new
-// CSS file.
+// Dev tab — read-only developer console for the manager, organised into
+// functional IA groups. Cards only reuse shipped contracts and shared console
+// primitives (no new events, deps, or CSS files).
 //
-// Redaction notice: passwords, API tokens and answer solutions are never logged.
-// That promise is surfaced as the API Explorer's description so it stays visible.
+// Auth: tab is gated admin + devMode in configurations/index.tsx (BUILTIN_TABS
+// roleGate/gated + isTabAllowed). Route-level redirect in config.$tab.tsx.
+//
+// Redaction: passwords, API tokens and answer solutions are never logged.
+
+/** Lightweight section header (no Accordion in repo — YAGNI). */
+const GroupHeader = ({ children }: { children: ReactNode }) => (
+  <p className="px-1 text-xs font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
+    {children}
+  </p>
+)
 
 const ConfigDev = () => {
   const { t } = useTranslation("manager")
@@ -39,11 +42,8 @@ const ConfigDev = () => {
     now,
   } = useDevTelemetry()
 
-  // Live theme + a local mirror of the animated-background CSS. The dev card is
-  // a minimal editor for theme.backgrounds.animatedCss: it reads the current
-  // value from the theme store, holds the edit locally, and persists on change
-  // via the same MANAGER.SET_THEME flow AnimatedBackgroundControls used (the
-  // full theme carries this field under backgrounds.animatedCss).
+  // Live theme + local mirror of animated-background CSS. Persists via the
+  // same MANAGER.SET_THEME flow AnimatedBackgroundControls uses.
   const { theme, setTheme } = useThemeStore()
   const [animatedCss, setAnimatedCss] = useState(
     theme.backgrounds.animatedCss ?? "",
@@ -63,50 +63,66 @@ const ConfigDev = () => {
     <>
       <div className="mb-4 flex shrink-0 flex-col gap-3">
         <PageHeader
-          title={t("dev.title", { defaultValue: "Entwicklung" })}
-          subtitle={t("dev.intro", { defaultValue: "Werkzeuge für Entwickler: API-Explorer, Live-Überwachung und Logs." })}
+          title={t("dev.title")}
+          subtitle={t("dev.intro")}
+          action={
+            <span
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--status-pending-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--status-pending-text)]"
+              role="status"
+            >
+              <Info className="size-3.5 shrink-0" aria-hidden />
+              {t("dev.mode")}
+            </span>
+          }
         />
       </div>
 
-      <div className="space-y-4">
-      {/* ── Theme overrides (relocated from the Design tab) ─────────────
-        ConfigSkeleton is prop-less and self-contained: it brings its own
-        SectionCards for the CSS-Override + JavaScript-Override editors. */}
-      <SectionCard
-        icon={<Palette className="size-5" />}
-        title={t("dev.theme.title", { defaultValue: "Theme-Overrides" })}
-        description={t("dev.theme.description", {
-          defaultValue:
-            "Freies CSS und JavaScript, das zusätzlich zum Theme auf allen Geräten geladen wird.",
-        })}
-      >
-        <ConfigSkeleton />
-      </SectionCard>
+      <div className="space-y-6">
+        {/* ── Debug & Diagnose ─────────────────────────────────────────
+            ObservabilityCard: live games, displays, health, metrics.
+            Metrics (perf) live inside this card — no separate perf card. */}
+        <div className="space-y-3">
+          <GroupHeader>{t("dev.section.debug")}</GroupHeader>
+          <ObservabilityCard
+            isConnected={isConnected}
+            games={games}
+            snapshot={snapshot}
+            displays={displays}
+            now={now}
+            withToken={withToken}
+          />
+        </div>
 
-      {/* ── Animated CSS — minimal theme draft wired to MANAGER.SET_THEME ── */}
-      <SectionCard
-        icon={<Sparkles className="size-5" />}
-        title={t("dev.animatedCss.title", { defaultValue: "Animated CSS" })}
-        description={t("dev.animatedCss.description", {
-          defaultValue:
-            "Eigenes CSS für den animierten Hintergrund. Speichern überträgt das aktuelle Theme.",
-        })}
-      >
-        <AnimatedCssEditor value={animatedCss} onChange={saveAnimatedCss} />
-      </SectionCard>
+        {/* ── Data Export ──────────────────────────────────────────────
+            LogsCard downloads redacted server/client log rings. */}
+        <div className="space-y-3">
+          <GroupHeader>{t("dev.section.export")}</GroupHeader>
+          <LogsCard withToken={withToken} />
+        </div>
 
-      <ApiExplorerCard apiInfo={apiInfo} withToken={withToken} />
+        {/* ── API & Docs ───────────────────────────────────────────────
+            Self-documenting HTTP surface + token placeholder EmptyState. */}
+        <div className="space-y-3">
+          <GroupHeader>{t("dev.section.api")}</GroupHeader>
+          <ApiExplorerCard apiInfo={apiInfo} withToken={withToken} />
+        </div>
 
-      <ObservabilityCard
-        isConnected={isConnected}
-        games={games}
-        snapshot={snapshot}
-        displays={displays}
-        now={now}
-        withToken={withToken}
-      />
-
-      <LogsCard withToken={withToken} />
+        {/* ── Theme Development ────────────────────────────────────────
+            ConfigSkeleton (CSS/JS overrides + transfer/reset) and
+            AnimatedCssEditor. Destructive ops live inside ConfigSkeleton
+            and are marked with the danger-zone border there. */}
+        <div className="space-y-3">
+          <GroupHeader>{t("dev.section.theme")}</GroupHeader>
+          {/* ConfigSkeleton is prop-less and brings its own SectionCards. */}
+          <ConfigSkeleton />
+          <SectionCard
+            icon={<Sparkles className="size-5" />}
+            title={t("dev.animatedCss.title")}
+            description={t("dev.animatedCss.description")}
+          >
+            <AnimatedCssEditor value={animatedCss} onChange={saveAnimatedCss} />
+          </SectionCard>
+        </div>
       </div>
     </>
   )

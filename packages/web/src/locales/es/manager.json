@@ -194,10 +194,12 @@
   "dev": {
     "redactionNotice": "Las contraseñas, los tokens de API y las soluciones de respuestas nunca se registran.",
     "theme": {
-      "title": "Sobrescrituras de tema"
+      "title": "Sobrescrituras de tema",
+      "description": "CSS y JavaScript libre que se carga además del tema en todos los dispositivos."
     },
     "animatedCss": {
-      "title": "CSS animado"
+      "title": "CSS animado",
+      "description": "CSS propio para el fondo animado. Guardar aplica el tema actual."
     },
     "api": {
       "title": "Explorador de API",
@@ -240,7 +242,21 @@
       "download": "Descargar"
     },
     "title": "Herramientas de desarrollo",
-    "intro": "Diagnóstico, datos de prueba y herramientas de API para el modo de desarrollo."
+    "intro": "Diagnóstico, datos de prueba y herramientas de API para el modo de desarrollo.",
+    "mode": "Modo de desarrollo",
+    "section": {
+      "debug": "Depuración y diagnóstico",
+      "testdata": "Datos de prueba y simulación",
+      "perf": "Rendimiento y métricas",
+      "export": "Exportación de datos",
+      "security": "Seguridad y tokens",
+      "api": "API y docs",
+      "theme": "Desarrollo del tema"
+    },
+    "danger": {
+      "title": "Zona de peligro",
+      "description": "Acciones irreversibles. Se requiere confirmación."
+    }
   },
   "satellite": {
     "title": "Pantalla satélite",
@@ -979,5 +995,16 @@
     },
     "editLabel": "Editar etiqueta",
     "deleteLabel": "Eliminar etiqueta"
+  },
+  "skeleton": {
+    "import": {
+      "title": "¿Importar skeleton?",
+      "confirm": "El tema, CSS y JS actuales se reemplazarán por el contenido del ZIP.",
+      "confirmLabel": "Elegir ZIP"
+    },
+    "js": {
+      "confirmTitle": "¿Guardar JavaScript?",
+      "confirm": "Este código se ejecutará en cada dispositivo conectado. Solo guarda código de confianza."
+    }
   }
 }
