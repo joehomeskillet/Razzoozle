@@ -150,7 +150,7 @@ const MediaCard = ({
         item={item}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        triggerRef={dialogTriggerRef}
+
       />
     </motion.article>
   )

@@ -48,7 +48,6 @@ interface MediaInfoDialogProps {
   item: MediaMeta
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  triggerRef?: React.RefObject<HTMLButtonElement | null>
 }
 
 // Per-card "info" affordance — keeps every card uniform/compact while the full
@@ -58,7 +57,6 @@ const MediaInfoDialog = ({
   item,
   open: controlledOpen,
   onOpenChange: onControlledOpenChange,
-  triggerRef,
 }: MediaInfoDialogProps) => {
   const { t } = useTranslation()
   const { socket } = useSocket()
