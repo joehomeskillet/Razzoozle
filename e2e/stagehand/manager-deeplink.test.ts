@@ -1,23 +1,37 @@
 /**
  * e2e/stagehand/manager-deeplink.test.ts
  *
- * Hard-load deep-link regression: /manager/config/classes must stay on the
- * classes tab after a true browser navigation (page.goto), not fall back to
- * play while config (klassenEnabled) is still undefined in the manager store.
+ * Hard-load deep-link regression (WP routes-B2, issue agent-claude/Razzoozle#219).
  *
- * Bug (ConsoleBody, configurations/index.tsx): before klassenEnabled is set by
- * the server CONFIG event, allowedTabs omits klassen-gated tabs and the render
- * fallback + useEffect navigate to allowedTabs[0] ("play"). This test must FAIL
- * without the hydration gate on that fallback/navigate (final URL → /play, or
- * active tab → Play while still settling).
+ * ROOT CAUSE (now fixed): the `/manager/config` route never emitted GET_CONFIG,
+ * so on a TRUE browser navigation (page.goto) the manager store's in-memory
+ * `config` stayed null. The child route then ran `navigate({ to: "/manager" })`,
+ * and the login page — seeing the still-valid sessionStorage token — redirected
+ * to the BARE `/manager/config`, discarding the intended $tab and resolving to
+ * the first allowed tab ("play" / Spielen). In-app clicks worked (config was
+ * already loaded); only hard loads / deep-links broke, silently (0 console errors).
+ *
+ * FIX: the `/manager/config` layout now bootstraps config itself — it emits
+ * GET_CONFIG (mirroring the `/manager/quizz` layout) and shows a loader until the
+ * CONFIG event arrives, then renders the outlet. A deep-link therefore loads
+ * config IN PLACE and keeps its tab instead of round-tripping through `/manager`.
+ *
+ * This spec hard-loads three deep-links against a fresh browser context with a
+ * valid session (token in sessionStorage, no stored tab preference) and asserts
+ * the TARGET tab renders — never the "play" fallback:
+ *   1. /manager/config/quiz     (ungated → cleanest core-bug repro)
+ *   2. /manager/config/classes  (klassenEnabled-gated)
+ *   3. /manager/config/klassen  (old German slug → redirects to /classes)
  *
  * Run: `npx tsx e2e/stagehand/manager-deeplink.test.ts`
- * Requires: E2E_PW or RAZZOOZLE_ADMIN_PW; classes tab needs klassenEnabled on the target.
+ * Requires: E2E_PW or RAZZOOZLE_ADMIN_PW. Cases 2 & 3 need klassenEnabled on the
+ * target (classes is only an allowed tab when klassenEnabled is true).
  */
 import { newStagehand } from './config';
 import type { Page } from '@browserbasehq/stagehand/lib/v3/understudy/page.js';
 
 const BASE_URL = 'https://rust.razzoozle.xyz';
+const TAB_STORAGE_KEY = 'rahoot_manager_tab';
 
 function requireAdminPassword(): string {
   const pw = process.env.RAZZOOZLE_ADMIN_PW || process.env.E2E_PW;
@@ -48,59 +62,92 @@ async function loginAsManager(page: Page): Promise<void> {
   await page.waitForSelector('button[role="tab"]', { state: 'visible', timeout: 20_000 });
 }
 
+interface DeeplinkExpectation {
+  /** Substring the settled URL must contain (e.g. "/manager/config/quiz"). */
+  expectedUrlContains: string;
+  /** Acceptable active-nav-tab labels across de/en (e.g. ["Classes", "Klassen"]). */
+  activeTabLabels: string[];
+  /** Optional tab-body marker proving the panel rendered (e.g. "klassen-create-btn"). */
+  bodyTestId?: string;
+}
+
 /**
- * Poll the URL from goto through ConsoleBody mount. The hydration race
- * redirects to /play on the first paint after tabs appear (useEffect → onSelect).
- * Catch that intermediate redirect — not only the final settled URL.
+ * Hard-load a deep-link and assert it lands on the intended tab, never the play
+ * fallback. Clears the stored tab preference first (keeping sessionStorage, i.e.
+ * the auth token) so a stale localStorage tab can't mask the config-bootstrap
+ * behaviour under test. Polls from goto through ConsoleBody mount so an
+ * intermediate redirect to /play is caught, not only the settled URL.
  */
-async function assertNoPlayFallbackDuringHydration(page: Page, timeoutMs = 25_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let sawTabs = false;
+async function assertDeeplinkTab(
+  page: Page,
+  path: string,
+  expect: DeeplinkExpectation,
+): Promise<void> {
+  await page.evaluate((key: string) => localStorage.removeItem(key), TAB_STORAGE_KEY);
 
+  console.log(`[TEST] Hard-loading ${path} via page.goto()...`);
+  await page.goto(`${BASE_URL}${path}`);
+
+  const isPlayFallback = (url: string) => /\/manager\/config\/play\b/.test(url);
+
+  // Poll until the console tabs mount, failing fast if the URL falls back to play.
+  const deadline = Date.now() + 25_000;
+  let tabsSeen = false;
   while (Date.now() < deadline) {
-    const url = page.url();
-    if (url.includes('/manager/config/play')) {
-      throw new Error(
-        `FAIL: deep-link redirected to play fallback (hydration race). URL: ${url}`,
-      );
+    if (isPlayFallback(page.url())) {
+      throw new Error(`FAIL: ${path} redirected to play fallback. URL: ${page.url()}`);
     }
-
     const tabVisible = await page
       .locator('button[role="tab"]')
       .first()
       .isVisible()
       .catch(() => false);
-
-    if (tabVisible && !sawTabs) {
-      sawTabs = true;
-      console.log(`[TEST] Console tabs visible; URL at first paint: ${url}`);
-      // Buggy useEffect navigates on the next tick after mount — give it a
-      // few frames so a race without the gate is reproducible here.
-      await page.waitForTimeout(400);
-      const urlAfterMount = page.url();
-      console.log(`[TEST] URL ~400ms after tabs mount: ${urlAfterMount}`);
-      if (urlAfterMount.includes('/manager/config/play')) {
-        throw new Error(
-          `FAIL: deep-link redirected to play fallback right after ConsoleBody mount (hydration race). URL: ${urlAfterMount}`,
-        );
-      }
-      if (!urlAfterMount.includes('/manager/config/classes')) {
-        throw new Error(
-          `FAIL: expected /manager/config/classes right after mount, got: ${urlAfterMount}`,
-        );
-      }
-      return;
+    if (tabVisible) {
+      tabsSeen = true;
+      break;
     }
-
     await page.waitForTimeout(50);
   }
+  if (!tabsSeen) {
+    throw new Error(`FAIL: ${path} — console tabs never mounted. URL: ${page.url()}`);
+  }
 
-  throw new Error(
-    `FAIL: timed out waiting for manager console tabs after hard-load. Final URL: ${page.url()}`,
+  // Give any (buggy) post-mount navigate a few frames to surface before asserting.
+  await page.waitForTimeout(500);
+  const url = page.url();
+  if (isPlayFallback(url)) {
+    throw new Error(`FAIL: ${path} redirected to play after ConsoleBody mount. URL: ${url}`);
+  }
+  if (!url.includes(expect.expectedUrlContains)) {
+    throw new Error(
+      `FAIL: ${path} — expected URL to contain ${expect.expectedUrlContains}, got: ${url}`,
+    );
+  }
+
+  if (expect.bodyTestId) {
+    await waitForTestId(page, expect.bodyTestId, 15_000);
+  }
+
+  const activeTabText = await page.evaluate(() => {
+    const selected = document.querySelector('button[role="tab"][aria-selected="true"]');
+    return selected?.textContent?.trim() ?? '';
+  });
+  const labelOk = expect.activeTabLabels.some(
+    (label) => activeTabText === label || activeTabText.includes(label),
+  );
+  if (!labelOk) {
+    throw new Error(
+      `FAIL: ${path} — expected active tab in [${expect.activeTabLabels.join(', ')}], got: "${activeTabText}"`,
+    );
+  }
+
+  console.log(
+    `  OK ${path}: URL=${url}, activeTab="${activeTabText}"` +
+      (expect.bodyTestId ? `, body=${expect.bodyTestId}` : ''),
   );
 }
 
-async function runDeeplinkClassesTest() {
+async function runDeeplinkTests() {
   const stagehand = newStagehand();
   await stagehand.init();
   const page = stagehand.context.activePage();
@@ -109,68 +156,47 @@ async function runDeeplinkClassesTest() {
   try {
     await page.setViewportSize(1280, 900);
 
-    // Auth must be established so the token is in sessionStorage; config itself
-    // is in-memory only and will be undefined on the next hard load.
+    // Establish the session so the token lives in sessionStorage; `config` itself
+    // is in-memory only and is null again on every subsequent hard load.
     await loginAsManager(page);
 
-    // True hard page load of the deep-link (not in-app navigate / click).
-    console.log('[TEST] Hard-loading /manager/config/classes via page.goto()...');
-    await page.goto(`${BASE_URL}/manager/config/classes`);
-
-    // Race window: tabs mount while klassenEnabled may still be undefined →
-    // without the ConsoleBody hydration gate this redirects to play.
-    await assertNoPlayFallbackDuringHydration(page);
-
-    // Settle: full config + classes panel.
-    await page.waitForTimeout(1500);
-
-    const finalUrl = page.url();
-    console.log(`  Final URL: ${finalUrl}`);
-
-    if (finalUrl.includes('/manager/config/play')) {
-      throw new Error(
-        `FAIL: deep-link redirected to play fallback (hydration race). URL: ${finalUrl}`,
-      );
-    }
-    if (!finalUrl.includes('/manager/config/classes')) {
-      throw new Error(
-        `FAIL: expected URL to contain /manager/config/classes, got: ${finalUrl}`,
-      );
-    }
-
-    // Classes panel marker (ConfigKlassen create control) — proves the tab body rendered.
-    await waitForTestId(page, 'klassen-create-btn', 15_000);
-
-    // Active nav tab should be Classes / Klassen, not Play / Spielen.
-    const activeTabText = await page.evaluate(() => {
-      const selected = document.querySelector('button[role="tab"][aria-selected="true"]');
-      return selected?.textContent?.trim() ?? '';
+    // 1. Ungated tab — the cleanest core-bug repro (no klassenEnabled dependency).
+    //    Before the fix this bounced /manager → bare /manager/config → play.
+    await assertDeeplinkTab(page, '/manager/config/quiz', {
+      expectedUrlContains: '/manager/config/quiz',
+      activeTabLabels: ['Quiz'],
     });
-    const isClassesLabel =
-      activeTabText === 'Classes' ||
-      activeTabText === 'Klassen' ||
-      activeTabText.includes('Classes') ||
-      activeTabText.includes('Klassen');
-    if (!isClassesLabel) {
-      throw new Error(
-        `FAIL: expected active tab to be Classes/Klassen, got: "${activeTabText}"`,
-      );
-    }
+
+    // 2. klassenEnabled-gated tab. Proves gated deep-links survive too, and that
+    //    the tab body (ConfigKlassen) actually renders.
+    await assertDeeplinkTab(page, '/manager/config/classes', {
+      expectedUrlContains: '/manager/config/classes',
+      activeTabLabels: ['Classes', 'Klassen'],
+      bodyTestId: 'klassen-create-btn',
+    });
+
+    // 3. Old German slug → the oldToNewTabKeyMap redirect (klassen → classes)
+    //    must still fire on a hard load and end on the classes tab, not play.
+    await assertDeeplinkTab(page, '/manager/config/klassen', {
+      expectedUrlContains: '/manager/config/classes',
+      activeTabLabels: ['Classes', 'Klassen'],
+      bodyTestId: 'klassen-create-btn',
+    });
 
     console.log('============================================================');
-    console.log('MANAGER DEEPLINK (classes hard-load): PASS');
+    console.log('MANAGER DEEPLINK (hard-load): PASS');
     console.log('============================================================');
-    console.log('✓ Hard page.goto(/manager/config/classes) kept classes URL');
+    console.log('✓ /manager/config/quiz    kept quiz tab (ungated core repro)');
+    console.log('✓ /manager/config/classes kept classes tab + body (gated)');
+    console.log('✓ /manager/config/klassen redirected to classes (alt slug)');
     console.log('✓ No play fallback at ConsoleBody mount or after settle');
-    console.log('✓ Classes tab body rendered (klassen-create-btn)');
-    console.log(`✓ Active nav tab: ${activeTabText}`);
     console.log('============================================================');
   } finally {
     await stagehand.close();
   }
 }
 
-runDeeplinkClassesTest().then(
+runDeeplinkTests().then(
   () => process.exit(0),
   (err) => {
     console.error('Manager deeplink test error:', err);

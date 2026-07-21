@@ -11,6 +11,7 @@ import { useEffect } from "react"
 const ManagerAuthPage = () => {
   const { setConfig } = useManagerStore()
   const navigate = useNavigate()
+  const { redirect } = Route.useSearch()
   const { socket, isConnected, reconnect } = useSocket()
 
   useEffect(() => {
@@ -25,7 +26,20 @@ const ManagerAuthPage = () => {
 
   useEvent(EVENTS.MANAGER.CONFIG, (data) => {
     setConfig(data)
-    navigate({ to: "/manager/config" })
+    // Return to the deep-link the manager hit while logged out, if any (the
+    // `/manager/config` auth guard forwards it as `?redirect=`). Only honor a
+    // same-area config tab path; anything else falls back to the bare dashboard,
+    // which resolves the default tab.
+    const tab = redirect?.match(/^\/manager\/config\/([^/?#]+)/)?.[1]
+    if (tab) {
+      navigate({
+        to: "/manager/config/$tab",
+        params: { tab: decodeURIComponent(tab) },
+        replace: true,
+      })
+    } else {
+      navigate({ to: "/manager/config" })
+    }
   })
 
   const handleAuth = () => {

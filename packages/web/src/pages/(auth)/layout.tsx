@@ -8,6 +8,10 @@ import { z } from "zod"
 
 const searchSchema = z.object({
   pin: z.coerce.string().optional(),
+  // Post-login return path. Set by the `/manager/config` auth guard when a
+  // logged-out deep-link is hit, so login can send the manager back to the
+  // intended tab instead of the bare dashboard.
+  redirect: z.string().optional(),
 })
 
 const AuthLayout = () => {

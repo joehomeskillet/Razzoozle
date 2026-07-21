@@ -1,11 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
-import Background from "@razzoozle/web/components/Background"
-import Loader from "@razzoozle/web/components/Loader"
-import {
-  useEvent,
-  useSocket,
-} from "@razzoozle/web/features/game/contexts/socket-context"
+import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import Configurations, {
   BUILTIN_TABS,
@@ -16,20 +11,9 @@ import Configurations, {
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 const ManagerConfigPage = () => {
-  const { isConnected } = useSocket()
-  const {
-    setGameId,
-    setInviteCode,
-    setStatus,
-    setConfig,
-    patchQuizzLabels,
-    config,
-  } = useManagerStore()
+  const { setGameId, setInviteCode, setStatus, patchQuizzLabels, config } =
+    useManagerStore()
   const navigate = useNavigate()
-
-  useEvent(EVENTS.MANAGER.CONFIG, (data) => {
-    setConfig(data)
-  })
 
   // #145: patch config.quizz in the store directly on the assign/remove ack —
   // the source of truth for `Configurations`' `data` prop — instead of a
@@ -51,16 +35,12 @@ const ManagerConfigPage = () => {
     navigate({ to: "/party/manager/$gameId", params: { gameId } })
   })
 
-  if (!isConnected) {
-    return (
-      <Background plain>
-        <Loader className="h-23" />
-      </Background>
-    )
-  }
-
+  // Connection, config bootstrap, and the unauthorized bounce are owned by the
+  // parent `/manager/config` layout, which only renders this outlet once config
+  // is present. This null-guard is therefore unreachable in practice — it exists
+  // to narrow `config` for the `data` prop below.
   if (!config) {
-    return navigate({ to: "/manager" })
+    return null
   }
 
   return (
