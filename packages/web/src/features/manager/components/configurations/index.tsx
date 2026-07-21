@@ -57,9 +57,9 @@ import {
 import {
   type ComponentType,
   useEffect,
-  useState,
 } from "react"
 import { useTranslation } from "react-i18next"
+import { useNavigate, useParams } from "@tanstack/react-router"
 
 interface TabDef {
   key: string
@@ -83,7 +83,8 @@ interface TabDef {
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
 // the matching component renders in the console panel.
-const BUILTIN_TABS: TabDef[] = [
+// Exported for route-level default-tab resolution (`/manager/config` redirect).
+export const BUILTIN_TABS: TabDef[] = [
   {
     key: "play",
     nameKey: "manager:tabs.play",
@@ -210,7 +211,7 @@ const BUILTIN_TABS: TabDef[] = [
 /**
  * Visibility gate for builtins based on role, dev mode, and klassenEnabled.
  */
-const isTabAllowed = (
+export const isTabAllowed = (
   tab: TabDef,
   opts: { devMode: boolean; klassenEnabled: boolean; role: "admin" | "user" | null },
 ): boolean => {
@@ -230,6 +231,40 @@ const isTabAllowed = (
   }
 
   return true
+}
+
+/** localStorage key for last-selected manager tab (reload continuity only). */
+export const TAB_STORAGE_KEY = "rahoot_manager_tab"
+
+/**
+ * Default tab for `/manager/config` redirect: last valid stored tab, else first
+ * allowed under current role/config gates. Unregistered/missing storage falls
+ * through. Does not 404 — always returns a concrete key.
+ */
+export const resolveDefaultManagerTab = (opts?: {
+  devMode?: boolean
+  klassenEnabled?: boolean
+  role?: "admin" | "user" | null
+}): string => {
+  const gateOpts = {
+    devMode: Boolean(opts?.devMode),
+    klassenEnabled: Boolean(opts?.klassenEnabled ?? false),
+    role: opts?.role ?? "user",
+  }
+  const allowed = BUILTIN_TABS.filter((tab) => isTabAllowed(tab, gateOpts))
+  const fallback = allowed[0]?.key ?? BUILTIN_TABS[0].key
+
+  try {
+    if (typeof window === "undefined") return fallback
+    const stored = window.localStorage.getItem(TAB_STORAGE_KEY)
+    if (!stored) return fallback
+    // Valid = known builtin key AND currently allowed
+    if (allowed.some((tab) => tab.key === stored)) return stored
+  } catch {
+    // Ignore storage failures (private mode / quota).
+  }
+
+  return fallback
 }
 
 /**
@@ -355,26 +390,24 @@ interface Props {
   data: ManagerConfig
 }
 
-// Persist the open section across reloads so a refresh doesn't dump the manager
-// back on the first tab. Client-only; falls back to the first tab when the
-// stored key is missing or renamed.
-const TAB_STORAGE_KEY = "rahoot_manager_tab"
-
+// Active tab is the route param (`/manager/config/$tab`). localStorage is still
+// written on change for reload continuity via the bare `/manager/config`
+// redirect — it is not the source of truth while the console is open.
 const Configurations = ({ data }: Props) => {
-  const [activeKey, setActiveKey] = useState<string>(() => {
-    if (typeof window === "undefined") return BUILTIN_TABS[0].key
-    return (
-      window.localStorage.getItem(TAB_STORAGE_KEY) ?? BUILTIN_TABS[0].key
-    )
-  })
+  const { tab: activeKey } = useParams({ from: "/manager/config/$tab" })
+  const navigate = useNavigate()
 
   const handleSelect = (key: string) => {
-    setActiveKey(key)
     try {
       window.localStorage.setItem(TAB_STORAGE_KEY, key)
     } catch {
       // Ignore storage failures (private mode / quota).
     }
+    if (key === activeKey) return
+    void navigate({
+      to: "/manager/config/$tab",
+      params: { tab: key },
+    })
   }
 
   return (

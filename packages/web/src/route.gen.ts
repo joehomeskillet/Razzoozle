@@ -27,6 +27,7 @@ import { Route as authManagerIndexRouteImport } from './pages/(auth)/manager/ind
 import { Route as QuizzIdSoloRouteImport } from './pages/quizz/$id/solo'
 import { Route as PartyManagerGameIdRouteImport } from './pages/party/manager/$gameId'
 import { Route as ManagerQuizzQuizzIdRouteImport } from './pages/manager/quizz/$quizzId'
+import { Route as ManagerConfigTabRouteImport } from './pages/manager/config.$tab'
 import { Route as QuizzIdAssignmentAssignmentIdRouteImport } from './pages/quizz/$id/assignment.$assignmentId'
 
 const DisplayLayoutRoute = DisplayLayoutRouteImport.update({
@@ -118,6 +119,11 @@ const ManagerQuizzQuizzIdRoute = ManagerQuizzQuizzIdRouteImport.update({
   path: '/$quizzId',
   getParentRoute: () => ManagerQuizzLayoutRoute,
 } as any)
+const ManagerConfigTabRoute = ManagerConfigTabRouteImport.update({
+  id: '/$tab',
+  path: '/$tab',
+  getParentRoute: () => ManagerConfigRoute,
+} as any)
 const QuizzIdAssignmentAssignmentIdRoute =
   QuizzIdAssignmentAssignmentIdRouteImport.update({
     id: '/quizz/$id/assignment/$assignmentId',
@@ -129,7 +135,7 @@ export interface FileRoutesByFullPath {
   '/display': typeof DisplayLayoutRouteWithChildren
   '/manager/quizz': typeof ManagerQuizzLayoutRouteWithChildren
   '/display/play': typeof DisplayPlayRoute
-  '/manager/config': typeof ManagerConfigRoute
+  '/manager/config': typeof ManagerConfigRouteWithChildren
   '/party/$gameId': typeof PartyGameIdRoute
   '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/submit/': typeof SubmitIndexRoute
   '/theme-preview/': typeof ThemePreviewIndexRoute
   '/trophies/': typeof TrophiesIndexRoute
+  '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
@@ -147,7 +154,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/display/play': typeof DisplayPlayRoute
-  '/manager/config': typeof ManagerConfigRoute
+  '/manager/config': typeof ManagerConfigRouteWithChildren
   '/party/$gameId': typeof PartyGameIdRoute
   '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/submit': typeof SubmitIndexRoute
   '/theme-preview': typeof ThemePreviewIndexRoute
   '/trophies': typeof TrophiesIndexRoute
+  '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
@@ -169,7 +177,7 @@ export interface FileRoutesById {
   '/display': typeof DisplayLayoutRouteWithChildren
   '/manager/quizz': typeof ManagerQuizzLayoutRouteWithChildren
   '/display/play': typeof DisplayPlayRoute
-  '/manager/config': typeof ManagerConfigRoute
+  '/manager/config': typeof ManagerConfigRouteWithChildren
   '/party/$gameId': typeof PartyGameIdRoute
   '/r/$id': typeof RIdRoute
   '/satellite/$gameId': typeof SatelliteGameIdRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/submit/': typeof SubmitIndexRoute
   '/theme-preview/': typeof ThemePreviewIndexRoute
   '/trophies/': typeof TrophiesIndexRoute
+  '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/submit/'
     | '/theme-preview/'
     | '/trophies/'
+    | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/quizz/$id/solo'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/submit'
     | '/theme-preview'
     | '/trophies'
+    | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/quizz/$id/solo'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/submit/'
     | '/theme-preview/'
     | '/trophies/'
+    | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
     | '/party/manager/$gameId'
     | '/quizz/$id/solo'
@@ -251,7 +263,7 @@ export interface RootRouteChildren {
   authLayoutRoute: typeof authLayoutRouteWithChildren
   DisplayLayoutRoute: typeof DisplayLayoutRouteWithChildren
   ManagerQuizzLayoutRoute: typeof ManagerQuizzLayoutRouteWithChildren
-  ManagerConfigRoute: typeof ManagerConfigRoute
+  ManagerConfigRoute: typeof ManagerConfigRouteWithChildren
   PartyGameIdRoute: typeof PartyGameIdRoute
   RIdRoute: typeof RIdRoute
   SatelliteGameIdRoute: typeof SatelliteGameIdRoute
@@ -391,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerQuizzQuizzIdRouteImport
       parentRoute: typeof ManagerQuizzLayoutRoute
     }
+    '/manager/config/$tab': {
+      id: '/manager/config/$tab'
+      path: '/$tab'
+      fullPath: '/manager/config/$tab'
+      preLoaderRoute: typeof ManagerConfigTabRouteImport
+      parentRoute: typeof ManagerConfigRoute
+    }
     '/quizz/$id/assignment/$assignmentId': {
       id: '/quizz/$id/assignment/$assignmentId'
       path: '/quizz/$id/assignment/$assignmentId'
@@ -442,11 +461,23 @@ const ManagerQuizzLayoutRouteChildren: ManagerQuizzLayoutRouteChildren = {
 const ManagerQuizzLayoutRouteWithChildren =
   ManagerQuizzLayoutRoute._addFileChildren(ManagerQuizzLayoutRouteChildren)
 
+interface ManagerConfigRouteChildren {
+  ManagerConfigTabRoute: typeof ManagerConfigTabRoute
+}
+
+const ManagerConfigRouteChildren: ManagerConfigRouteChildren = {
+  ManagerConfigTabRoute: ManagerConfigTabRoute,
+}
+
+const ManagerConfigRouteWithChildren = ManagerConfigRoute._addFileChildren(
+  ManagerConfigRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   authLayoutRoute: authLayoutRouteWithChildren,
   DisplayLayoutRoute: DisplayLayoutRouteWithChildren,
   ManagerQuizzLayoutRoute: ManagerQuizzLayoutRouteWithChildren,
-  ManagerConfigRoute: ManagerConfigRoute,
+  ManagerConfigRoute: ManagerConfigRouteWithChildren,
   PartyGameIdRoute: PartyGameIdRoute,
   RIdRoute: RIdRoute,
   SatelliteGameIdRoute: SatelliteGameIdRoute,
