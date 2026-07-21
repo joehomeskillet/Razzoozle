@@ -956,6 +956,9 @@
       "pink": "Rosa",
       "indigo": "Indigo",
       "gray": "Grau"
-    }
+    },
+    "editLabel": "Fach bearbeiten",
+    "deleteLabel": "Fach löschen",
+    "deleteImpact": "Diese Aktion kann nicht rückgängig gemacht werden. Das Fach wird von allen verbundenen Quizzen, Medien und Katalogeinträgen entfernt."
   }
 }

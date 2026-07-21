@@ -1,3 +1,4 @@
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
@@ -31,14 +32,10 @@ const ConfigLabels = () => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-4 pb-20">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--ink)]">
-            {t("manager:labels.title")}
-          </h2>
-          <p className="mt-2 text-sm text-[var(--ink-medium)]">
-            {t("manager:labels.description")}
-          </p>
-        </div>
+        <PageHeader
+          title={t("manager:labels.title")}
+          subtitle={t("manager:labels.description")}
+        />
 
         {hasLabels ? (
           <>
@@ -76,16 +73,20 @@ const ConfigLabels = () => {
                       size="sm"
                       className="rounded-lg"
                       onClick={() => setPendingEditLabel(label)}
+                      aria-label={t("manager:labels.editLabel")}
+                      title={t("manager:labels.editLabel")}
                     >
-                      <Edit2 className="size-4" />
+                      <Edit2 className="size-4" aria-hidden />
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       className="rounded-lg"
                       onClick={() => setPendingDeleteLabel(label)}
+                      aria-label={t("manager:labels.deleteLabel")}
+                      title={t("manager:labels.deleteLabel")}
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-4" aria-hidden />
                     </Button>
                   </div>
                 </div>
@@ -121,9 +122,13 @@ const ConfigLabels = () => {
             }
           }}
           title={t("manager:labels.deleteTitle")}
-          description={t("manager:labels.deleteConfirm", {
-            name: pendingDeleteLabel?.name ?? "",
-          })}
+          description={
+            t("manager:labels.deleteConfirm", {
+              name: pendingDeleteLabel?.name ?? "",
+            }) +
+            "\n\n" +
+            t("manager:labels.deleteImpact")
+          }
           confirmLabel={t("common:delete")}
           onConfirm={handleDeleteLabel}
         />

@@ -956,6 +956,9 @@
       "pink": "Rose",
       "indigo": "Indigo",
       "gray": "Gris"
-    }
+    },
+    "editLabel": "Modifier le label",
+    "deleteLabel": "Supprimer le label",
+    "deleteImpact": "Cette action est irréversible. Le label sera supprimé de tous les quiz, médias et entrées de catalogue associés."
   }
 }
