@@ -339,7 +339,11 @@
       "label": "Visibility"
     },
     "selectEntry": "Select \"{{name}}\"",
-    "editEntry": "Edit \"{{name}}\""
+    "editEntry": "Edit \"{{name}}\"",
+    "bulkSelected": "{{count}} selected",
+    "bulkDelete": "Delete",
+    "bulkDeleteTitle": "Delete questions",
+    "bulkDeleteConfirm": "{{count}} selected questions will be permanently removed from the catalog."
   },
   "ai": {
     "title": "AI settings",

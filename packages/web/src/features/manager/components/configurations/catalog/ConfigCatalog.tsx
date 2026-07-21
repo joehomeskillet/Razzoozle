@@ -123,8 +123,9 @@ const ConfigCatalog = () => {
         {selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:aria.catalogBulkSelected", {
+            aria-label={t("manager:catalog.bulkSelected", {
               count: selectionCount,
+              defaultValue: "{{count}} ausgewählt",
             })}
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
           >
@@ -224,7 +225,7 @@ const ConfigCatalog = () => {
                     selection={
                       <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
                         <span className="sr-only">
-                          {t("manager:aria.catalogSelectEntry", {
+                          {t("manager:catalog.selectEntry", {
                             name: entry.question.question,
                           })}
                         </span>
@@ -240,7 +241,7 @@ const ConfigCatalog = () => {
                     }
                     title={entry.question.question}
                     onClick={() => openEditModal(entry)}
-                    bodyLabel={t("manager:aria.catalogEditEntry", {
+                    bodyLabel={t("manager:catalog.editEntry", {
                       name: entry.question.question,
                     })}
                     meta={

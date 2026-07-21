@@ -565,7 +565,11 @@
       "label": "Visibilidad"
     },
     "selectEntry": "Seleccionar \"{{name}}\"",
-    "editEntry": "Editar \"{{name}}\""
+    "editEntry": "Editar \"{{name}}\"",
+    "bulkSelected": "{{count}} seleccionados",
+    "bulkDelete": "Eliminar",
+    "bulkDeleteTitle": "Eliminar preguntas",
+    "bulkDeleteConfirm": "Se eliminarán permanentemente del catálogo {{count}} preguntas seleccionadas."
   },
   "ai": {
     "title": "Ajustes de IA",
