@@ -3,7 +3,6 @@ import type { MediaMeta } from "@razzoozle/common/types/media"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
-import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
@@ -230,7 +229,11 @@ const ConfigMedia = () => {
           className="min-h-11 w-full rounded-[var(--radius-theme)]"
         />
 
-        <FilterGroup label={t("manager:media.filters.label")}>
+        <div
+          role="group"
+          aria-label={t("manager:aria.mediaSourceFilter")}
+          className="flex flex-wrap items-center gap-2"
+        >
           <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
           {sourceFilters.map((entry) => (
             <FilterPill
@@ -241,9 +244,15 @@ const ConfigMedia = () => {
               {entry.label}
             </FilterPill>
           ))}
-        </FilterGroup>
+        </div>
 
-        <FilterGroup label={t("manager:media.scope.label")}>
+        <div
+          role="group"
+          aria-label={t("manager:media.scope.label", {
+            defaultValue: "Sichtbarkeit",
+          })}
+          className="flex flex-wrap items-center gap-2"
+        >
           {scopeFilters.map((entry) => (
             <FilterPill
               key={entry.key}
@@ -253,16 +262,14 @@ const ConfigMedia = () => {
               {entry.label}
             </FilterPill>
           ))}
-        </FilterGroup>
+        </div>
 
         {config.klassenEnabled && labels.length > 0 && (
-          <FilterGroup label={t("manager:tabs.labels")}>
-            <LabelFilterPills
-              labels={labels}
-              activeId={labelFilter}
-              onChange={setLabelFilter}
-            />
-          </FilterGroup>
+          <LabelFilterPills
+            labels={labels}
+            activeId={labelFilter}
+            onChange={setLabelFilter}
+          />
         )}
 
         {selectionActive && (

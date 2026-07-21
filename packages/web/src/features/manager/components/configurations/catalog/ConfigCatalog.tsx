@@ -123,9 +123,8 @@ const ConfigCatalog = () => {
         {selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:catalog.bulkSelected", {
+            aria-label={t("manager:aria.catalogBulkSelected", {
               count: selectionCount,
-              defaultValue: "{{count}} ausgewählt",
             })}
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
           >
@@ -225,9 +224,8 @@ const ConfigCatalog = () => {
                     selection={
                       <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
                         <span className="sr-only">
-                          {t("manager:catalog.selectEntry", {
+                          {t("manager:aria.catalogSelectEntry", {
                             name: entry.question.question,
-                            defaultValue: '„{{name}}" auswählen',
                           })}
                         </span>
                         <Checkbox
@@ -242,9 +240,8 @@ const ConfigCatalog = () => {
                     }
                     title={entry.question.question}
                     onClick={() => openEditModal(entry)}
-                    bodyLabel={t("manager:catalog.editEntry", {
+                    bodyLabel={t("manager:aria.catalogEditEntry", {
                       name: entry.question.question,
-                      defaultValue: '„{{name}}" bearbeiten',
                     })}
                     meta={
                       <span className="flex flex-wrap items-center gap-2">

@@ -54,7 +54,7 @@ export const ACHIEVEMENTS_REGISTRY = [
     threshold: {
       key: "minRanksUp",
       default: 3,
-      unit: "Plätze",
+      unit: "places",
       min: 1,
       max: 20,
     },
@@ -72,7 +72,7 @@ export const ACHIEVEMENTS_REGISTRY = [
     threshold: {
       key: "minPointsAhead",
       default: 2000,
-      unit: "Pkt",
+      unit: "points",
       min: 100,
       max: 100000,
     },

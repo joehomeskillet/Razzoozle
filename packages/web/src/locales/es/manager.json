@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "Manager",
-    "subtitle": "Inicia sesión para gestionar tu partida."
+    "subtitle": "Inicia sesión para gestionar tu partida.",
+    "username": "Nombre de usuario",
+    "usernameLabel": "Nombre de usuario",
+    "usernamePlaceholder": "Nombre de usuario",
+    "invalidInput": "Se requiere nombre de usuario y contraseña",
+    "invalidCredentials": "Nombre de usuario o contraseña inválido",
+    "passwordLabel": "Contraseña",
+    "passwordError": "Contraseña inválida",
+    "error": "Autenticación fallida",
+    "networkError": "Error de conexión"
   },
   "aria": {
     "passwordLabel": "Contraseña",
@@ -554,7 +563,9 @@
       "global": "Global",
       "all": "Todas",
       "label": "Visibilidad"
-    }
+    },
+    "selectEntry": "Seleccionar \"{{name}}\"",
+    "editEntry": "Editar \"{{name}}\""
   },
   "ai": {
     "title": "Ajustes de IA",
@@ -724,7 +735,9 @@
       "minAccuracyPct": "Precisión mín. del deslizador (%)",
       "minRanksUp": "Puestos subidos en la clasificación",
       "minPointsAhead": "Ventaja de puntos del superado"
-    }
+    },
+    "unitPlaces": "Lugares",
+    "unitPoints": "Ptos"
   },
   "achievements": {
     "active": "activo"
@@ -880,7 +893,9 @@
       "removed": "Clave eliminada",
       "emptyHeadline": "Sin proveedores externos",
       "empty": "El administrador aún no ha configurado ningún proveedor de IA externo."
-    }
+    },
+    "welcome": "Bienvenido",
+    "description": "Tu perfil estará disponible pronto. Aquí podrás configurar tus preferencias, proveedores de IA y más opciones."
   },
   "schueler": {
     "title": "Gestión de Estudiantes",

@@ -337,7 +337,9 @@
       "global": "Global",
       "all": "All",
       "label": "Visibility"
-    }
+    },
+    "selectEntry": "Select \"{{name}}\"",
+    "editEntry": "Edit \"{{name}}\""
   },
   "ai": {
     "title": "AI settings",
@@ -733,7 +735,9 @@
       "minAccuracyPct": "Min slider accuracy (%)",
       "minRanksUp": "Ranks climbed in the leaderboard",
       "minPointsAhead": "Point lead of the overtaken player"
-    }
+    },
+    "unitPlaces": "places",
+    "unitPoints": "pts"
   },
   "achievements": {
     "active": "active"

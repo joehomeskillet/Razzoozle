@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "Manager",
-    "subtitle": "Accedi per gestire la tua partita."
+    "subtitle": "Accedi per gestire la tua partita.",
+    "username": "Nome utente",
+    "usernameLabel": "Nome utente",
+    "usernamePlaceholder": "Nome utente",
+    "invalidInput": "Nome utente e password sono obbligatori",
+    "invalidCredentials": "Nome utente o password non valido",
+    "passwordLabel": "Password",
+    "passwordError": "Password non valida",
+    "error": "Autenticazione non riuscita",
+    "networkError": "Errore di connessione"
   },
   "configurationsTitle": "Configurazioni",
   "logout": "Disconnetti",
@@ -554,7 +563,9 @@
       "global": "Globale",
       "all": "Tutte",
       "label": "Visibilità"
-    }
+    },
+    "selectEntry": "Seleziona \"{{name}}\"",
+    "editEntry": "Modifica \"{{name}}\""
   },
   "ai": {
     "title": "Impostazioni IA",
@@ -724,7 +735,9 @@
       "minAccuracyPct": "Precisione min del cursore (%)",
       "minRanksUp": "Posizioni scalate in classifica",
       "minPointsAhead": "Vantaggio punti del superato"
-    }
+    },
+    "unitPlaces": "Posizioni",
+    "unitPoints": "Pti"
   },
   "achievements": {
     "active": "attivo"
@@ -880,7 +893,9 @@
       "removed": "Chiave rimossa",
       "emptyHeadline": "Nessun provider esterno",
       "empty": "L'amministratore non ha ancora configurato alcun provider di IA esterno."
-    }
+    },
+    "welcome": "Benvenuto",
+    "description": "Il tuo profilo sarà disponibile presto. Qui potrai configurare le tue preferenze, i provider IA e altre opzioni."
   },
   "schueler": {
     "title": "Gestione Studenti",

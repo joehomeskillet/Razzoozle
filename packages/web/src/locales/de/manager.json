@@ -1,7 +1,16 @@
 {
   "auth": {
     "title": "Manager",
-    "subtitle": "Melde dich an, um dein Spiel zu verwalten."
+    "subtitle": "Melde dich an, um dein Spiel zu verwalten.",
+    "username": "Benutzername",
+    "usernameLabel": "Benutzername",
+    "usernamePlaceholder": "Benutzername",
+    "invalidInput": "Benutzername und Passwort erforderlich",
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort",
+    "passwordLabel": "Passwort",
+    "passwordError": "Ungültiges Passwort",
+    "error": "Authentifizierung fehlgeschlagen",
+    "networkError": "Verbindungsfehler"
   },
   "aria": {
     "passwordLabel": "Passwort",
@@ -328,7 +337,9 @@
       "global": "Global",
       "all": "Alle",
       "label": "Sichtbarkeit"
-    }
+    },
+    "selectEntry": "Select \"{{name}}\"",
+    "editEntry": "Edit \"{{name}}\""
   },
   "ai": {
     "title": "KI-Einstellungen",
@@ -679,7 +690,9 @@
       "minAccuracyPct": "Mindest-Genauigkeit Schieberegler (%)",
       "minRanksUp": "Plätze nach oben in der Rangliste",
       "minPointsAhead": "Punktevorsprung der überholten Person"
-    }
+    },
+    "unitPlaces": "Plätze",
+    "unitPoints": "Pkt"
   },
   "gameMode": {
     "title": "Spielmodus",
@@ -880,7 +893,9 @@
       "removed": "Schlüssel entfernt",
       "emptyHeadline": "Keine externen Anbieter",
       "empty": "Der Administrator hat noch keine externen KI-Anbieter eingerichtet."
-    }
+    },
+    "welcome": "Willkommen",
+    "description": "Dein Profil wird bald verfügbar sein. Hier kannst du später deine Einstellungen, KI-Anbieter und weitere Optionen konfigurieren."
   },
   "schueler": {
     "title": "Schülerverwaltung",
