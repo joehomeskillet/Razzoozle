@@ -279,7 +279,7 @@ const ConfigAI = () => {
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
         <PageHeader
           title={t("manager:ai.title")}
           subtitle={t("manager:ai.intro")}

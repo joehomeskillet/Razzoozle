@@ -61,7 +61,7 @@ const ConfigDev = () => {
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
         <PageHeader
           title={t("dev.title", { defaultValue: "Entwicklung" })}
           subtitle={t("dev.intro", { defaultValue: "Werkzeuge für Entwickler: API-Explorer, Live-Überwachung und Logs." })}

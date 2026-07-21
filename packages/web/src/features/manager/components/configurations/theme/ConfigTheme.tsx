@@ -68,7 +68,7 @@ const ConfigTheme = () => {
         }
       >
         {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
-        <div className="mb-4">
+        <div className="mb-4 flex shrink-0 flex-col gap-3">
             <PageHeader
               title={t("manager:theme.title", { defaultValue: "Gestaltung" })}
               subtitle={t("manager:theme.intro", { defaultValue: "Personalisiere das Aussehen deines Quizzes mit Farben, Logos und Animationen." })}

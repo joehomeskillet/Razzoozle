@@ -273,7 +273,7 @@ const ConfigGameMode = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="mb-4">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
         <PageHeader
           title={t("manager:gameMode.title")}
           subtitle={t("manager:gameMode.description")}
