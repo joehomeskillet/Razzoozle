@@ -110,8 +110,6 @@ const MediaInfoDialog = ({
     })
   }, [localLabelIds, socket, item.id])
 
-  const hasUsage = (item.usage?.length ?? 0) > 0
-
   return (
     <Dialog.Root open={isOpen} onOpenChange={setOpen}>
       {/* Only render trigger if not controlled */}
@@ -176,14 +174,14 @@ const MediaInfoDialog = ({
             {` · ${formatDate(item.uploadedAt)}`}
           </p>
 
-          {/* Usage Section */}
-          {hasUsage && (
-            <div className="mt-6 flex flex-col gap-3">
-              <label className="text-sm font-semibold text-[var(--ink)]">
-                {t("manager:media.usage.heading", { defaultValue: "Used in" })}
-              </label>
+          {/* Usage Section — ALWAYS rendered */}
+          <div className="mt-6 flex flex-col gap-3">
+            <label className="text-sm font-semibold text-[var(--ink)]">
+              {t("manager:media.usage.heading", { defaultValue: "Used in" })}
+            </label>
+            {item.usage && item.usage.length > 0 ? (
               <div className="max-h-48 overflow-y-auto space-y-1">
-                {item.usage!.map((entry, idx) => (
+                {item.usage.map((entry, idx) => (
                   <div key={idx} className="text-xs text-[var(--ink-muted)]">
                     <span className="font-medium text-[var(--ink)]">{entry.quizTitle}</span>
                     {" — "}
@@ -195,8 +193,12 @@ const MediaInfoDialog = ({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-[var(--ink-muted)]">
+                {t("manager:media.usage.empty", { defaultValue: "Not used in any quiz" })}
+              </p>
+            )}
+          </div>
 
           {/* Labels Section */}
           {config.klassenEnabled && (

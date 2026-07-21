@@ -337,7 +337,7 @@ const ConfigMedia = () => {
       ) : (
         <motion.div
           className={clsx(
-            "grid auto-rows-min grid-cols-4 gap-2 rounded-[var(--radius-theme)] p-0.5 transition-colors sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8",
+            "grid auto-rows-min grid-cols-4 gap-2 rounded-[var(--radius-theme)] p-0.5 transition-colors sm:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8",
             dragActive &&
               "outline-2 -outline-offset-2 outline-dashed outline-[var(--color-primary)]",
           )}
