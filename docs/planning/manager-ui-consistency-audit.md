@@ -44,7 +44,6 @@ This audit consolidates findings from three independent agents (A=Archaeological
 | Nutzerverwaltung (Users) | users | configurations/ConfigUsers.tsx (688) | ConsoleShell, PageHeader (partial), Input, FilterPill, ListRow, Button | Page desc says "teachers"; rows contain user/teacher/admin; missing search/filter; **self-admin can delete self (P0 security gap)**; ambiguous icon labels | Current | Wording mismatch + missing self-delete guard in UI + missing icon labels | Align wording to "Users & Roles"; add role/status filters; add aria-label to all icon buttons; **require server-side self-delete guard**; implement UI-side guard (show message, disable buttons if current user) | High | Security review + E2E #14 | P0 |
 | Entwicklungswerkzeuge (Dev-Tools) | dev | configurations/ConfigDev/ (ConfigDev.tsx 105 + ApiExplorerCard.tsx + LogsCard.tsx + ObservabilityCard.tsx — already modular, not "400+ LOC unstructured") | ConsoleShell, PageHeader (partial), Button, Input, code blocks (no copy UI) | Code blocks without copy controls; weak env warning; visual hierarchy | Partial (modular structure exists, copy UI missing) | Missing copy-to-clipboard + danger-zone UI | Add copy-to-clipboard for code blocks; organize by 6 functional groups (tabs/accordions); add danger zone visual distinction; verify dev/admin-only access enforced | Medium | Dev-tools tests + danger-zone confirmations | P2 |
 | **Already Fixed (Prior W0–W6)** |
-| PageHeader rollout | — | Most configurations/* files | PageHeader now standard | ~5 sections already use PageHeader; W6 verified | Already fixed | Consolidation W0–W6 | Status = Implemented | — | — | — |
 | "Klasse hinzufügen" text | schueler/* | StudentList.tsx, locale files | Input, Button, i18n keys | **NOT REPRODUCIBLE:** Zero grep hits for "+ + Klasse" or "Klasse hinzufügen" anywhere in codebase. Only real reference is single-plus "+ Klasse" in code comment. Fabricated bug — no fix needed. | Not an issue | Misattribution | Remove this entry from audit (not a real bug) | — | N/A | — |
 | KI-Generator-Gate | ki/* | ConfigAI.tsx, server-side | Button, logic | Disable generator while text provider down | Verified | Design audit W4 | Confirmed | — | Existing tests | — |
 | Klassen-Cards → ListRow | klassen/* | ClassList.tsx (329) | ListRow now standard | Partial migration in W6; verify density | Partial | Ongoing consolidation | Complete in WP3 | — | E2E #11 | — |
@@ -85,6 +84,7 @@ This audit consolidates findings from three independent agents (A=Archaeological
 
 ---
 
-**Document prepared:** 2026-07-21 (Correction 3)  
+**Document prepared:** 2026-07-21 (Correction 3b)  
 **BUILTIN_TABS count verified:** 18 tabs (not 16–17)  
-**Route structure verified:** /manager (app shell), /manager/config (single page with tab switching), /manager/quizz + /manager/quizz/$quizzId (editor)
+**Route structure verified:** /manager (app shell), /manager/config (single page with tab switching), /manager/quizz + /manager/quizz/$quizzId (editor)  
+**PageHeader status:** 4/18 sections have PageHeader (Catalog, Media, Profile, ConfigSchueler); 14 lack it — P1 priority gap, not "already fixed"
