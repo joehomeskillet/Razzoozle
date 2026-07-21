@@ -82,7 +82,8 @@
     "bulkDeleteTitle": "Delete quizzes",
     "bulkDeleteConfirm": "{{count}} selected quizzes will be permanently deleted.",
     "selectQuiz": "Select “{{name}}”",
-    "moreActions": "More options"
+    "moreActions": "More options",
+    "intro": "Create, edit and organise quizzes."
   },
   "result": {
     "delete": "Delete result",
@@ -132,7 +133,8 @@
     "export": {
       "csv": "Export as CSV",
       "done": "CSV downloaded"
-    }
+    },
+    "intro": "Review past games and share results."
   },
   "tabs": {
     "play": "Play",
@@ -643,7 +645,8 @@
       "technology": "Technology",
       "other": "Other"
     },
-    "submitLinkUnavailable": "Not yet available — your personal link will be activated soon."
+    "submitLinkUnavailable": "Not yet available — your personal link will be activated soon.",
+    "intro": "Review submitted questions and approve them."
   },
   "selectQuizz": {
     "copySoloLink": "Copy solo link",
@@ -657,7 +660,8 @@
     },
     "selectClass": "Select class",
     "chooseClass": "Choose a class …",
-    "klassenModeNeedsClass": "Please select a class"
+    "klassenModeNeedsClass": "Please select a class",
+    "intro": "Pick a quiz and start a game."
   },
   "gameMode": {
     "title": "Game mode",
@@ -836,7 +840,8 @@
     "pickerEmpty": "No students yet. Create new students in the student management.",
     "pickerAlreadyIn": "Already in this class",
     "pickerHint": "Choose students to add to the class \"{{className}}\".",
-    "pickerNoResults": "No students found"
+    "pickerNoResults": "No students found",
+    "intro": "Manage classes and student assignments."
   },
   "users": {
     "title": "User Management",

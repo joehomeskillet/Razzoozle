@@ -5,6 +5,7 @@ import type {
   SubmissionStatus,
 } from "@razzoozle/common/types/submission"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   useEvent,
   useSocket,
@@ -213,27 +214,40 @@ const ConfigSubmissions = () => {
   // Nothing has ever been submitted — keep the original full-screen empty state.
   if (submissions.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col justify-center gap-4">
-        <EmptyState
-          icon={Inbox}
-          headline={t("manager:submissions.emptyHeadline")}
-          hint={t("manager:submissions.empty")}
-          action={{
-            label: t("manager:tabs.catalog"),
-            onClick: () =>
-              window.dispatchEvent(
-                new CustomEvent("manager:config-tab", { detail: "catalog" }),
-              ),
-          }}
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <PageHeader
+          title={t("manager:tabs.submissions")}
+          subtitle={t("manager:submissions.intro")}
         />
+        <div className="flex min-h-0 flex-1 flex-col justify-center gap-4">
+          <EmptyState
+            icon={Inbox}
+            headline={t("manager:submissions.emptyHeadline")}
+            hint={t("manager:submissions.empty")}
+            action={{
+              label: t("manager:tabs.catalog"),
+              onClick: () =>
+                window.dispatchEvent(
+                  new CustomEvent("manager:config-tab", { detail: "catalog" }),
+                ),
+            }}
+          />
 
-        <SubmitLinkCard />
+          <SubmitLinkCard />
+        </div>
       </div>
     )
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <PageHeader
+          title={t("manager:tabs.submissions")}
+          subtitle={t("manager:submissions.intro")}
+        />
+      </div>
+
       {/* Status filter chips — switch the visible section between
           Offen / Angenommen / Abgelehnt. */}
       <div

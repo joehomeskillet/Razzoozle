@@ -73,7 +73,8 @@
     "bulkDeleteTitle": "删除测验",
     "bulkDeleteConfirm": "已选择的 {{count}} 个测验将被永久删除。",
     "selectQuiz": "选择“{{name}}”",
-    "moreActions": "更多选项"
+    "moreActions": "更多选项",
+    "intro": "创建、编辑并整理测验。"
   },
   "result": {
     "delete": "删除结果",
@@ -123,7 +124,8 @@
     "export": {
       "csv": "导出为 CSV",
       "done": "CSV 已下载"
-    }
+    },
+    "intro": "查看过往游戏并分享结果。"
   },
   "tabs": {
     "play": "游玩",
@@ -634,7 +636,8 @@
       "technology": "科技",
       "other": "其他"
     },
-    "submitLinkUnavailable": "暂不可用 — 您的个人链接即将激活。"
+    "submitLinkUnavailable": "暂不可用 — 您的个人链接即将激活。",
+    "intro": "审核提交的题目并予以通过。"
   },
   "selectQuizz": {
     "copySoloLink": "复制单人链接",
@@ -648,7 +651,8 @@
     },
     "selectClass": "选择班级",
     "chooseClass": "选择一个班级 …",
-    "klassenModeNeedsClass": "请选择一个班级"
+    "klassenModeNeedsClass": "请选择一个班级",
+    "intro": "选择一个测验并开始游戏。"
   },
   "gameMode": {
     "title": "游戏模式",
@@ -797,7 +801,8 @@
     "pickerEmpty": "暂无学生。请在学生管理中创建新学生。",
     "pickerAlreadyIn": "已在此班级中",
     "pickerHint": "选择要添加到班级\"{{className}}\"的学生。",
-    "pickerNoResults": "未找到学生"
+    "pickerNoResults": "未找到学生",
+    "intro": "管理班级与学生分配。"
   },
   "users": {
     "title": "用户管理",

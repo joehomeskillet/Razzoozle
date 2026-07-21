@@ -3,6 +3,7 @@ import type { GameResult } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import DateInput from "@razzoozle/web/components/DateInput"
 import Input from "@razzoozle/web/components/Input"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   useEvent,
   useSocket,
@@ -103,6 +104,13 @@ const ConfigResults = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <PageHeader
+          title={t("manager:tabs.results")}
+          subtitle={t("manager:result.intro")}
+        />
+      </div>
+
       {results.length === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col justify-center">
           <EmptyState

@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { GameSummary } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
   useEvent,
   useSocket,
@@ -10,7 +11,6 @@ import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import {
   EmptyState,
   ListRow,
-  SectionCard,
 } from "@razzoozle/web/features/manager/components/console"
 import { useActiveConsoleTab } from "@razzoozle/web/features/manager/contexts/active-console-tab"
 import { useSelectConsoleTab } from "@razzoozle/web/features/manager/contexts/select-console-tab"
@@ -86,23 +86,24 @@ const RunningGamesSection = () => {
   }
 
   return (
-    <SectionCard
-      icon={<Radio className="size-5" />}
-      title={t("manager:runningGames.title")}
-      description={t("manager:runningGames.description")}
-      actions={
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          onClick={refresh}
-          aria-label={t("manager:runningGames.refresh")}
-          title={t("manager:runningGames.refresh")}
-        >
-          <RefreshCw className="size-5" aria-hidden />
-        </Button>
-      }
-    >
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader
+        title={t("manager:tabs.running")}
+        subtitle={t("manager:runningGames.description")}
+        action={
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={refresh}
+            aria-label={t("manager:runningGames.refresh")}
+            title={t("manager:runningGames.refresh")}
+          >
+            <RefreshCw className="size-5" aria-hidden />
+          </Button>
+        }
+      />
+
       {games.length === 0 ? (
         <EmptyState
           icon={Radio}
@@ -170,7 +171,7 @@ const RunningGamesSection = () => {
         confirmLabel={t("manager:runningGames.end")}
         onConfirm={handleEnd}
       />
-    </SectionCard>
+    </div>
   )
 }
 

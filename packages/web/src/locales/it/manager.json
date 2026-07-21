@@ -62,7 +62,8 @@
     "bulkDeleteTitle": "Elimina quiz",
     "bulkDeleteConfirm": "{{count}} quiz selezionati verranno eliminati definitivamente.",
     "selectQuiz": "Seleziona «{{name}}»",
-    "moreActions": "Altre opzioni"
+    "moreActions": "Altre opzioni",
+    "intro": "Crea, modifica e organizza i quiz."
   },
   "result": {
     "delete": "Elimina risultato",
@@ -112,7 +113,8 @@
     "export": {
       "csv": "Esporta come CSV",
       "done": "CSV scaricato"
-    }
+    },
+    "intro": "Consulta le partite passate e condividi i risultati."
   },
   "tabs": {
     "play": "Gioca",
@@ -450,7 +452,8 @@
       "technology": "Tecnologia",
       "other": "Altro"
     },
-    "submitLinkUnavailable": "Non ancora disponibile — il tuo link personale sarà attivato presto."
+    "submitLinkUnavailable": "Non ancora disponibile — il tuo link personale sarà attivato presto.",
+    "intro": "Esamina le domande inviate e approvane."
   },
   "media": {
     "title": "Libreria multimediale",
@@ -648,7 +651,8 @@
     },
     "selectClass": "Seleziona classe",
     "chooseClass": "Scegli una classe …",
-    "klassenModeNeedsClass": "Seleziona una classe"
+    "klassenModeNeedsClass": "Seleziona una classe",
+    "intro": "Scegli un quiz e avvia una partita."
   },
   "gameMode": {
     "title": "Modalità di gioco",
@@ -797,7 +801,8 @@
     "pickerEmpty": "Nessuno studente ancora. Crea nuovi studenti nella gestione studenti.",
     "pickerAlreadyIn": "Già in questa classe",
     "pickerHint": "Scegli gli studenti da aggiungere alla classe \"{{className}}\".",
-    "pickerNoResults": "Nessuno studente trovato"
+    "pickerNoResults": "Nessuno studente trovato",
+    "intro": "Gestisci le classi e le assegnazioni degli studenti."
   },
   "users": {
     "title": "Gestione Utenti",

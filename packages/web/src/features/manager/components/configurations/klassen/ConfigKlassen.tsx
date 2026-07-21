@@ -3,6 +3,7 @@ import Input from "@razzoozle/web/components/Input"
 import Button from "@razzoozle/web/components/Button"
 import DateInput from "@razzoozle/web/components/DateInput"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -106,6 +107,13 @@ const ConfigKlassen = () => {
   return (
     <>
     <div className="flex min-h-0 flex-1 flex-col pb-20">
+      <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <PageHeader
+          title={t("manager:tabs.klassen")}
+          subtitle={t("manager:classes.intro")}
+        />
+      </div>
+
       {classes.length > 0 && (
         <div className="mb-4 flex shrink-0">
           <label htmlFor="classes-search" className="sr-only">

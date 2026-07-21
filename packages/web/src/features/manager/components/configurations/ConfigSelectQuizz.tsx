@@ -2,6 +2,7 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { SelectedModes } from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Select from "@razzoozle/web/components/Select"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
 import { ActionFooter } from "@razzoozle/web/components/ui"
@@ -154,18 +155,22 @@ const ConfigSelectQuizz = () => {
 
   if (list.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col justify-center">
-        <EmptyState
-          icon={ListChecks}
-          headline={t("manager:quizz.notFound")}
-          hint={t("manager:quizz.pleaseCreate")}
-          action={{
-            label: t("manager:quizz.create"),
-            onClick: () => {
-              void navigate({ to: "/manager/quizz" })
-            },
-          }}
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <PageHeader
+          title={t("manager:tabs.play")}
+          subtitle={t("manager:selectQuizz.intro")}
         />
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <EmptyState
+            icon={ListChecks}
+            headline={t("manager:quizz.notFound")}
+            hint={t("manager:quizz.pleaseCreate")}
+            action={{
+              label: t("manager:quizz.create"),
+              onClick: () => void navigate({ to: "/manager/quizz" }),
+            }}
+          />
+        </div>
       </div>
     )
   }
@@ -173,21 +178,23 @@ const ConfigSelectQuizz = () => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="mb-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1">
-            <label htmlFor="play-quizz-search" className="sr-only">
-              {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
-            </label>
-            <Input
-              id="play-quizz-search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t("manager:quizz.searchPlaceholder", {
-                defaultValue: "Nach Thema suchen …",
-              })}
-              className="min-h-11 w-full rounded-[var(--radius-theme)]"
-            />
-          </div>
+        <div className="mb-4 flex shrink-0 flex-col gap-3">
+          <PageHeader
+            title={t("manager:tabs.play")}
+            subtitle={t("manager:selectQuizz.intro")}
+          />
+          <label htmlFor="play-quizz-search" className="sr-only">
+            {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
+          </label>
+          <Input
+            id="play-quizz-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("manager:quizz.searchPlaceholder", {
+              defaultValue: "Nach Thema suchen …",
+            })}
+            className="min-h-11 w-full rounded-[var(--radius-theme)]"
+          />
         </div>
 
         <motion.div
