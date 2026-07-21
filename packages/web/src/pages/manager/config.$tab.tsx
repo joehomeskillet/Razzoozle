@@ -94,6 +94,12 @@ export const Route = createFileRoute("/manager/config/$tab")({
       })
     }
 
+    // HYDRATION GATE: only validate tab permissions once store is hydrated
+    if (!config) {
+      // Config not yet loaded from server — pass through and let component handle loading
+      return
+    }
+
     const knownKeys = BUILTIN_TABS.map((t) => t.key)
     // Unregistered → allow through (no 404).
     if (!knownKeys.includes(params.tab)) {
