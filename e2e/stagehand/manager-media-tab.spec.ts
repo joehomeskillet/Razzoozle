@@ -31,12 +31,42 @@ async function findMediaCardByFilename(page: Page, filename: string): Promise<nu
   return index;
 }
 
-async function closeDialog(page: Page) {
-  await page.evaluate(() => {
-    const event = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' });
-    document.dispatchEvent(event);
+async function closeDialogRobust(page: Page, timeoutMs = 5000): Promise<void> {
+  const startTime = Date.now();
+  
+  // Try clicking close button (Radix Dialog close trigger)
+  const closeClicked = await page.evaluate(() => {
+    const closeBtn = document.querySelector('[aria-label="Close"], [aria-label="close"]');
+    if (closeBtn) {
+      (closeBtn as HTMLButtonElement).click?.();
+      return true;
+    }
+    return false;
   });
-  await page.waitForTimeout(300);
+  
+  // If no close button, try Escape key via Radix Dialog handler
+  if (!closeClicked) {
+    await page.evaluate(() => {
+      const event = new KeyboardEvent('keydown', { 
+        key: 'Escape', 
+        code: 'Escape',
+        bubbles: true,
+        cancelable: true
+      });
+      document.activeElement?.dispatchEvent?.(event) || document.dispatchEvent(event);
+    });
+  }
+  
+  // Wait for dialog to close with timeout
+  while (Date.now() - startTime < timeoutMs) {
+    const isClosed = await page.evaluate(() => {
+      return document.querySelector('[role="dialog"]') === null;
+    });
+    if (isClosed) return;
+    await page.waitForTimeout(100);
+  }
+  
+  throw new Error(`Info dialog failed to close after ${timeoutMs}ms`);
 }
 
 async function assertUsageBadges(page: Page): Promise<void> {
@@ -86,7 +116,15 @@ async function assertInfoDialogUsage(page: Page): Promise<void> {
   });
   if (!hasUsageSection) throw new Error('Usage section or quiz title not found');
 
-  await closeDialog(page);
+  // Robustly close the info dialog
+  await closeDialogRobust(page);
+  
+  // Verify it's actually closed
+  const stillOpen = await page.evaluate(() => {
+    return document.querySelector('[role="dialog"]') !== null;
+  });
+  if (stillOpen) throw new Error('Info dialog failed to close after assertion');
+  
   console.log('  ✓ Info dialog usage section correct');
 }
 
@@ -94,9 +132,11 @@ async function assertDeleteWarning(page: Page): Promise<void> {
   console.log('[TEST] Asserting delete warning...');
   const index = await findMediaCardByFilename(page, 'image001-1-22340b26.webp');
 
+  // Click delete button (language-safe selector)
   await page.evaluate((idx: number) => {
     const card = document.querySelectorAll('article[role="option"]')[idx];
-    const deleteBtn = card?.querySelector?.('button[aria-label*="delete" i]');
+    const deleteBtn = card?.querySelector?.('button[aria-label*="delete" i]') || 
+                      card?.querySelector?.('button[aria-label*="löschen" i]');
     (deleteBtn as HTMLButtonElement)?.click?.();
   }, index);
   await page.waitForTimeout(500);
@@ -107,7 +147,7 @@ async function assertDeleteWarning(page: Page): Promise<void> {
   });
   if (!hasWarning) throw new Error('Delete warning not found');
 
-  // Click cancel button
+  // Click cancel button (language-safe)
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
     const cancelBtn = buttons.find(btn => 
@@ -116,8 +156,20 @@ async function assertDeleteWarning(page: Page): Promise<void> {
     );
     if (cancelBtn) (cancelBtn as HTMLButtonElement).click?.();
   });
-  await page.waitForTimeout(300);
+  
+  // Wait for delete dialog exit animation
+  await page.waitForTimeout(500);
+  
+  // Verify delete dialog is closed before checking for info dialog
+  const deleteDialogClosed = await page.evaluate(() => {
+    const alertDialog = document.querySelector('[role="alertdialog"]');
+    return alertDialog === null;
+  });
+  if (!deleteDialogClosed) {
+    await page.waitForTimeout(300);
+  }
 
+  // B1 regression: info dialog must NOT open after delete cancel
   const isDialogOpen = await page.evaluate(() => {
     return document.querySelector('[role="dialog"]') !== null;
   });
