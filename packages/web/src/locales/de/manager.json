@@ -839,7 +839,10 @@
     "deleteConfirmDescription": "{{name}} wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
     "deleteConfirmCascade": "Achtung: Alle Klassen und Schüler dieser Lehrkraft werden ebenfalls gelöscht.",
     "deleted": "{{name}} wurde gelöscht",
-    "deleteFailed": "Löschen fehlgeschlagen"
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "cannot_modify_own_account": "Du kannst dein eigenes Konto nicht ändern",
+    "cannot_delete_self": "Dein Konto kann nicht gelöscht werden",
+    "cannot_deactivate_self": "Dein Konto kann nicht deaktiviert werden"
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",

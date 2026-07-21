@@ -839,7 +839,10 @@
     "deleteConfirmDescription": "{{name}} será eliminado permanentemente. Esta acción no se puede deshacer.",
     "deleteConfirmCascade": "Advertencia: Todas las clases y estudiantes de este profesor también serán eliminados.",
     "deleted": "{{name}} fue eliminado",
-    "deleteFailed": "Error al eliminar"
+    "deleteFailed": "Error al eliminar",
+    "cannot_modify_own_account": "No puedes modificar tu propia cuenta",
+    "cannot_delete_self": "Tu cuenta no se puede eliminar",
+    "cannot_deactivate_self": "Tu cuenta no se puede desactivar"
   },
   "profile": {
     "intro": "Tu perfil y tus ajustes personales.",
