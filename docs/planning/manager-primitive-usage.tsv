@@ -1,0 +1,19 @@
+Section	Tab Key	Component File	PageHeader	ListRow	SelectableRow	FilterPill	Badge	AlertDialog	SectionCard	ConsoleShell
+Spielen (Play)	play	components/configurations/ConfigSelectQuizz.tsx	✗	✗	✓	✗	✗	✗	✗	✗
+Quiz	quizz	components/configurations/ConfigManageQuizz.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Katalog (Catalog)	catalog	components/configurations/ConfigCatalog.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Klassen (Classes)	klassen	components/configurations/klassen/ConfigKlassen.tsx	✗	✗	✗	✗	✗	✓	✗	✗
+Schülerverwaltung (Students)	schueler	components/configurations/schueler/ConfigSchueler.tsx	✓	✗	✗	✗	✗	✓	✗	✗
+Medien (Media)	media	components/configurations/ConfigMedia/ConfigMedia.tsx	✓	✗	✗	✓	✗	✓	✗	✗
+Ergebnisse (Results)	results	components/configurations/ConfigResults.tsx	✗	✓	✗	✓	✗	✗	✗	✗
+Vorschläge (Submissions)	submissions	components/configurations/ConfigSubmissions.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Profile	profile	components/configurations/ConfigProfile.tsx	✓	✗	✗	✗	✗	✗	✓	✗
+Modus (Game Mode)	gamemode	components/configurations/ConfigGameMode.tsx	✗	✗	✗	✓	✓	✗	✗	✗
+KI (AI Providers)	ki	components/configurations/ConfigAI.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Achievements	achievements	components/configurations/ConfigAchievements/ConfigAchievements.tsx	✗	✗	✗	✗	✓	✗	✓	✗
+Laufende Spiele (Running)	running	components/console/RunningGamesSection.tsx	✗	✓	✗	✗	✗	✓	✓	✗
+Nutzerverwaltung (Users)	users	components/configurations/ConfigUsers.tsx	✗	✓	✗	✗	✓	✓	✗	✗
+Design (Theme)	design	components/configurations/ConfigTheme.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Fächer/Labels (Labels)	labels	components/configurations/labels/ConfigLabels.tsx	✗	✗	✗	✗	✗	✓	✗	✗
+Satellit (Satellite)	satellite	components/configurations/ConfigDisplay.tsx	✗	✗	✗	✗	✗	✗	✗	✗
+Entwicklungswerkzeuge (Dev-Tools)	dev	components/configurations/ConfigDev/ConfigDev.tsx	✗	✗	✗	✗	✗	✗	✓	✗
