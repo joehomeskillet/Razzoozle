@@ -177,7 +177,8 @@ const ConfigSelectQuizz = () => {
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col">
+      {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
+      <div className="flex flex-1 flex-col">
         <div className="mb-4 flex shrink-0 flex-col gap-3">
           <PageHeader
             title={t("manager:tabs.play")}
