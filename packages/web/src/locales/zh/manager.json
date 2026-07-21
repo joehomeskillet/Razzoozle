@@ -1004,7 +1004,40 @@
     },
     "js": {
       "confirmTitle": "保存 JavaScript？",
-      "confirm": "此代码将在每个已连接设备上运行。请仅保存可信代码。"
+      "confirm": "此代码将在每个连接的设备上运行。仅保存受信任的代码。",
+      "title": "JavaScript 覆盖",
+      "description": "在每个连接的设备上执行的自由格式 JavaScript。",
+      "placeholder": "// console.log(window.razzoozle.theme)",
+      "warning": "⚠ 此 JavaScript 在每个玩家设备上运行 — 仅粘贴受信任的代码（存储型 XSS 风险）。",
+      "save": "保存 JavaScript"
+    },
+    "transfer": {
+      "title": "传输骨架",
+      "description": "将完整设计（标记、CSS、JS、资产）导出为 ZIP 或导入预制的骨架。",
+      "download": "下载骨架",
+      "upload": "上传骨架 (ZIP)",
+      "reset": "重置为默认值"
+    },
+    "reset": {
+      "title": "重置为默认值？",
+      "confirm": "当前主题、CSS 和 JS 将被丢弃，并恢复默认设计。",
+      "confirmLabel": "重置"
+    },
+    "css": {
+      "title": "CSS 覆盖",
+      "description": "自由格式 CSS，除主题外在所有设备上加载。",
+      "placeholder": "/* :root { --team-red: #ff0000 } */",
+      "save": "保存 CSS"
+    },
+    "toast": {
+      "cssSaved": "CSS 已保存",
+      "jsSaved": "JavaScript 已保存",
+      "reset": "已重置为默认值",
+      "exported": "已导出骨架",
+      "imported": "已导入骨架",
+      "exportFailed": "导出失败: {{message}}",
+      "importFailed": "导入失败: {{message}}",
+      "tooLarge": "文件太大（最大 512 KB）"
     }
   }
 }

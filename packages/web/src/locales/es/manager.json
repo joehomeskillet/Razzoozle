@@ -998,13 +998,46 @@
   },
   "skeleton": {
     "import": {
-      "title": "¿Importar skeleton?",
-      "confirm": "El tema, CSS y JS actuales se reemplazarán por el contenido del ZIP.",
+      "title": "¿Importar esqueleto?",
+      "confirm": "El tema actual, CSS y JS serán reemplazados por el contenido del ZIP.",
       "confirmLabel": "Elegir ZIP"
     },
     "js": {
       "confirmTitle": "¿Guardar JavaScript?",
-      "confirm": "Este código se ejecutará en cada dispositivo conectado. Solo guarda código de confianza."
+      "confirm": "Este código se ejecutará en cada dispositivo conectado. Solo guarde código de confianza.",
+      "title": "Anulación JavaScript",
+      "description": "JavaScript libre ejecutado en cada dispositivo conectado.",
+      "placeholder": "// console.log(window.razzoozle.theme)",
+      "warning": "⚠ Este JavaScript se ejecuta en cada dispositivo del jugador — solo pegue código de confianza (riesgo de XSS almacenado).",
+      "save": "Guardar JavaScript"
+    },
+    "transfer": {
+      "title": "Transferir esqueleto",
+      "description": "Exporta el diseño completo (tokens, CSS, JS, activos) como ZIP o importa un esqueleto preparado.",
+      "download": "Descargar esqueleto",
+      "upload": "Cargar esqueleto (ZIP)",
+      "reset": "Restablecer predeterminados"
+    },
+    "reset": {
+      "title": "¿Restablecer predeterminados?",
+      "confirm": "El tema actual, CSS y JS se descartarán y se restaurará el diseño predeterminado.",
+      "confirmLabel": "Restablecer"
+    },
+    "css": {
+      "title": "Anulación CSS",
+      "description": "CSS libre cargado además del tema en todos los dispositivos.",
+      "placeholder": "/* :root { --team-red: #ff0000 } */",
+      "save": "Guardar CSS"
+    },
+    "toast": {
+      "cssSaved": "CSS guardado",
+      "jsSaved": "JavaScript guardado",
+      "reset": "Restablecido a predeterminados",
+      "exported": "Esqueleto exportado",
+      "imported": "Esqueleto importado",
+      "exportFailed": "Error al exportar: {{message}}",
+      "importFailed": "Error al importar: {{message}}",
+      "tooLarge": "Archivo demasiado grande (máx. 512 KB)"
     }
   }
 }
