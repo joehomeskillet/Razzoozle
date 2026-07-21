@@ -155,6 +155,7 @@ const ConfigManageQuizz = () => {
           </div>
         )}
 
+        {/* Bulk toolbar: inline only when ≥1 selected (not sticky; ActionFooter stays sticky) */}
         {selectionActive && (
           <div
             role="toolbar"
@@ -162,7 +163,7 @@ const ConfigManageQuizz = () => {
               count: selectionCount,
               defaultValue: "{{count}} ausgewählt",
             })}
-            className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
+            className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <div className="flex min-w-0 items-center gap-2">
               <Button
