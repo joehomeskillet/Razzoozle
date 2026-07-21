@@ -25,9 +25,11 @@ const LabelColorPicker = ({ value, onChange }: LabelColorPickerProps) => {
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full"
               title={colorLabel}
               aria-label={colorLabel}
+              aria-pressed={value === c.slug}
             >
               <span
                 className="size-8 rounded-full border-2 transition-all"
+                aria-hidden
                 style={{
                   backgroundColor: `var(--label-${c.slug})`,
                   borderColor: value === c.slug ? "var(--color-secondary)" : "var(--border-hairline)",
