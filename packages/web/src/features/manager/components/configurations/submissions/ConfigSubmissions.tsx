@@ -4,6 +4,7 @@ import type {
   Submission,
   SubmissionStatus,
 } from "@razzoozle/common/types/submission"
+import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import {
@@ -250,30 +251,26 @@ const ConfigSubmissions = () => {
 
       {/* Status filter chips — switch the visible section between
           Offen / Angenommen / Abgelehnt. */}
-      <div
-        className="mb-3 flex flex-wrap items-center gap-2"
-        role="group"
-        aria-label={t("manager:submissions.statusFilter.label", {
-          defaultValue: "Nach Status filtern",
-        })}
-      >
-        <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
-        {statusFilters.map((entry) => (
-          <FilterPill
-            key={entry.key}
-            active={statusFilter === entry.key}
-            count={entry.count}
-            onClick={() => {
-              setStatusFilter(entry.key)
-              setApprovingId(null)
-              setEditingId(null)
-              setPreviewId(null)
-              setRejectingId(null)
-            }}
-          >
-            {entry.label}
-          </FilterPill>
-        ))}
+      <div className="mb-3">
+        <FilterGroup label={t("manager:submissions.statusFilter.label")}>
+          <Filter className="size-4 text-[var(--ink-faint)]" aria-hidden />
+          {statusFilters.map((entry) => (
+            <FilterPill
+              key={entry.key}
+              active={statusFilter === entry.key}
+              count={entry.count}
+              onClick={() => {
+                setStatusFilter(entry.key)
+                setApprovingId(null)
+                setEditingId(null)
+                setPreviewId(null)
+                setRejectingId(null)
+              }}
+            >
+              {entry.label}
+            </FilterPill>
+          ))}
+        </FilterGroup>
       </div>
 
       {visible.length === 0 ? (
