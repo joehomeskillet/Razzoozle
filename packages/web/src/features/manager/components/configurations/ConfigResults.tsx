@@ -261,9 +261,7 @@ const ConfigResults = () => {
                   aria-label="Alle auswählen"
                 />
                 {selection.selectionActive && (
-                  <span className="ml-2">
-                    {selection.selected.size} von {filteredResults.length} ausgewählt
-                  </span>
+                  <span className="ml-2">{getBulkLabel()}</span>
                 )}
               </div>
 
@@ -277,7 +275,7 @@ const ConfigResults = () => {
                     {...listItemMotion(index, reducedMotion)}
                   >
                     <ListRow
-                      leading={
+                      selection={
                         <Checkbox
                           data-testid={`result-select-${r.id}`}
                           checked={selection.isSelected(r.id)}
