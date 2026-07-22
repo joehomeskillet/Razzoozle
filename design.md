@@ -243,6 +243,14 @@ The admin console is the **backstage manifestation** of the same flat design lan
 
 **North Star:** Hierarchy through depth (surface layers), not glass or blur. All interactive elements follow stage guardrails. Backwards-compatible with the flat-field system (§1).
 
+> **Normative surface contract — Manager / Console**
+>
+> **Allowed component families:** ListRow, SectionCard, Badge, BulkActionToolbar, LabelRow, ToggleField, FilterPill, OverflowMenu, NavItem, EmptyState
+>
+> **Tokens:** Console-pinned (`--color-primary` `#7c3aed`, `--color-accent` `#ff9900`), console surfaces (`--surface-*`, `--ink-*`)
+>
+> **Explicit prohibition:** Manager components (ListRow, console tokens, SectionCard) NEVER appear in Game views (Player, Lobby, Leaderboard, Results). Game-answer-tiles, Game-tokens (`--answer-N`, state colors) NEVER used in Manager. The two palettes are incompatible.
+
 ---
 
 ### Console Tokens
@@ -408,6 +416,84 @@ Documented exceptions (D8 toolbar-density, D4 destructive-intent, etc.) require 
 ---
 
 **This section consolidates the manager console into the flat design system.** Read it alongside §1–7 (the stage guardrails apply equally). When in doubt, ask: "Is this token-driven? Is the focus formula D7? Are ink colors on fills?" — those three gates catch 80% of drift.
+
+---
+
+## 8·C Game-Präsentator (Host / Display Screens)
+
+Host/Display facing screens (Lobby, Question Display, Leaderboard, Podium/Recap) use the stage flat-design language with cream-field backgrounds. Applies identical token set and guardrails as stage (§1–§7).
+
+### Allowed Component Families
+
+- AnswerButton / AnswerTile (hairline ring + shape icon per §3)
+- LeaderboardRow (§3·B)
+- TierBadge (§3·B, ink labels only)
+- TeamChip (§3·B, derived -text)
+- Timer (tabular numerals, §3·B)
+- Modal / Dialog (§3·B fixed scrim)
+- Button (primary, accent, ghost — stage versions)
+- EmptyState (stage version, cream field)
+
+### Token Set (Stage Only)
+
+- Brand: `--color-primary`, `--color-secondary`, `--color-accent` (runtime-themeable, NOT console-pinned)
+- Answer tiles: `--answer-1` through `--answer-4`, `--answer-text`
+- State: `--state-correct`, `--state-wrong`
+- Fields: `--game-fg` (set to `#0E1120` on cream shells by GameWrapper)
+- All tokens via `color-mix` or CSS vars; never console tokens
+
+### Critical Prohibition: No Console Contamination
+
+**Manager/Console tokens and components MUST NOT appear in Presenter views.** Forbidden:
+
+- Console tokens: `--surface-*`, `--ink-*`, `--line`, `--ring-selected`
+- Console components: ListRow, SectionCard, BulkActionToolbar, LabelRow, ToggleField, FilterPill (console version), NavItem (console nav)
+- Console palette / pinned tokens: `--color-primary` (console `#7c3aed` pin) is conceptually different from stage primary (runtime-themed)
+
+The shell (`GameWrapper.tsx`) forces `--game-fg: #0E1120` + cream background; the stage guardrails (§2 Guardrail #5, ink labels on colored tiles) apply in full.
+
+---
+
+## 8·D Game-Client (Player)
+
+Player-facing views (Join flow, answer submission, results) use the same stage tokens and guardrails as the Presenter. No separate palette.
+
+### Allowed Component Families
+
+- Input (PIN, username — §3·B)
+- Button (primary, accent, ghost — stage)
+- AnswerTile (§3·B)
+- Modal / Dialog (§3·B)
+- TierBadge (§3·B)
+- EmptyState (stage)
+
+### Token Set (Stage, Identical to Presenter)
+
+- Inherits all stage tokens from §3 (answer tiles, state, brand, fields)
+- `--game-fg: #0E1120` set by stage shell
+- Cream field background via GameWrapper
+
+### Critical Prohibition: No Console or Presenter Cross-Leakage
+
+**The Player client is strictly stage-domain.** Forbidden:
+
+- Any console token or component (§8·B family)
+- Mixing Presenter-specific logic (leaderboard, display-only views) into Client views
+- Manager-facing strings or controls in Player UI
+
+The client and Presenter share the stage design system; they differ in PURPOSE, not tokens.
+
+---
+
+## Surface-Family Sanity Check
+
+| Surface | Tokens | Allowed Components | Forbidden |
+|---------|--------|-------------------|-----------|
+| Manager / Console | Console-pinned: `--color-primary` (#7c3aed), `--surface-*`, `--ink-*` | ListRow, SectionCard, Badge, BulkActionToolbar, NavItem, LabelRow, ToggleField, OverflowMenu | Game tokens, stage components, game-tiles |
+| Presenter (Host / Display) | Stage: `--answer-N`, `--state-correct/wrong`, `--game-fg`, runtime-primary | AnswerButton, LeaderboardRow, TierBadge, Timer, Modal, Button | Console tokens, Manager components |
+| Client (Player) | Stage (identical to Presenter) | Input, Button, AnswerTile, Modal, EmptyState | Console, Manager, Presenter-specific logic |
+
+**Golden rule:** A component built for the Manager uses `--surface-*` / `--ink-*` tokens and NEVER appears in a game view. A stage component uses answer-tile tokens or state colors and NEVER imports a console component. The three families are hermetically sealed at the token level.
 
 ---
 
