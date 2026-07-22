@@ -785,8 +785,8 @@
   },
   "users": {
     "title": "Gestion des Utilisateurs",
-    "intro": "Créer, verrouiller et déverrouiller les comptes des enseignants.",
-    "createTitle": "Créer un Nouvel Enseignant",
+    "intro": "Gère les utilisateurs, les enseignants et les administrateurs.",
+    "createTitle": "Créer un nouvel utilisateur",
     "created": "Utilisateur créé",
     "loadFailed": "Impossible de charger les utilisateurs",
     "invalidInput": "Nom d'utilisateur et mot de passe requis",
@@ -824,7 +824,9 @@
     "deleteFailed": "Échec de la suppression",
     "cannot_modify_own_account": "Tu ne peux pas modifier ton propre compte",
     "cannot_delete_self": "Ton compte ne peut pas être supprimé",
-    "cannot_deactivate_self": "Ton compte ne peut pas être désactivé"
+    "cannot_deactivate_self": "Ton compte ne peut pas être désactivé",
+    "copyUser": "Copier l'utilisateur",
+    "copyDialogTitle": "Copier l'utilisateur"
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",
@@ -969,5 +971,20 @@
       "importFailed": "Échec de l'import: {{message}}",
       "tooLarge": "Fichier trop volumineux (max. 512 KB)"
     }
+  },
+  "bulk": {
+    "selected": "{{count}} sélectionnés",
+    "selectAll": "Tout sélectionner",
+    "selectAllFiltered": "Sélectionner tous les filtrés",
+    "clearSelection": "Effacer la sélection",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "deleteSelected": "Supprimer la sélection",
+    "andNMore": "et {{count}} de plus",
+    "skippedProtected": "{{count}} comptes protégés ignorés",
+    "resultSucceeded": "{{count}} réussis",
+    "resultSkipped": "{{count}} ignorés",
+    "resultFailed": "{{count}} échoués",
+    "resultCompleted": "Terminé"
   }
 }

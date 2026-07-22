@@ -366,6 +366,351 @@ pub async fn delete_user(pool: &PgPool, user_id: i64) -> Result<bool, sqlx::Erro
     Ok(result.rows_affected() > 0)
 }
 
+// ── Bulk user ops (WP-C1) ──────────────────────────────────────────────────
+
+/// Max IDs accepted per bulk request (HTTP layer also enforces).
+pub const BULK_MAX_IDS: usize = 200;
+
+#[derive(Debug, serde::Serialize)]
+pub struct BulkOpResult {
+    pub succeeded: Vec<i64>,
+    pub skipped: Vec<SkippedEntry>,
+    pub failed: Vec<FailedEntry>,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SkippedEntry {
+    pub id: i64,
+    pub reason: String, // "self" | "last_admin"
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct FailedEntry {
+    pub id: i64,
+    pub reason: String, // "not_found"
+}
+
+/// Deduplicate IDs while preserving first-seen order.
+fn normalize_bulk_ids(ids: Vec<i64>) -> Vec<i64> {
+    let mut seen = std::collections::HashSet::with_capacity(ids.len());
+    let mut out = Vec::with_capacity(ids.len());
+    for id in ids {
+        if seen.insert(id) {
+            out.push(id);
+        }
+    }
+    out
+}
+
+/// Outcome of a single-user deactivate with last-admin guard (parity with
+/// `delete_user_guarded`). HTTP maps each variant to status codes.
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeactivateUserOutcome {
+    Deactivated,
+    NotFound,
+    LastActiveAdmin,
+}
+
+/// Deactivate a user (`active=false`) with the last-admin guard inside one
+/// transaction — same `SELECT ... FOR UPDATE ORDER BY id` pattern as
+/// `delete_user_guarded`, so concurrent deactivates cannot zero out admins.
+pub async fn deactivate_user_guarded(
+    pool: &PgPool,
+    user_id: i64,
+) -> Result<DeactivateUserOutcome, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    let target = sqlx::query_as::<_, (String, bool)>(
+        "SELECT role, active FROM users WHERE id = $1"
+    )
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let (role, active) = match target {
+        Some(v) => v,
+        None => {
+            tx.rollback().await?;
+            return Ok(DeactivateUserOutcome::NotFound);
+        }
+    };
+
+    // Already inactive → idempotent success (no last-admin risk).
+    if !active {
+        tx.commit().await?;
+        return Ok(DeactivateUserOutcome::Deactivated);
+    }
+
+    if role == "admin" {
+        let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+        )
+        .fetch_all(&mut *tx)
+        .await?;
+
+        let target_is_locked_active_admin = locked_admin_ids.iter().any(|(id,)| *id == user_id);
+        if target_is_locked_active_admin && locked_admin_ids.len() <= 1 {
+            tx.rollback().await?;
+            return Ok(DeactivateUserOutcome::LastActiveAdmin);
+        }
+    }
+
+    let result = sqlx::query("UPDATE users SET active = false WHERE id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        tx.rollback().await?;
+        return Ok(DeactivateUserOutcome::NotFound);
+    }
+
+    tx.commit().await?;
+    Ok(DeactivateUserOutcome::Deactivated)
+}
+
+/// Bulk-activate users. Already-active users count as succeeded (idempotent).
+/// Missing IDs go to `failed` with reason `not_found`.
+pub async fn bulk_activate(pool: &PgPool, ids: Vec<i64>) -> Result<BulkOpResult, sqlx::Error> {
+    let ids = normalize_bulk_ids(ids);
+    let mut result = BulkOpResult {
+        succeeded: Vec::new(),
+        skipped: Vec::new(),
+        failed: Vec::new(),
+    };
+
+    if ids.is_empty() {
+        return Ok(result);
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Lock matching rows deterministically, then mark active.
+    let existing: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
+    )
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let existing_set: std::collections::HashSet<i64> =
+        existing.into_iter().map(|(id,)| id).collect();
+
+    for id in &ids {
+        if !existing_set.contains(id) {
+            result.failed.push(FailedEntry {
+                id: *id,
+                reason: "not_found".to_string(),
+            });
+        }
+    }
+
+    if !existing_set.is_empty() {
+        let to_activate: Vec<i64> = existing_set.iter().copied().collect();
+        sqlx::query("UPDATE users SET active = true WHERE id = ANY($1)")
+            .bind(&to_activate)
+            .execute(&mut *tx)
+            .await?;
+        // Preserve request order for succeeded.
+        for id in &ids {
+            if existing_set.contains(id) {
+                result.succeeded.push(*id);
+            }
+        }
+    }
+
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// Bulk-deactivate users. Requester is skipped (`self`); missing IDs fail with
+/// `not_found`. Already-inactive users count as succeeded (idempotent).
+/// Last-active-admin targets are skipped (`last_admin`) so bulk cannot zero
+/// out admins (SDD §6.4).
+pub async fn bulk_deactivate(
+    pool: &PgPool,
+    requester_id: i64,
+    ids: Vec<i64>,
+) -> Result<BulkOpResult, sqlx::Error> {
+    let ids = normalize_bulk_ids(ids);
+    let mut result = BulkOpResult {
+        succeeded: Vec::new(),
+        skipped: Vec::new(),
+        failed: Vec::new(),
+    };
+
+    let mut work: Vec<i64> = Vec::with_capacity(ids.len());
+    for id in ids {
+        if id == requester_id {
+            result.skipped.push(SkippedEntry {
+                id,
+                reason: "self".to_string(),
+            });
+        } else {
+            work.push(id);
+        }
+    }
+
+    if work.is_empty() {
+        return Ok(result);
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Lock the active-admin set first (same order as the single-user guarded fns), then the target rows — consistent lock order prevents deadlocks.
+    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut remaining_admins = locked_admin_ids.len();
+    let admin_set: std::collections::HashSet<i64> =
+        locked_admin_ids.into_iter().map(|(id,)| id).collect();
+
+    let existing: Vec<(i64, String, bool)> = sqlx::query_as(
+        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
+    )
+    .bind(&work)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let existing_map: std::collections::HashMap<i64, (String, bool)> = existing
+        .into_iter()
+        .map(|(id, role, active)| (id, (role, active)))
+        .collect();
+
+    let mut to_deactivate: Vec<i64> = Vec::new();
+
+    for id in &work {
+        match existing_map.get(id) {
+            None => {
+                result.failed.push(FailedEntry {
+                    id: *id,
+                    reason: "not_found".to_string(),
+                });
+            }
+            Some((role, active)) => {
+                if *active && role == "admin" && admin_set.contains(id) {
+                    if remaining_admins <= 1 {
+                        result.skipped.push(SkippedEntry {
+                            id: *id,
+                            reason: "last_admin".to_string(),
+                        });
+                        continue;
+                    }
+                    remaining_admins -= 1;
+                }
+                to_deactivate.push(*id);
+            }
+        }
+    }
+
+    if !to_deactivate.is_empty() {
+        sqlx::query("UPDATE users SET active = false WHERE id = ANY($1)")
+            .bind(&to_deactivate)
+            .execute(&mut *tx)
+            .await?;
+        result.succeeded.extend(to_deactivate);
+    }
+
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// Bulk-delete users with self + last-admin guards inside one transaction.
+/// Sessions cascade via FK (`sessions.user_id ON DELETE CASCADE`).
+pub async fn bulk_delete(
+    pool: &PgPool,
+    requester_id: i64,
+    ids: Vec<i64>,
+) -> Result<BulkOpResult, sqlx::Error> {
+    let ids = normalize_bulk_ids(ids);
+    let mut result = BulkOpResult {
+        succeeded: Vec::new(),
+        skipped: Vec::new(),
+        failed: Vec::new(),
+    };
+
+    let mut work: Vec<i64> = Vec::with_capacity(ids.len());
+    for id in ids {
+        if id == requester_id {
+            result.skipped.push(SkippedEntry {
+                id,
+                reason: "self".to_string(),
+            });
+        } else {
+            work.push(id);
+        }
+    }
+
+    if work.is_empty() {
+        return Ok(result);
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Lock ALL active admins deterministically (same pattern as delete_user_guarded).
+    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut remaining_admins = locked_admin_ids.len();
+    let admin_set: std::collections::HashSet<i64> =
+        locked_admin_ids.into_iter().map(|(id,)| id).collect();
+
+    let existing: Vec<(i64, String, bool)> = sqlx::query_as(
+        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
+    )
+    .bind(&work)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let existing_map: std::collections::HashMap<i64, (String, bool)> = existing
+        .into_iter()
+        .map(|(id, role, active)| (id, (role, active)))
+        .collect();
+
+    let mut to_delete: Vec<i64> = Vec::new();
+
+    for id in &work {
+        match existing_map.get(id) {
+            None => {
+                result.failed.push(FailedEntry {
+                    id: *id,
+                    reason: "not_found".to_string(),
+                });
+            }
+            Some((role, active)) => {
+                if *active && role == "admin" && admin_set.contains(id) {
+                    if remaining_admins <= 1 {
+                        result.skipped.push(SkippedEntry {
+                            id: *id,
+                            reason: "last_admin".to_string(),
+                        });
+                        continue;
+                    }
+                    remaining_admins -= 1;
+                }
+                to_delete.push(*id);
+            }
+        }
+    }
+
+    if !to_delete.is_empty() {
+        sqlx::query("DELETE FROM users WHERE id = ANY($1)")
+            .bind(&to_delete)
+            .execute(&mut *tx)
+            .await?;
+        result.succeeded.extend(to_delete);
+    }
+
+    tx.commit().await?;
+    Ok(result)
+}
+
 /// Outcome of `delete_user_guarded` — the HTTP handler maps each variant to
 /// its own status code (Deleted -> 200, NotFound -> 404, LastActiveAdmin -> 400).
 #[derive(Debug, PartialEq, Eq)]

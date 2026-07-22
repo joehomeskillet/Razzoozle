@@ -815,8 +815,8 @@
   },
   "users": {
     "title": "User Management",
-    "intro": "Create, lock and unlock teacher accounts.",
-    "createTitle": "Create New Teacher",
+    "intro": "Manage users, teachers, and administrators.",
+    "createTitle": "Create new user",
     "created": "User created",
     "loadFailed": "Failed to load users",
     "invalidInput": "Username and password required",
@@ -854,7 +854,9 @@
     "deleteFailed": "Delete failed",
     "cannot_modify_own_account": "You cannot modify your own account",
     "cannot_delete_self": "Your account cannot be deleted",
-    "cannot_deactivate_self": "Your account cannot be deactivated"
+    "cannot_deactivate_self": "Your account cannot be deactivated",
+    "copyUser": "Copy user",
+    "copyDialogTitle": "Copy user"
   },
   "schueler": {
     "title": "Student Management",
@@ -969,5 +971,20 @@
       "importFailed": "Import failed: {{message}}",
       "tooLarge": "File too large (max. 512 KB)"
     }
+  },
+  "bulk": {
+    "selected": "{{count}} selected",
+    "selectAll": "Select all",
+    "selectAllFiltered": "Select all filtered",
+    "clearSelection": "Clear selection",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "deleteSelected": "Delete selected",
+    "andNMore": "and {{count}} more",
+    "skippedProtected": "{{count}} protected accounts skipped",
+    "resultSucceeded": "{{count}} succeeded",
+    "resultSkipped": "{{count}} skipped",
+    "resultFailed": "{{count}} failed",
+    "resultCompleted": "Completed"
   }
 }
