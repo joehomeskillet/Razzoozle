@@ -790,7 +790,7 @@
     "updated": "Class updated",
     "deleteClass": "Delete class",
     "deleteTitle": "Delete class",
-    "deleteConfirm": "Do you really want to delete the class \"{{name}}\"? Students in this class will be deleted.",
+    "deleteConfirm": "Really delete class \"{{name}}\"? Its assignments are removed; student accounts and results are kept.",
     "deleted": "Class deleted",
     "none": "No classes created yet",
     "pleaseCreate": "Please create a class first",

@@ -10,7 +10,7 @@ import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
@@ -40,8 +40,9 @@ const ConfigKlassen = () => {
     handleUpdateStudent,
     handleFetchStudents,
     handleAssignLabels,
-  } = useClassManager()
+  } = useClassManager({ onBulkSettled: () => bulkSettleRef.current() })
 
+  const bulkSettleRef = useRef<() => void>(() => {})
   const { socket } = useSocket()
   const { t } = useTranslation()
 
@@ -65,6 +66,16 @@ const ConfigKlassen = () => {
   // Bulk operation state
   const [pendingBulkAction, setPendingBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null)
   const [bulkOperationLoading, setBulkOperationLoading] = useState(false)
+
+  // Settled bulk op (BULK_ACTIVE_SET / BULK_DELETED) → reset loading, clear
+  // selection, close the confirm dialog (#288). Assigned every render so the
+  // ref-forwarded callback always sees the latest states.
+  bulkSettleRef.current = () => {
+    setBulkOperationLoading(false)
+    selection.clear()
+    setPendingBulkAction(null)
+  }
+  bulkSettleRef.current = () => { setBulkOperationLoading(false); selection.clear(); setPendingBulkAction(null) }
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)

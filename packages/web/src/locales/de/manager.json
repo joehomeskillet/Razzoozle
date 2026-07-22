@@ -760,7 +760,7 @@
     "updated": "Klasse aktualisiert",
     "deleteClass": "Klasse löschen",
     "deleteTitle": "Klasse löschen",
-    "deleteConfirm": "Möchtest du die Klasse \"{{name}}\" wirklich löschen? Die Schüler in dieser Klasse werden gelöscht.",
+    "deleteConfirm": "Möchtest du die Klasse \"{{name}}\" wirklich löschen? Die Zuordnungen werden entfernt; Schülerkonten und Ergebnisse bleiben erhalten.",
     "deleted": "Klasse gelöscht",
     "none": "Noch keine Klassen erstellt",
     "pleaseCreate": "Bitte erstelle zuerst eine Klasse",
