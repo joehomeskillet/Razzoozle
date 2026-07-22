@@ -511,6 +511,52 @@ const ConfigUsers = () => {
           </div>
         </div>
 
+        {/* Bulk action toolbar */}
+        {selection.selectionActive && (
+          <BulkActionToolbar
+            count={selection.selected.size}
+            label={t("manager:bulk.selected", {
+              count: selection.selected.size,
+              defaultValue: "{{count}} ausgewählt",
+            })}
+            onClear={selection.clear}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setBulkAction("activate")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:bulk.activate")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setBulkAction("deactivate")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:bulk.deactivate")}
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => {
+                setBulkAction("delete")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:bulk.deleteSelected")}
+            </Button>
+          </BulkActionToolbar>
+        )}
+
         {loading ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader className="h-16" />
@@ -683,52 +729,6 @@ const ConfigUsers = () => {
               )
             })}
           </div>
-        )}
-
-        {/* Bulk action toolbar */}
-        {selection.selectionActive && (
-          <BulkActionToolbar
-            count={selection.selected.size}
-            label={t("manager:bulk.selected", {
-              count: selection.selected.size,
-              defaultValue: "{{count}} ausgewählt",
-            })}
-            onClear={selection.clear}
-          >
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setBulkAction("activate")
-                setBulkConfirm(true)
-              }}
-              disabled={bulkProcessing}
-            >
-              {t("manager:users.enable", { defaultValue: "Aktivieren" })}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setBulkAction("deactivate")
-                setBulkConfirm(true)
-              }}
-              disabled={bulkProcessing}
-            >
-              {t("manager:users.disable", { defaultValue: "Deaktivieren" })}
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => {
-                setBulkAction("delete")
-                setBulkConfirm(true)
-              }}
-              disabled={bulkProcessing}
-            >
-              {t("manager:users.delete", { defaultValue: "Löschen" })}
-            </Button>
-          </BulkActionToolbar>
         )}
 
         {/* Delete Confirmation Dialog */}

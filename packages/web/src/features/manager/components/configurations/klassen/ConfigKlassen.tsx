@@ -247,6 +247,40 @@ const ConfigKlassen = () => {
         </div>
       )}
 
+      {selection.selectionActive && (
+        <BulkActionToolbar
+          count={selection.selected.size}
+          label={t("manager:bulk.selected", { count: selection.selected.size })}
+          onClear={selection.clear}
+          data-testid="classes-bulk-toolbar"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setPendingBulkAction('activate')}
+          >
+            {t("manager:bulk.activate")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setPendingBulkAction('deactivate')}
+          >
+            {t("manager:bulk.deactivate")}
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={() => setPendingBulkAction('delete')}
+          >
+            {t("manager:bulk.deleteSelected")}
+          </Button>
+        </BulkActionToolbar>
+      )}
+
       {filteredByStatus.length > 0 && (
         <div className="mb-4 flex shrink-0 items-center">
           <label htmlFor="classes-select-all" className="flex items-center gap-2 text-sm font-medium">
@@ -260,42 +294,6 @@ const ConfigKlassen = () => {
             />
             {selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
           </label>
-        </div>
-      )}
-
-      {selection.selectionActive && (
-        <div className="mb-4 flex shrink-0">
-          <BulkActionToolbar
-            count={selection.selected.size}
-            label={t("manager:bulk.selected", { count: selection.selected.size })}
-            onClear={selection.clear}
-            data-testid="classes-bulk-toolbar"
-          >
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setPendingBulkAction('activate')}
-            >
-              {t("manager:bulk.activate")}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setPendingBulkAction('deactivate')}
-            >
-              {t("manager:bulk.deactivate")}
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              size="sm"
-              onClick={() => setPendingBulkAction('delete')}
-            >
-              {t("manager:bulk.deleteSelected")}
-            </Button>
-          </BulkActionToolbar>
         </div>
       )}
 
