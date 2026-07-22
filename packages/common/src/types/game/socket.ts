@@ -428,6 +428,10 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.ALL_STUDENTS_DATA]: (_data: AllStudentsData) => void
   [EVENTS.CLASS.STUDENT_CREATED]: (_data: StudentCreatedData) => void
   [EVENTS.CLASS.STUDENT_PIN_DATA]: (_data: { studentId: number; pin: string; labels: string[] }) => void
+  [EVENTS.CLASS.PINS_DATA]: (_data: {
+    classId: number
+    pins: Array<{ studentId: number; displayName: string; pin: string; active: boolean }>
+  }) => void
   [EVENTS.CLASS.PIN_REGENERATED]: (_data: { studentId: number; pin: string; labels: string[] }) => void
   [EVENTS.CLASS.ACTIVE_SET]: (_data: { id: number; active: boolean }) => void
   [EVENTS.CLASS.BULK_ACTIVE_SET]: (_outcome: {
@@ -716,6 +720,7 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.LIST_ALL_STUDENTS]: () => void
   [EVENTS.CLASS.CREATE_STUDENT]: (_payload: CreateStudentPayload) => void
   [EVENTS.CLASS.STUDENT_PIN]: (_payload: { studentId: number }) => void
+  [EVENTS.CLASS.GET_PINS]: (_payload: { classId: number }) => void
   [EVENTS.CLASS.REGEN_PIN]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.SET_ACTIVE]: (_payload: { id: number; active: boolean }) => void
   [EVENTS.CLASS.BULK_SET_ACTIVE]: (_payload: { ids: number[]; active: boolean }) => void

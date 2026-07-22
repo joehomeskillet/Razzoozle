@@ -108,12 +108,8 @@ const ConfigGameMode = () => {
     patchKey: "teamMode",
     toastMessage: (next) =>
       next
-        ? t("manager:gameMode.teamModeEnabled", {
-            defaultValue: "Team-Modus aktiviert",
-          })
-        : t("manager:gameMode.teamModeDisabled", {
-            defaultValue: "Team-Modus deaktiviert",
-          }),
+        ? t("manager:gameMode.teamModeEnabled")
+        : t("manager:gameMode.teamModeDisabled"),
   })
   const handleToggle = teamModeToggle.commit
 
@@ -126,12 +122,8 @@ const ConfigGameMode = () => {
     sideEffect: setLowLatencyPref,
     toastMessage: (next) =>
       next
-        ? t("manager:gameMode.lowLatencyEnabled", {
-            defaultValue: "Low-Latency-Modus aktiviert",
-          })
-        : t("manager:gameMode.lowLatencyDisabled", {
-            defaultValue: "Low-Latency-Modus deaktiviert",
-          }),
+        ? t("manager:gameMode.lowLatencyEnabled")
+        : t("manager:gameMode.lowLatencyDisabled"),
   })
   const handleLowLatencyToggle = lowLatencyToggle.commit
 
@@ -140,10 +132,8 @@ const ConfigGameMode = () => {
     patchKey: "joinLocked",
     toastMessage: (next) =>
       next
-        ? t("manager:gameMode.lobbyLocked", { defaultValue: "Lobby gesperrt" })
-        : t("manager:gameMode.lobbyUnlocked", {
-            defaultValue: "Lobby entsperrt",
-          }),
+        ? t("manager:gameMode.lobbyLocked")
+        : t("manager:gameMode.lobbyUnlocked"),
   })
   const handleJoinLockedToggle = joinLockedToggle.commit
 
@@ -152,12 +142,8 @@ const ConfigGameMode = () => {
     patchKey: "randomizeAnswers",
     toastMessage: (next) =>
       next
-        ? t("manager:gameMode.randomizeAnswersEnabled", {
-            defaultValue: "Antworten werden gemischt",
-          })
-        : t("manager:gameMode.randomizeAnswersDisabled", {
-            defaultValue: "Antwortreihenfolge fest",
-          }),
+        ? t("manager:gameMode.randomizeAnswersEnabled")
+        : t("manager:gameMode.randomizeAnswersDisabled"),
   })
   const handleRandomizeAnswersToggle = randomizeAnswersToggle.commit
 
@@ -166,12 +152,8 @@ const ConfigGameMode = () => {
     patchKey: "scoringMode",
     toastMessage: (next) =>
       next === "accuracy"
-        ? t("manager:gameMode.accuracyMode", {
-            defaultValue: "Genauigkeitsmodus",
-          })
-        : t("manager:gameMode.speedMode", {
-            defaultValue: "Geschwindigkeitsmodus",
-          }),
+        ? t("manager:gameMode.accuracyMode")
+        : t("manager:gameMode.speedMode"),
   })
   const handleScoringModeChange = scoringModeToggle.commit
 
@@ -180,12 +162,8 @@ const ConfigGameMode = () => {
     patchKey: "klassenEnabled",
     toastMessage: (next) =>
       next
-        ? t("manager:gameMode.klassenEnabled", {
-            defaultValue: "Klassen-Modus verfügbar",
-          })
-        : t("manager:gameMode.klassenDisabled", {
-            defaultValue: "Klassen-Modus deaktiviert",
-          }),
+        ? t("manager:gameMode.klassenEnabled")
+        : t("manager:gameMode.klassenDisabled"),
   })
   const handleKlassenToggle = klassenToggle.commit
 
@@ -193,9 +171,7 @@ const ConfigGameMode = () => {
     setValue: setEndScreenModes,
     patchKey: "endScreenModes",
     toastMessage: () =>
-      t("manager:gameMode.endScreenModesUpdated", {
-        defaultValue: "Endbildschirm-Optionen aktualisiert",
-      }),
+      t("manager:gameMode.endScreenModesUpdated"),
   })
 
   const handleEndScreenModeToggle = useCallback(
@@ -228,23 +204,19 @@ const ConfigGameMode = () => {
 
   const teamLabelMap = useMemo<Record<string, string>>(
     () => ({
-      red: t("game:teams.red", { defaultValue: "Rot" }),
-      blue: t("game:teams.blue", { defaultValue: "Blau" }),
-      green: t("game:teams.green", { defaultValue: "Grün" }),
-      yellow: t("game:teams.yellow", { defaultValue: "Gelb" }),
+      red: t("game:teams.red"),
+      blue: t("game:teams.blue"),
+      green: t("game:teams.green"),
+      yellow: t("game:teams.yellow"),
     }),
     [t],
   )
 
   const endScreenModeLabelMap = useMemo<Record<string, string>>(
     () => ({
-      full: t("manager:gameMode.endScreenMode.full", {
-        defaultValue: "Vollständig",
-      }),
-      top3: t("manager:gameMode.endScreenMode.top3", { defaultValue: "Top 3" }),
-      private: t("manager:gameMode.endScreenMode.private", {
-        defaultValue: "Privat",
-      }),
+      full: t("manager:gameMode.endScreenMode.full"),
+      top3: t("manager:gameMode.endScreenMode.top3"),
+      private: t("manager:gameMode.endScreenMode.private"),
     }),
     [t],
   )
@@ -267,16 +239,12 @@ const ConfigGameMode = () => {
     () => [
       {
         value: "speed",
-        label: t("manager:gameMode.speedMode", {
-          defaultValue: "Geschwindigkeit",
-        }),
+        label: t("manager:gameMode.speedMode"),
         disabled: scoringModeToggle.saving,
       },
       {
         value: "accuracy",
-        label: t("manager:gameMode.accuracyMode", {
-          defaultValue: "Genauigkeit",
-        }),
+        label: t("manager:gameMode.accuracyMode"),
         disabled: scoringModeToggle.saving,
       },
     ],
@@ -311,13 +279,8 @@ const ConfigGameMode = () => {
             {/* 1. Team-Modus — requires restart */}
             <ToggleField
               id="setting-team-mode"
-              label={t("manager:gameMode.teamMode", {
-                defaultValue: "Team-Modus",
-              })}
-              description={t("manager:gameMode.description", {
-                defaultValue:
-                  "Im Team-Modus werden Punkte pro Team aufsummiert und eine Team-Rangliste angezeigt.",
-              })}
+              label={t("manager:gameMode.teamMode")}
+              description={t("manager:gameMode.description")}
               checked={teamMode}
               onChange={handleToggle}
               disabled={teamModeToggle.saving}
@@ -347,13 +310,8 @@ const ConfigGameMode = () => {
             {/* 2. Low-Latency-Modus */}
             <ToggleField
               id="setting-low-latency"
-              label={t("manager:gameMode.lowLatency", {
-                defaultValue: "Low-Latency-Modus",
-              })}
-              description={t("manager:gameMode.lowLatencyDescription", {
-                defaultValue:
-                  "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
-              })}
+              label={t("manager:gameMode.lowLatency")}
+              description={t("manager:gameMode.lowLatencyDescription")}
               checked={lowLatency}
               onChange={handleLowLatencyToggle}
               disabled={lowLatencyToggle.saving}
@@ -363,13 +321,8 @@ const ConfigGameMode = () => {
             {/* 3. Lobby gesperrt */}
             <ToggleField
               id="setting-lobby-locked"
-              label={t("manager:gameMode.lobbyTitle", {
-                defaultValue: "Lobby-Sperre",
-              })}
-              description={t("manager:gameMode.lobbyDescription", {
-                defaultValue:
-                  "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
-              })}
+              label={t("manager:gameMode.lobbyTitle")}
+              description={t("manager:gameMode.lobbyDescription")}
               checked={joinLocked}
               onChange={handleJoinLockedToggle}
               disabled={joinLockedToggle.saving}
@@ -379,13 +332,8 @@ const ConfigGameMode = () => {
             {/* 4. Randomize Answers */}
             <ToggleField
               id="setting-randomize-answers"
-              label={t("manager:gameMode.randomizeAnswersTitle", {
-                defaultValue: "Antwortreihenfolge",
-              })}
-              description={t("manager:gameMode.randomizeAnswersDescription", {
-                defaultValue:
-                  "Mischt die Reihenfolge der Antwortoptionen pro Frage zufällig, während die kanonischen Indizes für die Bewertung erhalten bleiben.",
-              })}
+              label={t("manager:gameMode.randomizeAnswersTitle")}
+              description={t("manager:gameMode.randomizeAnswersDescription")}
               checked={randomizeAnswers}
               onChange={handleRandomizeAnswersToggle}
               disabled={randomizeAnswersToggle.saving}
@@ -401,13 +349,8 @@ const ConfigGameMode = () => {
           </h3>
           <LabelRow
             id="setting-scoring-mode"
-            label={t("manager:gameMode.scoringTitle", {
-              defaultValue: "Wertung",
-            })}
-            description={t("manager:gameMode.scoringDescription", {
-              defaultValue:
-                "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
-            })}
+            label={t("manager:gameMode.scoringTitle")}
+            description={t("manager:gameMode.scoringDescription")}
             disabled={scoringModeToggle.saving}
             statusMessage={pendingStatus(scoringModeToggle.saving)}
           >
@@ -430,13 +373,8 @@ const ConfigGameMode = () => {
           </h3>
           <ToggleField
             id="setting-klassen-mode"
-            label={t("manager:gameMode.klassenTitle", {
-              defaultValue: "Klassen-Modus",
-            })}
-            description={t("manager:gameMode.klassenDescription", {
-              defaultValue:
-                "Aktiviert den Klassen-Modus, in dem Spieler aus einem von der Lehrkraft verwalteten Schülerverzeichnis beitreten können.",
-            })}
+            label={t("manager:gameMode.klassenTitle")}
+            description={t("manager:gameMode.klassenDescription")}
             checked={klassenEnabled}
             onChange={handleKlassenToggle}
             disabled={klassenToggle.saving}

@@ -261,17 +261,17 @@ const ConfigAI = () => {
 
   const textStatusBadge = {
     off: {
-      label: t("manager:ai.status.off", { defaultValue: "Aus" }),
+      label: t("manager:ai.status.off"),
       pill: "bg-[var(--surface-3)] text-[var(--ink-medium)]",
       dot: "bg-[var(--ink-faint)]",
     },
     ready: {
-      label: t("manager:ai.status.ready", { defaultValue: "Bereit" }),
+      label: t("manager:ai.status.ready"),
       pill: "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
       dot: "bg-[var(--state-correct)]",
     },
     error: {
-      label: t("manager:ai.status.error", { defaultValue: "Fehler" }),
+      label: t("manager:ai.status.error"),
       pill: "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]",
       dot: "bg-[var(--state-wrong)]",
     },

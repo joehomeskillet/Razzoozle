@@ -140,9 +140,7 @@ const ConfigAchievements = () => {
       config: buildConfigPatch(defaults),
     })
     toast.success(
-      t("manager:achievementsConfig.resetDone", {
-        defaultValue: "Auf Standard zurückgesetzt",
-      }),
+      t("manager:achievementsConfig.resetDone"),
     )
   }
 
@@ -239,9 +237,7 @@ const ConfigAchievements = () => {
           className="rounded-[var(--radius-theme)]"
         >
           <RotateCcw className="size-4" aria-hidden />
-          {t("manager:achievementsConfig.reset", {
-            defaultValue: "Auf Standard zurücksetzen",
-          })}
+          {t("manager:achievementsConfig.reset")}
         </Button>
         <Button
           variant="primary"

@@ -207,12 +207,8 @@ const QuizzList = ({
   ) : !hasMatches ? (
     <EmptyState
       icon={SearchX}
-      headline={t("manager:quizz.noResults", {
-        defaultValue: "Keine Treffer",
-      })}
-      hint={t("manager:quizz.noResultsHint", {
-        defaultValue: "Passe deinen Suchbegriff an.",
-      })}
+      headline={t("manager:quizz.noResults")}
+      hint={t("manager:quizz.noResultsHint")}
     />
   ) : (
     <motion.div
@@ -236,10 +232,7 @@ const QuizzList = ({
               selection={
                 <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
                   <span className="sr-only">
-                    {t("manager:quizz.selectQuiz", {
-                      name: q.subject,
-                      defaultValue: '„{{name}}" auswählen',
-                    })}
+                    {t("manager:quizz.selectQuiz", { name: q.subject })}
                   </span>
                   <Checkbox
                     checked={selected.has(q.id)}
@@ -283,17 +276,13 @@ const QuizzList = ({
                         }}
                       >
                         <Select.Trigger
-                          aria-label={t("manager:labels.assignLabel", {
-                            defaultValue: "Label zuweisen",
-                          })}
+                          aria-label={t("manager:labels.assignLabel")}
                           onPointerDown={(e) => e.stopPropagation()}
                           className={assignTriggerClass}
                         >
                           <Plus className="size-3" />
                           <Select.Value
-                            placeholder={t("manager:labels.assignTitle", {
-                              defaultValue: "+ Fach",
-                            })}
+                            placeholder={t("manager:labels.assignTitle")}
                           />
                         </Select.Trigger>
                         <Select.Portal>

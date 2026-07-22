@@ -51,13 +51,9 @@ const ImageSection = ({
                 )}
                 <div className="mt-3">
                   <LabelRow
-                    label={t("manager:ai.resolution.label", {
-                      defaultValue: "Bildauflösung",
-                    })}
+                    label={t("manager:ai.resolution.label")}
                     htmlFor={`ai-resolution-${provider.id}`}
-                    description={t("manager:ai.resolution.help", {
-                      defaultValue: "Kantenlänge des generierten Bildes",
-                    })}
+                    description={t("manager:ai.resolution.help")}
                   >
                     <Select
                       id={`ai-resolution-${provider.id}`}
@@ -70,10 +66,7 @@ const ImageSection = ({
                     >
                       {IMAGE_RESOLUTIONS.map((size) => (
                         <option key={size} value={size}>
-                          {t("manager:ai.resolution.option", {
-                            defaultValue: "{{size}} × {{size}}",
-                            size,
-                          })}
+                          {t("manager:ai.resolution.option", { size })}
                         </option>
                       ))}
                     </Select>

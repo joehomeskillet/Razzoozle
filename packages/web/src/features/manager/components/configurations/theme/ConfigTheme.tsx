@@ -70,8 +70,8 @@ const ConfigTheme = () => {
         {/* Extra bottom padding so the fixed ActionFooter never covers the last field */}
         <div className="mb-4 flex shrink-0 flex-col gap-3">
             <PageHeader
-              title={t("manager:theme.title", { defaultValue: "Gestaltung" })}
-              subtitle={t("manager:theme.intro", { defaultValue: "Personalisiere das Aussehen deines Quizzes mit Farben, Logos und Animationen." })}
+              title={t("manager:theme.title")}
+              subtitle={t("manager:theme.intro")}
             />
           </div>
 
@@ -89,15 +89,11 @@ const ConfigTheme = () => {
               variant="ghost"
               size="md"
               onClick={openPreviewWindow}
-              aria-label={t("manager:theme.preview.openWindow", {
-                defaultValue: "Live-Vorschau öffnen",
-              })}
+              aria-label={t("manager:theme.preview.openWindow")}
               className="absolute inset-0 z-20 items-end rounded-[var(--radius-theme)] p-4 hover:bg-[var(--ink)]/5"
             >
               <span className="rounded-lg bg-[var(--surface)]/90 px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] shadow-sm outline-1 -outline-offset-1 outline-[var(--line)]">
-                {t("manager:theme.preview.openWindow", {
-                  defaultValue: "Live-Vorschau öffnen",
-                })}
+                {t("manager:theme.preview.openWindow")}
               </span>
             </Button>
           </div>

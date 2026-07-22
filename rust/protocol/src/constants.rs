@@ -233,6 +233,10 @@ pub mod class {
     pub const STUDENT_PIN: &str = "class:studentPin";
     /// `class:studentPinData` → `{ studentId: number, pin: string, labels: string[], symbols: string[] }` (manager-authed via require_user).
     pub const STUDENT_PIN_DATA: &str = "class:studentPinData";
+    /// `class:getPins` req `{ classId: number }` — batch-fetch all student PINs for a class in one request (manager-authed via require_user; owner-scoped).
+    pub const GET_PINS: &str = "class:getPins";
+    /// `class:pinsData` → `{ classId: number, pins: Array<{ studentId: number, displayName: string, pin: string, active: boolean }> }` — unicast to requester only (manager-authed via require_user).
+    pub const PINS_DATA: &str = "class:pinsData";
     /// `class:regenPin` req `{ studentId: number }` — replaces the student's PIN with a fresh one (manager-authed via require_user).
     pub const REGEN_PIN: &str = "class:regenPin";
     /// `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[], symbols: string[] }` (manager-authed via require_user).

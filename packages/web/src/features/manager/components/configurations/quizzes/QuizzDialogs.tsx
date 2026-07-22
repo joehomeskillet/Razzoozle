@@ -51,14 +51,8 @@ const QuizzDialogs = ({
       <AlertDialog
         open={bulkDeleteOpen}
         onOpenChange={setBulkDeleteOpen}
-        title={t("manager:quizz.bulkDeleteTitle", {
-          defaultValue: "Quizze löschen",
-        })}
-        description={t("manager:quizz.bulkDeleteConfirm", {
-          count: selectionCount,
-          defaultValue:
-            "{{count}} ausgewählte Quizze werden dauerhaft gelöscht.",
-        })}
+        title={t("manager:quizz.bulkDeleteTitle")}
+        description={t("manager:quizz.bulkDeleteConfirm", { count: selectionCount })}
         confirmLabel={t("common:delete")}
         onConfirm={handleBulkDelete}
       />
@@ -70,17 +64,9 @@ const QuizzDialogs = ({
             setPendingDuplicate(null)
           }
         }}
-        title={t("manager:quizz.duplicateTitle", {
-          defaultValue: "Quiz duplizieren",
-        })}
-        description={t("manager:quizz.duplicateConfirm", {
-          name: pendingDuplicate?.subject ?? "",
-          defaultValue:
-            'Eine Kopie von „{{name}}“ wird mit dem Zusatz „(Kopie)“ erstellt.',
-        })}
-        confirmLabel={t("manager:quizz.duplicateAction", {
-          defaultValue: "Duplizieren",
-        })}
+        title={t("manager:quizz.duplicateTitle")}
+        description={t("manager:quizz.duplicateConfirm", { name: pendingDuplicate?.subject ?? "" })}
+        confirmLabel={t("manager:quizz.duplicateAction")}
         onConfirm={handleDuplicate}
       />
     </>

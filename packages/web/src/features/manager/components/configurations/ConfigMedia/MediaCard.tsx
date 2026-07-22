@@ -73,10 +73,7 @@ const MediaCard = ({
         type="button"
         role="checkbox"
         aria-checked={isSelected}
-        aria-label={t("manager:media.bulk.toggle", {
-          name: item.filename,
-          defaultValue: "{{name}} auswählen",
-        })}
+        aria-label={t("manager:media.bulk.toggle", { name: item.filename })}
         onClick={handleCardSelect(item.id)}
         variant="ghost"
         size="icon"
@@ -120,15 +117,9 @@ const MediaCard = ({
           <div className="absolute top-2 right-2 z-20" title={quizTitles}>
             <Badge
               className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
-              aria-label={t("manager:media.usage.count", {
-                count: usageCount,
-                defaultValue: "Used in {{count}} question(s)",
-              })}
+              aria-label={t("manager:media.usage.count", { count: usageCount })}
             >
-              {t("manager:media.usageBadge", {
-                count: usageCount,
-                defaultValue: "{{count}}×",
-              })}
+              {t("manager:media.usageBadge", { count: usageCount })}
             </Badge>
           </div>
         )}
@@ -145,7 +136,7 @@ const MediaCard = ({
               e.stopPropagation()
               setDialogOpen(true)
             }}
-            aria-label={t("manager:media.details", { defaultValue: "Details" })}
+            aria-label={t("manager:media.details")}
           >
             <Info className="size-4" aria-hidden />
           </Button>

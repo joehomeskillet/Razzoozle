@@ -66,12 +66,8 @@ const ThemeTemplatesCard = ({
             size="icon"
             type="button"
             onClick={() => templateFileInputRef.current?.click()}
-            title={t("manager:theme.templates.import", {
-              defaultValue: "Vorlage importieren",
-            })}
-            aria-label={t("manager:theme.templates.import", {
-              defaultValue: "Vorlage importieren",
-            })}
+            title={t("manager:theme.templates.import")}
+            aria-label={t("manager:theme.templates.import")}
           >
             <Upload className="size-4" aria-hidden />
           </Button>
@@ -131,21 +127,15 @@ const ThemeTemplatesCard = ({
                   type="button"
                   onClick={() => handleEditTemplate(template)}
                 >
-                  {t("manager:theme.templates.edit", {
-                    defaultValue: "Bearbeiten",
-                  })}
+                  {t("manager:theme.templates.edit")}
                 </Button>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="secondary"
                     size="icon"
                     type="button"
-                    aria-label={t("manager:theme.templates.export", {
-                      defaultValue: "Vorlage exportieren",
-                    })}
-                    title={t("manager:theme.templates.export", {
-                      defaultValue: "Vorlage exportieren",
-                    })}
+                    aria-label={t("manager:theme.templates.export")}
+                    title={t("manager:theme.templates.export")}
                     onClick={() => handleExportTemplate(template)}
                   >
                     <Download className="size-4" aria-hidden />

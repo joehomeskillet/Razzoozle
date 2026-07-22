@@ -125,10 +125,7 @@ const ConfigCatalog = () => {
         {selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:catalog.bulkSelected", {
-              count: selectionCount,
-              defaultValue: "{{count}} ausgewählt",
-            })}
+            aria-label={t("manager:catalog.bulkSelected", { count: selectionCount })}
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -143,10 +140,7 @@ const ConfigCatalog = () => {
                 <X className="size-5" aria-hidden />
               </Button>
               <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
-                {t("manager:catalog.bulkSelected", {
-                  count: selectionCount,
-                  defaultValue: "{{count}} ausgewählt",
-                })}
+                {t("manager:catalog.bulkSelected", { count: selectionCount })}
               </span>
             </div>
             <Button
@@ -158,7 +152,7 @@ const ConfigCatalog = () => {
             >
               <Trash2 className="size-4 shrink-0" aria-hidden />
               <span className="min-w-0 truncate">
-                {t("manager:catalog.bulkDelete", { defaultValue: "Löschen" })}
+                {t("manager:catalog.bulkDelete")}
               </span>
             </Button>
           </div>
@@ -276,17 +270,13 @@ const ConfigCatalog = () => {
                               }}
                             >
                               <Select.Trigger
-                                aria-label={t("manager:labels.assignLabel", {
-                                  defaultValue: "Label zuweisen",
-                                })}
+                                aria-label={t("manager:labels.assignLabel")}
                                 onPointerDown={(e) => e.stopPropagation()}
                                 className={assignTriggerClass}
                               >
                                 <Plus className="size-3" />
                                 <Select.Value
-                                  placeholder={t("manager:labels.assignTitle", {
-                                    defaultValue: "+ Fach",
-                                  })}
+                                  placeholder={t("manager:labels.assignTitle")}
                                 />
                               </Select.Trigger>
                               <Select.Portal>
@@ -375,14 +365,8 @@ const ConfigCatalog = () => {
         <AlertDialog
           open={bulkDeleteOpen}
           onOpenChange={setBulkDeleteOpen}
-          title={t("manager:catalog.bulkDeleteTitle", {
-            defaultValue: "Fragen löschen",
-          })}
-          description={t("manager:catalog.bulkDeleteConfirm", {
-            count: selectionCount,
-            defaultValue:
-              "{{count}} ausgewählte Fragen werden dauerhaft aus dem Katalog entfernt.",
-          })}
+          title={t("manager:catalog.bulkDeleteTitle")}
+          description={t("manager:catalog.bulkDeleteConfirm", { count: selectionCount })}
           confirmLabel={t("common:delete")}
           onConfirm={handleBulkDelete}
         />

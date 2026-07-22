@@ -160,9 +160,9 @@ const ConfigMedia = () => {
   ]
 
   const scopeFilters: Array<{ key: MediaScope; label: string }> = [
-    { key: "own", label: t("manager:media.scope.own", { defaultValue: "Eigene" }) },
-    { key: "global", label: t("manager:media.scope.global", { defaultValue: "Global" }) },
-    { key: "all", label: t("manager:media.scope.all", { defaultValue: "Alle" }) },
+    { key: "own", label: t("manager:media.scope.own") },
+    { key: "global", label: t("manager:media.scope.global") },
+    { key: "all", label: t("manager:media.scope.all") },
   ]
 
   return (
@@ -183,9 +183,7 @@ const ConfigMedia = () => {
         >
           <UploadCloud className="size-8" aria-hidden />
           <span className="text-sm font-semibold">
-            {t("manager:media.dropHint", {
-              defaultValue: "Dateien hier ablegen zum Hochladen",
-            })}
+            {t("manager:media.dropHint")}
           </span>
         </div>
       )}
@@ -268,17 +266,11 @@ const ConfigMedia = () => {
         {selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:media.bulk.selected", {
-              count: selected.size,
-              defaultValue: "{{count}} ausgewählt",
-            })}
+            aria-label={t("manager:media.bulk.selected", { count: selected.size })}
             className="flex flex-wrap items-center gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <span className="text-sm font-semibold text-[var(--ink-muted)]">
-              {t("manager:media.bulk.selected", {
-                count: selected.size,
-                defaultValue: "{{count}} ausgewählt",
-              })}
+              {t("manager:media.bulk.selected", { count: selected.size })}
             </span>
             <Button
               type="button"
@@ -288,7 +280,7 @@ const ConfigMedia = () => {
               onClick={() => setBulkDeleteOpen(true)}
             >
               <Trash2 className="size-4" aria-hidden />
-              {t("manager:media.bulk.delete", { defaultValue: "Löschen" })}
+              {t("manager:media.bulk.delete")}
             </Button>
             <Button
               type="button"
@@ -358,17 +350,11 @@ const ConfigMedia = () => {
       <AlertDialog
         open={bulkDeleteOpen}
         onOpenChange={setBulkDeleteOpen}
-        title={t("manager:media.bulk.delete", { defaultValue: "Löschen" })}
+        title={t("manager:media.bulk.delete")}
         description={
           bulkDeleteWarning
-            ? `${t("manager:media.bulk.deleteConfirm", {
-                count: selected.size,
-                defaultValue: "{{count}} Medien wirklich löschen?",
-              })}\n\n${bulkDeleteWarning}`
-            : t("manager:media.bulk.deleteConfirm", {
-                count: selected.size,
-                defaultValue: "{{count}} Medien wirklich löschen?",
-              })
+            ? `${t("manager:media.bulk.deleteConfirm", { count: selected.size })}\n\n${bulkDeleteWarning}`
+            : t("manager:media.bulk.deleteConfirm", { count: selected.size })
         }
         confirmLabel={t("common:delete")}
         onConfirm={handleBulkDelete}

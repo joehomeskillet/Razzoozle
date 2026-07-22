@@ -36,15 +36,10 @@ const AnimatedCssEditor = ({ value, onChange }: AnimatedCssEditorProps) => {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-1">
             <p className="text-sm font-semibold text-[var(--ink-muted)]">
-              {t("manager:theme.animatedBg.css.title", {
-                defaultValue: "CSS-Editor",
-              })}
+              {t("manager:theme.animatedBg.css.title")}
             </p>
             <p className="text-sm text-[var(--ink-subtle)]">
-              {t("manager:theme.animatedBg.css.description", {
-                defaultValue:
-                  "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
-              })}
+              {t("manager:theme.animatedBg.css.description")}
             </p>
           </div>
           <button
@@ -60,9 +55,7 @@ const AnimatedCssEditor = ({ value, onChange }: AnimatedCssEditorProps) => {
           </button>
         </div>
         <label htmlFor="anim-bg-css" className="sr-only">
-          {t("manager:theme.animatedBg.css.title", {
-            defaultValue: "CSS-Editor",
-          })}
+          {t("manager:theme.animatedBg.css.title")}
         </label>
         <textarea
           id="anim-bg-css"
@@ -70,10 +63,7 @@ const AnimatedCssEditor = ({ value, onChange }: AnimatedCssEditorProps) => {
           onChange={(e) => onChange(e.target.value)}
           spellCheck={false}
           rows={12}
-          placeholder={t("manager:theme.animatedBg.css.placeholder", {
-            defaultValue:
-              "/* .cream-backdrop .cb-blob--a { background: ... } */",
-          })}
+          placeholder={t("manager:theme.animatedBg.css.placeholder")}
           className="min-h-48 w-full resize-y rounded-lg bg-[var(--surface-muted)] p-3 font-mono text-sm text-[var(--surface)] outline-1 -outline-offset-1 outline-[var(--surface-4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         />
       </div>

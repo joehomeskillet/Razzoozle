@@ -74,10 +74,8 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
   return (
     <SectionCard
       icon={<Gauge className="size-5" />}
-      title={t("manager:theme.animation.title", { defaultValue: "Animation" })}
-      description={t("manager:theme.animation.description", {
-        defaultValue: "",
-      })}
+      title={t("manager:theme.animation.title")}
+      description={t("manager:theme.animation.description")}
     >
       {SLIDERS.map(({ key, min, max, step }) => {
         const current = value[key]
@@ -113,9 +111,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
         to the document root or the saved theme. */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-[var(--ink-subtle)]">
-          {t("manager:theme.animation.previewLabel", {
-            defaultValue: "Vorschau",
-          })}
+          {t("manager:theme.animation.previewLabel")}
         </span>
         <Button
           variant="secondary"
@@ -125,7 +121,7 @@ const AnimationControls = ({ value, onChange }: AnimationControlsProps) => {
           className="text-[var(--color-primary)] outline-1 -outline-offset-1 outline-[var(--border-hairline)]"
         >
           <RefreshCw className="size-4" aria-hidden />
-          {t("manager:theme.animation.replay", { defaultValue: "Abspielen" })}
+          {t("manager:theme.animation.replay")}
         </Button>
       </div>
 

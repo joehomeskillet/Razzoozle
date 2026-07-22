@@ -127,9 +127,7 @@ const ConfigUsers = () => {
       setUsers((await response.json()) as ManagedUser[])
     } catch {
       toast.error(
-        t("manager:users.loadFailed", {
-          defaultValue: "Nutzer konnten nicht geladen werden",
-        }),
+        t("manager:users.loadFailed"),
       )
     } finally {
       setLoading(false)
@@ -145,9 +143,7 @@ const ConfigUsers = () => {
 
     if (!username || !password) {
       toast.error(
-        t("manager:users.invalidInput", {
-          defaultValue: "Benutzername und Passwort erforderlich",
-        }),
+        t("manager:users.invalidInput"),
       )
       return
     }
@@ -163,15 +159,13 @@ const ConfigUsers = () => {
       if (!response.ok) {
         toast.error(
           (await parseErrorMessage(response)) ??
-            t("manager:users.createFailed", {
-              defaultValue: "Anlegen fehlgeschlagen",
-            }),
+            t("manager:users.createFailed"),
         )
         return
       }
 
       toast.success(
-        t("manager:users.created", { defaultValue: "Nutzer angelegt" }),
+        t("manager:users.created"),
       )
       setUsername("")
       setPassword("")
@@ -181,7 +175,7 @@ const ConfigUsers = () => {
       await loadUsers()
     } catch {
       toast.error(
-        t("manager:users.networkError", { defaultValue: "Verbindungsfehler" }),
+        t("manager:users.networkError"),
       )
     } finally {
       setCreating(false)
@@ -202,15 +196,13 @@ const ConfigUsers = () => {
 
       toast.success(
         user.active
-          ? t("manager:users.disabled", { defaultValue: "Nutzer deaktiviert" })
-          : t("manager:users.enabled", { defaultValue: "Nutzer aktiviert" }),
+          ? t("manager:users.disabled")
+          : t("manager:users.enabled"),
       )
       await loadUsers()
     } catch {
       toast.error(
-        t("manager:users.toggleFailed", {
-          defaultValue: "Aktion fehlgeschlagen",
-        }),
+        t("manager:users.toggleFailed"),
       )
     } finally {
       setPendingId(null)
@@ -220,9 +212,7 @@ const ConfigUsers = () => {
   const handleResetPassword = async (user: ManagedUser) => {
     if (!resetNewPassword) {
       toast.error(
-        t("manager:users.passwordRequired", {
-          defaultValue: "Passwort erforderlich",
-        }),
+        t("manager:users.passwordRequired"),
       )
       return
     }
@@ -243,18 +233,14 @@ const ConfigUsers = () => {
       }
 
       toast.success(
-        t("manager:users.passwordReset", {
-          defaultValue: "Passwort zurückgesetzt",
-        }),
+        t("manager:users.passwordReset"),
       )
       setResetPasswordId(null)
       setResetNewPassword("")
       await loadUsers()
     } catch {
       toast.error(
-        t("manager:users.resetFailed", {
-          defaultValue: "Zurücksetzen fehlgeschlagen",
-        }),
+        t("manager:users.resetFailed"),
       )
     } finally {
       setResettingPassword(false)
@@ -273,26 +259,19 @@ const ConfigUsers = () => {
       if (!response.ok) {
         toast.error(
           (await parseErrorMessage(response)) ??
-            t("manager:users.deleteFailed", {
-              defaultValue: "Löschen fehlgeschlagen",
-            }),
+            t("manager:users.deleteFailed"),
         )
         return
       }
 
       toast.success(
-        t("manager:users.deleted", {
-          name: pendingDelete.username,
-          defaultValue: "Nutzer {{name}} gelöscht",
-        }),
+        t("manager:users.deleted", { name: pendingDelete.username }),
       )
       setPendingDelete(null)
       await loadUsers()
     } catch {
       toast.error(
-        t("manager:users.toggleFailed", {
-          defaultValue: "Aktion fehlgeschlagen",
-        }),
+        t("manager:users.toggleFailed"),
       )
     } finally {
       setDeleting(false)
@@ -369,29 +348,22 @@ const ConfigUsers = () => {
   const getRoleLabel = (roleValue: string) => {
     switch (roleValue) {
       case "admin":
-        return t("manager:users.role.admin", { defaultValue: "Admin" })
+        return t("manager:users.role.admin")
       case "lehrkraft":
-        return t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })
+        return t("manager:users.role.lehrkraft")
       case "user":
       default:
-        return t("manager:users.role.user", { defaultValue: "Nutzer" })
+        return t("manager:users.role.user")
     }
   }
 
   const getDeleteDescription = () => {
     if (!pendingDelete) return ""
 
-    const baseDesc = t("manager:users.deleteConfirmDescription", {
-      name: pendingDelete.username,
-      defaultValue:
-        "Nutzer {{name}} wird endgültig gelöscht und kann nicht rückgängig gemacht werden.",
-    })
+    const baseDesc = t("manager:users.deleteConfirmDescription", { name: pendingDelete.username })
 
     if (pendingDelete.role === "lehrkraft") {
-      const cascadeWarning = t("manager:users.deleteConfirmCascade", {
-        defaultValue:
-          "Alle Klassen und Schüler dieser Lehrkraft werden ebenfalls gelöscht.",
-      })
+      const cascadeWarning = t("manager:users.deleteConfirmCascade")
       return `${baseDesc}\n\n${cascadeWarning}`
     }
 
@@ -407,18 +379,18 @@ const ConfigUsers = () => {
       .map((u) => u.username)
 
     const extra = selection.selected.size > 5 ?
-      ` ${t("manager:bulk.andNMore", { count: selection.selected.size - 5, defaultValue: "und {{count}} weitere" })}` :
+      ` ${t("manager:bulk.andNMore", { count: selection.selected.size - 5 })}` :
       ""
 
     const nameList = selectedNames.join(", ") + extra
 
     let actionDesc = ""
     if (bulkAction === "activate") {
-      actionDesc = t("manager:users.enable", { defaultValue: "aktivieren" })
+      actionDesc = t("manager:users.enable")
     } else if (bulkAction === "deactivate") {
-      actionDesc = t("manager:users.disable", { defaultValue: "deaktivieren" })
+      actionDesc = t("manager:users.disable")
     } else if (bulkAction === "delete") {
-      actionDesc = t("manager:users.delete", { defaultValue: "löschen" })
+      actionDesc = t("manager:users.delete")
     }
 
     return `${selection.selected.size} Benutzer ${actionDesc}: ${nameList}`
@@ -448,12 +420,8 @@ const ConfigUsers = () => {
     <>
       <div className="flex flex-1 flex-col gap-4 pb-20">
         <PageHeader
-          title={t("manager:users.title", {
-            defaultValue: "Nutzerverwaltung",
-          })}
-          subtitle={t("manager:users.intro", {
-            defaultValue: "Lehrkräfte-Konten anlegen, sperren und freigeben.",
-          })}
+          title={t("manager:users.title")}
+          subtitle={t("manager:users.intro")}
         />
 
         {/* Filter bar */}
@@ -473,9 +441,9 @@ const ConfigUsers = () => {
             {/* Role filter pills */}
             {[
               { value: "all" as const, label: t("manager:users.roleAll", { defaultValue: "Alle Rollen" }) },
-              { value: "user" as const, label: t("manager:users.role.user", { defaultValue: "Nutzer" }) },
-              { value: "lehrkraft" as const, label: t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" }) },
-              { value: "admin" as const, label: t("manager:users.role.admin", { defaultValue: "Admin" }) },
+              { value: "user" as const, label: t("manager:users.role.user") },
+              { value: "lehrkraft" as const, label: t("manager:users.role.lehrkraft") },
+              { value: "admin" as const, label: t("manager:users.role.admin") },
             ].map((pill) => (
               <button
                 key={pill.value}
@@ -493,8 +461,8 @@ const ConfigUsers = () => {
             {/* Status filter pills */}
             {[
               { value: "all" as const, label: t("manager:users.statusAll", { defaultValue: "Alle Status" }) },
-              { value: "active" as const, label: t("manager:users.active", { defaultValue: "Aktiv" }) },
-              { value: "inactive" as const, label: t("manager:users.disabledStatus", { defaultValue: "Deaktiviert" }) },
+              { value: "active" as const, label: t("manager:users.active") },
+              { value: "inactive" as const, label: t("manager:users.disabledStatus") },
             ].map((pill) => (
               <button
                 key={`status-${pill.value}`}
@@ -515,10 +483,7 @@ const ConfigUsers = () => {
         {selection.selectionActive && (
           <BulkActionToolbar
             count={selection.selected.size}
-            label={t("manager:bulk.selected", {
-              count: selection.selected.size,
-              defaultValue: "{{count}} ausgewählt",
-            })}
+            label={t("manager:bulk.selected", { count: selection.selected.size })}
             onClear={selection.clear}
           >
             <Button
@@ -571,12 +536,8 @@ const ConfigUsers = () => {
         ) : (
           <EmptyState
             icon={UsersIcon}
-            headline={t("manager:users.emptyHeadline", {
-              defaultValue: "Noch keine Nutzer",
-            })}
-            hint={t("manager:users.empty", {
-              defaultValue: "Lege oben das erste Konto an.",
-            })}
+            headline={t("manager:users.emptyHeadline")}
+            hint={t("manager:users.empty")}
           />
         )
         ) : (
@@ -614,25 +575,19 @@ const ConfigUsers = () => {
                 {
                   key: "copy",
                   icon: Copy,
-                  label: t("manager:users.copyUser", {
-                    defaultValue: "Benutzer kopieren",
-                  }),
+                  label: t("manager:users.copyUser"),
                   disabled: busy || isSelf,
                   title: isSelf
                     ? t("manager:users.cannot_copy_self", {
                         defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
                       })
-                    : t("manager:users.copyUser", {
-                        defaultValue: "Benutzer kopieren",
-                      }),
+                    : t("manager:users.copyUser"),
                   onClick: () => openCopyDialog(user),
                 },
                 {
                   key: "reset",
                   icon: Key,
-                  label: t("manager:users.resetPassword", {
-                    defaultValue: "Passwort zurücksetzen",
-                  }),
+                  label: t("manager:users.resetPassword"),
                   disabled: busy,
                   onClick: () => {
                     setResetPasswordId(user.id)
@@ -643,22 +598,14 @@ const ConfigUsers = () => {
                   key: "toggle",
                   icon: user.active ? Ban : CheckCircle2,
                   label: user.active
-                    ? t("manager:users.disable", {
-                        defaultValue: "Deaktivieren",
-                      })
-                    : t("manager:users.enable", { defaultValue: "Aktivieren" }),
+                    ? t("manager:users.disable")
+                    : t("manager:users.enable"),
                   destructive: user.active,
                   disabled: busy || isSelf,
                   title: isSelf
                     ? user.active
-                      ? t("manager:users.cannot_deactivate_self", {
-                          defaultValue:
-                            "Dein Konto kann nicht deaktiviert werden",
-                        })
-                      : t("manager:users.cannot_modify_own_account", {
-                          defaultValue:
-                            "Du kannst dein eigenes Konto nicht ändern",
-                        })
+                      ? t("manager:users.cannot_deactivate_self")
+                      : t("manager:users.cannot_modify_own_account")
                     : undefined,
                   onClick: () => {
                     if (isSelf) return
@@ -668,15 +615,11 @@ const ConfigUsers = () => {
                 {
                   key: "delete",
                   icon: Trash2,
-                  label: t("manager:users.delete", {
-                    defaultValue: "Löschen",
-                  }),
+                  label: t("manager:users.delete"),
                   destructive: true,
                   disabled: busy || isSelf,
                   title: isSelf
-                    ? t("manager:users.cannot_delete_self", {
-                        defaultValue: "Dein Konto kann nicht gelöscht werden",
-                      })
+                    ? t("manager:users.cannot_delete_self")
                     : undefined,
                   className: "max-sm:hidden",
                   onClick: () => {
@@ -712,10 +655,8 @@ const ConfigUsers = () => {
                       <Badge>{getRoleLabel(user.role)}</Badge>
                       <Badge tone={user.active ? "success" : "danger"}>
                         {user.active
-                          ? t("manager:users.active", { defaultValue: "Aktiv" })
-                          : t("manager:users.disabledStatus", {
-                              defaultValue: "Deaktiviert",
-                            })}
+                          ? t("manager:users.active")
+                          : t("manager:users.disabledStatus")}
                       </Badge>
                     </span>
                   }
@@ -739,13 +680,9 @@ const ConfigUsers = () => {
               setPendingDelete(null)
             }
           }}
-          title={t("manager:users.deleteConfirmTitle", {
-            defaultValue: "Benutzer löschen?",
-          })}
+          title={t("manager:users.deleteConfirmTitle")}
           description={getDeleteDescription()}
-          confirmLabel={t("manager:users.delete", {
-            defaultValue: "Löschen",
-          })}
+          confirmLabel={t("manager:users.delete")}
           onConfirm={handleDelete}
         />
 
@@ -770,9 +707,7 @@ const ConfigUsers = () => {
                   id="reset-password-dialog-title"
                   className="text-lg font-semibold text-[var(--ink)]"
                 >
-                  {t("manager:users.resetPasswordTitle", {
-                    defaultValue: "Passwort zurücksetzen",
-                  })}
+                  {t("manager:users.resetPasswordTitle")}
                 </Dialog.Title>
                 <Dialog.Close asChild>
                   <Button
@@ -790,9 +725,7 @@ const ConfigUsers = () => {
                   htmlFor="reset-password-input"
                   className="mb-2 block text-sm font-semibold text-[var(--ink-muted)]"
                 >
-                  {t("manager:users.passwordLabel", {
-                    defaultValue: "Passwort",
-                  })}
+                  {t("manager:users.passwordLabel")}
                 </label>
                 <Input
                   id="reset-password-input"
@@ -802,9 +735,7 @@ const ConfigUsers = () => {
                   onChange={(event) => setResetNewPassword(event.target.value)}
                   disabled={resettingPassword}
                   className="w-full"
-                  placeholder={t("manager:users.enterNewPassword", {
-                    defaultValue: "Neues Passwort eingeben",
-                  })}
+                  placeholder={t("manager:users.enterNewPassword")}
                 />
               </div>
 
@@ -818,7 +749,7 @@ const ConfigUsers = () => {
                   disabled={resettingPassword}
                   className="bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
                 >
-                  {t("common:cancel", { defaultValue: "Abbrechen" })}
+                  {t("common:cancel")}
                 </Button>
                 <Button
                   type="button"
@@ -831,8 +762,8 @@ const ConfigUsers = () => {
                   disabled={resettingPassword || !resetNewPassword}
                 >
                   {resettingPassword
-                    ? t("common:loading", { defaultValue: "Wird geladen…" })
-                    : t("common:confirm", { defaultValue: "Bestätigen" })}
+                    ? t("common:loading")
+                    : t("common:confirm")}
                 </Button>
               </div>
             </Dialog.Content>
@@ -856,12 +787,8 @@ const ConfigUsers = () => {
                   className="text-lg font-semibold text-[var(--ink)]"
                 >
                   {copySourceId
-                    ? t("manager:users.copyDialogTitle", {
-                        defaultValue: "Benutzer kopieren",
-                      })
-                    : t("manager:users.createTitle", {
-                        defaultValue: "Neuen Benutzer anlegen",
-                      })}
+                    ? t("manager:users.copyDialogTitle")
+                    : t("manager:users.createTitle")}
                 </Dialog.Title>
                 <Dialog.Close asChild>
                   <Button
@@ -885,9 +812,7 @@ const ConfigUsers = () => {
                     htmlFor="new-user-username"
                     className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
                   >
-                    {t("manager:users.usernameLabel", {
-                      defaultValue: "Benutzername",
-                    })}
+                    {t("manager:users.usernameLabel")}
                   </label>
                   <Input
                     id="new-user-username"
@@ -905,9 +830,7 @@ const ConfigUsers = () => {
                     htmlFor="new-user-password"
                     className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
                   >
-                    {t("manager:users.passwordLabel", {
-                      defaultValue: "Passwort",
-                    })}
+                    {t("manager:users.passwordLabel")}
                   </label>
                   <Input
                     id="new-user-password"
@@ -925,7 +848,7 @@ const ConfigUsers = () => {
                     htmlFor="new-user-role"
                     className="mb-1 block text-xs font-semibold text-[var(--ink-subtle)]"
                   >
-                    {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
+                    {t("manager:users.roleLabel")}
                   </label>
                   <Select
                     id="new-user-role"
@@ -943,16 +866,14 @@ const ConfigUsers = () => {
                     disabled={creating}
                   >
                     <option value="user">
-                      {t("manager:users.role.user", { defaultValue: "Nutzer" })}
+                      {t("manager:users.role.user")}
                     </option>
                     <option value="admin">
-                      {t("manager:users.role.admin", { defaultValue: "Admin" })}
+                      {t("manager:users.role.admin")}
                     </option>
                     {config?.klassenEnabled && (
                       <option value="lehrkraft">
-                        {t("manager:users.role.lehrkraft", {
-                          defaultValue: "Lehrkraft",
-                        })}
+                        {t("manager:users.role.lehrkraft")}
                       </option>
                     )}
                   </Select>
@@ -972,8 +893,8 @@ const ConfigUsers = () => {
                   </Button>
                   <Button type="submit" disabled={creating}>
                     {creating
-                      ? t("common:loading", { defaultValue: "Wird geladen…" })
-                      : t("manager:users.create", { defaultValue: "Erstellen" })}
+                      ? t("common:loading")
+                      : t("manager:users.create")}
                   </Button>
                 </div>
               </form>
@@ -1000,8 +921,8 @@ const ConfigUsers = () => {
           description={getBulkConfirmMessage()}
           confirmLabel={
             bulkAction === "delete"
-              ? t("manager:users.delete", { defaultValue: "Löschen" })
-              : t("common:confirm", { defaultValue: "Bestätigen" })
+              ? t("manager:users.delete")
+              : t("common:confirm")
           }
           onConfirm={handleBulkAction}
         />
@@ -1023,9 +944,7 @@ const ConfigUsers = () => {
         >
           <UserPlus className="size-5" aria-hidden strokeWidth={2.5} />
           <span>
-            {t("manager:users.createTitle", {
-              defaultValue: "Neuen Benutzer anlegen",
-            })}
+            {t("manager:users.createTitle")}
           </span>
         </Button>
       </ActionFooter>

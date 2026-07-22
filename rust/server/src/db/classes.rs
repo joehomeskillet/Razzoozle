@@ -1424,6 +1424,47 @@ pub async fn create_student(
     Ok(student_id)
 }
 
+/// Batch-fetch student PINs for one class (owner-scoped).
+/// `me`: None = unfiltered (admin); Some(id) = only students in a class owned by that user.
+/// Missing / null PIN → empty string (no lazy generation; single-student path does that).
+/// Unowned or missing class → empty vec (no oracle).
+pub async fn get_class_pins(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    me: Option<i64>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let rows: Vec<(i64, String, String, bool)> = sqlx::query_as(
+        "SELECT s.id, s.display_name, COALESCE(s.pin, ''), s.active \
+         FROM students s \
+         INNER JOIN class_students cs ON s.id = cs.student_id \
+         INNER JOIN classes c ON cs.class_id = c.id \
+         WHERE cs.class_id = $1 AND ($2::bigint IS NULL OR c.owner_id = $2) \
+         ORDER BY s.display_name ASC",
+    )
+    .bind(class_id)
+    .bind(me)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(student_id, display_name, pin, active)| {
+            serde_json::json!({
+                "studentId": student_id,
+                "displayName": display_name,
+                "pin": pin,
+                "active": active,
+            })
+        })
+        .collect())
+}
+
 pub async fn class_get_student_pin(
     pool: &Option<PgPool>,
     student_id: i64,
