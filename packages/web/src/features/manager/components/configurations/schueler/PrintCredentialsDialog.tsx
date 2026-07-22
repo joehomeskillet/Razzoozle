@@ -3,6 +3,7 @@ import Button from "@razzoozle/web/components/Button"
 import Radio from "@razzoozle/web/components/Radio"
 import { useTranslation } from "react-i18next"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useSchuelerManager } from "./useSchuelerManager"
 import { useClassManager } from "../klassen/useClassManager"
 import * as Select from "@radix-ui/react-select"
@@ -232,18 +233,22 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
         </div>
       </DialogPanel>
 
-      {/* Hidden print container */}
-      <div ref={printContainerRef} className="print-only" style={{ display: "none" }}>
-        {format === "sheets" ? (
-          <PrintSheets students={filteredStudents} pins={pinMap} loginUrl={window.location.origin} />
-        ) : (
-          <PrintSummary
-            students={filteredStudents}
-            pins={pinMap}
-            className={selectedClass?.name ?? ""}
-          />
-        )}
-      </div>
+      {/* Hidden print container — portaled to <body> so the console-shell's
+          @media-print display:none cannot swallow it (structural, not CSS). */}
+      {createPortal(
+        <div ref={printContainerRef} className="print-only" style={{ display: "none" }}>
+          {format === "sheets" ? (
+            <PrintSheets students={filteredStudents} pins={pinMap} loginUrl={window.location.origin} />
+          ) : (
+            <PrintSummary
+              students={filteredStudents}
+              pins={pinMap}
+              className={selectedClass?.name ?? ""}
+            />
+          )}
+        </div>,
+        document.body,
+      )}
     </>
   )
 }
