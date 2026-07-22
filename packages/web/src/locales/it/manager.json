@@ -935,7 +935,9 @@
     "printFormatSummary": "Foglio riepilogativo per l’insegnante",
     "printConfidentialNote": "Riservato — non condividere.",
     "printLoginHint": "Accedi con il tuo PIN:",
-    "printedAt": "Stampato il {{date}}"
+    "printedAt": "Stampato il {{date}}",
+    "printScope": "Ambito",
+    "printFormat": "Formato"
   },
   "labels": {
     "title": "Etichette",

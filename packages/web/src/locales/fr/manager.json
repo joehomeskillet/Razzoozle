@@ -935,7 +935,9 @@
     "printFormatSummary": "Feuille récapitulative pour l’enseignant",
     "printConfidentialNote": "Confidentiel — ne pas diffuser.",
     "printLoginHint": "Connecte-toi avec ton code PIN :",
-    "printedAt": "Imprimé le {{date}}"
+    "printedAt": "Imprimé le {{date}}",
+    "printScope": "Portée",
+    "printFormat": "Format"
   },
   "labels": {
     "title": "Étiquettes",

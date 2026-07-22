@@ -935,7 +935,9 @@
     "printFormatSummary": "教师汇总单",
     "printConfidentialNote": "机密 — 请勿外传。",
     "printLoginHint": "请使用你的 PIN 登录：",
-    "printedAt": "打印于 {{date}}"
+    "printedAt": "打印于 {{date}}",
+    "printScope": "范围",
+    "printFormat": "格式"
   },
   "labels": {
     "title": "标签",

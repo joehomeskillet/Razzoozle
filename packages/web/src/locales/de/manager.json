@@ -935,7 +935,9 @@
     "printFormatSummary": "Gesamtblatt für Lehrperson",
     "printConfidentialNote": "Vertraulich — nicht weitergeben.",
     "printLoginHint": "Melde dich mit deiner PIN an:",
-    "printedAt": "Gedruckt am {{date}}"
+    "printedAt": "Gedruckt am {{date}}",
+    "printScope": "Umfang",
+    "printFormat": "Format"
   },
   "labels": {
     "title": "Fächerverwaltung",

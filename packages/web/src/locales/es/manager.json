@@ -935,7 +935,9 @@
     "printFormatSummary": "Hoja resumen para el docente",
     "printConfidentialNote": "Confidencial — no compartir.",
     "printLoginHint": "Inicia sesión con tu PIN:",
-    "printedAt": "Impreso el {{date}}"
+    "printedAt": "Impreso el {{date}}",
+    "printScope": "Alcance",
+    "printFormat": "Formato"
   },
   "labels": {
     "title": "Etiquetas",

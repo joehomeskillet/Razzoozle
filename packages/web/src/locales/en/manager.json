@@ -935,7 +935,9 @@
     "printFormatSummary": "Teacher summary sheet",
     "printConfidentialNote": "Confidential — do not share.",
     "printLoginHint": "Sign in with your PIN:",
-    "printedAt": "Printed on {{date}}"
+    "printedAt": "Printed on {{date}}",
+    "printScope": "Scope",
+    "printFormat": "Format"
   },
   "labels": {
     "title": "Labels",
