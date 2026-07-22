@@ -34,52 +34,52 @@ mod tests {
 
     /// Scoped cleanup for Group 1 fixtures (display_name / class name / owner user).
     async fn cleanup_test_fixtures(pool: &sqlx::PgPool) {
-        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_set_%'")
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_f6_set_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_set_%'")
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_f6_set_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_set_%'")
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_f6_set_%'")
             .execute(pool)
             .await;
     }
 
     /// Scoped cleanup for Group 2 fixtures (bulk_delete_students).
     async fn cleanup_delete_fixtures(pool: &sqlx::PgPool) {
-        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_delete_%'")
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_f6_delete_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_delete_%'")
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_f6_delete_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_delete_%'")
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_f6_delete_%'")
             .execute(pool)
             .await;
     }
 
     /// Scoped cleanup for Group 3 fixtures (bulk_assign / bulk_remove).
     async fn cleanup_assign_fixtures(pool: &sqlx::PgPool) {
-        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_assign_%'")
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_f6_assign_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_assign_%'")
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_f6_assign_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_assign_%'")
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_f6_assign_%'")
             .execute(pool)
             .await;
     }
 
     /// Scoped cleanup for Group 3 remove fixtures.
     async fn cleanup_remove_fixtures(pool: &sqlx::PgPool) {
-        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_remove_%'")
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_f6_remove_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_remove_%'")
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_f6_remove_%'")
             .execute(pool)
             .await;
-        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_remove_%'")
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_f6_remove_%'")
             .execute(pool)
             .await;
     }
@@ -196,20 +196,20 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_set_group1_idem_owner",
+            "test_f6_set_group1_idem_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_set_group1_idem_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_set_group1_idem_class", owner_id)
             .await
             .expect("Failed to create class");
 
         let s1 = create_student(
             &opt,
-            "test_bulk_set_group1_idem_s1",
+            "test_f6_set_group1_idem_s1",
             "",
             &[class_id],
             owner_id,
@@ -221,7 +221,7 @@ mod tests {
         .expect("Failed to create student s1");
         let s2 = create_student(
             &opt,
-            "test_bulk_set_group1_idem_s2",
+            "test_f6_set_group1_idem_s2",
             "",
             &[class_id],
             owner_id,
@@ -291,7 +291,7 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_set_group1_nf_owner",
+            "test_f6_set_group1_nf_owner",
             "pass123",
             "user",
         )
@@ -340,20 +340,20 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_set_group1_dedup_owner",
+            "test_f6_set_group1_dedup_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_set_group1_dedup_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_set_group1_dedup_class", owner_id)
             .await
             .expect("Failed to create class");
 
         let s1 = create_student(
             &opt,
-            "test_bulk_set_group1_dedup_s1",
+            "test_f6_set_group1_dedup_s1",
             "",
             &[class_id],
             owner_id,
@@ -365,7 +365,7 @@ mod tests {
         .expect("Failed to create student s1");
         let s2 = create_student(
             &opt,
-            "test_bulk_set_group1_dedup_s2",
+            "test_f6_set_group1_dedup_s2",
             "",
             &[class_id],
             owner_id,
@@ -425,20 +425,20 @@ mod tests {
         // Real owner creates fixtures; call uses a different me (999).
         let owner_id = create_user(
             &pool,
-            "test_bulk_set_group1_scope_owner",
+            "test_f6_set_group1_scope_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_set_group1_scope_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_set_group1_scope_class", owner_id)
             .await
             .expect("Failed to create class");
 
         let s1 = create_student(
             &opt,
-            "test_bulk_set_group1_scope_s1",
+            "test_f6_set_group1_scope_s1",
             "",
             &[class_id],
             owner_id,
@@ -450,7 +450,7 @@ mod tests {
         .expect("Failed to create student s1");
         let s2 = create_student(
             &opt,
-            "test_bulk_set_group1_scope_s2",
+            "test_f6_set_group1_scope_s2",
             "",
             &[class_id],
             owner_id,
@@ -526,20 +526,20 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_delete_cascade_owner",
+            "test_f6_delete_cascade_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_delete_cascade_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_delete_cascade_class", owner_id)
             .await
             .expect("Failed to create class");
 
         let student_id = create_student(
             &opt,
-            "test_bulk_delete_cascade_s1",
+            "test_f6_delete_cascade_s1",
             "",
             &[class_id],
             owner_id,
@@ -610,23 +610,23 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_delete_hard_owner",
+            "test_f6_delete_hard_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_a = create_class(&opt, "test_bulk_delete_hard_class_a", owner_id)
+        let class_a = create_class(&opt, "test_f6_delete_hard_class_a", owner_id)
             .await
             .expect("Failed to create class A");
-        let class_b = create_class(&opt, "test_bulk_delete_hard_class_b", owner_id)
+        let class_b = create_class(&opt, "test_f6_delete_hard_class_b", owner_id)
             .await
             .expect("Failed to create class B");
 
         let student_id = create_student(
             &opt,
-            "test_bulk_delete_hard_s1",
+            "test_f6_delete_hard_s1",
             "",
             &[class_a, class_b],
             owner_id,
@@ -700,21 +700,21 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_assign_skip_owner",
+            "test_f6_assign_skip_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_assign_skip_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_assign_skip_class", owner_id)
             .await
             .expect("Failed to create class");
 
         // Student already enrolled via create_student class_ids.
         let student_id = create_student(
             &opt,
-            "test_bulk_assign_skip_s1",
+            "test_f6_assign_skip_s1",
             "",
             &[class_id],
             owner_id,
@@ -786,21 +786,21 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_assign_nodup_owner",
+            "test_f6_assign_nodup_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_assign_nodup_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_assign_nodup_class", owner_id)
             .await
             .expect("Failed to create class");
 
         // Student owned by me but NOT enrolled in the target class.
         let student_id = create_student(
             &opt,
-            "test_bulk_assign_nodup_s1",
+            "test_f6_assign_nodup_s1",
             "",
             &[],
             owner_id,
@@ -917,20 +917,20 @@ mod tests {
         let opt = Some(pool.clone());
         let owner_id = create_user(
             &pool,
-            "test_bulk_remove_idem_owner",
+            "test_f6_remove_idem_owner",
             "pass123",
             "user",
         )
         .await
         .expect("Failed to create owner");
 
-        let class_id = create_class(&opt, "test_bulk_remove_idem_class", owner_id)
+        let class_id = create_class(&opt, "test_f6_remove_idem_class", owner_id)
             .await
             .expect("Failed to create class");
 
         let student_id = create_student(
             &opt,
-            "test_bulk_remove_idem_s1",
+            "test_f6_remove_idem_s1",
             "",
             &[class_id],
             owner_id,
