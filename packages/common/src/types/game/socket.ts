@@ -85,6 +85,18 @@ export interface EmojiPinSetEntry {
   label: string
 }
 
+/** Manager student list row (`class:allStudentsData`). `active` defaulted true since migration 022. */
+export interface Student {
+  id: number
+  displayName: string
+  firstName?: string | null
+  lastName?: string | null
+  pin?: string
+  classes: Array<{ id: number; name: string }>
+  birthdate: string | null
+  active: boolean
+}
+
 export interface CreateStudentPayload {
   displayName?: string;
   firstName?: string;
@@ -135,10 +147,34 @@ export interface AllStudentsData {
     displayName: string;
     firstName?: string | null;
     lastName?: string | null;
-    pin: string;
+    pin?: string;
     classes: Array<{id: number; name: string}>;
     birthdate: string | null;
+    active: boolean;
   }>;
+}
+
+/** One id that failed a student bulk op (missing / not owned). Wire reason is always `"not_found"`. */
+export interface StudentBulkFailedEntry {
+  id: number
+  reason: "not_found"
+}
+
+/** One id skipped on bulk assign (already enrolled). */
+export interface StudentBulkSkippedEntry {
+  id: number
+  reason: "already_member"
+}
+
+export interface StudentBulkResult {
+  succeeded: number[]
+  failed: StudentBulkFailedEntry[]
+}
+
+export interface StudentBulkAssignResult {
+  succeeded: number[]
+  skipped: StudentBulkSkippedEntry[]
+  failed: StudentBulkFailedEntry[]
 }
 
 
@@ -402,6 +438,11 @@ export interface ServerToClientEvents {
     succeeded: number[]
     failed: Array<{ id: number; reason: "not_found" }>
   }) => void
+  [EVENTS.CLASS.STUDENT_ACTIVE_SET]: (_data: { studentId: number; active: boolean }) => void
+  [EVENTS.CLASS.BULK_STUDENT_ACTIVE_SET]: (_outcome: StudentBulkResult) => void
+  [EVENTS.CLASS.BULK_STUDENT_DELETED]: (_outcome: StudentBulkResult) => void
+  [EVENTS.CLASS.BULK_STUDENT_ASSIGNED]: (_outcome: StudentBulkAssignResult) => void
+  [EVENTS.CLASS.BULK_STUDENT_REMOVED]: (_outcome: StudentBulkResult) => void
 
   // Global labels (server -> client)
   [EVENTS.LABEL.DATA]: (_data: { labels: Array<{ id: number; name: string; color: string }> }) => void
@@ -679,6 +720,20 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.SET_ACTIVE]: (_payload: { id: number; active: boolean }) => void
   [EVENTS.CLASS.BULK_SET_ACTIVE]: (_payload: { ids: number[]; active: boolean }) => void
   [EVENTS.CLASS.BULK_DELETE]: (_payload: { ids: number[] }) => void
+  [EVENTS.CLASS.SET_STUDENT_ACTIVE]: (_payload: { studentId: number; active: boolean }) => void
+  [EVENTS.CLASS.BULK_SET_STUDENT_ACTIVE]: (_payload: {
+    studentIds: number[]
+    active: boolean
+  }) => void
+  [EVENTS.CLASS.BULK_DELETE_STUDENT]: (_payload: { studentIds: number[] }) => void
+  [EVENTS.CLASS.BULK_ASSIGN_STUDENT]: (_payload: {
+    studentIds: number[]
+    classId: number
+  }) => void
+  [EVENTS.CLASS.BULK_REMOVE_STUDENT]: (_payload: {
+    studentIds: number[]
+    classId: number
+  }) => void
 
   // Global labels (client -> server)
   [EVENTS.LABEL.LIST]: () => void

@@ -6,6 +6,7 @@ use socketioxide::extract::SocketRef;
 pub mod auth;
 pub mod catalog;
 pub mod classes;
+pub mod students;
 pub mod labels;
 pub mod config;
 pub mod config_helper;
@@ -28,6 +29,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     catalog::register(socket, ctx.clone());
     labels::register(socket, ctx.clone());
     classes::register(socket, ctx.clone());
+    students::register(socket, ctx.clone());
     config::register(socket, ctx.clone());
     game_flow::register(socket, ctx.clone());
     game_state::register(socket, ctx.clone());
