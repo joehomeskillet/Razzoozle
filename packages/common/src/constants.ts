@@ -301,6 +301,14 @@ export const EVENTS = {
      */
     STUDENT_PIN_DATA: "class:studentPinData",
     /**
+     * `class:getPins` req `{ classId: number }` — batch-fetch all student PINs for a class in one request (manager-authed via require_user; owner-scoped).
+     */
+    GET_PINS: "class:getPins",
+    /**
+     * `class:pinsData` → `{ classId: number, pins: Array<{ studentId: number, displayName: string, pin: string, active: boolean }> }` — unicast to requester only (manager-authed via require_user).
+     */
+    PINS_DATA: "class:pinsData",
+    /**
      * `class:regenPin` req `{ studentId: number }` — replaces the student's PIN with a fresh one (manager-authed via require_user).
      */
     REGEN_PIN: "class:regenPin",

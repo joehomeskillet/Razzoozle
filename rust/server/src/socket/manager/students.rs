@@ -1,10 +1,12 @@
 //! STUDENT bulk handlers — active status, delete, assign, remove (WP-F1)
+//! + batch class PIN fetch (WP-F8)
 //!
 //! class:setStudentActive — set active on one student
 //! class:bulkSetStudentActive — bulk activate/deactivate
 //! class:bulkDeleteStudent — bulk delete students
 //! class:bulkAssignStudent — bulk enroll into a class
 //! class:bulkRemoveStudent — bulk unenroll from a class
+//! class:getPins — batch PIN fetch for one class (unicast to requester)
 //!
 //! All ops are owner-scoped (student.owner_id or membership in an owned class),
 //! max 200 IDs, deduped. Failed / unauthorized IDs always report reason `"not_found"`.
@@ -17,6 +19,12 @@ use socketioxide::extract::{Data, SocketRef};
 
 /// Max ids accepted per student bulk op (matches classes/users/results bulk cap).
 const BULK_MAX_IDS: usize = db::classes::BULK_MAX_IDS;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPinsPayload {
+    class_id: i64,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +66,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_bulk_delete_student(socket, ctx.clone());
     register_bulk_assign_student(socket, ctx.clone());
     register_bulk_remove_student(socket, ctx.clone());
+    register_get_pins(socket, ctx);
 }
 
 /// Re-emit `class:allStudentsData` so the manager list reflects the mutation.
@@ -426,6 +435,66 @@ fn register_bulk_remove_student(socket: &SocketRef, ctx: HandlerCtx) {
                                 constants::class::ERROR,
                                 "errors:class.removeFromClassFailed",
                             )
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+/// `class:getPins` — batch PIN fetch for one class. Unicast to requester only
+/// (never broadcast). Auth gate mirrors `class:studentPin` (require_user + owner scope).
+fn register_get_pins(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::GET_PINS, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<GetPinsPayload>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.unauthorized")
+                            .ok();
+                        tracing::warn!("class:getPins denied: no user session");
+                        return;
+                    }
+                };
+
+                if payload.class_id <= 0 {
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.invalidClassId")
+                        .ok();
+                    return;
+                }
+
+                let me = me_from_user(&user);
+
+                match db::get_class_pins(&ctx.db_pool, payload.class_id, me).await {
+                    Ok(pins) => {
+                        // CRITICAL: unicast to requester only — never broadcast PIN material.
+                        socket
+                            .emit(
+                                constants::class::PINS_DATA,
+                                &serde_json::json!({
+                                    "classId": payload.class_id,
+                                    "pins": pins,
+                                }),
+                            )
+                            .ok();
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "class:getPins failed: actor_user_id={} class_id={} error={}",
+                            user.user_id,
+                            payload.class_id,
+                            e
+                        );
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.studentPinFailed")
                             .ok();
                     }
                 }
