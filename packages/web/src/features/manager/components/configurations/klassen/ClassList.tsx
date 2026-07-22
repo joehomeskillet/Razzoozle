@@ -245,6 +245,7 @@ const ClassList = ({
               </div>
             )}
             <ListRow
+              className="min-w-0 flex-1"
               title={classObj.name}
               meta={
                 <div className="flex items-center gap-2">
