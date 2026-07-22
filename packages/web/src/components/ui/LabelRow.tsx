@@ -1,7 +1,11 @@
 import clsx from "clsx"
 import { forwardRef, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import Badge from "@razzoozle/web/components/manager/Badge"
+import {
+  SettingRowRestartBadge,
+  SettingRowStatusMessage,
+  SettingRowDescription,
+} from "./SettingRowMeta"
 
 export interface LabelRowProps {
   /** Visible label text. */
@@ -65,9 +69,6 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
     const statusId = id && statusMessage ? `${id}-status` : undefined
     const describedBy = clsx(descId, statusId)
 
-    // Use provided label or fall back to i18n key
-    const badgeLabel = restartBadgeLabel ?? t("restartRequired")
-
     return (
       <div
         ref={ref}
@@ -88,9 +89,10 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
           >
             {label}
             {restartBadge && (
-              <Badge className="shrink-0 whitespace-nowrap bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
-                {badgeLabel}
-              </Badge>
+              <SettingRowRestartBadge
+                restartBadgeLabel={restartBadgeLabel}
+                t={t}
+              />
             )}
           </LabelTag>
 
@@ -106,25 +108,17 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
         </div>
 
         {statusMessage && (
-          <p
-            id={statusId}
-            className={clsx(
-              "text-xs",
-              statusMessage.tone === "error" && "text-[var(--state-wrong)]",
-              statusMessage.tone === "success" && "text-[var(--state-correct)]",
-              statusMessage.tone === "pending" && "text-[var(--ink-subtle)]"
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            {statusMessage.text}
-          </p>
+          <SettingRowStatusMessage
+            statusMessage={statusMessage}
+            statusId={statusId}
+          />
         )}
 
         {description && (
-          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-60">
-            {description}
-          </p>
+          <SettingRowDescription
+            description={description}
+            descId={descId}
+          />
         )}
       </div>
     )
