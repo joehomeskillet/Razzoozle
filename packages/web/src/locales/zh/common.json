@@ -29,5 +29,6 @@
   "create": "创建",
   "add": "添加",
   "removeLabelNamed": "移除{{name}}",
-  "copy": "复制"
+  "copy": "复制",
+  "restartRequired": "需要重启"
 }
