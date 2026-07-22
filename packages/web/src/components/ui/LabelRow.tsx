@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import { forwardRef, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import Badge from "@razzoozle/web/components/manager/Badge"
 
 export interface LabelRowProps {
@@ -13,7 +14,7 @@ export interface LabelRowProps {
   children: ReactNode
   /** Optional badge signal that the setting requires restart. */
   restartBadge?: boolean
-  /** Label text for restart badge. Must be i18n-ized by the caller. */
+  /** Optional i18n-ized label text for restart badge. If not provided, uses default i18n key. */
   restartBadgeLabel?: string
   /** Optional status message (validation error, success, pending save). */
   statusMessage?: {
@@ -57,11 +58,15 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation("common")
     const LabelTag = htmlFor ? "label" : "span"
     const titleId = id ? `${id}-title` : undefined
     const descId = id && description ? `${id}-desc` : undefined
     const statusId = id && statusMessage ? `${id}-status` : undefined
     const describedBy = clsx(descId, statusId)
+
+    // Use provided label or fall back to i18n key
+    const badgeLabel = restartBadgeLabel ?? t("restartRequired")
 
     return (
       <div
@@ -82,9 +87,9 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
             )}
           >
             {label}
-            {restartBadge && restartBadgeLabel && (
+            {restartBadge && (
               <Badge className="shrink-0 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
-                {restartBadgeLabel}
+                {badgeLabel}
               </Badge>
             )}
           </LabelTag>
