@@ -2,31 +2,47 @@ import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import Button from "@razzoozle/web/components/Button"
 import Radio from "@razzoozle/web/components/Radio"
 import { useTranslation } from "react-i18next"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSchuelerManager } from "./useSchuelerManager"
 import { useClassManager } from "../klassen/useClassManager"
 import * as Select from "@radix-ui/react-select"
 import { Check, ChevronDown } from "lucide-react"
+import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { EVENTS } from "@razzoozle/common/constants"
 import PrintSheets from "./PrintSheets"
 import PrintSummary from "./PrintSummary"
+import type { PinView } from "./useSchuelerManager"
 
 interface PrintCredentialsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-const LOGIN_URL = "https://razzoozle.joelduss.xyz" // TODO: env var
-
 const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogProps) => {
   const { t } = useTranslation()
   const { students } = useSchuelerManager()
   const { classes } = useClassManager()
+  const { socket } = useSocket()
   const printContainerRef = useRef<HTMLDivElement>(null)
 
   const [selectedClassId, setSelectedClassId] = useState<string>("")
   const [scope, setScope] = useState<"active" | "all" | "selected">("active")
   const [format, setFormat] = useState<"sheets" | "summary">("sheets")
   const [isPrinting, setIsPrinting] = useState(false)
+  const [pinMap, setPinMap] = useState<Map<number, PinView>>(new Map())
+  const [isLoadingPins, setIsLoadingPins] = useState(false)
+
+  // Listener für PIN-Daten von Server
+  useEvent(
+    EVENTS.CLASS.STUDENT_PIN_DATA,
+    (data: { studentId: number; pin: string; labels: string[]; symbols?: string[] }) => {
+      setPinMap(prev => {
+        const updated = new Map(prev)
+        updated.set(data.studentId, data)
+        return updated
+      })
+    }
+  )
 
   // Classes with students
   const classesWithStudents = useMemo(() => {
@@ -45,25 +61,35 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
 
   const selectedClass = classesWithStudents.find(c => c.id === Number(selectedClassId))
 
-  // Collect PIN data (placeholder for now - requires server integration)
-  const pinDataMap = useMemo(() => {
-    const map = new Map()
-    // TODO: fetch from server or context
-    students.forEach(s => {
-      map.set(s.id, {
-        studentId: s.id,
-        pin: "****",
-        labels: [],
-        symbols: []
-      })
-    })
-    return map
-  }, [students])
-
   const filteredStudents = useMemo(() => {
     if (!selectedClass) return []
     return students.filter(s => s.classes.some(cls => cls.id === selectedClass.id))
   }, [selectedClass, students])
+
+  // Load PINs when dialog opens or class changes
+  useEffect(() => {
+    if (!open || !selectedClass || filteredStudents.length === 0) return
+
+    const loadPins = async () => {
+      setIsLoadingPins(true)
+      // Sequenziell laden mit kleiner Verzögerung um Server nicht zu überlasten
+      for (const student of filteredStudents) {
+        socket.emit(EVENTS.CLASS.STUDENT_PIN, { studentId: student.id })
+        // Kleine Verzögerung zwischen requests
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      setIsLoadingPins(false)
+    }
+
+    loadPins()
+  }, [open, selectedClass, filteredStudents, socket])
+
+  // Clear PINs when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPinMap(new Map())
+    }
+  }, [open])
 
   const handlePrint = useCallback(() => {
     setIsPrinting(true)
@@ -77,16 +103,11 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
 
   return (
     <>
-      <style>{`
-        @media print {
-          [data-print-container] { display: block !important; }
-        }
-      `}</style>
       <DialogPanel
         open={open && !isPrinting}
         onOpenChange={onOpenChange}
         titleId="print-credentials-dialog-title"
-        title={t("manager:schueler.printDialogTitle")}
+        title={t("manager:students.printDialogTitle")}
       >
         <div className="space-y-4">
           {/* Class Selection */}
@@ -126,7 +147,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
 
           {/* Scope */}
           <fieldset>
-            <legend className="block text-sm font-medium mb-2">{t("manager:schueler.printScope")}</legend>
+            <legend className="block text-sm font-medium mb-2">{t("manager:students.printScope")}</legend>
             <div className="space-y-2">
               <Radio
                 name="scope"
@@ -134,7 +155,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={scope === "active"}
                 onChange={(e) => setScope(e.target.value as "active")}
                 data-testid="print-scope-active"
-                label={t("manager:schueler.printScopeActiveOnly")}
+                label={t("manager:students.printScopeActiveOnly")}
               />
               <Radio
                 name="scope"
@@ -142,7 +163,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={scope === "all"}
                 onChange={(e) => setScope(e.target.value as "all")}
                 data-testid="print-scope-all"
-                label={t("manager:schueler.printScopeAll")}
+                label={t("manager:students.printScopeAll")}
               />
               <Radio
                 name="scope"
@@ -151,14 +172,14 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 onChange={(e) => setScope(e.target.value as "selected")}
                 data-testid="print-scope-selected"
                 disabled
-                label={`${t("manager:schueler.printScopeSelected")} (0)`}
+                label={`${t("manager:students.printScopeSelected")} (0)`}
               />
             </div>
           </fieldset>
 
           {/* Format */}
           <fieldset>
-            <legend className="block text-sm font-medium mb-2">{t("manager:schueler.printFormat")}</legend>
+            <legend className="block text-sm font-medium mb-2">{t("manager:students.printFormat")}</legend>
             <div className="space-y-2">
               <Radio
                 name="format"
@@ -166,7 +187,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={format === "sheets"}
                 onChange={(e) => setFormat(e.target.value as "sheets")}
                 data-testid="print-format-sheets"
-                label={t("manager:schueler.printFormatSheets")}
+                label={t("manager:students.printFormatSheets")}
               />
               <Radio
                 name="format"
@@ -174,10 +195,14 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={format === "summary"}
                 onChange={(e) => setFormat(e.target.value as "summary")}
                 data-testid="print-format-summary"
-                label={t("manager:schueler.printFormatSummary")}
+                label={t("manager:students.printFormatSummary")}
               />
             </div>
           </fieldset>
+
+          {isLoadingPins && (
+            <p className="text-sm text-[var(--ink-subtle)]">{t("common:loading")}</p>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
@@ -187,8 +212,8 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
           <Button
             variant="primary"
             onClick={handlePrint}
-            disabled={!selectedClass || isPrinting}
-            aria-label={selectedClass ? t("manager:schueler.printCredentials") : ""}
+            disabled={!selectedClass || isPrinting || isLoadingPins}
+            aria-label={selectedClass ? t("manager:students.printCredentials") : ""}
           >
             {t("common:print")}
           </Button>
@@ -196,13 +221,13 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
       </DialogPanel>
 
       {/* Hidden print container */}
-      <div ref={printContainerRef} data-print-container className="no-print" style={{ display: "none" }}>
+      <div ref={printContainerRef} className="no-print" style={{ display: "none" }}>
         {format === "sheets" ? (
-          <PrintSheets students={filteredStudents} pins={pinDataMap} loginUrl={LOGIN_URL} />
+          <PrintSheets students={filteredStudents} pins={pinMap} loginUrl={window.location.origin} />
         ) : (
           <PrintSummary
             students={filteredStudents}
-            pins={pinDataMap}
+            pins={pinMap}
             className={selectedClass?.name ?? ""}
           />
         )}
