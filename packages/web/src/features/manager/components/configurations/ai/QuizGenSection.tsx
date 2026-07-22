@@ -87,6 +87,7 @@ const QuizGenSection = ({
         type="button"
         onClick={generateQuiz}
         disabled={!topic.trim() || generating || !textConfigured}
+        title={!textConfigured ? t("manager:ai.generate.notConfigured", { defaultValue: "Kein Text-Provider konfiguriert" }) : undefined}
       >
         {generating
           ? t("manager:ai.generate.generating")
