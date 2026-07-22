@@ -2,6 +2,25 @@ import Button from "@razzoozle/web/components/Button"
 import clsx from "clsx"
 import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
+import {
+  rowActionBase,
+  rowActionDestructiveHover,
+  rowActionGroupClass,
+  rowActionHover,
+  rowBodyFocusState,
+  rowDisabledState,
+  rowHoverState,
+  rowLeadingClass,
+  rowMetaClass,
+  rowRestState,
+  rowSelectedState,
+  rowShellBase,
+  rowShellDensity,
+  rowTitleClass,
+  type ListRowDensity,
+} from "./rowStyles"
+
+export type { ListRowDensity }
 
 export interface ListRowAction {
   /** Stable key for React. */
@@ -15,6 +34,8 @@ export interface ListRowAction {
   title?: string
   /** Tints the control red for destructive actions (delete, etc.). */
   destructive?: boolean
+  className?: string
+  "aria-expanded"?: boolean
 }
 
 export interface ListRowProps {
@@ -41,20 +62,14 @@ export interface ListRowProps {
   bodyLabel?: string
   /** Optional full-width second line inside the card (labels/assign row, spec D22c). */
   footer?: ReactNode
+  details?: ReactNode
+  density?: ListRowDensity
+  hoverable?: boolean
+  selected?: boolean
+  expanded?: boolean
+  disabled?: boolean
   className?: string
 }
-
-// Row actions use the shared ghost icon button. The only per-state override is
-// the colour channel: a muted gray-400 idle (calmer than ghost's gray-600) plus
-// a red destructive hover for delete-style actions — spacing/state only, never
-// a re-skin of the variant's surface/radius/focus.
-const actionClasses = (destructive?: boolean) =>
-  clsx(
-    "shrink-0 text-[var(--ink-faint)]",
-    destructive
-      ? "hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)]"
-      : "hover:bg-[var(--surface-3)] hover:text-[var(--ink-muted)]",
-  )
 
 /**
  * A uniform content row (spec §4.4) for the Quizze / Ergebnisse lists — ONE
@@ -73,30 +88,29 @@ const ListRow = ({
   onClick,
   bodyLabel,
   footer,
+  details,
   overflow,
+  density = "default",
+  hoverable = true,
+  selected,
+  expanded,
+  disabled,
   className,
 }: ListRowProps) => {
   const body = (
     <>
       {leading && (
-        <span
-          className="flex shrink-0 items-center text-[var(--ink-faint)]"
-          aria-hidden
-        >
+        <span className={rowLeadingClass} aria-hidden>
           {leading}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold text-[var(--ink)]">
-          {title}
-        </span>
+        <span className={rowTitleClass}>{title}</span>
         {meta &&
           (typeof meta === "string" ? (
-            <span className="truncate text-sm text-[var(--ink-subtle)]">
-              {meta}
-            </span>
+            <span className={clsx("truncate", rowMetaClass)}>{meta}</span>
           ) : (
-            <span className="text-sm text-[var(--ink-subtle)]">{meta}</span>
+            <span className={rowMetaClass}>{meta}</span>
           ))}
       </span>
     </>
@@ -105,9 +119,18 @@ const ListRow = ({
   return (
     <div
       className={clsx(
-        "flex flex-col rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]",
+        "flex flex-col",
+        rowShellBase,
+        rowShellDensity[density],
+        disabled
+          ? clsx(rowRestState, rowDisabledState)
+          : selected
+            ? rowSelectedState
+            : rowRestState,
+        hoverable && !disabled && rowHoverState,
         className,
       )}
+      data-state={expanded === undefined ? undefined : expanded ? "expanded" : "collapsed"}
     >
       <div className="flex min-h-11 items-center gap-3">
         {selection}
@@ -116,9 +139,10 @@ const ListRow = ({
             type="button"
             onClick={onClick}
             aria-label={bodyLabel}
+            disabled={disabled}
             className={clsx(
-              "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--surface-2)]",
-              "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+              "-m-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors",
+              rowBodyFocusState,
             )}
           >
             {body}
@@ -128,16 +152,18 @@ const ListRow = ({
         )}
 
         {((actions && actions.length > 0) || overflow) && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className={rowActionGroupClass}>
             {actions?.map(
               ({
                 key,
                 icon: Icon,
                 label,
                 onClick: act,
-                disabled,
+                disabled: actionDisabled,
                 title,
                 destructive,
+                className: actionClassName,
+                "aria-expanded": ariaExpanded,
               }) => (
                 <Button
                   key={key}
@@ -145,10 +171,15 @@ const ListRow = ({
                   size="icon"
                   type="button"
                   onClick={act}
-                  disabled={disabled}
+                  disabled={actionDisabled}
                   aria-label={title ?? label}
+                  aria-expanded={ariaExpanded}
                   title={title ?? label}
-                  className={actionClasses(destructive)}
+                  className={clsx(
+                    rowActionBase,
+                    destructive ? rowActionDestructiveHover : rowActionHover,
+                    actionClassName,
+                  )}
                 >
                   <Icon className="size-5" aria-hidden />
                 </Button>
@@ -160,6 +191,7 @@ const ListRow = ({
       </div>
 
       {footer && <div className="mt-3 w-full">{footer}</div>}
+      {details && <div className="mt-3 w-full">{details}</div>}
     </div>
   )
 }
