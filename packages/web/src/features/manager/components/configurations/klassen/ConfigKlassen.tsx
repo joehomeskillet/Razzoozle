@@ -14,7 +14,6 @@ import { useMemo, useState } from "react"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import toast from "react-hot-toast"
 
 import ClassList from "./ClassList"
 import StudentPicker from "./StudentPicker"
@@ -279,9 +278,8 @@ const ConfigKlassen = () => {
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
               variant="danger"
+              size="sm"
               onClick={() => setPendingBulkAction('delete')}
             >
               {t("manager:bulk.deleteSelected")}
@@ -404,9 +402,9 @@ const ConfigKlassen = () => {
         open={pendingBulkAction === 'activate'}
         onOpenChange={(open) => {
           if (!open) setPendingBulkAction(null)
-        description={bulkDescriptionWithClassNames}
         }}
         title={t("manager:classes.bulkConfirmTitleActivate", { count: selection.selected.size })}
+        description={bulkDescriptionWithClassNames}
         confirmLabel={t("manager:bulk.activate")}
         confirmDisabled={bulkOperationLoading}
         onConfirm={handleBulkActivate}
@@ -419,11 +417,11 @@ const ConfigKlassen = () => {
           if (!open) setPendingBulkAction(null)
         }}
         title={t("manager:classes.bulkConfirmTitleDeactivate", { count: selection.selected.size })}
+        description={bulkDescriptionWithClassNames}
         confirmLabel={t("manager:bulk.deactivate")}
         confirmDisabled={bulkOperationLoading}
         onConfirm={handleBulkDeactivate}
       />
-        description={bulkDescriptionWithClassNames}
 
       {/* Bulk Delete Dialog */}
       <AlertDialog
