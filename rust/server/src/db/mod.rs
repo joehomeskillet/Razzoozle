@@ -23,3 +23,6 @@ pub use users::*;
 pub use user_ai::*;
 pub mod labels;
 pub use labels::*;
+
+#[cfg(test)]
+mod tests_classes_bulk;
