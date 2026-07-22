@@ -87,6 +87,8 @@ const ConfigResults = () => {
     useCallback((data) => setSelectedResult(data), []),
   )
 
+  // Socket listener for bulk delete completion. Decoupled from selection via
+  // useCallback (only t in deps) to avoid re-registration on every filter change.
   useEvent(
     EVENTS.RESULTS.BULK_DELETED,
     useCallback(
@@ -108,7 +110,7 @@ const ConfigResults = () => {
         setTypeConfirmValue("")
         setBulkProcessing(false)
       },
-      [selection, t],
+      [t],
     ),
   )
 
@@ -150,7 +152,11 @@ const ConfigResults = () => {
   const needsTypeConfirm =
     selection.allSelected && !hasFilter && selection.selected.size >= 20
   const confirmPhrase = t("manager:result.confirmAllPhrase")
-  const isTypeConfirmValid = needsTypeConfirm ? typeConfirmValue === confirmPhrase : true
+  // Guard against empty confirm phrase (i18n missing/fallback) with strict validation.
+  // Type-confirm gate requires both: i18n-key must exist + user must type exact phrase.
+  const isConfirmPhraseValid = confirmPhrase && confirmPhrase.length > 0
+  const isTypeConfirmValid =
+    needsTypeConfirm ? isConfirmPhraseValid && typeConfirmValue === confirmPhrase : true
 
   const getBulkLabel = () => {
     if (!selection.selectionActive) return ""
@@ -158,11 +164,16 @@ const ConfigResults = () => {
 
     if (selection.allSelected) {
       if (hasFilter) {
+        // Filtered scope: show "Alle gefilterten ausgewählt" + count of visible results.
+        // Implementation sends only visible IDs; semantics: "all within filter scope".
         return t("manager:bulk.allFilteredSelected", { count })
       }
+      // No filter: all results in list are selected.
+      // Implementation sends all IDs; semantics: "all results".
       return t("manager:bulk.allSelected", { count })
     }
 
+    // Partial selection: show count of selected items within filtered results.
     return t("manager:bulk.selected", { count })
   }
 
