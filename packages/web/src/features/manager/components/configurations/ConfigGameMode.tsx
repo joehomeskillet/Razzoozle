@@ -1,4 +1,3 @@
-import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { LabelRow, ToggleField } from "@razzoozle/web/components/ui"
@@ -250,6 +249,15 @@ const ConfigGameMode = () => {
     [t],
   )
 
+  const endScreenModeDescriptionMap = useMemo<Record<string, string>>(
+    () => ({
+      full: t("manager:gameMode.endScreenModeDescription.full"),
+      top3: t("manager:gameMode.endScreenModeDescription.top3"),
+      private: t("manager:gameMode.endScreenModeDescription.private"),
+    }),
+    [t],
+  )
+
   const activeModes = useMemo(
     () => parseModes(endScreenModes),
     [endScreenModes],
@@ -284,15 +292,6 @@ const ConfigGameMode = () => {
         }
       : undefined
 
-  // Last remaining end-screen mode cannot be deselected (dependency chain).
-  const endScreenLastModeReason =
-    activeModes.size === 1
-      ? t("manager:gameMode.endScreenDescription", {
-          defaultValue:
-            "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen.",
-        })
-      : undefined
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="mb-4 flex shrink-0 flex-col gap-3">
@@ -302,173 +301,183 @@ const ConfigGameMode = () => {
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 pb-4">
-        {/* 1. Team-Modus — requires restart */}
-        <ToggleField
-          id="setting-team-mode"
-          label={t("manager:gameMode.teamMode", { defaultValue: "Team-Modus" })}
-          description={t("manager:gameMode.description", {
-            defaultValue:
-              "Im Team-Modus werden Punkte pro Team aufsummiert und eine Team-Rangliste angezeigt.",
-          })}
-          checked={teamMode}
-          onChange={handleToggle}
-          disabled={teamModeToggle.saving}
-          restartBadge
-          statusMessage={pendingStatus(teamModeToggle.saving)}
-        />
+      <div className="flex flex-1 flex-col gap-8 pb-4">
+        {/* Section 1: Spielablauf (Team-Modus, Low-Latency, Lobby-Sperre, Antwortreihenfolge) */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">
+            {t("manager:gameMode.sections.flow")}
+          </h3>
+          <div className="flex flex-col gap-4">
+            {/* 1. Team-Modus — requires restart */}
+            <ToggleField
+              id="setting-team-mode"
+              label={t("manager:gameMode.teamMode", {
+                defaultValue: "Team-Modus",
+              })}
+              description={t("manager:gameMode.description", {
+                defaultValue:
+                  "Im Team-Modus werden Punkte pro Team aufsummiert und eine Team-Rangliste angezeigt.",
+              })}
+              checked={teamMode}
+              onChange={handleToggle}
+              disabled={teamModeToggle.saving}
+              restartBadge
+              statusMessage={pendingStatus(teamModeToggle.saving)}
+            />
 
-        {teamMode && (
-          <div className="flex flex-wrap gap-2 sm:pl-44">
-            {["red", "blue", "green", "yellow"].map((team) => {
-              return (
-                <Badge
-                  key={team}
-                  className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
-                >
-                  <span
-                    className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
-                    aria-hidden
-                  />
-                  {teamLabelMap[team]}
-                </Badge>
-              )
-            })}
+            {teamMode && (
+              <div className="flex flex-wrap gap-2 sm:pl-44">
+                {["red", "blue", "green", "yellow"].map((team) => {
+                  return (
+                    <Badge
+                      key={team}
+                      className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
+                    >
+                      <span
+                        className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
+                        aria-hidden
+                      />
+                      {teamLabelMap[team]}
+                    </Badge>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 2. Low-Latency-Modus */}
+            <ToggleField
+              id="setting-low-latency"
+              label={t("manager:gameMode.lowLatency", {
+                defaultValue: "Low-Latency-Modus",
+              })}
+              description={t("manager:gameMode.lowLatencyDescription", {
+                defaultValue:
+                  "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
+              })}
+              checked={lowLatency}
+              onChange={handleLowLatencyToggle}
+              disabled={lowLatencyToggle.saving}
+              statusMessage={pendingStatus(lowLatencyToggle.saving)}
+            />
+
+            {/* 3. Lobby gesperrt */}
+            <ToggleField
+              id="setting-lobby-locked"
+              label={t("manager:gameMode.lobbyTitle", {
+                defaultValue: "Lobby-Sperre",
+              })}
+              description={t("manager:gameMode.lobbyDescription", {
+                defaultValue:
+                  "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
+              })}
+              checked={joinLocked}
+              onChange={handleJoinLockedToggle}
+              disabled={joinLockedToggle.saving}
+              statusMessage={pendingStatus(joinLockedToggle.saving)}
+            />
+
+            {/* 4. Randomize Answers */}
+            <ToggleField
+              id="setting-randomize-answers"
+              label={t("manager:gameMode.randomizeAnswersTitle", {
+                defaultValue: "Antwortreihenfolge",
+              })}
+              description={t("manager:gameMode.randomizeAnswersDescription", {
+                defaultValue:
+                  "Mischt die Reihenfolge der Antwortoptionen pro Frage zufällig, während die kanonischen Indizes für die Bewertung erhalten bleiben.",
+              })}
+              checked={randomizeAnswers}
+              onChange={handleRandomizeAnswersToggle}
+              disabled={randomizeAnswersToggle.saving}
+              statusMessage={pendingStatus(randomizeAnswersToggle.saving)}
+            />
           </div>
-        )}
+        </div>
 
-        {/* 2. Low-Latency-Modus */}
-        <ToggleField
-          id="setting-low-latency"
-          label={t("manager:gameMode.lowLatency", {
-            defaultValue: "Low-Latency-Modus",
-          })}
-          description={t("manager:gameMode.lowLatencyDescription", {
-            defaultValue:
-              "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
-          })}
-          checked={lowLatency}
-          onChange={handleLowLatencyToggle}
-          disabled={lowLatencyToggle.saving}
-          statusMessage={pendingStatus(lowLatencyToggle.saving)}
-        />
+        {/* Section 2: Wertung (Scoring Mode) */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">
+            {t("manager:gameMode.sections.scoring")}
+          </h3>
+          <LabelRow
+            id="setting-scoring-mode"
+            label={t("manager:gameMode.scoringTitle", {
+              defaultValue: "Wertung",
+            })}
+            description={t("manager:gameMode.scoringDescription", {
+              defaultValue:
+                "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
+            })}
+            disabled={scoringModeToggle.saving}
+            statusMessage={pendingStatus(scoringModeToggle.saving)}
+          >
+            <RadioGroup
+              name="scoring"
+              value={scoringMode}
+              onChange={(v) =>
+                handleScoringModeChange(v as "speed" | "accuracy")
+              }
+              options={scoringOptions}
+              aria-labelledby="setting-scoring-mode-title"
+            />
+          </LabelRow>
+        </div>
 
-        {/* 3. Lobby gesperrt */}
-        <ToggleField
-          id="setting-lobby-locked"
-          label={t("manager:gameMode.lobbyTitle", {
-            defaultValue: "Lobby-Sperre",
-          })}
-          description={t("manager:gameMode.lobbyDescription", {
-            defaultValue:
-              "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
-          })}
-          checked={joinLocked}
-          onChange={handleJoinLockedToggle}
-          disabled={joinLockedToggle.saving}
-          statusMessage={pendingStatus(joinLockedToggle.saving)}
-        />
-
-        {/* 4. Randomize Answers */}
-        <ToggleField
-          id="setting-randomize-answers"
-          label={t("manager:gameMode.randomizeAnswersTitle", {
-            defaultValue: "Antwortreihenfolge",
-          })}
-          description={t("manager:gameMode.randomizeAnswersDescription", {
-            defaultValue:
-              "Mischt die Reihenfolge der Antwortoptionen pro Frage zufällig, während die kanonischen Indizes für die Bewertung erhalten bleiben.",
-          })}
-          checked={randomizeAnswers}
-          onChange={handleRandomizeAnswersToggle}
-          disabled={randomizeAnswersToggle.saving}
-          statusMessage={pendingStatus(randomizeAnswersToggle.saving)}
-        />
-
-        {/* 5. Scoring Mode (speed/accuracy) */}
-        <LabelRow
-          id="setting-scoring-mode"
-          label={t("manager:gameMode.scoringTitle", {
-            defaultValue: "Wertung",
-          })}
-          description={t("manager:gameMode.scoringDescription", {
-            defaultValue:
-              "Wählen Sie, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
-          })}
-          disabled={scoringModeToggle.saving}
-          statusMessage={pendingStatus(scoringModeToggle.saving)}
-        >
-          <RadioGroup
-            name="scoring"
-            value={scoringMode}
-            onChange={(v) => handleScoringModeChange(v as "speed" | "accuracy")}
-            options={scoringOptions}
-            aria-labelledby="setting-scoring-mode-title"
+        {/* Section 3: Schule (Klassen-Modus) */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">
+            {t("manager:gameMode.sections.school")}
+          </h3>
+          <ToggleField
+            id="setting-klassen-mode"
+            label={t("manager:gameMode.klassenTitle", {
+              defaultValue: "Klassen-Modus",
+            })}
+            description={t("manager:gameMode.klassenDescription", {
+              defaultValue:
+                "Aktiviert den Klassen-Modus, in dem Spieler aus einem von der Lehrkraft verwalteten Schülerverzeichnis beitreten können.",
+            })}
+            checked={klassenEnabled}
+            onChange={handleKlassenToggle}
+            disabled={klassenToggle.saving}
+            restartBadge
+            statusMessage={pendingStatus(klassenToggle.saving)}
           />
-        </LabelRow>
+        </div>
 
-        {/* 6. Klassen-Modus — requires restart */}
-        <ToggleField
-          id="setting-klassen-mode"
-          label={t("manager:gameMode.klassenTitle", {
-            defaultValue: "Klassen-Modus",
-          })}
-          description={t("manager:gameMode.klassenDescription", {
-            defaultValue:
-              "Aktiviert den Klassen-Modus, in dem Spieler aus einem von der Lehrkraft verwalteten Schülerverzeichnis beitreten können.",
-          })}
-          checked={klassenEnabled}
-          onChange={handleKlassenToggle}
-          disabled={klassenToggle.saving}
-          restartBadge
-          statusMessage={pendingStatus(klassenToggle.saving)}
-        />
-
-        {/* 7. Endscreen-Modes (multi-select); last active mode cannot be deselected */}
-        <LabelRow
-          id="setting-end-screen-modes"
-          label={t("manager:gameMode.endScreenTitle", {
-            defaultValue: "Endbildschirm-Optionen",
-          })}
-          description={t("manager:gameMode.endScreenDescription", {
-            defaultValue:
-              "Wählen Sie, welche Endbildschirm-Anzeigeoptionen für die Lehrperson verfügbar sein sollen.",
-          })}
-          disabled={endScreenToggle.saving}
-          disabledReason={
-            endScreenToggle.saving ? t("common:loading") : undefined
-          }
-          statusMessage={pendingStatus(endScreenToggle.saving)}
-        >
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Section 4: Endbildschirm (End Screen Modes as ToggleFields) */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">
+            {t("manager:gameMode.sections.endScreen")}
+          </h3>
+          <div className="flex flex-col gap-4">
             {VALID_END_SCREEN_MODES.map((mode) => {
               const isActive = activeModes.has(mode)
               const isLastActive = activeModes.size === 1 && isActive
               return (
-                <span
+                <ToggleField
                   key={mode}
-                  title={
-                    isLastActive
-                      ? endScreenLastModeReason
-                      : undefined
-                  }
-                  className={
+                  id={`setting-end-screen-${mode}`}
+                  label={endScreenModeLabelMap[mode]}
+                  description={endScreenModeDescriptionMap[mode]}
+                  checked={isActive}
+                  onChange={() => handleEndScreenModeToggle(mode)}
+                  disabled={
                     isLastActive || endScreenToggle.saving
-                      ? "cursor-not-allowed opacity-60"
-                      : undefined
                   }
-                >
-                  <FilterPill
-                    active={isActive}
-                    onClick={() => handleEndScreenModeToggle(mode)}
-                  >
-                    {endScreenModeLabelMap[mode]}
-                  </FilterPill>
-                </span>
+                  disabledReason={
+                    isLastActive
+                      ? t("manager:gameMode.endScreenMinOneActive")
+                      : endScreenToggle.saving
+                        ? t("common:loading")
+                        : undefined
+                  }
+                  statusMessage={pendingStatus(endScreenToggle.saving)}
+                />
               )
             })}
           </div>
-        </LabelRow>
+        </div>
       </div>
     </div>
   )
