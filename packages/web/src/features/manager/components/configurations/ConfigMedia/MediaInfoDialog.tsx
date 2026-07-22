@@ -68,7 +68,7 @@ const MediaInfoDialog = ({
   const setOpen = onControlledOpenChange || setInternalOpen
   const isControlled = controlledOpen !== undefined
 
-  const detailsLabel = t("manager:media.details", { defaultValue: "Details" })
+  const detailsLabel = t("manager:media.details")
 
   const itemLabels = useMemo(
     () => localLabelIds
@@ -176,7 +176,7 @@ const MediaInfoDialog = ({
           {/* Usage Section — ALWAYS rendered */}
           <div className="mt-6 flex flex-col gap-3">
             <label className="text-sm font-semibold text-[var(--ink)]">
-              {t("manager:media.usage.heading", { defaultValue: "Used in" })}
+              {t("manager:media.usage.heading")}
             </label>
             {item.usage && item.usage.length > 0 ? (
               <div className="max-h-48 overflow-y-auto space-y-1">
@@ -184,17 +184,14 @@ const MediaInfoDialog = ({
                   <div key={idx} className="text-xs text-[var(--ink-muted)]">
                     <span className="font-medium text-[var(--ink)]">{entry.quizTitle}</span>
                     {" — "}
-                    {t("manager:media.usage.questionLabel", {
-                      index: entry.questionIndex + 1,
-                      label: entry.questionLabel,
-                      defaultValue: "Question {{index}}: {{label}}",
-                    })}
+                    {t("manager:media.usage.questionLabel", { index: entry.questionIndex + 1,
+                      label: entry.questionLabel })}
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-[var(--ink-muted)]">
-                {t("manager:media.usage.empty", { defaultValue: "Not used in any quiz" })}
+                {t("manager:media.usage.empty")}
               </p>
             )}
           </div>
@@ -204,7 +201,7 @@ const MediaInfoDialog = ({
             <div className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-[var(--ink)]">
-                  {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
+                  {t("manager:labels.assignLabel")}
                 </label>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {itemLabels.map((label) => (
@@ -225,9 +222,7 @@ const MediaInfoDialog = ({
                       >
                         <Plus className="size-3" />
                         <Select.Value
-                          placeholder={t("manager:labels.addLabel", {
-                            defaultValue: "+ Fach",
-                          })}
+                          placeholder={t("manager:labels.addLabel")}
                         />
                       </Select.Trigger>
                       <Select.Portal>
@@ -259,7 +254,7 @@ const MediaInfoDialog = ({
           <div className="mt-6 flex justify-end">
             <Dialog.Close asChild>
               <Button variant="secondary">
-                {t("common:close", { defaultValue: "Schließen" })}
+                {t("common:close")}
               </Button>
             </Dialog.Close>
           </div>

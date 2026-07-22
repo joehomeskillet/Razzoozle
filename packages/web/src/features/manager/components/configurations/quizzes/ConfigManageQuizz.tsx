@@ -99,44 +99,34 @@ const ConfigManageQuizz = () => {
           <div className="mb-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
               <label htmlFor="quizz-search" className="sr-only">
-                {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
+                {t("manager:quizz.search")}
               </label>
               <Input
                 id="quizz-search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("manager:quizz.searchPlaceholder", {
-                  defaultValue: "Nach Thema suchen …",
-                })}
+                placeholder={t("manager:quizz.searchPlaceholder")}
                 className="min-h-11 w-full rounded-[var(--radius-theme)]"
               />
             </div>
             <div className="shrink-0">
               <label htmlFor="quizz-sort" className="sr-only">
-                {t("manager:quizz.sort", { defaultValue: "Sortieren" })}
+                {t("manager:quizz.sort")}
               </label>
               <Select
                 id="quizz-sort"
                 value={sortKey}
                 onChange={(event) => setSortKey(event.target.value as SortKey)}
-                aria-label={t("manager:quizz.sort", {
-                  defaultValue: "Sortieren",
-                })}
+                aria-label={t("manager:quizz.sort")}
               >
                 <option value="name-asc">
-                  {t("manager:quizz.sortNameAsc", {
-                    defaultValue: "Name A–Z",
-                  })}
+                  {t("manager:quizz.sortNameAsc")}
                 </option>
                 <option value="count-desc">
-                  {t("manager:quizz.sortCountDesc", {
-                    defaultValue: "Meiste Fragen",
-                  })}
+                  {t("manager:quizz.sortCountDesc")}
                 </option>
                 <option value="count-asc">
-                  {t("manager:quizz.sortCountAsc", {
-                    defaultValue: "Wenigste Fragen",
-                  })}
+                  {t("manager:quizz.sortCountAsc")}
                 </option>
               </Select>
             </div>
@@ -159,10 +149,7 @@ const ConfigManageQuizz = () => {
         {selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:quizz.bulkSelected", {
-              count: selectionCount,
-              defaultValue: "{{count}} ausgewählt",
-            })}
+            aria-label={t("manager:quizz.bulkSelected", { count: selectionCount })}
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -177,10 +164,7 @@ const ConfigManageQuizz = () => {
                 <X className="size-5" aria-hidden />
               </Button>
               <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
-                {t("manager:quizz.bulkSelected", {
-                  count: selectionCount,
-                  defaultValue: "{{count}} ausgewählt",
-                })}
+                {t("manager:quizz.bulkSelected", { count: selectionCount })}
               </span>
             </div>
             <Button
@@ -192,7 +176,7 @@ const ConfigManageQuizz = () => {
             >
               <Trash2 className="size-4 shrink-0" aria-hidden />
               <span className="min-w-0 truncate">
-                {t("manager:quizz.bulkDelete", { defaultValue: "Löschen" })}
+                {t("manager:quizz.bulkDelete")}
               </span>
             </Button>
           </div>

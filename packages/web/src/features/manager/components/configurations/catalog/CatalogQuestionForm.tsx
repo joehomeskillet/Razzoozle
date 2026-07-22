@@ -118,13 +118,13 @@ export const CatalogQuestionForm = ({
           {klassenEnabled && labels.length > 0 && (
             <section className="flex flex-col gap-2">
               <label className="w-fit text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
-                {t("manager:labels.assignLabel", { defaultValue: "Labels zuweisen" })}
+                {t("manager:labels.assignLabel")}
               </label>
               <div className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 shadow-sm">
                 <div className="flex flex-wrap gap-2">
                   {labels.length === 0 ? (
                     <p className="text-sm text-[var(--ink-subtle)]">
-                      {t("manager:labels.noLabels", { defaultValue: "Keine Labels verfügbar" })}
+                      {t("manager:labels.noLabels")}
                     </p>
                   ) : (
                     labels.map((label) => {

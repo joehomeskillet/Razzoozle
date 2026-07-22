@@ -52,7 +52,7 @@ const ThemePreviewWindow = () => {
   return (
     <div className="min-h-dvh w-full bg-[var(--color-field-cream)] px-4 py-6 text-[color:var(--color-field-ink)]">
       <h1 className="mb-4 text-center text-lg font-bold tracking-tight">
-        {t("manager:theme.preview.title", { defaultValue: "Vorschau" })}
+        {t("manager:theme.preview.title")}
       </h1>
       <ThemePreviewPanel theme={liveTheme} className="mx-auto max-w-md" />
     </div>

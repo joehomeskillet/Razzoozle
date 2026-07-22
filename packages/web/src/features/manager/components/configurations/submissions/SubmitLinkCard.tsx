@@ -17,15 +17,10 @@ const SubmitLinkCard = () => {
     return (
       <div className="mx-auto w-full max-w-sm space-y-1 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-4 text-center">
         <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
-          {t("manager:submissions.submitLinkHint", {
-            defaultValue: "Öffentlicher Einreichungs-Link",
-          })}
+          {t("manager:submissions.submitLinkHint")}
         </p>
         <p className="text-sm text-[var(--ink-subtle)]">
-          {t("manager:submissions.submitLinkUnavailable", {
-            defaultValue:
-              "Noch nicht verfügbar — dein persönlicher Link wird demnächst aktiviert.",
-          })}
+          {t("manager:submissions.submitLinkUnavailable")}
         </p>
       </div>
     )
@@ -36,7 +31,7 @@ const SubmitLinkCard = () => {
   const handleCopySubmitLink = async () => {
     try {
       await navigator.clipboard.writeText(submitUrl)
-      toast.success(t("common:copied", { defaultValue: "Kopiert" }))
+      toast.success(t("common:copied"))
     } catch {
       toast.error(t("manager:result.share.copyFailed"))
     }
@@ -45,9 +40,7 @@ const SubmitLinkCard = () => {
   return (
     <div className="mx-auto w-full max-w-sm space-y-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-4 text-center">
       <p className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase">
-        {t("manager:submissions.submitLinkHint", {
-          defaultValue: "Öffentlicher Einreichungs-Link",
-        })}
+        {t("manager:submissions.submitLinkHint")}
       </p>
       <div className="flex items-center gap-2">
         <code className="min-w-0 flex-1 truncate rounded-lg bg-[var(--surface)] px-3 py-2 text-left text-sm text-[var(--ink-muted)] outline-1 -outline-offset-1 outline-[var(--line)]">
@@ -61,12 +54,8 @@ const SubmitLinkCard = () => {
           onClick={() => {
             void handleCopySubmitLink()
           }}
-          aria-label={t("manager:submissions.copyLink", {
-            defaultValue: "Link kopieren",
-          })}
-          title={t("manager:submissions.copyLink", {
-            defaultValue: "Link kopieren",
-          })}
+          aria-label={t("manager:submissions.copyLink")}
+          title={t("manager:submissions.copyLink")}
         >
           <Copy className="size-4" aria-hidden />
         </Button>

@@ -143,14 +143,14 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
         <div className="mb-3 flex items-center gap-2">
           <Eye className="size-4 text-[var(--ink-subtle)]" aria-hidden />
           <h2 className="text-base font-semibold text-[var(--ink)]">
-            {t("manager:theme.preview.title", { defaultValue: "Vorschau" })}
+            {t("manager:theme.preview.title")}
           </h2>
         </div>
 
         <div className="flex flex-col gap-3">
           {/* ── (1) Beitritt / Join ──────────────────────────────── */}
           <MockCard
-            label={t("manager:theme.preview.join", { defaultValue: "Beitritt" })}
+            label={t("manager:theme.preview.join")}
             background={authOn ? null : theme.backgrounds.auth}
             animated={
               authOn
@@ -181,9 +181,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
               className={"rounded-lg px-4 py-1.5 text-sm font-semibold text-white shadow" /* token-ok: stage-preview mirrors real join CTA white-on-primary (SubmitButton.tsx), design.md §2 Guardrail #5 */}
               style={{ background: "var(--color-primary)" }}
             >
-              {t("manager:themePreview.join", {
-                defaultValue: "Beitreten",
-              })}
+              {t("manager:themePreview.join")}
             </span>
             {theme.showBranding && (
               <span className="text-[10px] font-semibold text-white/50"> {/* token-ok: stage-preview watermark over image/backdrop, mirrors overlay-on-image convention */}
@@ -194,9 +192,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
 
           {/* ── (2) Frage / Question ─────────────────────────────── */}
           <MockCard
-            label={t("manager:theme.preview.question", {
-              defaultValue: "Frage",
-            })}
+            label={t("manager:theme.preview.question")}
             background={playerOn ? null : theme.backgrounds.playerGame}
             animated={
               playerOn
@@ -230,9 +226,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
 
           {/* ── (3) Rangliste / Leaderboard ──────────────────────── */}
           <MockCard
-            label={t("manager:theme.preview.leaderboard", {
-              defaultValue: "Rangliste",
-            })}
+            label={t("manager:theme.preview.leaderboard")}
             background={managerOn ? null : theme.backgrounds.managerGame}
             animated={
               managerOn
@@ -265,10 +259,7 @@ const ThemePreviewPanel = ({ theme, className }: ThemePreviewPanelProps) => {
                     </span>
                   )}
                   <span className="flex-1 truncate text-left">
-                    {t("manager:themePreview.playerName", {
-                      rank,
-                      defaultValue: "Spieler {{rank}}",
-                    })}
+                    {t("manager:themePreview.playerName", { rank })}
                   </span>
                   <span className="tabular-nums">{score}</span>
                 </div>

@@ -203,33 +203,25 @@ const ConfigResults = () => {
                 aria-hidden
               />
               <label htmlFor="results-search" className="sr-only">
-                {t("manager:result.searchPlaceholder", {
-                  defaultValue: "Ergebnisse durchsuchen",
-                })}
+                {t("manager:result.searchPlaceholder")}
               </label>
               <Input
                 id="results-search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("manager:result.searchPlaceholder", {
-                  defaultValue: "Ergebnisse durchsuchen",
-                })}
+                placeholder={t("manager:result.searchPlaceholder")}
                 className="min-h-11 w-full rounded-[var(--radius-theme)] pl-10"
               />
             </div>
             <div className="sm:w-52">
               <label htmlFor="results-date" className="sr-only">
-                {t("manager:result.dateFilter", {
-                  defaultValue: "Nach Datum filtern",
-                })}
+                {t("manager:result.dateFilter")}
               </label>
               <DateInput
                 id="results-date"
                 value={dateFilter}
                 onChange={(event) => setDateFilter(event.target.value)}
-                aria-label={t("manager:result.dateFilter", {
-                  defaultValue: "Nach Datum filtern",
-                })}
+                aria-label={t("manager:result.dateFilter")}
               />
             </div>
           </div>
@@ -259,12 +251,8 @@ const ConfigResults = () => {
           {filteredResults.length === 0 ? (
             <EmptyState
               icon={SearchX}
-              headline={t("manager:result.noResults", {
-                defaultValue: "Keine passenden Ergebnisse",
-              })}
-              hint={t("manager:result.noResultsHint", {
-                defaultValue: "Suche oder Datumsfilter anpassen.",
-              })}
+              headline={t("manager:result.noResults")}
+              hint={t("manager:result.noResultsHint")}
             />
           ) : (
             <>

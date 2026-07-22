@@ -87,23 +87,17 @@ const ConfigSubmissions = () => {
     [
       {
         key: "pending",
-        label: t("manager:submissions.statusFilter.pending", {
-          defaultValue: "Offen",
-        }),
+        label: t("manager:submissions.statusFilter.pending"),
         count: pending.length,
       },
       {
         key: "approved",
-        label: t("manager:submissions.statusFilter.approved", {
-          defaultValue: "Angenommen",
-        }),
+        label: t("manager:submissions.statusFilter.approved"),
         count: approved.length,
       },
       {
         key: "rejected",
-        label: t("manager:submissions.statusFilter.rejected", {
-          defaultValue: "Abgelehnt",
-        }),
+        label: t("manager:submissions.statusFilter.rejected"),
         count: rejected.length,
       },
     ]
@@ -284,13 +278,8 @@ const ConfigSubmissions = () => {
                   ? XCircle
                   : Inbox
             }
-            headline={t("manager:submissions.statusEmpty.headline", {
-              defaultValue: "Keine Vorschläge in dieser Ansicht",
-            })}
-            hint={t("manager:submissions.statusEmpty.hint", {
-              defaultValue:
-                "Wähle einen anderen Status, um weitere Vorschläge zu sehen.",
-            })}
+            headline={t("manager:submissions.statusEmpty.headline")}
+            hint={t("manager:submissions.statusEmpty.hint")}
           />
 
           {statusFilter === "pending" && <SubmitLinkCard />}

@@ -106,9 +106,7 @@ const ConfigSelectQuizz = () => {
 
     // Check if klassenMode is on but no class is selected
     if (klassenMode && !classId) {
-      toast.error(t("manager:selectQuizz.klassenModeNeedsClass", {
-        defaultValue: "Bitte wähle eine Klasse aus",
-      }))
+      toast.error(t("manager:selectQuizz.klassenModeNeedsClass"))
       return
     }
 
@@ -158,7 +156,7 @@ const ConfigSelectQuizz = () => {
       await navigator.clipboard.writeText(
         `${window.location.origin}/quizz/${selected}/solo`,
       )
-      toast.success(t("common:copied", { defaultValue: "Kopiert" }))
+      toast.success(t("common:copied"))
     } catch {
       toast.error(t("manager:result.share.copyFailed"))
     }
@@ -205,15 +203,13 @@ const ConfigSelectQuizz = () => {
             subtitle={t("manager:selectQuizz.intro")}
           />
           <label htmlFor="play-quizz-search" className="sr-only">
-            {t("manager:quizz.search", { defaultValue: "Quiz suchen" })}
+            {t("manager:quizz.search")}
           </label>
           <Input
             id="play-quizz-search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={t("manager:quizz.searchPlaceholder", {
-              defaultValue: "Nach Thema suchen …",
-            })}
+            placeholder={t("manager:quizz.searchPlaceholder")}
             className="min-h-11 w-full rounded-[var(--radius-theme)]"
           />
         </div>
@@ -234,10 +230,7 @@ const ConfigSelectQuizz = () => {
                 title={quizz.subject}
                 meta={
                   quizz.questionCount != null
-                    ? t("manager:selectQuizz.meta.questions", {
-                        defaultValue: "{{count}} Fragen",
-                        count: quizz.questionCount,
-                      })
+                    ? t("manager:selectQuizz.meta.questions", { count: quizz.questionCount })
                     : undefined
                 }
                 selected={selected === quizz.id}
@@ -370,9 +363,7 @@ const ConfigSelectQuizz = () => {
             !selected
               ? t("manager:quizz.pleaseSelect")
               : klassenMode && !classId
-                ? t("manager:selectQuizz.klassenModeNeedsClass", {
-                    defaultValue: "Bitte wähle eine Klasse aus",
-                  })
+                ? t("manager:selectQuizz.klassenModeNeedsClass")
                 : undefined
           }
         >
@@ -392,9 +383,7 @@ const ConfigSelectQuizz = () => {
         >
           <Copy className="size-5" aria-hidden />
           <span>
-            {t("manager:selectQuizz.copySoloLink", {
-              defaultValue: "Solo-Link kopieren",
-            })}
+            {t("manager:selectQuizz.copySoloLink")}
           </span>
         </Button>
       </ActionFooter>
