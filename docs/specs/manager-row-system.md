@@ -34,7 +34,7 @@ Vereinheitlichung aller Karten/Listenzeilen unter `/manager/config/*` (9 Tabs: p
 **Neue Datei `console/rowStyles.ts` mit genau diesen 14 Konstanten (Export über `console/index.ts`):**
 
 ```ts
-export const rowShellBase = "flex flex-col rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] transition-colors"
+export const rowShellBase = "rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] transition-colors"
 export const rowShellDensity: Record<ListRowDensity, string> = { default: "p-4", compact: "px-4 py-2" }
 export const rowHoverState = "hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]"
 export const rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
@@ -49,6 +49,12 @@ export const rowActionBase = "shrink-0 text-[var(--ink-faint)]"
 export const rowActionHover = "hover:bg-[var(--accent-tint)] hover:text-[var(--accent-contrast)]"
 export const rowActionDestructiveHover = "hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)]"
 ```
+
+**Wichtig (S4):** `rowShellBase` trägt nur Chrome (radius, outline, BG, transition) und States, KEINE Layout-Achse. Die setzt jede Komponente selbst:
+- **ListRow-Shell:** `flex flex-col` + rowShellBase (vertikale Zeilen)
+- **SelectableRow:** `flex min-h-11 w-full items-center gap-3 text-left` + rowShellBase (horizontale Button-Row)
+
+Beide nutzen rowShellDensity, rowHoverState, rowSelectedState, rowFocusState identisch.
 
 SelectableRow refaktoriert auf dieselben Konstanten; role=radio, aria-checked, Radio-Indikator + Check bleiben.
 
@@ -80,7 +86,7 @@ export interface ListRowProps {
   overflow?: ReactNode
   onClick?: () => void
   bodyLabel?: string
-  footer?: ReactNode                         // NEU: Expand-Inhalt, in derselben Shell, nach footer, "mt-3 w-full"
+  footer?: ReactNode                         // BESTAND: volle Breite unter der Zeile, "mt-3 w-full" (Pills/Chips)
   details?: ReactNode                        // NEU: Expand-Inhalt, in derselben Shell, nach footer, "mt-3 w-full"
   density?: ListRowDensity                   // NEU, default "default"
   hoverable?: boolean                        // NEU, default true
@@ -113,7 +119,7 @@ export interface ListRowProps {
 
 | Zustand | Shell-Klassen | Notizen |
 |---|---|---|
-| Default | `rowShellBase + rowShellDensity[density]` | Outline `[var(--line)]`, BG weiß |
+| Default | `rowShellBase + rowShellDensity[density]` (+ Layout-Achse je Komponente) | Outline `[var(--line)]`, BG weiß |
 | Hover | `+ hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]` | Cursor pointer, `transition-colors` nur |
 | Selected | `bg-[var(--accent-tint)] outline-[var(--color-primary)]` | Persistent; Indikator sichtbar; überlagert Hover |
 | Focus-Shell | `+ focus-visible:outline-offset-2` | Outline nach aussen, auch im Selected |
