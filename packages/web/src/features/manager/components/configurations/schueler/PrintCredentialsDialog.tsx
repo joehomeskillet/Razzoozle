@@ -233,7 +233,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
       </DialogPanel>
 
       {/* Hidden print container */}
-      <div ref={printContainerRef} className="no-print" style={{ display: "none" }}>
+      <div ref={printContainerRef} className="print-only" style={{ display: "none" }}>
         {format === "sheets" ? (
           <PrintSheets students={filteredStudents} pins={pinMap} loginUrl={window.location.origin} />
         ) : (
