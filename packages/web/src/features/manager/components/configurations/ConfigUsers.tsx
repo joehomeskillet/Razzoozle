@@ -67,42 +67,7 @@ const ConfigUsers = () => {
   const { t } = useTranslation()
   const config = useConfig()
   const currentUsername = useManagerStore((s) => s.username)
-  const [users, setUsers] = useState<ManagedUser[]>([])
-  const [loading, setLoading] = useState(true)
-
-  // Filters
-  const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "lehrkraft" | "admin">("all")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
-
-  // Create/Copy dialog
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [role, setRole] = useState<"user" | "admin" | "lehrkraft">("user")
-  const [creating, setCreating] = useState(false)
-  const [copySourceId, setCopySourceId] = useState<number | null>(null)
-
-  // Other single actions
-  const [pendingId, setPendingId] = useState<number | null>(null)
-  const [resetPasswordId, setResetPasswordId] = useState<number | null>(null)
-  const [resetNewPassword, setResetNewPassword] = useState("")
-  const [resettingPassword, setResettingPassword] = useState(false)
-  const [pendingDelete, setPendingDelete] = useState<{
-    id: number
-    username: string
-    role: string
-  } | null>(null)
-  const [deleting, setDeleting] = useState(false)
-
-  // Bulk actions
-  const [bulkAction, setBulkAction] = useState<"activate" | "deactivate" | "delete" | null>(null)
-  const [bulkConfirm, setBulkConfirm] = useState(false)
-  const [bulkProcessing, setBulkProcessing] = useState(false)
-
-  const selection = useEntitySelection<number>(users.map((u) => u.id))
-
-  // Filter users based on search & filters
+  
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
@@ -117,7 +82,10 @@ const ConfigUsers = () => {
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [users, searchTerm, roleFilter, statusFilter])
+  const selection = useEntitySelection<number>(filteredUsers.map((u) => u.id))
 
+  // Filter users based on search & filters
+  
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
@@ -328,7 +296,6 @@ const ConfigUsers = () => {
         parts.push(
           t("manager:bulk.resultSucceeded", {
             count: result.succeeded.length,
-            defaultValue: "{{count}} erfolgreich",
           }),
         )
       }
@@ -336,7 +303,6 @@ const ConfigUsers = () => {
         parts.push(
           t("manager:bulk.resultSkipped", {
             count: result.skipped.length,
-            defaultValue: "{{count}} übersprungen",
           }),
         )
       }
@@ -344,16 +310,13 @@ const ConfigUsers = () => {
         parts.push(
           t("manager:bulk.resultFailed", {
             count: result.failed.length,
-            defaultValue: "{{count}} fehlgeschlagen",
           }),
         )
       }
 
       const message = parts.length > 0
         ? parts.join(", ")
-        : t("manager:bulk.resultCompleted", {
-            defaultValue: "Abgeschlossen",
-          })
+        : t("manager:bulk.resultCompleted")
 
       toast.success(message)
 
