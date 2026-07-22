@@ -24,7 +24,7 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
