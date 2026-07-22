@@ -631,7 +631,8 @@
     "selectClass": "Seleziona classe",
     "chooseClass": "Scegli una classe …",
     "klassenModeNeedsClass": "Seleziona una classe",
-    "intro": "Scegli un quiz e avvia una partita."
+    "intro": "Scegli un quiz e avvia una partita.",
+    "optionsTitle": "Opzioni del gioco"
   },
   "gameMode": {
     "title": "Modalità di gioco",
@@ -668,7 +669,19 @@
       "top3": "Top 3",
       "private": "Privato"
     },
-    "endScreenSelectTitle": "Schermata finale"
+    "endScreenSelectTitle": "Schermata finale",
+    "sections": {
+      "flow": "Flusso del gioco",
+      "scoring": "Punteggio",
+      "school": "Scuola",
+      "endScreen": "Schermata finale"
+    },
+    "endScreenModeDescription": {
+      "full": "Mostra la classifica completa alla fine del gioco.",
+      "top3": "Mostra solo i tre migliori alla fine del gioco.",
+      "private": "I risultati sono visibili solo all'insegnante."
+    },
+    "endScreenMinOneActive": "Almeno un'opzione della schermata finale deve rimanere attiva."
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",

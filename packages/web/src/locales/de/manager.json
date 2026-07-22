@@ -631,7 +631,8 @@
     "selectClass": "Klasse wählen",
     "chooseClass": "Klasse auswählen …",
     "klassenModeNeedsClass": "Bitte wähle eine Klasse aus",
-    "intro": "Wähle ein Quiz und starte ein Spiel."
+    "intro": "Wähle ein Quiz und starte ein Spiel.",
+    "optionsTitle": "Spieloptionen"
   },
   "achievementsConfig": {
     "title": "Achievements konfigurieren",
@@ -692,7 +693,19 @@
       "top3": "Top 3",
       "private": "Privat"
     },
-    "endScreenSelectTitle": "Endbildschirm"
+    "endScreenSelectTitle": "Endbildschirm",
+    "sections": {
+      "flow": "Spielablauf",
+      "scoring": "Wertung",
+      "school": "Schule",
+      "endScreen": "Endbildschirm"
+    },
+    "endScreenModeDescription": {
+      "full": "Zeigt am Spielende die komplette Rangliste.",
+      "top3": "Zeigt am Spielende nur die besten drei.",
+      "private": "Ergebnisse sind nur für die Lehrperson sichtbar."
+    },
+    "endScreenMinOneActive": "Mindestens eine Endbildschirm-Option muss aktiv bleiben."
   },
   "achievements": {
     "active": "aktiv"

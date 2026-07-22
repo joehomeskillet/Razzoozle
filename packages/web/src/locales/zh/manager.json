@@ -631,7 +631,8 @@
     "selectClass": "选择班级",
     "chooseClass": "选择一个班级 …",
     "klassenModeNeedsClass": "请选择一个班级",
-    "intro": "选择一个测验并开始游戏。"
+    "intro": "选择一个测验并开始游戏。",
+    "optionsTitle": "游戏选项"
   },
   "gameMode": {
     "title": "游戏模式",
@@ -668,7 +669,19 @@
       "top3": "前三名",
       "private": "私密"
     },
-    "endScreenSelectTitle": "结束画面"
+    "endScreenSelectTitle": "结束画面",
+    "sections": {
+      "flow": "游戏流程",
+      "scoring": "评分",
+      "school": "学校",
+      "endScreen": "结束画面"
+    },
+    "endScreenModeDescription": {
+      "full": "在游戏结束时显示完整排行榜。",
+      "top3": "在游戏结束时仅显示前三名。",
+      "private": "结果仅对教师可见。"
+    },
+    "endScreenMinOneActive": "至少一个结束画面选项必须保持激活。"
   },
   "achievementsConfig": {
     "title": "配置成就",
