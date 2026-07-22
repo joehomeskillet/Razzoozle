@@ -557,7 +557,17 @@ pub async fn bulk_deactivate(
 
     let mut tx = pool.begin().await?;
 
-    // Lock target rows + the full active-admin set before any writes.
+    // Lock the active-admin set first (same order as the single-user guarded fns), then the target rows — consistent lock order prevents deadlocks.
+    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut remaining_admins = locked_admin_ids.len();
+    let admin_set: std::collections::HashSet<i64> =
+        locked_admin_ids.into_iter().map(|(id,)| id).collect();
+
     let existing: Vec<(i64, String, bool)> = sqlx::query_as(
         "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
     )
@@ -569,16 +579,6 @@ pub async fn bulk_deactivate(
         .into_iter()
         .map(|(id, role, active)| (id, (role, active)))
         .collect();
-
-    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
-    )
-    .fetch_all(&mut *tx)
-    .await?;
-
-    let mut remaining_admins = locked_admin_ids.len();
-    let admin_set: std::collections::HashSet<i64> =
-        locked_admin_ids.into_iter().map(|(id,)| id).collect();
 
     let mut to_deactivate: Vec<i64> = Vec::new();
 
@@ -650,6 +650,17 @@ pub async fn bulk_delete(
 
     let mut tx = pool.begin().await?;
 
+    // Lock ALL active admins deterministically (same pattern as delete_user_guarded).
+    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut remaining_admins = locked_admin_ids.len();
+    let admin_set: std::collections::HashSet<i64> =
+        locked_admin_ids.into_iter().map(|(id,)| id).collect();
+
     let existing: Vec<(i64, String, bool)> = sqlx::query_as(
         "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
     )
@@ -661,17 +672,6 @@ pub async fn bulk_delete(
         .into_iter()
         .map(|(id, role, active)| (id, (role, active)))
         .collect();
-
-    // Lock ALL active admins deterministically (same pattern as delete_user_guarded).
-    let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
-    )
-    .fetch_all(&mut *tx)
-    .await?;
-
-    let mut remaining_admins = locked_admin_ids.len();
-    let admin_set: std::collections::HashSet<i64> =
-        locked_admin_ids.into_iter().map(|(id,)| id).collect();
 
     let mut to_delete: Vec<i64> = Vec::new();
 
