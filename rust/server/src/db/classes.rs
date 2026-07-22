@@ -33,6 +33,7 @@ pub async fn create_class(
 
 /// Get all classes for a user.
 /// `me`: None = unfiltered (admin); Some(id) = only that owner's classes.
+/// Each class object includes `active` (migration 021; default true).
 pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
@@ -42,8 +43,8 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     // ownerName is only resolved for the unfiltered (admin) view — a non-admin
     // user's own classes never need an owner badge, and this keeps the extra
     // JOIN a no-op cost for the common (scoped) case.
-    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, i64, Option<String>, Vec<i64>)> = match sqlx::query_as(
-        "SELECT c.id, c.name, c.created_at, COALESCE(jt.student_count, 0) as student_count, \
+    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, bool, i64, Option<String>, Vec<i64>)> = match sqlx::query_as(
+        "SELECT c.id, c.name, c.created_at, c.active, COALESCE(jt.student_count, 0) as student_count, \
                 CASE WHEN $1::bigint IS NULL THEN u.username ELSE NULL END as owner_name, \
                 COALESCE(array_agg(cl.label_id) FILTER (WHERE cl.label_id IS NOT NULL), ARRAY[]::bigint[]) as label_ids \
          FROM classes c \
@@ -66,11 +67,12 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     };
 
     rows.into_iter()
-        .map(|(id, name, created_at, student_count, owner_name, label_ids)| {
+        .map(|(id, name, created_at, active, student_count, owner_name, label_ids)| {
             let mut obj = serde_json::json!({
                 "id": id,
                 "name": name,
                 "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                "active": active,
                 "studentCount": student_count,
                 "labelIds": label_ids,
             });
@@ -95,8 +97,8 @@ pub async fn get_class(
         None => return Err("no database configured".to_string()),
     };
 
-    let result: Option<(i64, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
-        "SELECT id, name, created_at FROM classes \
+    let result: Option<(i64, String, chrono::DateTime<chrono::Utc>, bool)> = sqlx::query_as(
+        "SELECT id, name, created_at, active FROM classes \
          WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
     )
     .bind(class_id)
@@ -106,15 +108,200 @@ pub async fn get_class(
     .map_err(|e| e.to_string())?;
 
     match result {
-        Some((id, name, created_at)) => {
+        Some((id, name, created_at, active)) => {
             Ok(serde_json::json!({
                 "id": id,
                 "name": name,
                 "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                "active": active,
             }))
         }
         None => Err("class not found".to_string()),
     }
+}
+
+/// Max IDs accepted per class bulk request (matches users/results bulk cap).
+pub const BULK_MAX_IDS: usize = 200;
+
+/// One id that could not be updated/deleted (missing / not owned).
+/// Wire reason is always `"not_found"` so ownership is never leaked.
+#[derive(Debug, serde::Serialize)]
+pub struct ClassFailedEntry {
+    pub id: i64,
+    pub reason: &'static str,
+}
+
+/// Outcome of a class bulk op. Shape matches results bulk + contract freeze.
+#[derive(Debug, serde::Serialize)]
+pub struct ClassBulkResult {
+    pub succeeded: Vec<i64>,
+    pub failed: Vec<ClassFailedEntry>,
+}
+
+/// Deduplicate IDs while preserving first-seen order.
+fn normalize_bulk_ids(ids: Vec<i64>) -> Vec<i64> {
+    let mut seen = std::collections::HashSet::with_capacity(ids.len());
+    let mut out = Vec::with_capacity(ids.len());
+    for id in ids {
+        if seen.insert(id) {
+            out.push(id);
+        }
+    }
+    out
+}
+
+/// Set `classes.active` for one class (owner-scoped).
+/// Returns Ok(rows_affected): 0 = not found / not owned.
+/// Idempotent: setting the same flag twice still returns rows_affected = 1 when the row matches.
+pub async fn set_class_active(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    active: bool,
+    me: Option<i64>,
+) -> Result<u64, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    let result = sqlx::query(
+        "UPDATE classes SET active = $1 \
+         WHERE id = $2 AND ($3::bigint IS NULL OR owner_id = $3)",
+    )
+    .bind(active)
+    .bind(class_id)
+    .bind(me)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.rows_affected())
+}
+
+/// Bulk-set `classes.active` (owner-scoped, single transaction).
+/// Dedupes `ids`. Already-matching active values count as succeeded (idempotent).
+/// Missing / not-owned ids land in `failed` with reason `not_found`.
+/// Caller must enforce `ids.len() ≤ max` (typically [`BULK_MAX_IDS`]).
+pub async fn bulk_set_class_active(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    active: bool,
+    me: Option<i64>,
+    max: usize,
+) -> Result<ClassBulkResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(ClassBulkResult {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let updated: Vec<(i64,)> = sqlx::query_as(
+        "UPDATE classes SET active = $1 \
+         WHERE id = ANY($2) AND ($3::bigint IS NULL OR owner_id = $3) \
+         RETURNING id",
+    )
+    .bind(active)
+    .bind(&ids)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let succeeded_set: std::collections::HashSet<i64> =
+        updated.into_iter().map(|(id,)| id).collect();
+
+    // Preserve request order for succeeded.
+    let mut succeeded = Vec::with_capacity(succeeded_set.len());
+    let mut failed = Vec::new();
+    for id in ids {
+        if succeeded_set.contains(&id) {
+            succeeded.push(id);
+        } else {
+            failed.push(ClassFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(ClassBulkResult { succeeded, failed })
+}
+
+/// Bulk-delete classes (owner-scoped, single transaction).
+///
+/// Assertion: class_students CASCADE; legacy students.class_id SET NULL by FK.
+/// class_labels CASCADE. Students rows and game results are retained.
+/// Dedupes `ids`. Missing / not-owned → `failed` with reason `not_found`.
+/// Caller must enforce `ids.len() ≤ max` (typically [`BULK_MAX_IDS`]).
+pub async fn bulk_delete_classes(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    me: Option<i64>,
+    max: usize,
+) -> Result<ClassBulkResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(ClassBulkResult {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    // class_students CASCADE; legacy students.class_id SET NULL by FK
+    let deleted: Vec<(i64,)> = sqlx::query_as(
+        "DELETE FROM classes \
+         WHERE id = ANY($1) AND ($2::bigint IS NULL OR owner_id = $2) \
+         RETURNING id",
+    )
+    .bind(&ids)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let succeeded_set: std::collections::HashSet<i64> =
+        deleted.into_iter().map(|(id,)| id).collect();
+
+    let mut succeeded = Vec::with_capacity(succeeded_set.len());
+    let mut failed = Vec::new();
+    for id in ids {
+        if succeeded_set.contains(&id) {
+            succeeded.push(id);
+        } else {
+            failed.push(ClassFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(ClassBulkResult { succeeded, failed })
 }
 
 /// Update a class name.
@@ -885,6 +1072,17 @@ mod tests {
         assert!(super::remove_student(&None, 1, Some(1)).await.is_err());
         assert!(super::update_student(&None, 1, Some("Updated"), None, None, None, Some(1)).await.is_err());
         assert!(super::create_student(&None, "Student", "", &[], 1, Some(1), None, "1234").await.is_err());
+        assert!(super::set_class_active(&None, 1, false, Some(1)).await.is_err());
+        assert!(
+            super::bulk_set_class_active(&None, vec![1], false, Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
+        assert!(
+            super::bulk_delete_classes(&None, vec![1], Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]

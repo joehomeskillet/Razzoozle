@@ -3,7 +3,10 @@
 //! class:list — list all classes for the user
 //! class:create — create a new class
 //! class:update — update class name
-//! class:delete — delete a class (cascades to students)
+//! class:delete — delete a class (cascades to class_students / labels; students retained)
+//! class:setActive — set active status on one class
+//! class:bulkSetActive — bulk activate/deactivate
+//! class:bulkDelete — bulk delete classes (students retained)
 //! class:addStudent — add a student to a class
 //! class:removeStudent — remove a student from a class
 //! class:updateStudent — update a student's display name
@@ -12,7 +15,28 @@
 use super::super::HandlerCtx;
 use crate::db;
 use razzoozle_protocol::constants;
+use serde::Deserialize;
 use socketioxide::extract::{Data, SocketRef};
+
+/// Max ids accepted per class bulk op (matches users/results bulk cap).
+const BULK_MAX_IDS: usize = db::classes::BULK_MAX_IDS;
+
+#[derive(Debug, Deserialize)]
+struct SetActivePayload {
+    id: i64,
+    active: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct BulkSetActivePayload {
+    ids: Vec<i64>,
+    active: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct BulkDeletePayload {
+    ids: Vec<i64>,
+}
 
 /// Map a known db-layer ownership/permission error string to a distinct i18n
 /// error key so the client toast can tell "not your class/student" apart from
@@ -32,6 +56,9 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_create(socket, ctx.clone());
     register_update(socket, ctx.clone());
     register_delete(socket, ctx.clone());
+    register_set_active(socket, ctx.clone());
+    register_bulk_set_active(socket, ctx.clone());
+    register_bulk_delete(socket, ctx.clone());
     register_add_student(socket, ctx.clone());
     register_remove_student(socket, ctx.clone());
     register_update_student(socket, ctx.clone());
@@ -43,6 +70,12 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_create_student(socket, ctx.clone());
     register_student_pin(socket, ctx.clone());
     register_regen_pin(socket, ctx.clone());
+}
+
+/// Re-emit `class:data` so the manager list reflects the mutation (WP-E1 list refresh).
+async fn emit_class_list_refresh(socket: &SocketRef, ctx: &HandlerCtx, me: Option<i64>) {
+    let classes = db::get_classes(&ctx.db_pool, me).await;
+    socket.emit(constants::class::DATA, &classes).ok();
 }
 
 fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
@@ -214,6 +247,206 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                             class_id, user.user_id, user.role, e
                         );
                         socket.emit(constants::class::ERROR, "errors:class.deleteFailed").ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_set_active(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::SET_ACTIVE, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<SetActivePayload>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
+                };
+
+                if payload.id <= 0 {
+                    socket.emit(constants::class::ERROR, "errors:class.invalidId").ok();
+                    return;
+                }
+
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
+
+                match db::set_class_active(&ctx.db_pool, payload.id, payload.active, me).await {
+                    Ok(0) => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                    }
+                    Ok(_) => {
+                        socket
+                            .emit(
+                                constants::class::ACTIVE_SET,
+                                &serde_json::json!({
+                                    "id": payload.id,
+                                    "active": payload.active,
+                                }),
+                            )
+                            .ok();
+                        emit_class_list_refresh(&socket, &ctx, me).await;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "class:setActive failed: class_id={} actor_user_id={} error={}",
+                            payload.id,
+                            user.user_id,
+                            e
+                        );
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.updateFailed")
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_bulk_set_active(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::BULK_SET_ACTIVE, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<BulkSetActivePayload>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
+                };
+
+                if payload.ids.is_empty() {
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.bulkEmpty")
+                        .ok();
+                    return;
+                }
+                if payload.ids.len() > BULK_MAX_IDS {
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.bulkTooMany")
+                        .ok();
+                    return;
+                }
+
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
+
+                match db::bulk_set_class_active(
+                    &ctx.db_pool,
+                    payload.ids,
+                    payload.active,
+                    me,
+                    BULK_MAX_IDS,
+                )
+                .await
+                {
+                    Ok(outcome) => {
+                        socket
+                            .emit(constants::class::BULK_ACTIVE_SET, &outcome)
+                            .ok();
+                        emit_class_list_refresh(&socket, &ctx, me).await;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "class:bulkSetActive failed: actor_user_id={} error={}",
+                            user.user_id,
+                            e
+                        );
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.updateFailed")
+                            .ok();
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn register_bulk_delete(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::class::BULK_DELETE, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<BulkDeletePayload>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
+                };
+
+                if payload.ids.is_empty() {
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.bulkEmpty")
+                        .ok();
+                    return;
+                }
+                if payload.ids.len() > BULK_MAX_IDS {
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.bulkTooMany")
+                        .ok();
+                    return;
+                }
+
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
+
+                match db::bulk_delete_classes(&ctx.db_pool, payload.ids, me, BULK_MAX_IDS).await
+                {
+                    Ok(outcome) => {
+                        tracing::info!(
+                            "class:bulkDelete: actor_user_id={} actor_role={} succeeded={} failed={}",
+                            user.user_id,
+                            user.role,
+                            outcome.succeeded.len(),
+                            outcome.failed.len()
+                        );
+                        socket
+                            .emit(constants::class::BULK_DELETED, &outcome)
+                            .ok();
+                        emit_class_list_refresh(&socket, &ctx, me).await;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "class:bulkDelete failed: actor_user_id={} error={}",
+                            user.user_id,
+                            e
+                        );
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.deleteFailed")
+                            .ok();
                     }
                 }
             });
