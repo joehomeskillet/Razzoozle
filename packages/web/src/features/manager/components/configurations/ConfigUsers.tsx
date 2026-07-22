@@ -516,6 +516,13 @@ const ConfigUsers = () => {
             <Loader className="h-16" />
           </div>
         ) : filteredUsers.length === 0 ? (
+        users.length > 0 ? (
+          <EmptyState
+            icon={UsersIcon}
+            headline={t("manager:users.noMatchesHeadline")}
+            hint={t("manager:users.noMatches")}
+          />
+        ) : (
           <EmptyState
             icon={UsersIcon}
             headline={t("manager:users.emptyHeadline", {
@@ -525,6 +532,7 @@ const ConfigUsers = () => {
               defaultValue: "Lege oben das erste Konto an.",
             })}
           />
+        )
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
             {/* Select-all checkbox header (optional visual) */}
@@ -982,7 +990,13 @@ const ConfigUsers = () => {
               setBulkAction(null)
             }
           }}
-          title={`${selection.selected.size} Benutzer ${bulkAction}?`}
+          title={
+  bulkAction === "activate"
+    ? t("manager:users.bulkConfirmTitleActivate", { count: selection.selected.size })
+    : bulkAction === "deactivate"
+      ? t("manager:users.bulkConfirmTitleDeactivate", { count: selection.selected.size })
+      : t("manager:users.bulkConfirmTitleDelete", { count: selection.selected.size })
+}
           description={getBulkConfirmMessage()}
           confirmLabel={
             bulkAction === "delete"
