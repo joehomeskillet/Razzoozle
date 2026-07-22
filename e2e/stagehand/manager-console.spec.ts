@@ -49,16 +49,16 @@ async function waitForTestIdPrefix(page: Page, prefix: string, timeoutMs = 15_00
 // substring guess a prior attempt used.
 const TAB_LABELS: Record<string, { en: string; de: string }> = {
   play: { en: 'Play', de: 'Spielen' },
-  quizz: { en: 'Quiz', de: 'Quiz' },
+  quiz: { en: 'Quiz', de: 'Quiz' },
   catalog: { en: 'Catalog', de: 'Katalog' },
-  klassen: { en: 'Classes', de: 'Klassen' },
-  schueler: { en: 'Student management', de: 'Schülerverwaltung' },
+  classes: { en: 'Classes', de: 'Klassen' },
+  students: { en: 'Student management', de: 'Schülerverwaltung' },
   media: { en: 'Media', de: 'Medien' },
   results: { en: 'Results', de: 'Ergebnisse' },
   submissions: { en: 'Suggestions', de: 'Vorschläge' },
   profile: { en: 'My Profile', de: 'Mein Profil' },
   gamemode: { en: 'Mode', de: 'Modus' },
-  ki: { en: 'AI', de: 'KI' },
+  ai: { en: 'AI', de: 'KI' },
   achievements: { en: 'Achievements', de: 'Achievements' },
   running: { en: 'Running Games', de: 'Laufende Spiele' },
   users: { en: 'User Management', de: 'Nutzerverwaltung' },
@@ -172,7 +172,9 @@ async function runMobilePass(page: Page): Promise<Map<string, { status: Status; 
       const found = await clickSectionTab(page, section);
       if (!found) {
         // Close the Drawer we opened (D10 Escape-to-close) before the next section.
-        await page.keyboard.press('Escape').catch(() => undefined);
+        if (page?.keyboard) {
+          await page.keyboard.press('Escape').catch(() => undefined);
+        }
         out.set(section, { status: 'skip' });
         console.log(`  [SKIP] ${section} (not present in Drawer)`);
         continue;
