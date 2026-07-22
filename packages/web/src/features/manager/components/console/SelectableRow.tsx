@@ -1,6 +1,17 @@
 import clsx from "clsx"
 import { Check } from "lucide-react"
 import type { ButtonHTMLAttributes, ReactNode } from "react"
+import {
+  rowShellBase,
+  rowRestState,
+  rowShellDensity,
+  rowHoverState,
+  rowSelectedState,
+  rowFocusState,
+  rowTitleClass,
+  rowMetaClass,
+  rowLeadingClass,
+} from "./rowStyles"
 
 export interface SelectableRowProps
   extends Omit<
@@ -24,6 +35,9 @@ export interface SelectableRowProps
  * Selected = accent outline + tinted bg + filled check indicator. Unselected =
  * `--line` (gray-200) outline + hollow ring. `p-4`, min-height ≥ 44px, full
  * focus ring. Presentational; selection state is owned by the caller.
+ *
+ * Shell/state classes from rowStyles (spec §3.1 S4): exclusive state branching
+ * so selected replaces rest/hover rather than stacking additively.
  */
 const SelectableRow = ({
   title,
@@ -38,25 +52,24 @@ const SelectableRow = ({
     role="radio"
     aria-checked={selected}
     className={clsx(
-      "flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-theme)] p-4 text-left transition-colors",
-      "outline-2 -outline-offset-2",
-      "focus-visible:outline-[var(--color-primary)] focus-visible:outline-offset-2",
-      selected
-        ? "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
-        : "bg-[var(--surface)] outline-[var(--line)] hover:bg-[var(--surface-2)]",
+      "flex min-h-11 w-full items-center gap-3 text-left",
+      rowShellBase,
+      rowShellDensity.default,
+      selected ? rowSelectedState : clsx(rowRestState, rowHoverState),
+      rowFocusState,
       className,
     )}
     {...buttonProps}
   >
     {leading && (
-      <span className="flex shrink-0 items-center text-[var(--ink-faint)]" aria-hidden>
+      <span className={rowLeadingClass} aria-hidden>
         {leading}
       </span>
     )}
 
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="truncate font-semibold text-[var(--ink)]">{title}</span>
-      {meta && <span className="truncate text-sm text-[var(--ink-subtle)]">{meta}</span>}
+      <span className={rowTitleClass}>{title}</span>
+      {meta && <span className={clsx("truncate", rowMetaClass)}>{meta}</span>}
     </span>
 
     {/* Radio indicator: filled accent disc + check when selected, hollow ring
