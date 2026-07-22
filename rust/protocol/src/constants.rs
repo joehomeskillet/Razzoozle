@@ -168,6 +168,8 @@ pub mod results {
     pub const GET: &str = "results:get";
     pub const DATA: &str = "results:data";
     pub const DELETE: &str = "results:delete";
+    pub const BULK_DELETE: &str = "results:bulkDelete";
+    pub const BULK_DELETED: &str = "results:bulkDeleted";
     pub const GET_SHARED: &str = "results:getShared";
     pub const SHARED_DATA: &str = "results:sharedData";
 }

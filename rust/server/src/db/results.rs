@@ -140,6 +140,77 @@ pub async fn delete_result(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> 
     }
 }
 
+/// One id that could not be deleted (missing / not owned). Wire shape is an
+/// object `{id, reason}` so the client does not receive a bare pair array.
+#[derive(Debug, serde::Serialize)]
+pub struct FailedResultEntry {
+    pub id: String,
+    pub reason: &'static str,
+}
+
+/// Outcome of a bulk result delete. Missing / not-owned ids are always
+/// `not_found` so ownership status is never leaked.
+#[derive(Debug, serde::Serialize)]
+pub struct BulkDeleteOutcome {
+    pub succeeded: Vec<String>,
+    pub failed: Vec<FailedResultEntry>,
+}
+
+/// Bulk-delete game results in one transaction.
+/// Dedupes `ids` (first-seen order). Owner scope matches `delete_result`.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+/// TX / SQL failures bubble as `Err`; only post-commit missing ids become
+/// `failed` with reason `not_found`.
+pub async fn delete_results(
+    pool: &PgPool,
+    ids: &[String],
+    me: Option<i64>,
+) -> Result<BulkDeleteOutcome, sqlx::Error> {
+    let mut seen = std::collections::HashSet::with_capacity(ids.len());
+    let unique: Vec<String> = ids
+        .iter()
+        .filter(|id| seen.insert((*id).as_str()))
+        .cloned()
+        .collect();
+
+    if unique.is_empty() {
+        return Ok(BulkDeleteOutcome {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Same owner-scope predicate as delete_result; ANY for batch.
+    let deleted: Vec<(String,)> = sqlx::query_as(
+        "DELETE FROM game_results \
+         WHERE id = ANY($1) AND ($2::bigint IS NULL OR owner_id = $2) \
+         RETURNING id",
+    )
+    .bind(&unique)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let succeeded: Vec<String> = deleted.into_iter().map(|(id,)| id).collect();
+
+    tx.commit().await?;
+
+    let succeeded_set: std::collections::HashSet<&str> =
+        succeeded.iter().map(|s| s.as_str()).collect();
+    let failed = unique
+        .into_iter()
+        .filter(|id| !succeeded_set.contains(id.as_str()))
+        .map(|id| FailedResultEntry {
+            id,
+            reason: "not_found",
+        })
+        .collect();
+
+    Ok(BulkDeleteOutcome { succeeded, failed })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

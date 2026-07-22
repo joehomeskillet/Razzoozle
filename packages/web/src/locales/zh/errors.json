@@ -214,5 +214,10 @@
     "nameExists": "已存在同名标签。",
     "entityNotOwned": "您无权编辑此实体。",
     "invalid": "无效的标签请求。"
+  },
+  "results": {
+    "bulkEmpty": "未选择结果。",
+    "bulkTooMany": "一次选择的结果过多（最多 200 个）。",
+    "bulkFailed": "批量删除失败。"
   }
 }

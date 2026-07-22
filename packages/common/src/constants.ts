@@ -205,6 +205,8 @@ export const EVENTS = {
     GET: "results:get",
     DATA: "results:data",
     DELETE: "results:delete",
+    BULK_DELETE: "results:bulkDelete",
+    BULK_DELETED: "results:bulkDeleted",
     // Public (no-auth) shareable result: client requests a result by id and the
     // server replies with a SharedResult that STRIPS `questions`.
     GET_SHARED: "results:getShared",

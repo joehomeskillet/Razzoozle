@@ -139,7 +139,12 @@
       "done": "CSV heruntergeladen",
       "json": "Als JSON exportieren"
     },
-    "intro": "Vergangene Spiele ansehen und teilen."
+    "intro": "Vergangene Spiele ansehen und teilen.",
+    "bulkDeleteTitle": "{{count}} Ergebnisse löschen?",
+    "bulkDeleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "bulkDeleteFilterHint": "Aktiver Filter: {{filter}}",
+    "confirmAllPhrase": "ALLE LÖSCHEN",
+    "typeToConfirm": "Tippe {{phrase}} um zu bestätigen"
   },
   "tabs": {
     "play": "Spielen",
@@ -990,6 +995,8 @@
     "resultSucceeded": "{{count}} erfolgreich",
     "resultSkipped": "{{count}} übersprungen",
     "resultFailed": "{{count}} fehlgeschlagen",
-    "resultCompleted": "Abgeschlossen"
+    "resultCompleted": "Abgeschlossen",
+    "allSelected": "Alle {{count}} Einträge ausgewählt",
+    "allFilteredSelected": "Alle {{count}} gefilterten Einträge ausgewählt"
   }
 }

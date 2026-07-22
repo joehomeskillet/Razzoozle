@@ -214,5 +214,10 @@
     "nameExists": "Un'etichetta con questo nome esiste già.",
     "entityNotOwned": "Non hai il permesso di modificare questa entità.",
     "invalid": "Richiesta etichetta non valida."
+  },
+  "results": {
+    "bulkEmpty": "Nessun risultato selezionato.",
+    "bulkTooMany": "Troppi risultati in una volta (max. 200).",
+    "bulkFailed": "Eliminazione multipla non riuscita."
   }
 }
