@@ -15,6 +15,7 @@ interface Class {
   students?: Student[]
   ownerName?: string
   labelIds?: number[]
+  active?: boolean
 }
 
 interface Student {

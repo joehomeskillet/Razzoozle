@@ -178,6 +178,13 @@ const ConfigKlassen = () => {
     </div>
   )
 
+  const bulkDescriptionWithClassNames = (
+    <div className="text-sm">
+      {selectedClassesForDelete.slice(0, 5).map(c => c.name).join(", ")}
+      {selectedClassesForDelete.length > 5 && ` ${t("manager:bulk.andNMore", { count: selectedClassesForDelete.length - 5 })}`}
+    </div>
+  )
+
   return (
     <>
     {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
@@ -274,7 +281,7 @@ const ConfigKlassen = () => {
               type="button"
               variant="ghost"
               size="sm"
-              destructive
+              variant="danger"
               onClick={() => setPendingBulkAction('delete')}
             >
               {t("manager:bulk.deleteSelected")}
@@ -397,6 +404,7 @@ const ConfigKlassen = () => {
         open={pendingBulkAction === 'activate'}
         onOpenChange={(open) => {
           if (!open) setPendingBulkAction(null)
+        description={bulkDescriptionWithClassNames}
         }}
         title={t("manager:classes.bulkConfirmTitleActivate", { count: selection.selected.size })}
         confirmLabel={t("manager:bulk.activate")}
@@ -415,6 +423,7 @@ const ConfigKlassen = () => {
         confirmDisabled={bulkOperationLoading}
         onConfirm={handleBulkDeactivate}
       />
+        description={bulkDescriptionWithClassNames}
 
       {/* Bulk Delete Dialog */}
       <AlertDialog
