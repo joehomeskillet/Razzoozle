@@ -816,7 +816,18 @@
     "pickerAlreadyIn": "Already in this class",
     "pickerHint": "Choose students to add to the class \"{{className}}\".",
     "pickerNoResults": "No students found",
-    "intro": "Manage classes and student assignments."
+    "intro": "Manage classes and student assignments.",
+    "statusActive": "Active",
+    "statusInactive": "Deactivated",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterInactive": "Deactivated",
+    "bulkConfirmTitleActivate": "Activate {{count}} classes?",
+    "bulkConfirmTitleDeactivate": "Deactivate {{count}} classes?",
+    "bulkConfirmTitleDelete": "Delete {{count}} classes?",
+    "deleteImpactStudents": "{{count}} student assignments will be removed",
+    "deleteImpactLabels": "{{count}} subject assignments will be removed",
+    "deleteKeepNote": "Student accounts and results are kept."
   },
   "users": {
     "title": "User Management",

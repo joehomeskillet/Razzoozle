@@ -786,7 +786,18 @@
     "pickerAlreadyIn": "Bereits in dieser Klasse",
     "pickerHint": "Wähle Schüler aus, die der Klasse \"{{className}}\" hinzugefügt werden sollen.",
     "pickerNoResults": "Keine Schüler gefunden",
-    "intro": "Klassen und Schülerzuordnungen verwalten."
+    "intro": "Klassen und Schülerzuordnungen verwalten.",
+    "statusActive": "Aktiv",
+    "statusInactive": "Deaktiviert",
+    "filterAll": "Alle",
+    "filterActive": "Aktiv",
+    "filterInactive": "Deaktiviert",
+    "bulkConfirmTitleActivate": "{{count}} Klassen aktivieren?",
+    "bulkConfirmTitleDeactivate": "{{count}} Klassen deaktivieren?",
+    "bulkConfirmTitleDelete": "{{count}} Klassen löschen?",
+    "deleteImpactStudents": "{{count}} Schülerzuordnungen werden entfernt",
+    "deleteImpactLabels": "{{count}} Fachzuordnungen werden entfernt",
+    "deleteKeepNote": "Schülerkonten und Ergebnisse bleiben erhalten."
   },
   "users": {
     "title": "Nutzerverwaltung",

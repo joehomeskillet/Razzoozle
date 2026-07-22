@@ -786,7 +786,18 @@
     "pickerAlreadyIn": "Già in questa classe",
     "pickerHint": "Scegli gli studenti da aggiungere alla classe \"{{className}}\".",
     "pickerNoResults": "Nessuno studente trovato",
-    "intro": "Gestisci le classi e le assegnazioni degli studenti."
+    "intro": "Gestisci le classi e le assegnazioni degli studenti.",
+    "statusActive": "Attiva",
+    "statusInactive": "Disattivata",
+    "filterAll": "Tutte",
+    "filterActive": "Attive",
+    "filterInactive": "Disattivate",
+    "bulkConfirmTitleActivate": "Attivare {{count}} classi?",
+    "bulkConfirmTitleDeactivate": "Disattivare {{count}} classi?",
+    "bulkConfirmTitleDelete": "Eliminare {{count}} classi?",
+    "deleteImpactStudents": "Verranno rimosse {{count}} associazioni di studenti",
+    "deleteImpactLabels": "Verranno rimosse {{count}} associazioni di materie",
+    "deleteKeepNote": "Gli account degli studenti e i risultati restano conservati."
   },
   "users": {
     "title": "Gestione Utenti",
