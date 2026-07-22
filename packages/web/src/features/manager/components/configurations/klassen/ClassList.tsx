@@ -136,8 +136,7 @@ const ClassList = ({
             key: `toggle-${classObj.id}`,
             icon: Power,
             label: classObj.active !== false ? t("manager:classes.deactivate") : t("manager:classes.activate"),
-            onClick: (e) => {
-              e.stopPropagation()
+            onClick: () => {
               onToggleSingleAction?.(classObj.id, classObj.active !== false ? 'deactivate' : 'activate')
             },
           },
