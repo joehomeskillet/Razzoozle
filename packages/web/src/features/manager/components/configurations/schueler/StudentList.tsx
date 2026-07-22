@@ -77,7 +77,7 @@ const StudentList = ({
   }
 
   return (
-    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-0.5">
       {students.map((student) => {
         const composedName = getComposedName(student)
         const availableClasses = classes.filter(
@@ -105,9 +105,7 @@ const StudentList = ({
         const title = composedName
 
         const meta = student.birthdate && (
-          <span className="text-xs text-[var(--ink-subtle)]">
-            {formatBirthdate(student.birthdate)}
-          </span>
+          <span>{formatBirthdate(student.birthdate)}</span>
         )
 
         const footer = (student.classes.length > 0 || availableClasses.length > 0) && (
@@ -152,8 +150,9 @@ const StudentList = ({
                 <Select.Trigger
                   aria-label={t("manager:schueler.addToClass")}
                   className={assignTriggerClass}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <Plus className="size-4" />
+                  <Plus className="size-3" />
                   <Select.Value placeholder={t("manager:schueler.addToClass")} />
                 </Select.Trigger>
                 <Select.Portal>
@@ -161,6 +160,7 @@ const StudentList = ({
                     position="popper"
                     sideOffset={4}
                     className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
                   >
                     <Select.Viewport className="p-1">
                       {availableClasses.map((c) => (
