@@ -13,6 +13,13 @@ import PrintSheets from "./PrintSheets"
 import PrintSummary from "./PrintSummary"
 import type { PinView } from "./useSchuelerManager"
 
+type PrintPinEntry = {
+  studentId: number
+  displayName: string
+  pin: string
+  active: boolean
+}
+
 interface PrintCredentialsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -29,19 +36,22 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
   const [scope, setScope] = useState<"active" | "all" | "selected">("active")
   const [format, setFormat] = useState<"sheets" | "summary">("sheets")
   const [isPrinting, setIsPrinting] = useState(false)
-  const [pinMap, setPinMap] = useState<Map<number, PinView>>(new Map())
+  // Local pin store for print dialog only — unicast PINS_DATA, not global STUDENT_PIN_DATA
+  const [printPinData, setPrintPinData] = useState<PrintPinEntry[]>([])
   const [isLoadingPins, setIsLoadingPins] = useState(false)
 
-  // Listener für PIN-Daten von Server
+  // Batch pins response (unicast). Isolated from PinDialog's STUDENT_PIN_DATA listener.
   useEvent(
-    EVENTS.CLASS.STUDENT_PIN_DATA,
-    (data: { studentId: number; pin: string; labels: string[]; symbols?: string[] }) => {
-      setPinMap(prev => {
-        const updated = new Map(prev)
-        updated.set(data.studentId, data)
-        return updated
-      })
-    }
+    EVENTS.CLASS.PINS_DATA,
+    useCallback(
+      (data: { classId: number; pins: PrintPinEntry[] }) => {
+        if (data.classId === Number(selectedClassId)) {
+          setPrintPinData(data.pins)
+          setIsLoadingPins(false)
+        }
+      },
+      [selectedClassId],
+    ),
   )
 
   // Classes with students
@@ -66,30 +76,32 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
     return students.filter(s => s.classes.some(cls => cls.id === selectedClass.id))
   }, [selectedClass, students])
 
-  // Load PINs when dialog opens or class changes
+  // Single batch request on class selection (no per-student STUDENT_PIN loop)
   useEffect(() => {
-    if (!open || !selectedClass || filteredStudents.length === 0) return
+    if (!open || !selectedClassId) return
 
-    const loadPins = async () => {
-      setIsLoadingPins(true)
-      // Sequenziell laden mit kleiner Verzögerung um Server nicht zu überlasten
-      for (const student of filteredStudents) {
-        socket.emit(EVENTS.CLASS.STUDENT_PIN, { studentId: student.id })
-        // Kleine Verzögerung zwischen requests
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
-      setIsLoadingPins(false)
-    }
+    setIsLoadingPins(true)
+    setPrintPinData([])
+    socket.emit(EVENTS.CLASS.GET_PINS, { classId: Number(selectedClassId) })
+  }, [open, selectedClassId, socket])
 
-    loadPins()
-  }, [open, selectedClass, filteredStudents, socket])
-
-  // Clear PINs when dialog closes
+  // Clear local pins when dialog closes
   useEffect(() => {
-    if (!open) {
-      setPinMap(new Map())
-    }
+    if (!open) setPrintPinData([])
   }, [open])
+
+  // Map for PrintSheets / PrintSummary (still expect Map<studentId, PinView>)
+  const pinMap = useMemo(() => {
+    const map = new Map<number, PinView>()
+    for (const p of printPinData) {
+      map.set(p.studentId, {
+        studentId: p.studentId,
+        pin: p.pin,
+        labels: [],
+      })
+    }
+    return map
+  }, [printPinData])
 
   const handlePrint = useCallback(() => {
     setIsPrinting(true)
