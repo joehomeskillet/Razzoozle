@@ -31,10 +31,11 @@ Vereinheitlichung aller Karten/Listenzeilen unter `/manager/config/*` (9 Tabs: p
 
 ### 3.1 rowStyles.ts — Exporte (Contract, eingefroren)
 
-**Neue Datei `console/rowStyles.ts` mit genau diesen 14 Konstanten (Export über `console/index.ts`):**
+**Neue Datei `console/rowStyles.ts` mit genau diesen 15 Konstanten (Export über `console/index.ts`):**
 
 ```ts
-export const rowShellBase = "rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] transition-colors"
+export const rowShellBase = "rounded-[var(--radius-theme)] outline-2 -outline-offset-2 transition-colors"
+export const rowRestState = "bg-[var(--surface)] outline-[var(--line)]"
 export const rowShellDensity: Record<ListRowDensity, string> = { default: "p-4", compact: "px-4 py-2" }
 export const rowHoverState = "hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]"
 export const rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
@@ -50,13 +51,26 @@ export const rowActionHover = "hover:bg-[var(--accent-tint)] hover:text-[var(--a
 export const rowActionDestructiveHover = "hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)]"
 ```
 
-**Wichtig (S4):** `rowShellBase` trägt nur Chrome (radius, outline, BG, transition) und States, KEINE Layout-Achse. Die setzt jede Komponente selbst:
+**Wichtig (S4):** `rowShellBase` trägt nur Chrome (radius, outline, transition) und States, KEINE Layout-Achse und KEINE Zustandsfarben (BG/Outline-Farbe). Die setzt jede Komponente selbst via exklusivem State-Branching:
 - **ListRow-Shell:** `flex flex-col` + rowShellBase (vertikale Zeilen)
 - **SelectableRow:** `flex min-h-11 w-full items-center gap-3 text-left` + rowShellBase (horizontale Button-Row)
 
 Beide nutzen rowShellDensity, rowHoverState, rowSelectedState, rowFocusState identisch.
 
 SelectableRow refaktoriert auf dieselben Konstanten; role=radio, aria-checked, Radio-Indikator + Check bleiben.
+
+**Exklusives State-Branching (ADR):** Tailwind v4 ordnet base-Utilities im Build unabhängig von clsx-Reihenfolge. Darum NIE additiv stapeln (`rowShellBase` + `rowRestState` + `rowSelectedState` gleichzeitig). Stattdessen exklusiv branchen: `selected ? rowSelectedState : rowRestState` (vgl. Kompositionsbeispiel §5).
+
+Beispiel:
+```ts
+clsx(
+  "flex flex-col",
+  rowShellBase,
+  rowShellDensity[density],
+  disabled ? clsx(rowRestState, rowDisabledState) : selected ? rowSelectedState : rowRestState,
+  hoverable && !disabled && rowHoverState
+)
+```
 
 ### 3.2 ListRow-API (R12, Contract eingefroren)
 
@@ -119,12 +133,12 @@ export interface ListRowProps {
 
 | Zustand | Shell-Klassen | Notizen |
 |---|---|---|
-| Default | `rowShellBase + rowShellDensity[density]` (+ Layout-Achse je Komponente) | Outline `[var(--line)]`, BG weiß |
-| Hover | `+ hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]` | Cursor pointer, `transition-colors` nur |
-| Selected | `bg-[var(--accent-tint)] outline-[var(--color-primary)]` | Persistent; Indikator sichtbar; überlagert Hover |
+| Default | `rowShellBase + rowRestState + rowShellDensity[density]` (+ Layout-Achse je Komponente) | rowRestState trägt BG+Outline-Farben; State-exklusiv Branching NICHT additiv |
+| Hover | `+ hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]` | Cursor pointer, `transition-colors` nur; hoverable & !disabled |
+| Selected | `rowShellBase + rowSelectedState + rowShellDensity[density]` | Farben-exklusiv: Selected ERSETZT rowRestState, nicht additiv; Indikator sichtbar; Hover-Variant gewinnt über Base |
 | Focus-Shell | `+ focus-visible:outline-offset-2` | Outline nach aussen, auch im Selected |
 | Focus-Body | `focus-visible:-outline-offset-2` | Inset-Formel für Body-Button |
-| Disabled | `opacity-60` | Keine Hover-Reaktion; Body-Button disabled; Shell hover-immun |
+| Disabled | `opacity-60` | rowDisabledState additiv ok; Keine Hover-Reaktion; Body-Button disabled; Shell hover-immun |
 | Expanded | nur `data-state="expanded\|collapsed"` auf Shell | Keine Style-Änderung, nur Data-Attribut |
 
 ---

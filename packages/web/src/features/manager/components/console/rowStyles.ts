@@ -2,17 +2,22 @@
  * Row Shell & State Classes — Unified Row System
  *
  * Centralized Tailwind class constants for all Manager console rows (ListRow, SelectableRow, SubmissionCard).
- * rowShellBase carries only Chrome (radius, outline, bg, transition), not layout axis.
+ * rowShellBase carries only Chrome (radius, outline, transition), not layout axis.
  * Each component applies its own flex direction & alignment:
  *   - ListRow: flex flex-col
  *   - SelectableRow: flex min-h-11 w-full items-center gap-3 text-left
+ *
+ * **State-Farben EXKLUSIV branchen:** Tailwind v4 ordert base-Utilities im Build unabhängig von clsx-Reihenfolge.
+ * Daher nie additiv stacken: `selected ? rowSelectedState : rowRestState` (nicht beide gleichzeitig).
+ * ADR: rowstyles-zustandsfarben-exklusiv-statt-additiv
  *
  * Ref: SDD docs/specs/manager-row-system.md §3.1 (R13)
  */
 
 export type ListRowDensity = "compact" | "default"
 
-export const rowShellBase = "rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] transition-colors"
+export const rowShellBase = "rounded-[var(--radius-theme)] outline-2 -outline-offset-2 transition-colors"
+export const rowRestState = "bg-[var(--surface)] outline-[var(--line)]"
 export const rowShellDensity: Record<ListRowDensity, string> = { default: "p-4", compact: "px-4 py-2" }
 export const rowHoverState = "hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]"
 export const rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
