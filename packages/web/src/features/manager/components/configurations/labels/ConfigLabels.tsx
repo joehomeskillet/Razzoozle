@@ -2,7 +2,12 @@ import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
-import { Plus, Trash2, Edit2 } from "lucide-react"
+import {
+  EmptyState,
+  ListRow,
+} from "@razzoozle/web/features/manager/components/console"
+import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
+import { Plus, SquarePen, Tags, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -54,59 +59,55 @@ const ConfigLabels = () => {
             type="submit"
             variant="primary"
             className="shrink-0 rounded-[var(--radius-theme)]"
+            aria-label={t("manager:labels.create")}
           >
             <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-            <span className="hidden sm:inline">{t("manager:labels.create")}</span>
+            <span className="hidden sm:inline">
+              {t("manager:labels.create")}
+            </span>
           </Button>
         </form>
 
         {hasLabels ? (
-          <div className="flex flex-1 flex-col gap-2 overflow-auto">
-            {labels.map((label) => (
-              <div
-                key={label.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
-                    style={{ backgroundColor: `var(--label-${label.color}, var(--label-gray))` }}
-                  />
-                  <span className="text-sm font-medium text-[var(--ink)]">
-                    {label.name}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-lg"
-                    onClick={() => setPendingEditLabel(label)}
-                    aria-label={t("manager:labels.editLabel")}
-                    title={t("manager:labels.editLabel")}
-                  >
-                    <Edit2 className="size-4" aria-hidden />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-lg"
-                    onClick={() => setPendingDeleteLabel(label)}
-                    aria-label={t("manager:labels.deleteLabel")}
-                    title={t("manager:labels.deleteLabel")}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-1 flex-col space-y-3 overflow-auto p-0.5">
+            {labels.map((label) => {
+              const actions: ListRowAction[] = [
+                {
+                  key: "edit",
+                  icon: SquarePen,
+                  label: t("manager:labels.editLabel"),
+                  onClick: () => setPendingEditLabel(label),
+                  title: t("manager:labels.editLabel"),
+                },
+                {
+                  key: "delete",
+                  icon: Trash2,
+                  label: t("manager:labels.deleteLabel"),
+                  destructive: true,
+                  onClick: () => setPendingDeleteLabel(label),
+                  title: t("manager:labels.deleteLabel"),
+                },
+              ]
+              return (
+                <ListRow
+                  key={label.id}
+                  density="compact"
+                  leading={
+                    <div
+                      className="h-6 w-6 rounded-full border border-[var(--border-hairline)]"
+                      style={{
+                        backgroundColor: `var(--label-${label.color}, var(--label-gray))`,
+                      }}
+                    />
+                  }
+                  title={label.name}
+                  actions={actions}
+                />
+              )
+            })}
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-8">
-            <p className="text-sm text-[var(--ink-subtle)]">
-              {t("manager:labels.emptyState")}
-            </p>
-          </div>
+          <EmptyState icon={Tags} headline={t("manager:labels.emptyState")} />
         )}
 
         <EditLabelDialog
