@@ -4,16 +4,17 @@
 // 1. rowStyles.ts: 15 constants exist and contain specified class strings.
 // 2. ListRow.tsx: Interface properties match spec §3.2 (Contract frozen).
 // 3. SelectableRow.tsx: role="radio", aria-checked, semantics.
-// 4. Badge.tsx: TONES mapping, assignTriggerClass structure.
-// 5. FilterPill.tsx: Base classes, aria-pressed, count span.
+// 4. Badge.tsx: TONES mapping, assignTriggerClass structure; rendered markup (R8).
+// 5. FilterPill.tsx: Base classes, aria-pressed, count span; rendered markup (R10).
 // 6. assignTriggerClass: Contains required pseudo-element and hover classes.
 //
-// NOTE: Tests are contract-only (no live component rendering). vitest env is
-// 'node' (no jsdom). Assertions verify imports, type signatures, and class
-// string content. Component implementations (esp. ListRow new props: density,
+// NOTE: vitest env is 'node' (no jsdom). Assertions verify imports, type signatures,
+// class string content, and rendered HTML structure (Badge/FilterPill via
+// renderToStaticMarkup). Component implementations (esp. ListRow new props: density,
 // selected, expanded, disabled, details, hoverable) are frozen in spec §3.2
 // and tested post-W2a/W2b merge. See SDD docs/specs/manager-row-system.md §11.
 
+import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 
 import type { ListRowDensity, ListRowAction, ListRowProps } from "@razzoozle/web/features/manager/components/console"
@@ -41,7 +42,6 @@ import SelectableRow from "@razzoozle/web/features/manager/components/console/Se
 import type { BadgeTone } from "@razzoozle/web/components/manager/Badge"
 import Badge, { chipBase, assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 
-import type { FilterPillProps } from "@razzoozle/web/components/manager/FilterPill"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 
 describe("rowStyles Contract — 15 constants (SDD §3.1, R13)", () => {
@@ -232,14 +232,6 @@ describe("SelectableRow — Radio selection (SDD §3.2, R12)", () => {
     expect(props.selected).toBe(false)
   })
 
-  it("SelectableRow renders with role='radio'", () => {
-    const { role } = SelectableRow as any
-    // Component prop signature confirms role constraint.
-    const props: SelectableRowProps = { title: "Test" }
-    expect(props.title).toBeDefined()
-    // Role='radio' is hardcoded in SelectableRow.tsx render per spec.
-  })
-
   it("SelectableRow accepts meta (secondary line)", () => {
     const props: SelectableRowProps = {
       title: "Quiz A",
@@ -259,7 +251,7 @@ describe("SelectableRow — Radio selection (SDD §3.2, R12)", () => {
   })
 })
 
-describe("Badge — Tone system (SDD §7, R8–R9)", () => {
+describe("Badge — Tone system & markup (SDD §7, R8)", () => {
   it("Badge component accepts tone: 'neutral' | 'primary' | 'success' | 'warning' | 'danger'", () => {
     const toneNeutral: BadgeTone = "neutral"
     const tonePrimary: BadgeTone = "primary"
@@ -278,6 +270,129 @@ describe("Badge — Tone system (SDD §7, R8–R9)", () => {
     expect(chipBase).toContain("py-0.5")
     expect(chipBase).toContain("text-xs")
     expect(chipBase).toContain("font-semibold")
+  })
+
+  it("Badge renders with tone=primary: accent-tint bg + accent-contrast text", () => {
+    const markup = renderToStaticMarkup(
+      <Badge tone="primary">Label</Badge>
+    )
+    expect(markup).toContain("inline-flex")
+    expect(markup).toContain("rounded-full")
+    expect(markup).toContain("bg-[var(--accent-tint)]")
+    expect(markup).toContain("text-[var(--accent-contrast)]")
+  })
+
+  it("Badge renders with tone=neutral: surface-4 bg + ink-muted text", () => {
+    const markup = renderToStaticMarkup(
+      <Badge tone="neutral">Neutral</Badge>
+    )
+    expect(markup).toContain("bg-[var(--surface-4)]")
+    expect(markup).toContain("text-[var(--ink-muted)]")
+  })
+
+  it("Badge renders with tone=success: status-online colors", () => {
+    const markup = renderToStaticMarkup(
+      <Badge tone="success">Online</Badge>
+    )
+    expect(markup).toContain("bg-[var(--status-online-bg)]")
+    expect(markup).toContain("text-[var(--status-online-text)]")
+  })
+
+  it("Badge with tone=danger renders red state colors", () => {
+    const markup = renderToStaticMarkup(
+      <Badge tone="danger">Error</Badge>
+    )
+    expect(markup).toContain("bg-[var(--status-offline-bg)]")
+    expect(markup).toContain("text-[var(--status-offline-text)]")
+  })
+
+  it("Badge without tone uses defaultTone (surface-4 bg)", () => {
+    const markup = renderToStaticMarkup(
+      <Badge>Unspecified</Badge>
+    )
+    expect(markup).toContain("bg-[var(--surface-4)]")
+    expect(markup).toContain("text-[var(--ink-muted)]")
+  })
+
+  it("Badge with className (and no tone) preserves className, ignores defaultTone", () => {
+    const markup = renderToStaticMarkup(
+      <Badge className="custom-class">Custom</Badge>
+    )
+    expect(markup).toContain("custom-class")
+    // className replaces defaultTone per spec §7 legacy behavior.
+  })
+})
+
+describe("FilterPill — Active/inactive markup (SDD §7, R10)", () => {
+  it("FilterPill renders with aria-pressed reflecting active state", () => {
+    const markupActive = renderToStaticMarkup(
+      <FilterPill active onClick={() => {}} count={5}>Filter</FilterPill>
+    )
+    expect(markupActive).toContain('aria-pressed="true"')
+    expect(markupActive).toContain("bg-[var(--accent-tint)]")
+    expect(markupActive).toContain("text-[var(--accent-contrast)]")
+    expect(markupActive).toContain("outline-2")
+    expect(markupActive).toContain("-outline-offset-2")
+    expect(markupActive).toContain("outline-[var(--color-primary)]")
+  })
+
+  it("FilterPill inactive renders surface-3 bg with surface-4 hover", () => {
+    const markup = renderToStaticMarkup(
+      <FilterPill active={false} onClick={() => {}} count={0}>Inactive</FilterPill>
+    )
+    expect(markup).toContain('aria-pressed="false"')
+    expect(markup).toContain("bg-[var(--surface-3)]")
+    expect(markup).toContain("text-[var(--ink-medium)]")
+    expect(markup).toContain("hover:bg-[var(--surface-4)]")
+  })
+
+  it("FilterPill renders count in tabular-nums span when count is defined", () => {
+    const markup = renderToStaticMarkup(
+      <FilterPill active={false} onClick={() => {}} count={42}>Label</FilterPill>
+    )
+    expect(markup).toContain("tabular-nums")
+    expect(markup).toContain(">42<")
+  })
+
+  it("FilterPill without count renders no number span", () => {
+    const markup = renderToStaticMarkup(
+      <FilterPill active={false} onClick={() => {}}>NoCount</FilterPill>
+    )
+    expect(markup).not.toContain("tabular-nums")
+  })
+
+  it("FilterPill min-h-9 (36px baseline per toolbar-density token-ok, R10)", () => {
+    const markup = renderToStaticMarkup(
+      <FilterPill active={false} onClick={() => {}}>Height</FilterPill>
+    )
+    expect(markup).toContain("min-h-9")
+    expect(markup).toContain("inline-flex")
+  })
+
+  it("FilterPill custom activeClassName replaces default active colors", () => {
+    const markup = renderToStaticMarkup(
+      <FilterPill active activeClassName="bg-red-500" onClick={() => {}}>Custom</FilterPill>
+    )
+    expect(markup).toContain("bg-red-500")
+    // When activeClassName is set, it replaces the default accent colors.
+  })
+})
+
+describe("assignTriggerClass — Pseudo-element structure (SDD §7, R9)", () => {
+  it("assignTriggerClass string is a valid Tailwind class sequence", () => {
+    expect(typeof assignTriggerClass).toBe("string")
+    expect(assignTriggerClass.length).toBeGreaterThan(0)
+  })
+
+  it("assignTriggerClass does not contain min-h-11 (touch area via before:, not padding)", () => {
+    // Touch target is 44px but achieved via before pseudo-element inset,
+    // not via min-h padding. Ensures tight visual + large hit area (R9).
+    expect(assignTriggerClass).not.toContain("min-h-11")
+  })
+
+  it("assignTriggerClass contains text-[var(--ink-medium)] and font-medium", () => {
+    expect(assignTriggerClass).toContain("text-[var(--ink-medium)]")
+    expect(assignTriggerClass).toContain("font-medium")
   })
 
   it("assignTriggerClass contains relative, border, gap-1, and hover colors", () => {
@@ -306,71 +421,5 @@ describe("Badge — Tone system (SDD §7, R8–R9)", () => {
     expect(assignTriggerClass).toContain("focus-visible:outline-2")
     expect(assignTriggerClass).toContain("focus-visible:outline-offset-2")
     expect(assignTriggerClass).toContain("focus-visible:outline-[var(--color-primary)]")
-  })
-})
-
-describe("FilterPill — Active/inactive variant (SDD §7, R10)", () => {
-  it("FilterPill accepts active, onClick, children, count, activeClassName props", () => {
-    const props: FilterPillProps = {
-      active: true,
-      onClick: () => {},
-      children: "All",
-      count: 42,
-      activeClassName: "bg-custom",
-    }
-    expect(props.active).toBe(true)
-    expect(props.count).toBe(42)
-    expect(props.activeClassName).toBe("bg-custom")
-  })
-
-  it("FilterPill renders with aria-pressed reflecting active state", () => {
-    // aria-pressed is hardcoded in FilterPill.tsx render logic (line 28).
-    // Assertion verifies interface allows calling the component.
-    const props: FilterPillProps = {
-      active: true,
-      onClick: () => {},
-      children: "Filter",
-    }
-    expect(props.active).toBe(true)
-  })
-
-  it("FilterPill count is optional and rendered in a tabular-nums span when defined", () => {
-    const propsWithCount: FilterPillProps = {
-      active: false,
-      onClick: () => {},
-      children: "Active",
-      count: 10,
-    }
-    const propsWithoutCount: FilterPillProps = {
-      active: false,
-      onClick: () => {},
-      children: "Pending",
-    }
-    expect(propsWithCount.count).toBe(10)
-    expect(propsWithoutCount.count).toBeUndefined()
-  })
-
-  it("FilterPill min-h-9 ensures ≥36px baseline height (toolbar-density token-ok)", () => {
-    // Base structure verified in FilterPill.tsx line 13-14.
-    // This assertion documents the design-system constraint.
-    expect(36).toBeGreaterThanOrEqual(36)
-  })
-})
-
-describe("assignTriggerClass — Pseudo-element structure (SDD §7, R9)", () => {
-  it("assignTriggerClass string is a valid Tailwind class sequence", () => {
-    expect(typeof assignTriggerClass).toBe("string")
-    expect(assignTriggerClass.length).toBeGreaterThan(0)
-  })
-
-  it("assignTriggerClass does not contain min-h-11 (touch area via before:, not padding)", () => {
-    // Touch target is 44px but achieved via before pseudo-element inset,
-    // not via min-h padding. Ensures tight visual + large hit area (R9).
-    expect(assignTriggerClass).not.toContain("min-h-11")
-  })
-
-  it("assignTriggerClass contains text-[var(--ink-medium)] and font-medium", () => {
-    expect(assignTriggerClass).toContain("text-[var(--ink-medium)]")
-    expect(assignTriggerClass).toContain("font-medium")
   })
 })
