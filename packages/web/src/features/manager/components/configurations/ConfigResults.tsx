@@ -12,6 +12,10 @@ import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
+import {
+  listContainerMotion,
+  listItemMotion,
+} from "@razzoozle/web/features/manager/components/console/listMotion"
 import ResultModal from "@razzoozle/web/features/manager/components/ResultModal"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
@@ -172,26 +176,12 @@ const ConfigResults = () => {
           ) : (
             <motion.div
               className="min-h-0 flex-1 space-y-3 p-0.5"
-              initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-              animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={
-                reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-              }
+              {...listContainerMotion(reducedMotion)}
             >
               {filteredResults.map((r, index) => (
                 <motion.div
                   key={r.id}
-                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                  transition={
-                    reducedMotion
-                      ? undefined
-                      : {
-                          duration: 0.28,
-                          ease: "easeOut",
-                          delay: Math.min(index, 8) * 0.04,
-                        }
-                  }
+                  {...listItemMotion(index, reducedMotion)}
                 >
                   <ListRow
                     title={r.subject}
@@ -208,6 +198,7 @@ const ConfigResults = () => {
                     }
                     onClick={handleOpen(r.id)}
                     bodyLabel={t("manager:result.open", { name: r.subject })}
+                    density="compact"
                     actions={[
                       {
                         key: "share",
