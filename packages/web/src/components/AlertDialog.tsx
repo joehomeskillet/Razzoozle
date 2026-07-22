@@ -7,7 +7,7 @@ interface Props {
   /** Element that opens the dialog. Omit for controlled use (`open`/`onOpenChange`). */
   trigger?: ReactNode
   title: string
-  description: string
+  description: ReactNode
   confirmLabel?: string
   onConfirm: () => void
   /** Controlled open state. When provided, the dialog is driven by the caller. */
