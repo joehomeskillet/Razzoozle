@@ -239,8 +239,8 @@ export const useClassManager = (options: UseClassManagerOptions = {}) => {
       toast.error(t("manager:bulk.resultFailed", { count: totalFailed }))
     }
     socket.emit(EVENTS.CLASS.LIST)
-  onBulkSettled?.()
-  }
+    onBulkSettled?.()
+  })
 
   useEvent(EVENTS.CLASS.BULK_DELETED, (data: { succeeded: number[]; failed: Array<{ id: number; reason: string }> }) => {
     const totalSucceeded = data.succeeded.length
@@ -252,8 +252,8 @@ export const useClassManager = (options: UseClassManagerOptions = {}) => {
       toast.error(t("manager:bulk.resultFailed", { count: totalFailed }))
     }
     socket.emit(EVENTS.CLASS.LIST)
-  onBulkSettled?.()
-  }
+    onBulkSettled?.()
+  })
 
   useEvent(EVENTS.CLASS.ERROR, (message: string) => {
     toast.error(t(message))
