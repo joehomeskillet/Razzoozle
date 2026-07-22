@@ -31,9 +31,15 @@ mod tests {
     }
 
     /// Helper to clean up test fixtures after each test.
-    /// Deletes all users created by tests (username starting with "test_").
+    /// Deletes users created by bulk and deactivate-guarded specs.
     async fn cleanup_test_users(pool: &sqlx::PgPool) {
-        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_%'")
+        let _ = sqlx::query(
+            "DELETE FROM users WHERE username LIKE 'test_bulk_%' \
+             OR username LIKE 'test_deactivate_g_spec_%'",
+        )
+        .execute(pool)
+        .await;
+        let _ = sqlx::query("DELETE FROM quizzes WHERE id LIKE 'test_q_%'")
             .execute(pool)
             .await;
     }
@@ -44,7 +50,8 @@ mod tests {
     async fn suspend_non_test_active_admins(pool: &sqlx::PgPool) -> Vec<i64> {
         let others: Vec<(i64,)> = sqlx::query_as(
             "SELECT id FROM users WHERE role = 'admin' AND active = true \
-             AND username NOT LIKE 'test_bulk_%'"
+             AND username NOT LIKE 'test_bulk_%' \
+             AND username NOT LIKE 'test_deactivate_g_spec_%'",
         )
         .fetch_all(pool)
         .await
@@ -767,6 +774,306 @@ mod tests {
 
         let (_, a1) = fetch_id_active(&pool, id1).await;
         assert!(a1, "id1 should remain active");
+
+        cleanup_test_users(&pool).await;
+    }
+
+    // ── Spec-Required: deactivate_user_guarded ───────────────────────────
+
+    /// Last remaining active admin cannot be deactivated (C1 parity).
+    #[tokio::test]
+    #[ignore]
+    async fn test_deactivate_user_guarded_last_admin_blocks() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        let id1 = create_user(
+            &pool,
+            "test_deactivate_g_spec_last_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1");
+        let id2 = create_user(
+            &pool,
+            "test_deactivate_g_spec_last_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
+
+        let outcome1 = deactivate_user_guarded(&pool, id1)
+            .await
+            .expect("deactivate_user_guarded id1 failed");
+        assert_eq!(
+            outcome1,
+            DeactivateUserOutcome::Deactivated,
+            "first of two admins should deactivate"
+        );
+
+        let outcome2 = deactivate_user_guarded(&pool, id2)
+            .await
+            .expect("deactivate_user_guarded id2 failed");
+        assert_eq!(
+            outcome2,
+            DeactivateUserOutcome::LastActiveAdmin,
+            "last active admin must be blocked"
+        );
+
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        assert!(a2, "id2 must remain active after LastActiveAdmin");
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Deactivate succeeds when other active admins remain.
+    #[tokio::test]
+    #[ignore]
+    async fn test_deactivate_user_guarded_allows_with_multiple_admins() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        let id1 = create_user(
+            &pool,
+            "test_deactivate_g_spec_multi_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1");
+        let id2 = create_user(
+            &pool,
+            "test_deactivate_g_spec_multi_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
+        let id3 = create_user(
+            &pool,
+            "test_deactivate_g_spec_multi_a3",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin3");
+
+        let outcome = deactivate_user_guarded(&pool, id1)
+            .await
+            .expect("deactivate_user_guarded id1 failed");
+        assert_eq!(
+            outcome,
+            DeactivateUserOutcome::Deactivated,
+            "deactivating one of three admins should succeed"
+        );
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        let (_, a3) = fetch_id_active(&pool, id3).await;
+        assert!(!a1, "id1 should be inactive");
+        assert!(a2, "id2 should remain active");
+        assert!(a3, "id3 should remain active");
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Already-inactive target is idempotent success (no last-admin risk).
+    #[tokio::test]
+    #[ignore]
+    async fn test_deactivate_user_guarded_idempotent_when_already_inactive() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        let _id1 = create_user(
+            &pool,
+            "test_deactivate_g_spec_idem_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create active admin");
+        let id2 = create_user(
+            &pool,
+            "test_deactivate_g_spec_idem_u2",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create user");
+        set_user_active(&pool, id2, false)
+            .await
+            .expect("Failed to pre-deactivate id2");
+
+        let outcome = deactivate_user_guarded(&pool, id2)
+            .await
+            .expect("deactivate_user_guarded id2 failed");
+        assert_eq!(
+            outcome,
+            DeactivateUserOutcome::Deactivated,
+            "already-inactive user should return Deactivated (idempotent)"
+        );
+
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        assert!(!a2, "id2 should remain inactive");
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Missing user id yields NotFound.
+    #[tokio::test]
+    #[ignore]
+    async fn test_deactivate_user_guarded_not_found() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+
+        cleanup_test_users(&pool).await;
+
+        let outcome = deactivate_user_guarded(&pool, 999999)
+            .await
+            .expect("deactivate_user_guarded should not SQL-error for missing id");
+        assert_eq!(
+            outcome,
+            DeactivateUserOutcome::NotFound,
+            "missing id must return NotFound"
+        );
+
+        cleanup_test_users(&pool).await;
+    }
+
+    // ── Spec-Required: quiz owner SET NULL on bulk_delete ─────────────────
+
+    /// bulk_delete nulls quizzes.owner_id (ON DELETE SET NULL) and keeps the quiz row.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_quiz_owner_set_null() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(
+            &pool,
+            "test_bulk_delete_g3_qown_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin requester");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_delete_g3_qown_isolate_u2",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create quiz owner user");
+
+        let quiz_id = format!("test_q_{}", id2);
+        sqlx::query(
+            "INSERT INTO quizzes (id, subject, questions, owner_id) \
+             VALUES ($1, $2, '[]'::jsonb, $3)",
+        )
+        .bind(&quiz_id)
+        .bind("test_subject")
+        .bind(id2)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert quiz owned by id2");
+
+        let owner_before = sqlx::query_as::<_, (Option<i64>,)>(
+            "SELECT owner_id FROM quizzes WHERE id = $1",
+        )
+        .bind(&quiz_id)
+        .fetch_one(&pool)
+        .await
+        .expect("fetch quiz owner before")
+        .0;
+        assert_eq!(owner_before, Some(id2), "quiz should be owned by id2 before delete");
+
+        let result = bulk_delete(&pool, id1, vec![id2])
+            .await
+            .expect("bulk_delete failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id2],
+            "expected id2 deleted, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips, got {:?}",
+            result.skipped
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let row = sqlx::query_as::<_, (String, Option<i64>)>(
+            "SELECT id, owner_id FROM quizzes WHERE id = $1",
+        )
+        .bind(&quiz_id)
+        .fetch_optional(&pool)
+        .await
+        .expect("fetch quiz after bulk_delete");
+
+        let (qid, owner_after) = row.expect("quiz row must still exist after owner delete");
+        assert_eq!(qid, quiz_id);
+        assert_eq!(
+            owner_after, None,
+            "quiz owner_id should be NULL after bulk_delete (ON DELETE SET NULL)"
+        );
 
         cleanup_test_users(&pool).await;
     }
