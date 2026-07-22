@@ -140,6 +140,83 @@ pub async fn delete_result(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> 
     }
 }
 
+/// Outcome of a bulk result delete. Missing / not-owned ids are always
+/// `not_found` so ownership status is never leaked.
+#[derive(Debug, serde::Serialize)]
+pub struct BulkDeleteOutcome {
+    pub succeeded: Vec<String>,
+    pub failed: Vec<(String, &'static str)>,
+}
+
+/// Bulk-delete game results in one transaction.
+/// Dedupes `ids` (first-seen order). Owner scope matches `delete_result`.
+/// `me`: None = admin/unguarded; Some(id) = only that owner's rows.
+pub async fn delete_results(
+    pool: &PgPool,
+    ids: &[String],
+    me: Option<i64>,
+) -> BulkDeleteOutcome {
+    let mut seen = std::collections::HashSet::with_capacity(ids.len());
+    let unique: Vec<String> = ids
+        .iter()
+        .filter(|id| seen.insert((*id).as_str()))
+        .cloned()
+        .collect();
+
+    if unique.is_empty() {
+        return BulkDeleteOutcome {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        };
+    }
+
+    let all_not_found = || BulkDeleteOutcome {
+        succeeded: Vec::new(),
+        failed: unique
+            .iter()
+            .map(|id| (id.clone(), "not_found"))
+            .collect(),
+    };
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => return all_not_found(),
+    };
+
+    // Same owner-scope predicate as delete_result; ANY for batch.
+    let deleted: Result<Vec<(String,)>, _> = sqlx::query_as(
+        "DELETE FROM game_results \
+         WHERE id = ANY($1) AND ($2::bigint IS NULL OR owner_id = $2) \
+         RETURNING id",
+    )
+    .bind(&unique)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await;
+
+    let succeeded = match deleted {
+        Ok(rows) => rows.into_iter().map(|(id,)| id).collect::<Vec<_>>(),
+        Err(_) => {
+            let _ = tx.rollback().await;
+            return all_not_found();
+        }
+    };
+
+    if tx.commit().await.is_err() {
+        return all_not_found();
+    }
+
+    let succeeded_set: std::collections::HashSet<&str> =
+        succeeded.iter().map(|s| s.as_str()).collect();
+    let failed = unique
+        .into_iter()
+        .filter(|id| !succeeded_set.contains(id.as_str()))
+        .map(|id| (id, "not_found"))
+        .collect();
+
+    BulkDeleteOutcome { succeeded, failed }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
