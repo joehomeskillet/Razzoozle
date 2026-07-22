@@ -72,6 +72,13 @@ grep -rnoE 'bg-black/[0-9]+' \
   grep -v ':bg-black/40$' | \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D10 SCRIM opacity '\2' invalid (only bg-black\/40 allowed)/" >>"$TMPFILE" || true
 
+# D22b (SettingRow-Grid-Kanon): sm:max-w-60 forbidden in settings rows
+# Matches sm:max-w-60 only in packages/web/src/components/ui/*.tsx
+grep -rnoE '\bsm:max-w-60\b' \
+  --include='*.tsx' "packages/web/src/components/ui" 2>/dev/null | \
+  grep -vF -f "$EXCLUDE" | \
+  sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D22b forbidden token '\2' settings row label must use the 15rem grid column, not max-w (design.md 8·B)/" >>"$TMPFILE" || true
+
 done
 
 # Output findings. Each line is one match (matches counted, not lines).
