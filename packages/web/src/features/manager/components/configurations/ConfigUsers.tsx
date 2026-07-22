@@ -79,15 +79,6 @@ const ConfigUsers = () => {
     role: string
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 600 : false,
-  )
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 600)
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -330,7 +321,7 @@ const ConfigUsers = () => {
             })}
           />
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+          <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
             {users.map((user) => {
               const isSelf =
                 currentUsername != null && user.username === currentUsername
@@ -388,6 +379,7 @@ const ConfigUsers = () => {
                         defaultValue: "Dein Konto kann nicht gelöscht werden",
                       })
                     : undefined,
+                  className: "max-sm:hidden",
                   onClick: () => {
                     if (isSelf) return
                     setPendingDelete({
@@ -398,14 +390,6 @@ const ConfigUsers = () => {
                   },
                 },
               ]
-              const visibleActions = isMobile
-                ? allActions.filter(
-                    (a) => a.key === "reset" || a.key === "toggle",
-                  )
-                : allActions
-              const overflowActions = isMobile
-                ? allActions.filter((a) => a.key === "delete")
-                : []
 
               return (
                 <ListRow
@@ -417,13 +401,7 @@ const ConfigUsers = () => {
                   meta={
                     <span className="flex flex-wrap items-center gap-2">
                       <Badge>{getRoleLabel(user.role)}</Badge>
-                      <Badge
-                        className={
-                          user.active
-                            ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
-                            : "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]"
-                        }
-                      >
+                      <Badge tone={user.active ? "success" : "danger"}>
                         {user.active
                           ? t("manager:users.active", { defaultValue: "Aktiv" })
                           : t("manager:users.disabledStatus", {
@@ -432,11 +410,11 @@ const ConfigUsers = () => {
                       </Badge>
                     </span>
                   }
-                  actions={visibleActions}
+                  actions={allActions}
                   overflow={
-                    isMobile && overflowActions.length > 0 ? (
-                      <OverflowMenu actions={overflowActions} />
-                    ) : undefined
+                    <span className="sm:hidden">
+                      <OverflowMenu actions={allActions.filter((a) => a.key === "delete")} />
+                    </span>
                   }
                 />
               )
