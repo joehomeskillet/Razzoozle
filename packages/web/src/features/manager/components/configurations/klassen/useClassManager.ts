@@ -36,8 +36,11 @@ export interface AllStudent {
   birthdate?: string | null
 }
 
-export const useClassManager = () => {
+interface UseClassManagerOptions { onBulkSettled?: () => void }
+
+export const useClassManager = (options: UseClassManagerOptions = {}) => {
   const { socket, isConnected } = useSocket()
+  const { onBulkSettled } = options
   const { t } = useTranslation()
 
   const [classes, setClasses] = useState<Class[]>([])
@@ -236,7 +239,8 @@ export const useClassManager = () => {
       toast.error(t("manager:bulk.resultFailed", { count: totalFailed }))
     }
     socket.emit(EVENTS.CLASS.LIST)
-  })
+  onBulkSettled?.()
+  }
 
   useEvent(EVENTS.CLASS.BULK_DELETED, (data: { succeeded: number[]; failed: Array<{ id: number; reason: string }> }) => {
     const totalSucceeded = data.succeeded.length
@@ -248,7 +252,8 @@ export const useClassManager = () => {
       toast.error(t("manager:bulk.resultFailed", { count: totalFailed }))
     }
     socket.emit(EVENTS.CLASS.LIST)
-  })
+  onBulkSettled?.()
+  }
 
   useEvent(EVENTS.CLASS.ERROR, (message: string) => {
     toast.error(t(message))
