@@ -981,6 +981,10 @@
     "deactivate": "禁用",
     "deleteSelected": "删除所选",
     "andNMore": "以及其他 {{count}} 个",
-    "skippedProtected": "已跳过 {{count}} 个受保护账户"
+    "skippedProtected": "已跳过 {{count}} 个受保护账户",
+    "resultSucceeded": "{{count}} 个成功",
+    "resultSkipped": "已跳过 {{count}} 个",
+    "resultFailed": "{{count}} 个失败",
+    "resultCompleted": "已完成"
   }
 }

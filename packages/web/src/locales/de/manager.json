@@ -981,6 +981,10 @@
     "deactivate": "Deaktivieren",
     "deleteSelected": "Ausgewählte löschen",
     "andNMore": "und {{count}} weitere",
-    "skippedProtected": "{{count}} geschützte Konten übersprungen"
+    "skippedProtected": "{{count}} geschützte Konten übersprungen",
+    "resultSucceeded": "{{count}} erfolgreich",
+    "resultSkipped": "{{count}} übersprungen",
+    "resultFailed": "{{count}} fehlgeschlagen",
+    "resultCompleted": "Abgeschlossen"
   }
 }

@@ -981,6 +981,10 @@
     "deactivate": "Désactiver",
     "deleteSelected": "Supprimer la sélection",
     "andNMore": "et {{count}} de plus",
-    "skippedProtected": "{{count}} comptes protégés ignorés"
+    "skippedProtected": "{{count}} comptes protégés ignorés",
+    "resultSucceeded": "{{count}} réussis",
+    "resultSkipped": "{{count}} ignorés",
+    "resultFailed": "{{count}} échoués",
+    "resultCompleted": "Terminé"
   }
 }
