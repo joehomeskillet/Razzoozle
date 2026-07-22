@@ -27,36 +27,74 @@ Vereinheitlichung aller Karten/Listenzeilen unter `/manager/config/*` (9 Tabs: p
 
 ---
 
-## 3. Row-Shell (R1–R3, R13)
+## 3. Row-Shell & Contracts (R1–R3, R12–R13)
 
-**Base-Klasse (rowShellBase):**
-```css
-flex flex-col rounded-[var(--radius-theme)] 
-bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] 
-transition-colors
+### 3.1 rowStyles.ts — Exporte (Contract, eingefroren)
+
+**Neue Datei `console/rowStyles.ts` mit genau diesen 14 Konstanten (Export über `console/index.ts`):**
+
+```ts
+export const rowShellBase = "flex flex-col rounded-[var(--radius-theme)] bg-[var(--surface)] outline-2 -outline-offset-2 outline-[var(--line)] transition-colors"
+export const rowShellDensity: Record<ListRowDensity, string> = { default: "p-4", compact: "px-4 py-2" }
+export const rowHoverState = "hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]"
+export const rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
+export const rowDisabledState = "opacity-60"
+export const rowFocusState = "focus-visible:outline-[var(--color-primary)] focus-visible:outline-offset-2"
+export const rowBodyFocusState = "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+export const rowTitleClass = "truncate text-sm leading-5 font-semibold text-[var(--ink)]"
+export const rowMetaClass = "text-xs leading-4 font-normal text-[var(--ink-subtle)]"
+export const rowLeadingClass = "flex shrink-0 items-center text-[var(--ink-muted)]"
+export const rowActionGroupClass = "flex shrink-0 items-center gap-1"
+export const rowActionBase = "shrink-0 text-[var(--ink-faint)]"
+export const rowActionHover = "hover:bg-[var(--accent-tint)] hover:text-[var(--accent-contrast)]"
+export const rowActionDestructiveHover = "hover:bg-[var(--state-wrong-soft)] hover:text-[var(--state-wrong)]"
 ```
 
-**Hover-Kanon (R1):** Gesamte Shell, nicht nur Body.
-```css
-hover:bg-[var(--accent-tint)] hover:outline-[var(--color-primary)]
-```
-Innerer Body-Hover `hover:bg-[var(--surface-2)]` wird ersatzlos entfernt.
+SelectableRow refaktoriert auf dieselben Konstanten; role=radio, aria-checked, Radio-Indikator + Check bleiben.
 
-**Selected (R2):** Persistent auf Shell.
-```css
-bg-[var(--accent-tint)] outline-[var(--color-primary)]
-```
-+ Indikator (SelectableRow: gefüllter Radio+Check; ListRow: `selected`-Prop → Checkbox im selection-Slot).
+### 3.2 ListRow-API (R12, Contract eingefroren)
 
-**Focus-Shell (R3, Buttons auf Shell z.B. SelectableRow):**
-```css
-focus-visible:outline-[var(--color-primary)] focus-visible:outline-offset-2
+**TypeScript-Interface (contract einfrieren; bestehende Aufrufer müssen kompatibel bleiben):**
+
+```ts
+export type ListRowDensity = "compact" | "default"
+
+export interface ListRowAction {
+  key: string
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  title?: string
+  destructive?: boolean
+  className?: string           // NEU: responsive Sichtbarkeit (z.B. "hidden sm:inline-flex")
+  "aria-expanded"?: boolean    // NEU: Expand-Trigger (ClassList-Chevron)
+}
+
+export interface ListRowProps {
+  title: ReactNode
+  meta?: ReactNode
+  selection?: ReactNode
+  leading?: ReactNode
+  actions?: ListRowAction[]
+  overflow?: ReactNode
+  onClick?: () => void
+  bodyLabel?: string
+  footer?: ReactNode                         // NEU: Expand-Inhalt, in derselben Shell, nach footer, "mt-3 w-full"
+  details?: ReactNode                        // NEU: Expand-Inhalt, in derselben Shell, nach footer, "mt-3 w-full"
+  density?: ListRowDensity                   // NEU, default "default"
+  hoverable?: boolean                        // NEU, default true
+  selected?: boolean                         // NEU
+  expanded?: boolean                         // NEU: nur data-state="expanded|collapsed" auf der Shell, keine Style-Änderung
+  disabled?: boolean                         // NEU: Shell opacity-60, Hover aus, Body-Button disabled
+  className?: string
+}
 ```
 
-**Focus-Body-Button (ListRow onClick-Button, existierende Formel):**
-```css
-focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]
-```
+**Invarianten:**
+- Shell bleibt div; Body wird nur bei onClick ein button.
+- Actions/Overflow/selection sind Siblings (kein nested button, kein Bubbling in Body-onClick).
+- Bestehende Aufrufer kompilieren unverändert.
 
 ---
 
@@ -100,6 +138,13 @@ Lokale Meta-Wrapper (text-xs) in QuizzList, Catalog, ClassList, StudentList werd
 ## 7. Badge-/Pill-System (R8–R10, R19)
 
 **Badge-Tones (R8, Badge.tsx):** `tone?: "neutral"|"primary"|"success"|"warning"|"danger"`
+
+Auflösungslogik (exakte Auflösung für Abwärts-Kompatibilität):
+```ts
+clsx(chipBase, tone ? TONES[tone] : (className ? undefined : defaultTone), className)
+```
+**Semantik:** Wenn `tone` gesetzt, verwendet die Komponente `TONES[tone]` als Basisklassen. Wenn kein `tone`: nur wenn `className` UND `defaultTone` existieren, wird `defaultTone` nur angewendet, wenn `className` absent ist. Dies bewahrt das Altverhalten, bei dem `className` ohne `tone` den `defaultTone` vollständig ersetzt.
+
 ```css
 neutral:   bg-[var(--surface-4)] text-[var(--ink-muted)]
 primary:   bg-[var(--accent-tint)] text-[var(--accent-contrast)]
@@ -107,7 +152,6 @@ success:   bg-[var(--status-online-bg)] text-[var(--status-online-text)]
 warning:   bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]
 danger:    bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]
 ```
-Abwärts-kompatibel: `tone` setzt Default, `className` überschreibt.
 
 **assignTriggerClass (R9, Badge.tsx-Export):**
 ```css
@@ -165,9 +209,7 @@ className="hidden sm:inline-flex"  // sekundäre Action auf Mobile verstecken
 | classes | default | — | ListRow mit Chevron-Action (aria-expanded) | R18: Schüler-Details-Slot mit density="compact"; "+ Schüler"-CTA im details |
 | students | default | — | ListRow mit Klassen-Chips | R19: Klassen Badge chipBase; "+ Klasse" = assignTriggerClass; Trigger stopPropagation |
 | labels | compact | — | ListRow (farbpunkt leading, Name title, Actions) | R20: leading+title+actions statt Eigenbau; Create-Button aria-label |
-| users | default/compact* | — | ListRow mit Badge-Meta | Badge-Tone-API; responsive Actions (hidden sm:inline-flex) |
-
-*users: Inhalt bestimmt Dichte, aber Default bevorzugt wegen Badge-Meta.
+| users | default | — | ListRow mit Badge-Meta | Badge-Tone-API; responsive Actions (hidden sm:inline-flex) |
 
 **R15 listMotion (neue Datei `console/listMotion.ts`):**
 ```ts
@@ -224,10 +266,13 @@ Konsumenten (≥3-Duplikate): ConfigSelectQuizz, ConfigResults, QuizzList, Confi
 
 ---
 
-**Wellen-Übersicht:**
-- **W1:** Chips/Styles (rowStyles, Badge, FilterPill, listMotion) — 1 WP
-- **W2:** ListRow+SelectableRow+Unit-Tests — 1 WP
-- **W3:** Einfache Seiten (results, labels, users, play) — 4 parallel WPs
-- **W4:** Komplexe Seiten (quiz, catalog, students, classes) — 4 parallel WPs
-- **W5:** Submissions — 1 WP
-- **W6:** Cleanup + Design-Amendment + E2E — 1 WP
+**Wellen-Übersicht (kleine WPs, breiter Fan-out):**
+
+| Welle | Branch | WPs | Dateien | Parallelität |
+|---|---|---|---|---|
+| **W1** | wp/w1-* | 1a rowStyles.ts+console/index.ts · 1b Badge.tsx · 1c FilterPill.tsx · 1d listMotion.ts | 4 Dateien | 4 parallel |
+| **W2** | wp/w2-* | 2a ListRow.tsx · 2b SelectableRow.tsx · 2c __tests__/row-system.test.tsx | 3 Dateien | 3 parallel |
+| **W3** | wp/w3-* | results · labels · users · play | 4 Seiten | 4 parallel |
+| **W4** | wp/w4-* | quiz · catalog · students · classes | 4 Seiten | 4 parallel |
+| **W5** | wp/w5-* | SubmissionCard.tsx · ConfigSubmissions.tsx | 2 Dateien | 2 parallel |
+| **W6** | wp/w6-* | Cleanup (MediaInfoDialog-Sonderklassen, design.md-§8·B-Amendment, e2e-Specs) | — | 1 |
