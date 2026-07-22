@@ -248,7 +248,7 @@ const QuizzList = ({
                 </label>
               }
               leading={
-                <ListChecks className="size-5 shrink-0 text-[var(--ink-faint)]" />
+                <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
               }
               title={q.subject}
               meta={questionCountMeta(q.questionCount)}
@@ -374,7 +374,7 @@ const QuizzList = ({
                 >
                   <ListRow
                     leading={
-                      <ListChecks className="size-5 shrink-0 text-[var(--ink-faint)]" />
+                      <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
                     }
                     title={q.subject}
                     meta={archivedMeta}
