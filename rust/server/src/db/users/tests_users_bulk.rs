@@ -1379,54 +1379,53 @@ mod tests {
             .await
             .expect("Failed to create regular user to delete");
 
-        // Quiz owned by id2 — use real schema (safe_id PK + subject/questions).
-        let quiz_id = "test_bulk_delete_g3_casc_quiz";
-        sqlx::query(
-            "INSERT INTO quizzes (id, subject, questions, archived, owner_id) \
-             VALUES ($1, 'test_quiz', '[]'::jsonb, false, $2)"
+        // Quiz owned by id2 (same insert shape as bulk_delete_sets_owner_id_null_on_quiz).
+        let quiz_id = sqlx::query_as::<_, (i64,)>(
+            "INSERT INTO quizzes (owner_id, name, design) VALUES ($1, 'test_quiz_g3', '{}') RETURNING id"
         )
-        .bind(quiz_id)
         .bind(id2)
-        .execute(&pool)
+        .fetch_one(&pool)
         .await
-        .expect("Failed to insert test quiz");
+        .expect("Failed to insert test quiz")
+        .0;
 
-        // Two sessions for id2 (token_hash unique).
+        // Two sessions for id2 (same column set as bulk_delete_cascades_sessions).
         sqlx::query(
-            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
-             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
+            "INSERT INTO sessions (user_id, token_hash, player_token, created_at) \
+             VALUES ($1, 'test_bulk_delete_g3_hash1', 'token1', now())"
         )
-        .bind("test_bulk_delete_g3_casc_hash1")
         .bind(id2)
         .execute(&pool)
         .await
         .expect("Failed to insert session 1");
 
         sqlx::query(
-            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
-             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
+            "INSERT INTO sessions (user_id, token_hash, player_token, created_at) \
+             VALUES ($1, 'test_bulk_delete_g3_hash2', 'token2', now())"
         )
-        .bind("test_bulk_delete_g3_casc_hash2")
         .bind(id2)
         .execute(&pool)
         .await
         .expect("Failed to insert session 2");
 
-        let sessions_before: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
-                .bind(id2)
-                .fetch_one(&pool)
-                .await
-                .expect("Failed to count sessions before delete");
-        assert_eq!(sessions_before.0, 2, "fixture should have 2 sessions for id2");
+        let sessions_before = sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) FROM sessions WHERE user_id = $1"
+        )
+        .bind(id2)
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count sessions before delete")
+        .0;
+        assert_eq!(sessions_before, 2, "fixture should have 2 sessions for id2");
 
-        let owner_before: (Option<i64>,) =
-            sqlx::query_as("SELECT owner_id FROM quizzes WHERE id = $1")
-                .bind(quiz_id)
-                .fetch_one(&pool)
-                .await
-                .expect("Failed to read quiz owner before delete");
-        assert_eq!(owner_before.0, Some(id2), "quiz should be owned by id2");
+        let (owner_before,): (Option<i64>,) = sqlx::query_as(
+            "SELECT owner_id FROM quizzes WHERE id = $1"
+        )
+        .bind(quiz_id)
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to read quiz owner before delete");
+        assert_eq!(owner_before, Some(id2), "quiz should be owned by id2");
 
         let result = bulk_delete(&pool, id1, vec![id2])
             .await
@@ -1449,40 +1448,156 @@ mod tests {
             result.failed
         );
 
-        let user_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE id = $1")
-            .bind(id2)
-            .fetch_one(&pool)
-            .await
-            .expect("Failed to count id2 after delete");
-        assert_eq!(user_count.0, 0, "id2 should be deleted from users");
+        let user_count = sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) FROM users WHERE id = $1"
+        )
+        .bind(id2)
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count id2 after delete")
+        .0;
+        assert_eq!(user_count, 0, "id2 should be deleted from users");
 
-        let session_count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
-                .bind(id2)
-                .fetch_one(&pool)
-                .await
-                .expect("Failed to count sessions after delete");
+        let session_count = sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) FROM sessions WHERE user_id = $1"
+        )
+        .bind(id2)
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count sessions after delete")
+        .0;
+        assert_eq!(session_count, 0, "Sessions should be cascade-deleted");
+
+        let (owner_after,): (Option<i64>,) = sqlx::query_as(
+            "SELECT owner_id FROM quizzes WHERE id = $1"
+        )
+        .bind(quiz_id)
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to read quiz owner after delete");
         assert_eq!(
-            session_count.0, 0,
-            "Sessions should be cascade-deleted"
-        );
-
-        let owner_after: (Option<i64>,) =
-            sqlx::query_as("SELECT owner_id FROM quizzes WHERE id = $1")
-                .bind(quiz_id)
-                .fetch_one(&pool)
-                .await
-                .expect("Failed to read quiz owner after delete");
-        assert!(
-            owner_after.0.is_none(),
+            owner_after, None,
             "Quiz owner_id should be NULL after user delete"
         );
 
-        // Cleanup orphan quiz (owner already null) + remaining test users.
+        // Orphan quiz row (owner already null) + remaining test users.
         let _ = sqlx::query("DELETE FROM quizzes WHERE id = $1")
             .bind(quiz_id)
             .execute(&pool)
             .await;
+        cleanup_test_users(&pool).await;
+    }
+
+    // ── Group 4: bulk_activate ──────────────────────────────────────────
+
+    /// Activates mixed active/inactive users idempotently (all succeed, no skips).
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_activate_succeeds_idempotent() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_activate_g4_id1", "pass123", "user")
+            .await
+            .expect("Failed to create id1 (active)");
+        let id2 = create_user(&pool, "test_bulk_activate_g4_id2", "pass123", "user")
+            .await
+            .expect("Failed to create id2 (active)");
+        let id3 = create_user(&pool, "test_bulk_activate_g4_id3", "pass123", "user")
+            .await
+            .expect("Failed to create id3 (to deactivate)");
+
+        set_user_active(&pool, id3, false)
+            .await
+            .expect("Failed to deactivate id3");
+
+        let result = bulk_activate(&pool, vec![id1, id2, id3])
+            .await
+            .expect("bulk_activate failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id1, id2, id3],
+            "expected all three ids succeeded, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips, got {:?}",
+            result.skipped
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        let (_, a3) = fetch_id_active(&pool, id3).await;
+        assert!(a1, "id1 should be active after bulk_activate");
+        assert!(a2, "id2 should be active after bulk_activate");
+        assert!(a3, "id3 should be active after bulk_activate");
+
+        cleanup_test_users(&pool).await;
+    }
+
+    /// Missing ids land in failed with reason not_found; existing ids still succeed.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_activate_handles_not_found() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_activate_g4_nf_id1", "pass123", "user")
+            .await
+            .expect("Failed to create id1 (active)");
+
+        let result = bulk_activate(&pool, vec![id1, 999999])
+            .await
+            .expect("bulk_activate failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id1],
+            "expected id1 succeeded, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips, got {:?}",
+            result.skipped
+        );
+        assert_eq!(
+            result.failed.len(),
+            1,
+            "expected one failure, got {:?}",
+            result.failed
+        );
+        assert_eq!(result.failed[0].id, 999999, "failed id should be 999999");
+        assert_eq!(
+            result.failed[0].reason, "not_found",
+            "fail reason should be not_found, got {}",
+            result.failed[0].reason
+        );
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        assert!(a1, "id1 should remain active");
+
         cleanup_test_users(&pool).await;
     }
 }
