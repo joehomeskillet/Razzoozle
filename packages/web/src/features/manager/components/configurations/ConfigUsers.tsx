@@ -16,7 +16,7 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { useManagerStore } from "@razzoozle/web/game/stores/manager"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import {
