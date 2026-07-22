@@ -795,7 +795,7 @@
     "usernameLabel": "Benutzername",
     "passwordLabel": "Passwort",
     "roleLabel": "Rolle",
-    "emptyHeadline": "Noch keine Lehrkräfte",
+    "emptyHeadline": "Noch keine Benutzer",
     "empty": "Lege oben das erste Konto an.",
     "active": "Aktiv",
     "disabledStatus": "Deaktiviert",
@@ -826,7 +826,12 @@
     "cannot_delete_self": "Dein Konto kann nicht gelöscht werden",
     "cannot_deactivate_self": "Dein Konto kann nicht deaktiviert werden",
     "copyUser": "Benutzer kopieren",
-    "copyDialogTitle": "Benutzer kopieren"
+    "copyDialogTitle": "Benutzer kopieren",
+    "bulkConfirmTitleActivate": "{{count}} Benutzer aktivieren?",
+    "bulkConfirmTitleDeactivate": "{{count}} Benutzer deaktivieren?",
+    "bulkConfirmTitleDelete": "{{count}} Benutzer löschen?",
+    "noMatchesHeadline": "Keine Treffer",
+    "noMatches": "Passe Suche oder Filter an."
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",

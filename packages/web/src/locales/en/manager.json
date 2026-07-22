@@ -825,7 +825,7 @@
     "usernameLabel": "Username",
     "passwordLabel": "Password",
     "roleLabel": "Role",
-    "emptyHeadline": "No teachers yet",
+    "emptyHeadline": "No users yet",
     "empty": "Create the first account above.",
     "active": "Active",
     "disabledStatus": "Disabled",
@@ -856,7 +856,12 @@
     "cannot_delete_self": "Your account cannot be deleted",
     "cannot_deactivate_self": "Your account cannot be deactivated",
     "copyUser": "Copy user",
-    "copyDialogTitle": "Copy user"
+    "copyDialogTitle": "Copy user",
+    "bulkConfirmTitleActivate": "Activate {{count}} users?",
+    "bulkConfirmTitleDeactivate": "Deactivate {{count}} users?",
+    "bulkConfirmTitleDelete": "Delete {{count}} users?",
+    "noMatchesHeadline": "No matches",
+    "noMatches": "Adjust your search or filters."
   },
   "schueler": {
     "title": "Student Management",
