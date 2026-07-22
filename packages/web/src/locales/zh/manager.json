@@ -795,7 +795,7 @@
     "usernameLabel": "用户名",
     "passwordLabel": "密码",
     "roleLabel": "角色",
-    "emptyHeadline": "还没有教师",
+    "emptyHeadline": "还没有用户",
     "empty": "在上面创建第一个账户。",
     "active": "活跃",
     "disabledStatus": "已禁用",
@@ -826,7 +826,12 @@
     "cannot_delete_self": "无法删除自己的账户",
     "cannot_deactivate_self": "无法停用自己的账户",
     "copyUser": "复制用户",
-    "copyDialogTitle": "复制用户"
+    "copyDialogTitle": "复制用户",
+    "bulkConfirmTitleActivate": "启用 {{count}} 个用户？",
+    "bulkConfirmTitleDeactivate": "禁用 {{count}} 个用户？",
+    "bulkConfirmTitleDelete": "删除 {{count}} 个用户？",
+    "noMatchesHeadline": "无匹配结果",
+    "noMatches": "请调整搜索或筛选条件。"
   },
   "profile": {
     "intro": "您的个人资料和设置",
