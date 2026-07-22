@@ -6,13 +6,23 @@
 use super::HandlerCtx;
 use crate::db;
 use razzoozle_protocol::constants;
+use serde::Deserialize;
 use socketioxide::extract::{Data, SocketRef};
 use std::fs;
+
+/// Max ids accepted per `results:bulkDelete` (matches users bulk cap).
+const BULK_DELETE_MAX_IDS: usize = 200;
+
+#[derive(Debug, Deserialize)]
+struct BulkDeletePayload {
+    ids: Vec<String>,
+}
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_get_shared(socket, ctx.clone());
     register_get(socket, ctx.clone());
-    register_delete(socket, ctx);
+    register_delete(socket, ctx.clone());
+    register_bulk_delete(socket, ctx);
 }
 
 /// Public (no auth): the `/r/:id` share page. The client emits a BARE STRING id
@@ -127,6 +137,73 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         .ok();
                     crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx).await;
                 }
+            });
+        }
+    });
+}
+
+/// Manager (auth-gated): bulk-delete results by id list.
+/// Payload is a typed `{ids: string[]}` object (not bare Value — socketioxide
+/// would otherwise fail to extract and silently drop the event).
+fn register_bulk_delete(socket: &SocketRef, ctx: HandlerCtx) {
+    socket.on(constants::results::BULK_DELETE, {
+        let ctx = ctx.clone();
+
+        move |socket: SocketRef, Data::<BulkDeletePayload>(payload)| {
+            let ctx = ctx.clone();
+
+            tokio::spawn(async move {
+                // Auth-gate — exact same logic as results:delete
+                let user = match ctx.require_user().await {
+                    Some(user) => user,
+                    None => {
+                        socket
+                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                            .ok();
+                        return;
+                    }
+                };
+                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+
+                if payload.ids.is_empty() {
+                    socket
+                        .emit(
+                            constants::manager::ERROR_MESSAGE,
+                            "errors:results.bulkEmpty",
+                        )
+                        .ok();
+                    return;
+                }
+                if payload.ids.len() > BULK_DELETE_MAX_IDS {
+                    socket
+                        .emit(
+                            constants::manager::ERROR_MESSAGE,
+                            "errors:results.bulkTooMany",
+                        )
+                        .ok();
+                    return;
+                }
+
+                let pool = match &ctx.db_pool {
+                    Some(p) => p,
+                    None => {
+                        socket
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:results.bulkFailed",
+                            )
+                            .ok();
+                        return;
+                    }
+                };
+
+                let outcome = db::delete_results(pool, &payload.ids, me).await;
+
+                socket
+                    .emit(constants::results::BULK_DELETED, &outcome)
+                    .ok();
+                // Same list refresh as single-delete
+                crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx).await;
             });
         }
     });
