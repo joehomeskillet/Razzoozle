@@ -26,6 +26,10 @@ import {
   Trash2,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
+import {
+  listContainerMotion,
+  listItemMotion,
+} from "@razzoozle/web/features/manager/components/console/listMotion"
 import { useTranslation } from "react-i18next"
 import { useState } from "react"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -182,7 +186,7 @@ const QuizzList = ({
   })
 
   const questionCountMeta = (count: number | null | undefined) => (
-    <span className="text-xs text-[var(--ink-subtle)]">
+    <span>
       {t("manager:catalog.count", { count: count ?? 0 })}
     </span>
   )
@@ -213,11 +217,7 @@ const QuizzList = ({
   ) : (
     <motion.div
       className="min-h-0 flex-1 space-y-3 p-0.5"
-      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={
-        reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-      }
+      {...listContainerMotion(reducedMotion)}
     >
       {activeQuizz.map((q, index) => {
         const assignedLabels = getLabelMap(q)
@@ -229,21 +229,12 @@ const QuizzList = ({
         return (
           <motion.div
             key={q.id}
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={
-              reducedMotion
-                ? undefined
-                : {
-                    duration: 0.28,
-                    ease: "easeOut",
-                    delay: Math.min(index, 8) * 0.04,
-                  }
-            }
+            {...listItemMotion(index, reducedMotion)}
           >
             <ListRow
+              selected={selected.has(q.id)}
               selection={
-                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
+                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
                   <span className="sr-only">
                     {t("manager:quizz.selectQuiz", {
                       name: q.subject,
@@ -371,7 +362,7 @@ const QuizzList = ({
                 q.questionCount != null ? (
                   questionCountMeta(q.questionCount)
                 ) : (
-                  <span className="text-xs text-[var(--ink-subtle)]">
+                  <span>
                     {t("manager:quizz.archived")}
                   </span>
                 )
@@ -379,17 +370,7 @@ const QuizzList = ({
               return (
                 <motion.div
                   key={q.id}
-                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                  transition={
-                    reducedMotion
-                      ? undefined
-                      : {
-                          duration: 0.28,
-                          ease: "easeOut",
-                          delay: Math.min(index, 8) * 0.04,
-                        }
-                  }
+                  {...listItemMotion(index, reducedMotion)}
                 >
                   <ListRow
                     leading={
