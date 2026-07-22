@@ -68,10 +68,19 @@ const ConfigSchueler = () => {
   )
   const selection = useEntitySelection(studentIds)
 
-  // Bulk operation state (SDD §3.2 / §9.3). Add/remove-class = Runde D.
+  // Bulk operation state (SDD §3.2 / §9.3).
+  // 'addToClass' | 'removeFromClass' reserved for Round D dialogs (stub buttons only in C1).
   const [pendingBulkAction, setPendingBulkAction] = useState<
-    "activate" | "deactivate" | "delete" | null
+    | "activate"
+    | "deactivate"
+    | "delete"
+    | "addToClass"
+    | "removeFromClass"
+    | null
   >(null)
+  // True while a bulk socket op is in flight (set on confirm, cleared on settle).
+  // Class stubs (addToClass/removeFromClass) only park dialog intent for Round D —
+  // they must not lock the toolbar.
   const [bulkOperationLoading, setBulkOperationLoading] = useState(false)
 
   // Pattern E5: settled bulk op → reset loading, clear selection, close dialog.
@@ -193,46 +202,66 @@ const ConfigSchueler = () => {
             </div>
           )}
 
-          {/* SDD §3.2 — bulk toolbar after filter pills + header checkbox */}
-          {selection.selectionActive && (
-            <div className="mb-0 w-full shrink-0">
-              <BulkActionToolbar
-                count={selection.selected.size}
-                label={t("manager:bulk.selected", {
-                  count: selection.selected.size,
-                })}
-                onClear={selection.clear}
+          {/* SDD §3.2 / §9.3 — bulk toolbar after filter pills + header checkbox, before StudentList */}
+          {selection.selected.size > 0 && (
+            <BulkActionToolbar
+              count={selection.selected.size}
+              label={t("manager:bulk.selected", {
+                count: selection.selected.size,
+              })}
+              onClear={() => {
+                selection.clear()
+                setPendingBulkAction(null)
+              }}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPendingBulkAction("activate")}
+                disabled={bulkOperationLoading}
               >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPendingBulkAction("activate")}
-                  disabled={bulkOperationLoading}
-                >
-                  {t("manager:bulk.activate")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPendingBulkAction("deactivate")}
-                  disabled={bulkOperationLoading}
-                >
-                  {t("manager:bulk.deactivate")}
-                </Button>
-                {/* Add/Remove class bulk = Runde D */}
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setPendingBulkAction("delete")}
-                  disabled={bulkOperationLoading}
-                >
-                  {t("manager:bulk.deleteSelected")}
-                </Button>
-              </BulkActionToolbar>
-            </div>
+                {t("manager:bulk.activate")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPendingBulkAction("deactivate")}
+                disabled={bulkOperationLoading}
+              >
+                {t("manager:bulk.deactivate")}
+              </Button>
+              {/* Round D: bulk assign-class dialog */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPendingBulkAction("addToClass")}
+                disabled={bulkOperationLoading}
+              >
+                {t("manager:schueler.addToClass")}
+              </Button>
+              {/* Round D: bulk remove-from-class dialog */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPendingBulkAction("removeFromClass")}
+                disabled={bulkOperationLoading}
+              >
+                {t("manager:schueler.removeFromClassTitle")}
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={() => setPendingBulkAction("delete")}
+                disabled={bulkOperationLoading}
+              >
+                {t("manager:bulk.deleteSelected")}
+              </Button>
+            </BulkActionToolbar>
           )}
 
           <StudentList
