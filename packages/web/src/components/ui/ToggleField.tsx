@@ -72,11 +72,11 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
         id={id}
         title={disabled && disabledReason ? disabledReason : undefined}
       >
-        <div className="flex min-h-11 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-h-0 flex-col gap-2 sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:items-center sm:gap-4">
           <span
             id={titleId}
             className={clsx(
-              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-60",
+              "shrink-0 text-sm font-medium text-[var(--ink-muted)]",
               "flex flex-wrap items-start gap-2",
               disabled && "opacity-50"
             )}
