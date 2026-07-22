@@ -324,6 +324,7 @@ export interface ServerToClientEvents {
   // Results events
   [EVENTS.RESULTS.DATA]: (_result: GameResult) => void
   [EVENTS.RESULTS.SHARED_DATA]: (_result: SharedResult) => void
+  [EVENTS.RESULTS.BULK_DELETED]: (_outcome: { succeeded: string[]; failed: { id: string; reason: string }[] }) => void
 
   // Display (satellite) events
   [EVENTS.DISPLAY.REGISTERED]: (_data: { code: string }) => void
@@ -600,6 +601,7 @@ export interface ClientToServerEvents {
   [EVENTS.RESULTS.GET]: (_id: string) => void
   [EVENTS.RESULTS.DELETE]: (_id: string) => void
   [EVENTS.RESULTS.GET_SHARED]: (_id: string) => void
+  [EVENTS.RESULTS.BULK_DELETE]: (_payload: { ids: string[] }) => void
 
   // Pause/resume (manager-owned, between-questions only — enforced server-side)
   [EVENTS.MANAGER.PAUSE_GAME]: (_message: { gameId?: string }) => void
