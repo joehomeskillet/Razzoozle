@@ -1,404 +1,504 @@
 {
-  "version": "1.0",
-  "timestamp": "2026-07-22",
-  "description": "Unified design tokens manifest for Razzoozle flat design system. Normalizes tokens from design.md, packages/web/src/index.css, and console/tokens.css into a single canonical schema.",
-  "source": {
-    "design_doc": "design.md",
-    "stage_tokens": "packages/web/src/index.css (:root + @theme blocks)",
-    "console_tokens": "packages/web/src/features/manager/components/console/tokens.css",
-    "styles_css": "ds-bundle/styles.css (imports _ds_bundle.css + fonts/fonts.css)",
-    "validation_gate": "scripts/check-manager-tokens.sh"
+  "$schema": "https://tokens.studio/schema/draft.json",
+  "$metadata": {
+    "tokenSetOrder": ["brand", "fields", "surfaces", "radius", "text", "console", "answer-tiles", "teams", "tiers", "state", "misc", "labels", "typography", "spacing", "scrim"],
+    "convertedDate": "2026-07-22",
+    "reconciliation": "DTCG design.tokens.json is now the single source of truth. Older .design-tokens.json (2026-07-17) should be regenerated from this file; do not edit .design-tokens.json directly.",
+    "sourceFiles": ["design.md", "packages/web/src/index.css", "packages/web/src/features/manager/components/console/tokens.css"]
   },
   "brand": {
     "primary": {
-      "value": "#7c3aed",
-      "description": "Violet brand color. Primary CTA, pinned in console. White text OK.",
-      "category": "brand",
-      "themeable": true,
-      "themes": ["stage"]
+      "$value": "#7c3aed",
+      "$type": "color",
+      "$description": "Violet brand color. Primary CTA, pinned in console. White text OK."
     },
     "secondary": {
-      "value": "#2e1065",
-      "description": "Dark ink, headings. Pinned in console.",
-      "category": "brand",
-      "themeable": false,
-      "themes": ["stage", "console"]
+      "$value": "#2e1065",
+      "$type": "color",
+      "$description": "Dark ink, headings. Pinned in console."
     },
     "accent": {
-      "value": "#ff9900",
-      "description": "Amber accent default. RUNTIME-themeable. The #FF2D6E in index.css @theme is unused static seed, overwritten on apply. Use ink text on accent fills, never white-on-accent on cream surfaces.",
-      "category": "brand",
-      "themeable": true,
-      "themes": ["stage"],
-      "note": "Canonical default is amber #ff9900; set in packages/common/types/theme.ts + validators/theme.ts"
+      "$value": "#ff9900",
+      "$type": "color",
+      "$description": "Amber accent default. RUNTIME-themeable. Canonical default is amber; set in packages/common/types/theme.ts + validators/theme.ts"
     }
   },
   "fields": {
     "cream": {
-      "value": "#F4F1EA",
-      "description": "Front-of-house background. STATIC (:root-only). Cream field for landing, lobby, player phone, trophies, join/auth.",
-      "category": "field",
-      "themeable": false,
-      "use": "app-background"
+      "$value": "#F4F1EA",
+      "$type": "color",
+      "$description": "Front-of-house background. STATIC (:root-only). Cream field for landing, lobby, player phone, trophies, join/auth."
     },
     "ink": {
-      "value": "#0E1120",
-      "description": "Stage background (shared result /r/:id). STATIC (:root-only). Manager/display/podium/recap now cream-converted via GameWrapper force.",
-      "category": "field",
-      "themeable": false,
-      "use": "stage-background"
+      "$value": "#0E1120",
+      "$type": "color",
+      "$description": "Stage background (shared result /r/:id). STATIC (:root-only). Manager/display/podium/recap now cream-converted via GameWrapper force."
     }
   },
   "surfaces": {
     "surface": {
-      "value": "#FFFFFF",
-      "description": "Card/surface fills on cream. STATIC (:root-only).",
-      "category": "surface",
-      "themeable": false,
-      "use": "cards-on-cream"
+      "$value": "#FFFFFF",
+      "$type": "color",
+      "$description": "Card/surface fills on cream. STATIC (:root-only)."
     },
     "border-hairline": {
-      "value": "#E2DDD2",
-      "description": "1px answer-tile ring separator (WCAG 1.4.11 distinction). STATIC (:root-only).",
-      "category": "surface",
-      "themeable": false,
-      "use": "borders-separators"
+      "$value": "#E2DDD2",
+      "$type": "color",
+      "$description": "1px answer-tile ring separator (WCAG 1.4.11 distinction). STATIC (:root-only)."
     },
     "shadow-flat": {
-      "value": "0 1px 2px rgba(20,18,43,.06), 0 8px 24px rgba(20,18,43,.07)",
-      "description": "Single shadow rung (no elevation ladder). STATIC (:root-only). Recipe, not a ladder.",
-      "category": "surface",
-      "themeable": false,
-      "use": "shadows"
+      "$value": "0 1px 2px rgba(20,18,43,.06), 0 8px 24px rgba(20,18,43,.07)",
+      "$type": "shadow",
+      "$description": "Single shadow rung (no elevation ladder). STATIC (:root-only). Recipe, not a ladder."
     }
   },
   "radius": {
     "theme": {
-      "value": "16px",
-      "description": "Standard corner radius. RUNTIME-themeable.",
-      "category": "radius",
-      "themeable": true,
-      "use": "cards-buttons-inputs"
+      "$value": "16px",
+      "$type": "dimension",
+      "$description": "Standard corner radius. RUNTIME-themeable."
     },
     "compact": {
-      "value": "8px",
-      "description": "Compact radius for chips, badges, tightly-spaced UI.",
-      "category": "radius",
-      "themeable": false,
-      "use": "chips-badges-compact"
+      "$value": "8px",
+      "$type": "dimension",
+      "$description": "Compact radius for chips, badges, tightly-spaced UI."
     }
   },
   "text": {
     "game-fg": {
-      "value": "#0E1120",
-      "description": "In-game foreground text. STATIC (no theme field). Shell sets #0E1120 (ink) for cream-converted surfaces. Bare :root default is WHITE (#ffffff). NEW cream shells MUST set --game-fg: #0E1120 themselves.",
-      "category": "text",
-      "themeable": false,
-      "note": "Default #ffffff in :root, overridden by shell to #0E1120 for cream fields"
+      "$value": "#0E1120",
+      "$type": "color",
+      "$description": "In-game foreground text. STATIC (no theme field). Shell sets #0E1120 (ink) for cream-converted surfaces. Bare :root default is WHITE (#ffffff). NEW cream shells MUST set --game-fg: #0E1120 themselves."
     },
     "answer-text": {
-      "value": "#0B0B12",
-      "description": "Uniform ink label on answer tiles (all 4 colors). RUNTIME-themeable. Runtime default is ink #0B0B12; previously drifted to white.",
-      "category": "text",
-      "themeable": true,
-      "use": "answer-tile-labels"
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Uniform ink label on answer tiles (all 4 colors). RUNTIME-themeable. Runtime default is ink #0B0B12; previously drifted to white."
     },
     "accent-contrast-text": {
-      "value": "#0E1120",
-      "description": "Ink text on accent fills. STATIC (:root-only). Never white-on-accent on cream surfaces.",
-      "category": "text",
-      "themeable": false,
-      "use": "text-on-accent"
+      "$value": "#0E1120",
+      "$type": "color",
+      "$description": "Ink text on accent fills. STATIC (:root-only). Never white-on-accent on cream surfaces."
     }
   },
   "console": {
-    "ink-family": {
-      "ink": "#111827",
-      "ink-muted": "#374151",
-      "ink-medium": "#4b5563",
-      "ink-subtle": "#6b7280",
-      "ink-faint": "#9ca3af",
-      "description": "Console text palette (STATIC). Replaces text-gray-*00/700/600/500/400 via migration mapping (T-0).",
-      "category": "console-text",
-      "themeable": false
+    "ink": {
+      "$value": "#111827",
+      "$type": "color",
+      "$description": "Console primary text color. STATIC."
     },
-    "surface-family": {
-      "surface-2": "#f9fafb",
-      "surface-3": "#f3f4f6",
-      "surface-4": "#e5e7eb",
-      "surface-5": "#d1d5db",
-      "description": "Console surface hierarchy (STATIC). Replaces bg-gray-50/100/200/300 via migration mapping (T-0). surface-5 for toggle/hover steps.",
-      "category": "console-surface",
-      "themeable": false
+    "ink-muted": {
+      "$value": "#374151",
+      "$type": "color",
+      "$description": "Console muted text color. STATIC."
+    },
+    "ink-medium": {
+      "$value": "#4b5563",
+      "$type": "color",
+      "$description": "Console medium text color. STATIC."
+    },
+    "ink-subtle": {
+      "$value": "#6b7280",
+      "$type": "color",
+      "$description": "Console subtle text color. STATIC."
+    },
+    "ink-faint": {
+      "$value": "#9ca3af",
+      "$type": "color",
+      "$description": "Console faint text color. STATIC."
+    },
+    "surface-2": {
+      "$value": "#f9fafb",
+      "$type": "color",
+      "$description": "Console surface level 2. STATIC."
+    },
+    "surface-3": {
+      "$value": "#f3f4f6",
+      "$type": "color",
+      "$description": "Console surface level 3. STATIC."
+    },
+    "surface-4": {
+      "$value": "#e5e7eb",
+      "$type": "color",
+      "$description": "Console surface level 4. STATIC."
+    },
+    "surface-5": {
+      "$value": "#d1d5db",
+      "$type": "color",
+      "$description": "Console surface level 5. STATIC. Used for toggle/hover steps."
     },
     "line": {
-      "value": "#e5e7eb",
-      "description": "Hairline borders, dividers (ListRow separator, form boundaries). STATIC (:root-only). Contrast on surface-3 = 1.09:1 (fails WCAG for meaning-bearing; acceptable as decorative divider).",
-      "category": "console-line",
-      "themeable": false,
-      "warning": "Contrast 1.09:1 on surface-3; use for decorative dividers only, not meaning-bearing distinctions"
+      "$value": "#e5e7eb",
+      "$type": "color",
+      "$description": "Hairline borders, dividers (ListRow separator, form boundaries). STATIC (:root-only). Contrast on surface-3 = 1.09:1 (fails WCAG for meaning-bearing; acceptable as decorative divider)."
     },
     "ring-selected": {
-      "value": "rgb(255 255 255 / 0.8)",
-      "description": "Focus ring on dark backgrounds (rarely used in light console). STATIC (:root-only).",
-      "category": "console-focus",
-      "themeable": false
+      "$value": "rgb(255 255 255 / 0.8)",
+      "$type": "color",
+      "$description": "Focus ring on dark backgrounds (rarely used in light console). STATIC (:root-only)."
     },
-    "status": {
-      "online": {
-        "bg": "#dcfce7",
-        "text": "#166534",
-        "contrast": "6.5:1",
-        "wcag": "AA"
-      },
-      "offline": {
-        "bg": "#fee2e2",
-        "text": "#991b1b",
-        "contrast": "6.8:1",
-        "wcag": "AA"
-      },
-      "pending": {
-        "bg": "#fef3c7",
-        "text": "#92400e",
-        "contrast": "6.4:1",
-        "wcag": "AA"
-      },
-      "description": "Status badge colors (D3). Always pair -bg with -text; never white text.",
-      "category": "console-status",
-      "themeable": false
+    "status-online-bg": {
+      "$value": "#dcfce7",
+      "$type": "color",
+      "$description": "Online status background color. STATIC."
     },
-    "accent-derived": {
-      "accent-tint": "color-mix(in srgb, var(--color-primary), white 88%)",
-      "accent-contrast": "color-mix(in srgb, color-mix(in srgb, var(--color-primary), black 34%), #1f2937 12%)",
-      "description": "Derived from themed primary. Re-derived inside .console-shell from pinned primary, ensuring console stays amber even when game recolors.",
-      "category": "console-accent",
-      "themeable": true,
-      "note": "color-mix() re-evaluates at paint time; tracks runtime theme automatically"
+    "status-online-text": {
+      "$value": "#166534",
+      "$type": "color",
+      "$description": "Online status text color. Contrast 6.5:1 (AA). STATIC."
+    },
+    "status-offline-bg": {
+      "$value": "#fee2e2",
+      "$type": "color",
+      "$description": "Offline status background color. STATIC."
+    },
+    "status-offline-text": {
+      "$value": "#991b1b",
+      "$type": "color",
+      "$description": "Offline status text color. Contrast 6.8:1 (AA). STATIC."
+    },
+    "status-pending-bg": {
+      "$value": "#fef3c7",
+      "$type": "color",
+      "$description": "Pending status background color. STATIC."
+    },
+    "status-pending-text": {
+      "$value": "#92400e",
+      "$type": "color",
+      "$description": "Pending status text color. Contrast 6.4:1 (AA). STATIC."
+    },
+    "accent-tint": {
+      "$value": "color-mix(in srgb, var(--color-primary), white 88%)",
+      "$type": "color",
+      "$description": "Derived from themed primary. Re-derived inside .console-shell from pinned primary, ensuring console stays amber even when game recolors."
+    },
+    "accent-contrast": {
+      "$value": "color-mix(in srgb, color-mix(in srgb, var(--color-primary), black 34%), #1f2937 12%)",
+      "$type": "color",
+      "$description": "Derived from themed primary. RUNTIME-themeable."
     }
   },
   "answer-tiles": {
     "answer-1": {
-      "value": "#E69F00",
-      "description": "Tile fill (orange). Recolors to state-correct (green) or state-wrong (red) on reveal. Ring + ink label retained.",
-      "category": "answer-tile",
-      "themeable": false
+      "$value": "#E69F00",
+      "$type": "color",
+      "$description": "Tile fill (orange). Recolors to state-correct (green) or state-wrong (red) on reveal. Ring + ink label retained."
     },
     "answer-2": {
-      "value": "#56B4E9",
-      "description": "Tile fill (blue). Recolors on reveal.",
-      "category": "answer-tile",
-      "themeable": false
+      "$value": "#56B4E9",
+      "$type": "color",
+      "$description": "Tile fill (blue). Recolors on reveal."
     },
     "answer-3": {
-      "value": "#3DBFA0",
-      "description": "Tile fill (teal). Recolors on reveal.",
-      "category": "answer-tile",
-      "themeable": false
+      "$value": "#3DBFA0",
+      "$type": "color",
+      "$description": "Tile fill (teal). Recolors on reveal."
     },
     "answer-4": {
-      "value": "#CC79A7",
-      "description": "Tile fill (pink). Recolors on reveal.",
-      "category": "answer-tile",
-      "themeable": false
-    },
-    "rule": "1px hairline ring (#E2DDD2) + shape icon + ink label (#0B0B12) on every tile. On reveal: swap fill to state-correct/state-wrong in place; keep ring + label."
+      "$value": "#CC79A7",
+      "$type": "color",
+      "$description": "Tile fill (pink). Recolors on reveal."
+    }
   },
   "teams": {
-    "red": {
-      "base": "#ef4444",
-      "ring": "color-mix(in srgb, var(--team-red), black 32%)",
-      "text": "color-mix(in srgb, var(--team-red), black 55%)",
-      "description": "Team color; use derived -text for labels."
+    "red-base": {
+      "$value": "#ef4444",
+      "$type": "color",
+      "$description": "Red team base color."
     },
-    "blue": {
-      "base": "#3b82f6",
-      "ring": "color-mix(in srgb, var(--team-blue), black 32%)",
-      "text": "color-mix(in srgb, var(--team-blue), black 55%)",
-      "description": "Team color; use derived -text for labels."
+    "red-ring": {
+      "$value": "color-mix(in srgb, var(--team-red), black 32%)",
+      "$type": "color",
+      "$description": "Red team derived ring color (black 32%)."
     },
-    "green": {
-      "base": "#22c55e",
-      "ring": "color-mix(in srgb, var(--team-green), black 32%)",
-      "text": "color-mix(in srgb, var(--team-green), black 55%)",
-      "description": "Team color; use derived -text for labels."
+    "red-text": {
+      "$value": "color-mix(in srgb, var(--team-red), black 55%)",
+      "$type": "color",
+      "$description": "Red team derived text color (black 55%)."
     },
-    "yellow": {
-      "base": "#facc15",
-      "ring": "color-mix(in srgb, var(--team-yellow), black 32%)",
-      "text": "color-mix(in srgb, var(--team-yellow), black 55%)",
-      "description": "Team color; use derived -text for labels."
+    "blue-base": {
+      "$value": "#3b82f6",
+      "$type": "color",
+      "$description": "Blue team base color."
     },
-    "rule": "Derived: -ring = color-mix black 32%, -text = color-mix black 55%"
+    "blue-ring": {
+      "$value": "color-mix(in srgb, var(--team-blue), black 32%)",
+      "$type": "color",
+      "$description": "Blue team derived ring color (black 32%)."
+    },
+    "blue-text": {
+      "$value": "color-mix(in srgb, var(--team-blue), black 55%)",
+      "$type": "color",
+      "$description": "Blue team derived text color (black 55%)."
+    },
+    "green-base": {
+      "$value": "#22c55e",
+      "$type": "color",
+      "$description": "Green team base color."
+    },
+    "green-ring": {
+      "$value": "color-mix(in srgb, var(--team-green), black 32%)",
+      "$type": "color",
+      "$description": "Green team derived ring color (black 32%)."
+    },
+    "green-text": {
+      "$value": "color-mix(in srgb, var(--team-green), black 55%)",
+      "$type": "color",
+      "$description": "Green team derived text color (black 55%)."
+    },
+    "yellow-base": {
+      "$value": "#facc15",
+      "$type": "color",
+      "$description": "Yellow team base color."
+    },
+    "yellow-ring": {
+      "$value": "color-mix(in srgb, var(--team-yellow), black 32%)",
+      "$type": "color",
+      "$description": "Yellow team derived ring color (black 32%)."
+    },
+    "yellow-text": {
+      "$value": "color-mix(in srgb, var(--team-yellow), black 55%)",
+      "$type": "color",
+      "$description": "Yellow team derived text color (black 55%)."
+    }
   },
   "tiers": {
-    "bronze": {
-      "fill": "#b45309",
-      "label": "white",
-      "contrast": "5.02:1",
-      "wcag": "AA+",
-      "note": "WHITE label OK on bronze (only tier that takes white)."
+    "bronze-fill": {
+      "$value": "#b45309",
+      "$type": "color",
+      "$description": "Bronze tier fill color. WHITE label OK on bronze (only tier that takes white). Contrast 5.02:1 (AA+)."
     },
-    "silver": {
-      "fill": "#9ca3af",
-      "label": "#0B0B12",
-      "contrast": "7.39:1",
-      "wcag": "AA+",
-      "note": "INK label (never white on silver)."
+    "bronze-label": {
+      "$value": "#FFFFFF",
+      "$type": "color",
+      "$description": "Bronze tier label color (white). Unique to bronze."
     },
-    "gold": {
-      "fill": "#eab308",
-      "label": "#0B0B12",
-      "contrast": "9.78:1",
-      "wcag": "AAA",
-      "note": "INK label (never white on gold)."
+    "silver-fill": {
+      "$value": "#9ca3af",
+      "$type": "color",
+      "$description": "Silver tier fill color. INK label (never white on silver). Contrast 7.39:1 (AA+)."
     },
-    "diamant": {
-      "fill": "#38bdf8",
-      "label": "#0B0B12",
-      "contrast": "8.75:1",
-      "wcag": "AAA",
-      "note": "INK label (never white on diamant)."
+    "silver-label": {
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Silver tier label color (ink)."
     },
-    "glow": "Derived shadow per tier (box-shadow with color-mix transparency 82–84%)"
+    "gold-fill": {
+      "$value": "#eab308",
+      "$type": "color",
+      "$description": "Gold tier fill color. INK label (never white on gold). Contrast 9.78:1 (AAA)."
+    },
+    "gold-label": {
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Gold tier label color (ink)."
+    },
+    "diamant-fill": {
+      "$value": "#38bdf8",
+      "$type": "color",
+      "$description": "Diamant tier fill color. INK label (never white on diamant). Contrast 8.75:1 (AAA)."
+    },
+    "diamant-label": {
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Diamant tier label color (ink)."
+    }
   },
   "state": {
-    "correct": {
-      "fill": "#22c55e",
-      "text": "#0B0B12",
-      "contrast": "7.8:1",
-      "wcag": "AAA",
-      "note": "INK text. White fails (2.28:1). Soft wash: color-mix transparent 78%."
+    "correct-fill": {
+      "$value": "#22c55e",
+      "$type": "color",
+      "$description": "Correct answer fill color. INK text. Soft wash: color-mix transparent 78%. Contrast 7.8:1 (AAA)."
     },
-    "wrong": {
-      "fill": "#ef4444",
-      "text": "#0B0B12",
-      "contrast": "7.2:1",
-      "wcag": "AAA",
-      "note": "INK text. White fails (3.76:1). Soft wash: color-mix transparent 78%."
+    "correct-text": {
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Correct answer text color (ink). White fails (2.28:1)."
+    },
+    "wrong-fill": {
+      "$value": "#ef4444",
+      "$type": "color",
+      "$description": "Wrong answer fill color. INK text. Soft wash: color-mix transparent 78%. Contrast 7.2:1 (AAA)."
+    },
+    "wrong-text": {
+      "$value": "#0B0B12",
+      "$type": "color",
+      "$description": "Wrong answer text color (ink). White fails (3.76:1)."
     }
   },
   "misc": {
     "rank-up": {
-      "value": "#10b981",
-      "description": "Rank-improved indicator."
+      "$value": "#10b981",
+      "$type": "color",
+      "$description": "Rank-improved indicator."
     },
     "rank-down": {
-      "value": "#f43f5e",
-      "description": "Rank-dropped indicator."
+      "$value": "#f43f5e",
+      "$type": "color",
+      "$description": "Rank-dropped indicator."
     },
     "timer-urgent": {
-      "value": "#ff3b30",
-      "description": "Timer urgency color."
+      "$value": "#ff3b30",
+      "$type": "color",
+      "$description": "Timer urgency color."
     },
     "timer-track": {
-      "value": "color-mix(in srgb, var(--color-text) 22%, transparent)",
-      "description": "Derived from text color at 22% opacity."
+      "$value": "color-mix(in srgb, var(--color-text) 22%, transparent)",
+      "$type": "color",
+      "$description": "Derived from text color at 22% opacity."
     },
     "streak-color": {
-      "value": "#b45309",
-      "description": "Streak indicator."
+      "$value": "#b45309",
+      "$type": "color",
+      "$description": "Streak indicator."
     },
     "surface-muted": {
-      "value": "#374151",
-      "description": "Muted surface."
+      "$value": "#374151",
+      "$type": "color",
+      "$description": "Muted surface."
     },
     "footer-bg": {
-      "value": "#ffffff",
-      "description": "Footer background."
+      "$value": "#ffffff",
+      "$type": "color",
+      "$description": "Footer background."
     },
     "footer-text": {
-      "value": "#1f2937",
-      "description": "Footer text."
+      "$value": "#1f2937",
+      "$type": "color",
+      "$description": "Footer text."
     },
     "danger-bg": {
-      "value": "color-mix(in srgb, var(--state-wrong), black 10%)",
-      "description": "Destructive action background (darkened state-wrong)."
+      "$value": "color-mix(in srgb, var(--state-wrong), black 10%)",
+      "$type": "color",
+      "$description": "Destructive action background (darkened state-wrong)."
     }
   },
   "labels": {
     "red": {
-      "value": "#ef4444",
-      "bg": "color-mix(in srgb, var(--label-red), white 92%)"
+      "$value": "#ef4444",
+      "$type": "color",
+      "$description": "Red label color."
+    },
+    "red-bg": {
+      "$value": "color-mix(in srgb, var(--label-red), white 92%)",
+      "$type": "color",
+      "$description": "Red label background (white 92% tint)."
     },
     "blue": {
-      "value": "#3b82f6",
-      "bg": "color-mix(in srgb, var(--label-blue), white 92%)"
+      "$value": "#3b82f6",
+      "$type": "color",
+      "$description": "Blue label color."
+    },
+    "blue-bg": {
+      "$value": "color-mix(in srgb, var(--label-blue), white 92%)",
+      "$type": "color",
+      "$description": "Blue label background (white 92% tint)."
     },
     "green": {
-      "value": "#22c55e",
-      "bg": "color-mix(in srgb, var(--label-green), white 92%)"
+      "$value": "#22c55e",
+      "$type": "color",
+      "$description": "Green label color."
+    },
+    "green-bg": {
+      "$value": "color-mix(in srgb, var(--label-green), white 92%)",
+      "$type": "color",
+      "$description": "Green label background (white 92% tint)."
     },
     "yellow": {
-      "value": "#facc15",
-      "bg": "color-mix(in srgb, var(--label-yellow), white 92%)"
+      "$value": "#facc15",
+      "$type": "color",
+      "$description": "Yellow label color."
+    },
+    "yellow-bg": {
+      "$value": "color-mix(in srgb, var(--label-yellow), white 92%)",
+      "$type": "color",
+      "$description": "Yellow label background (white 92% tint)."
     },
     "purple": {
-      "value": "#a855f7",
-      "bg": "color-mix(in srgb, var(--label-purple), white 92%)"
+      "$value": "#a855f7",
+      "$type": "color",
+      "$description": "Purple label color."
+    },
+    "purple-bg": {
+      "$value": "color-mix(in srgb, var(--label-purple), white 92%)",
+      "$type": "color",
+      "$description": "Purple label background (white 92% tint)."
     },
     "pink": {
-      "value": "#ec4899",
-      "bg": "color-mix(in srgb, var(--label-pink), white 92%)"
+      "$value": "#ec4899",
+      "$type": "color",
+      "$description": "Pink label color."
+    },
+    "pink-bg": {
+      "$value": "color-mix(in srgb, var(--label-pink), white 92%)",
+      "$type": "color",
+      "$description": "Pink label background (white 92% tint)."
     },
     "indigo": {
-      "value": "#6366f1",
-      "bg": "color-mix(in srgb, var(--label-indigo), white 92%)"
+      "$value": "#6366f1",
+      "$type": "color",
+      "$description": "Indigo label color."
+    },
+    "indigo-bg": {
+      "$value": "color-mix(in srgb, var(--label-indigo), white 92%)",
+      "$type": "color",
+      "$description": "Indigo label background (white 92% tint)."
     },
     "gray": {
-      "value": "#6b7280",
-      "bg": "color-mix(in srgb, var(--label-gray), white 92%)"
+      "$value": "#6b7280",
+      "$type": "color",
+      "$description": "Gray label color."
     },
-    "description": "8-tone fixed set for fächer (labels). Maps to answer/team/state tokens + new values."
+    "gray-bg": {
+      "$value": "color-mix(in srgb, var(--label-gray), white 92%)",
+      "$type": "color",
+      "$description": "Gray label background (white 92% tint)."
+    }
   },
   "typography": {
     "font-display": {
-      "family": "Rubik Variable",
-      "source": "@fontsource-variable/rubik",
-      "use": "Display, headings, stage marquee (weight 800). NOT serif, NOT Inter/Roboto/Helvetica.",
-      "category": "typography"
+      "$value": "Rubik Variable",
+      "$type": "fontFamily",
+      "$description": "Display, headings, stage marquee (weight 800). NOT serif, NOT Inter/Roboto/Helvetica. Source: @fontsource-variable/rubik"
     },
     "font-body": {
-      "family": "Tailwind default sans",
-      "use": "Body text",
-      "category": "typography"
+      "$value": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "$type": "fontFamily",
+      "$description": "Body text. Tailwind default sans stack."
     },
     "numerals": {
-      "variant": "font-variant-numeric: tabular-nums slashed-zero",
-      "use": "All numerals (score, timer, rank, PIN) to prevent reflow on update.",
-      "category": "typography"
+      "$value": "font-variant-numeric: tabular-nums slashed-zero",
+      "$type": "typography",
+      "$description": "All numerals (score, timer, rank, PIN) to prevent reflow on update."
     },
-    "console-headings": {
-      "h1": "lg + bold",
-      "h2": "base + semibold",
-      "h3": "sm + semibold",
-      "description": "Linear scale, no skips (D18). Page titles = h1, section titles = h2, card/group titles = h3.",
-      "category": "typography"
+    "console-heading-h1": {
+      "$value": "lg + bold",
+      "$type": "typography",
+      "$description": "Console H1 (page titles). Linear scale."
+    },
+    "console-heading-h2": {
+      "$value": "base + semibold",
+      "$type": "typography",
+      "$description": "Console H2 (section titles). Linear scale."
+    },
+    "console-heading-h3": {
+      "$value": "sm + semibold",
+      "$type": "typography",
+      "$description": "Console H3 (card/group titles). Linear scale."
     }
   },
   "spacing": {
-    "note": "Tailwind defaults apply. No custom spacing ladder defined in tokens. Console row density: default p-4 / compact px-4 py-2."
+    "note": {
+      "$value": "Tailwind defaults apply. No custom spacing ladder defined in tokens. Console row density: default p-4 / compact px-4 py-2.",
+      "$type": "other",
+      "$description": "Spacing note."
+    }
   },
   "scrim": {
-    "value": "0",
-    "description": "Dialog/modal overlay scrim. RUNTIME-themeable. MUST stay 0 in flat (legacy black scrim murks cream). bg-black/40 is the only sanctioned dark fill (on position:fixed full-screen modal overlays only).",
-    "category": "scrim",
-    "themeable": true,
-    "use": "dialog-scrim-override"
-  },
-  "notes": {
-    "design_system": "Flat only. Violet brand (--color-primary #7c3aed) + Amber accent (#ff9900 runtime default) + Cream field (#F4F1EA). Glass system fully removed (2026-07-17).",
-    "guardrails": [
-      "No backdrop-blur/backdrop-filter anywhere in shipped code (grep gate).",
-      "No hardcoded hex colors in components; all colors via CSS custom properties.",
-      "Every answer tile carries 1px hairline ring (--border-hairline) + shape icon + ink label.",
-      "Never white text on cream-side fills (state-correct, state-wrong, tier gold/silver/diamant, amber accent). Use ink text (--answer-text #0B0B12).",
-      "No dark surfaces on cream field. Use bg-white + --shadow-flat; carve-out: bg-black/40 ONLY on position:fixed full-screen modal overlays.",
-      "--game-fg MUST be set to #0E1120 on every cream shell (default :root is white, renders invisible on cream).",
-      "Set --game-fg: #0E1120 in NEW cream shells."
-    ],
-    "validation": "python3 -m json.tool design.tokens.json (syntax). scripts/check-manager-tokens.sh <path> (design rules D1/D2/D10 grep gates).",
-    "deprecations": "Glass system removed. No @supports backdrop-filter, no .glass-* classes, no data-theme-style=glass value allowed.",
-    "console_notes": "Console shell (.console-shell) PINS brand tokens to fixed Razzoozle defaults, isolated from game theme recolor. Flat design language applies to both stage and console.",
-    "token_mappings": "Manager migration T-0: text-gray-* → text-[var(--ink-*)], bg-gray-* → bg-[var(--surface-*)], border-gray-* → border-[var(--line)]. Coverage 94.9% (390/411)."
+    "overlay": {
+      "$value": "0",
+      "$type": "other",
+      "$description": "Dialog/modal overlay scrim. RUNTIME-themeable. MUST stay 0 in flat (legacy black scrim murks cream). bg-black/40 is the only sanctioned dark fill (on position:fixed full-screen modal overlays only)."
+    }
   }
 }
