@@ -785,8 +785,8 @@
   },
   "users": {
     "title": "Gestione Utenti",
-    "intro": "Crea, blocca e sblocca gli account dei docenti.",
-    "createTitle": "Crea Nuovo Docente",
+    "intro": "Gestisci utenti, docenti e amministratori.",
+    "createTitle": "Crea nuovo utente",
     "created": "Utente creato",
     "loadFailed": "Impossibile caricare gli utenti",
     "invalidInput": "Nome utente e password obbligatori",
@@ -824,7 +824,9 @@
     "deleteFailed": "Eliminazione non riuscita",
     "cannot_modify_own_account": "Non puoi modificare il tuo account",
     "cannot_delete_self": "Il tuo account non può essere eliminato",
-    "cannot_deactivate_self": "Il tuo account non può essere disattivato"
+    "cannot_deactivate_self": "Il tuo account non può essere disattivato",
+    "copyUser": "Copia utente",
+    "copyDialogTitle": "Copia utente"
   },
   "profile": {
     "intro": "Il tuo profilo e le tue impostazioni personali.",
@@ -969,5 +971,20 @@
       "importFailed": "Importazione non riuscita: {{message}}",
       "tooLarge": "File troppo grande (max. 512 KB)"
     }
+  },
+  "bulk": {
+    "selected": "{{count}} selezionati",
+    "selectAll": "Seleziona tutto",
+    "selectAllFiltered": "Seleziona tutti i filtrati",
+    "clearSelection": "Annulla selezione",
+    "activate": "Attiva",
+    "deactivate": "Disattiva",
+    "deleteSelected": "Elimina selezionati",
+    "andNMore": "e altri {{count}}",
+    "skippedProtected": "{{count}} account protetti saltati",
+    "resultSucceeded": "{{count}} riusciti",
+    "resultSkipped": "{{count}} saltati",
+    "resultFailed": "{{count}} non riusciti",
+    "resultCompleted": "Completato"
   }
 }

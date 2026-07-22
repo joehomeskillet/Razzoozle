@@ -785,8 +785,8 @@
   },
   "users": {
     "title": "Nutzerverwaltung",
-    "intro": "Lehrkräfte-Konten anlegen, sperren und freigeben.",
-    "createTitle": "Neue Lehrkraft anlegen",
+    "intro": "Verwalte Nutzer, Lehrkräfte und Administratoren.",
+    "createTitle": "Neuen Benutzer anlegen",
     "created": "Nutzer angelegt",
     "loadFailed": "Nutzer konnten nicht geladen werden",
     "invalidInput": "Benutzername und Passwort erforderlich",
@@ -824,7 +824,9 @@
     "deleteFailed": "Löschen fehlgeschlagen",
     "cannot_modify_own_account": "Du kannst dein eigenes Konto nicht ändern",
     "cannot_delete_self": "Dein Konto kann nicht gelöscht werden",
-    "cannot_deactivate_self": "Dein Konto kann nicht deaktiviert werden"
+    "cannot_deactivate_self": "Dein Konto kann nicht deaktiviert werden",
+    "copyUser": "Benutzer kopieren",
+    "copyDialogTitle": "Benutzer kopieren"
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",
@@ -969,5 +971,20 @@
       "importFailed": "Import fehlgeschlagen: {{message}}",
       "tooLarge": "Datei zu groß (max. 512 KB)"
     }
+  },
+  "bulk": {
+    "selected": "{{count}} ausgewählt",
+    "selectAll": "Alle auswählen",
+    "selectAllFiltered": "Alle gefilterten auswählen",
+    "clearSelection": "Auswahl aufheben",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "deleteSelected": "Ausgewählte löschen",
+    "andNMore": "und {{count}} weitere",
+    "skippedProtected": "{{count}} geschützte Konten übersprungen",
+    "resultSucceeded": "{{count}} erfolgreich",
+    "resultSkipped": "{{count}} übersprungen",
+    "resultFailed": "{{count}} fehlgeschlagen",
+    "resultCompleted": "Abgeschlossen"
   }
 }
