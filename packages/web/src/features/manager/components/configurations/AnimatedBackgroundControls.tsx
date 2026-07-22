@@ -141,9 +141,7 @@ const AnimatedBackgroundControls = ({
   return (
     <SectionCard
       icon={<Sparkles className="size-5" />}
-      title={t("manager:theme.animatedBg.title", {
-        defaultValue: "Animierter Hintergrund",
-      })}
+      title={t("manager:theme.animatedBg.title")}
     >
       {SLOTS.map((slot) => {
         const config = value[slot.key]
@@ -164,9 +162,7 @@ const AnimatedBackgroundControls = ({
                   type="button"
                   role="switch"
                   aria-checked={animatedOn}
-                  aria-label={t("manager:theme.animatedBg.toggle", {
-                    defaultValue: "Animierter Hintergrund",
-                  })}
+                  aria-label={t("manager:theme.animatedBg.toggle")}
                   onClick={() =>
                     setField(slot.key, "type")(
                       animatedOn ? "none" : "creamBackdrop",
@@ -188,21 +184,15 @@ const AnimatedBackgroundControls = ({
                   className="text-sm font-medium text-[var(--ink-medium)]"
                 >
                   {animatedOn
-                    ? t("manager:theme.animatedBg.mode.animated", {
-                        defaultValue: "Animiert",
-                      })
-                    : t("manager:theme.animatedBg.mode.wallpaper", {
-                        defaultValue: "Wallpaper",
-                      })}
+                    ? t("manager:theme.animatedBg.mode.animated")
+                    : t("manager:theme.animatedBg.mode.wallpaper")}
                 </label>
               </div>
 
               {animatedOn ? (
                 <>
                   <ColorPickerField
-                    label={t("manager:theme.animatedBg.color", {
-                      defaultValue: "Farbe",
-                    })}
+                    label={t("manager:theme.animatedBg.color")}
                     value={config.color || DEFAULT_ANIMATED_BG_COLOR}
                     onChange={setField(slot.key, "color")}
                   />
@@ -239,9 +229,7 @@ const AnimatedBackgroundControls = ({
                 renderWallpaperUpload && (
                   <div className="flex flex-col gap-1.5">
                     <p className="text-xs font-medium text-[var(--ink-subtle)]">
-                      {t("manager:theme.animatedBg.wallpaper", {
-                        defaultValue: "Hintergrundbild",
-                      })}
+                      {t("manager:theme.animatedBg.wallpaper")}
                     </p>
                     {renderWallpaperUpload(slot.key)}
                   </div>

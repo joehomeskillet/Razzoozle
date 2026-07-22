@@ -125,7 +125,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
         <span className="flex items-center gap-1.5">
           <Timer className="size-3.5" aria-hidden />
           {t("manager:submissions.previewLabels.cooldown")}: {question.cooldown}
-          {t("manager:submissions.cooldownSuffix", { defaultValue: "s" })}
+          {t("manager:submissions.cooldownSuffix")}
         </span>
       </div>
     </div>

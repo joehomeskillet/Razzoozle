@@ -113,10 +113,7 @@ const SubmissionCard = ({
               {/* WP-17 — surface the moderator note on rejected cards. */}
               {s.status === "rejected" && rejRecord?.rejectionReason && (
                 <p className="text-sm text-[var(--ink)]">
-                  {t("manager:submissions.rejectedBecause", {
-                    reason: rejRecord?.rejectionReason,
-                    defaultValue: "Abgelehnt: {{reason}}",
-                  })}
+                  {t("manager:submissions.rejectedBecause", { reason: rejRecord?.rejectionReason })}
                 </p>
               )}
             </div>
@@ -297,9 +294,7 @@ const SubmissionCard = ({
               htmlFor={`reject-reason-${s.id}`}
               className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase"
             >
-              {t("manager:submissions.rejectReason.label", {
-                defaultValue: "Begründung (optional)",
-              })}
+              {t("manager:submissions.rejectReason.label")}
             </label>
             <textarea
               id={`reject-reason-${s.id}`}
@@ -307,9 +302,7 @@ const SubmissionCard = ({
               onChange={(event) => setRejectReason(event.target.value)}
               rows={2}
               maxLength={500}
-              placeholder={t("manager:submissions.rejectReason.placeholder", {
-                defaultValue: "Warum wird diese Frage abgelehnt?",
-              })}
+              placeholder={t("manager:submissions.rejectReason.placeholder")}
               className="w-full resize-y rounded-lg bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-1 -outline-offset-1 outline-[var(--line)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
           </div>
@@ -319,9 +312,7 @@ const SubmissionCard = ({
               htmlFor={`reject-category-${s.id}`}
               className="text-xs font-semibold tracking-wide text-[var(--ink-subtle)] uppercase"
             >
-              {t("manager:submissions.category.label", {
-                defaultValue: "Kategorie",
-              })}
+              {t("manager:submissions.category.label")}
             </label>
             <Select
               id={`reject-category-${s.id}`}

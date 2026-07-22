@@ -53,10 +53,7 @@ const QuizGenSection = ({
         </LabelRow>
 
         <LabelRow
-          label={t("manager:ai.generate.countValue", {
-            defaultValue: "Fragen: {{count}}",
-            count,
-          })}
+          label={t("manager:ai.generate.countValue", { count })}
           htmlFor="ai-quiz-count"
         >
           <div className="flex items-center gap-3">
@@ -67,10 +64,7 @@ const QuizGenSection = ({
               max={AI.QUIZ_MAX_QUESTIONS}
               step={1}
               value={count}
-              aria-valuetext={t("manager:ai.generate.countValue", {
-                defaultValue: "Fragen: {{count}}",
-                count,
-              })}
+              aria-valuetext={t("manager:ai.generate.countValue", { count })}
               onChange={(event) =>
                 setCount(clampQuizCount(Number(event.target.value)))
               }
@@ -87,7 +81,7 @@ const QuizGenSection = ({
         type="button"
         onClick={generateQuiz}
         disabled={!topic.trim() || generating || !textConfigured}
-        title={!textConfigured ? t("manager:ai.generate.notConfigured", { defaultValue: "Kein Text-Provider konfiguriert" }) : undefined}
+        title={!textConfigured ? t("manager:ai.generate.notConfigured") : undefined}
       >
         {generating
           ? t("manager:ai.generate.generating")

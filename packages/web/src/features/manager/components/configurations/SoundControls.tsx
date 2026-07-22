@@ -145,7 +145,7 @@ const SoundControls = ({ draft, onSlotChange }: SoundControlsProps) => {
     <SectionCard
       icon={<Music className="size-5" />}
       title={t("manager:theme.sounds.title")}
-      description={t("manager:theme.sounds.description", { defaultValue: "" })}
+      description={t("manager:theme.sounds.description")}
     >
       <ul className="flex flex-col gap-2">
         {SOUND_SLOTS.map((slot) => {

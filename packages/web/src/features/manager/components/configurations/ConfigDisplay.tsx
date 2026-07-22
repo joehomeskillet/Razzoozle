@@ -30,21 +30,12 @@ const ConfigDisplay = () => {
     {
       icon: Monitor,
       text: t("manager:satellite.step1"),
-      result: t("manager:satellite.step1Result", {
-        defaultValue:
-          "Du siehst dann auf dem grossen Bildschirm einen 6-stelligen Code wie «ABC123».",
-      }),
+      result: t("manager:satellite.step1Result"),
     },
     {
       icon: Keyboard,
-      text: t("manager:satellite.step2Enter", {
-        defaultValue:
-          "Starte ein Spiel und tippe oben im Spielkopf auf «Satellit». Gib dort den Code ein, der auf dem grossen Bildschirm steht.",
-      }),
-      result: t("manager:satellite.step2Result", {
-        defaultValue:
-          "Tippe auf «Koppeln», um die Verbindung zu testen. Klappt es, erscheint «Anzeige gekoppelt».",
-      }),
+      text: t("manager:satellite.step2Enter"),
+      result: t("manager:satellite.step2Result"),
     },
     {
       icon: Smartphone,
@@ -60,26 +51,17 @@ const ConfigDisplay = () => {
     {
       icon: Clock,
       // → errors:display.invalidCode (wrong/expired) — the most common case.
-      text: t("manager:satellite.troubleCode", {
-        defaultValue:
-          "«Ungültiger oder abgelaufener Code»: Der Code stimmt nicht oder ist zu alt (er gilt nur 5 Minuten). Lade die /display-Seite auf dem grossen Bildschirm neu – sie zeigt dann einen frischen Code – und tippe ihn genau so ab, wie er dort steht.",
-      }),
+      text: t("manager:satellite.troubleCode"),
     },
     {
       icon: Wifi,
       // → errors:display.notConnected (satellite socket gone).
-      text: t("manager:satellite.troubleNotConnected", {
-        defaultValue:
-          "«Anzeige nicht verbunden»: Der Beamer oder Pi hat die Verbindung verloren. Prüfe, ob er noch im Internet ist, und lade die /display-Seite neu. Bei einem eigenen Netzwerk kann eine Firewall blockieren – dann müssen die Ports für razzoozle.joelduss.xyz freigegeben sein.",
-      }),
+      text: t("manager:satellite.troubleNotConnected"),
     },
     {
       icon: XCircle,
       // → errors:game.notFound / manager.invalidPassword / failedToReadConfig.
-      text: t("manager:satellite.troubleGame", {
-        defaultValue:
-          "«Spiel nicht gefunden» oder «Passwort ungültig»: Die Kopplung geht nur, solange dein Spiel läuft und du als Spielleiter angemeldet bist. Starte das Spiel neu oder melde dich erneut an und versuche es dann gleich noch einmal.",
-      }),
+      text: t("manager:satellite.troubleGame"),
     },
   ]
 
@@ -142,9 +124,7 @@ const ConfigDisplay = () => {
           className="flex items-center gap-2 text-sm font-semibold text-[var(--ink-muted)]"
         >
           <CircleHelp className="size-4 shrink-0 text-[var(--color-accent)]" aria-hidden />
-          {t("manager:satellite.troubleTitle", {
-            defaultValue: "Wenn die Kopplung nicht klappt",
-          })}
+          {t("manager:satellite.troubleTitle")}
         </h3>
         <ul className="flex flex-col gap-2">
           {troubleshooting.map(({ icon: Icon, text }, i) => (

@@ -143,13 +143,9 @@ const TextProviderSection = ({
                 </LabelRow>
 
                 <LabelRow
-                  label={t("manager:ai.temperature.label", {
-                    defaultValue: "Temperatur",
-                  })}
+                  label={t("manager:ai.temperature.label")}
                   htmlFor="ai-temperature"
-                  description={t("manager:ai.temperature.help", {
-                    defaultValue: "Höher = kreativer, niedriger = präziser",
-                  })}
+                  description={t("manager:ai.temperature.help")}
                 >
                   <div className="flex items-center gap-3">
                     <input
@@ -160,10 +156,7 @@ const TextProviderSection = ({
                       max={AI.TEMP_MAX}
                       step={0.1}
                       value={temperature}
-                      aria-valuetext={t("manager:ai.temperature.value", {
-                        defaultValue: "{{value}}",
-                        value: temperature.toFixed(1),
-                      })}
+                      aria-valuetext={t("manager:ai.temperature.value", { value: temperature.toFixed(1) })}
                       onChange={(event) =>
                         updateTextProvider(selectedProvider.id, {
                           temperature: Number(event.target.value),

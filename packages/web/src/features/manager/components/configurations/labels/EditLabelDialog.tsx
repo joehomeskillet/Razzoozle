@@ -64,7 +64,7 @@ const EditLabelDialog = ({ label, onClose, onUpdate }: EditLabelDialogProps) => 
         <LabelColorPicker value={color} onChange={setColor} />
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={handleClose}>
-            {t("common:cancel", { defaultValue: "Cancel" })}
+            {t("common:cancel")}
           </Button>
           <Button variant="primary" type="submit">
             {t("manager:labels.update")}

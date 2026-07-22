@@ -100,12 +100,8 @@ const ConfigSkeleton = () => {
     setSavingKind(null)
     toast.success(
       kind === "css"
-        ? t("manager:skeleton.toast.cssSaved", {
-            defaultValue: "CSS gespeichert",
-          })
-        : t("manager:skeleton.toast.jsSaved", {
-            defaultValue: "JavaScript gespeichert",
-          }),
+        ? t("manager:skeleton.toast.cssSaved")
+        : t("manager:skeleton.toast.jsSaved"),
     )
   })
 
@@ -114,9 +110,7 @@ const ConfigSkeleton = () => {
     setCssDraft("")
     setJsDraft("")
     toast.success(
-      t("manager:skeleton.toast.reset", {
-        defaultValue: "Auf Standard zurückgesetzt",
-      }),
+      t("manager:skeleton.toast.reset"),
     )
   })
 
@@ -150,10 +144,7 @@ const ConfigSkeleton = () => {
           // Non-JSON error body — fall back to the status code.
         }
         toast.error(
-          t("manager:skeleton.toast.exportFailed", {
-            defaultValue: "Export fehlgeschlagen: {{message}}",
-            message,
-          }),
+          t("manager:skeleton.toast.exportFailed", { message }),
         )
 
         return
@@ -171,8 +162,7 @@ const ConfigSkeleton = () => {
     } catch {
       toast.error(
         t("manager:skeleton.toast.exportFailed", {
-          defaultValue: "Export fehlgeschlagen: {{message}}",
-          message: t("common:networkError", { defaultValue: "Netzwerkfehler" }),
+          message: t("common:networkError"),
         }),
       )
     } finally {
@@ -214,25 +204,19 @@ const ConfigSkeleton = () => {
         const message =
           body && typeof body.error === "string" ? body.error : `${res.status}`
         toast.error(
-          t("manager:skeleton.toast.importFailed", {
-            defaultValue: "Import fehlgeschlagen: {{message}}",
-            message,
-          }),
+          t("manager:skeleton.toast.importFailed", { message }),
         )
 
         return
       }
 
       toast.success(
-        t("manager:skeleton.toast.imported", {
-          defaultValue: "Skeleton importiert",
-        }),
+        t("manager:skeleton.toast.imported"),
       )
     } catch {
       toast.error(
         t("manager:skeleton.toast.importFailed", {
-          defaultValue: "Import fehlgeschlagen: {{message}}",
-          message: t("common:networkError", { defaultValue: "Netzwerkfehler" }),
+          message: t("common:networkError"),
         }),
       )
     } finally {
@@ -245,9 +229,7 @@ const ConfigSkeleton = () => {
 
     if (new Blob([content]).size > MAX_ASSET_BYTES) {
       toast.error(
-        t("manager:skeleton.toast.tooLarge", {
-          defaultValue: "Datei zu groß (max. 512 KB)",
-        }),
+        t("manager:skeleton.toast.tooLarge"),
       )
 
       return
@@ -285,13 +267,8 @@ const ConfigSkeleton = () => {
         {/* ── Import / Export / Reset (danger-zone) ────────────────── */}
         <SectionCard
           icon={<Download className="size-5" />}
-          title={t("manager:skeleton.transfer.title", {
-            defaultValue: "Skeleton übertragen",
-          })}
-          description={t("manager:skeleton.transfer.description", {
-            defaultValue:
-              "Exportiere das komplette Design (Tokens, CSS, JS, Assets) als ZIP oder importiere ein vorbereitetes Skeleton.",
-          })}
+          title={t("manager:skeleton.transfer.title")}
+          description={t("manager:skeleton.transfer.description")}
         >
           <div className="border-l-4 border-[var(--state-wrong-soft)] pl-4">
             <p className="mb-1 text-sm font-semibold text-[var(--state-wrong)]">
@@ -309,9 +286,7 @@ const ConfigSkeleton = () => {
                   disabled={downloading}
                 >
                   <Download className="size-4" aria-hidden />
-                  {t("manager:skeleton.transfer.download", {
-                    defaultValue: "Skeleton herunterladen",
-                  })}
+                  {t("manager:skeleton.transfer.download")}
                 </Button>
 
                 {/* Import overwrites live theme assets — confirm first. */}
@@ -323,21 +298,12 @@ const ConfigSkeleton = () => {
                       disabled={importing}
                     >
                       <Upload className="size-4" aria-hidden />
-                      {t("manager:skeleton.transfer.upload", {
-                        defaultValue: "Skeleton hochladen (ZIP)",
-                      })}
+                      {t("manager:skeleton.transfer.upload")}
                     </Button>
                   }
-                  title={t("manager:skeleton.import.title", {
-                    defaultValue: "Skeleton importieren?",
-                  })}
-                  description={t("manager:skeleton.import.confirm", {
-                    defaultValue:
-                      "Das aktuelle Theme, CSS und JS werden durch den ZIP-Inhalt ersetzt.",
-                  })}
-                  confirmLabel={t("manager:skeleton.import.confirmLabel", {
-                    defaultValue: "ZIP wählen",
-                  })}
+                  title={t("manager:skeleton.import.title")}
+                  description={t("manager:skeleton.import.confirm")}
+                  confirmLabel={t("manager:skeleton.import.confirmLabel")}
                   onConfirm={() => fileInputRef.current?.click()}
                 />
 
@@ -349,21 +315,12 @@ const ConfigSkeleton = () => {
                       disabled={resetting}
                     >
                       <RotateCcw className="size-4" aria-hidden />
-                      {t("manager:skeleton.transfer.reset", {
-                        defaultValue: "Auf Standard zurücksetzen",
-                      })}
+                      {t("manager:skeleton.transfer.reset")}
                     </Button>
                   }
-                  title={t("manager:skeleton.reset.title", {
-                    defaultValue: "Auf Standard zurücksetzen?",
-                  })}
-                  description={t("manager:skeleton.reset.confirm", {
-                    defaultValue:
-                      "Aktuelles Theme, CSS und JS werden verworfen und das Standard-Design wiederhergestellt.",
-                  })}
-                  confirmLabel={t("manager:skeleton.reset.confirmLabel", {
-                    defaultValue: "Zurücksetzen",
-                  })}
+                  title={t("manager:skeleton.reset.title")}
+                  description={t("manager:skeleton.reset.confirm")}
+                  confirmLabel={t("manager:skeleton.reset.confirmLabel")}
                   onConfirm={handleReset}
                 />
                 <input
@@ -381,19 +338,12 @@ const ConfigSkeleton = () => {
         {/* ── CSS editor ───────────────────────────────────────────── */}
         <SectionCard
           icon={<FileCode className="size-5" />}
-          title={t("manager:skeleton.css.title", {
-            defaultValue: "CSS-Override",
-          })}
-          description={t("manager:skeleton.css.description", {
-            defaultValue:
-              "Freies CSS, das zusätzlich zum Theme auf allen Geräten geladen wird.",
-          })}
+          title={t("manager:skeleton.css.title")}
+          description={t("manager:skeleton.css.description")}
         >
           <div className="flex items-center justify-between gap-2">
             <label htmlFor="skeleton-css" className="sr-only">
-              {t("manager:skeleton.css.title", {
-                defaultValue: "CSS-Override",
-              })}
+              {t("manager:skeleton.css.title")}
             </label>
             <button
               type="button"
@@ -413,9 +363,7 @@ const ConfigSkeleton = () => {
             onChange={(e) => setCssDraft(e.target.value)}
             spellCheck={false}
             rows={12}
-            placeholder={t("manager:skeleton.css.placeholder", {
-              defaultValue: "/* :root { --team-red: #ff0000 } */",
-            })}
+            placeholder={t("manager:skeleton.css.placeholder")}
             className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
           />
           <div className="flex justify-end">
@@ -425,9 +373,7 @@ const ConfigSkeleton = () => {
               onClick={handleSaveAsset("css")}
               disabled={savingKind === "css"}
             >
-              {t("manager:skeleton.css.save", {
-                defaultValue: "CSS speichern",
-              })}
+              {t("manager:skeleton.css.save")}
             </Button>
           </div>
         </SectionCard>
@@ -435,13 +381,8 @@ const ConfigSkeleton = () => {
         {/* ── JS editor (DANGER) ───────────────────────────────────── */}
         <SectionCard
           icon={<Code2 className="size-5" />}
-          title={t("manager:skeleton.js.title", {
-            defaultValue: "JavaScript-Override",
-          })}
-          description={t("manager:skeleton.js.description", {
-            defaultValue:
-              "Freies JavaScript, das auf jedem verbundenen Gerät ausgeführt wird.",
-          })}
+          title={t("manager:skeleton.js.title")}
+          description={t("manager:skeleton.js.description")}
         >
           <div className="border-l-4 border-[var(--state-wrong-soft)] space-y-3 pl-4">
             <p className="text-sm font-semibold text-[var(--state-wrong)]">
@@ -457,10 +398,7 @@ const ConfigSkeleton = () => {
                 aria-hidden
               />
               <span>
-                {t("manager:skeleton.js.warning", {
-                  defaultValue:
-                    "⚠ Dieses JavaScript läuft auf jedem Spieler-Gerät — nur vertrauenswürdigen Code einfügen (stored-XSS-Risiko).",
-                })}
+                {t("manager:skeleton.js.warning")}
               </span>
             </div>
 
@@ -478,9 +416,7 @@ const ConfigSkeleton = () => {
               </button>
             </div>
             <label htmlFor="skeleton-js" className="sr-only">
-              {t("manager:skeleton.js.title", {
-                defaultValue: "JavaScript-Override",
-              })}
+              {t("manager:skeleton.js.title")}
             </label>
             <textarea
               id="skeleton-js"
@@ -488,9 +424,7 @@ const ConfigSkeleton = () => {
               onChange={(e) => setJsDraft(e.target.value)}
               spellCheck={false}
               rows={12}
-              placeholder={t("manager:skeleton.js.placeholder", {
-                defaultValue: "// console.log(window.razzoozle.theme)",
-              })}
+              placeholder={t("manager:skeleton.js.placeholder")}
               className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
             <div className="flex justify-end">
@@ -501,21 +435,12 @@ const ConfigSkeleton = () => {
                     type="button"
                     disabled={savingKind === "js"}
                   >
-                    {t("manager:skeleton.js.save", {
-                      defaultValue: "JavaScript speichern",
-                    })}
+                    {t("manager:skeleton.js.save")}
                   </Button>
                 }
-                title={t("manager:skeleton.js.confirmTitle", {
-                  defaultValue: "JavaScript speichern?",
-                })}
-                description={t("manager:skeleton.js.confirm", {
-                  defaultValue:
-                    "Dieser Code wird auf jedem verbundenen Gerät ausgeführt. Nur vertrauenswürdigen Code speichern.",
-                })}
-                confirmLabel={t("manager:skeleton.js.save", {
-                  defaultValue: "JavaScript speichern",
-                })}
+                title={t("manager:skeleton.js.confirmTitle")}
+                description={t("manager:skeleton.js.confirm")}
+                confirmLabel={t("manager:skeleton.js.save")}
                 onConfirm={handleSaveAsset("js")}
               />
             </div>

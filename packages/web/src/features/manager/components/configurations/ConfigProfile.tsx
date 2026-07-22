@@ -78,7 +78,7 @@ const ConfigProfile = () => {
     // save-key flow) — optimistic update, corrected by the next status fetch.
     setKeyStatus((current) => ({ ...current, [providerId]: true }))
     toast.success(
-      t("manager:profile.aiKeys.saved", { defaultValue: "Schlüssel gespeichert" }),
+      t("manager:profile.aiKeys.saved"),
     )
   }
 
@@ -86,25 +86,21 @@ const ConfigProfile = () => {
     socket.emit(EVENTS.USER.DELETE_AI_KEY, { providerId })
     setKeyStatus((current) => ({ ...current, [providerId]: false }))
     toast.success(
-      t("manager:profile.aiKeys.removed", { defaultValue: "Schlüssel entfernt" }),
+      t("manager:profile.aiKeys.removed"),
     )
   }
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error(
-        t("manager:profile.changePassword.allFieldsRequired", {
-          defaultValue: "Alle Felder sind erforderlich",
-        }),
+        t("manager:profile.changePassword.allFieldsRequired"),
       )
       return
     }
 
     if (newPassword !== confirmPassword) {
       toast.error(
-        t("manager:profile.changePassword.mismatch", {
-          defaultValue: "Neue Passwörter stimmen nicht überein",
-        }),
+        t("manager:profile.changePassword.mismatch"),
       )
       return
     }
@@ -123,33 +119,25 @@ const ConfigProfile = () => {
       if (!response.ok) {
         if (response.status === 403) {
           toast.error(
-            t("manager:profile.changePassword.wrongCurrent", {
-              defaultValue: "Aktuelles Passwort ist falsch",
-            }),
+            t("manager:profile.changePassword.wrongCurrent"),
           )
         } else {
           toast.error(
-            t("manager:profile.changePassword.failed", {
-              defaultValue: "Passwort konnte nicht geändert werden",
-            }),
+            t("manager:profile.changePassword.failed"),
           )
         }
         return
       }
 
       toast.success(
-        t("manager:profile.changePassword.success", {
-          defaultValue: "Passwort erfolgreich geändert",
-        }),
+        t("manager:profile.changePassword.success"),
       )
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch {
       toast.error(
-        t("manager:profile.changePassword.networkError", {
-          defaultValue: "Verbindungsfehler",
-        }),
+        t("manager:profile.changePassword.networkError"),
       )
     } finally {
       setIsChangingPassword(false)
@@ -159,20 +147,14 @@ const ConfigProfile = () => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <PageHeader
-        title={`${t("manager:profile.welcome", { defaultValue: "Willkommen" })}${username ? `, ${username}` : ""}`}
-        subtitle={t("manager:profile.intro", {
-          defaultValue: "Dein Profil und deine persönlichen Einstellungen.",
-        })}
+        title={`${t("manager:profile.welcome")}${username ? `, ${username}` : ""}`}
+        subtitle={t("manager:profile.intro")}
       />
 
       <SectionCard
         icon={<Lock className="size-5" aria-hidden />}
-        title={t("manager:profile.changePassword.title", {
-          defaultValue: "Passwort ändern",
-        })}
-        description={t("manager:profile.changePassword.description", {
-          defaultValue: "Ändere dein Passwort, um dein Konto zu schützen.",
-        })}
+        title={t("manager:profile.changePassword.title")}
+        description={t("manager:profile.changePassword.description")}
       >
         <div className="space-y-3">
           <div>
@@ -180,9 +162,7 @@ const ConfigProfile = () => {
               htmlFor="current-password"
               className="block text-sm font-medium text-[var(--ink-muted)]"
             >
-              {t("manager:profile.changePassword.current", {
-                defaultValue: "Aktuelles Passwort",
-              })}
+              {t("manager:profile.changePassword.current")}
             </label>
             <Input
               id="current-password"
@@ -190,9 +170,7 @@ const ConfigProfile = () => {
               autoComplete="current-password"
               variant="sm"
               value={currentPassword}
-              placeholder={t("manager:passwordPlaceholder", {
-                defaultValue: "Passwort",
-              })}
+              placeholder={t("manager:passwordPlaceholder")}
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="mt-1"
             />
@@ -203,9 +181,7 @@ const ConfigProfile = () => {
               htmlFor="new-password"
               className="block text-sm font-medium text-[var(--ink-muted)]"
             >
-              {t("manager:profile.changePassword.new", {
-                defaultValue: "Neues Passwort",
-              })}
+              {t("manager:profile.changePassword.new")}
             </label>
             <Input
               id="new-password"
@@ -213,9 +189,7 @@ const ConfigProfile = () => {
               autoComplete="new-password"
               variant="sm"
               value={newPassword}
-              placeholder={t("manager:passwordPlaceholder", {
-                defaultValue: "Passwort",
-              })}
+              placeholder={t("manager:passwordPlaceholder")}
               onChange={(e) => setNewPassword(e.target.value)}
               className="mt-1"
             />
@@ -226,9 +200,7 @@ const ConfigProfile = () => {
               htmlFor="confirm-password"
               className="block text-sm font-medium text-[var(--ink-muted)]"
             >
-              {t("manager:profile.changePassword.confirm", {
-                defaultValue: "Passwort bestätigen",
-              })}
+              {t("manager:profile.changePassword.confirm")}
             </label>
             <Input
               id="confirm-password"
@@ -236,9 +208,7 @@ const ConfigProfile = () => {
               autoComplete="new-password"
               variant="sm"
               value={confirmPassword}
-              placeholder={t("manager:passwordPlaceholder", {
-                defaultValue: "Passwort",
-              })}
+              placeholder={t("manager:passwordPlaceholder")}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="mt-1"
             />
@@ -253,9 +223,7 @@ const ConfigProfile = () => {
             {isChangingPassword ? (
               <Loader className="h-4" />
             ) : (
-              t("manager:profile.changePassword.submit", {
-                defaultValue: "Passwort ändern",
-              })
+              t("manager:profile.changePassword.submit")
             )}
           </Button>
         </div>
@@ -263,13 +231,8 @@ const ConfigProfile = () => {
 
       <SectionCard
         icon={<KeyRound className="size-5" aria-hidden />}
-        title={t("manager:profile.aiKeys.title", {
-          defaultValue: "Eigene KI-Anbieter",
-        })}
-        description={t("manager:profile.aiKeys.description", {
-          defaultValue:
-            "Hinterlege deinen eigenen API-Schlüssel für die KI-Generierung. Ohne eigenen Schlüssel wird — falls vorhanden — der Standard der Instanz verwendet. Ein gespeicherter Schlüssel wird nie wieder angezeigt.",
-        })}
+        title={t("manager:profile.aiKeys.title")}
+        description={t("manager:profile.aiKeys.description")}
       >
         {providers === null ? (
           <div className="flex flex-1 items-center justify-center py-8">
@@ -278,13 +241,8 @@ const ConfigProfile = () => {
         ) : providers.length === 0 ? (
           <EmptyState
             icon={KeyRound}
-            headline={t("manager:profile.aiKeys.emptyHeadline", {
-              defaultValue: "Keine externen Anbieter",
-            })}
-            hint={t("manager:profile.aiKeys.empty", {
-              defaultValue:
-                "Der Administrator hat noch keine externen KI-Anbieter eingerichtet.",
-            })}
+            headline={t("manager:profile.aiKeys.emptyHeadline")}
+            hint={t("manager:profile.aiKeys.empty")}
           />
         ) : (
           <div className="flex flex-col gap-3">
@@ -301,12 +259,8 @@ const ConfigProfile = () => {
                       className={providerStatusClass(configured)}
                       aria-label={
                         configured
-                          ? t("manager:profile.aiKeys.configured", {
-                              defaultValue: "Eigener Schlüssel hinterlegt",
-                            })
-                          : t("manager:profile.aiKeys.notConfigured", {
-                              defaultValue: "Kein eigener Schlüssel",
-                            })
+                          ? t("manager:profile.aiKeys.configured")
+                          : t("manager:profile.aiKeys.notConfigured")
                       }
                     >
                       <span className="inline-flex items-center gap-1">
@@ -316,12 +270,8 @@ const ConfigProfile = () => {
                           <XCircle className="size-3.5" aria-hidden />
                         )}
                         {configured
-                          ? t("manager:profile.aiKeys.configured", {
-                              defaultValue: "Eigener Schlüssel hinterlegt",
-                            })
-                          : t("manager:profile.aiKeys.notConfigured", {
-                              defaultValue: "Kein eigener Schlüssel",
-                            })}
+                          ? t("manager:profile.aiKeys.configured")
+                          : t("manager:profile.aiKeys.notConfigured")}
                       </span>
                     </span>
                   </div>
@@ -331,10 +281,7 @@ const ConfigProfile = () => {
                       htmlFor={`profile-ai-key-${provider.id}`}
                       className="sr-only"
                     >
-                      {t("manager:profile.aiKeys.inputLabel", {
-                        defaultValue: "API-Schlüssel für {{label}}",
-                        label: provider.label,
-                      })}
+                      {t("manager:profile.aiKeys.inputLabel", { label: provider.label })}
                     </label>
                     <Input
                       id={`profile-ai-key-${provider.id}`}
@@ -342,9 +289,7 @@ const ConfigProfile = () => {
                       autoComplete="off"
                       variant="sm"
                       value={keyInputs[provider.id] ?? ""}
-                      placeholder={t("manager:ai.apiKeyPlaceholder", {
-                        defaultValue: "Schlüssel eingeben…",
-                      })}
+                      placeholder={t("manager:ai.apiKeyPlaceholder")}
                       onChange={(event) =>
                         setKeyInputs((current) => ({
                           ...current,
@@ -359,7 +304,7 @@ const ConfigProfile = () => {
                       onClick={() => saveKey(provider.id)}
                       disabled={!(keyInputs[provider.id] ?? "").trim()}
                     >
-                      {t("manager:ai.saveKey", { defaultValue: "Schlüssel speichern" })}
+                      {t("manager:ai.saveKey")}
                     </Button>
                     {configured && (
                       <Button
@@ -369,9 +314,7 @@ const ConfigProfile = () => {
                         onClick={() => removeKey(provider.id)}
                       >
                         <Trash2 className="size-4" aria-hidden />
-                        {t("manager:profile.aiKeys.remove", {
-                          defaultValue: "Entfernen",
-                        })}
+                        {t("manager:profile.aiKeys.remove")}
                       </Button>
                     )}
                   </div>
