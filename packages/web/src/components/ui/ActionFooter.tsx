@@ -1,11 +1,12 @@
 import clsx from "clsx"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 export interface ActionFooterProps {
   /** Action buttons (e.g. Save / Reset). */
   children: ReactNode
   className?: string
-  /** Optional dirty state indicator. When true, applies subtle visual treatment. */
+  /** Optional dirty state indicator. When true, shows "Ungespeicherte Änderungen" label. */
   dirty?: boolean
 }
 
@@ -26,39 +27,53 @@ export interface ActionFooterProps {
  * bar scrolls away mid-panel. Working pattern: `className="flex flex-1 flex-col pb-20"`.
  * Broken pattern: `className="flex min-h-0 flex-1 flex-col pb-20"`.
  *
- * **Dirty state:** When `dirty=true`, the bar applies a subtle opacity reduction
- * to indicate unsaved changes. Parent component manages the dirty flag and button
- * states; ActionFooter is purely presentational.
+ * **Dirty state:** When `dirty=true`, renders a status label "Ungespeicherte Änderungen"
+ * (role="status", aria-live="polite") before the buttons, plus applies subtle
+ * opacity reduction to the whole bar. Parent component manages the dirty flag
+ * and button states; ActionFooter is purely presentational.
  *
  * Presentational — children provide the button row.
  */
-const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => (
-  <div
-    className={clsx(
-      // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
-      // bar sits flush at the very bottom. `sticky bottom` pins the BORDER edge
-      // to the container's PADDING edge, so a negative bottom (= -padding) is
-      // needed to reach the panel's border bottom — `bottom-0` alone leaves a
-      // padding-sized gap. The card's `overflow-hidden rounded-2xl` clips the
-      // bottom-RIGHT corner to the card radius; the bottom-LEFT stays square
-      // (it abuts the nav rail).
-      "sticky -bottom-4 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-bottom-6 sm:-mb-6",
-      // Surface — fully opaque so scrolled content never bleeds through.
-      // Token-only: use CSS variables for theme flexibility
-      "border-t border-[var(--line)] bg-[var(--surface)]",
-      // Shadow lifting the bar off scrolled content.
-      "shadow-[0_-2px_8px_rgba(0,0,0,0.08)]",
-      // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area
-      "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-      // Button row: right-aligned on ≥sm, stacked full-width below sm
-      "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
-      // Dirty state indicator: subtle opacity reduction
-      dirty && "opacity-75",
-      className,
-    )}
-  >
-    {children}
-  </div>
-)
+const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => {
+  const { t } = useTranslation("manager")
+
+  return (
+    <div
+      className={clsx(
+        // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
+        // bar sits flush at the very bottom. `sticky bottom` pins the BORDER edge
+        // to the container's PADDING edge, so a negative bottom (= -padding) is
+        // needed to reach the panel's border bottom — `bottom-0` alone leaves a
+        // padding-sized gap. The card's `overflow-hidden rounded-2xl` clips the
+        // bottom-RIGHT corner to the card radius; the bottom-LEFT stays square
+        // (it abuts the nav rail).
+        "sticky -bottom-4 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-bottom-6 sm:-mb-6",
+        // Surface — fully opaque so scrolled content never bleeds through.
+        // Token-only: use CSS variables for theme flexibility
+        "border-t border-[var(--line)] bg-[var(--surface)]",
+        // Shadow lifting the bar off scrolled content.
+        "shadow-[var(--shadow-flat)]",
+        // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area
+        "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
+        // Button row: right-aligned on ≥sm, stacked full-width below sm
+        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
+        // Dirty state indicator: subtle opacity reduction
+        dirty && "opacity-75",
+        className,
+      )}
+    >
+      {dirty && (
+        <span
+          role="status"
+          aria-live="polite"
+          className="text-sm font-medium text-[var(--ink-muted)] sm:mr-auto sm:order-first"
+        >
+          {t("editor.unsavedChanges")}
+        </span>
+      )}
+      {children}
+    </div>
+  )
+}
 
 export default ActionFooter
