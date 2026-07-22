@@ -344,7 +344,6 @@ describe("SettingRow API — ARIA compliance", () => {
     expect(props.disabled).toBe(true)
     expect(props.disabledReason).toBe("Requires admin access")
   })
-})
 
   it("restartBadge renders without restartBadgeLabel (uses i18n fallback)", () => {
     // Regression fix: badge must render when only restartBadge=true
@@ -372,3 +371,4 @@ describe("SettingRow API — ARIA compliance", () => {
     expect(propsWithLabel.restartBadge).toBe(true)
     expect(propsWithLabel.restartBadgeLabel).toBe("Needs restart")
   })
+})
