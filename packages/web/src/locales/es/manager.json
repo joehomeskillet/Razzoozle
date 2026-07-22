@@ -631,7 +631,8 @@
     "selectClass": "Seleccionar clase",
     "chooseClass": "Selecciona una clase …",
     "klassenModeNeedsClass": "Por favor, elige una clase",
-    "intro": "Elige un cuestionario y empieza una partida."
+    "intro": "Elige un cuestionario y empieza una partida.",
+    "optionsTitle": "Opciones del juego"
   },
   "gameMode": {
     "title": "Modo de juego",
@@ -668,7 +669,19 @@
       "top3": "Top 3",
       "private": "Privado"
     },
-    "endScreenSelectTitle": "Pantalla final"
+    "endScreenSelectTitle": "Pantalla final",
+    "sections": {
+      "flow": "Flujo del juego",
+      "scoring": "Puntuación",
+      "school": "Escuela",
+      "endScreen": "Pantalla final"
+    },
+    "endScreenModeDescription": {
+      "full": "Muestra la clasificación completa al final del juego.",
+      "top3": "Muestra solo los tres mejores al final del juego.",
+      "private": "Los resultados solo son visibles para el profesor."
+    },
+    "endScreenMinOneActive": "Debe permanecer activa al menos una opción de pantalla final."
   },
   "achievementsConfig": {
     "title": "Configurar logros",

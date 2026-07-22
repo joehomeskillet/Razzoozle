@@ -631,7 +631,8 @@
     "selectClass": "Select class",
     "chooseClass": "Choose a class …",
     "klassenModeNeedsClass": "Please select a class",
-    "intro": "Pick a quiz and start a game."
+    "intro": "Pick a quiz and start a game.",
+    "optionsTitle": "Game options"
   },
   "gameMode": {
     "title": "Game mode",
@@ -668,7 +669,19 @@
       "top3": "Top 3",
       "private": "Private"
     },
-    "endScreenSelectTitle": "End screen"
+    "endScreenSelectTitle": "End screen",
+    "sections": {
+      "flow": "Game flow",
+      "scoring": "Scoring",
+      "school": "School",
+      "endScreen": "End screen"
+    },
+    "endScreenModeDescription": {
+      "full": "Shows the full leaderboard at the end of the game.",
+      "top3": "Shows only the top three at the end of the game.",
+      "private": "Results are visible to the teacher only."
+    },
+    "endScreenMinOneActive": "At least one end screen option must remain active."
   },
   "achievementsConfig": {
     "title": "Configure Achievements",
