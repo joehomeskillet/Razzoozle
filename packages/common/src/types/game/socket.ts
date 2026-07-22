@@ -62,6 +62,18 @@ export interface SelectedModes {
 
 // ---- Class-mode LIVE join types (Wave 1B) ----
 
+/** Manager class list row (`class:data`). `active` defaulted true since migration 021. */
+export interface Class {
+  id: number
+  name: string
+  createdAt: string
+  active: boolean
+  studentCount?: number
+  labelIds?: number[]
+  /** Admin unfiltered view only — disambiguates same-named classes across owners. */
+  ownerName?: string
+}
+
 export interface RosterEntry {
   studentId: number
   displayName: string
@@ -365,7 +377,7 @@ export interface ServerToClientEvents {
 
   // Class-roster manager (server -> client). Owner-scoped; wire contract mirrors
   // rust/server/src/socket/manager/classes.rs emits.
-  [EVENTS.CLASS.DATA]: (_classes: Array<{ id: number; name: string; createdAt: string; labelIds?: number[] }>) => void
+  [EVENTS.CLASS.DATA]: (_classes: Class[]) => void
   [EVENTS.CLASS.CREATE_SUCCESS]: (_class: { id: number; name: string }) => void
   [EVENTS.CLASS.UPDATE_SUCCESS]: () => void
   [EVENTS.CLASS.DELETE_SUCCESS]: (_data: { id: number }) => void
@@ -381,6 +393,15 @@ export interface ServerToClientEvents {
   [EVENTS.CLASS.STUDENT_CREATED]: (_data: StudentCreatedData) => void
   [EVENTS.CLASS.STUDENT_PIN_DATA]: (_data: { studentId: number; pin: string; labels: string[] }) => void
   [EVENTS.CLASS.PIN_REGENERATED]: (_data: { studentId: number; pin: string; labels: string[] }) => void
+  [EVENTS.CLASS.ACTIVE_SET]: (_data: { id: number; active: boolean }) => void
+  [EVENTS.CLASS.BULK_ACTIVE_SET]: (_outcome: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: "not_found" }>
+  }) => void
+  [EVENTS.CLASS.BULK_DELETED]: (_outcome: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: "not_found" }>
+  }) => void
 
   // Global labels (server -> client)
   [EVENTS.LABEL.DATA]: (_data: { labels: Array<{ id: number; name: string; color: string }> }) => void
@@ -655,6 +676,9 @@ export interface ClientToServerEvents {
   [EVENTS.CLASS.CREATE_STUDENT]: (_payload: CreateStudentPayload) => void
   [EVENTS.CLASS.STUDENT_PIN]: (_payload: { studentId: number }) => void
   [EVENTS.CLASS.REGEN_PIN]: (_payload: { studentId: number }) => void
+  [EVENTS.CLASS.SET_ACTIVE]: (_payload: { id: number; active: boolean }) => void
+  [EVENTS.CLASS.BULK_SET_ACTIVE]: (_payload: { ids: number[]; active: boolean }) => void
+  [EVENTS.CLASS.BULK_DELETE]: (_payload: { ids: number[] }) => void
 
   // Global labels (client -> server)
   [EVENTS.LABEL.LIST]: () => void
