@@ -77,6 +77,11 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
 
   return (
     <>
+      <style>{`
+        @media print {
+          [data-print-container] { display: block !important; }
+        }
+      `}</style>
       <DialogPanel
         open={open && !isPrinting}
         onOpenChange={onOpenChange}
@@ -191,7 +196,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
       </DialogPanel>
 
       {/* Hidden print container */}
-      <div ref={printContainerRef} className="no-print" style={{ display: "none" }}>
+      <div ref={printContainerRef} data-print-container className="no-print" style={{ display: "none" }}>
         {format === "sheets" ? (
           <PrintSheets students={filteredStudents} pins={pinDataMap} loginUrl={LOGIN_URL} />
         ) : (
