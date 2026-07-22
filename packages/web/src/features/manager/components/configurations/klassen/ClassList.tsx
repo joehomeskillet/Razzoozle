@@ -9,11 +9,14 @@ import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import {
   EmptyState,
 } from "@razzoozle/web/features/manager/components/console"
+import Checkbox from "@razzoozle/web/components/Checkbox"
+import Badge from "@razzoozle/web/components/manager/Badge"
 import {
   ChevronDown,
   ChevronRight,
   GraduationCap,
   Plus,
+  Power,
   SquarePen,
   Trash2,
 } from "lucide-react"
@@ -39,10 +42,14 @@ interface Class {
   students?: Student[]
   ownerName?: string
   labelIds?: number[]
+  active?: boolean
 }
 
 interface ClassListProps {
   classes: Class[]
+  selectedIds?: Set<number>
+  onToggleSelect?: (id: number) => void
+  onToggleSingleAction?: (id: number, action: 'activate' | 'deactivate') => void
   onCreateClass: () => void
   onEditClass: (classObj: { id: number; name: string }) => void
   onDeleteClass: (classObj: { id: number; name: string }) => void
@@ -59,6 +66,9 @@ interface ClassListProps {
 
 const ClassList = ({
   classes,
+  selectedIds,
+  onToggleSelect,
+  onToggleSingleAction,
   onCreateClass,
   onEditClass,
   onDeleteClass,
@@ -110,7 +120,6 @@ const ClassList = ({
           }
         }
 
-        // SDD §4.5: open (expand) → edit → delete (visible, destructive)
         const actions: ListRowAction[] = [
           {
             key: `expand-${classObj.id}`,
@@ -122,6 +131,15 @@ const ClassList = ({
                 : t("common:expand"),
             onClick: handleToggleExpand,
             "aria-expanded": expandedClassId === classObj.id,
+          },
+          {
+            key: `toggle-${classObj.id}`,
+            icon: Power,
+            label: classObj.active !== false ? t("manager:classes.deactivate") : t("manager:classes.activate"),
+            onClick: (e) => {
+              e.stopPropagation()
+              onToggleSingleAction?.(classObj.id, classObj.active !== false ? 'deactivate' : 'activate')
+            },
           },
           {
             key: `edit-${classObj.id}`,
@@ -214,72 +232,92 @@ const ClassList = ({
           ) : undefined
 
         return (
-          <ListRow
-            key={classObj.id}
-            title={classObj.name}
-            meta={`${studentCount} ${t("manager:classes.studentCount")}`}
-            footer={footer}
-            actions={actions}
-            expanded={expandedClassId === classObj.id}
-            details={
-              expandedClassId === classObj.id ? (
-                <div className="space-y-2">
-                  {(classObj.students ?? []).length > 0 ? (
-                    <>
-                      {classObj.students?.map((student) => (
-                        <ListRow
-                          key={student.id}
-                          density="compact"
-                          title={student.displayName}
-                          actions={[
-                            {
-                              key: "edit",
-                              icon: SquarePen,
-                              label: t("manager:classes.editStudent"),
-                              onClick: () =>
-                                onEditStudent({
-                                  id: student.id,
-                                  displayName: student.displayName,
-                                  birthdate: student.birthdate,
-                                }),
-                            },
-                            {
-                              key: "delete",
-                              icon: Trash2,
-                              label: t("manager:classes.deleteStudent"),
-                              destructive: true,
-                              onClick: () =>
-                                onDeleteStudent({
-                                  id: student.id,
-                                  displayName: student.displayName,
-                                }),
-                            },
-                          ]}
-                        />
-                      ))}
-                    </>
-                  ) : (
-                    <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
-                      <p className="text-xs text-[var(--ink-subtle)]">
-                        {t("manager:classes.noStudents")}
-                      </p>
-                    </div>
+          <div key={classObj.id} className="flex items-start gap-2">
+            {onToggleSelect && (
+              <div className="mt-3 flex-shrink-0">
+                <Checkbox
+                  checked={selectedIds?.has(classObj.id) ?? false}
+                  onChange={() => {
+                    onToggleSelect(classObj.id)
+                  }}
+                  aria-label={`Klasse auswählen: ${classObj.name}`}
+                  data-testid={`class-select-${classObj.id}`}
+                />
+              </div>
+            )}
+            <ListRow
+              title={classObj.name}
+              meta={
+                <div className="flex items-center gap-2">
+                  <span>{`${studentCount} ${t("manager:classes.studentCount")}`}</span>
+                  {classObj.active === false && (
+                    <Badge tone="warning">{t("manager:classes.statusInactive", { defaultValue: "Inaktiv" })}</Badge>
                   )}
-
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="md"
-                    onClick={() => onAddStudent(classObj.id)}
-                    className="w-full"
-                  >
-                    <Plus className="size-4" />
-                    {t("manager:classes.addStudent")}
-                  </Button>
                 </div>
-              ) : undefined
-            }
-          />
+              }
+              footer={footer}
+              actions={actions}
+              expanded={expandedClassId === classObj.id}
+              details={
+                expandedClassId === classObj.id ? (
+                  <div className="space-y-2">
+                    {(classObj.students ?? []).length > 0 ? (
+                      <>
+                        {classObj.students?.map((student) => (
+                          <ListRow
+                            key={student.id}
+                            density="compact"
+                            title={student.displayName}
+                            actions={[
+                              {
+                                key: "edit",
+                                icon: SquarePen,
+                                label: t("manager:classes.editStudent"),
+                                onClick: () =>
+                                  onEditStudent({
+                                    id: student.id,
+                                    displayName: student.displayName,
+                                    birthdate: student.birthdate,
+                                  }),
+                              },
+                              {
+                                key: "delete",
+                                icon: Trash2,
+                                label: t("manager:classes.deleteStudent"),
+                                destructive: true,
+                                onClick: () =>
+                                  onDeleteStudent({
+                                    id: student.id,
+                                    displayName: student.displayName,
+                                  }),
+                              },
+                            ]}
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
+                        <p className="text-xs text-[var(--ink-subtle)]">
+                          {t("manager:classes.noStudents")}
+                        </p>
+                      </div>
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      onClick={() => onAddStudent(classObj.id)}
+                      className="w-full"
+                    >
+                      <Plus className="size-4" />
+                      {t("manager:classes.addStudent")}
+                    </Button>
+                  </div>
+                ) : undefined
+              }
+            />
+          </div>
         )
       })}
     </div>

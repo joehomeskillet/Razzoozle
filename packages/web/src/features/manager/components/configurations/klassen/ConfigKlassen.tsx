@@ -5,9 +5,14 @@ import DateInput from "@razzoozle/web/components/DateInput"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
+import Checkbox from "@razzoozle/web/components/Checkbox"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { EVENTS } from "@razzoozle/common/constants"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 
 import ClassList from "./ClassList"
 import StudentPicker from "./StudentPicker"
@@ -36,7 +41,25 @@ const ConfigKlassen = () => {
     handleAssignLabels,
   } = useClassManager()
 
+  const { socket } = useSocket()
   const { t } = useTranslation()
+
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+
+  // Filter classes by status
+  const filteredByStatus = useMemo(() => {
+    return classes.filter(c => {
+      if (statusFilter === 'all') return true
+      if (statusFilter === 'active') return c.active !== false
+      if (statusFilter === 'inactive') return c.active === false
+      return true
+    })
+  }, [classes, statusFilter])
+
+  // Selection state
+  const classIds = useMemo(() => filteredByStatus.map(c => c.id), [filteredByStatus])
+  const selection = useEntitySelection(classIds)
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -91,7 +114,6 @@ const ConfigKlassen = () => {
     birthdate?: string | null
   }) => {
     setEditingStudent(student)
-    // Prefill from firstName/lastName if available; otherwise split displayName on first space
     if (student.firstName) {
       setEditStudentFirstName(student.firstName)
       setEditStudentLastName(student.lastName ?? "")
@@ -130,8 +152,58 @@ const ConfigKlassen = () => {
         </div>
       )}
 
+      {filteredByStatus.length > 0 && (
+        <div className="mb-4 flex shrink-0 flex-wrap gap-2">
+          <FilterPill
+            active={statusFilter === 'all'}
+            onClick={() => setStatusFilter('all')}
+            data-testid="classes-status-filter-all"
+          >
+            {t("manager:classes.filterAll", { defaultValue: "Alle" })}
+          </FilterPill>
+          <FilterPill
+            active={statusFilter === 'active'}
+            onClick={() => setStatusFilter('active')}
+            data-testid="classes-status-filter-active"
+          >
+            {t("manager:classes.filterActive", { defaultValue: "Aktiv" })}
+          </FilterPill>
+          <FilterPill
+            active={statusFilter === 'inactive'}
+            onClick={() => setStatusFilter('inactive')}
+            data-testid="classes-status-filter-inactive"
+          >
+            {t("manager:classes.filterInactive", { defaultValue: "Deaktiviert" })}
+          </FilterPill>
+        </div>
+      )}
+
+      {filteredByStatus.length > 0 && (
+        <div className="mb-4 flex shrink-0 items-center">
+          <label htmlFor="classes-select-all" className="flex items-center gap-2 text-sm font-medium">
+            <Checkbox
+              id="classes-select-all"
+              checked={selection.allSelected}
+              indeterminate={selection.someSelected}
+              onChange={() => selection.toggleAll()}
+              data-testid="classes-select-all"
+              aria-label={selection.someSelected ? t("manager:classes.selectFiltered", { defaultValue: "Alle gefilterten Klassen auswählen" }) : t("manager:classes.selectAll", { defaultValue: "Alle auswählen" })}
+            />
+            {selection.someSelected ? t("manager:classes.selectFiltered", { defaultValue: "Alle gefilterten Klassen auswählen" }) : t("manager:classes.selectAll", { defaultValue: "Alle auswählen" })}
+          </label>
+        </div>
+      )}
+
       <ClassList
-        classes={classes}
+        classes={filteredByStatus}
+        selectedIds={selection.selected}
+        onToggleSelect={selection.toggle}
+        onToggleSingleAction={(classId, action) => {
+          socket.emit(EVENTS.CLASS.SET_ACTIVE, { 
+            id: classId, 
+            active: action === 'activate' 
+          })
+        }}
         onCreateClass={handleOpenCreateDialog}
         onEditClass={handleOpenEditDialog}
         onDeleteClass={(classObj) => setPendingDeleteClass(classObj)}
@@ -231,8 +303,7 @@ const ConfigKlassen = () => {
         onConfirm={handleDeleteClass}
       />
 
-      {/* Add Student Picker — replaces the old free-text dialog. Creating new
-          students now happens only in the Schülerverwaltung tab. */}
+      {/* Add Student Picker */}
       <StudentPicker
         open={isPickerOpen}
         classId={pickerClassId}
