@@ -1,4 +1,6 @@
-//! Tests for bulk student ops: bulk_set_student_active (WP-F6 Group 1).
+//! Tests for bulk student ops:
+//! - Group 1: bulk_set_student_active (WP-F6g1)
+//! - Group 2: bulk_delete_students (WP-F6g2)
 //! Requires a live Postgres database (`DATABASE_URL`).
 //! Run with: `cargo test -- --include-ignored`.
 
@@ -41,12 +43,43 @@ mod tests {
             .await;
     }
 
+    /// Scoped cleanup for Group 2 fixtures (bulk_delete_students).
+    async fn cleanup_delete_fixtures(pool: &sqlx::PgPool) {
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_delete_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_delete_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_delete_%'")
+            .execute(pool)
+            .await;
+    }
+
     async fn fetch_student_active(pool: &sqlx::PgPool, student_id: i64) -> bool {
         sqlx::query_as::<_, (bool,)>("SELECT active FROM students WHERE id = $1")
             .bind(student_id)
             .fetch_one(pool)
             .await
             .expect("Failed to fetch student.active")
+            .0
+    }
+
+    async fn count_students(pool: &sqlx::PgPool, student_id: i64) -> i64 {
+        sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
+            .bind(student_id)
+            .fetch_one(pool)
+            .await
+            .expect("Failed to count students")
+            .0
+    }
+
+    async fn count_class_students(pool: &sqlx::PgPool, student_id: i64) -> i64 {
+        sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM class_students WHERE student_id = $1")
+            .bind(student_id)
+            .fetch_one(pool)
+            .await
+            .expect("Failed to count class_students")
             .0
     }
 
@@ -378,5 +411,178 @@ mod tests {
         );
 
         cleanup_test_fixtures(&pool).await;
+    }
+
+    // ── Group 2: bulk_delete_students ─────────────────────────────────────
+
+    /// Student delete removes the row; class_students CASCADE via FK.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_students_cascade() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+        cleanup_delete_fixtures(&pool).await;
+
+        let opt = Some(pool.clone());
+        let owner_id = create_user(
+            &pool,
+            "test_bulk_delete_cascade_owner",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create owner");
+
+        let class_id = create_class(&opt, "test_bulk_delete_cascade_class", owner_id)
+            .await
+            .expect("Failed to create class");
+
+        let student_id = create_student(
+            &opt,
+            "test_bulk_delete_cascade_s1",
+            "",
+            &[class_id],
+            owner_id,
+            Some(owner_id),
+            None,
+            "1234",
+        )
+        .await
+        .expect("Failed to create student");
+
+        assert_eq!(
+            count_class_students(&pool, student_id).await,
+            1,
+            "fixture must have one class_students row"
+        );
+
+        let result =
+            bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
+                .await
+                .expect("bulk_delete_students failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![student_id],
+            "expected student in succeeded, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+        assert_eq!(
+            count_students(&pool, student_id).await,
+            0,
+            "student row must be hard-deleted"
+        );
+        assert_eq!(
+            count_class_students(&pool, student_id).await,
+            0,
+            "class_students must CASCADE when student is deleted"
+        );
+
+        cleanup_delete_fixtures(&pool).await;
+    }
+
+    /// bulk_delete_students is a hard delete (not soft via active=false).
+    /// Student with multiple class memberships is fully removed; junctions CASCADE.
+    ///
+    /// Note (SDD §8.4): class deletion retains students (`class_id` SET NULL /
+    /// junction CASCADE on the class side). That path is bulk_delete_classes /
+    /// delete_class — not covered here. This case locks the inverse: explicit
+    /// student bulk-delete removes the student row entirely.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_students_student_retained_class_nulled() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+        cleanup_delete_fixtures(&pool).await;
+
+        let opt = Some(pool.clone());
+        let owner_id = create_user(
+            &pool,
+            "test_bulk_delete_hard_owner",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create owner");
+
+        let class_a = create_class(&opt, "test_bulk_delete_hard_class_a", owner_id)
+            .await
+            .expect("Failed to create class A");
+        let class_b = create_class(&opt, "test_bulk_delete_hard_class_b", owner_id)
+            .await
+            .expect("Failed to create class B");
+
+        let student_id = create_student(
+            &opt,
+            "test_bulk_delete_hard_s1",
+            "",
+            &[class_a, class_b],
+            owner_id,
+            Some(owner_id),
+            None,
+            "1234",
+        )
+        .await
+        .expect("Failed to create student");
+
+        assert_eq!(
+            count_class_students(&pool, student_id).await,
+            2,
+            "fixture must have two class_students rows"
+        );
+        assert!(
+            fetch_student_active(&pool, student_id).await,
+            "student starts active (soft-delete would only flip this)"
+        );
+
+        let result =
+            bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
+                .await
+                .expect("bulk_delete_students failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![student_id],
+            "expected hard-delete success, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        // Hard delete: row gone (not soft-deactivated).
+        assert_eq!(
+            count_students(&pool, student_id).await,
+            0,
+            "student must be hard-deleted (no soft-delete via active)"
+        );
+        assert_eq!(
+            count_class_students(&pool, student_id).await,
+            0,
+            "all class_students memberships must CASCADE"
+        );
+
+        cleanup_delete_fixtures(&pool).await;
     }
 }
