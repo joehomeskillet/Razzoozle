@@ -139,7 +139,12 @@
       "done": "CSV 已下载",
       "json": "导出为 JSON"
     },
-    "intro": "查看过往游戏并分享结果。"
+    "intro": "查看过往游戏并分享结果。",
+    "bulkDeleteTitle": "删除 {{count}} 条结果？",
+    "bulkDeleteWarning": "此操作无法撤销。",
+    "bulkDeleteFilterHint": "当前筛选：{{filter}}",
+    "confirmAllPhrase": "全部删除",
+    "typeToConfirm": "输入 {{phrase}} 以确认"
   },
   "tabs": {
     "play": "游玩",
@@ -990,6 +995,8 @@
     "resultSucceeded": "{{count}} 个成功",
     "resultSkipped": "已跳过 {{count}} 个",
     "resultFailed": "{{count}} 个失败",
-    "resultCompleted": "已完成"
+    "resultCompleted": "已完成",
+    "allSelected": "已选择全部 {{count}} 条记录",
+    "allFilteredSelected": "已选择全部 {{count}} 条筛选记录"
   }
 }
