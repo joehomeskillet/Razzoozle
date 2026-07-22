@@ -23,7 +23,8 @@
     "locked": "Esta partida está bloqueada — no pueden unirse nuevos jugadores.",
     "playerNotFound": "Partida o jugador no encontrado — por favor, únete de nuevo",
     "invalidCredentials": "El nombre o el PIN no coinciden con la clase.",
-    "alreadyJoined": "Este nombre ya se ha unido."
+    "alreadyJoined": "Este nombre ya se ha unido.",
+    "classInactive": "Esta clase está desactivada."
   },
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",

@@ -23,7 +23,8 @@
     "locked": "Cette partie est verrouillée — aucun nouveau joueur ne peut rejoindre.",
     "playerNotFound": "Partie ou joueur introuvable — veuillez rejoindre à nouveau",
     "invalidCredentials": "Le nom ou le PIN ne correspond pas à la classe.",
-    "alreadyJoined": "Ce nom a déjà rejoint."
+    "alreadyJoined": "Ce nom a déjà rejoint.",
+    "classInactive": "Cette classe est désactivée."
   },
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",

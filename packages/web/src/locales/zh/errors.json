@@ -28,7 +28,8 @@
     "locked": "房间已被锁定 — 新玩家无法加入",
     "playerNotFound": "游戏或玩家未找到 — 请重新加入",
     "invalidCredentials": "姓名或 PIN 与班级不匹配。",
-    "alreadyJoined": "这个名字已经加入了。"
+    "alreadyJoined": "这个名字已经加入了。",
+    "classInactive": "该班级已停用。"
   },
   "manager": {
     "failedToReadConfig": "读取游戏配置失败",

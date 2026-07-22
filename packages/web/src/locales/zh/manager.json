@@ -786,7 +786,22 @@
     "pickerAlreadyIn": "已在此班级中",
     "pickerHint": "选择要添加到班级\"{{className}}\"的学生。",
     "pickerNoResults": "未找到学生",
-    "intro": "管理班级与学生分配。"
+    "intro": "管理班级与学生分配。",
+    "statusActive": "启用",
+    "statusInactive": "已停用",
+    "filterAll": "全部",
+    "filterActive": "启用",
+    "filterInactive": "已停用",
+    "bulkConfirmTitleActivate": "启用 {{count}} 个班级？",
+    "bulkConfirmTitleDeactivate": "停用 {{count}} 个班级？",
+    "bulkConfirmTitleDelete": "删除 {{count}} 个班级？",
+    "deleteImpactStudents": "将移除 {{count}} 个学生关联",
+    "deleteImpactLabels": "将移除 {{count}} 个科目关联",
+    "deleteKeepNote": "学生账户和成绩将保留。",
+    "activate": "激活",
+    "deactivate": "停用",
+    "selectAll": "选择所有班级",
+    "selectFiltered": "选择所有筛选的班级"
   },
   "users": {
     "title": "用户管理",

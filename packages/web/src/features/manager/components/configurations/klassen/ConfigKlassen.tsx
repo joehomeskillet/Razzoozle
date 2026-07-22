@@ -5,9 +5,15 @@ import DateInput from "@razzoozle/web/components/DateInput"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
+import Checkbox from "@razzoozle/web/components/Checkbox"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { EVENTS } from "@razzoozle/common/constants"
+import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 
 import ClassList from "./ClassList"
 import StudentPicker from "./StudentPicker"
@@ -36,7 +42,29 @@ const ConfigKlassen = () => {
     handleAssignLabels,
   } = useClassManager()
 
+  const { socket } = useSocket()
   const { t } = useTranslation()
+
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+
+  // Filter classes by status
+  const filteredByStatus = useMemo(() => {
+    return classes.filter(c => {
+      if (statusFilter === 'all') return true
+      if (statusFilter === 'active') return c.active !== false
+      if (statusFilter === 'inactive') return c.active === false
+      return true
+    })
+  }, [classes, statusFilter])
+
+  // Selection state
+  const classIds = useMemo(() => filteredByStatus.map(c => c.id), [filteredByStatus])
+  const selection = useEntitySelection(classIds)
+
+  // Bulk operation state
+  const [pendingBulkAction, setPendingBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null)
+  const [bulkOperationLoading, setBulkOperationLoading] = useState(false)
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -91,7 +119,6 @@ const ConfigKlassen = () => {
     birthdate?: string | null
   }) => {
     setEditingStudent(student)
-    // Prefill from firstName/lastName if available; otherwise split displayName on first space
     if (student.firstName) {
       setEditStudentFirstName(student.firstName)
       setEditStudentLastName(student.lastName ?? "")
@@ -103,6 +130,59 @@ const ConfigKlassen = () => {
     setEditStudentBirthdate(student.birthdate ?? "")
     setIsEditStudentDialogOpen(true)
   }
+
+  const handleBulkActivate = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_SET_ACTIVE, {
+      ids: Array.from(selection.selected),
+      active: true,
+    })
+    setPendingBulkAction(null)
+  }
+
+  const handleBulkDeactivate = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_SET_ACTIVE, {
+      ids: Array.from(selection.selected),
+      active: false,
+    })
+    setPendingBulkAction(null)
+  }
+
+  const handleBulkDelete = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_DELETE, {
+      ids: Array.from(selection.selected),
+    })
+    setPendingBulkAction(null)
+  }
+
+  // Delete dialog content for bulk delete
+  const selectedClassesForDelete = useMemo(() => {
+    return filteredByStatus.filter(c => selection.selected.has(c.id))
+  }, [filteredByStatus, selection.selected])
+
+  const totalStudents = selectedClassesForDelete.reduce((sum, c) => sum + (c.studentCount ?? 0), 0)
+  const totalLabels = selectedClassesForDelete.reduce((sum, c) => sum + (c.labelIds?.length ?? 0), 0)
+
+  const deleteBulkDescription = (
+    <div className="space-y-2 text-sm">
+      <p>
+        {selectedClassesForDelete.slice(0, 5).map(c => c.name).join(", ")}
+        {selectedClassesForDelete.length > 5 && ` ${t("manager:bulk.andNMore", { count: selectedClassesForDelete.length - 5 })}`}
+      </p>
+      <p>{t("manager:classes.deleteImpactStudents", { count: totalStudents })}</p>
+      <p>{t("manager:classes.deleteImpactLabels", { count: totalLabels })}</p>
+      <p className="text-xs text-[var(--ink-subtle)]">{t("manager:classes.deleteKeepNote")}</p>
+    </div>
+  )
+
+  const bulkDescriptionWithClassNames = (
+    <div className="text-sm">
+      {selectedClassesForDelete.slice(0, 5).map(c => c.name).join(", ")}
+      {selectedClassesForDelete.length > 5 && ` ${t("manager:bulk.andNMore", { count: selectedClassesForDelete.length - 5 })}`}
+    </div>
+  )
 
   return (
     <>
@@ -130,8 +210,94 @@ const ConfigKlassen = () => {
         </div>
       )}
 
+      {filteredByStatus.length > 0 && (
+        <div className="mb-4 flex shrink-0 flex-wrap gap-2">
+          <FilterPill
+            active={statusFilter === 'all'}
+            onClick={() => setStatusFilter('all')}
+            data-testid="classes-status-filter-all"
+          >
+            {t("manager:classes.filterAll")}
+          </FilterPill>
+          <FilterPill
+            active={statusFilter === 'active'}
+            onClick={() => setStatusFilter('active')}
+            data-testid="classes-status-filter-active"
+          >
+            {t("manager:classes.filterActive")}
+          </FilterPill>
+          <FilterPill
+            active={statusFilter === 'inactive'}
+            onClick={() => setStatusFilter('inactive')}
+            data-testid="classes-status-filter-inactive"
+          >
+            {t("manager:classes.filterInactive")}
+          </FilterPill>
+        </div>
+      )}
+
+      {filteredByStatus.length > 0 && (
+        <div className="mb-4 flex shrink-0 items-center">
+          <label htmlFor="classes-select-all" className="flex items-center gap-2 text-sm font-medium">
+            <Checkbox
+              id="classes-select-all"
+              checked={selection.allSelected}
+              indeterminate={selection.someSelected}
+              onChange={() => selection.toggleAll()}
+              data-testid="classes-select-all"
+              aria-label={selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
+            />
+            {selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
+          </label>
+        </div>
+      )}
+
+      {selection.selectionActive && (
+        <div className="mb-4 flex shrink-0">
+          <BulkActionToolbar
+            count={selection.selected.size}
+            label={t("manager:bulk.selected", { count: selection.selected.size })}
+            onClear={selection.clear}
+            data-testid="classes-bulk-toolbar"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingBulkAction('activate')}
+            >
+              {t("manager:bulk.activate")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingBulkAction('deactivate')}
+            >
+              {t("manager:bulk.deactivate")}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => setPendingBulkAction('delete')}
+            >
+              {t("manager:bulk.deleteSelected")}
+            </Button>
+          </BulkActionToolbar>
+        </div>
+      )}
+
       <ClassList
-        classes={classes}
+        classes={filteredByStatus}
+        selectedIds={selection.selected}
+        onToggleSelect={selection.toggle}
+        onToggleSingleAction={(classId, action) => {
+          socket.emit(EVENTS.CLASS.SET_ACTIVE, { 
+            id: classId, 
+            active: action === 'activate' 
+          })
+        }}
         onCreateClass={handleOpenCreateDialog}
         onEditClass={handleOpenEditDialog}
         onDeleteClass={(classObj) => setPendingDeleteClass(classObj)}
@@ -231,8 +397,46 @@ const ConfigKlassen = () => {
         onConfirm={handleDeleteClass}
       />
 
-      {/* Add Student Picker — replaces the old free-text dialog. Creating new
-          students now happens only in the Schülerverwaltung tab. */}
+      {/* Bulk Activate Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'activate'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleActivate", { count: selection.selected.size })}
+        description={bulkDescriptionWithClassNames}
+        confirmLabel={t("manager:bulk.activate")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkActivate}
+      />
+
+      {/* Bulk Deactivate Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'deactivate'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleDeactivate", { count: selection.selected.size })}
+        description={bulkDescriptionWithClassNames}
+        confirmLabel={t("manager:bulk.deactivate")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkDeactivate}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'delete'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleDelete", { count: selection.selected.size })}
+        description={deleteBulkDescription}
+        confirmLabel={t("common:delete")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkDelete}
+      />
+
+      {/* Add Student Picker */}
       <StudentPicker
         open={isPickerOpen}
         classId={pickerClassId}

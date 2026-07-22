@@ -308,6 +308,21 @@ export const EVENTS = {
      * `class:pinRegenerated` → `{ studentId: number, pin: string, labels: string[], symbols: string[] }` (manager-authed via require_user).
      */
     PIN_REGENERATED: "class:pinRegenerated",
+    /**
+     * `class:setActive` req `{ id: number, active: boolean }` → success `class:activeSet` `{ id, active }` (owner-scoped; manager-authed via require_user).
+     */
+    SET_ACTIVE: "class:setActive",
+    ACTIVE_SET: "class:activeSet",
+    /**
+     * `class:bulkSetActive` req `{ ids: number[], active: boolean }` → ack `class:bulkActiveSet` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped).
+     */
+    BULK_SET_ACTIVE: "class:bulkSetActive",
+    BULK_ACTIVE_SET: "class:bulkActiveSet",
+    /**
+     * `class:bulkDelete` req `{ ids: number[] }` → ack `class:bulkDeleted` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; class_students CASCADE, students.class_id SET NULL by FK).
+     */
+    BULK_DELETE: "class:bulkDelete",
+    BULK_DELETED: "class:bulkDeleted",
   },
   // Global labels (Fächer) — admin-defined, can tag quizzes/media/catalog.
   // All events are auth-gated (require_user for list/assign, require_admin for crud).

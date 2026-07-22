@@ -28,7 +28,8 @@
     "locked": "This game is locked — no new players can join.",
     "playerNotFound": "Game or player not found — please rejoin",
     "invalidCredentials": "Name or PIN doesn't match the class.",
-    "alreadyJoined": "This name has already joined."
+    "alreadyJoined": "This name has already joined.",
+    "classInactive": "This class is deactivated."
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",

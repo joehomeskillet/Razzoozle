@@ -786,7 +786,22 @@
     "pickerAlreadyIn": "Déjà dans cette classe",
     "pickerHint": "Choisis les élèves à ajouter à la classe \"{{className}}\".",
     "pickerNoResults": "Aucun élève trouvé",
-    "intro": "Gère les classes et les affectations d'élèves."
+    "intro": "Gère les classes et les affectations d'élèves.",
+    "statusActive": "Active",
+    "statusInactive": "Désactivée",
+    "filterAll": "Toutes",
+    "filterActive": "Actives",
+    "filterInactive": "Désactivées",
+    "bulkConfirmTitleActivate": "Activer {{count}} classes ?",
+    "bulkConfirmTitleDeactivate": "Désactiver {{count}} classes ?",
+    "bulkConfirmTitleDelete": "Supprimer {{count}} classes ?",
+    "deleteImpactStudents": "{{count}} associations d'élèves seront supprimées",
+    "deleteImpactLabels": "{{count}} associations de matières seront supprimées",
+    "deleteKeepNote": "Les comptes élèves et les résultats sont conservés.",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "selectAll": "Sélectionner toutes les classes",
+    "selectFiltered": "Sélectionner toutes les classes filtrées"
   },
   "users": {
     "title": "Gestion des Utilisateurs",
