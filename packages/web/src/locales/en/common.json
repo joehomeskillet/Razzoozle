@@ -29,5 +29,6 @@
   "create": "Create",
   "add": "Add",
   "removeLabelNamed": "Remove {{name}}",
-  "copy": "Copy"
+  "copy": "Copy",
+  "restartRequired": "Restart required"
 }
