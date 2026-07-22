@@ -80,8 +80,8 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
             {...(htmlFor ? { htmlFor } : {})}
             id={titleId}
             className={clsx(
-              "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40 sm:py-2.5",
-              "flex items-center gap-2",
+              "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-40 sm:py-2.5",
+              "flex flex-wrap items-start gap-2",
               htmlFor && "cursor-pointer",
               disabled && "opacity-50"
             )}
@@ -122,7 +122,7 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
         )}
 
         {description && (
-          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-44">
+          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-40">
             {description}
           </p>
         )}

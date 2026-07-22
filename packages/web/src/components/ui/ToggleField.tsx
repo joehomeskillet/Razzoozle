@@ -1,5 +1,6 @@
 import clsx from "clsx"
 import { forwardRef } from "react"
+import { useTranslation } from "react-i18next"
 import Badge from "@razzoozle/web/components/manager/Badge"
 
 export interface ToggleFieldProps {
@@ -12,6 +13,8 @@ export interface ToggleFieldProps {
   disabled?: boolean
   /** Optional badge signal that the setting requires restart. */
   restartBadge?: boolean
+  /** Optional i18n-ized label text for restart badge. If not provided, uses default i18n key. */
+  restartBadgeLabel?: string
   /** Optional status message (validation error, success, pending save). */
   statusMessage?: {
     text: string
@@ -44,6 +47,7 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
       onChange,
       disabled,
       restartBadge,
+      restartBadgeLabel,
       statusMessage,
       disabledReason,
       id,
@@ -51,10 +55,14 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation("common")
     const titleId = id ? `${id}-title` : undefined
     const descId = id && description ? `${id}-desc` : undefined
     const statusId = id && statusMessage ? `${id}-status` : undefined
     const describedBy = clsx(descId, statusId)
+
+    // Use provided label or fall back to i18n key
+    const badgeLabel = restartBadgeLabel ?? t("restartRequired")
 
     return (
       <div
@@ -67,15 +75,15 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
           <span
             id={titleId}
             className={clsx(
-              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:w-40",
-              "flex items-center gap-2",
+              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-40",
+              "flex flex-wrap items-start gap-2",
               disabled && "opacity-50"
             )}
           >
             {label}
             {restartBadge && (
-              <Badge className="shrink-0 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
-                Neustart erforderlich
+              <Badge className="shrink-0 whitespace-nowrap bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
+                {badgeLabel}
               </Badge>
             )}
           </span>
@@ -124,7 +132,7 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
         )}
 
         {description && (
-          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-44">
+          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-40">
             {description}
           </p>
         )}
