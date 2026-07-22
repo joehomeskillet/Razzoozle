@@ -785,8 +785,8 @@
   },
   "users": {
     "title": "用户管理",
-    "intro": "创建、锁定和解锁教师账户。",
-    "createTitle": "创建新教师",
+    "intro": "管理用户、教师和管理员。",
+    "createTitle": "创建新用户",
     "created": "用户已创建",
     "loadFailed": "无法加载用户",
     "invalidInput": "需要用户名和密码",
@@ -824,7 +824,9 @@
     "deleteFailed": "删除失败",
     "cannot_modify_own_account": "你不能修改自己的账户",
     "cannot_delete_self": "无法删除自己的账户",
-    "cannot_deactivate_self": "无法停用自己的账户"
+    "cannot_deactivate_self": "无法停用自己的账户",
+    "copyUser": "复制用户",
+    "copyDialogTitle": "复制用户"
   },
   "profile": {
     "intro": "您的个人资料和设置",
@@ -969,5 +971,16 @@
       "importFailed": "导入失败: {{message}}",
       "tooLarge": "文件太大（最大 512 KB）"
     }
+  },
+  "bulk": {
+    "selected": "已选择 {{count}} 项",
+    "selectAll": "全选",
+    "selectAllFiltered": "选择所有筛选结果",
+    "clearSelection": "清除选择",
+    "activate": "启用",
+    "deactivate": "禁用",
+    "deleteSelected": "删除所选",
+    "andNMore": "以及其他 {{count}} 个",
+    "skippedProtected": "已跳过 {{count}} 个受保护账户"
   }
 }

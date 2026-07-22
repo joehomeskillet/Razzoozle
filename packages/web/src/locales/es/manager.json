@@ -785,8 +785,8 @@
   },
   "users": {
     "title": "Gestión de Usuarios",
-    "intro": "Crear, bloquear y desbloquear cuentas de profesores.",
-    "createTitle": "Crear Nuevo Profesor",
+    "intro": "Gestiona usuarios, profesores y administradores.",
+    "createTitle": "Crear nuevo usuario",
     "created": "Usuario creado",
     "loadFailed": "Error al cargar usuarios",
     "invalidInput": "Usuario y contraseña requeridos",
@@ -824,7 +824,9 @@
     "deleteFailed": "Error al eliminar",
     "cannot_modify_own_account": "No puedes modificar tu propia cuenta",
     "cannot_delete_self": "Tu cuenta no se puede eliminar",
-    "cannot_deactivate_self": "Tu cuenta no se puede desactivar"
+    "cannot_deactivate_self": "Tu cuenta no se puede desactivar",
+    "copyUser": "Copiar usuario",
+    "copyDialogTitle": "Copiar usuario"
   },
   "profile": {
     "intro": "Tu perfil y tus ajustes personales.",
@@ -969,5 +971,16 @@
       "importFailed": "Error al importar: {{message}}",
       "tooLarge": "Archivo demasiado grande (máx. 512 KB)"
     }
+  },
+  "bulk": {
+    "selected": "{{count}} seleccionados",
+    "selectAll": "Seleccionar todo",
+    "selectAllFiltered": "Seleccionar todos los filtrados",
+    "clearSelection": "Quitar selección",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "deleteSelected": "Eliminar seleccionados",
+    "andNMore": "y {{count}} más",
+    "skippedProtected": "{{count}} cuentas protegidas omitidas"
   }
 }
