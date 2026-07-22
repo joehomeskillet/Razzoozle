@@ -16,10 +16,13 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useManagerStore } from "@razzoozle/web/game/stores/manager"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import {
   Ban,
   CheckCircle2,
+  Copy,
   UserCog,
   UserPlus,
   Users as UsersIcon,
@@ -27,19 +30,22 @@ import {
   Trash2,
   X,
 } from "lucide-react"
-import { type SyntheticEvent, useCallback, useEffect, useState } from "react"
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-// Admin-only teacher-account management (GET/POST /api/users, admin-gated on
-// the server). Not a socket concern — the payload is a plain REST DTO local
-// to this tab, so the shape lives here rather than in @razzoozle/common.
 interface ManagedUser {
   id: number
   username: string
   role: string
   active: boolean
   created_at: string
+}
+
+interface BulkResponse {
+  succeeded: number[]
+  skipped: Array<{ id: number; reason: string }>
+  failed: Array<{ id: number; reason: string }>
 }
 
 const parseErrorMessage = async (
@@ -52,7 +58,7 @@ const parseErrorMessage = async (
       return typeof error === "string" ? error : null
     }
   } catch {
-    // Non-JSON error body — fall back to the caller's generic message.
+    // Non-JSON error body — fall back to caller's generic message
   }
   return null
 }
@@ -60,15 +66,24 @@ const parseErrorMessage = async (
 const ConfigUsers = () => {
   const { t } = useTranslation()
   const config = useConfig()
-  // Store only keeps username (no user id) — match list rows by username.
   const currentUsername = useManagerStore((s) => s.username)
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("")
+  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "lehrkraft" | "admin">("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  
+  // Create/Copy dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<"user" | "admin" | "lehrkraft">("user")
   const [creating, setCreating] = useState(false)
+  const [copySourceId, setCopySourceId] = useState<number | null>(null)
+  
+  // Other single actions
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [resetPasswordId, setResetPasswordId] = useState<number | null>(null)
   const [resetNewPassword, setResetNewPassword] = useState("")
@@ -79,6 +94,39 @@ const ConfigUsers = () => {
     role: string
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
+  
+  // Bulk actions
+  const [bulkAction, setBulkAction] = useState<"activate" | "deactivate" | "delete" | null>(null)
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [bulkProcessing, setBulkProcessing] = useState(false)
+  
+  const selection = useEntitySelection<number>(users.map((u) => u.id))
+  
+  // Filter users based on search & filters
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        user.username.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesRole =
+        roleFilter === "all" || user.role === roleFilter
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && user.active) ||
+        (statusFilter === "inactive" && !user.active)
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [users, searchTerm, roleFilter, statusFilter])
+
+  // Update selection state when filtered users change
+  useEffect(() => {
+    const filteredIds = filteredUsers.map((u) => u.id)
+    selection.selected.forEach((id) => {
+      if (!filteredIds.includes(id)) {
+        selection.selected.delete(id)
+      }
+    })
+  }, [filteredUsers, selection.selected])
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -139,6 +187,7 @@ const ConfigUsers = () => {
       setUsername("")
       setPassword("")
       setRole("user")
+      setCopySourceId(null)
       setIsCreateDialogOpen(false)
       await loadUsers()
     } catch {
@@ -261,6 +310,57 @@ const ConfigUsers = () => {
     }
   }
 
+  const handleBulkAction = async () => {
+    if (!bulkAction || selection.selected.size === 0) return
+
+    setBulkProcessing(true)
+    try {
+      const endpoint = `/api/users/bulk-${bulkAction}`
+      const response = await fetchWithAuth(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selection.selected) }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`)
+      }
+
+      const result = (await response.json()) as BulkResponse
+      
+      // Build toast message with precise counts
+      const succeeded = result.succeeded.length
+      const skipped = result.skipped.length
+      const failed = result.failed.length
+      
+      let message = ""
+      if (succeeded > 0) {
+        message += `${succeeded} erfolgreich`
+      }
+      if (skipped > 0) {
+        message += (message ? ", " : "") + `${skipped} übersprungen`
+      }
+      if (failed > 0) {
+        message += (message ? ", " : "") + `${failed} fehlgeschlagen`
+      }
+      
+      toast.success(message || "Abgeschlossen")
+      
+      selection.clear()
+      setBulkConfirm(false)
+      setBulkAction(null)
+      await loadUsers()
+    } catch {
+      toast.error(
+        t("manager:users.bulkFailed", {
+          defaultValue: "Bulk-Aktion fehlgeschlagen",
+        }),
+      )
+    } finally {
+      setBulkProcessing(false)
+    }
+  }
+
   const getRoleLabel = (roleValue: string) => {
     switch (roleValue) {
       case "admin":
@@ -279,13 +379,13 @@ const ConfigUsers = () => {
     const baseDesc = t("manager:users.deleteConfirmDescription", {
       name: pendingDelete.username,
       defaultValue:
-        "Nutzer {{name}} wird endgueltig geloescht und kann nicht rueckgaengig gemacht werden.",
+        "Nutzer {{name}} wird endgültig gelöscht und kann nicht rückgängig gemacht werden.",
     })
 
     if (pendingDelete.role === "lehrkraft") {
       const cascadeWarning = t("manager:users.deleteConfirmCascade", {
         defaultValue:
-          "Alle Klassen und Schueler dieser Lehrkraft werden ebenfalls geloescht.",
+          "Alle Klassen und Schüler dieser Lehrkraft werden ebenfalls gelöscht.",
       })
       return `${baseDesc}\n\n${cascadeWarning}`
     }
@@ -293,9 +393,42 @@ const ConfigUsers = () => {
     return baseDesc
   }
 
+  const getBulkConfirmMessage = () => {
+    if (!bulkAction) return ""
+    
+    const selectedNames = filteredUsers
+      .filter((u) => selection.isSelected(u.id))
+      .slice(0, 5)
+      .map((u) => u.username)
+    
+    const extra = selection.selected.size > 5 ? 
+      ` ${t("manager:bulk.andNMore", { count: selection.selected.size - 5, defaultValue: "und {{count}} weitere" })}` : 
+      ""
+    
+    const nameList = selectedNames.join(", ") + extra
+    
+    let actionDesc = ""
+    if (bulkAction === "activate") {
+      actionDesc = "aktivieren"
+    } else if (bulkAction === "deactivate") {
+      actionDesc = "deaktivieren"
+    } else if (bulkAction === "delete") {
+      actionDesc = "löschen"
+    }
+    
+    return `${selection.selected.size} Benutzer ${actionDesc}: ${nameList}`
+  }
+
+  const openCopyDialog = (sourceUser: ManagedUser) => {
+    setCopySourceId(sourceUser.id)
+    setUsername(`${sourceUser.username}-kopie`)
+    setPassword("")
+    setRole(sourceUser.role as "user" | "admin" | "lehrkraft")
+    setIsCreateDialogOpen(true)
+  }
+
   return (
     <>
-      {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
       <div className="flex flex-1 flex-col gap-4 pb-20">
         <PageHeader
           title={t("manager:users.title", {
@@ -306,15 +439,70 @@ const ConfigUsers = () => {
           })}
         />
 
+        {/* Filter bar */}
+        <div className="space-y-3 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface-2)] p-4">
+          <Input
+            data-testid="users-search"
+            type="text"
+            placeholder={t("manager:users.searchPlaceholder", {
+              defaultValue: "Nach Benutzername suchen...",
+            })}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+          
+          <div className="flex flex-wrap gap-2">
+            {/* Role filter pills */}
+            {[
+              { value: "all" as const, label: t("manager:users.roleAll", { defaultValue: "Alle Rollen" }) },
+              { value: "user" as const, label: t("manager:users.role.user", { defaultValue: "Nutzer" }) },
+              { value: "lehrkraft" as const, label: t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" }) },
+              { value: "admin" as const, label: t("manager:users.role.admin", { defaultValue: "Admin" }) },
+            ].map((pill) => (
+              <button
+                key={pill.value}
+                onClick={() => setRoleFilter(pill.value)}
+                className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                  roleFilter === pill.value
+                    ? "bg-[var(--accent)] text-[var(--surface)]"
+                    : "bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
+            
+            {/* Status filter pills */}
+            {[
+              { value: "all" as const, label: t("manager:users.statusAll", { defaultValue: "Alle Status" }) },
+              { value: "active" as const, label: t("manager:users.active", { defaultValue: "Aktiv" }) },
+              { value: "inactive" as const, label: t("manager:users.disabledStatus", { defaultValue: "Deaktiviert" }) },
+            ].map((pill) => (
+              <button
+                key={`status-${pill.value}`}
+                onClick={() => setStatusFilter(pill.value)}
+                className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                  statusFilter === pill.value
+                    ? "bg-[var(--accent)] text-[var(--surface)]"
+                    : "bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader className="h-16" />
           </div>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <EmptyState
             icon={UsersIcon}
             headline={t("manager:users.emptyHeadline", {
-              defaultValue: "Noch keine Lehrkräfte",
+              defaultValue: "Noch keine Nutzer",
             })}
             hint={t("manager:users.empty", {
               defaultValue: "Lege oben das erste Konto an.",
@@ -322,12 +510,48 @@ const ConfigUsers = () => {
           />
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
-            {users.map((user) => {
+            {/* Select-all checkbox header (optional visual) */}
+            <div className="text-xs font-semibold text-[var(--ink-muted)] px-3">
+              <input
+                data-testid="users-select-all"
+                type="checkbox"
+                ref={(el) => {
+                  if (el) {
+                    el.indeterminate =
+                      selection.someSelected && !selection.allSelected
+                    el.checked = selection.allSelected
+                  }
+                }}
+                onChange={() => selection.toggleAll()}
+                className="mr-2"
+                aria-label="Alle auswählen"
+              />
+              {selection.selectionActive && (
+                <span className="text-sm">
+                  {selection.selected.size} von {filteredUsers.length} ausgewählt
+                </span>
+              )}
+            </div>
+            
+            {filteredUsers.map((user) => {
               const isSelf =
                 currentUsername != null && user.username === currentUsername
               const busy =
-                pendingId === user.id || resettingPassword || deleting
+                pendingId === user.id || resettingPassword || deleting || bulkProcessing
+              
               const allActions: ListRowAction[] = [
+                {
+                  key: "copy",
+                  icon: Copy,
+                  label: t("manager:users.copyUser", {
+                    defaultValue: "Benutzer kopieren",
+                  }),
+                  disabled: busy,
+                  title: t("manager:users.copyUser", {
+                    defaultValue: "Benutzer kopieren",
+                  }),
+                  onClick: () => openCopyDialog(user),
+                },
                 {
                   key: "reset",
                   icon: Key,
@@ -395,7 +619,17 @@ const ConfigUsers = () => {
                 <ListRow
                   key={user.id}
                   leading={
-                    <UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                    <>
+                      <input
+                        data-testid={`user-select-${user.id}`}
+                        type="checkbox"
+                        checked={selection.isSelected(user.id)}
+                        onChange={() => selection.toggle(user.id)}
+                        className="mr-2"
+                        aria-label={`Auswahl: ${user.username}`}
+                      />
+                      <UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                    </>
                   }
                   title={user.username}
                   meta={
@@ -420,6 +654,52 @@ const ConfigUsers = () => {
               )
             })}
           </div>
+        )}
+
+        {/* Bulk action toolbar */}
+        {selection.selectionActive && (
+          <BulkActionToolbar
+            count={selection.selected.size}
+            label={t("manager:bulk.selected", {
+              count: selection.selected.size,
+              defaultValue: "{{count}} ausgewählt",
+            })}
+            onClear={selection.clear}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setBulkAction("activate")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:users.enable", { defaultValue: "Aktivieren" })}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setBulkAction("deactivate")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:users.disable", { defaultValue: "Deaktivieren" })}
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => {
+                setBulkAction("delete")
+                setBulkConfirm(true)
+              }}
+              disabled={bulkProcessing}
+            >
+              {t("manager:users.delete", { defaultValue: "Löschen" })}
+            </Button>
+          </BulkActionToolbar>
         )}
 
         {/* Delete Confirmation Dialog */}
@@ -498,6 +778,7 @@ const ConfigUsers = () => {
                   })}
                 />
               </div>
+
               <div className="mt-4 flex justify-end gap-3">
                 <Button
                   type="button"
@@ -529,7 +810,7 @@ const ConfigUsers = () => {
           </Portal>
         </Dialog.Root>
 
-        {/* Create User Dialog */}
+        {/* Create/Copy User Dialog */}
         <Dialog.Root
           open={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
@@ -545,9 +826,13 @@ const ConfigUsers = () => {
                   id="create-user-dialog-title"
                   className="text-lg font-semibold text-[var(--ink)]"
                 >
-                  {t("manager:users.createTitle", {
-                    defaultValue: "Neue Lehrkraft anlegen",
-                  })}
+                  {copySourceId
+                    ? t("manager:users.copyDialogTitle", {
+                        defaultValue: "Benutzer kopieren",
+                      })
+                    : t("manager:users.createTitle", {
+                        defaultValue: "Neuen Benutzer anlegen",
+                      })}
                 </Dialog.Title>
                 <Dialog.Close asChild>
                   <Button
@@ -648,7 +933,10 @@ const ConfigUsers = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setIsCreateDialogOpen(false)}
+                    onClick={() => {
+                      setIsCreateDialogOpen(false)
+                      setCopySourceId(null)
+                    }}
                     disabled={creating}
                   >
                     {t("common:cancel")}
@@ -656,13 +944,32 @@ const ConfigUsers = () => {
                   <Button type="submit" disabled={creating}>
                     {creating
                       ? t("common:loading", { defaultValue: "Wird geladen…" })
-                      : t("manager:users.create", { defaultValue: "Create" })}
+                      : t("manager:users.create", { defaultValue: "Erstellen" })}
                   </Button>
                 </div>
               </form>
             </Dialog.Content>
           </Portal>
         </Dialog.Root>
+
+        {/* Bulk confirmation dialog */}
+        <AlertDialog
+          open={bulkConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              setBulkConfirm(false)
+              setBulkAction(null)
+            }
+          }}
+          title={`${selection.selected.size} Benutzer ${bulkAction}?`}
+          description={getBulkConfirmMessage()}
+          confirmLabel={
+            bulkAction === "delete"
+              ? t("manager:users.delete", { defaultValue: "Löschen" })
+              : t("common:confirm", { defaultValue: "Bestätigen" })
+          }
+          onConfirm={handleBulkAction}
+        />
       </div>
 
       <ActionFooter>
@@ -671,12 +978,18 @@ const ConfigUsers = () => {
           variant="primary"
           size="lg"
           className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={() => {
+            setCopySourceId(null)
+            setUsername("")
+            setPassword("")
+            setRole("user")
+            setIsCreateDialogOpen(true)
+          }}
         >
           <UserPlus className="size-5" aria-hidden strokeWidth={2.5} />
           <span>
             {t("manager:users.createTitle", {
-              defaultValue: "Neue Lehrkraft anlegen",
+              defaultValue: "Neuen Benutzer anlegen",
             })}
           </span>
         </Button>
