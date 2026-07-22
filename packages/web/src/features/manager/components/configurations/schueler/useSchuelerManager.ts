@@ -231,6 +231,45 @@ export const useSchuelerManager = (
     onBulkSettled?.()
   })
 
+  // Bulk class-assign ack (WP-F2d): toast succeeded; skip "skipped" (already_member)
+  // from the error toast — only real failures surface as error.
+  useEvent(EVENTS.CLASS.BULK_STUDENT_ASSIGNED, (data: {
+    succeeded: number[]
+    skipped: Array<{ id: number; reason: string }>
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
+      )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
+  })
+
+  useEvent(EVENTS.CLASS.BULK_STUDENT_REMOVED, (data: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
+      )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
+  })
+
   useEvent(
     EVENTS.CLASS.STUDENT_MOVED,
     (data: { studentId: number; classId: number; joinedAt: string }) => {
@@ -404,6 +443,25 @@ export const useSchuelerManager = (
     [socket],
   )
 
+  // WP-F2d: one emit per classId (server contract is single classId per call).
+  const handleBulkAssignStudents = useCallback(
+    (studentIds: number[], classIds: number[]): void => {
+      for (const classId of classIds) {
+        socket.emit(EVENTS.CLASS.BULK_ASSIGN_STUDENT, { studentIds, classId })
+      }
+    },
+    [socket],
+  )
+
+  const handleBulkRemoveStudents = useCallback(
+    (studentIds: number[], classIds: number[]): void => {
+      for (const classId of classIds) {
+        socket.emit(EVENTS.CLASS.BULK_REMOVE_STUDENT, { studentIds, classId })
+      }
+    },
+    [socket],
+  )
+
   const clearPinView = useCallback(() => {
     setPinView(null)
   }, [])
@@ -434,5 +492,7 @@ export const useSchuelerManager = (
     handleSetStudentActive,
     handleBulkSetStudentActive,
     handleBulkDeleteStudents,
+    handleBulkAssignStudents,
+    handleBulkRemoveStudents,
   }
 }
