@@ -20,7 +20,7 @@ interface PrintSummaryProps {
 const PrintSummary = ({ students, pins, className }: PrintSummaryProps) => {
   return (
     <div
-      className="print-summary no-print"
+      className="print-summary print-only"
       style={{
         display: "none",
         width: "210mm",

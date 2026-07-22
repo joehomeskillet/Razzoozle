@@ -24,7 +24,7 @@ const PrintSheets = ({ students, pins, loginUrl }: PrintSheetsProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
 
   return (
-    <div ref={containerRef} className="no-print" style={{ display: "none" }}>
+    <div ref={containerRef} className="print-only" style={{ display: "none" }}>
       {students.map((student) => {
         const pinView = pins.get(student.id)
         const className = student.classes[0]?.name ?? ""
