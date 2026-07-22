@@ -1,6 +1,9 @@
 import * as Select from "@radix-ui/react-select"
-import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
-import Button from "@razzoozle/web/components/Button"
+import Badge, {
+  assignTriggerClass,
+  chipBase,
+} from "@razzoozle/web/components/manager/Badge"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -8,7 +11,7 @@ import {
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
-import { KeyRound, Plus, Trash2, Users, X } from "lucide-react"
+import { KeyRound, Plus, Power, Trash2, Users, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { SchuelerStudent, StudentClassRef } from "./useSchuelerManager"
@@ -16,6 +19,10 @@ import type { SchuelerStudent, StudentClassRef } from "./useSchuelerManager"
 interface StudentListProps {
   students: SchuelerStudent[]
   classes: StudentClassRef[]
+  /** Row multi-select set; when set with onToggleSelect, row checkboxes render. */
+  selectedIds?: Set<number>
+  onToggleSelect?: (id: number) => void
+  onToggleActive: (studentId: number, active: boolean) => void
   onShowPin: (studentId: number) => void
   onDelete: (student: { id: number; displayName: string }) => void
   onRemoveFromClass: (data: {
@@ -55,6 +62,9 @@ const getComposedName = (student: SchuelerStudent): string => {
 const StudentList = ({
   students,
   classes,
+  selectedIds,
+  onToggleSelect,
+  onToggleActive,
   onShowPin,
   onDelete,
   onRemoveFromClass,
@@ -78,6 +88,7 @@ const StudentList = ({
 
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-0.5">
+      {/* Header select-all + BulkActionToolbar live in ConfigSchueler (above). */}
       {students.map((student) => {
         const composedName = getComposedName(student)
         const availableClasses = classes.filter(
@@ -86,6 +97,15 @@ const StudentList = ({
         const pendingClassId = pendingClassIdByStudentId[student.id] ?? ""
 
         const actions: ListRowAction[] = [
+          {
+            key: "toggle-active",
+            icon: Power,
+            label:
+              student.active !== false
+                ? t("manager:bulk.deactivate")
+                : t("manager:bulk.activate"),
+            onClick: () => onToggleActive(student.id, student.active === false),
+          },
           {
             key: "show-pin",
             icon: KeyRound,
@@ -104,21 +124,31 @@ const StudentList = ({
 
         const title = composedName
 
-        const meta = student.birthdate && (
-          <span>{formatBirthdate(student.birthdate)}</span>
-        )
+        const meta =
+          student.birthdate || student.active === false ? (
+            <div className="flex items-center gap-2">
+              {student.birthdate && (
+                <span>{formatBirthdate(student.birthdate)}</span>
+              )}
+              {student.active === false && (
+                <Badge tone="warning">
+                  {t("manager:schueler.statusInactive")}
+                </Badge>
+              )}
+            </div>
+          ) : undefined
 
+        // Compact class chips (LabelChip pattern) + assign trigger.
+        // SDD §9.1 / chipBase: text-xs px-2.5 py-0.5 rounded-full, flex-wrap.
         const footer = (student.classes.length > 0 || availableClasses.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {student.classes.map((c) => (
-              <Badge
+              <span
                 key={c.id}
-                className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
+                className={`${chipBase} gap-1.5 bg-[var(--surface-4)] text-[var(--ink-muted)]`}
               >
                 {c.name}
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   type="button"
                   onClick={() =>
                     onRemoveFromClass({
@@ -128,12 +158,12 @@ const StudentList = ({
                       className: c.name,
                     })
                   }
-                  aria-label={t("manager:schueler.removeFromClassTitle")}
-                  className="relative rounded-full before:absolute before:-inset-3 before:content-['']"
+                  aria-label={t("common:removeLabelNamed", { name: c.name })}
+                  className="ml-0.5 relative inline-flex items-center justify-center text-current hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-primary)] rounded before:absolute before:-inset-3 before:content-['']"
                 >
-                  <X className="size-4" />
-                </Button>
-              </Badge>
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              </span>
             ))}
 
             {availableClasses.length > 0 && (
@@ -152,7 +182,7 @@ const StudentList = ({
                   className={assignTriggerClass}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3" aria-hidden />
                   <Select.Value placeholder={t("manager:schueler.addToClass")} />
                 </Select.Trigger>
                 <Select.Portal>
@@ -181,14 +211,29 @@ const StudentList = ({
         )
 
         return (
-          <ListRow
-            key={student.id}
-            leading={<Users className="size-5 shrink-0 text-[var(--ink-muted)]" />}
-            title={title}
-            meta={meta}
-            footer={footer}
-            actions={actions}
-          />
+          <div key={student.id} className="flex items-start gap-2">
+            {onToggleSelect && (
+              <div className="mt-3 flex-shrink-0">
+                <Checkbox
+                  checked={selectedIds?.has(student.id) ?? false}
+                  onChange={() => {
+                    onToggleSelect(student.id)
+                  }}
+                  aria-label={`Schüler auswählen: ${composedName}`}
+                  data-testid={`student-select-${student.id}`}
+                />
+              </div>
+            )}
+            <ListRow
+              leading={
+                <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
+              }
+              title={title}
+              meta={meta}
+              footer={footer}
+              actions={actions}
+            />
+          </div>
         )
       })}
     </div>

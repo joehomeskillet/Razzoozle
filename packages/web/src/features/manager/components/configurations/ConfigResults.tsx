@@ -234,6 +234,28 @@ const ConfigResults = () => {
             </div>
           </div>
 
+          {/* Bulk action toolbar */}
+          {selection.selectionActive && (
+            <BulkActionToolbar
+              data-testid="results-bulk-toolbar"
+              count={selection.selected.size}
+              label={getBulkLabel()}
+              onClear={selection.clear}
+            >
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  setBulkConfirm(true)
+                  setTypeConfirmValue("")
+                }}
+                disabled={bulkProcessing}
+              >
+                {t("manager:bulk.deleteSelected")}
+              </Button>
+            </BulkActionToolbar>
+          )}
+
           {filteredResults.length === 0 ? (
             <EmptyState
               icon={SearchX}
@@ -319,28 +341,6 @@ const ConfigResults = () => {
                 ))}
               </motion.div>
             </>
-          )}
-
-          {/* Bulk action toolbar */}
-          {selection.selectionActive && (
-            <BulkActionToolbar
-              data-testid="results-bulk-toolbar"
-              count={selection.selected.size}
-              label={getBulkLabel()}
-              onClear={selection.clear}
-            >
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  setBulkConfirm(true)
-                  setTypeConfirmValue("")
-                }}
-                disabled={bulkProcessing}
-              >
-                {t("manager:bulk.deleteSelected")}
-              </Button>
-            </BulkActionToolbar>
           )}
         </>
       )}

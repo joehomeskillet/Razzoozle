@@ -138,6 +138,36 @@ pub struct ClassBulkResult {
     pub failed: Vec<ClassFailedEntry>,
 }
 
+/// One id that could not be updated/deleted (missing / not owned).
+/// Wire reason is always `"not_found"` so ownership is never leaked.
+#[derive(Debug, serde::Serialize)]
+pub struct StudentFailedEntry {
+    pub id: i64,
+    pub reason: &'static str,
+}
+
+/// One id skipped on bulk assign (already enrolled in target class).
+#[derive(Debug, serde::Serialize)]
+pub struct StudentSkippedEntry {
+    pub id: i64,
+    pub reason: &'static str,
+}
+
+/// Outcome of a student bulk op (setActive / delete / remove).
+#[derive(Debug, serde::Serialize)]
+pub struct StudentBulkResult {
+    pub succeeded: Vec<i64>,
+    pub failed: Vec<StudentFailedEntry>,
+}
+
+/// Outcome of bulk assign: succeeded / already-member skipped / not-found failed.
+#[derive(Debug, serde::Serialize)]
+pub struct StudentBulkAssignResult {
+    pub succeeded: Vec<i64>,
+    pub skipped: Vec<StudentSkippedEntry>,
+    pub failed: Vec<StudentFailedEntry>,
+}
+
 /// Deduplicate IDs while preserving first-seen order.
 fn normalize_bulk_ids(ids: Vec<i64>) -> Vec<i64> {
     let mut seen = std::collections::HashSet::with_capacity(ids.len());
@@ -302,6 +332,393 @@ pub async fn bulk_delete_classes(
 
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(ClassBulkResult { succeeded, failed })
+}
+
+// ── Student bulk / active ops (WP-F1) ──────────────────────────────────────
+
+/// Set `students.active` for one student (owner-scoped via owner_id or class membership).
+/// Returns Ok(rows_affected): 0 = not found / not owned.
+/// Idempotent: setting the same flag twice still returns rows_affected = 1 when the row matches.
+pub async fn set_student_active(
+    pool: &Option<PgPool>,
+    student_id: i64,
+    active: bool,
+    me: Option<i64>,
+) -> Result<u64, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    // $1 = active, $2 = me, $3 = student_id
+    let result = sqlx::query(
+        "UPDATE students SET active = $1 \
+         WHERE id = $3 AND ($2::bigint IS NULL \
+           OR owner_id = $2 \
+           OR EXISTS ( \
+             SELECT 1 FROM class_students cs \
+             INNER JOIN classes c ON cs.class_id = c.id \
+             WHERE cs.student_id = students.id AND c.owner_id = $2 \
+           ))",
+    )
+    .bind(active)
+    .bind(me)
+    .bind(student_id)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result.rows_affected())
+}
+
+/// Bulk-set `students.active` (owner-scoped, single transaction).
+/// Dedupes `ids`. Already-matching active values count as succeeded (idempotent).
+/// Missing / not-owned ids land in `failed` with reason `not_found`.
+pub async fn bulk_set_student_active(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    active: bool,
+    me: Option<i64>,
+    max: usize,
+) -> Result<StudentBulkResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(StudentBulkResult {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    // $1 = active, $2 = me, $3 = ids
+    let updated: Vec<(i64,)> = sqlx::query_as(
+        "UPDATE students SET active = $1 \
+         WHERE id = ANY($3) AND ($2::bigint IS NULL \
+           OR owner_id = $2 \
+           OR EXISTS ( \
+             SELECT 1 FROM class_students cs \
+             INNER JOIN classes c ON cs.class_id = c.id \
+             WHERE cs.student_id = students.id AND c.owner_id = $2 \
+           )) \
+         RETURNING id",
+    )
+    .bind(active)
+    .bind(me)
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let succeeded_set: std::collections::HashSet<i64> =
+        updated.into_iter().map(|(id,)| id).collect();
+
+    let mut succeeded = Vec::with_capacity(succeeded_set.len());
+    let mut failed = Vec::new();
+    for id in ids {
+        if succeeded_set.contains(&id) {
+            succeeded.push(id);
+        } else {
+            failed.push(StudentFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(StudentBulkResult { succeeded, failed })
+}
+
+/// Bulk-delete students (owner-scoped, single transaction).
+/// class_students CASCADE by FK. Missing / not-owned → `failed` with reason `not_found`.
+pub async fn bulk_delete_students(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    me: Option<i64>,
+    max: usize,
+) -> Result<StudentBulkResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(StudentBulkResult {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    // $1 = ids, $2 = me
+    let deleted: Vec<(i64,)> = sqlx::query_as(
+        "DELETE FROM students \
+         WHERE id = ANY($1) AND ($2::bigint IS NULL \
+           OR owner_id = $2 \
+           OR EXISTS ( \
+             SELECT 1 FROM class_students cs \
+             INNER JOIN classes c ON cs.class_id = c.id \
+             WHERE cs.student_id = students.id AND c.owner_id = $2 \
+           )) \
+         RETURNING id",
+    )
+    .bind(&ids)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let succeeded_set: std::collections::HashSet<i64> =
+        deleted.into_iter().map(|(id,)| id).collect();
+
+    let mut succeeded = Vec::with_capacity(succeeded_set.len());
+    let mut failed = Vec::new();
+    for id in ids {
+        if succeeded_set.contains(&id) {
+            succeeded.push(id);
+        } else {
+            failed.push(StudentFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(StudentBulkResult { succeeded, failed })
+}
+
+/// Bulk-assign students to a class (owner-scoped, single transaction).
+/// Target class must be owned. Already-member → skipped. Unmanageable student → failed not_found.
+pub async fn bulk_assign_students(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    class_id: i64,
+    me: Option<i64>,
+    max: usize,
+) -> Result<StudentBulkAssignResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(StudentBulkAssignResult {
+            succeeded: Vec::new(),
+            skipped: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    // Target class must be owned by me (or admin).
+    let owns_class: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(class_id)
+    .bind(me)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if owns_class.is_none() {
+        // Class missing / not owned → every id fails as not_found (no ownership leak).
+        let failed = ids
+            .into_iter()
+            .map(|id| StudentFailedEntry {
+                id,
+                reason: "not_found",
+            })
+            .collect();
+        tx.rollback().await.ok();
+        return Ok(StudentBulkAssignResult {
+            succeeded: Vec::new(),
+            skipped: Vec::new(),
+            failed,
+        });
+    }
+
+    // Manageable students among the request set.
+    let manageable: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM students \
+         WHERE id = ANY($1) AND ($2::bigint IS NULL \
+           OR owner_id = $2 \
+           OR EXISTS ( \
+             SELECT 1 FROM class_students cs \
+             INNER JOIN classes c ON cs.class_id = c.id \
+             WHERE cs.student_id = students.id AND c.owner_id = $2 \
+           ))",
+    )
+    .bind(&ids)
+    .bind(me)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let manageable_set: std::collections::HashSet<i64> =
+        manageable.into_iter().map(|(id,)| id).collect();
+
+    // Already enrolled in the target class.
+    let already: Vec<(i64,)> = sqlx::query_as(
+        "SELECT student_id FROM class_students \
+         WHERE class_id = $1 AND student_id = ANY($2)",
+    )
+    .bind(class_id)
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let already_set: std::collections::HashSet<i64> =
+        already.into_iter().map(|(id,)| id).collect();
+
+    let mut to_insert = Vec::new();
+    let mut succeeded = Vec::new();
+    let mut skipped = Vec::new();
+    let mut failed = Vec::new();
+
+    for id in ids {
+        if !manageable_set.contains(&id) {
+            failed.push(StudentFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        } else if already_set.contains(&id) {
+            skipped.push(StudentSkippedEntry {
+                id,
+                reason: "already_member",
+            });
+        } else {
+            to_insert.push(id);
+            succeeded.push(id);
+        }
+    }
+
+    if !to_insert.is_empty() {
+        sqlx::query(
+            "INSERT INTO class_students (class_id, student_id, joined_at) \
+             SELECT $1, unnest($2::bigint[]), now() \
+             ON CONFLICT (class_id, student_id) DO NOTHING",
+        )
+        .bind(class_id)
+        .bind(&to_insert)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(StudentBulkAssignResult {
+        succeeded,
+        skipped,
+        failed,
+    })
+}
+
+/// Bulk-remove students from a class (owner-scoped, single transaction).
+/// Only removes the class_students row; student rows are retained.
+/// Target class must be owned. Not enrolled / not owned → failed not_found.
+pub async fn bulk_remove_students(
+    pool: &Option<PgPool>,
+    ids: Vec<i64>,
+    class_id: i64,
+    me: Option<i64>,
+    max: usize,
+) -> Result<StudentBulkResult, String> {
+    let pool = match pool {
+        Some(p) => p,
+        None => return Err("no database configured".to_string()),
+    };
+
+    if ids.len() > max {
+        return Err(format!("too many ids (max {max})"));
+    }
+
+    let ids = normalize_bulk_ids(ids);
+    if ids.is_empty() {
+        return Ok(StudentBulkResult {
+            succeeded: Vec::new(),
+            failed: Vec::new(),
+        });
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let owns_class: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(class_id)
+    .bind(me)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if owns_class.is_none() {
+        let failed = ids
+            .into_iter()
+            .map(|id| StudentFailedEntry {
+                id,
+                reason: "not_found",
+            })
+            .collect();
+        tx.rollback().await.ok();
+        return Ok(StudentBulkResult {
+            succeeded: Vec::new(),
+            failed,
+        });
+    }
+
+    let removed: Vec<(i64,)> = sqlx::query_as(
+        "DELETE FROM class_students \
+         WHERE class_id = $1 AND student_id = ANY($2) \
+         RETURNING student_id",
+    )
+    .bind(class_id)
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let succeeded_set: std::collections::HashSet<i64> =
+        removed.into_iter().map(|(id,)| id).collect();
+
+    let mut succeeded = Vec::with_capacity(succeeded_set.len());
+    let mut failed = Vec::new();
+    for id in ids {
+        if succeeded_set.contains(&id) {
+            succeeded.push(id);
+        } else {
+            failed.push(StudentFailedEntry {
+                id,
+                reason: "not_found",
+            });
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(StudentBulkResult { succeeded, failed })
 }
 
 /// Update a class name.
@@ -817,8 +1234,8 @@ pub async fn list_all_students(
     };
 
     // Fetch all students visible to me (either admin or own a class containing them)
-    let students: Vec<(i64, String, Option<chrono::NaiveDate>, Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT DISTINCT s.id, s.display_name, s.birthdate, s.first_name, s.last_name FROM students s \
+    let students: Vec<(i64, String, Option<chrono::NaiveDate>, Option<String>, Option<String>, bool)> = sqlx::query_as(
+        "SELECT DISTINCT s.id, s.display_name, s.birthdate, s.first_name, s.last_name, s.active FROM students s \
          WHERE $1::bigint IS NULL OR EXISTS ( \
            SELECT 1 FROM class_students cs \
            INNER JOIN classes c ON cs.class_id = c.id \
@@ -833,7 +1250,7 @@ pub async fn list_all_students(
 
     let mut result = Vec::new();
 
-    for (student_id, display_name, birthdate, first_name, last_name) in students {
+    for (student_id, display_name, birthdate, first_name, last_name, active) in students {
         // Fetch classes for this student
         let classes: Vec<(i64, String)> = sqlx::query_as(
             "SELECT c.id, c.name FROM classes c \
@@ -864,6 +1281,7 @@ pub async fn list_all_students(
             "lastName": last_name,
             "classes": classes_json,
             "birthdate": birthdate.map(|d| d.format("%Y-%m-%d").to_string()),
+            "active": active,
         }));
     }
 
@@ -1080,6 +1498,27 @@ mod tests {
         );
         assert!(
             super::bulk_delete_classes(&None, vec![1], Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
+        assert!(super::set_student_active(&None, 1, false, Some(1)).await.is_err());
+        assert!(
+            super::bulk_set_student_active(&None, vec![1], false, Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
+        assert!(
+            super::bulk_delete_students(&None, vec![1], Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
+        assert!(
+            super::bulk_assign_students(&None, vec![1], 1, Some(1), super::BULK_MAX_IDS)
+                .await
+                .is_err()
+        );
+        assert!(
+            super::bulk_remove_students(&None, vec![1], 1, Some(1), super::BULK_MAX_IDS)
                 .await
                 .is_err()
         );

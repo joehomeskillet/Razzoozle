@@ -64,7 +64,8 @@ pub async fn create_solo_session(
 }
 
 /// Validate a student's PIN against the stored value.
-/// Returns true if PIN is valid AND the assignment exists.
+/// Returns true if PIN is valid, the student is active, AND the assignment exists.
+/// Inactive students return Ok(false) — same shape as wrong PIN (no info leak).
 /// Returns Err with constant-shape error (no oracle which check failed).
 pub async fn validate_student_pin(
     pool: &PgPool,
@@ -72,8 +73,8 @@ pub async fn validate_student_pin(
     student_id: i64,
     pin: &str,
 ) -> Result<bool, String> {
-    let stored_pin = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT pin FROM students WHERE id = $1",
+    let row: Option<(Option<String>, bool)> = sqlx::query_as(
+        "SELECT pin, active FROM students WHERE id = $1",
     )
     .bind(student_id)
     .fetch_optional(pool)
@@ -88,50 +89,56 @@ pub async fn validate_student_pin(
     .await
     .map_err(|_| "validation_failed".to_string())?;
 
-    match (stored_pin.flatten(), assignment_exists) {
-        (Some(stored), true) => Ok(stored == pin),
+    match (row, assignment_exists) {
+        (Some((Some(stored), true)), true) => Ok(stored == pin),
+        // Inactive student: same shape as wrong PIN (Ok(false)), no oracle.
+        (Some((_, false)), true) => Ok(false),
+        (Some((None, true)), true) => Ok(false),
         _ => Err("validation_failed".to_string()),
     }
 }
 
 /// Wave-1 live join: verify emoji PIN against plaintext `students.pin`.
 /// No assignment gate — identity is (student_id ∈ class roster) enforced by the caller.
-/// Constant-shape: Ok(false) for mismatch / missing student; Err only on DB failure.
+/// Constant-shape: Ok(false) for mismatch / missing / inactive student; Err only on DB failure.
 /// NEVER log `pin` or student_id values at call sites (security audit gate).
 pub async fn validate_student_pin_plain(
     pool: &PgPool,
     student_id: i64,
     pin: &str,
 ) -> Result<bool, String> {
-    let stored_pin = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT pin FROM students WHERE id = $1",
+    let row: Option<(Option<String>, bool)> = sqlx::query_as(
+        "SELECT pin, active FROM students WHERE id = $1",
     )
     .bind(student_id)
     .fetch_optional(pool)
     .await
     .map_err(|_| "validation_failed".to_string())?;
 
-    match stored_pin.flatten() {
-        Some(stored) => Ok(stored == pin),
-        None => Ok(false),
+    match row {
+        // Inactive: treat as wrong PIN (no info leak).
+        Some((_, false)) => Ok(false),
+        Some((Some(stored), true)) => Ok(stored == pin),
+        Some((None, true)) | None => Ok(false),
     }
 }
 
 /// Wave-1 §B: Fetch students in a class WITH stored PINs for klassen login validation.
-/// Returns (id, display_name, stored_pin) tuples. PINs are required for credential checking.
+/// Returns (id, display_name, stored_pin, active) tuples. PINs are required for credential checking.
 /// Scoped to class_id + owner_id (class.owner_id) for authorization.
+/// Includes inactive students so callers can reject with the same shape as wrong PIN.
 pub async fn students_with_pins(
     pool: &Option<PgPool>,
     class_id: i64,
     owner_id: i64,
-) -> Vec<(i64, String, String)> {
+) -> Vec<(i64, String, String, bool)> {
     let pool = match pool {
         Some(p) => p,
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, String)> = match sqlx::query_as(
-        "SELECT s.id, s.display_name, COALESCE(s.pin, '') FROM students s \
+    let rows: Vec<(i64, String, String, bool)> = match sqlx::query_as(
+        "SELECT s.id, s.display_name, COALESCE(s.pin, ''), s.active FROM students s \
          INNER JOIN class_students cs ON s.id = cs.student_id \
          INNER JOIN classes c ON cs.class_id = c.id \
          WHERE cs.class_id = $1 AND c.owner_id = $2 \

@@ -6,7 +6,7 @@ use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use std::net::IpAddr;
-use tracing::info;
+use tracing::{info, warn};
 
 /// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
 const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
@@ -86,12 +86,12 @@ pub(crate) enum KlassenLoginDecision {
 
 /// Evaluate class-mode login against roster + pin + active set (no I/O).
 /// `emoji_pin_joined` is the client array joined into the stored plaintext form.
-/// `roster` is (student_id, display_name, stored_pin).
+/// `roster` is (student_id, display_name, stored_pin, student_active).
 /// `active_student_ids` are student_ids of currently connected players.
 pub(crate) fn decide_klassen_login(
     student_id: Option<i64>,
     emoji_pin_joined: Option<&str>,
-    roster: &[(i64, String, String)],
+    roster: &[(i64, String, String, bool)],
     active_student_ids: &[i64],
     throttle_blocked: bool,
 ) -> KlassenLoginDecision {
@@ -108,12 +108,21 @@ pub(crate) fn decide_klassen_login(
         return KlassenLoginDecision::InvalidCredentials;
     }
 
-    let member = roster.iter().find(|(id, _, _)| *id == sid);
-    let Some((_, display_name, stored_pin)) = member else {
+    let member = roster.iter().find(|(id, _, _, _)| *id == sid);
+    let Some((_, display_name, stored_pin, student_active)) = member else {
         // Non-rostered — same shape as wrong PIN (A7).
         return KlassenLoginDecision::InvalidCredentials;
     };
     if stored_pin != pin {
+        return KlassenLoginDecision::InvalidCredentials;
+    }
+    // WP-F1: inactive student — same client error as wrong PIN (no info leak).
+    // Audit trail only: server-side warn with student id.
+    if !*student_active {
+        warn!(
+            "login denied: check=student_inactive student={}",
+            sid
+        );
         return KlassenLoginDecision::InvalidCredentials;
     }
     // A6: post-PIN dedup — active session for this student.
@@ -373,11 +382,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         crate::db::pins::students_with_pins(&db_pool, cid, oid)
                                             .await;
 
-                                    let roster_for_decision: Vec<(i64, String, String)> =
-                                        students_with_pins
-                                            .into_iter()
-                                            .map(|(id, name, pin)| (id, name, pin))
-                                            .collect();
+                                    let roster_for_decision = students_with_pins;
 
                                     // F2(b): Per-student throttle initialization (keyed by game:student_id).
                                     // Will be recorded on failure if needed.
@@ -692,10 +697,11 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
 mod tests {
     use super::*;
 
-    fn roster() -> Vec<(i64, String, String)> {
+    fn roster() -> Vec<(i64, String, String, bool)> {
         vec![
-            (1, "Anna".into(), "🐱🐶🐭🐹".into()),
-            (2, "Ben".into(), "🍕📚🎮🌸".into()),
+            (1, "Anna".into(), "🐱🐶🐭🐹".into(), true),
+            (2, "Ben".into(), "🍕📚🎮🌸".into(), true),
+            (3, "Clara".into(), "🍎🍌🍇🍊".into(), false), // inactive
         ]
     }
 
@@ -721,6 +727,19 @@ mod tests {
         let d = decide_klassen_login(
             Some(1),
             Some("🍕📚🎮🌸"),
+            &roster(),
+            &[],
+            false,
+        );
+        assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
+    }
+
+    #[test]
+    fn klassen_login_inactive_student_invalid_credentials_no_oracle() {
+        // Correct PIN but inactive → same shape as wrong PIN (WP-F1, no info leak).
+        let d = decide_klassen_login(
+            Some(3),
+            Some("🍎🍌🍇🍊"),
             &roster(),
             &[],
             false,

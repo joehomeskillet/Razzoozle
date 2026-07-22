@@ -10,6 +10,9 @@ import { useTranslation } from "react-i18next"
 export interface StudentClassRef {
   id: number
   name: string
+  // Present on the wire since WP-E1 (class:list carries `active`); optional
+  // because older payloads may omit it. `active !== false` counts as active.
+  active?: boolean
 }
 
 export interface SchuelerStudent {
@@ -23,6 +26,10 @@ export interface SchuelerStudent {
   // compiles cleanly against today's contract and picks the value up for
   // free the moment the server starts sending it.
   birthdate?: string | null
+  // ADDENDUM (active): student active/inactive status (WP-F1, migration
+  // 022). Optional exactly like `birthdate` — the field lands on the wire
+  // with the parallel backend WP; `active !== false` counts as active.
+  active?: boolean
 }
 
 export interface PinView {
@@ -52,13 +59,26 @@ interface CreateStudentPayload {
   birthdate?: string
 }
 
-export const useSchuelerManager = () => {
+interface UseSchuelerManagerOptions {
+  /** Called after a bulk op settles (success or partial failure ack). Pattern E5. */
+  onBulkSettled?: () => void
+}
+
+export const useSchuelerManager = (
+  options: UseSchuelerManagerOptions = {},
+) => {
+  const { onBulkSettled } = options
   const { socket, isConnected } = useSocket()
   const { t } = useTranslation()
 
   const [students, setStudents] = useState<SchuelerStudent[]>([])
   const [classes, setClasses] = useState<StudentClassRef[]>([])
   const [search, setSearch] = useState("")
+  // SDD §3.2 status filter pills: null = all, otherwise active/inactive.
+  // `active !== false` counts as active (field optional until WP-F1 lands).
+  const [statusFilter, setStatusFilter] = useState<
+    null | "active" | "inactive"
+  >(null)
 
   // The currently-visible PIN dialog content. Populated by STUDENT_CREATED
   // (new student flow), STUDENT_PIN_DATA (clicking "PIN" on a row) and kept
@@ -80,16 +100,23 @@ export const useSchuelerManager = () => {
   } | null>(null)
 
   const filteredStudents = useMemo(() => {
+    let list = students
+    if (statusFilter === "active") {
+      list = list.filter((s) => s.active !== false)
+    } else if (statusFilter === "inactive") {
+      list = list.filter((s) => s.active === false)
+    }
+
     const query = search.trim().toLowerCase()
     if (query.length === 0) {
-      return students
+      return list
     }
-    return students.filter(
+    return list.filter(
       (s) =>
         s.displayName.toLowerCase().includes(query) ||
         s.classes.some((c) => c.name.toLowerCase().includes(query)),
     )
-  }, [students, search])
+  }, [students, search, statusFilter])
 
   const sortedClasses = useMemo(
     () => [...classes].sort((a, b) => a.name.localeCompare(b.name)),
@@ -107,8 +134,8 @@ export const useSchuelerManager = () => {
 
   useEvent(
     EVENTS.CLASS.DATA,
-    (data: Array<{ id: number; name: string }>) => {
-      setClasses(data.map((c) => ({ id: c.id, name: c.name })))
+    (data: Array<{ id: number; name: string; active?: boolean }>) => {
+      setClasses(data.map((c) => ({ id: c.id, name: c.name, active: c.active })))
     },
   )
 
@@ -124,6 +151,7 @@ export const useSchuelerManager = () => {
       classes: StudentClassRef[]
       birthdate?: string | null
       symbols?: string[]
+      active?: boolean
     }) => {
       setStudents((prev) => [
         {
@@ -133,6 +161,7 @@ export const useSchuelerManager = () => {
           lastName: data.lastName,
           classes: data.classes,
           birthdate: data.birthdate,
+          active: data.active,
         },
         ...prev,
       ])
@@ -150,6 +179,56 @@ export const useSchuelerManager = () => {
     setStudents((prev) => prev.filter((s) => s.id !== data.studentId))
     setPendingDeleteStudent(null)
     toast.success(t("manager:schueler.deleted"))
+  })
+
+  // Single active-toggle ack (WP-F2). Confirmed state, applied locally so the
+  // badge/toggle flips immediately; the server re-list keeps it consistent.
+  useEvent(EVENTS.CLASS.STUDENT_ACTIVE_SET, (data: {
+    studentId: number
+    active: boolean
+  }) => {
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === data.studentId ? { ...s, active: data.active } : s,
+      ),
+    )
+  })
+
+  // Bulk acks (WP-F2c / Pattern E5): toast partial results, re-list, settle.
+  useEvent(EVENTS.CLASS.BULK_STUDENT_ACTIVE_SET, (data: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
+      )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
+  })
+
+  useEvent(EVENTS.CLASS.BULK_STUDENT_DELETED, (data: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
+      )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
   })
 
   useEvent(
@@ -298,15 +377,45 @@ export const useSchuelerManager = () => {
     [socket],
   )
 
+  const handleSetStudentActive = useCallback(
+    (studentId: number, active: boolean): void => {
+      socket.emit(EVENTS.CLASS.SET_STUDENT_ACTIVE, {
+        studentId,
+        active,
+      })
+    },
+    [socket],
+  )
+
+  const handleBulkSetStudentActive = useCallback(
+    (ids: number[], active: boolean): void => {
+      socket.emit(EVENTS.CLASS.BULK_SET_STUDENT_ACTIVE, {
+        studentIds: ids,
+        active,
+      })
+    },
+    [socket],
+  )
+
+  const handleBulkDeleteStudents = useCallback(
+    (ids: number[]): void => {
+      socket.emit(EVENTS.CLASS.BULK_DELETE_STUDENT, { studentIds: ids })
+    },
+    [socket],
+  )
+
   const clearPinView = useCallback(() => {
     setPinView(null)
   }, [])
 
   return {
     students: filteredStudents,
+    filteredStudents,
     hasStudents: students.length > 0,
     search,
     setSearch,
+    statusFilter,
+    setStatusFilter,
     classes: sortedClasses,
     pinView,
     clearPinView,
@@ -322,5 +431,8 @@ export const useSchuelerManager = () => {
     handleDeleteStudent,
     handleRemoveFromClass,
     handleAddToClass,
+    handleSetStudentActive,
+    handleBulkSetStudentActive,
+    handleBulkDeleteStudents,
   }
 }
