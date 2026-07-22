@@ -5,7 +5,7 @@ import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Select from "@razzoozle/web/components/Select"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
-import { ActionFooter } from "@razzoozle/web/components/ui"
+import { ActionFooter, LabelRow } from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -240,14 +240,14 @@ const ConfigSelectQuizz = () => {
             }
             className="shrink-0 space-y-2 rounded-lg bg-[var(--surface-2)] p-3"
           >
+            <h3 className="text-sm font-semibold text-[var(--ink)]">
+              {t("manager:selectQuizz.optionsTitle")}
+            </h3>
+
             {config.scoringMode !== undefined && (
               <ToggleField
-                label={t("manager:gameMode.speedMode", {
-                  defaultValue: "Geschwindigkeit",
-                })}
-                description={t("manager:selectQuizz.modeSelector.scoringModeHint", {
-                  defaultValue: "Geschwindigkeit berücksichtigen",
-                })}
+                label={t("manager:gameMode.speedMode")}
+                description={t("manager:selectQuizz.modeSelector.scoringModeHint")}
                 checked={scoringMode === "speed"}
                 onChange={(isSpeed) =>
                   setScoringMode(isSpeed ? "speed" : "accuracy")
@@ -257,12 +257,8 @@ const ConfigSelectQuizz = () => {
 
             {config.teamMode === true && (
               <ToggleField
-                label={t("manager:gameMode.teamMode", {
-                  defaultValue: "Team-Modus",
-                })}
-                description={t("manager:selectQuizz.modeSelector.teamModeHint", {
-                  defaultValue: "Spieler wählen Teams",
-                })}
+                label={t("manager:gameMode.teamMode")}
+                description={t("manager:selectQuizz.modeSelector.teamModeHint")}
                 checked={teamMode}
                 onChange={setTeamMode}
               />
@@ -271,23 +267,25 @@ const ConfigSelectQuizz = () => {
             {config.klassenEnabled === true && (
               <>
                 <ToggleField
-                  label={t("manager:gameMode.klassenMode", {
-                    defaultValue: "Klassen-Modus",
-                  })}
-                  description={t("manager:selectQuizz.modeSelector.klassenModeHint", {
-                    defaultValue: "Klassen-Beitritte aktivieren",
-                  })}
+                  label={t("manager:gameMode.klassenMode")}
+                  description={t("manager:selectQuizz.modeSelector.klassenModeHint")}
                   checked={klassenMode}
                   onChange={setKlassenMode}
                 />
 
                 {klassenMode && (
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="class-select" className="text-sm font-medium text-[var(--ink-muted)]">
-                      {t("manager:selectQuizz.selectClass", {
-                        defaultValue: "Klasse wählen",
-                      })}
-                    </label>
+                  <LabelRow
+                    label={t("manager:selectQuizz.selectClass")}
+                    htmlFor="class-select"
+                    statusMessage={
+                      !classId
+                        ? {
+                            text: t("manager:selectQuizz.klassenModeNeedsClass"),
+                            tone: "error",
+                          }
+                        : undefined
+                    }
+                  >
                     <Select
                       id="class-select"
                       value={classId}
@@ -295,9 +293,7 @@ const ConfigSelectQuizz = () => {
                       data-testid="class-select"
                     >
                       <option value="">
-                        {t("manager:selectQuizz.chooseClass", {
-                          defaultValue: "Klasse auswählen …",
-                        })}
+                        {t("manager:selectQuizz.chooseClass")}
                       </option>
                       {classes.map((cls) => (
                         <option key={cls.id} value={String(cls.id)}>
@@ -305,37 +301,37 @@ const ConfigSelectQuizz = () => {
                         </option>
                       ))}
                     </Select>
-                    {!classId && klassenMode && (
-                      <p className="text-xs text-[var(--state-wrong)] mt-1">
-                        {t("manager:selectQuizz.klassenModeNeedsClass", {
-                          defaultValue: "Bitte wähle eine Klasse aus",
-                        })}
-                      </p>
-                    )}
-                  </div>
+                  </LabelRow>
                 )}
               </>
             )}
 
-            {endScreenModesList.length > 1 && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="endscreen-select" className="text-sm font-medium text-[var(--ink-muted)]">
-                  {t("manager:gameMode.endScreenSelectTitle", {
-                    defaultValue: "Endbildschirm",
-                  })}
-                </label>
+            {endScreenModesList.length > 1 ? (
+              <LabelRow
+                label={t("manager:gameMode.endScreenSelectTitle")}
+                htmlFor="endscreen-select"
+              >
                 <Select
                   id="endscreen-select"
                   value={endScreen}
                   onChange={(e) => setEndScreen(e.target.value)}
+                  className="w-full sm:w-72"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
-                      {mode}
+                      {t(`manager:gameMode.endScreenMode.${mode}`)}
                     </option>
                   ))}
                 </Select>
-              </div>
+              </LabelRow>
+            ) : (
+              <LabelRow label={t("manager:gameMode.endScreenSelectTitle")}>
+                <div className="text-sm font-medium text-[var(--ink)]">
+                  {t(
+                    `manager:gameMode.endScreenMode.${endScreenModesList[0] ?? "full"}`,
+                  )}
+                </div>
+              </LabelRow>
             )}
           </motion.div>
         )}
