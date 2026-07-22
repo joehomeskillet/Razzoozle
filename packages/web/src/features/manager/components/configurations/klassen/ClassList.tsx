@@ -16,7 +16,6 @@ import {
   Plus,
   SquarePen,
   Trash2,
-  X,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useState } from "react"
@@ -122,6 +121,7 @@ const ClassList = ({
                 ? t("common:collapse")
                 : t("common:expand"),
             onClick: handleToggleExpand,
+            "aria-expanded": expandedClassId === classObj.id,
           },
           {
             key: `edit-${classObj.id}`,
@@ -175,6 +175,7 @@ const ClassList = ({
                     aria-label={t("manager:labels.assignTitle")}
                     className={assignTriggerClass}
                     onClick={() => setPendingLabelPickerId(classObj.id)}
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
                     <Plus className="size-3" />
                     <Select.Value
@@ -186,6 +187,7 @@ const ClassList = ({
                       position="popper"
                       sideOffset={4}
                       className={`z-50 min-w-40 overflow-hidden ${popoverContentClass}`}
+                      onCloseAutoFocus={(e) => e.preventDefault()}
                     >
                       <Select.Viewport className="p-1">
                         {availableLabels.length > 0 ? (
@@ -212,89 +214,72 @@ const ClassList = ({
           ) : undefined
 
         return (
-          <div key={classObj.id} className="space-y-1">
-            <ListRow
-              title={classObj.name}
-              meta={
-                <span className="text-xs text-[var(--ink-subtle)]">
-                  {studentCount} {t("manager:classes.studentCount")}
-                </span>
-              }
-              footer={footer}
-              actions={actions}
-            />
+          <ListRow
+            key={classObj.id}
+            title={classObj.name}
+            meta={`${studentCount} ${t("manager:classes.studentCount")}`}
+            footer={footer}
+            actions={actions}
+            expanded={expandedClassId === classObj.id}
+            details={
+              expandedClassId === classObj.id ? (
+                <div className="space-y-2">
+                  {(classObj.students ?? []).length > 0 ? (
+                    <>
+                      {classObj.students?.map((student) => (
+                        <ListRow
+                          key={student.id}
+                          density="compact"
+                          title={student.displayName}
+                          actions={[
+                            {
+                              key: "edit",
+                              icon: SquarePen,
+                              label: t("manager:classes.editStudent"),
+                              onClick: () =>
+                                onEditStudent({
+                                  id: student.id,
+                                  displayName: student.displayName,
+                                  birthdate: student.birthdate,
+                                }),
+                            },
+                            {
+                              key: "delete",
+                              icon: Trash2,
+                              label: t("manager:classes.deleteStudent"),
+                              destructive: true,
+                              onClick: () =>
+                                onDeleteStudent({
+                                  id: student.id,
+                                  displayName: student.displayName,
+                                }),
+                            },
+                          ]}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
+                      <p className="text-xs text-[var(--ink-subtle)]">
+                        {t("manager:classes.noStudents")}
+                      </p>
+                    </div>
+                  )}
 
-            {expandedClassId === classObj.id && (
-              <div className="ml-10 space-y-1">
-                {(classObj.students ?? []).length > 0 ? (
-                  <>
-                    {classObj.students?.map((student) => (
-                      <div
-                        key={student.id}
-                        className="flex items-center gap-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface-2)] px-3 py-2"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-[var(--ink)]">
-                            {student.displayName}
-                          </p>
-                        </div>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            onEditStudent({
-                              id: student.id,
-                              displayName: student.displayName,
-                              birthdate: student.birthdate,
-                            })
-                          }
-                          title={t("manager:classes.editStudent")}
-                          aria-label={t("manager:classes.editStudent")}
-                        >
-                          <SquarePen className="size-3.5" />
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="icon"
-                          onClick={() =>
-                            onDeleteStudent({
-                              id: student.id,
-                              displayName: student.displayName,
-                            })
-                          }
-                          title={t("manager:classes.deleteStudent")}
-                          aria-label={t("manager:classes.deleteStudent")}
-                        >
-                          <X className="size-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
-                    <p className="text-xs text-[var(--ink-subtle)]">
-                      {t("manager:classes.noStudents")}
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="md"
-                  onClick={() => onAddStudent(classObj.id)}
-                  className="w-full"
-                >
-                  <Plus className="size-4" />
-                  {t("manager:classes.addStudent")}
-                </Button>
-              </div>
-            )}
-          </div>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    onClick={() => onAddStudent(classObj.id)}
+                    className="w-full"
+                  >
+                    <Plus className="size-4" />
+                    {t("manager:classes.addStudent")}
+                  </Button>
+                </div>
+              ) : undefined
+            }
+          />
         )
       })}
     </div>
