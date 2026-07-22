@@ -1,6 +1,8 @@
 import * as Select from "@radix-ui/react-select"
-import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
-import Button from "@razzoozle/web/components/Button"
+import Badge, {
+  assignTriggerClass,
+  chipBase,
+} from "@razzoozle/web/components/manager/Badge"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import {
   popoverContentClass,
@@ -134,17 +136,17 @@ const StudentList = ({
             </div>
           ) : undefined
 
+        // Compact class chips (LabelChip pattern) + assign trigger.
+        // SDD §9.1 / chipBase: text-xs px-2.5 py-0.5 rounded-full, flex-wrap.
         const footer = (student.classes.length > 0 || availableClasses.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {student.classes.map((c) => (
-              <Badge
+              <span
                 key={c.id}
-                className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
+                className={`${chipBase} gap-1.5 bg-[var(--surface-4)] text-[var(--ink-muted)]`}
               >
                 {c.name}
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   type="button"
                   onClick={() =>
                     onRemoveFromClass({
@@ -154,12 +156,12 @@ const StudentList = ({
                       className: c.name,
                     })
                   }
-                  aria-label={t("manager:schueler.removeFromClassTitle")}
-                  className="relative rounded-full before:absolute before:-inset-3 before:content-['']"
+                  aria-label={t("common:removeLabelNamed", { name: c.name })}
+                  className="ml-0.5 relative inline-flex items-center justify-center text-current hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-primary)] rounded before:absolute before:-inset-3 before:content-['']"
                 >
-                  <X className="size-4" />
-                </Button>
-              </Badge>
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              </span>
             ))}
 
             {availableClasses.length > 0 && (
@@ -178,7 +180,7 @@ const StudentList = ({
                   className={assignTriggerClass}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3" aria-hidden />
                   <Select.Value placeholder={t("manager:schueler.addToClass")} />
                 </Select.Trigger>
                 <Select.Portal>
