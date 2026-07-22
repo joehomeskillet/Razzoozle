@@ -122,7 +122,7 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
         )}
 
         {description && (
-          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-40">
+          <p id={descId} className="text-xs text-[var(--ink-subtle)] sm:pl-60">
             {description}
           </p>
         )}
