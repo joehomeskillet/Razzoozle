@@ -33,6 +33,7 @@ const ConfigSchueler = () => {
     handleDeleteStudent,
     handleRemoveFromClass,
     handleAddToClass,
+    handleSetStudentActive,
   } = useSchuelerManager()
 
   const { t } = useTranslation()
@@ -65,6 +66,7 @@ const ConfigSchueler = () => {
           <StudentList
             students={students}
             classes={classes}
+            onToggleActive={handleSetStudentActive}
             onShowPin={handleShowPin}
             onDelete={(student) => setPendingDeleteStudent(student)}
             onRemoveFromClass={(data) => setPendingRemoveFromClass(data)}
