@@ -10,25 +10,26 @@ interface FilterPillProps {
   activeClassName?: string
 }
 
+const filterPillBase =
+  "inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]" // token-ok: toolbar-density-36
+
 const FilterPill = ({ active, onClick, children, count, activeClassName }: FilterPillProps) => {
   const activeColors =
     activeClassName ?? "bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
 
-  // Variant with count badge (ConfigSubmissions)
-  if (count !== undefined) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={active}
-        className={clsx(
-          "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-          active
-            ? clsx(activeColors, "outline-2 -outline-offset-2 outline-[var(--color-primary)]")
-            : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
-        )}
-      >
-        {children}
+  const stateClasses = active
+    ? clsx(activeColors, "outline-2 -outline-offset-2 outline-[var(--color-primary)]")
+    : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]"
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(filterPillBase, stateClasses)}
+    >
+      {children}
+      {count !== undefined && (
         <span
           className={clsx(
             "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums",
@@ -37,24 +38,7 @@ const FilterPill = ({ active, onClick, children, count, activeClassName }: Filte
         >
           {count}
         </span>
-      </button>
-    )
-  }
-
-  // Variant without count (ConfigCatalog scope pills / LabelFilterPills)
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={clsx(
-        "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-        active
-          ? clsx(activeColors, "outline-2 -outline-offset-2 outline-[var(--color-primary)]")
-          : "bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]",
       )}
-    >
-      {children}
     </button>
   )
 }
