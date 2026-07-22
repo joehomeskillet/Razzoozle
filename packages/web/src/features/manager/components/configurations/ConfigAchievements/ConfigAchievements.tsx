@@ -20,7 +20,7 @@ import { ActionFooter } from "@razzoozle/web/components/ui"
 import Button from "@razzoozle/web/components/Button"
 import { Award, RotateCcw } from "lucide-react"
 import { AnimatePresence, useReducedMotion } from "motion/react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -85,6 +85,12 @@ const ConfigAchievements = () => {
     setLocal(buildInitial())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.achievements])
+
+  // Calculate isDirty: true if local state differs from server (buildInitial)
+  const isDirty = useMemo(
+    () => JSON.stringify(local) !== JSON.stringify(buildInitial()),
+    [local, config.achievements]
+  )
 
   const handleChange = (id: AchievementId, patch: Partial<RowState>) => {
     setLocal((prev) => ({
@@ -225,7 +231,7 @@ const ConfigAchievements = () => {
       </SectionCard>
       </div>
 
-      <ActionFooter>
+      <ActionFooter dirty={isDirty}>
         <Button
           variant="secondary"
           type="button"

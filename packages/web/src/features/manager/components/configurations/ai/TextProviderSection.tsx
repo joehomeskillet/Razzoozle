@@ -14,11 +14,9 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 import { FormSection, LabelRow } from "@razzoozle/web/components/ui"
 import {
-  CheckCircle2,
   ShieldAlert,
   ShieldCheck,
   Wand2,
-  XCircle,
 } from "lucide-react"
 import type { TFunction } from "i18next"
 import type { Dispatch, SetStateAction } from "react"
@@ -199,7 +197,7 @@ const TextProviderSection = ({
                 )}
               </FormSection>
 
-              {/* Group: API-Schlüssel */}
+              {/* Group: API-Schlüssel mit Test-Status inline */}
               <FormSection
                 title={t("manager:ai.apiKey")}
                 className="mb-0"
@@ -222,6 +220,24 @@ const TextProviderSection = ({
                   <LabelRow
                     label={t("manager:ai.apiKey")}
                     htmlFor="ai-api-key"
+                    statusMessage={
+                      testing
+                        ? {
+                            text: t("manager:ai.testing"),
+                            tone: "pending",
+                          }
+                        : lastTest === "ok"
+                          ? {
+                              text: lastTestMessage || t("manager:ai.testOk"),
+                              tone: "success",
+                            }
+                          : lastTest === "failed"
+                            ? {
+                                text: lastTestMessage || t("manager:ai.testFailed"),
+                                tone: "error",
+                              }
+                            : undefined
+                    }
                   >
                     <Input
                       id="ai-api-key"
@@ -229,6 +245,7 @@ const TextProviderSection = ({
                       value={keyInput}
                       placeholder={t("manager:ai.apiKeyPlaceholder")}
                       onChange={(event) => setKeyInput(event.target.value)}
+                      disabled={testing}
                       className="w-full"
                     />
                   </LabelRow>
@@ -237,7 +254,7 @@ const TextProviderSection = ({
                       type="button"
                       size="sm"
                       onClick={() => saveKey(selectedProvider.id)}
-                      disabled={!keyInput.trim()}
+                      disabled={!keyInput.trim() || testing}
                     >
                       {t("manager:ai.saveKey")}
                     </Button>
@@ -246,8 +263,18 @@ const TextProviderSection = ({
                       variant="secondary"
                       size="sm"
                       onClick={() => clearKey(selectedProvider.id)}
+                      disabled={testing}
                     >
                       {t("manager:ai.clearKey")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={testProvider}
+                      disabled={testing}
+                    >
+                      {testing ? t("manager:ai.testing") : t("manager:ai.test")}
                     </Button>
                   </div>
                 </SubGroup>
@@ -255,60 +282,6 @@ const TextProviderSection = ({
             </>
           )
         })()}
-
-      {/* Test result feedback */}
-      <div className="space-y-2 border-t border-[var(--line)] pt-3">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={testProvider}
-            disabled={testing}
-          >
-            {testing ? t("manager:ai.testing") : t("manager:ai.test")}
-          </Button>
-        </div>
-        <div aria-live="polite" className="min-h-5">
-          {testing && (
-            <p className="text-sm text-[var(--ink-subtle)]">{t("manager:ai.testing")}</p>
-          )}
-          {!testing && lastTest === "ok" && (
-            <div className="flex items-start gap-2 rounded-lg bg-[var(--status-online-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-online-text)]">
-              <CheckCircle2
-                className="mt-0.5 size-5 shrink-0 text-[var(--status-online-text)]"
-                aria-hidden
-              />
-              <div>
-                <p className="text-sm font-semibold text-[var(--status-online-text)]">
-                  {t("manager:ai.testOk")}
-                </p>
-                {lastTestMessage && (
-                  <p className="text-sm text-[var(--status-online-text)]">{lastTestMessage}</p>
-                )}
-              </div>
-            </div>
-          )}
-          {!testing && lastTest === "failed" && (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-lg bg-[var(--status-offline-bg)] p-3 outline-1 -outline-offset-1 outline-[var(--status-offline-text)]"
-            >
-              <XCircle
-                className="mt-0.5 size-5 shrink-0 text-[var(--status-offline-text)]"
-                aria-hidden
-              />
-              <div>
-                <p className="text-sm font-semibold text-[var(--status-offline-text)]">
-                  {t("manager:ai.testFailed")}
-                </p>
-                {lastTestMessage && (
-                  <p className="text-sm text-[var(--status-offline-text)]">{lastTestMessage}</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </SectionCard>
   )
 }
