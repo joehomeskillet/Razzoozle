@@ -14,7 +14,6 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useLabelManager } from "../labels/useLabelManager"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
-import clsx from "clsx"
 import { Info, Plus } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -222,7 +221,7 @@ const MediaInfoDialog = ({
                     >
                       <Select.Trigger
                         aria-label={t("manager:labels.addLabel")}
-                        className={clsx(assignTriggerClass, "cursor-pointer py-0.5")}
+                        className={assignTriggerClass}
                       >
                         <Plus className="size-3" />
                         <Select.Value

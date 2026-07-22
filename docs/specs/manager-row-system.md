@@ -212,8 +212,10 @@ Overflow ⋮ IMMER letzter Slot.
 
 **Responsive Actions (R16, ConfigUsers):** CSS-Lösung, kein isMobile-State.
 ```css
-className="hidden sm:inline-flex"  // sekundäre Action auf Mobile verstecken
+className="max-sm:hidden"        // Action inline nur ≥sm (Variant-Regel gewinnt sicher)
+<span className="sm:hidden">     // OverflowMenu-Wrapper nur <sm
 ```
+Nie `hidden` + Basis-Display-Klasse mischen — Variant-Regeln (`max-sm:`/`sm:`) statt Base-Utility-Overrides (vgl. ADR rowstyles-zustandsfarben-exklusiv-statt-additiv).
 
 ---
 
