@@ -911,7 +911,12 @@
     "deleted": "Schüler gelöscht",
     "search": "Schüler suchen",
     "searchPlaceholder": "Nach Name oder Klasse suchen …",
-    "noResults": "Keine Schüler gefunden"
+    "noResults": "Keine Schüler gefunden",
+    "statusInactive": "Deaktiviert",
+    "filterAll": "Alle",
+    "filterActive": "Aktiv",
+    "filterInactive": "Deaktiviert",
+    "selectAll": "Alle Schüler auswählen"
   },
   "labels": {
     "title": "Fächerverwaltung",
@@ -1012,6 +1017,7 @@
     "resultFailed": "{{count}} fehlgeschlagen",
     "resultCompleted": "Abgeschlossen",
     "allSelected": "Alle {{count}} Einträge ausgewählt",
-    "allFilteredSelected": "Alle {{count}} gefilterten Einträge ausgewählt"
+    "allFilteredSelected": "Alle {{count}} gefilterten Einträge ausgewählt",
+    "selectFiltered": "{{count}} / {{total}} gefiltert"
   }
 }

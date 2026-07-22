@@ -911,7 +911,12 @@
     "deleted": "Estudiante eliminado",
     "search": "Buscar estudiante",
     "searchPlaceholder": "Buscar por nombre o clase …",
-    "noResults": "No se encontraron estudiantes"
+    "noResults": "No se encontraron estudiantes",
+    "statusInactive": "Desactivado",
+    "filterAll": "Todos",
+    "filterActive": "Activos",
+    "filterInactive": "Desactivados",
+    "selectAll": "Seleccionar todos los alumnos"
   },
   "labels": {
     "title": "Etiquetas",
@@ -1012,6 +1017,7 @@
     "resultFailed": "{{count}} fallidos",
     "resultCompleted": "Completado",
     "allSelected": "Todas las {{count}} entradas seleccionadas",
-    "allFilteredSelected": "Todas las {{count}} entradas filtradas seleccionadas"
+    "allFilteredSelected": "Todas las {{count}} entradas filtradas seleccionadas",
+    "selectFiltered": "{{count}} / {{total}} filtrados"
   }
 }

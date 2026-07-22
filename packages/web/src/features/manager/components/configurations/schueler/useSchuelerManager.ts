@@ -91,6 +91,11 @@ export const useSchuelerManager = () => {
   const [students, setStudents] = useState<SchuelerStudent[]>([])
   const [classes, setClasses] = useState<StudentClassRef[]>([])
   const [search, setSearch] = useState("")
+  // SDD §3.2 status filter pills: null = all, otherwise active/inactive.
+  // `active !== false` counts as active (field optional until WP-F1 lands).
+  const [statusFilter, setStatusFilter] = useState<
+    null | "active" | "inactive"
+  >(null)
 
   // The currently-visible PIN dialog content. Populated by STUDENT_CREATED
   // (new student flow), STUDENT_PIN_DATA (clicking "PIN" on a row) and kept
@@ -112,16 +117,23 @@ export const useSchuelerManager = () => {
   } | null>(null)
 
   const filteredStudents = useMemo(() => {
+    let list = students
+    if (statusFilter === "active") {
+      list = list.filter((s) => s.active !== false)
+    } else if (statusFilter === "inactive") {
+      list = list.filter((s) => s.active === false)
+    }
+
     const query = search.trim().toLowerCase()
     if (query.length === 0) {
-      return students
+      return list
     }
-    return students.filter(
+    return list.filter(
       (s) =>
         s.displayName.toLowerCase().includes(query) ||
         s.classes.some((c) => c.name.toLowerCase().includes(query)),
     )
-  }, [students, search])
+  }, [students, search, statusFilter])
 
   const sortedClasses = useMemo(
     () => [...classes].sort((a, b) => a.name.localeCompare(b.name)),
@@ -358,9 +370,12 @@ export const useSchuelerManager = () => {
 
   return {
     students: filteredStudents,
+    filteredStudents,
     hasStudents: students.length > 0,
     search,
     setSearch,
+    statusFilter,
+    setStatusFilter,
     classes: sortedClasses,
     pinView,
     clearPinView,

@@ -911,7 +911,12 @@
     "deleted": "学生已删除",
     "search": "搜索学生",
     "searchPlaceholder": "按姓名或班级搜索 …",
-    "noResults": "未找到学生"
+    "noResults": "未找到学生",
+    "statusInactive": "已停用",
+    "filterAll": "全部",
+    "filterActive": "启用中",
+    "filterInactive": "已停用",
+    "selectAll": "选择全部学生"
   },
   "labels": {
     "title": "标签",
@@ -1012,6 +1017,7 @@
     "resultFailed": "{{count}} 个失败",
     "resultCompleted": "已完成",
     "allSelected": "已选择全部 {{count}} 条记录",
-    "allFilteredSelected": "已选择全部 {{count}} 条筛选记录"
+    "allFilteredSelected": "已选择全部 {{count}} 条筛选记录",
+    "selectFiltered": "{{count}} / {{total}} 已筛选"
   }
 }

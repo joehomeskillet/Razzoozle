@@ -1,10 +1,12 @@
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { Plus } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import CreateStudentDialog from "./CreateStudentDialog"
@@ -14,10 +16,12 @@ import { useSchuelerManager } from "./useSchuelerManager"
 
 const ConfigSchueler = () => {
   const {
-    students,
+    filteredStudents,
     hasStudents,
     search,
     setSearch,
+    statusFilter,
+    setStatusFilter,
     classes,
     pinView,
     clearPinView,
@@ -38,6 +42,13 @@ const ConfigSchueler = () => {
 
   const { t } = useTranslation()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+  // Selection is scoped to the currently filtered list (search + status pills).
+  const studentIds = useMemo(
+    () => filteredStudents.map((s) => s.id),
+    [filteredStudents],
+  )
+  const selection = useEntitySelection(studentIds)
 
   return (
     <>
@@ -63,9 +74,34 @@ const ConfigSchueler = () => {
             />
           </div>
 
+          {/* SDD §3.2 — status filter pills (All / Active / Inactive) */}
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <FilterPill
+              active={statusFilter === null}
+              onClick={() => setStatusFilter(null)}
+            >
+              {t("manager:schueler.filterAll")}
+            </FilterPill>
+            <FilterPill
+              active={statusFilter === "active"}
+              onClick={() => setStatusFilter("active")}
+            >
+              {t("manager:schueler.filterActive")}
+            </FilterPill>
+            <FilterPill
+              active={statusFilter === "inactive"}
+              onClick={() => setStatusFilter("inactive")}
+            >
+              {t("manager:schueler.filterInactive")}
+            </FilterPill>
+          </div>
+
           <StudentList
-            students={students}
+            students={filteredStudents}
             classes={classes}
+            selectedIds={selection.selected}
+            onToggleSelect={selection.toggle}
+            onToggleSelectAll={selection.toggleAll}
             onToggleActive={handleSetStudentActive}
             onShowPin={handleShowPin}
             onDelete={(student) => setPendingDeleteStudent(student)}

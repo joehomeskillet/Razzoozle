@@ -21,6 +21,8 @@ interface StudentListProps {
   classes: StudentClassRef[]
   selectedIds?: Set<number>
   onToggleSelect?: (id: number) => void
+  /** Select/deselect all currently filtered students (header checkbox). */
+  onToggleSelectAll?: () => void
   onToggleActive: (studentId: number, active: boolean) => void
   onShowPin: (studentId: number) => void
   onDelete: (student: { id: number; displayName: string }) => void
@@ -63,6 +65,7 @@ const StudentList = ({
   classes,
   selectedIds,
   onToggleSelect,
+  onToggleSelectAll,
   onToggleActive,
   onShowPin,
   onDelete,
@@ -85,8 +88,30 @@ const StudentList = ({
     )
   }
 
+  const allSelected =
+    (selectedIds?.size ?? 0) === students.length && students.length > 0
+  const someSelected =
+    (selectedIds?.size ?? 0) > 0 && (selectedIds?.size ?? 0) < students.length
+
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-0.5">
+      {/* SDD §9.2 — header select-all for the currently filtered list */}
+      {students.length > 0 && onToggleSelectAll && (
+        <div className="mb-3 flex items-center gap-3">
+          <Checkbox
+            checked={allSelected}
+            indeterminate={someSelected}
+            onChange={onToggleSelectAll}
+            aria-label={t("manager:schueler.selectAll")}
+          />
+          <span className="text-sm text-[var(--ink-subtle)]">
+            {t("manager:bulk.selectFiltered", {
+              count: selectedIds?.size ?? 0,
+              total: students.length,
+            })}
+          </span>
+        </div>
+      )}
       {students.map((student) => {
         const composedName = getComposedName(student)
         const availableClasses = classes.filter(

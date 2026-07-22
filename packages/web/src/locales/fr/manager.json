@@ -911,7 +911,12 @@
     "deleted": "Élève supprimé",
     "search": "Rechercher un élève",
     "searchPlaceholder": "Rechercher par nom ou classe …",
-    "noResults": "Aucun élève trouvé"
+    "noResults": "Aucun élève trouvé",
+    "statusInactive": "Désactivé",
+    "filterAll": "Tous",
+    "filterActive": "Actifs",
+    "filterInactive": "Désactivés",
+    "selectAll": "Sélectionner tous les élèves"
   },
   "labels": {
     "title": "Étiquettes",
@@ -1012,6 +1017,7 @@
     "resultFailed": "{{count}} échoués",
     "resultCompleted": "Terminé",
     "allSelected": "Toutes les {{count}} entrées sélectionnées",
-    "allFilteredSelected": "Toutes les {{count}} entrées filtrées sélectionnées"
+    "allFilteredSelected": "Toutes les {{count}} entrées filtrées sélectionnées",
+    "selectFiltered": "{{count}} / {{total}} filtrés"
   }
 }

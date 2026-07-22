@@ -911,7 +911,12 @@
     "deleted": "Student deleted",
     "search": "Search student",
     "searchPlaceholder": "Search by name or class …",
-    "noResults": "No students found"
+    "noResults": "No students found",
+    "statusInactive": "Deactivated",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterInactive": "Deactivated",
+    "selectAll": "Select all students"
   },
   "labels": {
     "title": "Labels",
@@ -1012,6 +1017,7 @@
     "resultFailed": "{{count}} failed",
     "resultCompleted": "Completed",
     "allSelected": "All {{count}} entries selected",
-    "allFilteredSelected": "All {{count}} filtered entries selected"
+    "allFilteredSelected": "All {{count}} filtered entries selected",
+    "selectFiltered": "{{count}} / {{total}} filtered"
   }
 }
