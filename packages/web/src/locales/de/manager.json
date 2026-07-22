@@ -916,7 +916,11 @@
     "filterAll": "Alle",
     "filterActive": "Aktiv",
     "filterInactive": "Deaktiviert",
-    "selectAll": "Alle Schüler auswählen"
+    "selectAll": "Alle Schüler auswählen",
+    "bulkConfirmTitleActivate": "{{count}} Schüler aktivieren?",
+    "bulkConfirmTitleDeactivate": "{{count}} Schüler deaktivieren?",
+    "bulkConfirmTitleDelete": "{{count}} Schüler löschen?",
+    "deleteImpactNote": "Ergebnisse bleiben unter dem bisherigen Namen erhalten."
   },
   "labels": {
     "title": "Fächerverwaltung",

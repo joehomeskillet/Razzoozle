@@ -916,7 +916,11 @@
     "filterAll": "Todos",
     "filterActive": "Activos",
     "filterInactive": "Desactivados",
-    "selectAll": "Seleccionar todos los alumnos"
+    "selectAll": "Seleccionar todos los alumnos",
+    "bulkConfirmTitleActivate": "¿Activar {{count}} alumnos?",
+    "bulkConfirmTitleDeactivate": "¿Desactivar {{count}} alumnos?",
+    "bulkConfirmTitleDelete": "¿Eliminar {{count}} alumnos?",
+    "deleteImpactNote": "Los resultados se conservan con el nombre anterior."
   },
   "labels": {
     "title": "Etiquetas",

@@ -916,7 +916,11 @@
     "filterAll": "All",
     "filterActive": "Active",
     "filterInactive": "Deactivated",
-    "selectAll": "Select all students"
+    "selectAll": "Select all students",
+    "bulkConfirmTitleActivate": "Activate {{count}} students?",
+    "bulkConfirmTitleDeactivate": "Deactivate {{count}} students?",
+    "bulkConfirmTitleDelete": "Delete {{count}} students?",
+    "deleteImpactNote": "Results are kept under the previous name."
   },
   "labels": {
     "title": "Labels",

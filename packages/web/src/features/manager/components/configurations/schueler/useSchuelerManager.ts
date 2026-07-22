@@ -84,7 +84,15 @@ interface CreateStudentPayload {
   birthdate?: string
 }
 
-export const useSchuelerManager = () => {
+interface UseSchuelerManagerOptions {
+  /** Called after a bulk op settles (success or partial failure ack). Pattern E5. */
+  onBulkSettled?: () => void
+}
+
+export const useSchuelerManager = (
+  options: UseSchuelerManagerOptions = {},
+) => {
+  const { onBulkSettled } = options
   const { socket, isConnected } = useSocket()
   const { t } = useTranslation()
 
@@ -200,16 +208,58 @@ export const useSchuelerManager = () => {
 
   // Single active-toggle ack (WP-F2). Confirmed state, applied locally so the
   // badge/toggle flips immediately; the server re-list keeps it consistent.
-  useEvent(
-    SCHUELER_STUDENT_EVENTS.ACTIVE_SET,
-    (data: { studentId: number; active: boolean }) => {
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === data.studentId ? { ...s, active: data.active } : s,
-        ),
+  // Event names are frozen locally (packages/common out of F2 scope) — `as any`
+  // until the parallel contract WP mirrors them into Client/Server event maps.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useEvent(SCHUELER_STUDENT_EVENTS.ACTIVE_SET as any, (data: {
+    studentId: number
+    active: boolean
+  }) => {
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === data.studentId ? { ...s, active: data.active } : s,
+      ),
+    )
+  })
+
+  // Bulk acks (WP-F2c / Pattern E5): toast partial results, re-list, settle.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useEvent(SCHUELER_STUDENT_EVENTS.BULK_ACTIVE_SET as any, (data: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
       )
-    },
-  )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useEvent(SCHUELER_STUDENT_EVENTS.BULK_DELETED as any, (data: {
+    succeeded: number[]
+    failed: Array<{ id: number; reason: string }>
+  }) => {
+    if (data.succeeded.length > 0) {
+      toast.success(
+        t("manager:bulk.resultSucceeded", { count: data.succeeded.length }),
+      )
+    }
+    if (data.failed.length > 0) {
+      toast.error(
+        t("manager:bulk.resultFailed", { count: data.failed.length }),
+      )
+    }
+    socket.emit(EVENTS.CLASS.LIST_ALL_STUDENTS)
+    onBulkSettled?.()
+  })
 
   useEvent(
     EVENTS.CLASS.STUDENT_MOVED,
@@ -359,7 +409,28 @@ export const useSchuelerManager = () => {
 
   const handleSetStudentActive = useCallback(
     (studentId: number, active: boolean): void => {
-      socket.emit(SCHUELER_STUDENT_EVENTS.SET_ACTIVE, { studentId, active })
+      // Frozen local event name — not yet in ClientToServerEvents.
+      socket.emit(SCHUELER_STUDENT_EVENTS.SET_ACTIVE as any, {
+        studentId,
+        active,
+      })
+    },
+    [socket],
+  )
+
+  const handleBulkSetStudentActive = useCallback(
+    (ids: number[], active: boolean): void => {
+      socket.emit(SCHUELER_STUDENT_EVENTS.BULK_SET_ACTIVE as any, {
+        ids,
+        active,
+      })
+    },
+    [socket],
+  )
+
+  const handleBulkDeleteStudents = useCallback(
+    (ids: number[]): void => {
+      socket.emit(SCHUELER_STUDENT_EVENTS.BULK_DELETE as any, { ids })
     },
     [socket],
   )
@@ -392,5 +463,7 @@ export const useSchuelerManager = () => {
     handleRemoveFromClass,
     handleAddToClass,
     handleSetStudentActive,
+    handleBulkSetStudentActive,
+    handleBulkDeleteStudents,
   }
 }

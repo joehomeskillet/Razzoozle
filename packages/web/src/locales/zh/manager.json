@@ -916,7 +916,11 @@
     "filterAll": "全部",
     "filterActive": "启用中",
     "filterInactive": "已停用",
-    "selectAll": "选择全部学生"
+    "selectAll": "选择全部学生",
+    "bulkConfirmTitleActivate": "要启用 {{count}} 名学生吗？",
+    "bulkConfirmTitleDeactivate": "要停用 {{count}} 名学生吗？",
+    "bulkConfirmTitleDelete": "要删除 {{count}} 名学生吗？",
+    "deleteImpactNote": "成绩结果将保留在原有姓名下。"
   },
   "labels": {
     "title": "标签",
