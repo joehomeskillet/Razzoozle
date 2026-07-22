@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next"
 
 import CreateStudentDialog from "./CreateStudentDialog"
 import PinDialog from "./PinDialog"
+import PrintCredentialsTrigger from "./PrintCredentialsTrigger"
 import StudentList from "./StudentList"
 import {
   useSchuelerManager,
@@ -245,8 +246,8 @@ const ConfigSchueler = () => {
             />
           </div>
 
-          {/* SDD §3.2 — status filter pills (All / Active / Inactive) */}
-          <div className="flex shrink-0 flex-wrap gap-2">
+          {/* SDD §3.2 — status filter pills (All / Active / Inactive) + print entry (SDD §9.5) */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <FilterPill
               active={statusFilter === null}
               onClick={() => setStatusFilter(null)}
@@ -265,6 +266,9 @@ const ConfigSchueler = () => {
             >
               {t("manager:schueler.filterInactive")}
             </FilterPill>
+            <div className="ml-auto">
+              <PrintCredentialsTrigger />
+            </div>
           </div>
 
           {/* SDD §9.2 — header select-all for the currently filtered list */}
@@ -278,9 +282,8 @@ const ConfigSchueler = () => {
                 data-testid="schueler-select-all"
               />
               <span className="text-sm text-[var(--ink-subtle)]">
-                {t("manager:bulk.selectFiltered", {
+                {t("manager:bulk.selected", {
                   count: selection.selected.size,
-                  total: filteredStudents.length,
                 })}
               </span>
             </div>
