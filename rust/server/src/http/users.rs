@@ -154,7 +154,8 @@ pub async fn create(
 }
 
 /// POST /api/users/:id/disable — disable a user (set active=false).
-/// Guards: an admin can never disable their own account (self-disable) → 400.
+/// Guards: an admin can never disable their own account (self-disable) → 400,
+/// and the last remaining active admin can never be deactivated → 400.
 pub async fn disable(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -183,11 +184,28 @@ pub async fn disable(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
     };
 
-    db::users::set_user_active(pool, id, false)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to disable user: {}", e)))?;
-
-    Ok(StatusCode::OK)
+    // Load + last-admin-check + deactivate all happen inside a single DB
+    // transaction (deactivate_user_guarded) — parity with delete_user_handler.
+    match db::users::deactivate_user_guarded(pool, id).await {
+        Ok(db::users::DeactivateUserOutcome::Deactivated) => {
+            info!("user disabled: id={}", id);
+            Ok(StatusCode::OK)
+        }
+        Ok(db::users::DeactivateUserOutcome::NotFound) => {
+            Err(json_error_response(StatusCode::NOT_FOUND, "User not found"))
+        }
+        Ok(db::users::DeactivateUserOutcome::LastActiveAdmin) => {
+            warn!("user disable denied: check=last_admin user={}", id);
+            Err(json_error_response(
+                StatusCode::BAD_REQUEST,
+                "Cannot deactivate the last active admin",
+            ))
+        }
+        Err(e) => Err(json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to disable user: {}", e),
+        )),
+    }
 }
 
 /// POST /api/users/:id/enable — enable a user (set active=true).
@@ -262,6 +280,154 @@ pub async fn delete_user_handler(
             format!("Failed to delete user: {}", e),
         )),
     }
+}
+
+// ── Bulk user ops (WP-C1) ──────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct BulkRequestIds {
+    pub ids: Vec<i64>,
+}
+
+/// Validate bulk id list: non-empty and ≤ BULK_MAX_IDS. Duplicates are
+/// normalized downstream in the DB helpers.
+fn validate_bulk_ids(ids: &[i64]) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    if ids.is_empty() {
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "At least one id is required",
+        ));
+    }
+    if ids.len() > db::users::BULK_MAX_IDS {
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            format!("At most {} ids allowed per request", db::users::BULK_MAX_IDS),
+        ));
+    }
+    Ok(())
+}
+
+/// POST /api/users/bulk-activate — activate many users (admin only).
+/// Body: `{ "ids": [i64, ...] }`. Response: `{ succeeded, skipped, failed }`.
+pub async fn bulk_activate(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<BulkRequestIds>,
+) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
+    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    }
+
+    validate_bulk_ids(&req.ids)?;
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    let result = db::users::bulk_activate(pool, req.ids)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to bulk-activate users: {}", e),
+            )
+        })?;
+
+    info!(
+        "bulk-activate: succeeded={}, failed={}",
+        result.succeeded.len(),
+        result.failed.len()
+    );
+    Ok(Json(result))
+}
+
+/// POST /api/users/bulk-deactivate — deactivate many users (admin only).
+/// Self-target and last-active-admin entries are skipped with structured reasons.
+pub async fn bulk_deactivate(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<BulkRequestIds>,
+) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
+    let admin = match require_admin_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+    };
+
+    validate_bulk_ids(&req.ids)?;
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    let result = db::users::bulk_deactivate(pool, admin.user_id, req.ids)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to bulk-deactivate users: {}", e),
+            )
+        })?;
+
+    if !result.skipped.is_empty() {
+        warn!(
+            "bulk-deactivate: requester={}, skipped={}",
+            admin.user_id,
+            result.skipped.len()
+        );
+    }
+    info!(
+        "bulk-deactivate: succeeded={}, skipped={}, failed={}",
+        result.succeeded.len(),
+        result.skipped.len(),
+        result.failed.len()
+    );
+    Ok(Json(result))
+}
+
+/// POST /api/users/bulk-delete — permanently delete many users (admin only).
+/// Self-target and last-active-admin entries are skipped; missing → failed.
+pub async fn bulk_delete(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<BulkRequestIds>,
+) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
+    let admin = match require_admin_http(&headers, &state.db_pool).await {
+        Some(user) => user,
+        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+    };
+
+    validate_bulk_ids(&req.ids)?;
+
+    let pool = match &state.db_pool {
+        Some(p) => p,
+        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+    };
+
+    let result = db::users::bulk_delete(pool, admin.user_id, req.ids)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to bulk-delete users: {}", e),
+            )
+        })?;
+
+    if !result.skipped.is_empty() {
+        warn!(
+            "bulk-delete: requester={}, skipped={}",
+            admin.user_id,
+            result.skipped.len()
+        );
+    }
+    info!(
+        "bulk-delete: succeeded={}, skipped={}, failed={}",
+        result.succeeded.len(),
+        result.skipped.len(),
+        result.failed.len()
+    );
+    Ok(Json(result))
 }
 
 #[derive(Debug, Deserialize)]
