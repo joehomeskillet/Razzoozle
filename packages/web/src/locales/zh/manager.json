@@ -760,7 +760,7 @@
     "updated": "班级已更新",
     "deleteClass": "删除班级",
     "deleteTitle": "删除班级",
-    "deleteConfirm": "确定要删除班级\"{{name}}\"吗？该班级中的学生将被删除。",
+    "deleteConfirm": "确定要删除班级“{{name}}”吗？仅移除班级分配；学生账户与成绩结果将保留。",
     "deleted": "班级已删除",
     "none": "尚未创建班级",
     "pleaseCreate": "请先创建一个班级",

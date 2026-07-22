@@ -760,7 +760,7 @@
     "updated": "Classe aggiornata",
     "deleteClass": "Elimina classe",
     "deleteTitle": "Elimina classe",
-    "deleteConfirm": "Vuoi davvero eliminare la classe \"{{name}}\"? Gli studenti in questa classe saranno eliminati.",
+    "deleteConfirm": "Eliminare davvero la classe \"{{name}}\"? Vengono rimosse le assegnazioni; gli account studenti e i risultati restano.",
     "deleted": "Classe eliminata",
     "none": "Nessuna classe creata ancora",
     "pleaseCreate": "Crea prima una classe",
