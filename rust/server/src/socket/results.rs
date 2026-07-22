@@ -197,7 +197,18 @@ fn register_bulk_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let outcome = db::delete_results(pool, &payload.ids, me).await;
+                let outcome = match db::delete_results(pool, &payload.ids, me).await {
+                    Ok(outcome) => outcome,
+                    Err(_) => {
+                        socket
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:results.bulkFailed",
+                            )
+                            .ok();
+                        return;
+                    }
+                };
 
                 socket
                     .emit(constants::results::BULK_DELETED, &outcome)
