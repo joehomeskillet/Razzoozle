@@ -760,7 +760,7 @@
     "updated": "Classe mise à jour",
     "deleteClass": "Supprimer la classe",
     "deleteTitle": "Supprimer la classe",
-    "deleteConfirm": "Voulez-vous vraiment supprimer la classe \"{{name}}\"? Les élèves de cette classe seront supprimés.",
+    "deleteConfirm": "Vraiment supprimer la classe « {{name}} » ? Les affectations sont retirées ; les comptes élèves et les résultats sont conservés.",
     "deleted": "Classe supprimée",
     "none": "Aucune classe créée pour le moment",
     "pleaseCreate": "Veuillez d'abord créer une classe",
