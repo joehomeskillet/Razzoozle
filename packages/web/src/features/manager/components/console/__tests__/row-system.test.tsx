@@ -37,12 +37,13 @@ import {
 } from "@razzoozle/web/features/manager/components/console"
 
 import type { SelectableRowProps } from "@razzoozle/web/features/manager/components/console/SelectableRow"
-import SelectableRow from "@razzoozle/web/features/manager/components/console/SelectableRow"
 
 import type { BadgeTone } from "@razzoozle/web/components/manager/Badge"
 import Badge, { chipBase, assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+
+import { Check as CheckIcon } from "lucide-react"
 
 describe("rowStyles Contract — 15 constants (SDD §3.1, R13)", () => {
   it("rowShellBase contains radius, outline, and transition", () => {
@@ -147,7 +148,7 @@ describe("ListRow — API contract (SDD §3.2, R12)", () => {
   it("ListRowAction interface has required key, icon, label, onClick", () => {
     const action: ListRowAction = {
       key: "test",
-      icon: () => null,
+      icon: CheckIcon,
       label: "Test action",
       onClick: () => {},
     }
@@ -160,7 +161,7 @@ describe("ListRow — API contract (SDD §3.2, R12)", () => {
   it("ListRowAction accepts optional disabled, title, destructive, className, aria-expanded", () => {
     const action: ListRowAction = {
       key: "edit",
-      icon: () => null,
+      icon: CheckIcon,
       label: "Edit",
       onClick: () => {},
       disabled: false,
@@ -226,7 +227,6 @@ describe("SelectableRow — Radio selection (SDD §3.2, R12)", () => {
       title: "Quiz option",
       selected: false,
       disabled: false,
-      type: "button",
     }
     expect(props.title).toBe("Quiz option")
     expect(props.selected).toBe(false)
@@ -371,9 +371,9 @@ describe("FilterPill — Active/inactive markup (SDD §7, R10)", () => {
 
   it("FilterPill custom activeClassName replaces default active colors", () => {
     const markup = renderToStaticMarkup(
-      <FilterPill active activeClassName="bg-red-500" onClick={() => {}}>Custom</FilterPill>
+      <FilterPill active activeClassName="bg-[var(--surface-3)]" onClick={() => {}}>Custom</FilterPill>
     )
-    expect(markup).toContain("bg-red-500")
+    expect(markup).toContain("bg-[var(--surface-3)]")
     // When activeClassName is set, it replaces the default accent colors.
   })
 })
