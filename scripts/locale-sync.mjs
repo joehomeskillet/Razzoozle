@@ -43,6 +43,14 @@ function nsFilePath(locale, ns) {
   return path.join(LOCALES_DIR, locale, `${ns}.json`);
 }
 
+function validateNsKey(ns) {
+  if (!/^[a-z0-9_-]+$/.test(ns)) {
+    throw new Error(
+      `invalid namespace key "${ns}" — must match /^[a-z0-9_-]+$/`,
+    );
+  }
+}
+
 function readJson(filePath) {
   const raw = readFileSync(filePath, "utf8");
   return JSON.parse(raw);
@@ -261,11 +269,11 @@ function cmdApply(args) {
 
   for (const [locale, nsMap] of Object.entries(translations)) {
     if (!knownLocales.has(locale)) {
-      console.error(`WARNING: skipping unknown locale "${locale}"`);
-      continue;
+      throw new Error(`unknown locale "${locale}"`);
     }
     const knownNamespaces = new Set(listNamespaces(locale));
     for (const [ns, entries] of Object.entries(nsMap)) {
+      validateNsKey(ns);
       const filePath = nsFilePath(locale, ns);
       let targetObj;
       if (knownNamespaces.has(ns)) {
@@ -309,6 +317,7 @@ function cmdRemove(args) {
   for (const locale of listLocales()) {
     const knownNamespaces = new Set(listNamespaces(locale));
     for (const [ns, paths] of Object.entries(deadKeys)) {
+      validateNsKey(ns);
       if (!knownNamespaces.has(ns)) {
         console.error(`WARNING: skipping unknown namespace "${ns}" for locale "${locale}"`);
         continue;
