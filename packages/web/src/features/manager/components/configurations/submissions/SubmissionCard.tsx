@@ -10,6 +10,13 @@ import Button from "@razzoozle/web/components/Button"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
 import Select from "@razzoozle/web/components/Select"
+import {
+  listItemMotion,
+  rowHoverState,
+  rowRestState,
+  rowShellBase,
+  rowShellDensity,
+} from "@razzoozle/web/features/manager/components/console"
 import clsx from "clsx"
 import { Check, ChevronDown } from "lucide-react"
 import { motion } from "motion/react"
@@ -88,18 +95,13 @@ const SubmissionCard = ({
 
   return (
     <motion.div
-      className="rounded-[var(--radius-theme)] bg-[var(--surface)] p-4 outline-2 -outline-offset-2 outline-[var(--line)]"
-      initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={
-        reducedMotion
-          ? undefined
-          : {
-              duration: 0.28,
-              ease: "easeOut",
-              delay: Math.min(index, 8) * 0.04,
-            }
-      }
+      className={clsx(
+        rowShellBase,
+        rowShellDensity.default,
+        rowRestState,
+        rowHoverState,
+      )}
+      {...listItemMotion(index, reducedMotion)}
     >
       {!isPending &&
         (() => {
@@ -151,6 +153,7 @@ const SubmissionCard = ({
               size="sm"
               className="min-h-11"
               onClick={handleOpenApprove(s.id)}
+              aria-expanded={approvingId === s.id}
             >
               {t("manager:submissions.approve")}
             </Button>
@@ -160,6 +163,7 @@ const SubmissionCard = ({
               size="sm"
               className="min-h-11"
               onClick={handleOpenEdit(s.id, s.question)}
+              aria-expanded={editingId === s.id}
             >
               {t("manager:submissions.edit")}
             </Button>
