@@ -827,7 +827,11 @@
     "bulkConfirmTitleDelete": "Delete {{count}} classes?",
     "deleteImpactStudents": "{{count}} student assignments will be removed",
     "deleteImpactLabels": "{{count}} subject assignments will be removed",
-    "deleteKeepNote": "Student accounts and results are kept."
+    "deleteKeepNote": "Student accounts and results are kept.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "selectAll": "Select all classes",
+    "selectFiltered": "Select all filtered classes"
   },
   "users": {
     "title": "User Management",

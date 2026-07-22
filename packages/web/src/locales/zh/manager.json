@@ -797,7 +797,11 @@
     "bulkConfirmTitleDelete": "删除 {{count}} 个班级？",
     "deleteImpactStudents": "将移除 {{count}} 个学生关联",
     "deleteImpactLabels": "将移除 {{count}} 个科目关联",
-    "deleteKeepNote": "学生账户和成绩将保留。"
+    "deleteKeepNote": "学生账户和成绩将保留。",
+    "activate": "激活",
+    "deactivate": "停用",
+    "selectAll": "选择所有班级",
+    "selectFiltered": "选择所有筛选的班级"
   },
   "users": {
     "title": "用户管理",

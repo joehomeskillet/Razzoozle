@@ -797,7 +797,11 @@
     "bulkConfirmTitleDelete": "{{count}} Klassen löschen?",
     "deleteImpactStudents": "{{count}} Schülerzuordnungen werden entfernt",
     "deleteImpactLabels": "{{count}} Fachzuordnungen werden entfernt",
-    "deleteKeepNote": "Schülerkonten und Ergebnisse bleiben erhalten."
+    "deleteKeepNote": "Schülerkonten und Ergebnisse bleiben erhalten.",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "selectAll": "Alle Klassen auswählen",
+    "selectFiltered": "Alle gefilterten Klassen auswählen"
   },
   "users": {
     "title": "Nutzerverwaltung",

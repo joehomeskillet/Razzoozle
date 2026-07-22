@@ -797,7 +797,11 @@
     "bulkConfirmTitleDelete": "Supprimer {{count}} classes ?",
     "deleteImpactStudents": "{{count}} associations d'élèves seront supprimées",
     "deleteImpactLabels": "{{count}} associations de matières seront supprimées",
-    "deleteKeepNote": "Les comptes élèves et les résultats sont conservés."
+    "deleteKeepNote": "Les comptes élèves et les résultats sont conservés.",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "selectAll": "Sélectionner toutes les classes",
+    "selectFiltered": "Sélectionner toutes les classes filtrées"
   },
   "users": {
     "title": "Gestion des Utilisateurs",
