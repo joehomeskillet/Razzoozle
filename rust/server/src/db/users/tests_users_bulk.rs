@@ -26,6 +26,43 @@ mod tests {
             .await;
     }
 
+    /// Temporarily deactivate non-test active admins so last-admin scenarios are
+    /// deterministic against a shared DB that may already have a bootstrap admin.
+    /// Returns the IDs that were deactivated so the caller can restore them.
+    async fn suspend_non_test_active_admins(pool: &sqlx::PgPool) -> Vec<i64> {
+        let others: Vec<(i64,)> = sqlx::query_as(
+            "SELECT id FROM users WHERE role = 'admin' AND active = true \
+             AND username NOT LIKE 'test_bulk_%'"
+        )
+        .fetch_all(pool)
+        .await
+        .expect("Failed to list non-test active admins");
+
+        let mut ids = Vec::with_capacity(others.len());
+        for (id,) in others {
+            set_user_active(pool, id, false)
+                .await
+                .expect("Failed to suspend non-test admin for isolation");
+            ids.push(id);
+        }
+        ids
+    }
+
+    async fn restore_active_admins(pool: &sqlx::PgPool, ids: &[i64]) {
+        for id in ids {
+            let _ = set_user_active(pool, *id, true).await;
+        }
+    }
+
+    /// Fetch (id, active) for verification; panics if the row is missing.
+    async fn fetch_id_active(pool: &sqlx::PgPool, user_id: i64) -> (i64, bool) {
+        sqlx::query_as::<_, (i64, bool)>("SELECT id, active FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(pool)
+            .await
+            .expect("Failed to fetch user id/active")
+    }
+
     // ── deactivate_user_guarded tests ──────────────────────────────────────
 
     #[tokio::test]
@@ -1133,6 +1170,319 @@ mod tests {
         let (_, active1) = fetch_id_active(&pool, id1).await;
         assert!(active1, "requester should remain active");
 
+        cleanup_test_users(&pool).await;
+    }
+
+    // ── Group 3: bulk_delete ────────────────────────────────────────────
+
+    /// Skips the requester (self) and the last remaining active admin target.
+    ///
+    /// Self-skip does not reduce `remaining_admins` (requester stays active in
+    /// the locked set). When the requester is an active admin, peer admins are
+    /// therefore deletable. To exercise both `self` and `last_admin` in one
+    /// call, the requester is a regular user included in the id list while two
+    /// isolated active admins are targeted.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_skips_self_and_last_admin() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        // Exactly two active admins after suspend + one regular requester + one
+        // bystander regular (must not be touched).
+        let id1 = create_user(&pool, "test_bulk_delete_g3_self_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1");
+        let id2 = create_user(&pool, "test_bulk_delete_g3_self_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+        let id_req = create_user(&pool, "test_bulk_delete_g3_self_req", "pass123", "user")
+            .await
+            .expect("Failed to create requester (regular user)");
+        let id_bystander =
+            create_user(&pool, "test_bulk_delete_g3_self_bystander", "pass123", "user")
+                .await
+                .expect("Failed to create bystander regular user");
+
+        // remaining_admins starts at 2. Self-skip removes id_req from work only.
+        // work order: id1 then id2 → id1 deleted (2→1), id2 last_admin-skipped.
+        let result = bulk_delete(&pool, id_req, vec![id_req, id1, id2])
+            .await
+            .expect("bulk_delete failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id1],
+            "expected first admin deleted, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.skipped.len(),
+            2,
+            "expected self + last_admin skips, got {:?}",
+            result.skipped
+        );
+        assert_eq!(result.skipped[0].id, id_req, "first skip should be self (requester)");
+        assert_eq!(
+            result.skipped[0].reason, "self",
+            "skip reason should be self, got {}",
+            result.skipped[0].reason
+        );
+        assert_eq!(result.skipped[1].id, id2, "second skip should be last admin id2");
+        assert_eq!(
+            result.skipped[1].reason, "last_admin",
+            "skip reason should be last_admin, got {}",
+            result.skipped[1].reason
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        // id1 deleted; id2 (last admin), requester, and bystander remain.
+        let id1_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE id = $1")
+            .bind(id1)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to count id1");
+        assert_eq!(id1_count.0, 0, "id1 should be deleted");
+
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        let (_, a_req) = fetch_id_active(&pool, id_req).await;
+        let (_, a_by) = fetch_id_active(&pool, id_bystander).await;
+        assert!(a2, "id2 (last admin) must remain active");
+        assert!(a_req, "requester must remain active after self skip");
+        assert!(a_by, "bystander regular user must be unaffected");
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Deletes peer admins when multiple active admins remain (requester stays).
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_deletes_when_multiple_admins_remain() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_delete_g3_multi_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(&pool, "test_bulk_delete_g3_multi_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+        let id3 = create_user(&pool, "test_bulk_delete_g3_multi_a3", "pass123", "admin")
+            .await
+            .expect("Failed to create admin3");
+        let id_reg = create_user(&pool, "test_bulk_delete_g3_multi_user", "pass123", "user")
+            .await
+            .expect("Failed to create regular user");
+
+        let count_before: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM users WHERE username LIKE 'test_bulk_delete_g3_multi_%'"
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count users before delete");
+        assert_eq!(count_before.0, 4, "fixture should have 4 test users");
+
+        // Requester id1 not in ids → no self skip. remaining_admins=3 (id1,id2,id3).
+        // Deleting id2 then id3 leaves id1 as sole active admin.
+        let result = bulk_delete(&pool, id1, vec![id2, id3])
+            .await
+            .expect("bulk_delete failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id2, id3],
+            "expected id2 and id3 deleted, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips (requester not in list), got {:?}",
+            result.skipped
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        assert!(a1, "requester id1 must remain active");
+
+        let gone: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM users WHERE id = ANY($1)"
+        )
+        .bind(&vec![id2, id3])
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count deleted users");
+        assert_eq!(gone.0, 0, "id2 and id3 should be deleted from users");
+
+        let (_, a_reg) = fetch_id_active(&pool, id_reg).await;
+        assert!(a_reg, "regular user must be unaffected");
+
+        let count_after: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM users WHERE username LIKE 'test_bulk_delete_g3_multi_%'"
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to count users after delete");
+        assert_eq!(
+            count_after.0,
+            count_before.0 - 2,
+            "user count should drop by 2"
+        );
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Bulk-delete cascades sessions (ON DELETE CASCADE) and nullifies quiz owner_id
+    /// (ON DELETE SET NULL).
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_delete_cascades_sessions_and_nullifies_quiz_owner() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_delete_g3_casc_admin", "pass123", "admin")
+            .await
+            .expect("Failed to create admin (requester)");
+        let id2 = create_user(&pool, "test_bulk_delete_g3_casc_user", "pass123", "user")
+            .await
+            .expect("Failed to create regular user to delete");
+
+        // Quiz owned by id2 — use real schema (safe_id PK + subject/questions).
+        let quiz_id = "test_bulk_delete_g3_casc_quiz";
+        sqlx::query(
+            "INSERT INTO quizzes (id, subject, questions, archived, owner_id) \
+             VALUES ($1, 'test_quiz', '[]'::jsonb, false, $2)"
+        )
+        .bind(quiz_id)
+        .bind(id2)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert test quiz");
+
+        // Two sessions for id2 (token_hash unique).
+        sqlx::query(
+            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
+             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
+        )
+        .bind("test_bulk_delete_g3_casc_hash1")
+        .bind(id2)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert session 1");
+
+        sqlx::query(
+            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
+             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
+        )
+        .bind("test_bulk_delete_g3_casc_hash2")
+        .bind(id2)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert session 2");
+
+        let sessions_before: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+                .bind(id2)
+                .fetch_one(&pool)
+                .await
+                .expect("Failed to count sessions before delete");
+        assert_eq!(sessions_before.0, 2, "fixture should have 2 sessions for id2");
+
+        let owner_before: (Option<i64>,) =
+            sqlx::query_as("SELECT owner_id FROM quizzes WHERE id = $1")
+                .bind(quiz_id)
+                .fetch_one(&pool)
+                .await
+                .expect("Failed to read quiz owner before delete");
+        assert_eq!(owner_before.0, Some(id2), "quiz should be owned by id2");
+
+        let result = bulk_delete(&pool, id1, vec![id2])
+            .await
+            .expect("bulk_delete failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id2],
+            "expected id2 deleted, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips, got {:?}",
+            result.skipped
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let user_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE id = $1")
+            .bind(id2)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to count id2 after delete");
+        assert_eq!(user_count.0, 0, "id2 should be deleted from users");
+
+        let session_count: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+                .bind(id2)
+                .fetch_one(&pool)
+                .await
+                .expect("Failed to count sessions after delete");
+        assert_eq!(
+            session_count.0, 0,
+            "Sessions should be cascade-deleted"
+        );
+
+        let owner_after: (Option<i64>,) =
+            sqlx::query_as("SELECT owner_id FROM quizzes WHERE id = $1")
+                .bind(quiz_id)
+                .fetch_one(&pool)
+                .await
+                .expect("Failed to read quiz owner after delete");
+        assert!(
+            owner_after.0.is_none(),
+            "Quiz owner_id should be NULL after user delete"
+        );
+
+        // Cleanup orphan quiz (owner already null) + remaining test users.
+        let _ = sqlx::query("DELETE FROM quizzes WHERE id = $1")
+            .bind(quiz_id)
+            .execute(&pool)
+            .await;
         cleanup_test_users(&pool).await;
     }
 }
