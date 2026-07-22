@@ -359,3 +359,51 @@ button:not(:disabled),
 .lobby-bob { animation: lobby-bob 4.5s ease-in-out infinite; }
 @keyframes lobby-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 @media (prefers-reduced-motion: reduce) { .lobby-bob { animation: none !important; } }
+
+/* Print styles for credential printing */
+.print-only { display: none; }
+
+@media print {
+  /* Hide all UI chrome during print */
+  .no-print,
+  [class*="ActionFooter"],
+  [class*="nav"],
+  [class*="shell"],
+  button,
+  [role="button"],
+  [role="navigation"],
+  [role="menubar"],
+  [role="toolbar"],
+  .toast,
+  [role="alert"],
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Show print-only content */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Print-specific layout */
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-sheet,
+  .print-summary {
+    display: block !important;
+    page-break-after: always;
+    break-after: page;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* A4 page size (210mm × 297mm) */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
