@@ -23,3 +23,4 @@ export type { AssetPreviewProps } from "@razzoozle/web/features/manager/componen
 export { default as AssetPreviewCard } from "@razzoozle/web/features/manager/components/console/AssetPreviewCard"
 export type { AssetPreviewCardProps } from "@razzoozle/web/features/manager/components/console/AssetPreviewCard"
 export * from "@razzoozle/web/features/manager/components/console/rowStyles"
+export * from "@razzoozle/web/features/manager/components/console/listMotion"
