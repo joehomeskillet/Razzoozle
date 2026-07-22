@@ -6,6 +6,7 @@ import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
+import type { ListRowAction } from "@razzoozle/web/features/manager/components/console"
 import { Plus, SquarePen, Tags, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
