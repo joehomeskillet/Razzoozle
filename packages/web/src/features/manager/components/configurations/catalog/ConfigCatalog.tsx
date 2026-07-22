@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
+import { listContainerMotion, listItemMotion } from "@razzoozle/web/features/manager/components/console/listMotion"
 import { TYPE_LABEL_KEY } from "./constants"
 import { useCatalogManager } from "./useCatalogManager"
 import { formatDate } from "./utils"
@@ -184,11 +185,7 @@ const ConfigCatalog = () => {
         ) : (
           <motion.div
             className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
-            initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={
-              reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-            }
+            {...listContainerMotion(reducedMotion)}
           >
             {filteredEntries.map((entry, index) => {
               const type = entry.question.type ?? "choice"
@@ -210,21 +207,12 @@ const ConfigCatalog = () => {
                 <motion.div
                   key={entry.id}
                   data-testid={`catalog-row-${entry.id}`}
-                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                  transition={
-                    reducedMotion
-                      ? undefined
-                      : {
-                          duration: 0.28,
-                          ease: "easeOut",
-                          delay: Math.min(index, 8) * 0.04,
-                        }
-                  }
+                  {...listItemMotion(index, reducedMotion)}
                 >
                   <ListRow
+                    selected={selected.has(entry.id)}
                     selection={
-                      <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg hover:bg-[var(--surface-3)]">
+                      <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
                         <span className="sr-only">
                           {t("manager:catalog.selectEntry", {
                             name: entry.question.question,
@@ -253,7 +241,7 @@ const ConfigCatalog = () => {
                         <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
                           {t(`manager:catalog.source.${source}`)}
                         </Badge>
-                        <span className="text-xs text-[var(--ink-subtle)]">
+                        <span>
                           {formatDate(entry.addedAt)}
                         </span>
                       </span>
