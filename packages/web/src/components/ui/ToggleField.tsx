@@ -75,7 +75,7 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
           <span
             id={titleId}
             className={clsx(
-              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-40",
+              "shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-60",
               "flex flex-wrap items-start gap-2",
               disabled && "opacity-50"
             )}
