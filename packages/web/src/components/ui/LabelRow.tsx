@@ -88,7 +88,7 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
           >
             {label}
             {restartBadge && (
-              <Badge className="shrink-0 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
+              <Badge className="shrink-0 whitespace-nowrap bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
                 {badgeLabel}
               </Badge>
             )}
