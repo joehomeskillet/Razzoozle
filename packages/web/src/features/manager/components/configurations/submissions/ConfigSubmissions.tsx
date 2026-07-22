@@ -12,6 +12,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
+import { listContainerMotion } from "@razzoozle/web/features/manager/components/console/listMotion"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { CheckCircle2, Filter, Inbox, XCircle } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -297,11 +298,7 @@ const ConfigSubmissions = () => {
       ) : (
         <motion.div
           className="min-h-0 flex-1 space-y-3 p-0.5"
-          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={
-            reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-          }
+          {...listContainerMotion(reducedMotion)}
         >
           {visible.map((s, index) => (
             <SubmissionCard
