@@ -33,7 +33,7 @@ const BulkActionToolbar = ({
     <div
       role="toolbar"
       aria-label={label}
-      className="flex flex-wrap items-center gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+      className="mb-3 flex w-full flex-wrap items-center gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
     >
       <span className="text-sm font-semibold text-[var(--ink-muted)]">
         {t("manager:bulk.selected", { count })}
