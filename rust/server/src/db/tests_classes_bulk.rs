@@ -1,6 +1,7 @@
 //! Tests for bulk student ops:
 //! - Group 1: bulk_set_student_active (WP-F6g1)
 //! - Group 2: bulk_delete_students (WP-F6g2)
+//! - Group 3: bulk_assign_students / bulk_remove_students (WP-F6g3)
 //! Requires a live Postgres database (`DATABASE_URL`).
 //! Run with: `cargo test -- --include-ignored`.
 
@@ -56,6 +57,32 @@ mod tests {
             .await;
     }
 
+    /// Scoped cleanup for Group 3 fixtures (bulk_assign / bulk_remove).
+    async fn cleanup_assign_fixtures(pool: &sqlx::PgPool) {
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_assign_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_assign_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_assign_%'")
+            .execute(pool)
+            .await;
+    }
+
+    /// Scoped cleanup for Group 3 remove fixtures.
+    async fn cleanup_remove_fixtures(pool: &sqlx::PgPool) {
+        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE 'test_bulk_remove_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM classes WHERE name LIKE 'test_bulk_remove_%'")
+            .execute(pool)
+            .await;
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_bulk_remove_%'")
+            .execute(pool)
+            .await;
+    }
+
     async fn fetch_student_active(pool: &sqlx::PgPool, student_id: i64) -> bool {
         sqlx::query_as::<_, (bool,)>("SELECT active FROM students WHERE id = $1")
             .bind(student_id)
@@ -81,6 +108,18 @@ mod tests {
             .await
             .expect("Failed to count class_students")
             .0
+    }
+
+    async fn count_membership(pool: &sqlx::PgPool, student_id: i64, class_id: i64) -> i64 {
+        sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) FROM class_students WHERE student_id = $1 AND class_id = $2",
+        )
+        .bind(student_id)
+        .bind(class_id)
+        .fetch_one(pool)
+        .await
+        .expect("Failed to count class_students membership")
+        .0
     }
 
     // ── Group 1: bulk_set_student_active ──────────────────────────────────
@@ -584,5 +623,344 @@ mod tests {
         );
 
         cleanup_delete_fixtures(&pool).await;
+    }
+
+    // ── Group 3: bulk_assign_students / bulk_remove_students ─────────────
+
+    /// Already-member students land in skipped with reason already_member;
+    /// they must not appear in succeeded and must not create duplicate rows.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_assign_students_already_member_skipped() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+        cleanup_assign_fixtures(&pool).await;
+
+        let opt = Some(pool.clone());
+        let owner_id = create_user(
+            &pool,
+            "test_bulk_assign_skip_owner",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create owner");
+
+        let class_id = create_class(&opt, "test_bulk_assign_skip_class", owner_id)
+            .await
+            .expect("Failed to create class");
+
+        // Student already enrolled via create_student class_ids.
+        let student_id = create_student(
+            &opt,
+            "test_bulk_assign_skip_s1",
+            "",
+            &[class_id],
+            owner_id,
+            Some(owner_id),
+            None,
+            "1234",
+        )
+        .await
+        .expect("Failed to create student");
+
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "fixture must already have one class_students row"
+        );
+
+        let result = bulk_assign_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_assign_students failed");
+
+        assert!(
+            result.succeeded.is_empty(),
+            "already-member must NOT be in succeeded, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.skipped.len(),
+            1,
+            "expected one skipped entry, got {:?}",
+            result.skipped
+        );
+        assert_eq!(result.skipped[0].id, student_id);
+        assert_eq!(result.skipped[0].reason, "already_member");
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "must not create duplicate class_students rows"
+        );
+
+        cleanup_assign_fixtures(&pool).await;
+    }
+
+    /// Assigning the same student repeatedly yields a single class_students row.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_assign_students_no_duplicate_rows() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+        cleanup_assign_fixtures(&pool).await;
+
+        let opt = Some(pool.clone());
+        let owner_id = create_user(
+            &pool,
+            "test_bulk_assign_nodup_owner",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create owner");
+
+        let class_id = create_class(&opt, "test_bulk_assign_nodup_class", owner_id)
+            .await
+            .expect("Failed to create class");
+
+        // Student owned by me but NOT enrolled in the target class.
+        let student_id = create_student(
+            &opt,
+            "test_bulk_assign_nodup_s1",
+            "",
+            &[],
+            owner_id,
+            Some(owner_id),
+            None,
+            "1234",
+        )
+        .await
+        .expect("Failed to create student");
+
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            0,
+            "fixture must start with no membership"
+        );
+
+        let first = bulk_assign_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_assign_students first call failed");
+
+        assert_eq!(
+            first.succeeded,
+            vec![student_id],
+            "first assign should succeed, got {:?}",
+            first.succeeded
+        );
+        assert!(
+            first.skipped.is_empty(),
+            "first assign must not skip, got {:?}",
+            first.skipped
+        );
+        assert!(
+            first.failed.is_empty(),
+            "expected no failures on first assign, got {:?}",
+            first.failed
+        );
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "exactly one class_students row after first assign"
+        );
+
+        // Second assign of the same pair: already_member skip, still one row.
+        let second = bulk_assign_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_assign_students second call failed");
+
+        assert!(
+            second.succeeded.is_empty(),
+            "re-assign must not succeed again, got {:?}",
+            second.succeeded
+        );
+        assert_eq!(second.skipped.len(), 1);
+        assert_eq!(second.skipped[0].id, student_id);
+        assert_eq!(second.skipped[0].reason, "already_member");
+        assert!(second.failed.is_empty());
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "re-assign must not insert a second class_students row"
+        );
+
+        // Third call still one row (ON CONFLICT / already_set path).
+        let third = bulk_assign_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_assign_students third call failed");
+
+        assert!(third.succeeded.is_empty());
+        assert_eq!(third.skipped.len(), 1);
+        assert_eq!(third.skipped[0].reason, "already_member");
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "SELECT COUNT(*) FROM class_students WHERE student_id = X AND class_id = Y must stay 1"
+        );
+
+        cleanup_assign_fixtures(&pool).await;
+    }
+
+    /// bulk_remove_students removes the junction row; re-call does not error
+    /// and leaves membership empty (DB-state idempotent). Student row retained.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_remove_students_idempotent() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        let _lock = lock_db_isolation();
+        cleanup_remove_fixtures(&pool).await;
+
+        let opt = Some(pool.clone());
+        let owner_id = create_user(
+            &pool,
+            "test_bulk_remove_idem_owner",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create owner");
+
+        let class_id = create_class(&opt, "test_bulk_remove_idem_class", owner_id)
+            .await
+            .expect("Failed to create class");
+
+        let student_id = create_student(
+            &opt,
+            "test_bulk_remove_idem_s1",
+            "",
+            &[class_id],
+            owner_id,
+            Some(owner_id),
+            None,
+            "1234",
+        )
+        .await
+        .expect("Failed to create student");
+
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            1,
+            "fixture must start enrolled"
+        );
+
+        let first = bulk_remove_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_remove_students first call failed");
+
+        assert_eq!(
+            first.succeeded,
+            vec![student_id],
+            "first remove should succeed, got {:?}",
+            first.succeeded
+        );
+        assert!(
+            first.failed.is_empty(),
+            "expected no failures on first remove, got {:?}",
+            first.failed
+        );
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            0,
+            "no class_students rows after first remove"
+        );
+        assert_eq!(
+            count_students(&pool, student_id).await,
+            1,
+            "student row must be retained (remove is unenroll only)"
+        );
+
+        // Second call: no error; membership stays empty (idempotent DB state).
+        // Already-not-enrolled maps to failed not_found (DELETE RETURNING empty).
+        let second = bulk_remove_students(
+            &opt,
+            vec![student_id],
+            class_id,
+            Some(owner_id),
+            BULK_MAX_IDS,
+        )
+        .await
+        .expect("bulk_remove_students second call must not error");
+
+        assert_eq!(
+            count_membership(&pool, student_id, class_id).await,
+            0,
+            "re-remove must leave membership empty"
+        );
+        assert_eq!(
+            count_students(&pool, student_id).await,
+            1,
+            "student row still retained after re-remove"
+        );
+        assert!(
+            second.succeeded.is_empty(),
+            "already-removed is not re-succeeded, got {:?}",
+            second.succeeded
+        );
+        assert_eq!(
+            second.failed.len(),
+            1,
+            "already-removed → failed not_found, got {:?}",
+            second.failed
+        );
+        assert_eq!(second.failed[0].id, student_id);
+        assert_eq!(second.failed[0].reason, "not_found");
+
+        cleanup_remove_fixtures(&pool).await;
     }
 }
