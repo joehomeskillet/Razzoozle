@@ -225,6 +225,7 @@ const StudentList = ({
               </div>
             )}
             <ListRow
+              className="min-w-0 flex-1"
               leading={
                 <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
               }
