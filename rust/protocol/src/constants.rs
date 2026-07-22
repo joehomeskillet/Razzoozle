@@ -246,6 +246,21 @@ pub mod class {
     /// `class:bulkDelete` req `{ ids: number[] }` → ack `class:bulkDeleted` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; class_students CASCADE, students.class_id SET NULL by FK).
     pub const BULK_DELETE: &str = "class:bulkDelete";
     pub const BULK_DELETED: &str = "class:bulkDeleted";
+    /// `class:setStudentActive` req `{ studentId: number, active: boolean }` → success `class:studentActiveSet` `{ studentId, active }` (owner-scoped; manager-authed via require_user; idempotent).
+    pub const SET_STUDENT_ACTIVE: &str = "class:setStudentActive";
+    pub const STUDENT_ACTIVE_SET: &str = "class:studentActiveSet";
+    /// `class:bulkSetStudentActive` req `{ studentIds: number[], active: boolean }` → ack `class:bulkStudentActiveSet` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped).
+    pub const BULK_SET_STUDENT_ACTIVE: &str = "class:bulkSetStudentActive";
+    pub const BULK_STUDENT_ACTIVE_SET: &str = "class:bulkStudentActiveSet";
+    /// `class:bulkDeleteStudent` req `{ studentIds: number[] }` → ack `class:bulkStudentDeleted` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped).
+    pub const BULK_DELETE_STUDENT: &str = "class:bulkDeleteStudent";
+    pub const BULK_STUDENT_DELETED: &str = "class:bulkStudentDeleted";
+    /// `class:bulkAssignStudent` req `{ studentIds: number[], classId: number }` → ack `class:bulkStudentAssigned` `{ succeeded, skipped: [{ id, reason: "already_member" }], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped).
+    pub const BULK_ASSIGN_STUDENT: &str = "class:bulkAssignStudent";
+    pub const BULK_STUDENT_ASSIGNED: &str = "class:bulkStudentAssigned";
+    /// `class:bulkRemoveStudent` req `{ studentIds: number[], classId: number }` → ack `class:bulkStudentRemoved` `{ succeeded, failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped).
+    pub const BULK_REMOVE_STUDENT: &str = "class:bulkRemoveStudent";
+    pub const BULK_STUDENT_REMOVED: &str = "class:bulkStudentRemoved";
 }
 
 // Sim-mode bot tuning (server-side scripted opponents). Bots are a dev/test aid,

@@ -323,6 +323,31 @@ export const EVENTS = {
      */
     BULK_DELETE: "class:bulkDelete",
     BULK_DELETED: "class:bulkDeleted",
+    /**
+     * `class:setStudentActive` req `{ studentId: number, active: boolean }` → success `class:studentActiveSet` `{ studentId, active }` (owner-scoped; manager-authed via require_user; idempotent).
+     */
+    SET_STUDENT_ACTIVE: "class:setStudentActive",
+    STUDENT_ACTIVE_SET: "class:studentActiveSet",
+    /**
+     * `class:bulkSetStudentActive` req `{ studentIds: number[], active: boolean }` → ack `class:bulkStudentActiveSet` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; already-matching active counts as succeeded).
+     */
+    BULK_SET_STUDENT_ACTIVE: "class:bulkSetStudentActive",
+    BULK_STUDENT_ACTIVE_SET: "class:bulkStudentActiveSet",
+    /**
+     * `class:bulkDeleteStudent` req `{ studentIds: number[] }` → ack `class:bulkStudentDeleted` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; class_students CASCADE by FK).
+     */
+    BULK_DELETE_STUDENT: "class:bulkDeleteStudent",
+    BULK_STUDENT_DELETED: "class:bulkStudentDeleted",
+    /**
+     * `class:bulkAssignStudent` req `{ studentIds: number[], classId: number }` → ack `class:bulkStudentAssigned` `{ succeeded: number[], skipped: [{ id, reason: "already_member" }], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; target class must be owned; already-member = skipped).
+     */
+    BULK_ASSIGN_STUDENT: "class:bulkAssignStudent",
+    BULK_STUDENT_ASSIGNED: "class:bulkStudentAssigned",
+    /**
+     * `class:bulkRemoveStudent` req `{ studentIds: number[], classId: number }` → ack `class:bulkStudentRemoved` `{ succeeded: number[], failed: [{ id, reason: "not_found" }] }` (max 200, deduped, owner-scoped; removes class_students row only; students retained).
+     */
+    BULK_REMOVE_STUDENT: "class:bulkRemoveStudent",
+    BULK_STUDENT_REMOVED: "class:bulkStudentRemoved",
   },
   // Global labels (Fächer) — admin-defined, can tag quizzes/media/catalog.
   // All events are auth-gated (require_user for list/assign, require_admin for crud).
