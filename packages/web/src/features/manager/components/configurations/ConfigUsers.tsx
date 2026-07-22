@@ -30,7 +30,7 @@ import {
   Trash2,
   X,
 } from "lucide-react"
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -69,12 +69,12 @@ const ConfigUsers = () => {
   const currentUsername = useManagerStore((s) => s.username)
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "user" | "lehrkraft" | "admin">("all")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
-  
+
   // Create/Copy dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [username, setUsername] = useState("")
@@ -82,7 +82,7 @@ const ConfigUsers = () => {
   const [role, setRole] = useState<"user" | "admin" | "lehrkraft">("user")
   const [creating, setCreating] = useState(false)
   const [copySourceId, setCopySourceId] = useState<number | null>(null)
-  
+
   // Other single actions
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [resetPasswordId, setResetPasswordId] = useState<number | null>(null)
@@ -94,14 +94,14 @@ const ConfigUsers = () => {
     role: string
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
-  
+
   // Bulk actions
   const [bulkAction, setBulkAction] = useState<"activate" | "deactivate" | "delete" | null>(null)
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [bulkProcessing, setBulkProcessing] = useState(false)
-  
+
   const selection = useEntitySelection<number>(users.map((u) => u.id))
-  
+
   // Filter users based on search & filters
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -117,16 +117,6 @@ const ConfigUsers = () => {
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [users, searchTerm, roleFilter, statusFilter])
-
-  // Update selection state when filtered users change
-  useEffect(() => {
-    const filteredIds = filteredUsers.map((u) => u.id)
-    selection.selected.forEach((id) => {
-      if (!filteredIds.includes(id)) {
-        selection.selected.delete(id)
-      }
-    })
-  }, [filteredUsers, selection.selected])
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -327,25 +317,46 @@ const ConfigUsers = () => {
       }
 
       const result = (await response.json()) as BulkResponse
-      
-      // Build toast message with precise counts
-      const succeeded = result.succeeded.length
-      const skipped = result.skipped.length
-      const failed = result.failed.length
-      
-      let message = ""
-      if (succeeded > 0) {
-        message += `${succeeded} erfolgreich`
+
+      // Build toast message with localized counts.
+      // Server returns {succeeded, skipped (with reason), failed (with reason)}.
+      // Note: skipped items with reason "self" or "last_admin" are handled server-side;
+      // consider adding client-side warnings for self-protective scenarios in future.
+      const parts: string[] = []
+
+      if (result.succeeded.length > 0) {
+        parts.push(
+          t("manager:bulk.resultSucceeded", {
+            count: result.succeeded.length,
+            defaultValue: "{{count}} erfolgreich",
+          }),
+        )
       }
-      if (skipped > 0) {
-        message += (message ? ", " : "") + `${skipped} übersprungen`
+      if (result.skipped.length > 0) {
+        parts.push(
+          t("manager:bulk.resultSkipped", {
+            count: result.skipped.length,
+            defaultValue: "{{count}} übersprungen",
+          }),
+        )
       }
-      if (failed > 0) {
-        message += (message ? ", " : "") + `${failed} fehlgeschlagen`
+      if (result.failed.length > 0) {
+        parts.push(
+          t("manager:bulk.resultFailed", {
+            count: result.failed.length,
+            defaultValue: "{{count}} fehlgeschlagen",
+          }),
+        )
       }
-      
-      toast.success(message || "Abgeschlossen")
-      
+
+      const message = parts.length > 0
+        ? parts.join(", ")
+        : t("manager:bulk.resultCompleted", {
+            defaultValue: "Abgeschlossen",
+          })
+
+      toast.success(message)
+
       selection.clear()
       setBulkConfirm(false)
       setBulkAction(null)
@@ -395,31 +406,43 @@ const ConfigUsers = () => {
 
   const getBulkConfirmMessage = () => {
     if (!bulkAction) return ""
-    
+
     const selectedNames = filteredUsers
       .filter((u) => selection.isSelected(u.id))
       .slice(0, 5)
       .map((u) => u.username)
-    
-    const extra = selection.selected.size > 5 ? 
-      ` ${t("manager:bulk.andNMore", { count: selection.selected.size - 5, defaultValue: "und {{count}} weitere" })}` : 
+
+    const extra = selection.selected.size > 5 ?
+      ` ${t("manager:bulk.andNMore", { count: selection.selected.size - 5, defaultValue: "und {{count}} weitere" })}` :
       ""
-    
+
     const nameList = selectedNames.join(", ") + extra
-    
+
     let actionDesc = ""
     if (bulkAction === "activate") {
-      actionDesc = "aktivieren"
+      actionDesc = t("manager:users.enable", { defaultValue: "aktivieren" })
     } else if (bulkAction === "deactivate") {
-      actionDesc = "deaktivieren"
+      actionDesc = t("manager:users.disable", { defaultValue: "deaktivieren" })
     } else if (bulkAction === "delete") {
-      actionDesc = "löschen"
+      actionDesc = t("manager:users.delete", { defaultValue: "löschen" })
     }
-    
+
     return `${selection.selected.size} Benutzer ${actionDesc}: ${nameList}`
   }
 
   const openCopyDialog = (sourceUser: ManagedUser) => {
+    // Protect against copying own account (data exposure risk)
+    const isSelf =
+      currentUsername != null && sourceUser.username === currentUsername
+    if (isSelf) {
+      toast.error(
+        t("manager:users.cannot_copy_self", {
+          defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
+        }),
+      )
+      return
+    }
+
     setCopySourceId(sourceUser.id)
     setUsername(`${sourceUser.username}-kopie`)
     setPassword("")
@@ -451,7 +474,7 @@ const ConfigUsers = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
           />
-          
+
           <div className="flex flex-wrap gap-2">
             {/* Role filter pills */}
             {[
@@ -472,7 +495,7 @@ const ConfigUsers = () => {
                 {pill.label}
               </button>
             ))}
-            
+
             {/* Status filter pills */}
             {[
               { value: "all" as const, label: t("manager:users.statusAll", { defaultValue: "Alle Status" }) },
@@ -532,13 +555,13 @@ const ConfigUsers = () => {
                 </span>
               )}
             </div>
-            
+
             {filteredUsers.map((user) => {
               const isSelf =
                 currentUsername != null && user.username === currentUsername
               const busy =
                 pendingId === user.id || resettingPassword || deleting || bulkProcessing
-              
+
               const allActions: ListRowAction[] = [
                 {
                   key: "copy",
@@ -546,10 +569,14 @@ const ConfigUsers = () => {
                   label: t("manager:users.copyUser", {
                     defaultValue: "Benutzer kopieren",
                   }),
-                  disabled: busy,
-                  title: t("manager:users.copyUser", {
-                    defaultValue: "Benutzer kopieren",
-                  }),
+                  disabled: busy || isSelf,
+                  title: isSelf
+                    ? t("manager:users.cannot_copy_self", {
+                        defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
+                      })
+                    : t("manager:users.copyUser", {
+                        defaultValue: "Benutzer kopieren",
+                      }),
                   onClick: () => openCopyDialog(user),
                 },
                 {
