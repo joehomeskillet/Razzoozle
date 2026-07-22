@@ -920,7 +920,9 @@
     "bulkConfirmTitleActivate": "要启用 {{count}} 名学生吗？",
     "bulkConfirmTitleDeactivate": "要停用 {{count}} 名学生吗？",
     "bulkConfirmTitleDelete": "要删除 {{count}} 名学生吗？",
-    "deleteImpactNote": "成绩结果将保留在原有姓名下。"
+    "deleteImpactNote": "成绩结果将保留在原有姓名下。",
+    "assignDialogTitle": "分配班级",
+    "assignOnlyActive": "仅显示启用的班级。"
   },
   "labels": {
     "title": "标签",

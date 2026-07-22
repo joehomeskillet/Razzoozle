@@ -920,7 +920,9 @@
     "bulkConfirmTitleActivate": "{{count}} Schüler aktivieren?",
     "bulkConfirmTitleDeactivate": "{{count}} Schüler deaktivieren?",
     "bulkConfirmTitleDelete": "{{count}} Schüler löschen?",
-    "deleteImpactNote": "Ergebnisse bleiben unter dem bisherigen Namen erhalten."
+    "deleteImpactNote": "Ergebnisse bleiben unter dem bisherigen Namen erhalten.",
+    "assignDialogTitle": "Klasse zuordnen",
+    "assignOnlyActive": "Nur aktive Klassen werden angezeigt."
   },
   "labels": {
     "title": "Fächerverwaltung",

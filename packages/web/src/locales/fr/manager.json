@@ -920,7 +920,9 @@
     "bulkConfirmTitleActivate": "Activer {{count}} élèves ?",
     "bulkConfirmTitleDeactivate": "Désactiver {{count}} élèves ?",
     "bulkConfirmTitleDelete": "Supprimer {{count}} élèves ?",
-    "deleteImpactNote": "Les résultats sont conservés sous le nom précédent."
+    "deleteImpactNote": "Les résultats sont conservés sous le nom précédent.",
+    "assignDialogTitle": "Attribuer une classe",
+    "assignOnlyActive": "Seules les classes actives sont affichées."
   },
   "labels": {
     "title": "Étiquettes",

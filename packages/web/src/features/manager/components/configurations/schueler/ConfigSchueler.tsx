@@ -3,6 +3,7 @@ import Button from "@razzoozle/web/components/Button"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
+import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
@@ -18,6 +19,9 @@ import {
   useSchuelerManager,
   type SchuelerStudent,
 } from "./useSchuelerManager"
+
+/** Per-class membership of the current selection (SDD §9.3). */
+type ClassMembership = "all" | "partial" | "none"
 
 // Compose display name from firstName/lastName with displayName fallback.
 const getComposedName = (student: SchuelerStudent): string => {
@@ -56,6 +60,8 @@ const ConfigSchueler = () => {
     handleSetStudentActive,
     handleBulkSetStudentActive,
     handleBulkDeleteStudents,
+    handleBulkAssignStudents,
+    handleBulkRemoveStudents,
   } = useSchuelerManager({ onBulkSettled: () => bulkSettleRef.current() })
 
   const { t } = useTranslation()
@@ -69,30 +75,90 @@ const ConfigSchueler = () => {
   const selection = useEntitySelection(studentIds)
 
   // Bulk operation state (SDD §3.2 / §9.3).
-  // 'addToClass' | 'removeFromClass' reserved for Round D dialogs (stub buttons only in C1).
   const [pendingBulkAction, setPendingBulkAction] = useState<
-    | "activate"
-    | "deactivate"
-    | "delete"
-    | "addToClass"
-    | "removeFromClass"
-    | null
+    "activate" | "deactivate" | "delete" | null
   >(null)
   // True while a bulk socket op is in flight (set on confirm, cleared on settle).
-  // Class stubs (addToClass/removeFromClass) only park dialog intent for Round D —
-  // they must not lock the toolbar.
   const [bulkOperationLoading, setBulkOperationLoading] = useState(false)
 
-  // Pattern E5: settled bulk op → reset loading, clear selection, close dialog.
+  // WP-F2d: class assignment dialog (active classes only, tri-state membership).
+  const [showAssignDialog, setShowAssignDialog] = useState(false)
+  // User checkbox overrides: true/false after toggle; seeded from membership on open.
+  const [classChecks, setClassChecks] = useState<Record<number, boolean>>({})
+  // Indeterminate only for partial membership until the user toggles that class.
+  const [classIndeterminate, setClassIndeterminate] = useState<
+    Record<number, boolean>
+  >({})
+
+  // Pattern E5: settled bulk op → reset loading, clear selection, close dialogs.
   bulkSettleRef.current = () => {
     setBulkOperationLoading(false)
     selection.clear()
     setPendingBulkAction(null)
+    setShowAssignDialog(false)
   }
 
   const selectedStudents = useMemo(
     () => filteredStudents.filter((s) => selection.selected.has(s.id)),
     [filteredStudents, selection.selected],
+  )
+
+  // SDD §9.3: bulk class dialog shows only active classes.
+  const filteredActiveClasses = useMemo(
+    () => classes.filter((c) => c.active !== false),
+    [classes],
+  )
+
+  // Membership of selected students per active class: all | partial | none.
+  const membershipState = useMemo(() => {
+    const map: Record<number, ClassMembership> = {}
+    const selected = selectedStudents
+    for (const cls of filteredActiveClasses) {
+      if (selected.length === 0) {
+        map[cls.id] = "none"
+        continue
+      }
+      let inCount = 0
+      for (const s of selected) {
+        if (s.classes.some((c) => c.id === cls.id)) {
+          inCount += 1
+        }
+      }
+      if (inCount === 0) {
+        map[cls.id] = "none"
+      } else if (inCount === selected.length) {
+        map[cls.id] = "all"
+      } else {
+        map[cls.id] = "partial"
+      }
+    }
+    return map
+  }, [filteredActiveClasses, selectedStudents])
+
+  const openAssignDialog = () => {
+    const checks: Record<number, boolean> = {}
+    const indet: Record<number, boolean> = {}
+    for (const cls of filteredActiveClasses) {
+      const state = membershipState[cls.id] ?? "none"
+      checks[cls.id] = state !== "none"
+      indet[cls.id] = state === "partial"
+    }
+    setClassChecks(checks)
+    setClassIndeterminate(indet)
+    setShowAssignDialog(true)
+  }
+
+  const toggleClass = (classId: number) => {
+    setClassChecks((prev) => ({ ...prev, [classId]: !prev[classId] }))
+    setClassIndeterminate((prev) => ({ ...prev, [classId]: false }))
+  }
+
+  const targetedClassIds = useMemo(
+    () =>
+      filteredActiveClasses
+        .filter((cls) => classChecks[cls.id])
+        .map((cls) => cls.id),
+    [filteredActiveClasses, classChecks],
   )
 
   const namePreview = useMemo(() => {
@@ -135,6 +201,24 @@ const ConfigSchueler = () => {
     setBulkOperationLoading(true)
     handleBulkDeleteStudents(Array.from(selection.selected))
     setPendingBulkAction(null)
+  }
+
+  const handleBulkAssign = () => {
+    if (targetedClassIds.length === 0 || selection.selected.size === 0) return
+    setBulkOperationLoading(true)
+    handleBulkAssignStudents(
+      Array.from(selection.selected),
+      targetedClassIds,
+    )
+  }
+
+  const handleBulkRemove = () => {
+    if (targetedClassIds.length === 0 || selection.selected.size === 0) return
+    setBulkOperationLoading(true)
+    handleBulkRemoveStudents(
+      Array.from(selection.selected),
+      targetedClassIds,
+    )
   }
 
   return (
@@ -212,6 +296,7 @@ const ConfigSchueler = () => {
               onClear={() => {
                 selection.clear()
                 setPendingBulkAction(null)
+                setShowAssignDialog(false)
               }}
             >
               <Button
@@ -232,22 +317,21 @@ const ConfigSchueler = () => {
               >
                 {t("manager:bulk.deactivate")}
               </Button>
-              {/* Round D: bulk assign-class dialog */}
+              {/* WP-F2d: bulk class assignment dialog (add + remove) */}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setPendingBulkAction("addToClass")}
+                onClick={openAssignDialog}
                 disabled={bulkOperationLoading}
               >
                 {t("manager:schueler.addToClass")}
               </Button>
-              {/* Round D: bulk remove-from-class dialog */}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setPendingBulkAction("removeFromClass")}
+                onClick={openAssignDialog}
                 disabled={bulkOperationLoading}
               >
                 {t("manager:schueler.removeFromClassTitle")}
@@ -388,6 +472,79 @@ const ConfigSchueler = () => {
         confirmDisabled={bulkOperationLoading}
         onConfirm={handleBulkDelete}
       />
+
+      {/* WP-F2d: Class assignment dialog — active classes only, tri-state membership */}
+      <DialogPanel
+        open={showAssignDialog}
+        onOpenChange={(open) => {
+          if (!open) setShowAssignDialog(false)
+        }}
+        titleId="schueler-assign-dialog-title"
+        title={t("manager:schueler.assignDialogTitle")}
+        maxWidth="md"
+      >
+        <p className="mt-2 text-sm text-[var(--ink-subtle)]">
+          {t("manager:schueler.assignOnlyActive")}
+        </p>
+
+        <div className="mt-4 max-h-60 space-y-1 overflow-y-auto rounded-[var(--radius-theme)] border border-[var(--border-hairline)] p-2">
+          {filteredActiveClasses.length === 0 ? (
+            <p className="px-2 py-2 text-sm text-[var(--ink-subtle)]">
+              {t("manager:schueler.noClasses")}
+            </p>
+          ) : (
+            filteredActiveClasses.map((cls) => (
+              <label
+                key={cls.id}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-sm text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
+              >
+                <Checkbox
+                  checked={Boolean(classChecks[cls.id])}
+                  indeterminate={Boolean(classIndeterminate[cls.id])}
+                  onChange={() => toggleClass(cls.id)}
+                  disabled={bulkOperationLoading}
+                />
+                {cls.name}
+              </label>
+            ))
+          )}
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setShowAssignDialog(false)}
+            disabled={bulkOperationLoading}
+          >
+            {t("common:cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleBulkAssign}
+            disabled={
+              bulkOperationLoading ||
+              targetedClassIds.length === 0 ||
+              selection.selected.size === 0
+            }
+          >
+            {t("common:add")}
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleBulkRemove}
+            disabled={
+              bulkOperationLoading ||
+              targetedClassIds.length === 0 ||
+              selection.selected.size === 0
+            }
+          >
+            {t("manager:schueler.removeFromClassTitle")}
+          </Button>
+        </div>
+      </DialogPanel>
     </div>
 
     <ActionFooter>

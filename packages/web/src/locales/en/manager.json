@@ -920,7 +920,9 @@
     "bulkConfirmTitleActivate": "Activate {{count}} students?",
     "bulkConfirmTitleDeactivate": "Deactivate {{count}} students?",
     "bulkConfirmTitleDelete": "Delete {{count}} students?",
-    "deleteImpactNote": "Results are kept under the previous name."
+    "deleteImpactNote": "Results are kept under the previous name.",
+    "assignDialogTitle": "Assign class",
+    "assignOnlyActive": "Only active classes are shown."
   },
   "labels": {
     "title": "Labels",
