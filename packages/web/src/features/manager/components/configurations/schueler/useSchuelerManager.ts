@@ -10,6 +10,9 @@ import { useTranslation } from "react-i18next"
 export interface StudentClassRef {
   id: number
   name: string
+  // Present on the wire since WP-E1 (class:list carries `active`); optional
+  // because older payloads may omit it. `active !== false` counts as active.
+  active?: boolean
 }
 
 export interface SchuelerStudent {
@@ -23,7 +26,36 @@ export interface SchuelerStudent {
   // compiles cleanly against today's contract and picks the value up for
   // free the moment the server starts sending it.
   birthdate?: string | null
+  // ADDENDUM (active): student active/inactive status (WP-F1, migration
+  // 022). Optional exactly like `birthdate` — the field lands on the wire
+  // with the parallel backend WP; `active !== false` counts as active.
+  active?: boolean
 }
+
+// ADDENDUM (WP-F2 contract freeze): student status/bulk socket events.
+// The backend handlers land in the parallel WP-F1 follow-up; per the
+// implementation matrix the event names are frozen client-side first so this
+// view stays scoped to the schueler folder (packages/common constants are out
+// of scope). Naming follows the existing `class:*` student convention
+// (class:createStudent/class:removeStudent) and the WP-E bulk ack schema
+// `{ succeeded: number[], failed: [{ id, reason }] }`.
+export const SCHUELER_STUDENT_EVENTS = {
+  /** req `{ studentId, active }` → ack `class:studentActiveSet` `{ studentId, active }` */
+  SET_ACTIVE: "class:setStudentActive",
+  ACTIVE_SET: "class:studentActiveSet",
+  /** req `{ ids: number[], active }` → ack `{ succeeded, failed }` */
+  BULK_SET_ACTIVE: "class:bulkSetStudentActive",
+  BULK_ACTIVE_SET: "class:bulkStudentActiveSet",
+  /** req `{ ids: number[] }` → ack `{ succeeded, failed }` */
+  BULK_DELETE: "class:bulkDeleteStudents",
+  BULK_DELETED: "class:bulkStudentsDeleted",
+  /** req `{ ids: number[], classId }` → ack `{ succeeded, failed, classId }` (dedupes memberships) */
+  BULK_ASSIGN_CLASS: "class:bulkAssignClass",
+  BULK_CLASS_ASSIGNED: "class:bulkClassAssigned",
+  /** req `{ ids: number[], classId }` → ack `{ succeeded, failed, classId }` */
+  BULK_REMOVE_CLASS: "class:bulkRemoveClass",
+  BULK_CLASS_REMOVED: "class:bulkClassRemoved",
+} as const
 
 export interface PinView {
   studentId: number
@@ -107,8 +139,8 @@ export const useSchuelerManager = () => {
 
   useEvent(
     EVENTS.CLASS.DATA,
-    (data: Array<{ id: number; name: string }>) => {
-      setClasses(data.map((c) => ({ id: c.id, name: c.name })))
+    (data: Array<{ id: number; name: string; active?: boolean }>) => {
+      setClasses(data.map((c) => ({ id: c.id, name: c.name, active: c.active })))
     },
   )
 
@@ -124,6 +156,7 @@ export const useSchuelerManager = () => {
       classes: StudentClassRef[]
       birthdate?: string | null
       symbols?: string[]
+      active?: boolean
     }) => {
       setStudents((prev) => [
         {
@@ -133,6 +166,7 @@ export const useSchuelerManager = () => {
           lastName: data.lastName,
           classes: data.classes,
           birthdate: data.birthdate,
+          active: data.active,
         },
         ...prev,
       ])
@@ -151,6 +185,19 @@ export const useSchuelerManager = () => {
     setPendingDeleteStudent(null)
     toast.success(t("manager:schueler.deleted"))
   })
+
+  // Single active-toggle ack (WP-F2). Confirmed state, applied locally so the
+  // badge/toggle flips immediately; the server re-list keeps it consistent.
+  useEvent(
+    SCHUELER_STUDENT_EVENTS.ACTIVE_SET,
+    (data: { studentId: number; active: boolean }) => {
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === data.studentId ? { ...s, active: data.active } : s,
+        ),
+      )
+    },
+  )
 
   useEvent(
     EVENTS.CLASS.STUDENT_MOVED,
@@ -298,6 +345,13 @@ export const useSchuelerManager = () => {
     [socket],
   )
 
+  const handleSetStudentActive = useCallback(
+    (studentId: number, active: boolean): void => {
+      socket.emit(SCHUELER_STUDENT_EVENTS.SET_ACTIVE, { studentId, active })
+    },
+    [socket],
+  )
+
   const clearPinView = useCallback(() => {
     setPinView(null)
   }, [])
@@ -322,5 +376,6 @@ export const useSchuelerManager = () => {
     handleDeleteStudent,
     handleRemoveFromClass,
     handleAddToClass,
+    handleSetStudentActive,
   }
 }

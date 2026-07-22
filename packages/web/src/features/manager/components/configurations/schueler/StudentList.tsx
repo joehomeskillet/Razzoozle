@@ -1,6 +1,7 @@
 import * as Select from "@radix-ui/react-select"
 import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -8,7 +9,7 @@ import {
 import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import type { ListRowAction } from "@razzoozle/web/features/manager/components/console/ListRow"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
-import { KeyRound, Plus, Trash2, Users, X } from "lucide-react"
+import { KeyRound, Plus, Power, Trash2, Users, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { SchuelerStudent, StudentClassRef } from "./useSchuelerManager"
@@ -16,6 +17,9 @@ import type { SchuelerStudent, StudentClassRef } from "./useSchuelerManager"
 interface StudentListProps {
   students: SchuelerStudent[]
   classes: StudentClassRef[]
+  selectedIds?: Set<number>
+  onToggleSelect?: (id: number) => void
+  onToggleActive: (studentId: number, active: boolean) => void
   onShowPin: (studentId: number) => void
   onDelete: (student: { id: number; displayName: string }) => void
   onRemoveFromClass: (data: {
@@ -55,6 +59,9 @@ const getComposedName = (student: SchuelerStudent): string => {
 const StudentList = ({
   students,
   classes,
+  selectedIds,
+  onToggleSelect,
+  onToggleActive,
   onShowPin,
   onDelete,
   onRemoveFromClass,
@@ -87,6 +94,15 @@ const StudentList = ({
 
         const actions: ListRowAction[] = [
           {
+            key: "toggle-active",
+            icon: Power,
+            label:
+              student.active !== false
+                ? t("manager:bulk.deactivate")
+                : t("manager:bulk.activate"),
+            onClick: () => onToggleActive(student.id, student.active === false),
+          },
+          {
             key: "show-pin",
             icon: KeyRound,
             label: t("manager:schueler.showPin"),
@@ -104,9 +120,19 @@ const StudentList = ({
 
         const title = composedName
 
-        const meta = student.birthdate && (
-          <span>{formatBirthdate(student.birthdate)}</span>
-        )
+        const meta =
+          student.birthdate || student.active === false ? (
+            <div className="flex items-center gap-2">
+              {student.birthdate && (
+                <span>{formatBirthdate(student.birthdate)}</span>
+              )}
+              {student.active === false && (
+                <Badge tone="warning">
+                  {t("manager:schueler.statusInactive")}
+                </Badge>
+              )}
+            </div>
+          ) : undefined
 
         const footer = (student.classes.length > 0 || availableClasses.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5">
@@ -181,14 +207,29 @@ const StudentList = ({
         )
 
         return (
-          <ListRow
-            key={student.id}
-            leading={<Users className="size-5 shrink-0 text-[var(--ink-muted)]" />}
-            title={title}
-            meta={meta}
-            footer={footer}
-            actions={actions}
-          />
+          <div key={student.id} className="flex items-start gap-2">
+            {onToggleSelect && (
+              <div className="mt-3 flex-shrink-0">
+                <Checkbox
+                  checked={selectedIds?.has(student.id) ?? false}
+                  onChange={() => {
+                    onToggleSelect(student.id)
+                  }}
+                  aria-label={`Schüler auswählen: ${composedName}`}
+                  data-testid={`student-select-${student.id}`}
+                />
+              </div>
+            )}
+            <ListRow
+              leading={
+                <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
+              }
+              title={title}
+              meta={meta}
+              footer={footer}
+              actions={actions}
+            />
+          </div>
         )
       })}
     </div>
