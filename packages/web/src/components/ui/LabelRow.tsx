@@ -80,7 +80,7 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
             {...(htmlFor ? { htmlFor } : {})}
             id={titleId}
             className={clsx(
-              "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-40 sm:py-2.5",
+              "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:max-w-60 sm:py-2.5",
               "flex flex-wrap items-start gap-2",
               htmlFor && "cursor-pointer",
               disabled && "opacity-50"
