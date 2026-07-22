@@ -80,6 +80,22 @@ const ConfigSelectQuizz = () => {
     }
   }, [klassenMode])
 
+  // Reset classId if it points to an inactive class (WP-E4). The `active`
+  // field only lands on the wire with WP-E1; `!== false` treats undefined as
+  // active so every class stays selectable pre-merge.
+  useEffect(() => {
+    if (
+      classId &&
+      !classes.some(
+        (cls) =>
+          String(cls.id) === classId &&
+          (cls as { active?: boolean }).active !== false,
+      )
+    ) {
+      setClassId("")
+    }
+  }, [classes, classId])
+
   const handleSelect = (id: string) => () =>
     setSelected((current) => (current === id ? null : id))
 
@@ -295,11 +311,16 @@ const ConfigSelectQuizz = () => {
                       <option value="">
                         {t("manager:selectQuizz.chooseClass")}
                       </option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={String(cls.id)}>
-                          {cls.name}
-                        </option>
-                      ))}
+                      {classes
+                        .filter(
+                          (cls) =>
+                            (cls as { active?: boolean }).active !== false,
+                        )
+                        .map((cls) => (
+                          <option key={cls.id} value={String(cls.id)}>
+                            {cls.name}
+                          </option>
+                        ))}
                     </Select>
                   </LabelRow>
                 )}
