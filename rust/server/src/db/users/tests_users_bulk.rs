@@ -6,6 +6,18 @@
 mod tests {
     use super::super::*;
     use sqlx::postgres::PgPoolOptions;
+    use std::sync::{Mutex, MutexGuard};
+
+    /// Serializes tests that mutate the global active-admin set (suspend/restore).
+    /// cargo test runs cases on multiple threads; without this, remaining_admins
+    /// assertions race with sibling bulk tests.
+    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::new(());
+
+    fn lock_db_isolation() -> MutexGuard<'static, ()> {
+        DB_ISOLATION_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
 
     /// Helper to get a database pool from the DATABASE_URL env var.
     /// Returns None if DATABASE_URL is not set or connection fails.
@@ -1185,6 +1197,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_bulk_delete_skips_self_and_last_admin() {
+        let _isolation = lock_db_isolation();
         let pool = match get_test_pool().await {
             Some(p) => p,
             None => {
@@ -1271,6 +1284,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_bulk_delete_deletes_when_multiple_admins_remain() {
+        let _isolation = lock_db_isolation();
         let pool = match get_test_pool().await {
             Some(p) => p,
             None => {
@@ -1362,6 +1376,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_bulk_delete_cascades_sessions_and_nullifies_quiz_owner() {
+        let _isolation = lock_db_isolation();
         let pool = match get_test_pool().await {
             Some(p) => p,
             None => {
@@ -1379,30 +1394,34 @@ mod tests {
             .await
             .expect("Failed to create regular user to delete");
 
-        // Quiz owned by id2 (same insert shape as bulk_delete_sets_owner_id_null_on_quiz).
-        let quiz_id = sqlx::query_as::<_, (i64,)>(
-            "INSERT INTO quizzes (owner_id, name, design) VALUES ($1, 'test_quiz_g3', '{}') RETURNING id"
-        )
-        .bind(id2)
-        .fetch_one(&pool)
-        .await
-        .expect("Failed to insert test quiz")
-        .0;
-
-        // Two sessions for id2 (same column set as bulk_delete_cascades_sessions).
+        // Live schema: quizzes.id is safe_id (text); no name/design columns.
+        let quiz_id = "test_bulk_delete_g3_casc_quiz";
         sqlx::query(
-            "INSERT INTO sessions (user_id, token_hash, player_token, created_at) \
-             VALUES ($1, 'test_bulk_delete_g3_hash1', 'token1', now())"
+            "INSERT INTO quizzes (id, subject, questions, archived, owner_id) \
+             VALUES ($1, 'test_quiz_g3', '[]'::jsonb, false, $2)"
         )
+        .bind(quiz_id)
+        .bind(id2)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert test quiz");
+
+        // Live schema: token_hash + expires_at required; no player_token column.
+        sqlx::query(
+            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
+             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
+        )
+        .bind("test_bulk_delete_g3_hash1")
         .bind(id2)
         .execute(&pool)
         .await
         .expect("Failed to insert session 1");
 
         sqlx::query(
-            "INSERT INTO sessions (user_id, token_hash, player_token, created_at) \
-             VALUES ($1, 'test_bulk_delete_g3_hash2', 'token2', now())"
+            "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
+             VALUES ($1, $2, now(), now(), now() + interval '7 days')"
         )
+        .bind("test_bulk_delete_g3_hash2")
         .bind(id2)
         .execute(&pool)
         .await
