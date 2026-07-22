@@ -7,12 +7,14 @@ import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useState } from "react"
 import { EVENTS } from "@razzoozle/common/constants"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
+import toast from "react-hot-toast"
 
 import ClassList from "./ClassList"
 import StudentPicker from "./StudentPicker"
@@ -60,6 +62,10 @@ const ConfigKlassen = () => {
   // Selection state
   const classIds = useMemo(() => filteredByStatus.map(c => c.id), [filteredByStatus])
   const selection = useEntitySelection(classIds)
+
+  // Bulk operation state
+  const [pendingBulkAction, setPendingBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null)
+  const [bulkOperationLoading, setBulkOperationLoading] = useState(false)
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -126,6 +132,52 @@ const ConfigKlassen = () => {
     setIsEditStudentDialogOpen(true)
   }
 
+  const handleBulkActivate = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_SET_ACTIVE, {
+      ids: Array.from(selection.selected),
+      active: true,
+    })
+    setPendingBulkAction(null)
+  }
+
+  const handleBulkDeactivate = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_SET_ACTIVE, {
+      ids: Array.from(selection.selected),
+      active: false,
+    })
+    setPendingBulkAction(null)
+  }
+
+  const handleBulkDelete = () => {
+    setBulkOperationLoading(true)
+    socket.emit(EVENTS.CLASS.BULK_DELETE, {
+      ids: Array.from(selection.selected),
+    })
+    setPendingBulkAction(null)
+  }
+
+  // Delete dialog content for bulk delete
+  const selectedClassesForDelete = useMemo(() => {
+    return filteredByStatus.filter(c => selection.selected.has(c.id))
+  }, [filteredByStatus, selection.selected])
+
+  const totalStudents = selectedClassesForDelete.reduce((sum, c) => sum + (c.studentCount ?? 0), 0)
+  const totalLabels = selectedClassesForDelete.reduce((sum, c) => sum + (c.labelIds?.length ?? 0), 0)
+
+  const deleteBulkDescription = (
+    <div className="space-y-2 text-sm">
+      <p>
+        {selectedClassesForDelete.slice(0, 5).map(c => c.name).join(", ")}
+        {selectedClassesForDelete.length > 5 && ` ${t("manager:bulk.andNMore", { count: selectedClassesForDelete.length - 5 })}`}
+      </p>
+      <p>{t("manager:classes.deleteImpactStudents", { count: totalStudents })}</p>
+      <p>{t("manager:classes.deleteImpactLabels", { count: totalLabels })}</p>
+      <p className="text-xs text-[var(--ink-subtle)]">{t("manager:classes.deleteKeepNote")}</p>
+    </div>
+  )
+
   return (
     <>
     {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
@@ -159,21 +211,21 @@ const ConfigKlassen = () => {
             onClick={() => setStatusFilter('all')}
             data-testid="classes-status-filter-all"
           >
-            {t("manager:classes.filterAll", { defaultValue: "Alle" })}
+            {t("manager:classes.filterAll")}
           </FilterPill>
           <FilterPill
             active={statusFilter === 'active'}
             onClick={() => setStatusFilter('active')}
             data-testid="classes-status-filter-active"
           >
-            {t("manager:classes.filterActive", { defaultValue: "Aktiv" })}
+            {t("manager:classes.filterActive")}
           </FilterPill>
           <FilterPill
             active={statusFilter === 'inactive'}
             onClick={() => setStatusFilter('inactive')}
             data-testid="classes-status-filter-inactive"
           >
-            {t("manager:classes.filterInactive", { defaultValue: "Deaktiviert" })}
+            {t("manager:classes.filterInactive")}
           </FilterPill>
         </div>
       )}
@@ -187,10 +239,47 @@ const ConfigKlassen = () => {
               indeterminate={selection.someSelected}
               onChange={() => selection.toggleAll()}
               data-testid="classes-select-all"
-              aria-label={selection.someSelected ? t("manager:classes.selectFiltered", { defaultValue: "Alle gefilterten Klassen auswählen" }) : t("manager:classes.selectAll", { defaultValue: "Alle auswählen" })}
+              aria-label={selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
             />
-            {selection.someSelected ? t("manager:classes.selectFiltered", { defaultValue: "Alle gefilterten Klassen auswählen" }) : t("manager:classes.selectAll", { defaultValue: "Alle auswählen" })}
+            {selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
           </label>
+        </div>
+      )}
+
+      {selection.selectionActive && (
+        <div className="mb-4 flex shrink-0">
+          <BulkActionToolbar
+            count={selection.selected.size}
+            label={t("manager:bulk.selected", { count: selection.selected.size })}
+            onClear={selection.clear}
+            data-testid="classes-bulk-toolbar"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingBulkAction('activate')}
+            >
+              {t("manager:bulk.activate")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingBulkAction('deactivate')}
+            >
+              {t("manager:bulk.deactivate")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              destructive
+              onClick={() => setPendingBulkAction('delete')}
+            >
+              {t("manager:bulk.deleteSelected")}
+            </Button>
+          </BulkActionToolbar>
         </div>
       )}
 
@@ -301,6 +390,43 @@ const ConfigKlassen = () => {
         })}
         confirmLabel={t("common:delete")}
         onConfirm={handleDeleteClass}
+      />
+
+      {/* Bulk Activate Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'activate'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleActivate", { count: selection.selected.size })}
+        confirmLabel={t("manager:bulk.activate")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkActivate}
+      />
+
+      {/* Bulk Deactivate Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'deactivate'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleDeactivate", { count: selection.selected.size })}
+        confirmLabel={t("manager:bulk.deactivate")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkDeactivate}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog
+        open={pendingBulkAction === 'delete'}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkAction(null)
+        }}
+        title={t("manager:classes.bulkConfirmTitleDelete", { count: selection.selected.size })}
+        description={deleteBulkDescription}
+        confirmLabel={t("common:delete")}
+        confirmDisabled={bulkOperationLoading}
+        onConfirm={handleBulkDelete}
       />
 
       {/* Add Student Picker */}

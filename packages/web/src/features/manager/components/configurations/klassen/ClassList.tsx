@@ -251,7 +251,7 @@ const ClassList = ({
                 <div className="flex items-center gap-2">
                   <span>{`${studentCount} ${t("manager:classes.studentCount")}`}</span>
                   {classObj.active === false && (
-                    <Badge tone="warning">{t("manager:classes.statusInactive", { defaultValue: "Inaktiv" })}</Badge>
+                    <Badge tone="warning">{t("manager:classes.statusInactive")}</Badge>
                   )}
                 </div>
               }
