@@ -795,7 +795,7 @@
     "usernameLabel": "Nom d'utilisateur",
     "passwordLabel": "Mot de passe",
     "roleLabel": "Rôle",
-    "emptyHeadline": "Aucun enseignant pour l'instant",
+    "emptyHeadline": "Aucun utilisateur pour l'instant",
     "empty": "Créez le premier compte ci-dessus.",
     "active": "Actif",
     "disabledStatus": "Désactivé",
@@ -826,7 +826,12 @@
     "cannot_delete_self": "Ton compte ne peut pas être supprimé",
     "cannot_deactivate_self": "Ton compte ne peut pas être désactivé",
     "copyUser": "Copier l'utilisateur",
-    "copyDialogTitle": "Copier l'utilisateur"
+    "copyDialogTitle": "Copier l'utilisateur",
+    "bulkConfirmTitleActivate": "Activer {{count}} utilisateurs ?",
+    "bulkConfirmTitleDeactivate": "Désactiver {{count}} utilisateurs ?",
+    "bulkConfirmTitleDelete": "Supprimer {{count}} utilisateurs ?",
+    "noMatchesHeadline": "Aucun résultat",
+    "noMatches": "Ajuste ta recherche ou tes filtres."
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",
