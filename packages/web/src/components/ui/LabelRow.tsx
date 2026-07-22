@@ -13,6 +13,8 @@ export interface LabelRowProps {
   children: ReactNode
   /** Optional badge signal that the setting requires restart. */
   restartBadge?: boolean
+  /** Label text for restart badge. Must be i18n-ized by the caller. */
+  restartBadgeLabel?: string
   /** Optional status message (validation error, success, pending save). */
   statusMessage?: {
     text: string
@@ -46,6 +48,7 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
       description,
       children,
       restartBadge,
+      restartBadgeLabel,
       statusMessage,
       disabledReason,
       id,
@@ -79,9 +82,9 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
             )}
           >
             {label}
-            {restartBadge && (
+            {restartBadge && restartBadgeLabel && (
               <Badge className="shrink-0 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
-                Neustart erforderlich
+                {restartBadgeLabel}
               </Badge>
             )}
           </LabelTag>
