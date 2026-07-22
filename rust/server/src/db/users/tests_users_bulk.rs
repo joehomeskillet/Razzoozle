@@ -829,4 +829,310 @@ mod tests {
 
         cleanup_test_users(&pool).await;
     }
+
+    // ── Group 2: bulk_deactivate ──────────────────────────────────────────
+
+    /// Skips the requester (self) and deactivates other targets.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_deactivate_skips_self_target() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_deactivate_g2_self_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(&pool, "test_bulk_deactivate_g2_self_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+
+        let result = bulk_deactivate(&pool, id1, vec![id1, id2])
+            .await
+            .expect("bulk_deactivate failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id2],
+            "expected only peer admin in succeeded, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.skipped.len(),
+            1,
+            "expected one self skip, got {:?}",
+            result.skipped
+        );
+        assert_eq!(result.skipped[0].id, id1, "skipped id should be requester");
+        assert_eq!(
+            result.skipped[0].reason, "self",
+            "skip reason should be self, got {}",
+            result.skipped[0].reason
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let (_, active1) = fetch_id_active(&pool, id1).await;
+        let (_, active2) = fetch_id_active(&pool, id2).await;
+        assert!(
+            active1,
+            "requester id1 must remain active after self skip"
+        );
+        assert!(!active2, "id2 should be inactive after bulk deactivate");
+
+        cleanup_test_users(&pool).await;
+    }
+
+    /// Skips the last remaining active admin target so bulk cannot zero out admins.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_deactivate_blocks_last_active_admin() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+        let suspended = suspend_non_test_active_admins(&pool).await;
+
+        // Exactly three active admins in the system (after suspend). Requester is a
+        // non-admin so self-skip does not apply and remaining_admins starts at 3.
+        let id1 = create_user(&pool, "test_bulk_deactivate_g2_last_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1");
+        let id2 = create_user(&pool, "test_bulk_deactivate_g2_last_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+        let id3 = create_user(&pool, "test_bulk_deactivate_g2_last_a3", "pass123", "admin")
+            .await
+            .expect("Failed to create admin3");
+        let id4 = create_user(&pool, "test_bulk_deactivate_g2_last_req", "pass123", "user")
+            .await
+            .expect("Failed to create requester (regular user)");
+
+        let result = bulk_deactivate(&pool, id4, vec![id1, id2, id3])
+            .await
+            .expect("bulk_deactivate failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id1, id2],
+            "expected first two admins deactivated, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.skipped.len(),
+            1,
+            "expected one last_admin skip, got {:?}",
+            result.skipped
+        );
+        assert_eq!(result.skipped[0].id, id3, "last admin id3 should be skipped");
+        assert_eq!(
+            result.skipped[0].reason, "last_admin",
+            "skip reason should be last_admin, got {}",
+            result.skipped[0].reason
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        let (_, a3) = fetch_id_active(&pool, id3).await;
+        let (_, a4) = fetch_id_active(&pool, id4).await;
+        assert!(!a1, "id1 should be inactive");
+        assert!(!a2, "id2 should be inactive");
+        assert!(a3, "id3 (last admin) must remain active");
+        assert!(a4, "requester id4 must remain active");
+
+        cleanup_test_users(&pool).await;
+        restore_active_admins(&pool, &suspended).await;
+    }
+
+    /// Mixed outcomes: self skip, peer deactivate, idempotent inactive, not_found.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_deactivate_multiple_ids_mixed_outcomes() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_deactivate_g2_mix_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(&pool, "test_bulk_deactivate_g2_mix_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+        let id3 = create_user(&pool, "test_bulk_deactivate_g2_mix_u3", "pass123", "user")
+            .await
+            .expect("Failed to create regular user");
+        let id4 = create_user(&pool, "test_bulk_deactivate_g2_mix_u4", "pass123", "user")
+            .await
+            .expect("Failed to create inactive user");
+        set_user_active(&pool, id4, false)
+            .await
+            .expect("Failed to pre-deactivate id4");
+
+        let result = bulk_deactivate(&pool, id1, vec![id1, id2, id3, id4, 999999])
+            .await
+            .expect("bulk_deactivate failed");
+
+        // Self is filtered first; work order preserves request order: id2, id3, id4 succeed;
+        // missing id fails. Requester id1 remains active admin so id2 is not last_admin.
+        assert_eq!(
+            result.succeeded,
+            vec![id2, id3, id4],
+            "expected peer admin + regular + already-inactive in succeeded, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.skipped.len(),
+            1,
+            "expected one self skip, got {:?}",
+            result.skipped
+        );
+        assert_eq!(result.skipped[0].id, id1);
+        assert_eq!(result.skipped[0].reason, "self");
+        assert_eq!(
+            result.failed.len(),
+            1,
+            "expected one not_found, got {:?}",
+            result.failed
+        );
+        assert_eq!(result.failed[0].id, 999999);
+        assert_eq!(result.failed[0].reason, "not_found");
+
+        let (_, a1) = fetch_id_active(&pool, id1).await;
+        let (_, a2) = fetch_id_active(&pool, id2).await;
+        let (_, a3) = fetch_id_active(&pool, id3).await;
+        let (_, a4) = fetch_id_active(&pool, id4).await;
+        assert!(a1, "requester id1 should still be active");
+        assert!(!a2, "id2 should be inactive after deactivate");
+        assert!(!a3, "id3 should be inactive after deactivate");
+        assert!(!a4, "id4 should remain inactive (idempotent)");
+
+        cleanup_test_users(&pool).await;
+    }
+
+    /// Duplicate IDs are normalized to a single succeeded entry.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_deactivate_deduplicates_ids() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_deactivate_g2_dedup_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(&pool, "test_bulk_deactivate_g2_dedup_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+
+        let result = bulk_deactivate(&pool, id1, vec![id2, id2, id2])
+            .await
+            .expect("bulk_deactivate failed");
+
+        assert_eq!(
+            result.succeeded,
+            vec![id2],
+            "expected id2 once after dedup, got {:?}",
+            result.succeeded
+        );
+        assert_eq!(
+            result.succeeded.len(),
+            1,
+            "id2 must appear in succeeded only once"
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skips, got {:?}",
+            result.skipped
+        );
+        assert!(
+            result.failed.is_empty(),
+            "expected no failures, got {:?}",
+            result.failed
+        );
+
+        let (_, active2) = fetch_id_active(&pool, id2).await;
+        assert!(!active2, "id2 should be inactive after deduped deactivate");
+
+        cleanup_test_users(&pool).await;
+    }
+
+    /// All missing IDs land in failed with not_found; no succeeded/skipped.
+    #[tokio::test]
+    #[ignore]
+    async fn test_bulk_deactivate_all_not_found() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        let id1 = create_user(&pool, "test_bulk_deactivate_g2_nf_admin", "pass123", "admin")
+            .await
+            .expect("Failed to create admin (requester)");
+
+        let result = bulk_deactivate(&pool, id1, vec![888888, 999999])
+            .await
+            .expect("bulk_deactivate failed");
+
+        assert!(
+            result.succeeded.is_empty(),
+            "expected no succeeded, got {:?}",
+            result.succeeded
+        );
+        assert!(
+            result.skipped.is_empty(),
+            "expected no skipped, got {:?}",
+            result.skipped
+        );
+        assert_eq!(
+            result.failed.len(),
+            2,
+            "expected two not_found entries, got {:?}",
+            result.failed
+        );
+        assert_eq!(result.failed[0].id, 888888);
+        assert_eq!(result.failed[0].reason, "not_found");
+        assert_eq!(result.failed[1].id, 999999);
+        assert_eq!(result.failed[1].reason, "not_found");
+
+        let (_, active1) = fetch_id_active(&pool, id1).await;
+        assert!(active1, "requester should remain active");
+
+        cleanup_test_users(&pool).await;
+    }
 }
