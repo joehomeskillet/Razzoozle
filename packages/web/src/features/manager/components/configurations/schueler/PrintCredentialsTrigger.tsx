@@ -25,7 +25,7 @@ const PrintCredentialsTrigger = () => {
         data-testid="print-credentials-button"
       >
         <Printer className="size-5" aria-hidden strokeWidth={2.5} />
-        <span>{t("common:print")}</span>
+        <span>{t("manager:schueler.printCredentials")}</span>
       </Button>
 
       <PrintCredentialsDialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen} />

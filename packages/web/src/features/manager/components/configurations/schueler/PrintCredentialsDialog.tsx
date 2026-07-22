@@ -119,13 +119,13 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
         open={open && !isPrinting}
         onOpenChange={onOpenChange}
         titleId="print-credentials-dialog-title"
-        title={t("manager:students.printDialogTitle")}
+        title={t("manager:schueler.printDialogTitle")}
       >
         <div className="space-y-4">
           {/* Class Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              {t("manager:classes.selectAll")}
+              {t("manager:selectQuizz.selectClass")}
             </label>
             <Select.Root value={selectedClassId} onValueChange={setSelectedClassId}>
               <Select.Trigger
@@ -159,7 +159,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
 
           {/* Scope */}
           <fieldset>
-            <legend className="block text-sm font-medium mb-2">{t("manager:students.printScope")}</legend>
+            <legend className="block text-sm font-medium mb-2">{t("manager:schueler.printScope")}</legend>
             <div className="space-y-2">
               <Radio
                 name="scope"
@@ -167,7 +167,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={scope === "active"}
                 onChange={(e) => setScope(e.target.value as "active")}
                 data-testid="print-scope-active"
-                label={t("manager:students.printScopeActiveOnly")}
+                label={t("manager:schueler.printScopeActiveOnly")}
               />
               <Radio
                 name="scope"
@@ -175,7 +175,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={scope === "all"}
                 onChange={(e) => setScope(e.target.value as "all")}
                 data-testid="print-scope-all"
-                label={t("manager:students.printScopeAll")}
+                label={t("manager:schueler.printScopeAll")}
               />
               <Radio
                 name="scope"
@@ -184,14 +184,14 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 onChange={(e) => setScope(e.target.value as "selected")}
                 data-testid="print-scope-selected"
                 disabled
-                label={`${t("manager:students.printScopeSelected")} (0)`}
+                label={`${t("manager:schueler.printScopeSelected")} (0)`}
               />
             </div>
           </fieldset>
 
           {/* Format */}
           <fieldset>
-            <legend className="block text-sm font-medium mb-2">{t("manager:students.printFormat")}</legend>
+            <legend className="block text-sm font-medium mb-2">{t("manager:schueler.printFormat")}</legend>
             <div className="space-y-2">
               <Radio
                 name="format"
@@ -199,7 +199,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={format === "sheets"}
                 onChange={(e) => setFormat(e.target.value as "sheets")}
                 data-testid="print-format-sheets"
-                label={t("manager:students.printFormatSheets")}
+                label={t("manager:schueler.printFormatSheets")}
               />
               <Radio
                 name="format"
@@ -207,7 +207,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
                 checked={format === "summary"}
                 onChange={(e) => setFormat(e.target.value as "summary")}
                 data-testid="print-format-summary"
-                label={t("manager:students.printFormatSummary")}
+                label={t("manager:schueler.printFormatSummary")}
               />
             </div>
           </fieldset>
@@ -225,9 +225,9 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
             variant="primary"
             onClick={handlePrint}
             disabled={!selectedClass || isPrinting || isLoadingPins}
-            aria-label={selectedClass ? t("manager:students.printCredentials") : ""}
+            aria-label={selectedClass ? t("manager:schueler.printCredentials") : ""}
           >
-            {t("common:print")}
+            {t("manager:schueler.printCredentials")}
           </Button>
         </div>
       </DialogPanel>
