@@ -9,7 +9,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
 
   if (status === "approved") {
     return (
-      <Badge className="gap-1.5 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
+      <Badge tone="success" className="gap-1.5">
         <CheckCircle2 className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.approved", {
           defaultValue: "Angenommen",
@@ -20,7 +20,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
 
   if (status === "rejected") {
     return (
-      <Badge className="gap-1.5 bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]">
+      <Badge tone="danger" className="gap-1.5">
         <XCircle className="size-3.5" aria-hidden />
         {t("manager:submissions.statusFilter.rejected", {
           defaultValue: "Abgelehnt",
@@ -30,7 +30,7 @@ export const StatusBadge = ({ status }: { status: SubmissionStatus }) => {
   }
 
   return (
-    <Badge className="gap-1.5 bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
+    <Badge tone="warning" className="gap-1.5">
       <Inbox className="size-3.5" aria-hidden />
       {t("manager:submissions.statusFilter.pending", {
         defaultValue: "Offen",
