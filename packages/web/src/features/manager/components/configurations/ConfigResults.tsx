@@ -1,9 +1,12 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import type { GameResult } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
+import Button from "@razzoozle/web/components/Button"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import DateInput from "@razzoozle/web/components/DateInput"
 import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import {
   useEvent,
   useSocket,
@@ -18,6 +21,7 @@ import {
 } from "@razzoozle/web/features/manager/components/console/listMotion"
 import ResultModal from "@razzoozle/web/features/manager/components/ResultModal"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useMemo, useState } from "react"
@@ -37,9 +41,6 @@ const formatDate = (iso: string) => {
   })}`
 }
 
-// Local YYYY-MM-DD for an ISO timestamp, so a date-picker value (which is local
-// and timezone-naive) compares against the same calendar day the user sees in
-// the list — not the UTC day.
 const localDateKey = (iso: string) => {
   const d = new Date(iso)
   const month = String(d.getMonth() + 1).padStart(2, "0")
@@ -54,11 +55,13 @@ const ConfigResults = () => {
   const [selectedResult, setSelectedResult] = useState<GameResult | null>(null)
   const [search, setSearch] = useState("")
   const [dateFilter, setDateFilter] = useState("")
-  // The result pending a delete confirmation; drives the AlertDialog.
   const [pendingDelete, setPendingDelete] = useState<{
     id: string
     subject: string
   } | null>(null)
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [bulkProcessing, setBulkProcessing] = useState(false)
+  const [typeConfirmValue, setTypeConfirmValue] = useState("")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
 
@@ -77,9 +80,38 @@ const ConfigResults = () => {
     })
   }, [results, search, dateFilter])
 
+  const selection = useEntitySelection<string>(filteredResults.map((r) => r.id))
+
   useEvent(
     EVENTS.RESULTS.DATA,
     useCallback((data) => setSelectedResult(data), []),
+  )
+
+  // Socket listener for bulk delete completion. Decoupled from selection via
+  // useCallback (only t in deps) to avoid re-registration on every filter change.
+  useEvent(
+    EVENTS.RESULTS.BULK_DELETED,
+    useCallback(
+      (data: { succeeded: string[]; failed: Array<{ id: string; reason: string }> }) => {
+        const succeeded = data.succeeded.length
+        const failed = data.failed.length
+
+        let message = ""
+        if (succeeded > 0) {
+          message += t("manager:bulk.resultSucceeded", { count: succeeded })
+        }
+        if (failed > 0) {
+          message += (message ? ", " : "") + t("manager:bulk.resultFailed", { count: failed })
+        }
+
+        toast.success(message || t("manager:bulk.resultCompleted"))
+        selection.clear()
+        setBulkConfirm(false)
+        setTypeConfirmValue("")
+        setBulkProcessing(false)
+      },
+      [t],
+    ),
   )
 
   const handleOpen = (id: string) => () => {
@@ -96,6 +128,15 @@ const ConfigResults = () => {
     setPendingDelete(null)
   }
 
+  const handleBulkDelete = () => {
+    if (selection.selected.size === 0 || bulkProcessing) return
+
+    setBulkProcessing(true)
+    socket.emit(EVENTS.RESULTS.BULK_DELETE, {
+      ids: Array.from(selection.selected),
+    })
+  }
+
   const handleShare = (id: string) => async () => {
     const url = `${window.location.origin}/r/${id}`
     try {
@@ -104,6 +145,36 @@ const ConfigResults = () => {
     } catch {
       toast.error(t("manager:result.share.copyFailed"))
     }
+  }
+
+  const hasFilter = search.trim() !== "" || dateFilter !== ""
+  const filterText = search.trim() || dateFilter
+  const needsTypeConfirm =
+    selection.allSelected && !hasFilter && selection.selected.size >= 20
+  const confirmPhrase = t("manager:result.confirmAllPhrase")
+  // Guard against empty confirm phrase (i18n missing/fallback) with strict validation.
+  // Type-confirm gate requires both: i18n-key must exist + user must type exact phrase.
+  const isConfirmPhraseValid = confirmPhrase && confirmPhrase.length > 0
+  const isTypeConfirmValid =
+    needsTypeConfirm ? isConfirmPhraseValid && typeConfirmValue === confirmPhrase : true
+
+  const getBulkLabel = () => {
+    if (!selection.selectionActive) return ""
+    const count = selection.selected.size
+
+    if (selection.allSelected) {
+      if (hasFilter) {
+        // Filtered scope: show "Alle gefilterten ausgewählt" + count of visible results.
+        // Implementation sends only visible IDs; semantics: "all within filter scope".
+        return t("manager:bulk.allFilteredSelected", { count })
+      }
+      // No filter: all results in list are selected.
+      // Implementation sends all IDs; semantics: "all results".
+      return t("manager:bulk.allSelected", { count })
+    }
+
+    // Partial selection: show count of selected items within filtered results.
+    return t("manager:bulk.selected", { count })
   }
 
   return (
@@ -174,55 +245,109 @@ const ConfigResults = () => {
               })}
             />
           ) : (
-            <motion.div
-              className="min-h-0 flex-1 space-y-3 p-0.5"
-              {...listContainerMotion(reducedMotion)}
-            >
-              {filteredResults.map((r, index) => (
-                <motion.div
-                  key={r.id}
-                  {...listItemMotion(index, reducedMotion)}
-                >
-                  <ListRow
-                    title={r.subject}
-                    meta={
-                      <>
-                        {formatDate(r.date)}
-                        {" · "}
-                        <span className="tabular-nums">
-                          {t("manager:result.playerCount", {
-                            count: r.playerCount,
-                          })}
-                        </span>
-                      </>
+            <>
+              {/* Select-all header */}
+              <div className="text-xs font-semibold text-[var(--ink-muted)] px-3 py-2">
+                <Checkbox
+                  data-testid="results-select-all"
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate =
+                        selection.someSelected && !selection.allSelected
+                      el.checked = selection.allSelected
                     }
-                    onClick={handleOpen(r.id)}
-                    bodyLabel={t("manager:result.open", { name: r.subject })}
-                    density="compact"
-                    actions={[
-                      {
-                        key: "share",
-                        icon: Share2,
-                        label: t("manager:result.share.action"),
-                        onClick: handleShare(r.id),
-                      },
-                      {
-                        key: "delete",
-                        icon: Trash2,
-                        label: t("manager:result.delete"),
-                        destructive: true,
-                        onClick: () =>
-                          setPendingDelete({ id: r.id, subject: r.subject }),
-                      },
-                    ]}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
+                  }}
+                  onChange={() => selection.toggleAll()}
+                  aria-label="Alle auswählen"
+                />
+                {selection.selectionActive && (
+                  <span className="ml-2">
+                    {selection.selected.size} von {filteredResults.length} ausgewählt
+                  </span>
+                )}
+              </div>
+
+              <motion.div
+                className="min-h-0 flex-1 space-y-3 p-0.5"
+                {...listContainerMotion(reducedMotion)}
+              >
+                {filteredResults.map((r, index) => (
+                  <motion.div
+                    key={r.id}
+                    {...listItemMotion(index, reducedMotion)}
+                  >
+                    <ListRow
+                      leading={
+                        <Checkbox
+                          data-testid={`result-select-${r.id}`}
+                          checked={selection.isSelected(r.id)}
+                          onChange={() => selection.toggle(r.id)}
+                          aria-label={`Auswahl: ${r.subject} · ${formatDate(r.date)}`}
+                        />
+                      }
+                      title={r.subject}
+                      meta={
+                        <>
+                          {formatDate(r.date)}
+                          {" · "}
+                          <span className="tabular-nums">
+                            {t("manager:result.playerCount", {
+                              count: r.playerCount,
+                            })}
+                          </span>
+                        </>
+                      }
+                      onClick={handleOpen(r.id)}
+                      bodyLabel={t("manager:result.open", { name: r.subject })}
+                      density="compact"
+                      actions={[
+                        {
+                          key: "share",
+                          icon: Share2,
+                          label: t("manager:result.share.action"),
+                          onClick: handleShare(r.id),
+                        },
+                        {
+                          key: "delete",
+                          icon: Trash2,
+                          label: t("manager:result.delete"),
+                          destructive: true,
+                          onClick: () =>
+                            setPendingDelete({ id: r.id, subject: r.subject }),
+                        },
+                      ]}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </>
+          )}
+
+          {/* Bulk action toolbar */}
+          {selection.selectionActive && (
+            <BulkActionToolbar
+              data-testid="results-bulk-toolbar"
+              count={selection.selected.size}
+              label={getBulkLabel()}
+              onClear={selection.clear}
+            >
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  setBulkConfirm(true)
+                  setTypeConfirmValue("")
+                }}
+                disabled={bulkProcessing}
+              >
+                {t("manager:bulk.deleteSelected")}
+              </Button>
+            </BulkActionToolbar>
           )}
         </>
       )}
 
+      {/* Single delete dialog */}
       <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => {
@@ -236,6 +361,48 @@ const ConfigResults = () => {
         })}
         confirmLabel={t("common:delete")}
         onConfirm={handleDelete}
+      />
+
+      {/* Bulk delete dialog */}
+      <AlertDialog
+        open={bulkConfirm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setBulkConfirm(false)
+            setTypeConfirmValue("")
+          }
+        }}
+        title={t("manager:result.bulkDeleteTitle", {
+          count: selection.selected.size,
+        })}
+        description={
+          <>
+            <p>{t("manager:result.bulkDeleteWarning")}</p>
+            {hasFilter && (
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">
+                {t("manager:result.bulkDeleteFilterHint", { filter: filterText })}
+              </p>
+            )}
+            {needsTypeConfirm && (
+              <>
+                <p className="mt-4 text-sm">
+                  {t("manager:result.typeToConfirm", { phrase: confirmPhrase })}
+                </p>
+                <input
+                  data-testid="results-bulk-confirm-input"
+                  type="text"
+                  value={typeConfirmValue}
+                  onChange={(e) => setTypeConfirmValue(e.target.value)}
+                  placeholder={confirmPhrase}
+                  className="mt-2 w-full rounded border border-[var(--border-hairline)] bg-[var(--surface)] px-3 py-2 text-sm"
+                />
+              </>
+            )}
+          </>
+        }
+        confirmLabel={t("manager:bulk.deleteSelected")}
+        onConfirm={handleBulkDelete}
+        confirmDisabled={bulkProcessing || !isTypeConfirmValid}
       />
 
       {selectedResult && (

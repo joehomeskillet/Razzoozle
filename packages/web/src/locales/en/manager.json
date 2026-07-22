@@ -139,7 +139,12 @@
       "done": "CSV downloaded",
       "json": "Export as JSON"
     },
-    "intro": "Review past games and share results."
+    "intro": "Review past games and share results.",
+    "bulkDeleteTitle": "Delete {{count}} results?",
+    "bulkDeleteWarning": "This action cannot be undone.",
+    "bulkDeleteFilterHint": "Active filter: {{filter}}",
+    "confirmAllPhrase": "DELETE ALL",
+    "typeToConfirm": "Type {{phrase}} to confirm"
   },
   "tabs": {
     "play": "Play",
@@ -990,6 +995,8 @@
     "resultSucceeded": "{{count}} succeeded",
     "resultSkipped": "{{count}} skipped",
     "resultFailed": "{{count}} failed",
-    "resultCompleted": "Completed"
+    "resultCompleted": "Completed",
+    "allSelected": "All {{count}} entries selected",
+    "allFilteredSelected": "All {{count}} filtered entries selected"
   }
 }

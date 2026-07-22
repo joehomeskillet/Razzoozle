@@ -960,3 +960,4 @@ mod tests {
 }
 
 mod tests_users_delete;
+mod tests_users_bulk;

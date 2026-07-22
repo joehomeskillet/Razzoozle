@@ -139,7 +139,12 @@
       "done": "CSV descargado",
       "json": "Exportar como JSON"
     },
-    "intro": "Consulta partidas anteriores y comparte resultados."
+    "intro": "Consulta partidas anteriores y comparte resultados.",
+    "bulkDeleteTitle": "¿Eliminar {{count}} resultados?",
+    "bulkDeleteWarning": "Esta acción no se puede deshacer.",
+    "bulkDeleteFilterHint": "Filtro activo: {{filter}}",
+    "confirmAllPhrase": "ELIMINAR TODO",
+    "typeToConfirm": "Escribe {{phrase}} para confirmar"
   },
   "tabs": {
     "play": "Jugar",
@@ -990,6 +995,8 @@
     "resultSucceeded": "{{count}} correctos",
     "resultSkipped": "{{count}} omitidos",
     "resultFailed": "{{count}} fallidos",
-    "resultCompleted": "Completado"
+    "resultCompleted": "Completado",
+    "allSelected": "Todas las {{count}} entradas seleccionadas",
+    "allFilteredSelected": "Todas las {{count}} entradas filtradas seleccionadas"
   }
 }

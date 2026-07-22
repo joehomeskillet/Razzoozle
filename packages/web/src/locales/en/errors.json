@@ -214,5 +214,10 @@
     "nameExists": "A label with this name already exists.",
     "entityNotOwned": "You don't have permission to edit this entity.",
     "invalid": "Invalid label request."
+  },
+  "results": {
+    "bulkEmpty": "No results selected.",
+    "bulkTooMany": "Too many results at once (max. 200).",
+    "bulkFailed": "Bulk deletion failed."
   }
 }

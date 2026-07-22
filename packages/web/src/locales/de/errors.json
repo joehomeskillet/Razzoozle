@@ -214,5 +214,10 @@
     "nameExists": "Ein Fach mit diesem Namen existiert bereits.",
     "entityNotOwned": "Du darfst diese Entität nicht bearbeiten.",
     "invalid": "Ungültige Fach-Anfrage."
+  },
+  "results": {
+    "bulkEmpty": "Keine Ergebnisse ausgewählt.",
+    "bulkTooMany": "Zu viele Ergebnisse auf einmal (max. 200).",
+    "bulkFailed": "Bulk-Löschung fehlgeschlagen."
   }
 }

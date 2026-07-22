@@ -214,5 +214,10 @@
     "nameExists": "Une étiquette avec ce nom existe déjà.",
     "entityNotOwned": "Vous n'avez pas la permission de modifier cette entité.",
     "invalid": "Demande d'étiquette invalide."
+  },
+  "results": {
+    "bulkEmpty": "Aucun résultat sélectionné.",
+    "bulkTooMany": "Trop de résultats à la fois (max. 200).",
+    "bulkFailed": "Échec de la suppression groupée."
   }
 }

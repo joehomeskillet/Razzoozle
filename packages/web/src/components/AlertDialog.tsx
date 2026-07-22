@@ -7,13 +7,15 @@ interface Props {
   /** Element that opens the dialog. Omit for controlled use (`open`/`onOpenChange`). */
   trigger?: ReactNode
   title: string
-  description: string
+  description: ReactNode
   confirmLabel?: string
   onConfirm: () => void
   /** Controlled open state. When provided, the dialog is driven by the caller. */
   open?: boolean
   /** Controlled open-state change handler (paired with `open`). */
   onOpenChange?: (open: boolean) => void
+  /** Optional disabled state for the confirm button (e.g., for form validation gates). */
+  confirmDisabled?: boolean
 }
 
 const AlertDialog = ({
@@ -24,6 +26,7 @@ const AlertDialog = ({
   onConfirm,
   open,
   onOpenChange,
+  confirmDisabled,
 }: Props) => {
   const { t } = useTranslation()
 
@@ -51,7 +54,7 @@ const AlertDialog = ({
             </RadixAlertDialog.Cancel>
 
             <RadixAlertDialog.Action asChild>
-              <Button variant="danger" onClick={onConfirm}>
+              <Button variant="danger" onClick={onConfirm} disabled={confirmDisabled}>
                 {confirmLabel ?? t("common:confirm")}
               </Button>
             </RadixAlertDialog.Action>
