@@ -118,7 +118,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
             <Select.Root value={selectedClassId} onValueChange={setSelectedClassId}>
               <Select.Trigger
                 data-testid="print-dialog-class-select"
-                className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[var(--border-hairline)] bg-white px-3 text-sm"
+                className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] px-3 text-sm"
               >
                 <Select.Value />
                 <ChevronDown className="size-4" />
@@ -126,7 +126,7 @@ const PrintCredentialsDialog = ({ open, onOpenChange }: PrintCredentialsDialogPr
               <Select.Portal>
                 <Select.Content
                   position="popper"
-                  className="z-50 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-white shadow-lg"
+                  className="z-50 min-w-40 overflow-hidden rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] shadow-lg"
                 >
                   <Select.Viewport className="p-1">
                     {classesWithStudents.map(c => (
