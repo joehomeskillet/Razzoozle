@@ -5,17 +5,40 @@
 // 2. restartBadge: Badge renders with design-system tokens.
 // 3. statusMessage: role="status", aria-live="polite", aria-describedby, tone-based colors.
 // 4. disabledReason: title attribute on disabled row.
-// 5. ActionFooter dirty: opacity-75 when dirty.
+// 5. ActionFooter dirty: opacity-75 plus an accessible unsaved-changes indicator.
 //
-// NOTE: vitest env is 'node' (no jsdom). These tests verify prop interfaces
-// and type compatibility; full DOM render tests require jsdom setup (not in scope).
+// NOTE: vitest env is 'node' (no jsdom). ActionFooter behavior uses React's
+// server renderer, while the remaining tests verify prop interfaces.
 
+import { createInstance } from "i18next"
+import { renderToStaticMarkup } from "react-dom/server"
+import { I18nextProvider } from "react-i18next"
 import { describe, expect, it } from "vitest"
+
+import managerDe from "../../locales/de/manager.json"
 
 // Component interfaces (imported for type checking).
 import type { LabelRowProps } from "./LabelRow"
 import type { ToggleFieldProps } from "./ToggleField"
-import type { ActionFooterProps } from "./ActionFooter"
+import ActionFooter, { type ActionFooterProps } from "./ActionFooter"
+
+const renderActionFooter = async (dirty?: boolean) => {
+  const i18n = createInstance()
+  await i18n.init({
+    lng: "de",
+    fallbackLng: false,
+    ns: ["manager"],
+    resources: { de: { manager: managerDe } },
+  })
+
+  return renderToStaticMarkup(
+    <I18nextProvider i18n={i18n}>
+      <ActionFooter dirty={dirty}>
+        <button type="button">Save</button>
+      </ActionFooter>
+    </I18nextProvider>,
+  )
+}
 
 describe("LabelRow — SettingRow API", () => {
   it("accepts backward-compat props (label, htmlFor, description, children)", () => {
@@ -217,6 +240,34 @@ describe("ActionFooter — SettingRow API", () => {
     expect(getDirtyClass(true)).toBe("opacity-75")
     expect(getDirtyClass(false)).toBe("")
     expect(getDirtyClass(undefined)).toBe("")
+  })
+
+  it("renders the localized unsaved-changes indicator before Save when dirty", async () => {
+    const markup = await renderActionFooter(true)
+    const indicatorIndex = markup.indexOf("Ungespeicherte Änderungen")
+    const saveButtonIndex = markup.indexOf(">Save</button>")
+
+    expect(indicatorIndex).toBeGreaterThan(-1)
+    expect(saveButtonIndex).toBeGreaterThan(indicatorIndex)
+  })
+
+  it("announces the dirty indicator as a polite status", async () => {
+    const markup = await renderActionFooter(true)
+
+    expect(markup).toContain('role="status"')
+    expect(markup).toContain('aria-live="polite"')
+  })
+
+  it("does not render the unsaved-changes indicator when dirty is false", async () => {
+    const markup = await renderActionFooter(false)
+
+    expect(markup).not.toContain("Ungespeicherte Änderungen")
+  })
+
+  it("does not render the unsaved-changes indicator when dirty is omitted", async () => {
+    const markup = await renderActionFooter()
+
+    expect(markup).not.toContain("Ungespeicherte Änderungen")
   })
 
   it("children can be any ReactNode", () => {
