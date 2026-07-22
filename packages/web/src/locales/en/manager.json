@@ -2,13 +2,11 @@
   "auth": {
     "title": "Manager",
     "subtitle": "Sign in to manage your game.",
-    "username": "Username",
     "usernameLabel": "Username",
     "usernamePlaceholder": "Username",
     "invalidInput": "Username and password required",
     "invalidCredentials": "Invalid username or password",
     "passwordLabel": "Password",
-    "passwordError": "Invalid password",
     "error": "Authentication failed",
     "networkError": "Connection error"
   },
@@ -16,9 +14,9 @@
   "logout": "Logout",
   "passwordPlaceholder": "Password",
   "aria": {
-    "passwordLabel": "Password",
     "openNav": "Open navigation",
-    "navTitle": "Navigation"
+    "navTitle": "Navigation",
+    "exportQuestionsCsv": "Export question answers as CSV"
   },
   "kickPlayer": {
     "aria": "Remove {{name}} from the game",
@@ -83,7 +81,8 @@
     "bulkDeleteConfirm": "{{count}} selected quizzes will be permanently deleted.",
     "selectQuiz": "Select “{{name}}”",
     "moreActions": "More options",
-    "intro": "Create, edit and organise quizzes."
+    "intro": "Create, edit and organise quizzes.",
+    "readError": "Could not read file"
   },
   "result": {
     "delete": "Delete result",
@@ -111,7 +110,12 @@
       "incorrect": " Incorrect",
       "player": "Player",
       "points": "Points",
-      "rank": "Rank"
+      "rank": "Rank",
+      "questionNo": "Question",
+      "question": "Question",
+      "responseMs": "Response time (ms)",
+      "yes": "Yes",
+      "no": "No"
     },
     "playerCount": "{{count}} player(s)",
     "timeLimitSuffix": "s time limit",
@@ -132,7 +136,8 @@
     },
     "export": {
       "csv": "Export as CSV",
-      "done": "CSV downloaded"
+      "done": "CSV downloaded",
+      "json": "Export as JSON"
     },
     "intro": "Review past games and share results."
   },
@@ -143,8 +148,6 @@
     "ki": "AI",
     "results": "Results",
     "design": "Design",
-    "plugins": "Plugins",
-    "skeleton": "Skeleton",
     "satellite": "Satellite",
     "submissions": "Suggestions",
     "media": "Media",
@@ -164,39 +167,10 @@
       "system": "System"
     }
   },
-  "plugins": {
-    "title": "Plugins",
-    "install": "Install plugin",
-    "installHint": "Upload a plugin as a ZIP archive.",
-    "dropzone": "Drag a ZIP here or click to choose",
-    "installing": "Installing …",
-    "installed": "Installed plugins",
-    "empty": "No plugins installed yet",
-    "emptyHint": "Installed plugins will appear here.",
-    "uninstall": "Remove",
-    "uninstallConfirm": "Do you really want to remove the plugin “{{name}}”?",
-    "toast": {
-      "installed": "Plugin installed"
-    },
-    "warning": {
-      "title": "Plugins run with full access",
-      "body": "Plugins get full access to the manager and the server. Only install code you trust."
-    },
-    "capabilities": {
-      "tab": "Own tab",
-      "ui": "Interface",
-      "server": "Server hook",
-      "config": "Settings",
-      "i18n": "Translations"
-    },
-    "serverHandlerWarning": "This plugin uses server hooks that the Rust backend does not yet support — it will have no effect."
-  },
   "dev": {
     "redactionNotice": "Passwords, API tokens and answer solutions are never logged.",
     "api": {
       "title": "API Explorer",
-      "description": "Self-documenting HTTP surface.",
-      "openapi": "OpenAPI schema",
       "events": "Event catalog",
       "schema": "Client-event schema",
       "routes": "routes",
@@ -209,16 +183,13 @@
       "title": "Observability",
       "description": "Live health and diagnostics.",
       "serverHealth": "Server health",
-      "activeGames": "Active games",
       "players": "players",
       "noGames": "No active games",
-      "metrics": "Latency & health",
       "reconnects": "Reconnects",
       "rejected": "Rejected answers",
       "answerLatency": "Answer latency",
       "metricsOffTitle": "Metrics inactive",
       "metricsOffHint": "Low-latency mode is off.",
-      "displays": "Displays",
       "noDisplays": "No displays paired",
       "eventCatalog": "Event catalog",
       "sampledRedacted": "sampled & redacted",
@@ -233,10 +204,6 @@
       "client": "Client logs",
       "download": "Download"
     },
-    "theme": {
-      "title": "Theme Overrides",
-      "description": "Free-form CSS and JavaScript loaded in addition to the theme on all devices."
-    },
     "animatedCss": {
       "title": "Animated CSS",
       "description": "Custom CSS for the animated background. Saving applies the current theme."
@@ -246,10 +213,7 @@
     "mode": "Development mode",
     "section": {
       "debug": "Debug & diagnose",
-      "testdata": "Test data & simulation",
-      "perf": "Performance & metrics",
       "export": "Data export",
-      "security": "Security & tokens",
       "api": "API & docs",
       "theme": "Theme development"
     },
@@ -445,9 +409,7 @@
       "label": "Image resolution",
       "help": "Edge length of the generated image",
       "option": "{{size}} × {{size}}"
-    },
-    "imageResolution": "Image resolution",
-    "imageSizeLong": "Edge length of the generated image"
+    }
   },
   "satellite": {
     "title": "Satellite Display",
@@ -505,8 +467,6 @@
       "join": "Join",
       "question": "Question",
       "leaderboard": "Leaderboard",
-      "interactive": "Click for interactive preview",
-      "static": "Preview as image",
       "openWindow": "Open live preview"
     },
     "contrast": {
@@ -524,11 +484,6 @@
     "contrastNote": "Light primary colors are automatically darkened for text and icons so they stay legible.",
     "scrim": "Darken background ({{value}}%)",
     "backgrounds": "Backgrounds",
-    "bgSlots": {
-      "auth": "Home / Join",
-      "managerGame": "Host screen (question)",
-      "playerGame": "Player phone (in game)"
-    },
     "save": "Save",
     "reset": "Reset",
     "toast": {
@@ -551,14 +506,6 @@
       "import": "Import template",
       "export": "Export template"
     },
-    "revisions": {
-      "title": "Versions",
-      "restore": "Restore",
-      "empty": "No saved versions yet",
-      "restored": "Version restored",
-      "confirmRestore": "Restore this version? The current one will be saved as a new version.",
-      "savedAt": "Saved {{when}}"
-    },
     "animation": {
       "title": "Animation",
       "description": "Fine-tune the in-game feel — spring force, duration and reveal stagger.",
@@ -575,10 +522,6 @@
         "auth": "Start & join",
         "managerGame": "Host screen",
         "playerGame": "Player phone"
-      },
-      "type": {
-        "none": "None",
-        "creamBackdrop": "Cream backdrop"
       },
       "speed": "Speed",
       "intensity": "Intensity",
@@ -694,19 +637,15 @@
     "title": "Game mode",
     "description": "In team mode, points are summed up per team and a team leaderboard is shown.",
     "teamMode": "Team mode",
-    "teamModeHint": "Players pick a team (red, blue, green, yellow). Requires a restart of the game.",
     "teamModeEnabled": "Team mode enabled",
     "teamModeDisabled": "Team mode disabled",
     "lowLatency": "Low-latency mode",
-    "lowLatencyTitle": "Low-latency mode",
     "lowLatencyDescription": "Tunes timing for fast play: clock sync, answer acknowledgement and throttled leaderboard updates. Also shows the latency health panel for the host.",
-    "lowLatencyHint": "Reduces perceived delay. Requires a restart of the game.",
     "lowLatencyEnabled": "Low-latency mode enabled",
     "lowLatencyDisabled": "Low-latency mode disabled",
     "klassenTitle": "Class Mode",
     "klassenDescription": "Enables class mode, where students join from a teacher-managed student directory.",
     "klassenMode": "Class mode available",
-    "klassenModeHint": "Allows teachers to manage classes and student directories. Requires game restart.",
     "klassenEnabled": "Class mode enabled",
     "klassenDisabled": "Class mode disabled",
     "endScreenTitle": "End Screen Options",
@@ -715,17 +654,13 @@
     "lobbyTitle": "Lobby Lock",
     "lobbyDescription": "When enabled, new players can no longer join the lobby. Existing players and their reconnections are unaffected.",
     "lobbyLocked": "Lock lobby",
-    "lobbyLockedHint": "Locks the lobby for new players while existing players can still join.",
     "lobbyUnlocked": "Lobby unlocked",
     "randomizeAnswersTitle": "Answer Order",
     "randomizeAnswersDescription": "Randomly shuffles the order of answer options per question while keeping canonical indices for scoring.",
-    "randomizeAnswers": "Shuffle answers",
-    "randomizeAnswersHint": "Randomizes the display order of answers per question.",
     "randomizeAnswersEnabled": "Answers will be shuffled",
     "randomizeAnswersDisabled": "Answer order fixed",
     "scoringTitle": "Scoring",
     "scoringDescription": "Choose how points are calculated. Speed takes answer time into account, accuracy counts only correct or incorrect answers.",
-    "scoringMode": "Scoring mode",
     "speedMode": "Speed",
     "accuracyMode": "Accuracy",
     "endScreenMode": {
@@ -770,7 +705,6 @@
     "playerName": "Player {{rank}}"
   },
   "runningGames": {
-    "title": "Running Games",
     "description": "Manage currently active games.",
     "refresh": "Refresh",
     "emptyHeadline": "No running games",
@@ -799,7 +733,6 @@
   },
   "profile": {
     "welcome": "Welcome",
-    "description": "Your profile will be available soon. Here you can later configure your settings, AI providers and more options.",
     "intro": "Your profile and your personal settings.",
     "changePassword": {
       "title": "Change Password",
@@ -824,7 +757,8 @@
       "saved": "Key saved",
       "removed": "Key removed",
       "emptyHeadline": "No external providers",
-      "empty": "The administrator has not set up any external AI providers yet."
+      "empty": "The administrator has not set up any external AI providers yet.",
+      "remove": "Remove"
     }
   },
   "classes": {
@@ -832,12 +766,10 @@
     "createTitle": "Create class",
     "createDescription": "Enter a name for the new class.",
     "created": "Class created",
-    "edit": "Edit class",
     "editTitle": "Rename class",
     "editDescription": "Enter a new name for the class.",
     "editClass": "Edit class",
     "updated": "Class updated",
-    "delete": "Delete class",
     "deleteClass": "Delete class",
     "deleteTitle": "Delete class",
     "deleteConfirm": "Do you really want to delete the class \"{{name}}\"? Students in this class will be deleted.",
@@ -847,12 +779,8 @@
     "search": "Search class",
     "searchPlaceholder": "Search classes or students …",
     "classNamePlaceholder": "Class name",
-    "studentNamePlaceholder": "Student name",
-    "students": "Students",
     "studentCount": "students",
     "addStudent": "Add student",
-    "addStudentTitle": "Add student",
-    "addStudentDescription": "Enter the student name.",
     "studentAdded": "Student added",
     "editStudent": "Edit student",
     "editStudentTitle": "Change student name",
@@ -904,8 +832,6 @@
       "admin": "Admin",
       "lehrkraft": "Teacher"
     },
-    "roleUser": "Teacher",
-    "roleAdmin": "Admin",
     "create": "Create",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete user?",
@@ -924,7 +850,6 @@
     "create": "Create student",
     "createTitle": "Create student",
     "createDescription": "Create a new student and optionally assign them to one or more classes right away.",
-    "namePlaceholder": "Student's name",
     "firstNamePlaceholder": "First name",
     "lastNamePlaceholder": "Last name",
     "birthdateLabel": "Date of birth (optional)",
@@ -953,19 +878,12 @@
     "description": "Define global labels (subjects) for organizing quizzes, media, and catalog entries.",
     "emptyState": "No labels defined yet. Create your first label with the button below.",
     "create": "Create label",
-    "createTitle": "Create new label",
     "namePlaceholder": "Label name",
     "colorLabel": "Color",
-    "created": "Label created",
-    "updated": "Label updated",
-    "deleted": "Label deleted",
     "deleteTitle": "Delete label",
     "deleteConfirm": "Do you really want to delete \"{{name}}\"? The label will be removed from all quizzes, media, and catalog entries.",
-    "renameTitle": "Edit label",
     "filterAll": "All",
-    "filterLabel": "Label",
     "assignTitle": "Assign label",
-    "assignSave": "Save",
     "noLabels": "No labels available",
     "editTitle": "Edit label",
     "update": "Save",
@@ -1033,7 +951,6 @@
       "cssSaved": "CSS saved",
       "jsSaved": "JavaScript saved",
       "reset": "Reset to defaults",
-      "exported": "Skeleton exported",
       "imported": "Skeleton imported",
       "exportFailed": "Export failed: {{message}}",
       "importFailed": "Import failed: {{message}}",

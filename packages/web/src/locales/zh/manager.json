@@ -2,13 +2,11 @@
   "auth": {
     "title": "管理员",
     "subtitle": "登录以管理你的游戏。",
-    "username": "用户名",
     "usernameLabel": "用户名",
     "usernamePlaceholder": "用户名",
     "invalidInput": "需要用户名和密码",
     "invalidCredentials": "用户名或密码无效",
     "passwordLabel": "密码",
-    "passwordError": "无效的密码",
     "error": "身份验证失败",
     "networkError": "连接错误"
   },
@@ -16,9 +14,9 @@
   "logout": "退出登录",
   "passwordPlaceholder": "密码",
   "aria": {
-    "passwordLabel": "密码",
     "openNav": "打开导航",
-    "navTitle": "导航"
+    "navTitle": "导航",
+    "exportQuestionsCsv": "将题目作答导出为 CSV"
   },
   "kickPlayer": {
     "aria": "将 {{name}} 移出游戏",
@@ -83,7 +81,8 @@
     "bulkDeleteConfirm": "已选择的 {{count}} 个测验将被永久删除。",
     "selectQuiz": "选择“{{name}}”",
     "moreActions": "更多选项",
-    "intro": "创建、编辑并整理测验。"
+    "intro": "创建、编辑并整理测验。",
+    "readError": "无法读取文件"
   },
   "result": {
     "delete": "删除结果",
@@ -111,7 +110,12 @@
       "incorrect": " 错误",
       "player": "玩家",
       "points": "分数",
-      "rank": "排名"
+      "rank": "排名",
+      "questionNo": "题目",
+      "question": "题目",
+      "responseMs": "作答时间（毫秒）",
+      "yes": "是",
+      "no": "否"
     },
     "playerCount": "{{count}} 名玩家",
     "timeLimitSuffix": "秒时间限制",
@@ -132,7 +136,8 @@
     },
     "export": {
       "csv": "导出为 CSV",
-      "done": "CSV 已下载"
+      "done": "CSV 已下载",
+      "json": "导出为 JSON"
     },
     "intro": "查看过往游戏并分享结果。"
   },
@@ -143,8 +148,6 @@
     "ki": "AI",
     "results": "结果",
     "design": "设计",
-    "plugins": "插件",
-    "skeleton": "皮肤包",
     "satellite": "卫星屏",
     "submissions": "建议",
     "media": "媒体",
@@ -164,47 +167,14 @@
       "system": "系统"
     }
   },
-  "plugins": {
-    "title": "插件",
-    "install": "安装插件",
-    "installHint": "以 ZIP 压缩包上传插件。",
-    "dropzone": "将 ZIP 拖拽到此处，或点击选择",
-    "installing": "正在安装…",
-    "installed": "已安装的插件",
-    "empty": "尚未安装任何插件",
-    "emptyHint": "已安装的插件将显示在此处。",
-    "uninstall": "移除",
-    "uninstallConfirm": "确定要移除插件“{{name}}”吗？",
-    "toast": {
-      "installed": "插件已安装"
-    },
-    "warning": {
-      "title": "插件以完整权限运行",
-      "body": "插件将获得对管理后台和服务器的完整访问权限。请仅安装你信任的代码。"
-    },
-    "capabilities": {
-      "tab": "专属选项卡",
-      "ui": "界面",
-      "server": "服务器钩子",
-      "config": "设置",
-      "i18n": "翻译"
-    },
-    "serverHandlerWarning": "此插件使用了 Rust 后端尚不支持的服务器钩子——它将不会生效。"
-  },
   "dev": {
     "redactionNotice": "密码、API 令牌和答案解析绝不会被记录。",
-    "theme": {
-      "title": "主题覆盖",
-      "description": "在所有设备上额外加载的自定义 CSS 与 JavaScript。"
-    },
     "animatedCss": {
       "title": "动态 CSS",
       "description": "动画背景的自定义 CSS。保存会应用当前主题。"
     },
     "api": {
       "title": "API 浏览器",
-      "description": "自文档化的 HTTP 接口。",
-      "openapi": "OpenAPI 架构",
       "events": "事件目录",
       "schema": "客户端事件架构",
       "routes": "路由",
@@ -217,16 +187,13 @@
       "title": "可观测性",
       "description": "实时健康状况与诊断。",
       "serverHealth": "服务器健康状况",
-      "activeGames": "活跃游戏",
       "players": "玩家",
       "noGames": "无活跃游戏",
-      "metrics": "延迟与健康状况",
       "reconnects": "重新连接",
       "rejected": "被拒绝的答案",
       "answerLatency": "答题延迟",
       "metricsOffTitle": "指标未启用",
       "metricsOffHint": "低延迟模式已关闭。",
-      "displays": "显示屏",
       "noDisplays": "没有已配对的显示屏",
       "eventCatalog": "事件目录",
       "sampledRedacted": "已采样并脱敏",
@@ -246,10 +213,7 @@
     "mode": "开发模式",
     "section": {
       "debug": "调试与诊断",
-      "testdata": "测试数据与模拟",
-      "perf": "性能与指标",
       "export": "数据导出",
-      "security": "安全与令牌",
       "api": "API 与文档",
       "theme": "主题开发"
     },
@@ -445,9 +409,7 @@
       "label": "图片分辨率",
       "help": "生成图片的边长",
       "option": "{{size}} × {{size}}"
-    },
-    "imageResolution": "图片分辨率",
-    "imageSizeLong": "生成图片的边长"
+    }
   },
   "satellite": {
     "title": "卫星显示屏",
@@ -505,8 +467,6 @@
       "join": "加入",
       "question": "题目",
       "leaderboard": "排行榜",
-      "interactive": "点击查看交互式预览",
-      "static": "以图片形式预览",
       "openWindow": "打开实时预览"
     },
     "contrast": {
@@ -524,11 +484,6 @@
     "contrastNote": "浅色的主色会自动加深，用于文字和图标，以保持其可读性。",
     "scrim": "压暗背景（{{value}}%）",
     "backgrounds": "背景",
-    "bgSlots": {
-      "auth": "首页 / 加入",
-      "managerGame": "主持人屏幕（题目）",
-      "playerGame": "玩家手机（游戏中）"
-    },
     "save": "保存",
     "reset": "重置",
     "toast": {
@@ -551,14 +506,6 @@
       "export": "导出模板",
       "edit": "编辑"
     },
-    "revisions": {
-      "title": "版本",
-      "restore": "恢复",
-      "empty": "尚无已保存的版本",
-      "restored": "版本已恢复",
-      "confirmRestore": "恢复此版本？当前版本将另存为一个新版本。",
-      "savedAt": "保存于 {{when}}"
-    },
     "animation": {
       "title": "动画",
       "description": "微调游戏手感——弹簧强度、时长和出现错峰。",
@@ -575,10 +522,6 @@
         "auth": "开始 / 加入",
         "managerGame": "主持人屏幕",
         "playerGame": "玩家手机"
-      },
-      "type": {
-        "none": "无",
-        "creamBackdrop": "奶油背景"
       },
       "speed": "速度",
       "intensity": "强度",
@@ -694,19 +637,15 @@
     "title": "游戏模式",
     "description": "在团队模式下，分数会按队伍累加，并显示队伍排行榜。",
     "teamMode": "团队模式",
-    "teamModeHint": "玩家选择一个队伍（红、蓝、绿、黄）。需要重启游戏。",
     "teamModeEnabled": "团队模式已启用",
     "teamModeDisabled": "团队模式已禁用",
     "lowLatency": "低延迟模式",
-    "lowLatencyTitle": "低延迟模式",
     "lowLatencyDescription": "为快速游戏优化时序：时钟同步、答题确认和受限的排行榜更新。同时为主持人显示延迟状态面板。",
-    "lowLatencyHint": "降低感知延迟。需要重启游戏。",
     "lowLatencyEnabled": "低延迟模式已启用",
     "lowLatencyDisabled": "低延迟模式已禁用",
     "klassenTitle": "班级模式",
     "klassenDescription": "启用班级模式，学生可以从教师管理的学生目录加入。",
     "klassenMode": "班级模式可用",
-    "klassenModeHint": "允许教师管理班级和学生目录。需要重启游戏。",
     "klassenEnabled": "班级模式已启用",
     "klassenDisabled": "班级模式已禁用",
     "endScreenTitle": "结束画面选项",
@@ -715,17 +654,13 @@
     "lobbyTitle": "大厅锁定",
     "lobbyDescription": "启用后，新玩家无法再加入大厅。现有玩家及其重新连接不受影响。",
     "lobbyLocked": "锁定大厅",
-    "lobbyLockedHint": "为新玩家锁定大厅，但现有玩家仍可加入。",
     "lobbyUnlocked": "大厅已解锁",
     "randomizeAnswersTitle": "答案顺序",
     "randomizeAnswersDescription": "随机打乱每个问题的答案选项顺序，同时保持规范索引以供评分。",
-    "randomizeAnswers": "打乱答案",
-    "randomizeAnswersHint": "随机打乱每个问题的答案显示顺序。",
     "randomizeAnswersEnabled": "答案将被打乱",
     "randomizeAnswersDisabled": "答案顺序固定",
     "scoringTitle": "评分",
     "scoringDescription": "选择如何计算分数。速度考虑答题时间，准确度仅计算正确或错误的答案。",
-    "scoringMode": "评分模式",
     "speedMode": "速度",
     "accuracyMode": "准确度",
     "endScreenMode": {
@@ -770,7 +705,6 @@
     "playerName": "玩家 {{rank}}"
   },
   "runningGames": {
-    "title": "进行中的游戏",
     "description": "管理当前进行中的游戏。",
     "refresh": "刷新",
     "emptyHeadline": "没有进行中的游戏",
@@ -802,12 +736,10 @@
     "createTitle": "创建班级",
     "createDescription": "输入新班级的名称。",
     "created": "班级已创建",
-    "edit": "编辑班级",
     "editTitle": "重命名班级",
     "editDescription": "输入班级的新名称。",
     "editClass": "编辑班级",
     "updated": "班级已更新",
-    "delete": "删除班级",
     "deleteClass": "删除班级",
     "deleteTitle": "删除班级",
     "deleteConfirm": "确定要删除班级\"{{name}}\"吗？该班级中的学生将被删除。",
@@ -817,12 +749,8 @@
     "search": "搜索班级",
     "searchPlaceholder": "搜索班级或学生 …",
     "classNamePlaceholder": "班级名称",
-    "studentNamePlaceholder": "学生姓名",
-    "students": "学生",
     "studentCount": "学生",
     "addStudent": "添加学生",
-    "addStudentTitle": "添加学生",
-    "addStudentDescription": "输入学生的姓名。",
     "studentAdded": "学生已添加",
     "editStudent": "编辑学生",
     "editStudentTitle": "更改学生姓名",
@@ -874,8 +802,6 @@
       "admin": "管理员",
       "lehrkraft": "教师"
     },
-    "roleUser": "教师",
-    "roleAdmin": "管理员",
     "create": "创建",
     "delete": "删除",
     "deleteConfirmTitle": "删除用户？",
@@ -912,10 +838,10 @@
       "saved": "密钥已保存",
       "removed": "密钥已删除",
       "emptyHeadline": "无外部提供商",
-      "empty": "管理员尚未设置任何外部 AI 提供商。"
+      "empty": "管理员尚未设置任何外部 AI 提供商。",
+      "remove": "移除"
     },
-    "welcome": "欢迎",
-    "description": "您的个人资料即将可用。之后您可以配置您的设置、AI 提供商和更多选项。"
+    "welcome": "欢迎"
   },
   "schueler": {
     "title": "学生管理",
@@ -924,7 +850,6 @@
     "create": "创建学生",
     "createTitle": "创建学生",
     "createDescription": "创建一名新学生，并可选择立即将其分配到一个或多个班级。",
-    "namePlaceholder": "学生姓名",
     "firstNamePlaceholder": "名",
     "lastNamePlaceholder": "姓",
     "birthdateLabel": "出生日期（可选）",
@@ -953,19 +878,12 @@
     "description": "定义全局标签（科目）以组织测验、媒体和目录条目。",
     "emptyState": "尚未定义任何标签。使用下方按钮创建您的第一个标签。",
     "create": "创建标签",
-    "createTitle": "创建新标签",
     "namePlaceholder": "标签名称",
     "colorLabel": "颜色",
-    "created": "标签已创建",
-    "updated": "标签已更新",
-    "deleted": "标签已删除",
     "deleteTitle": "删除标签",
     "deleteConfirm": "您确定要删除\"{{name}}\"吗？该标签将从所有测验、媒体和目录条目中删除。",
-    "renameTitle": "编辑标签",
     "filterAll": "全部",
-    "filterLabel": "标签",
     "assignTitle": "分配标签",
-    "assignSave": "保存",
     "noLabels": "没有可用标签",
     "editTitle": "编辑标签",
     "update": "保存",
@@ -1033,7 +951,6 @@
       "cssSaved": "CSS 已保存",
       "jsSaved": "JavaScript 已保存",
       "reset": "已重置为默认值",
-      "exported": "已导出骨架",
       "imported": "已导入骨架",
       "exportFailed": "导出失败: {{message}}",
       "importFailed": "导入失败: {{message}}",

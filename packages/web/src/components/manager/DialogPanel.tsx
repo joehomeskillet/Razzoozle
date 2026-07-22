@@ -16,7 +16,7 @@ export interface DialogPanelProps {
 
 // Shared Radix Dialog chrome (overlay + centered content surface + the
 // title/close header) that was duplicated verbatim across ConfigKlassen,
-// CreateStudentDialog, PinDialog, CreateLabelDialog and EditLabelDialog.
+// CreateStudentDialog, PinDialog and EditLabelDialog.
 // Callers only supply the title and body; open/close wiring, aria-labelledby
 // and the close button's focus ring live here once.
 const DialogPanel = ({

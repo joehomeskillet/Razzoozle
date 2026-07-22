@@ -105,6 +105,36 @@ function writeJson(filePath, obj) {
   writeFileSync(filePath, `${JSON.stringify(obj, null, 2)}\n`, "utf8");
 }
 
+// Deletes a dotted-path leaf from a nested object, if present. Returns
+// whether anything was actually removed (false for already-absent paths).
+// Never touches sibling keys. Parent objects left empty by the deletion are
+// pruned separately via pruneEmpty (see cmdRemove).
+function deletePath(obj, dottedPath) {
+  const segments = dottedPath.split(".");
+  let cur = obj;
+  for (let i = 0; i < segments.length - 1; i++) {
+    const segment = segments[i];
+    if (!isPlainObject(cur[segment])) return false;
+    cur = cur[segment];
+  }
+  const last = segments[segments.length - 1];
+  if (!(last in cur)) return false;
+  delete cur[last];
+  return true;
+}
+
+// Recursively removes now-empty plain-object containers (post `remove`), so
+// deleting the last key of e.g. "plugins.title" doesn't leave "plugins": {}
+// litter behind. Never touches non-empty objects, arrays, or primitives.
+function pruneEmpty(obj) {
+  for (const [key, value] of Object.entries(obj)) {
+    if (isPlainObject(value)) {
+      pruneEmpty(value);
+      if (Object.keys(value).length === 0) delete obj[key];
+    }
+  }
+}
+
 // Computes, per target locale/namespace, the deeply-missing leaf keys
 // relative to `sourceLocale`. Returns { [loc]: { [ns]: { path: value } } },
 // omitting empty entries.
@@ -258,6 +288,49 @@ function cmdApply(args) {
   }
 }
 
+// Removes dead keys from every locale for the given namespace(s). Input
+// shape: { [namespace]: ["dotted.path", ...] }. Applied identically across
+// ALL locales (a dead key is dead regardless of language). Missing paths
+// are reported as WARNING and otherwise ignored (idempotent).
+function cmdRemove(args) {
+  const [deadKeysPath] = args;
+  if (!deadKeysPath) {
+    console.error("remove: missing <dead-keys.json> argument");
+    process.exit(1);
+  }
+  let deadKeys;
+  try {
+    deadKeys = JSON.parse(readFileSync(deadKeysPath, "utf8"));
+  } catch (err) {
+    console.error(`remove: cannot read/parse "${deadKeysPath}": ${err.message}`);
+    process.exit(1);
+  }
+
+  for (const locale of listLocales()) {
+    const knownNamespaces = new Set(listNamespaces(locale));
+    for (const [ns, paths] of Object.entries(deadKeys)) {
+      if (!knownNamespaces.has(ns)) {
+        console.error(`WARNING: skipping unknown namespace "${ns}" for locale "${locale}"`);
+        continue;
+      }
+      const filePath = nsFilePath(locale, ns);
+      const targetObj = readJson(filePath);
+      let changed = false;
+      for (const dottedPath of paths) {
+        if (deletePath(targetObj, dottedPath)) {
+          changed = true;
+        } else {
+          console.error(`WARNING: "${dottedPath}" not found in ${locale}/${ns}, skipping`);
+        }
+      }
+      if (changed) {
+        pruneEmpty(targetObj);
+        writeJson(filePath, targetObj);
+      }
+    }
+  }
+}
+
 function cmdCheck() {
   let report;
   try {
@@ -306,6 +379,15 @@ Usage:
 
       Example:
         node scripts/locale-sync.mjs check
+
+  node scripts/locale-sync.mjs remove <dead-keys.json>
+      Reads a { namespace: ["dotted.key.path", ...] } file and deletes each
+      path from that namespace in EVERY locale (a dead key is dead in every
+      language). Missing paths are reported as WARNING and skipped.
+      Idempotent.
+
+      Example:
+        node scripts/locale-sync.mjs remove /tmp/dead-keys.json
 `);
 }
 
@@ -324,6 +406,9 @@ function main() {
       break;
     case "check":
       cmdCheck();
+      break;
+    case "remove":
+      cmdRemove(rest);
       break;
     default:
       console.error(`unknown command "${command}"\n`);

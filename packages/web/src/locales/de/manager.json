@@ -2,20 +2,18 @@
   "auth": {
     "title": "Manager",
     "subtitle": "Melde dich an, um dein Spiel zu verwalten.",
-    "username": "Benutzername",
     "usernameLabel": "Benutzername",
     "usernamePlaceholder": "Benutzername",
     "invalidInput": "Benutzername und Passwort erforderlich",
     "invalidCredentials": "Ungültiger Benutzername oder Passwort",
     "passwordLabel": "Passwort",
-    "passwordError": "Ungültiges Passwort",
     "error": "Authentifizierung fehlgeschlagen",
     "networkError": "Verbindungsfehler"
   },
   "aria": {
-    "passwordLabel": "Passwort",
     "openNav": "Navigation öffnen",
-    "navTitle": "Navigation"
+    "navTitle": "Navigation",
+    "exportQuestionsCsv": "Fragen-Antworten als CSV exportieren"
   },
   "configurationsTitle": "Konfigurationen",
   "kickPlayer": {
@@ -83,7 +81,8 @@
     "bulkDeleteConfirm": "{{count}} ausgewählte Quizze werden dauerhaft gelöscht.",
     "selectQuiz": "„{{name}}“ auswählen",
     "moreActions": "Weitere Optionen",
-    "intro": "Quizze erstellen, bearbeiten und organisieren."
+    "intro": "Quizze erstellen, bearbeiten und organisieren.",
+    "readError": "Datei konnte nicht gelesen werden"
   },
   "result": {
     "delete": "Ergebnis löschen",
@@ -111,7 +110,12 @@
       "incorrect": " Falsch",
       "player": "Spieler",
       "points": "Punkte",
-      "rank": "Rang"
+      "rank": "Rang",
+      "questionNo": "Frage",
+      "question": "Frage",
+      "responseMs": "Antwortzeit (ms)",
+      "yes": "Ja",
+      "no": "Nein"
     },
     "playerCount": "{{count}} Spieler",
     "timeLimitSuffix": "s Zeitlimit",
@@ -132,7 +136,8 @@
     },
     "export": {
       "csv": "Als CSV exportieren",
-      "done": "CSV heruntergeladen"
+      "done": "CSV heruntergeladen",
+      "json": "Als JSON exportieren"
     },
     "intro": "Vergangene Spiele ansehen und teilen."
   },
@@ -143,8 +148,6 @@
     "ki": "KI",
     "results": "Ergebnisse",
     "design": "Design",
-    "plugins": "Plugins",
-    "skeleton": "Skeleton",
     "satellite": "Satellit",
     "submissions": "Vorschläge",
     "media": "Medien",
@@ -164,39 +167,10 @@
       "system": "System"
     }
   },
-  "plugins": {
-    "title": "Plugins",
-    "install": "Plugin installieren",
-    "installHint": "Lade ein Plugin als ZIP-Archiv hoch.",
-    "dropzone": "ZIP hierher ziehen oder zum Auswählen klicken",
-    "installing": "Wird installiert …",
-    "installed": "Installierte Plugins",
-    "empty": "Noch keine Plugins installiert",
-    "emptyHint": "Installierte Plugins erscheinen hier.",
-    "uninstall": "Entfernen",
-    "uninstallConfirm": "Möchtest du das Plugin „{{name}}“ wirklich entfernen?",
-    "toast": {
-      "installed": "Plugin installiert"
-    },
-    "warning": {
-      "title": "Plugins laufen mit vollem Zugriff",
-      "body": "Plugins erhalten vollen Zugriff auf die Verwaltung und den Server. Installiere nur Code, dem du vertraust."
-    },
-    "capabilities": {
-      "tab": "Eigener Tab",
-      "ui": "Oberfläche",
-      "server": "Server-Hook",
-      "config": "Einstellungen",
-      "i18n": "Übersetzungen"
-    },
-    "serverHandlerWarning": "Dieses Plugin nutzt Server-Hooks, die das Rust-Backend noch nicht ausführt — es bleibt hier wirkungslos."
-  },
   "dev": {
     "redactionNotice": "Passwörter, API-Tokens und Antwortlösungen werden nie protokolliert.",
     "api": {
       "title": "API-Explorer",
-      "description": "Selbstdokumentierende HTTP-Schnittstelle.",
-      "openapi": "OpenAPI-Schema",
       "events": "Ereignis-Katalog",
       "schema": "Client-Ereignis-Schema",
       "routes": "Routen",
@@ -209,16 +183,13 @@
       "title": "Observability",
       "description": "Live-Zustand und Diagnose.",
       "serverHealth": "Server-Zustand",
-      "activeGames": "Aktive Spiele",
       "players": "Spieler",
       "noGames": "Keine aktiven Spiele",
-      "metrics": "Latenz & Zustand",
       "reconnects": "Reconnects",
       "rejected": "Abgelehnte Antworten",
       "answerLatency": "Antwort-Latenz",
       "metricsOffTitle": "Metriken inaktiv",
       "metricsOffHint": "Low-Latency-Modus ist aus.",
-      "displays": "Displays",
       "noDisplays": "Keine Displays gekoppelt",
       "eventCatalog": "Ereignis-Katalog",
       "sampledRedacted": "gesampelt & redigiert",
@@ -233,10 +204,6 @@
       "client": "Client-Logs",
       "download": "Herunterladen"
     },
-    "theme": {
-      "title": "Theme-Overrides",
-      "description": "Freies CSS und JavaScript, das zusätzlich zum Theme auf allen Geräten geladen wird."
-    },
     "animatedCss": {
       "title": "Animated CSS",
       "description": "Eigenes CSS für den animierten Hintergrund. Speichern überträgt das aktuelle Theme."
@@ -246,10 +213,7 @@
     "mode": "Entwicklungsmodus",
     "section": {
       "debug": "Debug & Diagnose",
-      "testdata": "Testdaten & Simulation",
-      "perf": "Performance & Metriken",
       "export": "Datenexport",
-      "security": "Sicherheit & Tokens",
       "api": "API & Docs",
       "theme": "Theme-Entwicklung"
     },
@@ -445,9 +409,7 @@
       "label": "Bildauflösung",
       "help": "Kantenlänge des generierten Bildes",
       "option": "{{size}} × {{size}}"
-    },
-    "imageResolution": "Bildauflösung",
-    "imageSizeLong": "Kantenlänge des generierten Bildes"
+    }
   },
   "satellite": {
     "title": "Satelliten-Anzeige",
@@ -505,8 +467,6 @@
       "join": "Beitritt",
       "question": "Frage",
       "leaderboard": "Rangliste",
-      "interactive": "Klicken für interaktive Vorschau",
-      "static": "Vorschau als Bild",
       "openWindow": "Live-Vorschau öffnen"
     },
     "contrast": {
@@ -524,11 +484,6 @@
     "contrastNote": "Helle Primärfarben werden für Text und Symbole automatisch abgedunkelt, damit sie lesbar bleiben.",
     "scrim": "Hintergrund abdunkeln ({{value}}%)",
     "backgrounds": "Hintergründe",
-    "bgSlots": {
-      "auth": "Startseite / Beitritt",
-      "managerGame": "Host-Bildschirm (Frage)",
-      "playerGame": "Spieler-Handy (im Spiel)"
-    },
     "save": "Speichern",
     "reset": "Zurücksetzen",
     "toast": {
@@ -551,14 +506,6 @@
       "import": "Vorlage importieren",
       "export": "Vorlage exportieren"
     },
-    "revisions": {
-      "title": "Versionen",
-      "restore": "Wiederherstellen",
-      "empty": "Noch keine gespeicherten Versionen",
-      "restored": "Version wiederhergestellt",
-      "confirmRestore": "Diese Version wiederherstellen? Die aktuelle wird als neue Version gesichert.",
-      "savedAt": "Gespeichert {{when}}"
-    },
     "animation": {
       "title": "Animation",
       "description": "Feinabstimmung des Spielgefühls — Federkraft, Dauer und Versatz der Einblendungen.",
@@ -575,10 +522,6 @@
         "auth": "Start / Beitritt",
         "managerGame": "Host-Bildschirm",
         "playerGame": "Spieler-Handy"
-      },
-      "type": {
-        "none": "Keiner",
-        "creamBackdrop": "Cream-Backdrop"
       },
       "speed": "Geschwindigkeit",
       "intensity": "Intensität",
@@ -718,19 +661,15 @@
     "title": "Spielmodus",
     "description": "Im Team-Modus werden Punkte pro Team aufsummiert und eine Team-Rangliste angezeigt.",
     "teamMode": "Team-Modus",
-    "teamModeHint": "Spieler wählen ein Team (Rot, Blau, Grün, Gelb). Erfordert einen Neustart des Spiels.",
     "teamModeEnabled": "Team-Modus aktiviert",
     "teamModeDisabled": "Team-Modus deaktiviert",
     "lowLatency": "Low-Latency-Modus",
-    "lowLatencyTitle": "Low-Latency-Modus",
     "lowLatencyDescription": "Optimiert das Timing fürs schnelle Spielen: Uhr-Synchronisierung, Antwort-Bestätigung und gedrosselte Ranglisten-Updates. Blendet zudem die Latenz-Anzeige für den Host ein.",
-    "lowLatencyHint": "Reduziert die wahrgenommene Verzögerung. Erfordert einen Neustart des Spiels.",
     "lowLatencyEnabled": "Low-Latency-Modus aktiviert",
     "lowLatencyDisabled": "Low-Latency-Modus deaktiviert",
     "klassenTitle": "Klassen-Modus",
     "klassenDescription": "Aktiviert den Klassen-Modus, in dem Spieler aus einem von der Lehrkraft verwalteten Schülerverzeichnis beitreten können.",
     "klassenMode": "Klassen-Modus verfügbar",
-    "klassenModeHint": "Ermöglicht Lehrkräften, Klassen und Schülerverzeichnisse zu verwalten. Erfordert Neustart des Spiels.",
     "klassenEnabled": "Klassen-Modus verfügbar",
     "klassenDisabled": "Klassen-Modus deaktiviert",
     "endScreenTitle": "Endbildschirm-Optionen",
@@ -739,17 +678,13 @@
     "lobbyTitle": "Lobby-Sperre",
     "lobbyDescription": "Wenn aktiviert, können neue Spieler nicht mehr der Lobby beitreten. Bestehende Spieler und deren Wiederverbindungen sind nicht betroffen.",
     "lobbyLocked": "Lobby sperren",
-    "lobbyLockedHint": "Sperrt die Lobby für neue Spieler, während bestehende Spieler weiterhin beitreten können.",
     "lobbyUnlocked": "Lobby entsperrt",
     "randomizeAnswersTitle": "Antwortreihenfolge",
     "randomizeAnswersDescription": "Mischt die Reihenfolge der Antwortoptionen pro Frage zufällig, während die kanonischen Indizes für die Bewertung erhalten bleiben.",
-    "randomizeAnswers": "Antworten mischen",
-    "randomizeAnswersHint": "Randomisiert die Anzeigereihenfolge der Antworten pro Frage.",
     "randomizeAnswersEnabled": "Antworten werden gemischt",
     "randomizeAnswersDisabled": "Antwortreihenfolge fest",
     "scoringTitle": "Wertung",
     "scoringDescription": "Wähle aus, wie Punkte berechnet werden. Geschwindigkeit berücksichtigt die Antwortzeit, Genauigkeit zählt nur richtige oder falsche Antworten.",
-    "scoringMode": "Wertungsmodus",
     "speedMode": "Geschwindigkeit",
     "accuracyMode": "Genauigkeit",
     "endScreenMode": {
@@ -770,7 +705,6 @@
     "playerName": "Spieler {{rank}}"
   },
   "runningGames": {
-    "title": "Laufende Spiele",
     "description": "Aktuell aktive Spiele verwalten.",
     "refresh": "Aktualisieren",
     "emptyHeadline": "Keine laufenden Spiele",
@@ -802,12 +736,10 @@
     "createTitle": "Klasse erstellen",
     "createDescription": "Gib einen Namen für die neue Klasse ein.",
     "created": "Klasse erstellt",
-    "edit": "Klasse bearbeiten",
     "editTitle": "Klasse umbenennen",
     "editDescription": "Gib einen neuen Namen für die Klasse ein.",
     "editClass": "Klasse bearbeiten",
     "updated": "Klasse aktualisiert",
-    "delete": "Klasse löschen",
     "deleteClass": "Klasse löschen",
     "deleteTitle": "Klasse löschen",
     "deleteConfirm": "Möchtest du die Klasse \"{{name}}\" wirklich löschen? Die Schüler in dieser Klasse werden gelöscht.",
@@ -817,12 +749,8 @@
     "search": "Klasse suchen",
     "searchPlaceholder": "Nach Klasse oder Schüler suchen …",
     "classNamePlaceholder": "Klassenname",
-    "studentNamePlaceholder": "Schülername",
-    "students": "Schüler",
     "studentCount": "Schüler",
     "addStudent": "Schüler hinzufügen",
-    "addStudentTitle": "Schüler hinzufügen",
-    "addStudentDescription": "Gib den Namen des Schülers ein.",
     "studentAdded": "Schüler hinzugefügt",
     "editStudent": "Schüler bearbeiten",
     "editStudentTitle": "Schülernamen ändern",
@@ -874,8 +802,6 @@
       "admin": "Admin",
       "lehrkraft": "Lehrkraft"
     },
-    "roleUser": "Lehrkraft",
-    "roleAdmin": "Admin",
     "create": "Erstellen",
     "delete": "Löschen",
     "deleteConfirmTitle": "Benutzer löschen?",
@@ -912,10 +838,10 @@
       "saved": "Schlüssel gespeichert",
       "removed": "Schlüssel entfernt",
       "emptyHeadline": "Keine externen Anbieter",
-      "empty": "Der Administrator hat noch keine externen KI-Anbieter eingerichtet."
+      "empty": "Der Administrator hat noch keine externen KI-Anbieter eingerichtet.",
+      "remove": "Entfernen"
     },
-    "welcome": "Willkommen",
-    "description": "Dein Profil wird bald verfügbar sein. Hier kannst du später deine Einstellungen, KI-Anbieter und weitere Optionen konfigurieren."
+    "welcome": "Willkommen"
   },
   "schueler": {
     "title": "Schülerverwaltung",
@@ -924,7 +850,6 @@
     "create": "Schüler anlegen",
     "createTitle": "Schüler anlegen",
     "createDescription": "Lege einen neuen Schüler an und weise ihn optional direkt einer oder mehreren Klassen zu.",
-    "namePlaceholder": "Name des Schülers",
     "firstNamePlaceholder": "Vorname",
     "lastNamePlaceholder": "Nachname",
     "birthdateLabel": "Geburtsdatum (optional)",
@@ -953,19 +878,12 @@
     "description": "Definiere globale Fächer (Labels) zur Kategor­isierung von Quizzen, Medien und Katalogeinträgen.",
     "emptyState": "Noch keine Fächer definiert. Erstelle dein erstes Fach mit dem Button unten.",
     "create": "Fach erstellen",
-    "createTitle": "Neues Fach",
     "namePlaceholder": "Name des Fachs",
     "colorLabel": "Farbe",
-    "created": "Fach erstellt",
-    "updated": "Fach aktualisiert",
-    "deleted": "Fach gelöscht",
     "deleteTitle": "Fach löschen",
     "deleteConfirm": "Möchtest du \"{{name}}\" wirklich löschen? Das Fach wird von allen Quizzen, Medien und Katalogeinträgen entfernt.",
-    "renameTitle": "Fach bearbeiten",
     "filterAll": "Alle",
-    "filterLabel": "Fach",
     "assignTitle": "Fach zuweisen",
-    "assignSave": "Speichern",
     "noLabels": "Keine Fächer verfügbar",
     "editTitle": "Label bearbeiten",
     "update": "Speichern",
@@ -1033,7 +951,6 @@
       "cssSaved": "CSS gespeichert",
       "jsSaved": "JavaScript gespeichert",
       "reset": "Auf Standard zurückgesetzt",
-      "exported": "Skeleton exportiert",
       "imported": "Skeleton importiert",
       "exportFailed": "Export fehlgeschlagen: {{message}}",
       "importFailed": "Import fehlgeschlagen: {{message}}",
