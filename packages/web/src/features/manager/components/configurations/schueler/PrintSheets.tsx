@@ -1,4 +1,5 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
+import QRCode from "qr-code-styling"
 
 interface SchuelerStudent {
   id: number
@@ -93,7 +94,7 @@ const PrintSheets = ({ students, pins, loginUrl }: PrintSheetsProps) => {
               </div>
             )}
 
-            {/* QR Code Placeholder */}
+            {/* QR Code */}
             <div
               style={{
                 flex: 1,
@@ -102,30 +103,9 @@ const PrintSheets = ({ students, pins, loginUrl }: PrintSheetsProps) => {
                 justifyContent: "center",
                 alignItems: "center",
                 minHeight: "120px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                backgroundColor: "#f9f9f9",
               }}
             >
-              <div style={{ fontSize: "12px", color: "#999" }}>
-                QR-Code
-              </div>
-              <div
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  marginTop: "8px",
-                  backgroundColor: "#fff",
-                  border: "1px solid #ddd",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "10px",
-                }}
-              >
-                {/* TODO: ETAPPE 2 - integrate qr-code-styling */}
-                [QR]
-              </div>
+              <QRCodeCanvas url={loginUrl} />
             </div>
 
             {/* Login URL */}
@@ -138,6 +118,45 @@ const PrintSheets = ({ students, pins, loginUrl }: PrintSheetsProps) => {
         )
       })}
     </div>
+  )
+}
+
+interface QRCodeCanvasProps {
+  url: string
+}
+
+const QRCodeCanvas = ({ url }: QRCodeCanvasProps) => {
+  const canvasRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!canvasRef.current || !url) return
+
+    try {
+      const qr = new QRCode({
+        width: 200,
+        height: 200,
+        type: "canvas",
+        margin: 0,
+        data: url,
+        background: "#ffffff",
+        color: "#000000",
+      } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      canvasRef.current.innerHTML = ""
+      qr.append(canvasRef.current)
+    } catch (err) {
+      console.error("QR Code generation failed:", err)
+      canvasRef.current!.innerHTML = '<div style="color:red">QR Error</div>'
+    }
+  }, [url])
+
+  return (
+    <div
+      ref={canvasRef}
+      style={{ width: "200px", height: "200px" }}
+      aria-label={`QR Code für Login: ${url}`}
+      role="img"
+    />
   )
 }
 
