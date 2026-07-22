@@ -132,6 +132,48 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                     None
                 };
 
+                // WP-E1: reject game start when the bound class is inactive.
+                // Owner-scoped lookup (admin sees any class). Missing/not-owned → invalidPayload.
+                if let Some(cid) = bound_class_id {
+                    let me = if user.role == "admin" {
+                        None
+                    } else {
+                        Some(user.user_id)
+                    };
+                    match crate::db::get_class(&ctx.db_pool, cid, me).await {
+                        Ok(class) => {
+                            let active = class
+                                .get("active")
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(true);
+                            if !active {
+                                tracing::warn!(
+                                    "game create denied: check=class_inactive class={}",
+                                    cid
+                                );
+                                socket
+                                    .emit(
+                                        constants::game::ERROR_MESSAGE,
+                                        "errors:game.classInactive",
+                                    )
+                                    .ok();
+                                return;
+                            }
+                        }
+                        Err(_) => {
+                            tracing::warn!(
+                                "game:create denied: class not found/not owned class={} user_id={}",
+                                cid,
+                                user.user_id
+                            );
+                            socket
+                                .emit(constants::game::ERROR_MESSAGE, "errors:game.invalidPayload")
+                                .ok();
+                            return;
+                        }
+                    }
+                }
+
                 // Fetch achievements config for this game (N3 requirement)
                 let ach_rows = crate::db::get_achievements(&ctx.db_pool).await;
 
