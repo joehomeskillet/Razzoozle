@@ -14,9 +14,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 
-import RowSelectionControl, {
-  type RowSelectionControlProps,
-} from "../RowSelectionControl"
+import RowSelectionControl from "../RowSelectionControl"
 
 const render = (component: React.ReactNode) => renderToStaticMarkup(component)
 
