@@ -151,17 +151,17 @@ const Medal = ({ rank }: { rank: number }) => {
 // cycles through all achievements every 3 seconds. Otherwise shows first 3 static.
 // Skips ids absent from the static meta catalog.
 
-const PodiumMedals = ({ 
-  achievements, 
-  autoMode = false, 
-  isRevealed = false 
-}: { 
+const PodiumMedals = ({
+  achievements,
+  autoMode = false,
+  isRevealed = false
+}: {
   achievements?: string[]
   autoMode?: boolean
   isRevealed?: boolean
 }) => {
   const [carouselIndex, setCarouselIndex] = useState(0)
-  
+
   const shown = useMemo(() => (achievements ?? [])
     .map((id) => ({ id, meta: ACHIEVEMENT_META[id] }))
     .filter((x): x is { id: string; meta: (typeof ACHIEVEMENT_META)[string] } =>
@@ -192,8 +192,8 @@ const PodiumMedals = ({
 
   // Determine which achievements to show (carousel or static)
   const displayed = autoMode && shown.length > 3
-    ? [shown[(carouselIndex) % shown.length], 
-       shown[(carouselIndex + 1) % shown.length], 
+    ? [shown[(carouselIndex) % shown.length],
+       shown[(carouselIndex + 1) % shown.length],
        shown[(carouselIndex + 2) % shown.length]]
     : shown.slice(0, 3)
 
@@ -314,6 +314,73 @@ const PodiumStickerButton = ({
   )
 }
 
+// ─── Single Winner Layout ────────────────────────────────────────────────────
+// Compact, centered layout for a single player winner.
+interface SingleWinnerProps {
+  player: ManagerStatusDataMap["FINISHED"]["top"][0]
+  subject: string
+  autoMode: boolean
+  apparition: number
+  reveal: ReturnType<typeof useReveal>
+}
+
+const SingleWinner = ({
+  player: p,
+  subject,
+  autoMode,
+  apparition,
+  reveal,
+}: SingleWinnerProps) => {
+  const { t } = useTranslation()
+
+  return (
+    <motion.div
+      variants={reveal.item(96)}
+      initial="hidden"
+      animate={apparition >= 3 ? "visible" : "hidden"}
+      transition={reveal.spring}
+      className="flex flex-1 flex-col items-center justify-center gap-6"
+    >
+      <Avatar
+        src={p.avatar}
+        name={p.username}
+        size={128}
+        className="mx-auto"
+      />
+
+      <div className="text-center">
+        <p className="text-lg font-semibold text-[color:var(--color-accent)] mb-2">
+          {t("game:podium.firstPlace", { defaultValue: "1. Platz" })}
+        </p>
+        <p className="text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-5xl">
+          {p.username}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center gap-2 rounded-lg bg-[var(--color-accent)] px-6 py-4 text-center text-white shadow-lg">
+        <p className="text-sm font-semibold opacity-90">
+          {t("game:podium.points", { defaultValue: "Punkte" })}
+        </p>
+        <p className="text-5xl font-bold tabular-nums drop-shadow-sm">
+          {p.points}
+        </p>
+      </div>
+
+      <PodiumMedals achievements={p.achievements} autoMode={autoMode} isRevealed={apparition >= 3} />
+
+      {apparition >= 4 && (
+        <PodiumStickerButton
+          rank={1}
+          name={p.username}
+          points={p.points}
+          subject={subject}
+          achievements={p.achievements}
+        />
+      )}
+    </motion.div>
+  )
+}
+
 const Podium = ({
   data: { subject, top: allPlayers, teamStandings, recap, autoMode, endScreen },
 }: Props) => {
@@ -337,6 +404,12 @@ const Podium = ({
 
   // Rank → sticker tier mapping (1-based podium order).
   const rankOf = useMemo(() => ({ 0: 1, 1: 2, 2: 3 }) as const, [])
+
+  const { t } = useTranslation()
+
+  const topThree = top.slice(0, 3)
+  const rankingList = top.slice(3)
+  const showRankingList = endScreen === "full" && rankingList.length > 0
 
   return (
     <>
@@ -366,6 +439,7 @@ const Podium = ({
           <div className="spotlight"></div>
         </div>
       )}
+
       <section
         data-testid="podium"
         className={clsx(
@@ -381,162 +455,227 @@ const Podium = ({
           <TeamLeaderboard standings={teamStandings} />
         )}
 
-        <div
-          style={{ gridTemplateColumns: `repeat(${top.length}, 1fr)` }}
-          className={`grid w-full max-w-200 flex-1 items-end justify-center justify-self-end overflow-x-visible overflow-y-hidden`}
-        >
-          {top[1] && (
-            <motion.div
-              variants={reveal.item(RISE)}
-              initial="hidden"
-              animate={apparition >= 2 ? "visible" : "hidden"}
-              transition={reveal.spring}
-              className="z-20 flex h-[50%] w-full flex-col items-center justify-center gap-3"
+        {top.length === 1 ? (
+          // Single winner layout
+          <SingleWinner
+            player={top[0]}
+            subject={subject}
+            autoMode={autoMode}
+            apparition={apparition}
+            reveal={reveal}
+          />
+        ) : (
+          // Traditional podium layout for 2+ players
+          <>
+            <div
+              style={{ gridTemplateColumns: `repeat(${topThree.length}, 1fr)` }}
+              className={`grid w-full max-w-200 flex-1 items-end justify-center justify-self-end overflow-x-visible overflow-y-hidden`}
             >
-              <Avatar
-                src={top[1].avatar}
-                name={top[1].username}
-                size={56}
-                className="mx-auto"
-              />
-              <p
-                className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
-                  {
-                    "anim-balanced": apparition >= 4,
-                  },
-                )}
-              >
-                {top[1].username}
-              </p>
-              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+              {topThree[1] && (
                 <motion.div
-                  variants={reveal.pop()}
+                  variants={reveal.item(RISE)}
                   initial="hidden"
                   animate={apparition >= 2 ? "visible" : "hidden"}
-                  transition={reveal.snap}
+                  transition={reveal.spring}
+                  className="z-20 flex h-[50%] w-full flex-col items-center justify-center gap-3"
                 >
-                  <Medal rank={2} />
-                </motion.div>
-                <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
-                  {top[1].points}
-                </p>
-                <PodiumMedals achievements={top[1].achievements} autoMode={autoMode} isRevealed={apparition >= 2} />
-                {apparition >= 4 && (
-                  <PodiumStickerButton
-                    rank={rankOf[1]}
-                    name={top[1].username}
-                    points={top[1].points}
-                    subject={subject}
-                    achievements={top[1].achievements}
+                  <Avatar
+                    src={topThree[1].avatar}
+                    name={topThree[1].username}
+                    size={56}
+                    className="mx-auto"
                   />
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          <motion.div
-            variants={reveal.item(RISE)}
-            initial="hidden"
-            animate={apparition >= 3 ? "visible" : "hidden"}
-            transition={reveal.spring}
-            className={clsx(
-              "z-30 flex h-[60%] w-full flex-col items-center gap-3",
-              {
-                "md:min-w-64": top.length < 2,
-              },
-            )}
-          >
-            <Avatar
-              src={top[0].avatar}
-              name={top[0].username}
-              size={72}
-              className="mx-auto"
-            />
-            <p
-              className={clsx(
-                "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] opacity-0 md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
-                { "anim-balanced opacity-100": apparition >= 4 },
+                  <p
+                    className={clsx(
+                      "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                      {
+                        "anim-balanced": apparition >= 4,
+                      },
+                    )}
+                  >
+                    {topThree[1].username}
+                  </p>
+                  <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+                    <motion.div
+                      variants={reveal.pop()}
+                      initial="hidden"
+                      animate={apparition >= 2 ? "visible" : "hidden"}
+                      transition={reveal.snap}
+                    >
+                      <Medal rank={2} />
+                    </motion.div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-sm font-semibold text-white/90">
+                        {t("game:podium.points", { defaultValue: "Punkte" })}
+                      </p>
+                      <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+                        {topThree[1].points}
+                      </p>
+                    </div>
+                    <PodiumMedals achievements={topThree[1].achievements} autoMode={autoMode} isRevealed={apparition >= 2} />
+                    {apparition >= 4 && (
+                      <PodiumStickerButton
+                        rank={rankOf[1]}
+                        name={topThree[1].username}
+                        points={topThree[1].points}
+                        subject={subject}
+                        achievements={topThree[1].achievements}
+                      />
+                    )}
+                  </div>
+                </motion.div>
               )}
-            >
-              {top[0].username}
-            </p>
-            <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+
               <motion.div
-                variants={reveal.pop()}
+                variants={reveal.item(RISE)}
                 initial="hidden"
                 animate={apparition >= 3 ? "visible" : "hidden"}
-                transition={reveal.snap}
-              >
-                <Medal rank={1} />
-              </motion.div>
-              <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
-                {top[0].points}
-              </p>
-              <PodiumMedals achievements={top[0].achievements} autoMode={autoMode} isRevealed={apparition >= 3} />
-              {apparition >= 4 && (
-                <PodiumStickerButton
-                  rank={rankOf[0]}
-                  name={top[0].username}
-                  points={top[0].points}
-                  subject={subject}
-                  achievements={top[0].achievements}
-                />
-              )}
-            </div>
-          </motion.div>
-
-          {top[2] && (
-            <motion.div
-              variants={reveal.item(RISE)}
-              initial="hidden"
-              animate={apparition >= 1 ? "visible" : "hidden"}
-              transition={reveal.spring}
-              className="z-10 flex h-[40%] w-full flex-col items-center gap-3"
-            >
-              <Avatar
-                src={top[2].avatar}
-                name={top[2].username}
-                size={56}
-                className="mx-auto"
-              />
-              <p
+                transition={reveal.spring}
                 className={clsx(
-                  "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                  "z-30 flex h-[60%] w-full flex-col items-center gap-3",
                   {
-                    "anim-balanced": apparition >= 4,
+                    "md:min-w-64": topThree.length < 2,
                   },
                 )}
               >
-                {top[2].username}
-              </p>
-              <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+                <Avatar
+                  src={topThree[0].avatar}
+                  name={topThree[0].username}
+                  size={72}
+                  className="mx-auto"
+                />
+                <p
+                  className={clsx(
+                    "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] opacity-0 md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                    { "anim-balanced opacity-100": apparition >= 4 },
+                  )}
+                >
+                  {topThree[0].username}
+                </p>
+                <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+                  <motion.div
+                    variants={reveal.pop()}
+                    initial="hidden"
+                    animate={apparition >= 3 ? "visible" : "hidden"}
+                    transition={reveal.snap}
+                  >
+                    <Medal rank={1} />
+                  </motion.div>
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm font-semibold text-white/90">
+                      {t("game:podium.points", { defaultValue: "Punkte" })}
+                    </p>
+                    <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+                      {topThree[0].points}
+                    </p>
+                  </div>
+                  <PodiumMedals achievements={topThree[0].achievements} autoMode={autoMode} isRevealed={apparition >= 3} />
+                  {apparition >= 4 && (
+                    <PodiumStickerButton
+                      rank={rankOf[0]}
+                      name={topThree[0].username}
+                      points={topThree[0].points}
+                      subject={subject}
+                      achievements={topThree[0].achievements}
+                    />
+                  )}
+                </div>
+              </motion.div>
+
+              {topThree[2] && (
                 <motion.div
-                  variants={reveal.pop()}
+                  variants={reveal.item(RISE)}
                   initial="hidden"
                   animate={apparition >= 1 ? "visible" : "hidden"}
-                  transition={reveal.snap}
+                  transition={reveal.spring}
+                  className="z-10 flex h-[40%] w-full flex-col items-center gap-3"
                 >
-                  <Medal rank={3} />
-                </motion.div>
-
-                <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
-                  {top[2].points}
-                </p>
-                <PodiumMedals achievements={top[2].achievements} autoMode={autoMode} isRevealed={apparition >= 1} />
-                {apparition >= 4 && (
-                  <PodiumStickerButton
-                    rank={rankOf[2]}
-                    name={top[2].username}
-                    points={top[2].points}
-                    subject={subject}
-                    achievements={top[2].achievements}
+                  <Avatar
+                    src={topThree[2].avatar}
+                    name={topThree[2].username}
+                    size={56}
+                    className="mx-auto"
                   />
-                )}
-              </div>
-            </motion.div>
-          )}
-        </div>
+                  <p
+                    className={clsx(
+                      "overflow-visible text-center text-2xl font-bold whitespace-nowrap text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4vh,5rem)]",
+                      {
+                        "anim-balanced": apparition >= 4,
+                      },
+                    )}
+                  >
+                    {topThree[2].username}
+                  </p>
+                  <div className="flex h-full w-full flex-col items-center gap-4 rounded-t-xl bg-[var(--color-accent)] pt-6 text-center shadow-2xl">
+                    <motion.div
+                      variants={reveal.pop()}
+                      initial="hidden"
+                      animate={apparition >= 1 ? "visible" : "hidden"}
+                      transition={reveal.snap}
+                    >
+                      <Medal rank={3} />
+                    </motion.div>
+
+                    <div className="flex flex-col items-center">
+                      <p className="text-sm font-semibold text-white/90">
+                        {t("game:podium.points", { defaultValue: "Punkte" })}
+                      </p>
+                      <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
+                        {topThree[2].points}
+                      </p>
+                    </div>
+                    <PodiumMedals achievements={topThree[2].achievements} autoMode={autoMode} isRevealed={apparition >= 1} />
+                    {apparition >= 4 && (
+                      <PodiumStickerButton
+                        rank={rankOf[2]}
+                        name={topThree[2].username}
+                        points={topThree[2].points}
+                        subject={subject}
+                        achievements={topThree[2].achievements}
+                      />
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {showRankingList && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={apparition >= 4 ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ delay: 1, duration: 0.5 }}
+                className="w-full mt-6 px-4"
+              >
+                <h3 className="text-center text-lg font-semibold text-[color:var(--game-fg)] mb-4">
+                  {t("game:podium.ranking", { defaultValue: "Rangliste" })}
+                </h3>
+                <div className="space-y-2 max-w-md mx-auto">
+                  {rankingList.map((player, idx) => (
+                    <div
+                      key={player.username}
+                      className="flex items-center gap-3 px-4 py-2 rounded-lg bg-[color:var(--color-accent)]/10 border border-[color:var(--color-accent)]/30"
+                    >
+                      <span className="font-semibold text-[color:var(--color-accent)] min-w-8">
+                        #{idx + 4}
+                      </span>
+                      <Avatar
+                        src={player.avatar}
+                        name={player.username}
+                        size={32}
+                      />
+                      <span className="flex-1 font-medium text-[color:var(--game-fg)]">
+                        {player.username}
+                      </span>
+                      <span className="text-sm font-semibold text-[color:var(--game-fg)]">
+                        {player.points}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
       </section>
     </>
   )
