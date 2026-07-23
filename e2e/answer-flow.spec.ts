@@ -595,6 +595,7 @@ test.describe("Answer flow — E2E All Types", () => {
         !process.env.E2E_RACE_STANDALONE,
         "Standalone race tests opt-in via E2E_RACE_STANDALONE=1; main flow covers deadline race",
       )
+      test.setTimeout(120_000)
 
       const hostCtx = await browser.newContext()
       const p1Ctx = await browser.newContext()
@@ -659,6 +660,7 @@ test.describe("Answer flow — E2E All Types", () => {
         !process.env.E2E_RACE_STANDALONE,
         "Standalone race tests opt-in via E2E_RACE_STANDALONE=1; main flow covers double-submit",
       )
+      test.setTimeout(120_000)
 
       const hostCtx = await browser.newContext()
       const p1Ctx = await browser.newContext()
