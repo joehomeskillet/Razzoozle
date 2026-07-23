@@ -12,6 +12,8 @@ use tracing::{info, warn};
 const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
 /// Distinct error after PIN proven — student already has an active session (A6).
 const ALREADY_JOINED: &str = "errors:game.alreadyJoined";
+/// Free-text join: another connected player already uses this display name.
+const DUPLICATE_NAME: &str = "errors:game.duplicateName";
 
 /// Check if an IP address is a trusted proxy (loopback or private range).
 fn is_trusted_proxy(ip: IpAddr) -> bool {
@@ -143,6 +145,17 @@ pub(crate) fn join_emoji_pin(symbols: &[String]) -> Option<String> {
         return None;
     }
     Some(symbols.join(""))
+}
+
+/// Free-text join: true if a connected player already uses `username`
+/// (case-insensitive). Pure helper for the in-lock check + unit tests.
+pub(crate) fn free_text_name_taken<'a, I>(connected_usernames: I, username: &str) -> bool
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    connected_usernames
+        .into_iter()
+        .any(|n| n.to_lowercase() == username.to_lowercase())
 }
 
 /// Parse student_id stored on a player for klassen dedup (identifier_hash).
@@ -552,6 +565,28 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                                 return;
                                             }
                                         }
+                                    } else {
+                                        // Free-text parity with class-mode student-id dedup:
+                                        // reject if a connected player already has this name
+                                        // (case-insensitive).
+                                        let name_taken = free_text_name_taken(
+                                            game.players
+                                                .iter()
+                                                .filter(|p| p.connected)
+                                                .map(|p| p.username.as_str()),
+                                            &admit_username,
+                                        );
+                                        if name_taken {
+                                            drop(game);
+                                            warn!(
+                                                "login denied: check=duplicate_name username={}",
+                                                admit_username
+                                            );
+                                            socket
+                                                .emit(constants::game::ERROR_MESSAGE, DUPLICATE_NAME)
+                                                .ok();
+                                            return;
+                                        }
                                     }
 
                                     let mut player = match game.add_player(
@@ -855,5 +890,25 @@ mod tests {
             true, // throttle_blocked = true
         );
         assert_eq!(d2, KlassenLoginDecision::InvalidCredentials);
+    }
+
+    #[test]
+    fn test_free_text_duplicate_name_rejected() {
+        // Two players, same name (different cases) → second rejected.
+        assert!(free_text_name_taken(["Alice"], "alice"));
+        assert!(free_text_name_taken(["alice"], "ALICE"));
+        assert!(free_text_name_taken(["Alice", "Bob"], "ALICE"));
+
+        // Unicode case-insensitivity (German umlauts): "München" vs "münchen"
+        assert!(free_text_name_taken(["München"], "münchen"));
+        assert!(free_text_name_taken(["münchen"], "MÜNCHEN"));
+        assert!(free_text_name_taken(["Äpfel"], "äpfel"));
+
+        // Different names → ok.
+        assert!(!free_text_name_taken(["Alice"], "Bob"));
+        assert!(!free_text_name_taken(["Alice", "Bob"], "Carol"));
+
+        // Empty room / only disconnected names not passed in → ok.
+        assert!(!free_text_name_taken([], "Alice"));
     }
 }

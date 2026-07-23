@@ -29,6 +29,7 @@
     "playerNotFound": "Spiel oder Spieler nicht gefunden — bitte neu beitreten",
     "invalidCredentials": "Name oder PIN stimmen nicht mit der Klasse überein.",
     "alreadyJoined": "Dieser Name ist schon beigetreten.",
+    "duplicateName": "Dieser Name ist schon vergeben.",
     "classInactive": "Diese Klasse ist deaktiviert.",
     "statusError": "Fehler beim Laden des Quiz.",
     "networkError": "Netzwerkfehler beim Laden des Quiz."
