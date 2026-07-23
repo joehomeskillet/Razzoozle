@@ -572,8 +572,8 @@ test.describe("Answer flow — E2E All Types", () => {
             // Cap: theoretical max ~1000 * questions answered correctly.
             await expect.poll(async () => {
               const s1 = await parseLeaderboardScore(host, PLAYER1)
-              // ponytail: margin 600 covers configured achievement bonuses (first_correct+first_responder+climber, folded into score) while still catching double-counted answers (+1000)
-              return s1 <= 1000 * (i + 1) + 600
+              // ponytail: achievement bonuses accrue PER question (observed ≤420/round on prod config), so the margin scales with i; early rounds still catch a double-counted answer (+1000), later rounds are covered by the dedicated double-submit test (DOUBLE_SUBMIT_Q)
+              return s1 <= 1600 * (i + 1)
             }, { timeout: 10_000 }).toBe(true)
 
             // Advance to next question (effect-verified: re-click only if leaderboard still visible).
