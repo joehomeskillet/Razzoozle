@@ -3,7 +3,7 @@ import Badge, {
   assignTriggerClass,
   chipBase,
 } from "@razzoozle/web/components/manager/Badge"
-import Checkbox from "@razzoozle/web/components/Checkbox"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -217,14 +217,12 @@ const StudentList = ({
             className="min-w-0"
             selected={isSelected}
             selection={onToggleSelect ? (
-              <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
-                <Checkbox
-                  checked={isSelected}
-                  onChange={() => onToggleSelect(student.id)}
-                  aria-label={`Schüler auswählen: ${composedName}`}
-                  data-testid={`student-select-${student.id}`}
-                />
-              </label>
+              <RowSelectionControl
+                checked={isSelected}
+                onChange={() => onToggleSelect(student.id)}
+                ariaLabel={`Schüler auswählen: ${composedName}`}
+                data-testid={`student-select-${student.id}`}
+              />
             ) : undefined}
             leading={
               <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
