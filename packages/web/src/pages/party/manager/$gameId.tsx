@@ -55,7 +55,7 @@ const AutoAdvanceCountdown = ({ ms }: { ms: number | undefined }) => {
   const pct = Math.max(0, Math.min(100, (remaining / ms) * 100))
 
   return (
-    <div className="pointer-events-none absolute top-4 left-1/2 z-30 -translate-x-1/2">
+    <div className="pointer-events-none absolute top-20 left-4 z-30">
       <div className="flex min-w-48 flex-col items-center gap-1 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-4 py-2 shadow-md">
         <span className="text-sm font-semibold text-[color:var(--color-field-ink)] tabular-nums">
           {t("manager:auto.nextIn", {
@@ -148,7 +148,7 @@ const ManagerGamePage = () => {
       onNext={handleSkip}
       // Exit (LogOut) button opens the confirm dialog instead of leaving
       // immediately; performExit runs after the host confirms.
-      onBack={status.name === STATUS.FINISHED ? undefined : () => setConfirmExit(true)}
+      onBack={() => setConfirmExit(true)}
       manager
     >
       <AutoAdvanceCountdown ms={autoAdvanceMs} />
