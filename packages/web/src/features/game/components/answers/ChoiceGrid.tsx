@@ -45,6 +45,7 @@ export default function ChoiceGrid({
   const isSolo = testIdPrefix === "solo-"
   const reveal = useReveal()
   const renderOrder = displayOrder ?? answers?.map((_, i) => i) ?? []
+  const isBoolean = renderOrder.length === 2
 
   const handleTap = (key: number) => () => {
     onChange(key)
@@ -52,10 +53,14 @@ export default function ChoiceGrid({
   }
 
   return (
-    <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-      {renderOrder.map((key) => {
+    <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-[var(--game-space-2)] px-2 text-lg font-bold md:gap-[var(--game-space-3)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+      {renderOrder.map((key, index) => {
         const answer = answers?.[key]
         const isPicked = value === key
+        const tileLayout = clsx(
+          isBoolean ? "min-h-20" : "min-h-14 md:min-h-16",
+          renderOrder.length === 3 && index === 2 && "col-span-2",
+        )
 
         if (isSolo) {
           return (
@@ -71,13 +76,13 @@ export default function ChoiceGrid({
               initial="hidden"
               animate={feedback && isPicked ? "popped" : "visible"}
               transition={feedback && isPicked ? reveal.snap : reveal.spring}
-              className="relative flex"
+              className={clsx("relative flex", tileLayout)}
             >
               <AnswerButton
                 colorIndex={key}
                 correct={feedback && isPicked ? feedback.correct : undefined}
                 className={clsx(
-                  "w-full",
+                  "w-full break-words hyphens-auto",
                   !reveal.reduced &&
                     !disabled &&
                     "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
@@ -99,6 +104,8 @@ export default function ChoiceGrid({
             data-testid={`answer-btn-${key}`}
             key={key}
             className={clsx(
+              tileLayout,
+              "break-words hyphens-auto",
               ANSWERS_COLORS[key],
               !disabled && PRESS_FEEDBACK,
               disabled && value !== null && value !== key && "opacity-40",
