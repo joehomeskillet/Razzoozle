@@ -646,6 +646,7 @@ mod tests {
                 player_count: None,
                 correct_answer: None,
                 correct_chunks: None,
+                correct_token_pos: None,
                 scoring_mode: None,
                 auto_advance_ms: None,
                 round_recap: None,

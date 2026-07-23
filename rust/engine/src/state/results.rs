@@ -33,6 +33,7 @@ impl RoundResult {
             player_count: Some(total_players),
             correct_answer: None,
             correct_chunks: None,
+            correct_token_pos: None,
             auto_advance_ms: None,
             round_recap: None,
             scoring_mode: None,
@@ -77,11 +78,11 @@ mod tests {
         };
 
         let data = result.to_show_result_data(&player, 2);
-        
+
         // Verify auto_advance_ms is None in the base method
         // (it will be set in reveal_helpers if auto_mode is active)
         assert_eq!(data.auto_advance_ms, None);
-        
+
         // Verify other fields are set correctly
         assert!(data.correct);
         assert_eq!(data.points, 50);
