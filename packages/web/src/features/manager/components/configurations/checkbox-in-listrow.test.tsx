@@ -88,10 +88,11 @@ describe("ClassList — Checkbox-in-ListRow", () => {
     )
 
     // Verify label contains size-11 and cursor-pointer
-    const labelMatch = markup.match(
-      /label[^>]*class="[^"]*size-11[^"]*cursor-pointer[^"]*"[^>]*>/,
-    )
-    expect(labelMatch).toBeDefined()
+    const labelMatch =
+      /label[^>]*class="[^"]*size-11[^"]*cursor-pointer[^"]*"[^>]*>/.exec(
+        markup,
+      )
+    expect(labelMatch).not.toBeNull()
   })
 
   it("applies rowSelectedState classes when selectedIds contains class id", async () => {
@@ -123,8 +124,8 @@ describe("ClassList — Checkbox-in-ListRow", () => {
     }
 
     // Verify the card for the selected class contains at least one of these tokens
-    expect(markup.match(/bg-\[var\(--accent-tint\)\]/)).toBeDefined()
-    expect(markup.match(/outline-\[var\(--color-primary\)\]/)).toBeDefined()
+    expect(/bg-\[var\(--accent-tint\)\]/.exec(markup)).not.toBeNull()
+    expect(/outline-\[var\(--color-primary\)\]/.exec(markup)).not.toBeNull()
   })
 
   it("does not render selection slot when onToggleSelect is undefined", async () => {
@@ -212,10 +213,10 @@ describe("ClassList — Checkbox-in-ListRow", () => {
     // With the refactor, the card div uses flex-col from ListRow, not items-start.
     // Verify that there is no standalone "items-start" class pair near a card shell.
     // (This is more of a sanity check; the current structure should show flex-col instead.)
-    const cardMatch = markup.match(
-      /flex flex-col[^>]*rounded-\[var\(--radius-theme\)\]/,
+    const cardMatch = /flex flex-col[^>]*rounded-\[var\(--radius-theme\)\]/.exec(
+      markup,
     )
-    expect(cardMatch).toBeDefined()
+    expect(cardMatch).not.toBeNull()
   })
 })
 
@@ -279,10 +280,11 @@ describe("StudentList — Checkbox-in-ListRow", () => {
       />,
     )
 
-    const labelMatch = markup.match(
-      /label[^>]*class="[^"]*size-11[^"]*cursor-pointer[^"]*"[^>]*>/,
-    )
-    expect(labelMatch).toBeDefined()
+    const labelMatch =
+      /label[^>]*class="[^"]*size-11[^"]*cursor-pointer[^"]*"[^>]*>/.exec(
+        markup,
+      )
+    expect(labelMatch).not.toBeNull()
   })
 
   it("renders checkbox within card and student name appears in markup", async () => {
