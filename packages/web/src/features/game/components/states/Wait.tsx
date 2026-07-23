@@ -174,21 +174,22 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
         </motion.div>
       )}
 
-      <motion.div
-        animate={loaderPulse}
-        transition={breatheTransition}
-        style={{ willChange: "transform, opacity" }}
-        className="mt-8"
-      >
-        <Loader className="h-30" />
-      </motion.div>
-      <motion.h2
-        animate={headingSheen}
-        transition={breatheTransition}
-        className="mt-5 text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
-      >
-        {t(text)}
-      </motion.h2>
+      <div className={`flex flex-col items-center ${isLobby ? "gap-4 mt-6" : "gap-2 mt-8"}`}>
+        <motion.div
+          animate={loaderPulse}
+          transition={breatheTransition}
+          style={{ willChange: "transform, opacity" }}
+        >
+          <Loader className="h-30" />
+        </motion.div>
+        <motion.h2
+          animate={headingSheen}
+          transition={breatheTransition}
+          className="text-center text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(3rem,6vh,6rem)]"
+        >
+          {t(text)}
+        </motion.h2>
+      </div>
     </section>
   )
 }
