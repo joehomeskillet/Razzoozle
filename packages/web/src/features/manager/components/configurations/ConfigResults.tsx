@@ -2,11 +2,11 @@ import { EVENTS } from "@razzoozle/common/constants"
 import type { GameResult } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
-import Checkbox from "@razzoozle/web/components/Checkbox"
 import DateInput from "@razzoozle/web/components/DateInput"
 import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import {
   useEvent,
   useSocket,
@@ -22,6 +22,7 @@ import {
 import ResultModal from "@razzoozle/web/features/manager/components/ResultModal"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
+import Checkbox from "@razzoozle/web/components/Checkbox"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useMemo, useState } from "react"
@@ -256,24 +257,15 @@ const ConfigResults = () => {
             />
           ) : (
             <>
-              {/* Select-all header */}
-              <div className="text-xs font-semibold text-[var(--ink-muted)] px-3 py-2">
-                <Checkbox
-                  data-testid="results-select-all"
-                  ref={(el) => {
-                    if (el) {
-                      el.indeterminate =
-                        selection.someSelected && !selection.allSelected
-                      el.checked = selection.allSelected
-                    }
-                  }}
-                  onChange={() => selection.toggleAll()}
-                  aria-label="Alle auswählen"
-                />
-                {selection.selectionActive && (
-                  <span className="ml-2">{getBulkLabel()}</span>
-                )}
-              </div>
+              <SelectAllControl
+                id="results-select-all"
+                data-testid="results-select-all"
+                allSelected={selection.allSelected}
+                someSelected={selection.someSelected}
+                selectedCount={selection.selected.size}
+                totalCount={filteredResults.length}
+                onToggleAll={selection.toggleAll}
+              />
 
               <motion.div
                 className="min-h-0 flex-1 space-y-3 p-0.5"
