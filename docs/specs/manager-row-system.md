@@ -228,10 +228,12 @@ Nie `hidden` + Basis-Display-Klasse mischen — Variant-Regeln (`max-sm:`/`sm:`)
 | quiz | default | Checkbox in ListRow.selection | ListRow | R21: Hover-Label entfällt; selected={checked} |
 | catalog | default | Checkbox in ListRow.selection | ListRow | R21: Body-onClick bleibt |
 | submissions | default | — | SubmissionCard → rowShellBase-Klassen | R17: StatusBadge tone-API; aria-expanded |
-| classes | default | — | ListRow mit Chevron-Action (aria-expanded) | R18: Schüler-Details-Slot mit density="compact"; "+ Schüler"-CTA im details |
-| students | default | — | ListRow mit Klassen-Chips | R19: Klassen Badge chipBase; "+ Klasse" = assignTriggerClass; Trigger stopPropagation |
+| classes | default | Checkbox in ListRow.selection | ListRow mit Chevron-Action (aria-expanded) | R18: Schüler-Details-Slot mit density="compact"; "+ Schüler"-CTA im details; selected={checked} |
+| students | default | Checkbox in ListRow.selection | ListRow mit Klassen-Chips | R19: Klassen Badge chipBase; "+ Klasse" = assignTriggerClass; Trigger stopPropagation; selected={checked} |
 | labels | compact | — | ListRow (farbpunkt leading, Name title, Actions) | R20: leading+title+actions statt Eigenbau; Create-Button aria-label |
 | users | default | — | ListRow mit Badge-Meta | Badge-Tone-API; responsive Actions (hidden sm:inline-flex) |
+
+**Invariante Multi-Select-Checkboxen:** ListRow-basierte Managerlisten tragen ihre Multi-Select-Checkboxen innerhalb der Karten-Shell im `selection`-Slot (Checkbox in einem `size-11`-`label`-Wrapper, Muster wie QuizzList). Externe Checkbox-Spalten neben ListRow sind nicht zulässig.
 
 **R15 listMotion (neue Datei `console/listMotion.ts`):**
 ```ts
