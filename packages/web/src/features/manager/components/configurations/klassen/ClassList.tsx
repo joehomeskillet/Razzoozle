@@ -9,7 +9,7 @@ import ListRow from "@razzoozle/web/features/manager/components/console/ListRow"
 import {
   EmptyState,
 } from "@razzoozle/web/features/manager/components/console"
-import Checkbox from "@razzoozle/web/components/Checkbox"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import {
   ChevronDown,
@@ -240,14 +240,12 @@ const ClassList = ({
             selection={
               onToggleSelect
                 ? (
-                    <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
-                      <Checkbox
-                        checked={isSelected}
-                        onChange={() => onToggleSelect(classObj.id)}
-                        aria-label={`Klasse auswählen: ${classObj.name}`}
-                        data-testid={`class-select-${classObj.id}`}
-                      />
-                    </label>
+                    <RowSelectionControl
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(classObj.id)}
+                      ariaLabel={`Klasse auswählen: ${classObj.name}`}
+                      data-testid={`class-select-${classObj.id}`}
+                    />
                   )
                 : undefined
             }
