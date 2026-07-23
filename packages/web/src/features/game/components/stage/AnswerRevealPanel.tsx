@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useGameAudience } from "@/features/game/hooks";
-import { ANSWER_TILE_SURFACE } from "@/features/game/utils/answers";
+import { useGameAudience } from "@razzoozle/web/features/game/audience";
+import { ANSWER_TILE_SURFACE } from "@razzoozle/web/features/game/utils/answers";
 
 export interface AnswerRevealPanelProps {
   title?: string;
