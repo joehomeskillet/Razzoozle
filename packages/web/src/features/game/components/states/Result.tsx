@@ -1,5 +1,5 @@
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
-import Markdown from "@razzoozle/web/components/Markdown"
+import { AnswerRevealPanel } from "@razzoozle/web/features/game/components/stage/AnswerRevealPanel"
 import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
@@ -59,6 +59,7 @@ const Result = ({
     bonusPoints,
     correctAnswer,
     correctChunks,
+    correctTokenPos,
     playerCount,
     roundRecap,
   },
@@ -193,7 +194,17 @@ const Result = ({
           )}
         </motion.div>
       )}
-      {!poll && correctChunks && (
+      <h2 className="mt-1 text-4xl md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)] font-bold text-[color:var(--game-fg)] text-center">
+        {t(message)}
+      </h2>
+
+      {/* Reveal (§14.3, unified via AnswerRevealPanel): per-chunk submitted-vs-
+          correct feedback (sentence-builder / wortarten) first, then the
+          canonical correct-answer panel — tokenPos for wortarten (richer,
+          preferred), chips for sentence-builder, text as the generic
+          fallback (slider/mathematik/… and old servers without
+          correctTokenPos). Poll never carries reveal data (`!poll` gate). */}
+      {!poll && correctChunks && submittedChunks.length > 0 && (
         <motion.div
           className="w-full"
           variants={reveal.pop()}
@@ -201,58 +212,77 @@ const Result = ({
           animate="visible"
           transition={reveal.snap}
         >
-          {submittedChunks.length > 0 ? (
-            <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
-              {submittedChunks.map((chunk, idx) => {
-                const isDisabled = correctChunks[idx] === ""
-                const isCorrect = !isDisabled && chunk === correctChunks[idx]
+          <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
+            {submittedChunks.map((chunk, idx) => {
+              const isDisabled = correctChunks[idx] === ""
+              const isCorrect = !isDisabled && chunk === correctChunks[idx]
 
-                return (
-                  <span
-                    key={`${chunk}-${idx}`}
-                    className={clsx(
-                      "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
-                      isDisabled
-                        ? "bg-[var(--tier-silver)]"
-                        : isCorrect
-                        ? "bg-[var(--state-correct)]"
-                        : "bg-[var(--state-wrong)]",
-                    )}
-                  >
-                    {chunk}
-                  </span>
-                )
-              })}
-            </div>
-          ) : null}
-
-          <div className="mx-auto mb-4 max-w-3xl rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]">
-            <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
-              {t("game:sentenceBuilder.correctSentence", {
-                defaultValue: "Correct answer",
-              })}
-            </p>
-            <p className="text-lg font-bold text-[color:var(--game-fg)]">
-              {correctChunks.filter((c) => c !== "").join(" ")}
-            </p>
+              return (
+                <span
+                  key={`${chunk}-${idx}`}
+                  className={clsx(
+                    "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
+                    isDisabled
+                      ? "bg-[var(--tier-silver)]"
+                      : isCorrect
+                      ? "bg-[var(--state-correct)]"
+                      : "bg-[var(--state-wrong)]",
+                  )}
+                >
+                  {chunk}
+                </span>
+              )
+            })}
           </div>
         </motion.div>
       )}
-      <h2 className="mt-1 text-4xl md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)] font-bold text-[color:var(--game-fg)] text-center">
-        {t(message)}
-      </h2>
+      {!poll && correctTokenPos && correctTokenPos.length > 0 ? (
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel variant="tokenPos" tokenPos={correctTokenPos} />
+        </motion.div>
+      ) : !poll && correctChunks ? (
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel
+            variant="chips"
+            title={t("game:sentenceBuilder.correctSentence")}
+            chips={correctChunks.filter((c) => c !== "")}
+          />
+        </motion.div>
+      ) : (
+        // W1-D FIX 1: the question is over, so reveal the correct answer on the
+        // wrong-answer (Too bad) screen. Never shown for poll or correct.
+        !poll &&
+        !correct &&
+        correctAnswer && (
+          <motion.div
+            className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            transition={reveal.snap}
+          >
+            <AnswerRevealPanel variant="text" text={correctAnswer} />
+          </motion.div>
+        )
+      )}
+
       {showRank && (
         <p className="mt-1 text-xl font-bold text-[color:var(--game-fg)]">
           {t("game:resultTop")}
           {t(rankKey, { rank })}
           {aheadOfMe ? `${t("game:resultBehind")}${aheadOfMe}` : ""}
-        </p>
-      )}
-      {/* W1-D FIX 1: the question is over, so reveal the correct answer on the
-          wrong-answer (Too bad) screen. Never shown for poll or correct. */}
-      {!poll && !correct && correctAnswer && (
-        <p className="mt-2 text-lg md:text-2xl lg:text-[clamp(1.5rem,3.5vh,3rem)] font-semibold text-[color:var(--game-fg)]">
-          {t("game:slider.correctAnswer")}: <Markdown>{correctAnswer}</Markdown>
         </p>
       )}
       {showPoints && !poll && correct && (
