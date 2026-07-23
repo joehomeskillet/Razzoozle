@@ -3,7 +3,8 @@
   "gamePinLabel": "Spiel-PIN:",
   "hud": {
     "answers": "Antworten",
-    "time": "Zeit"
+    "time": "Zeit",
+    "answerSaved": "Antwort gespeichert"
   },
   "joinInstruction": "Tritt dem Spiel bei auf",
   "joinTimeout": "Beitritt fehlgeschlagen. Bitte versuche es erneut",
@@ -283,7 +284,8 @@
     "answerBar": "Deine Antwort",
     "wordBank": "Wortbank",
     "tapHint": "Tippe auf die Wörter unten, um deine Antwort zu bilden",
-    "submit": "Absenden"
+    "submit": "Absenden",
+    "correctSentence": "Richtiger Satz"
   },
   "badge": {
     "solo": "Solo",

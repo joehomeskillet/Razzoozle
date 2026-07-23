@@ -3,7 +3,8 @@
   "gamePinLabel": "PIN del gioco:",
   "hud": {
     "answers": "Risposte",
-    "time": "Tempo"
+    "time": "Tempo",
+    "answerSaved": "Risposta salvata"
   },
   "joinInstruction": "Unisciti al gioco su",
   "leaderboard": {
@@ -283,7 +284,8 @@
     "answerBar": "La tua risposta",
     "wordBank": "Banca di parole",
     "tapHint": "Tocca le parole qui sotto per costruire la tua risposta",
-    "submit": "Invia"
+    "submit": "Invia",
+    "correctSentence": "Frase corretta"
   },
   "badge": {
     "solo": "Solo",

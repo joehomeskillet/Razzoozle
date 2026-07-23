@@ -3,7 +3,8 @@
   "gamePinLabel": "Game PIN:",
   "hud": {
     "answers": "Answers",
-    "time": "Time"
+    "time": "Time",
+    "answerSaved": "Answer saved"
   },
   "joinInstruction": "Join the game at",
   "joinTimeout": "Could not join in time. Please try again",
@@ -283,7 +284,8 @@
     "answerBar": "Your answer",
     "wordBank": "Word bank",
     "tapHint": "Tap the words below to build your answer",
-    "submit": "Submit"
+    "submit": "Submit",
+    "correctSentence": "Correct sentence"
   },
   "badge": {
     "solo": "Solo",
