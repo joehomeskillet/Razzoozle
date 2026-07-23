@@ -29,7 +29,9 @@
     "playerNotFound": "Spiel oder Spieler nicht gefunden — bitte neu beitreten",
     "invalidCredentials": "Name oder PIN stimmen nicht mit der Klasse überein.",
     "alreadyJoined": "Dieser Name ist schon beigetreten.",
-    "classInactive": "Diese Klasse ist deaktiviert."
+    "classInactive": "Diese Klasse ist deaktiviert.",
+    "statusError": "Fehler beim Laden des Quiz.",
+    "networkError": "Netzwerkfehler beim Laden des Quiz."
   },
   "manager": {
     "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",
