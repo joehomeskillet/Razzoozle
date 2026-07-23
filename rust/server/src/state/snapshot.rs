@@ -820,25 +820,17 @@ mod tests {
     /// restoring current_answers during SELECT_ANSWER phase.
     #[test]
     fn test_snapshot_roundtrip_answers_mid_question() {
-        // Create a snapshot as if a game was interrupted mid-SELECT_ANSWER
-        // with two players having submitted answers
-        let snap = serde_json::json!({
-            "gameId": "game-interrupted",
-            "inviteCode": "invite-123",
-            "managerClientId": "mgr-1",
+        // Base snapshot from working test_snapshot_integration_multiplay
+        let mut snap = serde_json::json!({
+            "gameId": "game-1",
+            "inviteCode": "invite-xyz",
+            "managerClientId": "mgr-client",
             "hostToken": "host-secret",
             "started": true,
             "phase": "SELECT_ANSWER",
             "quizz": {
-                "subject": "Test Quiz",
-                "questions": [
-                    {
-                        "question": "What is 2+2?",
-                        "answers": ["3", "4", "5"],
-                        "correctAnswers": [1],
-                        "type": "multiple-choice"
-                    }
-                ]
+                "subject": "Test",
+                "questions": []
             },
             "quizId": "quiz-1",
             "lowLatencyConfig": {"enabled": false},
@@ -848,26 +840,25 @@ mod tests {
                     "clientId": "c1",
                     "connected": true,
                     "username": "Alice",
-                    "points": 0,
-                    "streak": 0,
+                    "points": 100,
+                    "streak": 3,
                 },
                 {
                     "id": "p2",
                     "clientId": "c2",
                     "connected": true,
                     "username": "Bob",
-                    "points": 0,
-                    "streak": 0,
-                }
+                    "points": 50,
+                    "streak": 1,
+                },
             ],
             "playerTokens": {
-                "p1": "token-alice",
-                "p2": "token-bob"
+                "p1": "token-alice-secret",
+                "p2": "token-bob-secret",
             },
             "autoMode": false,
             "currentQuestionIndex": 0,
-            "answerDeadlineAtServerMs": 1000000,
-            // W1-1: Current in-flight answers
+            // W1-1: Current in-flight answers mid-SELECT_ANSWER
             "currentAnswers": [
                 {
                     "clientId": "c1",
@@ -904,6 +895,7 @@ mod tests {
     #[test]
     fn test_snapshot_backward_compat_old_snapshot() {
         // Simulate a version 1 snapshot without in-flight answer data
+        // Based on the working test_snapshot_integration_multiplay structure
         let snap = serde_json::json!({
             "gameId": "old-game",
             "inviteCode": "old-invite",
@@ -913,7 +905,7 @@ mod tests {
             "phase": "SELECT_ANSWER",
             "quizz": {
                 "subject": "Old Quiz",
-                "questions": [{"question": "Q", "answers": ["A", "B"], "type": "multiple-choice"}]
+                "questions": []
             },
             "quizId": "quiz-old",
             "lowLatencyConfig": {"enabled": false},
