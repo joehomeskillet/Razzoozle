@@ -44,7 +44,7 @@ export default function MathematikInput({
         autoFocus
         className={clsx(
           ANSWER_TILE_SURFACE,
-          "w-full px-5 py-4 text-center text-2xl font-semibold tabular-nums text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 md:text-3xl lg:py-6",
+          "w-full px-5 py-4 text-center text-2xl font-semibold tabular-nums text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] focus:ring-2 focus:ring-[color:var(--color-accent)] disabled:opacity-50 md:text-3xl lg:py-6",
         )}
       />
       <SubmitButton
