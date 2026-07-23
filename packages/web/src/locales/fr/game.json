@@ -3,7 +3,8 @@
   "gamePinLabel": "PIN de la partie :",
   "hud": {
     "answers": "Réponses",
-    "time": "Temps"
+    "time": "Temps",
+    "answerSaved": "Réponse enregistrée"
   },
   "joinInstruction": "Rejoins la partie sur",
   "joinTimeout": "Impossible de rejoindre à temps. Réessaie",
@@ -283,7 +284,8 @@
     "answerBar": "Votre réponse",
     "wordBank": "Banque de mots",
     "tapHint": "Appuyez sur les mots ci-dessous pour construire votre réponse",
-    "submit": "Envoyer"
+    "submit": "Envoyer",
+    "correctSentence": "Phrase correcte"
   },
   "badge": {
     "solo": "Solo",
