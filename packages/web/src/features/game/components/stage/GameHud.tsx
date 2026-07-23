@@ -34,6 +34,7 @@ export function GameHud({
           : "flex items-center justify-between gap-[var(--game-space-6)] text-2xl font-bold text-[color:var(--game-fg)] md:text-3xl lg:text-[clamp(1.5rem,3vh,2.5rem)]"
       }`}
       role="status"
+      aria-live="polite"
     >
       {/* Timer slot */}
       {timer && (
