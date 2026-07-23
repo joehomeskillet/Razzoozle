@@ -7,6 +7,7 @@ import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import {
   useEvent,
   useSocket,
@@ -22,7 +23,6 @@ import {
 import ResultModal from "@razzoozle/web/features/manager/components/ResultModal"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import Checkbox from "@razzoozle/web/components/Checkbox"
 import { BarChart3, Search, SearchX, Share2, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useMemo, useState } from "react"
@@ -278,11 +278,11 @@ const ConfigResults = () => {
                   >
                     <ListRow
                       selection={
-                        <Checkbox
+                        <RowSelectionControl
                           data-testid={`result-select-${r.id}`}
                           checked={selection.isSelected(r.id)}
                           onChange={() => selection.toggle(r.id)}
-                          aria-label={`Auswahl: ${r.subject} · ${formatDate(r.date)}`}
+                          ariaLabel={`Auswahl: ${r.subject} · ${formatDate(r.date)}`}
                         />
                       }
                       title={r.subject}
