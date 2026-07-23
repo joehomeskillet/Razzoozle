@@ -50,8 +50,38 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
     let current_answers = game.engine.current_answers.iter().map(|(client_id, answer)| {
         serde_json::json!({
             "clientId": client_id,
-            "answerInput": serde_json::to_value(&answer.answer_input).unwrap_or_else(|_| serde_json::json!({})),
+            "answerInput": {
+                "answerKey": answer.answer_input.answer_key,
+                "answerKeys": &answer.answer_input.answer_keys,
+                "answerText": &answer.answer_input.answer_text,
+            },
             "responseTimeMs": answer.response_time_ms,
+        })
+    }).collect::<Vec<_>>();
+
+    // Serialize recap_stats (HashMap<String, RecapStat>)
+    let recap_stats = game.engine.recap_stats.iter().map(|(player_id, stat)| {
+        serde_json::json!({
+            "playerId": player_id,
+            "username": &stat.username,
+            "fastestMs": stat.fastest_ms,
+            "peakStreak": stat.peak_streak,
+            "correct": stat.correct,
+            "wrong": stat.wrong,
+            "answered": stat.answered,
+            "bestClimb": stat.best_climb,
+            "worstRankEver": stat.worst_rank_ever,
+            "achievementIds": &stat.achievement_ids,
+            "luckyGuess": stat.lucky_guess,
+        })
+    }).collect::<Vec<_>>();
+
+    // Serialize question_stats (HashMap<i32, QuestionStat>)
+    let question_stats = game.engine.question_stats.iter().map(|(question_index, stat)| {
+        serde_json::json!({
+            "questionIndex": question_index,
+            "correct": stat.correct,
+            "total": stat.total,
         })
     }).collect::<Vec<_>>();
 
@@ -100,8 +130,8 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         // W1-1: Persist in-flight answer data and per-question stats
         "currentAnswers": current_answers,
         "answerOrder": &game.engine.answer_order,
-        "recapStats": &game.engine.recap_stats,
-        "questionStats": &game.engine.question_stats,
+        "recapStats": recap_stats,
+        "questionStats": question_stats,
         "questionsHistory": &game.engine.questions_history,
     })
 }
@@ -210,20 +240,31 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     // W1-1 Fix: Restore in-flight answers with backward compatibility
     if let Some(answers_array) = snap.get("currentAnswers").and_then(|v| v.as_array()) {
         for answer_obj in answers_array {
-            if let (Some(client_id), Some(answer_input), Some(response_time_ms)) = (
+            if let (Some(client_id), Some(answer_input_obj), Some(response_time_ms)) = (
                 answer_obj.get("clientId").and_then(|v| v.as_str()),
-                answer_obj.get("answerInput"),
+                answer_obj.get("answerInput").and_then(|v| v.as_object()),
                 answer_obj.get("responseTimeMs").and_then(|v| v.as_i64()),
             ) {
-                if let Ok(input) = serde_json::from_value(answer_input.clone()) {
-                    engine.current_answers.insert(
-                        client_id.to_string(),
-                        razzoozle_engine::state::Answer {
-                            answer_input: input,
-                            response_time_ms,
+                // Manually deserialize AnswerInput from JSON object
+                let answer_key = answer_input_obj.get("answerKey").and_then(|v| v.as_i64()).map(|k| k as i32);
+                let answer_keys = answer_input_obj.get("answerKeys")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| arr.iter().filter_map(|v| v.as_i64().map(|k| k as i32)).collect());
+                let answer_text = answer_input_obj.get("answerText")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                engine.current_answers.insert(
+                    client_id.to_string(),
+                    razzoozle_engine::state::Answer {
+                        answer_input: razzoozle_engine::eval::AnswerInput {
+                            answer_key,
+                            answer_keys,
+                            answer_text,
                         },
-                    );
-                }
+                        response_time_ms,
+                    },
+                );
             }
         }
     }
@@ -237,13 +278,43 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     }
 
     // W1-1 Fix: Restore recap_stats (per-player statistics collected across all questions)
-    if let Ok(stats) = serde_json::from_value(snap.get("recapStats").cloned().unwrap_or_else(|| serde_json::json!({}))) {
-        engine.recap_stats = stats;
+    if let Some(stats_array) = snap.get("recapStats").and_then(|v| v.as_array()) {
+        for stat_obj in stats_array {
+            if let Some(player_id) = stat_obj.get("playerId").and_then(|v| v.as_str()) {
+                let stat = razzoozle_engine::state::RecapStat {
+                    username: stat_obj.get("username")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    fastest_ms: stat_obj.get("fastestMs").and_then(|v| v.as_i64()),
+                    peak_streak: stat_obj.get("peakStreak").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    correct: stat_obj.get("correct").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    wrong: stat_obj.get("wrong").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    answered: stat_obj.get("answered").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    best_climb: stat_obj.get("bestClimb").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    worst_rank_ever: stat_obj.get("worstRankEver").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    achievement_ids: stat_obj.get("achievementIds")
+                        .and_then(|v| v.as_array())
+                        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                        .unwrap_or_default(),
+                    lucky_guess: stat_obj.get("luckyGuess").and_then(|v| v.as_bool()).unwrap_or(false),
+                };
+                engine.recap_stats.insert(player_id.to_string(), stat);
+            }
+        }
     }
 
     // W1-1 Fix: Restore question_stats (per-question statistics)
-    if let Ok(stats) = serde_json::from_value(snap.get("questionStats").cloned().unwrap_or_else(|| serde_json::json!({}))) {
-        engine.question_stats = stats;
+    if let Some(stats_array) = snap.get("questionStats").and_then(|v| v.as_array()) {
+        for stat_obj in stats_array {
+            if let Some(question_index) = stat_obj.get("questionIndex").and_then(|v| v.as_i64()) {
+                let stat = razzoozle_engine::state::QuestionStat {
+                    correct: stat_obj.get("correct").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    total: stat_obj.get("total").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                };
+                engine.question_stats.insert(question_index as i32, stat);
+            }
+        }
     }
 
     // W1-1 Fix: Restore questions_history (full history of question results)
@@ -800,12 +871,12 @@ mod tests {
             "currentAnswers": [
                 {
                     "clientId": "c1",
-                    "answerInput": {"selected": 1},
+                    "answerInput": {"answerKey": 1},
                     "responseTimeMs": 500
                 },
                 {
                     "clientId": "c2",
-                    "answerInput": {"selected": 0},
+                    "answerInput": {"answerKey": 0},
                     "responseTimeMs": 800
                 }
             ],
