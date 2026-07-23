@@ -200,7 +200,8 @@ button:not(:disabled),
   position: absolute;
   height: 200%;
   width: 200%;
-  z-index: 100;
+  z-index: 5;
+  pointer-events: none;
   background-image: radial-gradient(
     circle,
     transparent 180px,

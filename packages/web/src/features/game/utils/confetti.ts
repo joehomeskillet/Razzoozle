@@ -18,6 +18,9 @@ import {
 // async indirection is invisible to them.
 const loadConfetti = () => import("canvas-confetti").then((m) => m.default)
 
+/** Safe under Toolbar z-10 / Chrome z-50 so confetti never blocks chrome UI. */
+const CONFETTI_Z_INDEX = 40
+
 /**
  * Per-tier burst parameters. Centralised so every tier funnels through one
  * `confetti()` call path — diamant being the only tier that fires a two-sided
@@ -40,6 +43,19 @@ function shouldSkipBurst(reduced: boolean): boolean {
 }
 
 /**
+ * Build a worker-backed confetti fire fn. Passing a falsy canvas lets the
+ * library manage a full-window canvas (isLibCanvas); types require an element
+ * so we cast null. zIndex is applied per call-site options.
+ */
+async function createWorkerConfetti() {
+  const confetti = await loadConfetti()
+  // Library accepts null → auto-managed canvas; types only list HTMLCanvasElement.
+  return confetti.create(null as unknown as HTMLCanvasElement, {
+    useWorker: true,
+  })
+}
+
+/**
  * Fire a confetti burst scaled to the highest unlocked achievement tier.
  * Two-sided stream for the diamant tier.
  */
@@ -57,7 +73,7 @@ export async function fireTierConfetti(
   if (!top) return
 
   const colors = TIER_COLORS[top] ?? []
-  const confetti = await loadConfetti()
+  const fire = await createWorkerConfetti()
 
   if (top === "diamant") {
     // Two-sided stream
@@ -67,16 +83,20 @@ export async function fireTierConfetti(
       startVelocity: 55,
       ticks: 200,
       colors,
+      zIndex: CONFETTI_Z_INDEX,
+      disableForReducedMotion: true,
     }
-    void confetti({ ...baseOpts, origin: { x: 0, y: 0.6 }, angle: 60 })
-    void confetti({ ...baseOpts, origin: { x: 1, y: 0.6 }, angle: 120 })
+    void fire({ ...baseOpts, origin: { x: 0, y: 0.6 }, angle: 60 })
+    void fire({ ...baseOpts, origin: { x: 1, y: 0.6 }, angle: 120 })
   } else {
-    void confetti({
+    void fire({
       particleCount: 60,
       spread: 60,
       origin: { x: 0.5, y: 0.65 },
       colors,
       ticks: 160,
+      zIndex: CONFETTI_Z_INDEX,
+      disableForReducedMotion: true,
     })
   }
 }
@@ -88,10 +108,12 @@ export async function fireTierConfetti(
 export async function fireCenterSalvo(reduced: boolean): Promise<void> {
   if (shouldSkipBurst(reduced)) return
 
-  const confetti = await loadConfetti()
-  void confetti({
+  const fire = await createWorkerConfetti()
+  void fire({
     particleCount: 45,
     spread: 70,
     origin: { x: 0.5, y: 0.6 },
+    zIndex: CONFETTI_Z_INDEX,
+    disableForReducedMotion: true,
   })
 }
