@@ -10,7 +10,6 @@
  * with `testIdPrefix="solo-"`, keeping transport/timer/feedback logic here.
  */
 import type { SoloQuestion } from "@razzoozle/common/types/game"
-import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import { QuestionStage } from "@razzoozle/web/features/game/components/stage/QuestionStage"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
@@ -312,7 +311,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     <div className="flex h-full flex-1 flex-col justify-between">
       <QuestionStage
         question={question.question}
-        media={question.media}
+        media={question.media ? <QuestionMedia media={question.media} alt={question.question} /> : undefined}
         hud={
           <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
             {/* Kahoot-style circular countdown — same as the live game. `countdown`
