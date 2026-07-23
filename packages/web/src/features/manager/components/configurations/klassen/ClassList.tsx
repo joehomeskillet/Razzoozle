@@ -230,94 +230,98 @@ const ClassList = ({
             </div>
           ) : undefined
 
-        return (
-          <div key={classObj.id} className="flex items-start gap-2">
-            {onToggleSelect && (
-              <div className="mt-3 flex-shrink-0">
-                <Checkbox
-                  checked={selectedIds?.has(classObj.id) ?? false}
-                  onChange={() => {
-                    onToggleSelect(classObj.id)
-                  }}
-                  aria-label={`Klasse auswählen: ${classObj.name}`}
-                  data-testid={`class-select-${classObj.id}`}
-                />
-              </div>
-            )}
-            <ListRow
-              className="min-w-0 flex-1"
-              title={classObj.name}
-              meta={
-                <div className="flex items-center gap-2">
-                  <span>{`${studentCount} ${t("manager:classes.studentCount")}`}</span>
-                  {classObj.active === false && (
-                    <Badge tone="warning">{t("manager:classes.statusInactive")}</Badge>
-                  )}
-                </div>
-              }
-              footer={footer}
-              actions={actions}
-              expanded={expandedClassId === classObj.id}
-              details={
-                expandedClassId === classObj.id ? (
-                  <div className="space-y-2">
-                    {(classObj.students ?? []).length > 0 ? (
-                      <>
-                        {classObj.students?.map((student) => (
-                          <ListRow
-                            key={student.id}
-                            density="compact"
-                            title={student.displayName}
-                            actions={[
-                              {
-                                key: "edit",
-                                icon: SquarePen,
-                                label: t("manager:classes.editStudent"),
-                                onClick: () =>
-                                  onEditStudent({
-                                    id: student.id,
-                                    displayName: student.displayName,
-                                    birthdate: student.birthdate,
-                                  }),
-                              },
-                              {
-                                key: "delete",
-                                icon: Trash2,
-                                label: t("manager:classes.deleteStudent"),
-                                destructive: true,
-                                onClick: () =>
-                                  onDeleteStudent({
-                                    id: student.id,
-                                    displayName: student.displayName,
-                                  }),
-                              },
-                            ]}
-                          />
-                        ))}
-                      </>
-                    ) : (
-                      <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
-                        <p className="text-xs text-[var(--ink-subtle)]">
-                          {t("manager:classes.noStudents")}
-                        </p>
-                      </div>
-                    )}
+        const isSelected = selectedIds?.has(classObj.id) ?? false
 
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="md"
-                      onClick={() => onAddStudent(classObj.id)}
-                      className="w-full"
-                    >
-                      <Plus className="size-4" />
-                      {t("manager:classes.addStudent")}
-                    </Button>
-                  </div>
-                ) : undefined
-              }
-            />
-          </div>
+        return (
+          <ListRow
+            key={classObj.id}
+            className="min-w-0"
+            selected={isSelected}
+            selection={
+              onToggleSelect
+                ? (
+                    <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => onToggleSelect(classObj.id)}
+                        aria-label={`Klasse auswählen: ${classObj.name}`}
+                        data-testid={`class-select-${classObj.id}`}
+                      />
+                    </label>
+                  )
+                : undefined
+            }
+            title={classObj.name}
+            meta={
+              <div className="flex items-center gap-2">
+                <span>{`${studentCount} ${t("manager:classes.studentCount")}`}</span>
+                {classObj.active === false && (
+                  <Badge tone="warning">{t("manager:classes.statusInactive")}</Badge>
+                )}
+              </div>
+            }
+            footer={footer}
+            actions={actions}
+            expanded={expandedClassId === classObj.id}
+            details={
+              expandedClassId === classObj.id ? (
+                <div className="space-y-2">
+                  {(classObj.students ?? []).length > 0 ? (
+                    <>
+                      {classObj.students?.map((student) => (
+                        <ListRow
+                          key={student.id}
+                          density="compact"
+                          title={student.displayName}
+                          actions={[
+                            {
+                              key: "edit",
+                              icon: SquarePen,
+                              label: t("manager:classes.editStudent"),
+                              onClick: () =>
+                                onEditStudent({
+                                  id: student.id,
+                                  displayName: student.displayName,
+                                  birthdate: student.birthdate,
+                                }),
+                            },
+                            {
+                              key: "delete",
+                              icon: Trash2,
+                              label: t("manager:classes.deleteStudent"),
+                              destructive: true,
+                              onClick: () =>
+                                onDeleteStudent({
+                                  id: student.id,
+                                  displayName: student.displayName,
+                                }),
+                            },
+                          ]}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-center">
+                      <p className="text-xs text-[var(--ink-subtle)]">
+                        {t("manager:classes.noStudents")}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    onClick={() => onAddStudent(classObj.id)}
+                    className="w-full"
+                  >
+                    <Plus className="size-4" />
+                    {t("manager:classes.addStudent")}
+                  </Button>
+                </div>
+              ) : undefined
+            }
+          />
         )
       })}
     </div>
