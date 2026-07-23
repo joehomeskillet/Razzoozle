@@ -165,6 +165,7 @@ function MobileBottomSheet({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
         <Dialog.Content
           aria-labelledby={titleId}
+          style={{ "--game-fg": "#0E1120" } as CSSProperties}
           className={clsx(
             ANSWER_TILE_SURFACE,
             "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-b-0 p-4 pb-[env(safe-area-inset-bottom,1rem)] shadow-[var(--shadow-flat)] outline-none",
@@ -284,7 +285,7 @@ function DesktopPopover({
       ref={popoverRef}
       role="dialog"
       aria-label={t("quizz:wortarten.selectLabel")}
-      style={style}
+      style={{ ...style, "--game-fg": "#0E1120" } as CSSProperties}
       className={clsx(ANSWER_TILE_SURFACE, "max-w-[16rem] p-2")}
     >
       <PosOptionGrid
