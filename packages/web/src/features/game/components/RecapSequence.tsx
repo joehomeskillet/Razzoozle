@@ -27,6 +27,7 @@ import type {
   SuperlativeKey,
 } from "@razzoozle/common/types/game"
 import Avatar from "@razzoozle/web/components/Avatar"
+import Button from "@razzoozle/web/components/Button"
 import {
   DURATION,
   EASE,
@@ -242,7 +243,7 @@ const RecapSequence = ({
       role="region"
       aria-label={awardsTitle}
       aria-live="polite"
-      className="absolute inset-0 z-40 flex w-full flex-col items-center justify-center gap-8 px-6 text-center"
+      className="absolute inset-0 z-40 flex w-full flex-col items-center justify-center gap-6 px-6 text-center"
     >
       {/* Click-anywhere-to-advance — non-essential enhancement, hidden from AT
           (the Weiter button below is the accessible control). */}
@@ -272,151 +273,154 @@ const RecapSequence = ({
         className="relative z-10 flex w-full items-center justify-center"
         style={{ perspective: 1200 }}
       >
-      <AnimatePresence mode="wait">
-        {!isFinalCue && current ? (
-          // Medal/card surface — the award reads as a flat light award card
-          // on the cream field, not bare floating text.
-          <motion.div
-            key={`card-${step}`}
-            className="relative flex aspect-video w-[min(94vw,64rem)] items-center justify-center gap-8 rounded-3xl border border-[var(--border-hairline)] bg-white px-10 py-8 text-center shadow-xl md:gap-14 md:px-16 md:py-10"
-            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
-            initial={flip.initial}
-            animate={flip.animate}
-            exit={flip.exit}
-            transition={flipTransition}
-          >
-            {/* Award side — glyph gently pulses with twinkling sparkles (subtle, reduced-motion safe) */}
-            <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-              <span
-                className="relative flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-gray-100 md:size-32"
+        <AnimatePresence mode="wait">
+          {!isFinalCue && current ? (
+            // Medal/card surface — the award reads as a flat light award card
+            // on the cream field, not bare floating text.
+            <motion.div
+              key={`card-${step}`}
+              className="relative flex w-[min(94vw,56rem)] flex-col items-stretch justify-between gap-6 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-8 py-6 text-center shadow-[var(--shadow-flat)] md:flex-row md:gap-8 md:px-12 md:py-8"
+              style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+              initial={flip.initial}
+              animate={flip.animate}
+              exit={flip.exit}
+              transition={flipTransition}
+            >
+              {/* Award side — glyph gently pulses with twinkling sparkles (subtle, reduced-motion safe) */}
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+                <span
+                  className="relative flex size-24 items-center justify-center rounded-full border-4 border-[var(--border-hairline)] bg-white md:size-32"
+                  aria-hidden
+                >
+                  {!reveal.reduced &&
+                    SPARKLES.map((s, i) => (
+                      <motion.svg
+                        key={i}
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                        className={clsx(
+                          "absolute text-[color:var(--color-accent)] drop-shadow",
+                          s.size,
+                        )}
+                        style={{ top: s.top, left: s.left }}
+                        initial={{ scale: 0, opacity: 0, rotate: 0 }}
+                        animate={{ scale: [0, 1, 0], opacity: [0, 1, 0], rotate: [0, 80] }}
+                        transition={{
+                          duration: 1.6,
+                          repeat: Infinity,
+                          repeatDelay: 0.6,
+                          delay: s.delay,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <path d={SPARKLE_PATH} fill="currentColor" />
+                      </motion.svg>
+                    ))}
+                  <motion.svg
+                    viewBox={ICON_VIEWBOX}
+                    className="relative size-14 text-[color:var(--color-primary)] md:size-20"
+                    aria-hidden
+                    animate={reveal.reduced ? undefined : { scale: [1, 1.08, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
+                  </motion.svg>
+                </span>
+                <p className="text-2xl font-extrabold text-[color:var(--color-field-ink)] md:text-3xl lg:text-4xl">
+                  {t(current.label, { defaultValue: current.labelFallback })}
+                </p>
+              </div>
+
+              {/* Vertical divider — subtle separator with breathing room */}
+              <div
+                aria-hidden
+                className="h-px w-full bg-[var(--border-hairline)] md:h-2/3 md:w-px md:shrink-0 md:self-center"
+              />
+
+              {/* Winner side — avatar + name + value, centered to mirror the award side */}
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center md:gap-5">
+                <Avatar
+                  src={current.winnerAvatar}
+                  name={current.winnerName}
+                  size={128}
+                  className="mx-auto"
+                />
+                <p className="text-2xl font-black text-[color:var(--color-field-ink)] md:text-3xl lg:text-4xl">
+                  {current.winnerName}
+                </p>
+                {current.value ? (
+                  <p className="rounded-full border border-[var(--border-hairline)] bg-white px-5 py-2 text-lg font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-xl">
+                    {current.value}
+                  </p>
+                ) : null}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="final-cue"
+              className="relative flex flex-col items-center gap-3"
+              style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+              initial={flip.initial}
+              animate={flip.animate}
+              exit={flip.exit}
+              transition={flipTransition}
+            >
+              <svg
+                viewBox={ICON_VIEWBOX}
+                className="size-24 text-[color:var(--color-primary)] drop-shadow-lg md:size-28"
                 aria-hidden
               >
-                {!reveal.reduced &&
-                  SPARKLES.map((s, i) => (
-                    <motion.svg
-                      key={i}
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                      className={clsx(
-                        "absolute text-[color:var(--color-accent)] drop-shadow",
-                        s.size,
-                      )}
-                      style={{ top: s.top, left: s.left }}
-                      initial={{ scale: 0, opacity: 0, rotate: 0 }}
-                      animate={{ scale: [0, 1, 0], opacity: [0, 1, 0], rotate: [0, 80] }}
-                      transition={{
-                        duration: 1.6,
-                        repeat: Infinity,
-                        repeatDelay: 0.6,
-                        delay: s.delay,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <path d={SPARKLE_PATH} fill="currentColor" />
-                    </motion.svg>
-                  ))}
-                <motion.svg
-                  viewBox={ICON_VIEWBOX}
-                  className="relative size-14 text-[color:var(--color-primary)] md:size-20"
-                  aria-hidden
-                  animate={reveal.reduced ? undefined : { scale: [1, 1.08, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <path d={ICON_PATHS[current.glyph]} fill="currentColor" />
-                </motion.svg>
-              </span>
-              <p className="text-3xl font-extrabold text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
-                {t(current.label, { defaultValue: current.labelFallback })}
+                <path d={ICON_PATHS[RECAP_FINAL_GLYPH]} fill="currentColor" />
+              </svg>
+              <p className="text-3xl font-black text-[color:var(--game-fg)] md:text-4xl">
+                {t("game:recap.podiumCue", {
+                  defaultValue: "Und jetzt: Das Podium",
+                })}
               </p>
-            </div>
-
-            {/* Vertical divider — gives the two halves a balanced, intentional structure */}
-            <div
-              aria-hidden
-              className="h-2/3 w-px shrink-0 self-center bg-[var(--border-hairline)]"
-            />
-
-            {/* Winner side — avatar + name + value, centered to mirror the award side */}
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center md:gap-5">
-              <Avatar
-                src={current.winnerAvatar}
-                name={current.winnerName}
-                size={128}
-                className="mx-auto"
-              />
-              <p className="text-3xl font-black text-[color:var(--color-field-ink)] md:text-5xl lg:text-[clamp(2.5rem,5.5vh,5rem)]">
-                {current.winnerName}
-              </p>
-              {current.value ? (
-                <p className="rounded-full border border-[var(--border-hairline)] bg-gray-100 px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums md:text-3xl">
-                  {current.value}
-                </p>
-              ) : null}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="final-cue"
-            className="relative flex flex-col items-center gap-4"
-            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
-            initial={flip.initial}
-            animate={flip.animate}
-            exit={flip.exit}
-            transition={flipTransition}
-          >
-            <svg
-              viewBox={ICON_VIEWBOX}
-              className="size-24 md:size-28 text-[color:var(--color-primary)] drop-shadow-lg"
-              aria-hidden
-            >
-              <path d={ICON_PATHS[RECAP_FINAL_GLYPH]} fill="currentColor" />
-            </svg>
-            <p className="text-4xl font-black text-[color:var(--game-fg)] md:text-5xl">
-              {t("game:recap.podiumCue", {
-                defaultValue: "Und jetzt: Das Podium",
-              })}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Progress dots — one per card, filling step-by-step as the index advances
-          (a dot lights only once its card has been reached). */}
-      <div className="relative z-10 flex items-center gap-2" aria-hidden>
-        {cards.map((c, i) => (
-          <span
-            key={`${c.key}-${i}`}
-            className={
-              i <= step
-                ? "h-2.5 w-2.5 rounded-full bg-white"
-                : "h-2.5 w-2.5 rounded-full bg-white/40"
-            }
-          />
-        ))}
-      </div>
-
-      {/* Accessible controls: pause/resume auto-advance + manual advance. */}
+      {/* Controls: progress dots + buttons */}
       {!isFinalCue && (
-        <div className="relative z-10 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setPaused((p) => !p)}
-            aria-pressed={paused}
-            className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-base font-bold text-white hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-primary)]"
-          >
-            {paused
-              ? t("game:recap.resume", { defaultValue: "Fortsetzen" })
-              : t("game:recap.pause", { defaultValue: "Pause" })}
-          </button>
-          <button
-            type="button"
-            data-testid="recap-advance"
-            onClick={advance}
-            className="rounded-full bg-[var(--color-accent)] px-6 py-2 text-base font-bold text-[var(--accent-contrast-text)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
-          >
-            {t("game:recap.advance", { defaultValue: "Weiter" })}
-          </button>
+        <div className="relative z-10 flex flex-col items-center gap-4 md:gap-5">
+          {/* Progress dots — one per card, filling step-by-step as the index advances
+              (a dot lights only once its card has been reached). */}
+          <div className="flex items-center gap-2" aria-hidden>
+            {cards.map((c, i) => (
+              <span
+                key={`${c.key}-${i}`}
+                className={
+                  i <= step
+                    ? "h-2.5 w-2.5 rounded-full bg-white"
+                    : "h-2.5 w-2.5 rounded-full bg-white/40"
+                }
+              />
+            ))}
+          </div>
+
+          {/* Pause/Resume + Weiter buttons via shared Button component */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setPaused((p) => !p)}
+              aria-pressed={paused}
+            >
+              {paused
+                ? t("game:recap.resume", { defaultValue: "Fortsetzen" })
+                : t("game:recap.pause", { defaultValue: "Pause" })}
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              data-testid="recap-advance"
+              onClick={advance}
+            >
+              {t("game:recap.advance", { defaultValue: "Weiter" })}
+            </Button>
+          </div>
         </div>
       )}
     </section>
