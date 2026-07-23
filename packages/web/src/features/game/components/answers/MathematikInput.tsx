@@ -24,9 +24,8 @@ export default function MathematikInput({
     <div className="mx-auto mb-4 flex w-full max-w-xl flex-col gap-4 px-4">
       <input
         data-testid="mathematik-input"
-        type="number"
+        type="text"
         inputMode="decimal"
-        step="0.01"
         value={value}
         onChange={(e) => {
           let val = e.target.value
@@ -45,7 +44,7 @@ export default function MathematikInput({
         autoFocus
         className={clsx(
           ANSWER_TILE_SURFACE,
-          "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+          "w-full px-5 py-4 text-center text-2xl font-semibold tabular-nums text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 md:text-3xl lg:py-6",
         )}
       />
       <SubmitButton
