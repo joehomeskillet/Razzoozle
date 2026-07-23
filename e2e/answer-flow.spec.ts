@@ -393,12 +393,6 @@ async function waitForAnswerControl(page: Page, questionType: string) {
       await expect(page.getByTestId("mathematik-input")).toBeVisible({ timeout: 45_000 })
       break
     case "wortarten":
-      // TODO: Wortarten questions are runtime-filtered to class-mode games only
-      // (see rust/server/src/socket/game.rs hard-guard). This test cannot exercise
-      // wortarten in the default fixture flow because the all-types game starts
-      // in normal mode. This assertion will timeout/skip. To fully cover wortarten,
-      // a separate class-mode test should be created or the fixture should be
-      // branched into a class-mode variant.
       await expect(page.getByTestId("wortarten-token-0")).toBeVisible({ timeout: 45_000 })
       break
     default:
@@ -409,7 +403,7 @@ async function waitForAnswerControl(page: Page, questionType: string) {
 // ── Main suite ────────────────────────────────────────────────────────────────
 
 test.describe("Answer flow — E2E All Types", () => {
-  test("host + 2 players: all types (wortarten skipped in non-class mode), P1 correct > P2", async ({
+  test("host + 2 players: all 9 types incl. wortarten, P1 correct > P2", async ({
     browser,
   }) => {
     test.setTimeout(420_000)
@@ -463,16 +457,6 @@ test.describe("Answer flow — E2E All Types", () => {
 
       for (let i = 0; i < quizFixture.questions.length; i++) {
         const q = quizFixture.questions[i]
-
-        // Skip wortarten in this flow (requires class mode).
-        if (q.type === "wortarten") {
-          await test.step(`Q${i + 1} ${q.type}: SKIPPED (requires class-mode game)`, async () => {
-            // Wortarten is filtered out by runtime hard-guard in non-class-mode games.
-            // This assertion documents the constraint; do not let it silently pass.
-            test.skip(true, "Wortarten requires class-mode game; see waitForAnswerControl TODO")
-          })
-          continue
-        }
 
         await test.step(`Q${i + 1} ${q.type}: wait for controls + align question-text`, async () => {
           // Wait for type-specific answer control (covers COOLDOWN ~5s, then SELECT_ANSWER phase).
