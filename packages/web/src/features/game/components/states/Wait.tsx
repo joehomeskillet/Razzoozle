@@ -110,7 +110,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
                 size="sm"
                 onClick={() => setShowPicker(true)}
               >
-                {t("game:avatar.change", { defaultValue: "Avatar ändern" })}
+                {t("game:avatar.change")}
               </Button>
             </motion.div>
           )}
@@ -131,9 +131,9 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           className="mt-4 w-full max-w-md rounded-xl bg-white px-4 py-3 shadow-lg"
         >
           <p className="mb-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
-            {t("game:teams.pick", { defaultValue: "Team wählen" })}
+            {t("game:teams.pick")}
           </p>
-          <div className="flex gap-3" role="group" aria-label={t("game:teams.pick", { defaultValue: "Team wählen" })}>
+          <div className="flex gap-3" role="group" aria-label={t("game:teams.pick")}>
             {TEAMS.map((team) => {
               const swatch = teamSwatch(team)
               const isSelected = selectedTeam === team

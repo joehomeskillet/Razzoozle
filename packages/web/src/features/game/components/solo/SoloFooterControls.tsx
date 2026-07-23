@@ -52,10 +52,10 @@ const SoloFooterControls = ({
           />
         </span>
         <span className="hidden sm:inline">
-          {t("game:solo.autoNext", { defaultValue: "Auto-Weiter" })}{" "}
+          {t("game:solo.autoNext")}{" "}
           {autoAdvance
-            ? t("game:controls.autoOn", { defaultValue: "an" })
-            : t("game:controls.autoOff", { defaultValue: "aus" })}
+            ? t("game:controls.autoOn")
+            : t("game:controls.autoOff")}
         </span>
       </button>
       <motion.div

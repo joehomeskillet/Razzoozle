@@ -22,7 +22,7 @@ const TeamLeaderboard = ({ standings }: Props) => {
   return (
     <div className="mb-6 w-full max-w-4xl">
       <h3 className="mb-3 text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-3xl">
-        {t("game:teamLeaderboard", { defaultValue: "Teams" })}
+        {t("game:teamLeaderboard")}
       </h3>
       <motion.div
         className="flex flex-col gap-2"

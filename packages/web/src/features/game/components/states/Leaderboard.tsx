@@ -67,8 +67,8 @@ const RankDeltaChip = ({ move, delta }: { move: RankMove; delta: number }) => {
 
   const up = move === "up"
   const label = up
-    ? t("game:rankUp", { defaultValue: "{{count}} hoch", count: delta })
-    : t("game:rankDown", { defaultValue: "{{count}} runter", count: delta })
+    ? t("game:rankUp", { count: delta })
+    : t("game:rankDown", { count: delta })
 
   return (
     <span

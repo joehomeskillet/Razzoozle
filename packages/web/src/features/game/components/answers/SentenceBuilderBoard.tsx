@@ -138,7 +138,7 @@ export default function SentenceBuilderBoard({
           !disabled && PRESS_FEEDBACK,
         )}
       >
-        {t("game:sentenceBuilder.submit", { defaultValue: "Submit" })}
+        {t("game:sentenceBuilder.submit")}
       </button>
     </div>
   )

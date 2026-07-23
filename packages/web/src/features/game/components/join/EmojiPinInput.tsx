@@ -244,13 +244,13 @@ const EmojiPinInput = ({ value, onChange, error, disabled = false }: Props) => {
         htmlFor="emoji-pin-1"
         className="mb-3 block text-sm font-semibold text-[var(--game-fg)]"
       >
-        {t("game:emojiPin.label", { defaultValue: "Confirm with your PIN" })}
+        {t("game:emojiPin.label")}
       </label>
 
       {/* Slots wrapper */}
       <div
         className="flex gap-3"
-        aria-label={t("game:emojiPin.wrapperAria", { defaultValue: "Emoji PIN input" })}
+        aria-label={t("game:emojiPin.wrapperAria")}
         onPaste={handlePaste}
         role="group"
       >
@@ -329,7 +329,7 @@ const EmojiPinInput = ({ value, onChange, error, disabled = false }: Props) => {
           <div className="max-h-64 overflow-y-auto">
             {loading ? (
               <div className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">
-                {t("game:emojiPin.loading", { defaultValue: "Loading..." })}
+                {t("game:emojiPin.loading")}
               </div>
             ) : filteredEmoji.length > 0 ? (
               filteredEmoji.map((entry) => (
@@ -352,7 +352,7 @@ const EmojiPinInput = ({ value, onChange, error, disabled = false }: Props) => {
               ))
             ) : (
               <div className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">
-                {t("game:emojiPin.noResults", { defaultValue: "No emoji found" })}
+                {t("game:emojiPin.noResults")}
               </div>
             )}
           </div>

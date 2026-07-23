@@ -409,8 +409,8 @@ const RecapSequence = ({
               aria-pressed={paused}
             >
               {paused
-                ? t("game:recap.resume", { defaultValue: "Fortsetzen" })
-                : t("game:recap.pause", { defaultValue: "Pause" })}
+                ? t("game:recap.resume")
+                : t("game:recap.pause")}
             </Button>
             <Button
               variant="primary"
@@ -418,7 +418,7 @@ const RecapSequence = ({
               data-testid="recap-advance"
               onClick={advance}
             >
-              {t("game:recap.advance", { defaultValue: "Weiter" })}
+              {t("game:recap.advance")}
             </Button>
           </div>
         </div>

@@ -196,7 +196,7 @@ const Username = () => {
           {/* Player name select */}
           <div>
             <label htmlFor="student-search" className="sr-only">
-              {t("game:classJoin.selectName", { defaultValue: "Select your name" })}
+              {t("game:classJoin.selectName")}
             </label>
             <PlayerNameSelect
               roster={roster}
@@ -243,7 +243,7 @@ const Username = () => {
                   name: roster.find((s) => s.studentId === selectedStudentId)
                     ?.displayName || "",
                 })
-              : t("game:classJoin.submit", { defaultValue: "Join" })}
+              : t("game:classJoin.submit")}
           </Button>
         </div>
       </Card>
@@ -288,19 +288,19 @@ const Username = () => {
       {requireIdentifier && (
         <>
           <label htmlFor="identifier" className="sr-only">
-            {t("game:join.identifier", { defaultValue: "Kennung (optional)" })}
+            {t("game:join.identifier")}
           </label>
           <Input
             id="identifier"
             className="mt-2 text-center"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder={t("game:join.identifier", { defaultValue: "Kennung (optional)" })}
+            placeholder={t("game:join.identifier")}
             autoComplete="off"
             aria-describedby="identifier-hint"
           />
           <p id="identifier-hint" className="mt-1 text-xs text-gray-500">
-            {t("game:join.identifierHint", { defaultValue: "Optional for assignment tracking" })}
+            {t("game:join.identifierHint")}
           </p>
         </>
       )}
