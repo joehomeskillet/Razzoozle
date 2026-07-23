@@ -52,8 +52,8 @@ namespaces). Comprehensive e2e suite (9 question types, host + 2 players).
 - **Achievement visibility contracts** — achievements and award badges now
   respect gameplay-context conditions (e.g., hidden until player meets reveal
   thresholds, only shown post-game recap).
-- **i18n completeness** — all 8 namespaces (manager, game, student, admin,
-  common, alerts, tutorials, errors) present across de/en/es/fr/it/zh with CI
+- **i18n completeness** — all 8 namespaces (common, display, errors, game,
+  manager, quizz, results, submit) present across de/en/es/fr/it/zh with CI
   gate ensuring locale parity on every commit.
 - **Design tokens manifest** — centralized `design.tokens.json` for Figma sync
   and design system governance.
@@ -62,8 +62,7 @@ namespaces). Comprehensive e2e suite (9 question types, host + 2 players).
 
 - **Game recap sequence** — fixed phase transitions; recap completion now
   properly gates the advance button to avoid race conditions in auto-advance
-  mode. Answer reveal patterns unified across question types (multiple choice,
-  slider, ordering, wortarten).
+  mode. Answer reveal patterns unified across all question types.
 - **Podium and awards** — single-winner layout with optional auto-celebration
   mode; award card logic consolidated. Labeled points display. Safe celebration
   layers prevent button-click interference.
@@ -83,10 +82,10 @@ namespaces). Comprehensive e2e suite (9 question types, host + 2 players).
 
 ### Tests
 
-- **e2e answer-flow revival** — comprehensive 9-type all-types flow
-  (multiple-choice, slider, ordering, wortarten, true/false, matching, hotspot,
-  image-select, drag-drop) with host + 2 player actors, covering solo and team
-  modes. Published as mandatory gate before main-branch merges.
+- **e2e answer-flow revival** — comprehensive 9-type all-types flow (choice,
+  boolean, slider, poll, multiple-select, type-answer, sentence-builder,
+  mathematik, wortarten) with host + 2 player actors, covering multiplayer and
+  solo runs. Published as mandatory gate before main-branch merges.
 - **Manager checkbox regression suite** — checkbox-in-ListRow selection and
   SelectAllControl unit tests added to prevent future multi-select breakage.
 - **Podium and recap fixtures** — score-cap margin verification, single-winner
