@@ -175,6 +175,10 @@ const ConfigGameMode = () => {
       t("manager:gameMode.endScreenModesUpdated"),
   })
 
+  useEffect(() => {
+    if (!endScreenToggle.saving) setPendingEndScreenMode(null)
+  }, [endScreenToggle.saving])
+
   const handleEndScreenModeToggle = useCallback(
     (mode: string) => {
       // Prevent clicks while saving
@@ -200,7 +204,6 @@ const ConfigGameMode = () => {
       }
 
       endScreenToggle.commit(stringifyModes(next))
-        .finally(() => setPendingEndScreenMode(null))
     },
     [endScreenModes, endScreenToggle],
   )
