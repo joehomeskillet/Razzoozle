@@ -19,6 +19,7 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import {
   Ban,
   CheckCircle2,
@@ -542,28 +543,18 @@ const ConfigUsers = () => {
         )
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
-            {/* Select-all checkbox header (optional visual) */}
-            <div className="text-xs font-semibold text-[var(--ink-muted)] px-3">
-              <input
+            {/* Select-all control */}
+            {filteredUsers.length > 0 && (
+              <SelectAllControl
+                id="users-select-all"
                 data-testid="users-select-all"
-                type="checkbox"
-                ref={(el) => {
-                  if (el) {
-                    el.indeterminate =
-                      selection.someSelected && !selection.allSelected
-                    el.checked = selection.allSelected
-                  }
-                }}
-                onChange={() => selection.toggleAll()}
-                className="mr-2"
-                aria-label="Alle auswählen"
+                allSelected={selection.allSelected}
+                someSelected={selection.someSelected}
+                selectedCount={selection.selected.size}
+                totalCount={filteredUsers.length}
+                onToggleAll={selection.toggleAll}
               />
-              {selection.selectionActive && (
-                <span className="text-sm">
-                  {selection.selected.size} von {filteredUsers.length} ausgewählt
-                </span>
-              )}
-            </div>
+            )}
 
             {filteredUsers.map((user) => {
               const isSelf =
