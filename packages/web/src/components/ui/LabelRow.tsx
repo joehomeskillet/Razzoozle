@@ -108,22 +108,22 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
           <div className="flex-1">{children}</div>
         </div>
 
-        {statusMessage && (
-          <>
-            <div aria-hidden className="hidden sm:block" />
-            <SettingRowStatusMessage
-              statusMessage={statusMessage}
-              statusId={statusId}
-            />
-          </>
-        )}
-
         {description && (
           <>
             <div aria-hidden className="hidden sm:block" />
             <SettingRowDescription
               description={description}
               descId={descId}
+            />
+          </>
+        )}
+
+        {statusMessage && (
+          <>
+            <div aria-hidden className="hidden sm:block" />
+            <SettingRowStatusMessage
+              statusMessage={statusMessage}
+              statusId={statusId}
             />
           </>
         )}

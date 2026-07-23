@@ -69,7 +69,7 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
     const describedBy = clsx(descId, statusId)
 
     const isInteractionDisabled = disabled || pending
-    const cursorClass = pending ? "cursor-wait" : disabled ? "cursor-not-allowed" : ""
+    const cursorClass = pending ? "cursor-wait" : disabled ? "cursor-not-allowed" : "cursor-pointer"
 
     return (
       <div
