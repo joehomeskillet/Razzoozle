@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { useGameAudience } from "@razzoozle/web/features/game/audience";
-import { ANSWER_TILE_SURFACE } from "@razzoozle/web/features/game/utils/answers";
+import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
+import { useGameAudience } from "@razzoozle/web/features/game/audience"
+import { ANSWER_TILE_SURFACE } from "@razzoozle/web/features/game/utils/answers"
 
 export interface AnswerRevealPanelProps {
   title?: string;
@@ -20,17 +20,17 @@ export function AnswerRevealPanel({
   tokenPos,
   className,
 }: AnswerRevealPanelProps): ReactNode {
-  const { t } = useTranslation();
-  const audience = useGameAudience();
+  const { t } = useTranslation()
+  const audience = useGameAudience()
 
-  const isPresenter = audience === "presenter";
-  const baseClasses = `${ANSWER_TILE_SURFACE} p-[var(--game-space-4)] rounded-[var(--radius-theme)] ${className || ""}`.trim();
-  const titleClasses = isPresenter ? "text-base" : "text-sm";
+  const isPresenter = audience === "presenter"
+  const baseClasses = `${ANSWER_TILE_SURFACE} p-[var(--game-space-4)] rounded-[var(--radius-theme)] ${className || ""}`.trim()
+  const titleClasses = isPresenter ? "text-base" : "text-sm"
   const contentClasses = isPresenter
     ? "text-4xl md:text-5xl"
-    : "text-2xl md:text-3xl";
+    : "text-2xl md:text-3xl"
 
-  const displayTitle = title ?? t("game:reveal.correctAnswer");
+  const displayTitle = title ?? t("game:reveal.correctAnswer")
 
   return (
     <div className={baseClasses}>
@@ -77,5 +77,5 @@ export function AnswerRevealPanel({
         </div>
       )}
     </div>
-  );
+  )
 }
