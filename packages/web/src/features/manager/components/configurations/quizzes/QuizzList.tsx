@@ -45,16 +45,16 @@ type QuizzListProps = Pick<
   | "hasMatches"
   | "activeQuizz"
   | "archivedQuizz"
-  | "selected"
   | "showArchived"
   | "navigate"
-  | "toggleSelect"
   | "handleExport"
   | "handleArchived"
   | "setPendingDelete"
   | "setPendingDuplicate"
   | "setShowArchived"
 > & {
+  selected: Set<string>
+  toggleSelect: (id: string) => void
   labels: Label[]
 }
 

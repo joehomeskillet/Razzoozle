@@ -10,12 +10,13 @@ type QuizzDialogsProps = Pick<
   | "handleDelete"
   | "bulkDeleteOpen"
   | "setBulkDeleteOpen"
-  | "selectionCount"
-  | "handleBulkDelete"
   | "pendingDuplicate"
   | "setPendingDuplicate"
   | "handleDuplicate"
->
+> & {
+  selectionCount: number
+  handleBulkDelete: () => void
+}
 
 const QuizzDialogs = ({
   pendingDelete,
