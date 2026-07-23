@@ -42,6 +42,8 @@ export interface Answer {
   answerIds?: number[]
   // Type-answer: the raw submitted free-text (answerId is a sentinel).
   answerText?: string
+  // Sequencing: the ordered item ids (answerId is a sentinel).
+  answerOrder?: string[]
   points: number
 }
 
@@ -87,6 +89,8 @@ export interface PlayerAnswerRecord {
   answerIds?: number[] | null
   // Type-answer submitted text; null/absent when not applicable.
   answerText?: string | null
+  // Sequencing: ordered item ids; null/absent when not applicable.
+  answerOrder?: string[] | null
   // ms from question start to this player's answer; null/absent for no-answer or legacy results.
   responseMs?: number | null
 }
@@ -127,6 +131,7 @@ export interface SoloCheckAnswerRequest {
   answerId?: number
   answerIds?: number[]
   answerText?: string
+  answerOrder?: string[]
 }
 
 export interface SoloCheckAnswerResponse {
