@@ -262,7 +262,7 @@ async function startAllTypesQuiz(host: Page): Promise<string> {
   // Quiz id is server-derived (slug + shortId); match by subject text on row.
   const row = host
     .getByTestId(/^quizz-row-/)
-    .filter({ hasText: QUIZ_SUBJECT })
+    .filter({ has: host.getByText(QUIZ_SUBJECT, { exact: true }) })
     .first()
   await expect(row).toBeVisible({ timeout: 30_000 })
   await row.click()
