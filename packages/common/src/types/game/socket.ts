@@ -49,6 +49,15 @@ export interface MessageGameId {
   hostToken?: string
 }
 
+export interface SocketAuthPayload {
+  /** Durable client identity, persisted across sessions for reconnect binding. */
+  clientId: string
+  /** Token for satellite (Raspberry Pi kiosk) authentication, optional for normal clients. */
+  satelliteToken?: string
+  /** Session token from HTTP /api/login, optional for manager-authenticated flows. */
+  sessionToken?: string
+}
+
 // ---- Mode selection types (W1-M2) ----
 
 export type EndScreen = 'full' | 'top3' | 'private'

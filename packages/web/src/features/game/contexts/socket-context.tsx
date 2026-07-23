@@ -4,6 +4,7 @@ import {
 } from "@razzoozle/common/utils/clock-sync"
 import { EVENTS } from "@razzoozle/common/constants"
 import type {
+  SocketAuthPayload,
   ClientToServerEvents,
   ServerToClientEvents,
 } from "@razzoozle/common/types/game/socket"
@@ -182,7 +183,7 @@ export const socketClient: TypedSocket = io("/", {
   // why backend/curl smokes passed.) Regression from dd33e187 (W0-A6 login).
   auth: (cb) => {
     const store = useManagerStore.getState()
-    const payload: Record<string, string> = { clientId }
+    const payload: SocketAuthPayload = { clientId }
 
     if (satelliteAuth.token) {
       payload.satelliteToken = satelliteAuth.token
