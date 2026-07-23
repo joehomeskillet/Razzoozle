@@ -55,10 +55,23 @@ Razzoozle è un **quiz game** in tempo reale e self-hosted per aule, eventi e se
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
+# Costruisci l'immagine Docker (include SPA web + server Rust)
+DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile -t razzoozle:latest .
+
+# Esegui con Postgres (richiede la variabile d'ambiente DATABASE_URL)
+# Esempio: impostare una password admin predefinita per il moderatore
+docker run -d \
+  -p 3020:3020 \
+  -e DATABASE_URL='postgresql://razzoozle:password@postgres:5432/razzoozle' \
+  -e BOOTSTRAP_ADMIN_PASSWORD='your-secure-password' \
+  -v razzoozle-config:/config \
+  razzoozle:latest
+
+# Avvia Postgres separatamente o aggiungi a docker-compose
+# Vedi docs/Self-Hosting.md per le istruzioni complete di distribuzione
 ```
 
-Lo stack è autonomo (il server Rust + il proprio Postgres). Apri l'app, vai su `/manager` e **cambia la password predefinita del moderatore**. Metti un reverse proxy (Caddy/Traefik/nginx) davanti per il TLS e un hostname pubblico.
+Il server funziona sulla porta `3020` e richiede un database PostgreSQL. Apri l'app, vai su `/manager` e **cambia la password predefinita del moderatore**. Metti un reverse proxy (Caddy/Traefik/nginx) davanti per il TLS e un hostname pubblico. Vedi **[Self-Hosting](docs/Self-Hosting.md)** per la configurazione dettagliata.
 
 ---
 
@@ -83,6 +96,7 @@ Lo stack è autonomo (il server Rust + il proprio Postgres). Apri l'app, vai su 
 | 🖼️ | **Immagini AI locali** — genera grafiche di domande/temi sul dispositivo tramite ComfyUI (Z-Image), oppure collega provider cloud — le chiavi restano lato server. |
 | 🌍 | **6 lingue + PWA** — inglese, tedesco, francese, spagnolo, italiano, cinese; installabile, utilizzabile offline. |
 | 📺 | **Kiosk proiettore + affidabilità** — una vista proiettore `/display`, modalità a bassa latenza, ripristino dai crash, riconnessione e un server MCP per il controllo tramite strumenti AI. |
+| 🎛️ | **Console manager unificata** — una console manager riprogettata con un sistema basato su righe, azioni multi-selezione, operazioni in blocco e controlli coerenti su tutte le schede di gestione. |
 
 Supportato da **oltre 592 test automatizzati**, un pass di sicurezza path-traversal + CVE `ws`, una superficie non autenticata irrobustita (limiti di risorse per partita + espulsione delle partite, limiti di frequenza per IP, throttling anti-forza-bruta sull'auth del moderatore, autenticazione con host-token emesso dal server che chiude l'IDOR) e un deploy Docker con health-gate. Testato sotto carico fino a **600 giocatori simultanei**.
 
@@ -90,7 +104,7 @@ Supportato da **oltre 592 test automatizzati**, un pass di sicurezza path-traver
 
 ## Server Rust
 
-Il server di Razzoozle è stato **portato da Node.js a Rust** — il server **Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) è ora l'unico backend, copre tutti i flussi di gioco, moderatore, giocatore e display e parla socket.io con il client React invariato. Lo stato è interamente persistito in **PostgreSQL**; non esiste persistenza basata su file.
+Il backend di Razzoozle è un **server Rust** (`axum` + `socketioxide`, memory-safe e a basso consumo) che copre tutti i flussi di gioco, moderatore, giocatore e display e parla socket.io con il client React invariato. Lo stato è interamente persistito in **PostgreSQL**; non esiste persistenza basata su file.
 
 **→ Dettagli interni Rust, build e test: [`rust/README.md`](rust/README.md)**
 

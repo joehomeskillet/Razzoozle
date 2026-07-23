@@ -55,10 +55,23 @@ Razzoozle 是一款自托管、实时的**测验游戏**，适用于教室、活
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
+# 构建 Docker 镜像（包括 Web SPA + Rust 服务器）
+DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile -t razzoozle:latest .
+
+# 运行 Postgres（需要 DATABASE_URL 环境变量）
+# 例子：为管理员设置默认密码
+docker run -d \
+  -p 3020:3020 \
+  -e DATABASE_URL='postgresql://razzoozle:password@postgres:5432/razzoozle' \
+  -e BOOTSTRAP_ADMIN_PASSWORD='your-secure-password' \
+  -v razzoozle-config:/config \
+  razzoozle:latest
+
+# 分别启动 Postgres 或添加到 docker-compose 中
+# 详见 docs/Self-Hosting.md 的完整部署说明
 ```
 
-整个栈是自包含的（Rust 服务器 + 自己的 Postgres）。打开应用，进入 `/manager`，并**修改默认的管理员密码**。在前面放置一个反向代理（Caddy/Traefik/nginx）以获得 TLS 和公共主机名。
+服务器运行在端口 `3020` 并需要 PostgreSQL 数据库。打开应用，进入 `/manager`，并**修改默认的管理员密码**。在前面放置一个反向代理（Caddy/Traefik/nginx）以获得 TLS 和公共主机名。详见 **[Self-Hosting](docs/Self-Hosting.md)** 的详细设置。
 
 ---
 
@@ -83,6 +96,7 @@ docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:30
 | 🖼️ | **本地 AI 图像** —— 通过 ComfyUI（Z-Image）在本地设备生成题目/主题图像，或接入云端提供商 —— 密钥保留在服务器端。 |
 | 🌍 | **6 种语言 + PWA** —— 英语、德语、法语、西班牙语、意大利语、中文；可安装、支持离线。 |
 | 📺 | **投影仪 kiosk + 可靠性** —— `/display` 投影视图、低延迟模式、崩溃恢复、重连，以及用于 AI 工具控制的 MCP 服务器。 |
+| 🎛️ | **统一管理控制台** —— 重新设计的管理界面，具有基于行的系统、多选操作、批量操作以及所有管理标签页中的一致控制。 |
 
 由 **592+ 项自动化测试**、一次路径穿越 + `ws` CVE 安全审查、强化的未认证接口（每局资源上限 + 游戏驱逐、每 IP 速率限制、管理员认证防暴力破解节流、服务器签发的 host-token 认证以关闭 IDOR）以及带健康门控的 Docker 部署作为支撑。经负载测试可达 **600 名并发玩家**。
 
@@ -90,7 +104,7 @@ docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:30
 
 ## Rust 服务器
 
-Razzoozle 的服务器已**从 Node.js 移植到 Rust** —— **Rust** 服务器（`axum` + `socketioxide`，内存安全且占用低）现为唯一后端，涵盖所有游戏、管理、玩家和显示流程，并通过 socket.io 与未改动的 React 客户端通信。状态完全持久化在 **PostgreSQL** 中；不再有基于文件的持久化。
+Razzoozle 的后端是一个 **Rust 服务器**（`axum` + `socketioxide`，内存安全且占用低），涵盖所有游戏、管理、玩家和显示流程，并通过 socket.io 与未改动的 React 客户端通信。状态完全持久化在 **PostgreSQL** 中；不再有基于文件的持久化。
 
 **→ Rust 内部实现、构建与测试：[`rust/README.md`](rust/README.md)**
 

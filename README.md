@@ -55,10 +55,23 @@ Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and g
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
 
-docker compose -f compose.rust.yml up -d   # Rust server → http://127.0.0.1:3011
+# Build the Docker image (includes web SPA + Rust server)
+DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile -t razzoozle:latest .
+
+# Run with Postgres (requires DATABASE_URL environment variable)
+# Example: set a default admin password for the manager
+docker run -d \
+  -p 3020:3020 \
+  -e DATABASE_URL='postgresql://razzoozle:password@postgres:5432/razzoozle' \
+  -e BOOTSTRAP_ADMIN_PASSWORD='your-secure-password' \
+  -v razzoozle-config:/config \
+  razzoozle:latest
+
+# Start Postgres separately or add to docker-compose
+# See docs/Self-Hosting.md for full deployment instructions
 ```
 
-The stack is self-contained (the Rust server + its own Postgres). Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname.
+The server runs on port `3020` and requires a PostgreSQL database. Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname. See **[Self-Hosting](docs/Self-Hosting.md)** for detailed setup.
 
 ---
 
@@ -83,6 +96,7 @@ The stack is self-contained (the Rust server + its own Postgres). Open the app, 
 | 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
 | 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
 | 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
+| 🎛️ | **Unified manager console** — a redesigned manager UI with a row-based system, multi-select actions, bulk operations, and consistent controls across all management tabs. |
 
 Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game resource caps + game eviction, per-IP rate-limits, manager-auth brute-force throttling, server-minted host-token auth closing IDOR), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
 
@@ -90,7 +104,7 @@ Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a
 
 ## Rust server
 
-Razzoozle's server was **ported from Node.js to Rust** — the **Rust** server (`axum` + `socketioxide`, memory-safe and low-footprint) is now the sole backend, covering all gameplay, manager, player and display flows and speaking socket.io to the unchanged React client. State is persisted entirely in **PostgreSQL**; there is no file-based persistence.
+Razzoozle's backend is a **Rust server** (`axum` + `socketioxide`, memory-safe and low-footprint) covering all gameplay, manager, player and display flows and speaking socket.io to the unchanged React client. State is persisted entirely in **PostgreSQL**; there is no file-based persistence.
 
 **→ Rust internals, build & tests: [`rust/README.md`](rust/README.md)**
 
