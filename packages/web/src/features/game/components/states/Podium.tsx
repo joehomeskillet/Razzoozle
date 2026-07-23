@@ -460,7 +460,7 @@ const Podium = ({
           <SingleWinner
             player={top[0]}
             subject={subject}
-            autoMode={autoMode}
+            autoMode={autoMode ?? false}
             apparition={apparition}
             reveal={reveal}
           />
