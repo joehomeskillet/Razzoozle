@@ -572,7 +572,8 @@ test.describe("Answer flow — E2E All Types", () => {
             // Cap: theoretical max ~1000 * questions answered correctly.
             await expect.poll(async () => {
               const s1 = await parseLeaderboardScore(host, PLAYER1)
-              return s1 <= 1000 * (i + 1) + 50
+              // ponytail: margin 600 covers configured achievement bonuses (first_correct+first_responder+climber, folded into score) while still catching double-counted answers (+1000)
+              return s1 <= 1000 * (i + 1) + 600
             }, { timeout: 10_000 }).toBe(true)
 
             // Advance to next question (effect-verified: re-click only if leaderboard still visible).
