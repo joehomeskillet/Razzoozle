@@ -12,6 +12,7 @@
 import type { SoloQuestion } from "@razzoozle/common/types/game"
 import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
+import { QuestionStage } from "@razzoozle/web/features/game/components/stage/QuestionStage"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { buildWortartenAnswer } from "@razzoozle/web/features/game/components/answers/buildWortartenAnswer"
 import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGrid"
@@ -309,24 +310,22 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
 
   return (
     <div className="flex h-full flex-1 flex-col justify-between">
-      <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 overflow-hidden lg:max-w-[85vw]">
-        <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
-          <Markdown>{question.question}</Markdown>
-        </h2>
-
-        <QuestionMedia media={question.media} alt={question.question} />
-      </div>
+      <QuestionStage
+        question={question.question}
+        media={question.media}
+        hud={
+          <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
+            {/* Kahoot-style circular countdown — same as the live game. `countdown`
+                is the remaining seconds; `question.time` is the total. */}
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm">{t("game:hud.time")}</span>
+              <CircularTimer seconds={countdown} total={question.time} size={72} />
+            </div>
+          </div>
+        }
+      />
 
       <div>
-        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
-          {/* Kahoot-style circular countdown — same as the live game. `countdown`
-              is the remaining seconds; `question.time` is the total. */}
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm">{t("game:hud.time")}</span>
-            <CircularTimer seconds={countdown} total={question.time} size={72} />
-          </div>
-        </div>
-
         {isTypeAnswer ? (
           <TypeAnswerInput
             value={textAnswer}
