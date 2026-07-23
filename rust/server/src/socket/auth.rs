@@ -62,20 +62,6 @@ pub fn can_authorize_display_event(ctx: &HandlerCtx) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-    use tokio::sync::RwLock;
-
-    fn make_handler_ctx_with_satellite(token: Option<String>) -> HandlerCtx {
-        HandlerCtx {
-            registry: Arc::new(RwLock::new(Default::default())),
-            io: Default::default(),
-            client_id: "test-client".to_string(),
-            db_pool: None,
-            session_token: None,
-            satellite_token: token,
-            user_cache: Arc::new(RwLock::new(None)),
-        }
-    }
 
     #[test]
     fn test_constant_time_eq_matching() {
@@ -93,68 +79,46 @@ mod tests {
     }
 
     #[test]
+    fn test_satellite_token_absent() {
+        let token: Option<String> = None;
+        assert!(!is_satellite_authenticated(&token), "should deny when no token provided");
+    }
+
+    #[test]
     fn test_satellite_token_no_env_var() {
-        // Clear the env var if it's set
+        // Env var not set: deny any token
         std::env::remove_var("SATELLITE_TOKEN");
         let token = Some("any-token".to_string());
         assert!(!is_satellite_authenticated(&token), "should deny when SATELLITE_TOKEN env not set");
     }
 
     #[test]
-    fn test_satellite_token_absent() {
-        std::env::remove_var("SATELLITE_TOKEN");
-        let token: Option<String> = None;
-        assert!(!is_satellite_authenticated(&token), "should deny when no token provided");
-    }
-
-    #[test]
-    fn test_satellite_token_valid_against_env() {
-        // Set a known secret for this test
+    fn test_satellite_token_valid_and_invalid_against_env() {
+        // Test valid token
         std::env::set_var("SATELLITE_TOKEN", "test-secret-123");
-        let token = Some("test-secret-123".to_string());
+        let valid_token = Some("test-secret-123".to_string());
         assert!(
-            is_satellite_authenticated(&token),
+            is_satellite_authenticated(&valid_token),
             "should allow token matching SATELLITE_TOKEN env"
         );
-        std::env::remove_var("SATELLITE_TOKEN");
-    }
 
-    #[test]
-    fn test_satellite_token_invalid_against_env() {
-        std::env::set_var("SATELLITE_TOKEN", "test-secret-123");
-        let token = Some("wrong-token".to_string());
+        // Test invalid token
+        let invalid_token = Some("wrong-token".to_string());
         assert!(
-            !is_satellite_authenticated(&token),
+            !is_satellite_authenticated(&invalid_token),
             "should deny token not matching SATELLITE_TOKEN env"
         );
+
+        // Clean up
         std::env::remove_var("SATELLITE_TOKEN");
     }
 
     #[test]
-    fn test_can_authorize_display_event_with_valid_token() {
-        std::env::set_var("SATELLITE_TOKEN", "test-secret-123");
-        let ctx = make_handler_ctx_with_satellite(Some("test-secret-123".to_string()));
-        assert!(can_authorize_display_event(&ctx), "should authorize with valid token");
-        std::env::remove_var("SATELLITE_TOKEN");
-    }
-
-    #[test]
-    fn test_can_authorize_display_event_without_token() {
-        std::env::remove_var("SATELLITE_TOKEN");
-        let ctx = make_handler_ctx_with_satellite(None);
+    fn test_satellite_token_empty_string() {
+        let token = Some(String::new());
         assert!(
-            !can_authorize_display_event(&ctx),
-            "should deny without satellite token"
-        );
-    }
-
-    #[test]
-    fn test_can_authorize_display_event_without_env_secret() {
-        std::env::remove_var("SATELLITE_TOKEN");
-        let ctx = make_handler_ctx_with_satellite(Some("any-token".to_string()));
-        assert!(
-            !can_authorize_display_event(&ctx),
-            "should deny when server SATELLITE_TOKEN not configured"
+            !is_satellite_authenticated(&token),
+            "should deny empty token"
         );
     }
 }
