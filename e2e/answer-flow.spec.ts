@@ -362,8 +362,12 @@ async function advanceToState(host: Page, target: "leaderboard" | "podium", play
   for (let s = 0; s < maxSteps; s++) {
     if (await targetVisible()) return
     // Only click on RECOGNIZED safe states (responses-view or round-recap).
-    if (await host.getByTestId("responses-view").isVisible().catch(() => false)
-      || await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+    if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
+      // Recap advances itself (final cue auto-fires after 1400ms); nudge it along
+      // via its own buttons when present, never via the hidden toolbar next-btn.
+      await host.getByTestId("recap-final-advance").click({ timeout: 2_000 }).catch(() => {})
+      await host.getByTestId("recap-advance").click({ timeout: 2_000 }).catch(() => {})
+    } else if (await host.getByTestId("responses-view").isVisible().catch(() => false)) {
       await host.getByTestId("next-btn").click()
     }
     // Let state settle; do not click blindly.
@@ -622,9 +626,11 @@ test.describe("Answer flow — E2E All Types", () => {
         // Wait for leaderboard-row OR round-recap (achievements may trigger interstitial recap).
         const lbOrRecap = host.getByTestId(`leaderboard-row-${PLAYER1}`).or(host.getByTestId("round-recap")).first()
         await expect(lbOrRecap).toBeVisible({ timeout: 15_000 })
-        // If round-recap appeared, click next to advance to leaderboard.
+        // If round-recap appeared, let it advance itself via its own buttons
+        // (final cue auto-fires after 1400ms); never click the hidden next-btn.
         if (await host.getByTestId("round-recap").isVisible().catch(() => false)) {
-          await host.getByTestId("next-btn").click()
+          await host.getByTestId("recap-final-advance").click({ timeout: 2_000 }).catch(() => {})
+          await host.getByTestId("recap-advance").click({ timeout: 2_000 }).catch(() => {})
         }
         // Wait for leaderboard (now guaranteed to be visible).
         await expect(host.getByTestId(`leaderboard-row-${PLAYER1}`)).toBeVisible({ timeout: 15_000 })
