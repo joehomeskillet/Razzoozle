@@ -29,7 +29,6 @@ interface Props {
 
 const LS_KEY = "rahoot_achievements"
 
-/** {id: count} map persisted by Result.tsx. Cumulative across all games. */
 function readStoredAchievements(): Record<string, number> {
   try {
     const raw = localStorage.getItem(LS_KEY)
@@ -39,7 +38,6 @@ function readStoredAchievements(): Record<string, number> {
   }
 }
 
-/** Narrow the polymorphic recap field to the per-player shape. */
 function isPlayerRecap(
   recap: CommonStatusDataMap["FINISHED"]["recap"],
 ): recap is PlayerRecap {
@@ -51,40 +49,11 @@ function isPlayerRecap(
   )
 }
 
-// ─── Medal/Rank Display ───────────────────────────────────────────────────────
-
-const MedalDisplay = ({ rank }: { rank: number }) => {
-  const { t } = useTranslation()
-  const reveal = useReveal()
-
-  if (rank < 1 || rank > 3) {
-    return null
-  }
-
-  const medals: Record<number, { color: string; label: string }> = {
-    1: { color: "text-yellow-600", label: t("game:rank.1") },
-    2: { color: "text-slate-400", label: t("game:rank.2") },
-    3: { color: "text-orange-600", label: t("game:rank.3") },
-  }
-
-  const medal = medals[rank]
-  if (!medal) return null
-
-  return (
-    <motion.div
-      className="flex flex-col items-center gap-2"
-      variants={reveal.item()}
-      transition={reveal.spring}
-    >
-      <Medal className={clsx("size-12 drop-shadow", medal.color)} aria-hidden />
-      <span className="text-sm font-semibold text-[color:var(--game-fg)] drop-shadow">
-        {medal.label}
-      </span>
-    </motion.div>
-  )
+const tierColors: Record<number, string> = {
+  1: "var(--tier-gold)",
+  2: "var(--tier-silver)",
+  3: "var(--tier-bronze)",
 }
-
-// ─── Top 3 Leaderboard ────────────────────────────────────────────────────────
 
 const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
   const { t } = useTranslation()
@@ -95,12 +64,6 @@ const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
   }
 
   const displayPlayers = topPlayers.slice(0, 3)
-
-  const medalColors: Record<number, string> = {
-    1: "text-yellow-600",
-    2: "text-slate-400",
-    3: "text-orange-600",
-  }
 
   return (
     <motion.section
@@ -133,7 +96,8 @@ const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
               transition={reveal.spring}
             >
               <Trophy
-                className={clsx("size-6", medalColors[rank])}
+                className="size-6"
+                style={{ color: tierColors[rank] }}
                 aria-hidden
               />
               <div className="flex flex-1 flex-col">
@@ -154,8 +118,6 @@ const TopThreeLeaderboard = ({ topPlayers }: { topPlayers: Player[] }) => {
     </motion.section>
   )
 }
-
-// ─── myRecap stat card ────────────────────────────────────────────────────────
 
 const MyRecapCard = ({ myRecap }: { myRecap: PlayerRecap["myRecap"] }) => {
   const { t } = useTranslation()
@@ -208,8 +170,6 @@ const MyRecapCard = ({ myRecap }: { myRecap: PlayerRecap["myRecap"] }) => {
   )
 }
 
-// ─── Highlight badge (the one superlative this player won) ────────────────────
-
 const HighlightBadge = ({
   highlight,
 }: {
@@ -247,8 +207,6 @@ const HighlightBadge = ({
   )
 }
 
-// ─── Trophy summary (this game merged with cumulative localStorage) ───────────
-
 const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
   const { t } = useTranslation()
   const reveal = useReveal()
@@ -280,7 +238,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
   return (
     <motion.section
       aria-label={t("game:recap.trophies.title")}
-      className="flex w-full flex-col gap-3"
+      className="flex w-full flex-col gap-2"
       variants={reveal.container()}
       initial="hidden"
       animate="visible"
@@ -305,7 +263,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
         return (
           <motion.div
             key={tier}
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5"
             variants={reveal.item()}
             transition={reveal.spring}
           >
@@ -318,7 +276,7 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
             >
               {t(`game:tier.${tier}`)}
             </span>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
               {ids.map((id) => {
                 const count = counts[id] ?? 0
                 const isNew = thisGameSet.has(id)
@@ -370,8 +328,6 @@ const TrophySummary = ({ thisGame }: { thisGame: string[] }) => {
     </motion.section>
   )
 }
-
-// ─── Share-sticker button (top-3 only) ────────────────────────────────────────
 
 const ShareStickerButton = ({
   rank,
@@ -436,8 +392,6 @@ const ShareStickerButton = ({
   )
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 const PlayerFinished = ({ data }: Props) => {
   const { rank, subject, top, recap, endScreen } = data
   const { player } = usePlayerStore()
@@ -446,9 +400,6 @@ const PlayerFinished = ({ data }: Props) => {
 
   const rankKey = typeof rank === "number" ? rankKeyFor(rank) : null
   const playerRecap = isPlayerRecap(recap) ? recap : null
-  // W1-M3b: "private" mode — the player sees only their own result/rank, no
-  // public ranking. "full"/"top3" (and legacy games without endScreen) keep
-  // the top-3 mini leaderboard (TopThreeLeaderboard already caps at 3).
   const showPublicRanking = endScreen !== "private"
 
   const isTopThree =
@@ -463,50 +414,57 @@ const PlayerFinished = ({ data }: Props) => {
       initial="hidden"
       animate="visible"
     >
-      <motion.p
-        className="text-center text-4xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-5xl"
+      <motion.div
+        className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border border-[var(--border-hairline)] bg-white px-6 py-6 shadow-md"
         variants={reveal.pop()}
         transition={reveal.spring}
       >
-        {subject}
-      </motion.p>
+        <motion.p
+          className="text-center text-lg font-semibold text-[color:var(--color-field-ink)]/70"
+          variants={reveal.item()}
+          transition={reveal.spring}
+        >
+          {subject}
+        </motion.p>
 
-      <motion.p
-        className="text-center text-3xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl"
-        variants={reveal.item()}
-        transition={reveal.spring}
-      >
-        {rankKey !== null ? t(rankKey, { rank }) : "—"}
-      </motion.p>
+        <motion.p
+          className="text-center text-4xl font-bold text-[color:var(--game-fg)] drop-shadow-lg"
+          variants={reveal.item()}
+          transition={reveal.spring}
+        >
+          {rankKey !== null ? t(rankKey, { rank }) : "—"}
+        </motion.p>
 
-      {typeof rank === "number" && rank >= 1 && rank <= 3 && (
-        <MedalDisplay rank={rank} />
-      )}
+        {typeof rank === "number" && rank >= 1 && rank <= 3 && (
+          <motion.div
+            className="flex flex-col items-center gap-1"
+            variants={reveal.item()}
+            transition={reveal.spring}
+          >
+            <Medal
+              className="size-10 drop-shadow"
+              style={{ color: tierColors[rank] }}
+              aria-hidden
+            />
+          </motion.div>
+        )}
 
-      <motion.p
-        className="mt-2 rounded-2xl border border-[var(--border-hairline)] bg-white px-6 py-2 text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums shadow-md"
-        variants={reveal.item()}
-        transition={reveal.spring}
-      >
-        {player?.points ?? 0} {t("game:recap.sticker.points")}
-      </motion.p>
+        <motion.p
+          className="text-center text-2xl font-bold text-[color:var(--color-field-ink)] tabular-nums"
+          variants={reveal.item()}
+          transition={reveal.spring}
+        >
+          {player?.points ?? 0} {t("game:recap.sticker.points")}
+        </motion.p>
+      </motion.div>
 
       {showPublicRanking && top && top.length > 0 && (
         <TopThreeLeaderboard topPlayers={top} />
       )}
 
-      <motion.a
-        href="/submit"
-        className="focus-visible:ring-primary/60 mt-4 inline-flex min-h-11 items-center rounded px-3 py-2 text-center text-base font-semibold text-[color:var(--game-fg)] underline-offset-4 drop-shadow-lg hover:underline focus-visible:ring-2 focus-visible:outline-none"
-        variants={reveal.item()}
-        transition={reveal.spring}
-      >
-        {t("submit:cta.afterGame")}
-      </motion.a>
-
       {playerRecap && (
         <motion.div
-          className="mt-6 flex w-full max-w-md flex-col gap-5"
+          className="flex w-full max-w-md flex-col gap-4"
           variants={reveal.container()}
           initial="hidden"
           animate="visible"
@@ -526,24 +484,39 @@ const PlayerFinished = ({ data }: Props) => {
           )}
 
           <TrophySummary thisGame={playerRecap.myRecap.achievements} />
-
-          {isTopThree !== null && (
-            <motion.div
-              className="flex justify-center"
-              variants={reveal.item()}
-              transition={reveal.spring}
-            >
-              <ShareStickerButton
-                rank={isTopThree}
-                name={player?.username ?? subject}
-                points={player?.points ?? 0}
-                subject={subject}
-                achievements={playerRecap.myRecap.achievements}
-              />
-            </motion.div>
-          )}
         </motion.div>
       )}
+
+      <motion.div
+        className="flex w-full max-w-md flex-col items-center gap-3"
+        variants={reveal.container()}
+        initial="hidden"
+        animate="visible"
+      >
+        {isTopThree !== null && playerRecap && (
+          <motion.div
+            variants={reveal.item()}
+            transition={reveal.spring}
+          >
+            <ShareStickerButton
+              rank={isTopThree}
+              name={player?.username ?? subject}
+              points={player?.points ?? 0}
+              subject={subject}
+              achievements={playerRecap.myRecap.achievements}
+            />
+          </motion.div>
+        )}
+
+        <motion.a
+          href="/submit"
+          className="focus-visible:ring-primary/60 inline-flex min-h-11 items-center rounded px-3 py-2 text-center text-base font-semibold text-[color:var(--game-fg)] underline-offset-4 drop-shadow-lg hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          variants={reveal.item()}
+          transition={reveal.spring}
+        >
+          {t("submit:cta.afterGame")}
+        </motion.a>
+      </motion.div>
     </motion.div>
   )
 }
