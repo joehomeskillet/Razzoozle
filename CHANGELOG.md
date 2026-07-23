@@ -8,6 +8,98 @@ reference deployment is `razzoozle.joelduss.xyz`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [3.0.0] — 2026-07-23
+
+**Breaking: Rust-only deployment.** The Node.js backend and dual-stack Docker
+compose files have been removed; the Rust server with `axum` + `socketioxide` is
+now the sole backend. Deployment is simplified to a single Rust-based `docker
+build` workflow. 🔥 Manager console redesigned with unified row-system layout
+across all 9 tabs. Consistent game UI (presenter, player, display). Class-mode
+with server-enforced join and emoji PINs. Full i18n parity (6 languages, 8
+namespaces). Comprehensive e2e suite (9 question types, host + 2 players).
+
+### Breaking Changes
+
+- **Removed Node.js backend and dual-stack Docker support** — `compose.node.yml`,
+  `compose.rust.yml`, root-level `Dockerfile`, and `docker/supervisord.conf`
+  deleted. Deployment now requires only `rust/Dockerfile` and standard
+  `docker build` + `docker run`. Self-hosters relying on Node.js backend must
+  migrate to the Rust backend.
+
+### Added
+
+- **Manager console redesign** — unified row-system (`ListRow` component) across
+  all 9 config tabs (users, quizzes, classes, students, results, themes,
+  settings, achievements, plugins). Multi-select checkboxes now live *inside* the
+  row (not in a separate header), with compact checkmark/selection state. Shared
+  `SelectAllControl` component replaces duplicated select-all logic on 6 tabs.
+- **Bulk actions & management** — unified toolbar for bulk delete, activate,
+  deactivate, and assign operations across tabs (users, classes, students,
+  results). Confirmation dialogs prevent accidental data loss. Localized bulk
+  vocabulary (de/en/es/fr/it/zh).
+- **Game UI consistency wave** — new `GameAudience` socket contract, unified
+  spacing tokens, shared motion foundations. `QuestionStage`, `GameHud`,
+  `AnswerRevealPanel`, and `RecapPanel` redesigned for visual/interactive parity
+  across presenter, player, and audience display. Auto-advance countdown moved to
+  bottom-center for all question types.
+- **Class mode & class-based gameplay** — classes and students management UI
+  with status badges, filters, and bulk operations. Server-side enforcement of
+  class-only join (players must hold a valid class pin). Emoji PIN system for
+  secure, memorable student access. Inactive class guards prevent game startup.
+- **Security hardening** — self-admin guard (admin users cannot delete or
+  deactivate their own account; UI + server-side enforcement), rate-limiting on
+  bulk operations, inactive-student login guards.
+- **Achievement visibility contracts** — achievements and award badges now
+  respect gameplay-context conditions (e.g., hidden until player meets reveal
+  thresholds, only shown post-game recap).
+- **i18n completeness** — all 8 namespaces (manager, game, student, admin,
+  common, alerts, tutorials, errors) present across de/en/es/fr/it/zh with CI
+  gate ensuring locale parity on every commit.
+- **Design tokens manifest** — centralized `design.tokens.json` for Figma sync
+  and design system governance.
+
+### Changed
+
+- **Game recap sequence** — fixed phase transitions; recap completion now
+  properly gates the advance button to avoid race conditions in auto-advance
+  mode. Answer reveal patterns unified across question types (multiple choice,
+  slider, ordering, wortarten).
+- **Podium and awards** — single-winner layout with optional auto-celebration
+  mode; award card logic consolidated. Labeled points display. Safe celebration
+  layers prevent button-click interference.
+- **Presenter leaderboard scaling** — responsive scaling for beamer projection
+  and kiosk displays.
+- **Game-lobby improvements** — prioritized avatar picker composition (picker
+  deferred until opened). Compact wait-state layout for mobile views.
+
+### Fixed
+
+- **Wortarten rendering** — define game foreground color inside radix portals to
+  prevent CSS cascade issues (P0 white-on-white text).
+- **Recap advance timing** — recap-aware helpers prevent hidden next-button
+  clicks during phase transitions.
+- **E2E latency budgets** — remote test runs now allow 120 s for race conditions.
+- **Node 22 compatibility** — fixed `json` import attribute syntax in e2e suite.
+
+### Tests
+
+- **e2e answer-flow revival** — comprehensive 9-type all-types flow
+  (multiple-choice, slider, ordering, wortarten, true/false, matching, hotspot,
+  image-select, drag-drop) with host + 2 player actors, covering solo and team
+  modes. Published as mandatory gate before main-branch merges.
+- **Manager checkbox regression suite** — checkbox-in-ListRow selection and
+  SelectAllControl unit tests added to prevent future multi-select breakage.
+- **Podium and recap fixtures** — score-cap margin verification, single-winner
+  layout, award card state transitions.
+
+### i18n
+
+- Full locale key coverage: 6 languages × 8 namespaces. Added bulk-action
+  vocabulary (bulk.selectedOfTotal, bulk actions toast messages), game-UI keys
+  (countdown, recap, podium, achievement reveal), and manager-console keys
+  (class assignment, student status, results deletion). All keys synchronized
+  via `scripts/check-locales.sh` CI gate.
+
 ## [2.0.0] — 2026-07-09
 
 **The 2.0 milestone.** The Rust backend reaches full gameplay parity and the
