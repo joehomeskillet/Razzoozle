@@ -169,10 +169,9 @@ describe("SelectAllControl — Shared Component", () => {
     )
 
     // Verify wrapper div classes
-    const wrapperMatch = markup.match(
-      /div[^>]*class="[^"]*min-h-11[^"]*items-center[^"]*"/,
-    )
-    expect(wrapperMatch).toBeDefined()
+    const wrapperMatch =
+      /div[^>]*class="[^"]*min-h-11[^"]*items-center[^"]*"/.exec(markup)
+    expect(wrapperMatch).not.toBeNull()
   })
 
   it("counter span has aria-live='polite' and tabular-nums class", async () => {
