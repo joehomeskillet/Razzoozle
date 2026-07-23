@@ -817,11 +817,12 @@ mod tests {
 
     /// W1-1 New Test: Roundtrip with in-flight answers mid-question.
     /// This tests the critical functionality added in Commit 1: persisting and
-    /// restoring current_answers during SELECT_ANSWER phase.
+    /// restoring current_answers during SELECT_ANSWER phase with an active question.
+    /// P1-Bug validation: Crash mid-SELECT_ANSWER with player submissions → Restore keeps answers intact.
     #[test]
     fn test_snapshot_roundtrip_answers_mid_question() {
-        // Base snapshot from working test_snapshot_integration_multiplay
-        let mut snap = serde_json::json!({
+        // Full snapshot with a real question mid-SELECT_ANSWER
+        let snap = serde_json::json!({
             "gameId": "game-1",
             "inviteCode": "invite-xyz",
             "managerClientId": "mgr-client",
@@ -829,8 +830,15 @@ mod tests {
             "started": true,
             "phase": "SELECT_ANSWER",
             "quizz": {
-                "subject": "Test",
-                "questions": []
+                "subject": "Test Quiz",
+                "questions": [
+                    {
+                        "question": "What is 2+2?",
+                        "answers": ["3", "4", "5"],
+                        "cooldown": 0,
+                        "time": 10
+                    }
+                ]
             },
             "quizId": "quiz-1",
             "lowLatencyConfig": {"enabled": false},
@@ -858,7 +866,7 @@ mod tests {
             },
             "autoMode": false,
             "currentQuestionIndex": 0,
-            // W1-1: Current in-flight answers mid-SELECT_ANSWER
+            // W1-1: In-flight answers mid-SELECT_ANSWER (the P1-Bug scenario)
             "currentAnswers": [
                 {
                     "clientId": "c1",
@@ -879,7 +887,7 @@ mod tests {
 
         let restored = game_from_snapshot(&snap).expect("Failed to restore interrupted game");
 
-        // Verify the in-flight answers were restored
+        // Verify the in-flight answers were restored (P1 bug fix validation)
         assert_eq!(restored.engine.current_answers.len(), 2, "Should have 2 in-flight answers");
         assert!(restored.engine.current_answers.contains_key("c1"), "Answer from c1 missing");
         assert!(restored.engine.current_answers.contains_key("c2"), "Answer from c2 missing");
@@ -888,6 +896,10 @@ mod tests {
         assert_eq!(restored.engine.answer_order.len(), 2, "Should have 2 answers in order");
         assert_eq!(restored.engine.answer_order[0], "c1", "First answer order incorrect");
         assert_eq!(restored.engine.answer_order[1], "c2", "Second answer order incorrect");
+
+        // Verify the active question is intact
+        assert_eq!(restored.engine.current_question_index, 0, "Question index mismatch");
+        assert_eq!(restored.engine.quiz.questions.len(), 1, "Question count mismatch");
     }
 
     /// W1-1 New Test: Backward compatibility with old snapshots (version 1).
