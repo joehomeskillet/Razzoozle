@@ -6,6 +6,7 @@ import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolb
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { Plus } from "lucide-react"
@@ -271,25 +272,7 @@ const ConfigSchueler = () => {
             </div>
           </div>
 
-          {/* SDD §9.2 — header select-all for the currently filtered list */}
-          {filteredStudents.length > 0 && (
-            <div className="mb-0 flex shrink-0 items-center gap-3">
-              <Checkbox
-                checked={selection.allSelected}
-                indeterminate={selection.someSelected}
-                onChange={selection.toggleAll}
-                aria-label={t("manager:schueler.selectAll")}
-                data-testid="schueler-select-all"
-              />
-              <span className="text-sm text-[var(--ink-subtle)]">
-                {t("manager:bulk.selected", {
-                  count: selection.selected.size,
-                })}
-              </span>
-            </div>
-          )}
-
-          {/* SDD §3.2 / §9.3 — bulk toolbar after filter pills + header checkbox, before StudentList */}
+          {/* SDD §3.2 / §9.3 — bulk toolbar after filter pills, before SelectAllControl + StudentList */}
           {selection.selected.size > 0 && (
             <BulkActionToolbar
               count={selection.selected.size}
@@ -349,6 +332,19 @@ const ConfigSchueler = () => {
                 {t("manager:bulk.deleteSelected")}
               </Button>
             </BulkActionToolbar>
+          )}
+
+          {/* SDD §9.2 — SelectAllControl for the currently filtered list */}
+          {filteredStudents.length > 0 && (
+            <SelectAllControl
+              id="schueler-select-all"
+              data-testid="schueler-select-all"
+              allSelected={selection.allSelected}
+              someSelected={selection.someSelected}
+              selectedCount={selection.selected.size}
+              totalCount={filteredStudents.length}
+              onToggleAll={selection.toggleAll}
+            />
           )}
 
           <StudentList

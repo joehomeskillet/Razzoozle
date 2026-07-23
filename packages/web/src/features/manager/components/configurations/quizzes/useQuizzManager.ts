@@ -38,8 +38,7 @@ export const useQuizzManager = () => {
     id: string
     subject: string
   } | null>(null)
-  // Multi-select state keyed by quiz id (indices would break under filter/sort).
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Bulk delete dialog state; selection now managed by useEntitySelection in ConfigManageQuizz
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   // Live search + sort applied to both the active and archived sections.
@@ -99,53 +98,14 @@ export const useQuizzManager = () => {
     socket.emit(EVENTS.QUIZZ.GET, id)
   }
 
-  const clearSelection = () => setSelected(new Set())
-
-  // Drop ids that are no longer SELECTABLE — only active (non-archived) rows
-  // carry a checkbox, so prune against that set (not the full list). This means
-  // archiving a selected quiz removes it from the selection, preventing a later
-  // bulk-delete from silently deleting a now-hidden archived quiz.
-  useEffect(() => {
-    setSelected((prev) => {
-      if (prev.size === 0) {
-        return prev
-      }
-
-      const selectable = new Set(
-        quizz.filter((q) => !q.archived).map((q) => q.id),
-      )
-      const next = new Set([...prev].filter((id) => selectable.has(id)))
-
-      return next.size === prev.size ? prev : next
-    })
-  }, [quizz])
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-
-      return next
-    })
-  }
-
-  const handleBulkDelete = () => {
-    selected.forEach((id) => {
+  const handleBulkDelete = (ids: string[]) => {
+    ids.forEach((id) => {
       socket.emit(EVENTS.QUIZZ.DELETE, id)
     })
     // ponytail: optimistic; failures surface via QUIZZ.ERROR
     toast.success(t("manager:quizz.deleted"))
-    clearSelection()
     setBulkDeleteOpen(false)
   }
-
-  const selectionCount = selected.size
-  const selectionActive = selectionCount > 0
 
   const handleDelete = () => {
     if (!pendingDelete) {
@@ -239,18 +199,13 @@ export const useQuizzManager = () => {
     setPendingDelete,
     pendingDuplicate,
     setPendingDuplicate,
-    selected,
     bulkDeleteOpen,
     setBulkDeleteOpen,
     activeQuizz,
     archivedQuizz,
     hasMatches,
     handleExport,
-    clearSelection,
-    toggleSelect,
     handleBulkDelete,
-    selectionCount,
-    selectionActive,
     handleDelete,
     handleDuplicate,
     handleArchived,
