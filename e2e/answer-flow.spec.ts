@@ -8,7 +8,7 @@
 // (W0a upsert-quiz.mjs). data-testid contract from W0_SPEC / W0b-1.
 import { test, expect, type Page, type BrowserContext } from "@playwright/test"
 // Path locked per W0_SPEC (W0a owns content; mirrored here for import/parse).
-import quizFixture from "./fixtures/all-types-quiz.json"
+import quizFixture from "./fixtures/all-types-quiz.json" with { type: "json" }
 
 const PLAYER1 = "Player1"
 const PLAYER2 = "Player2"
