@@ -21,26 +21,18 @@ use razzoozle_protocol::constants;
 /// http-routes.ts:109 SKELETON_IMPORT_MAX.
 const SKELETON_IMPORT_MAX: usize = 16 * 1024 * 1024;
 
+/// w2-7: was a verbatim duplicate of the admin-only check (session token →
+/// `role == "admin"`); now delegates to the centralized
+/// `crate::auth::ensure_admin`. Behavior unchanged (admin-only).
 async fn authorize_manager(
     headers: &HeaderMap,
     state: &AppState,
 ) -> Result<(), (StatusCode, Json<Value>)> {
-    let token = headers
-        .get("x-manager-token")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if token.is_empty() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
+    if crate::auth::ensure_admin(headers, &state.db_pool).await {
+        Ok(())
+    } else {
+        Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
     }
-    // Check if token is valid session token and user is admin
-    if let Some(ref pool) = state.db_pool {
-        if let Some(user) = crate::db::users::session_user(pool, token).await.ok().flatten() {
-            if user.role == "admin" {
-                return Ok(());
-            }
-        }
-    }
-    Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
 }
 
 pub async fn handle_skeleton_export(
