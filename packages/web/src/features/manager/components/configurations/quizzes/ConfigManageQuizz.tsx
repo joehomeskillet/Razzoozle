@@ -3,6 +3,7 @@ import Input from "@razzoozle/web/components/Input"
 import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import Select from "@razzoozle/web/components/Select"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Plus, Trash2, Upload, X } from "lucide-react"
@@ -11,6 +12,7 @@ import { useMemo, useState } from "react"
 
 import { useLabelManager } from "../labels/useLabelManager"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import QuizzDialogs from "./QuizzDialogs"
 import QuizzList from "./QuizzList"
 import type { SortKey } from "./types"
@@ -31,18 +33,13 @@ const ConfigManageQuizz = () => {
     setPendingDelete,
     pendingDuplicate,
     setPendingDuplicate,
-    selected,
     bulkDeleteOpen,
     setBulkDeleteOpen,
     activeQuizz,
     archivedQuizz,
     hasMatches,
     handleExport,
-    clearSelection,
-    toggleSelect,
     handleBulkDelete,
-    selectionCount,
-    selectionActive,
     handleDelete,
     handleDuplicate,
     handleArchived,
@@ -75,6 +72,17 @@ const ConfigManageQuizz = () => {
       hasFilteredMatches: filtered.length > 0 || filteredArch.length > 0,
     }
   }, [klassenEnabled, activeFilterId, activeQuizz, archivedQuizz, hasMatches])
+
+  const selectableQuizIds = useMemo(
+    () => filteredActive.map((quiz) => quiz.id),
+    [filteredActive],
+  )
+  const selection = useEntitySelection(selectableQuizIds)
+
+  const handleBulkDeleteConfirm = () => {
+    handleBulkDelete(Array.from(selection.selected))
+    selection.clear()
+  }
 
   return (
     <>
@@ -146,10 +154,12 @@ const ConfigManageQuizz = () => {
         )}
 
         {/* Bulk toolbar: inline only when ≥1 selected (not sticky; ActionFooter stays sticky) */}
-        {selectionActive && (
+        {selection.selectionActive && (
           <div
             role="toolbar"
-            aria-label={t("manager:quizz.bulkSelected", { count: selectionCount })}
+            aria-label={t("manager:quizz.bulkSelected", {
+              count: selection.selected.size,
+            })}
             className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -157,14 +167,16 @@ const ConfigManageQuizz = () => {
                 variant="ghost"
                 size="icon"
                 type="button"
-                onClick={clearSelection}
+                onClick={() => selection.clear()}
                 aria-label={t("common:cancel")}
                 title={t("common:cancel")}
               >
                 <X className="size-5" aria-hidden />
               </Button>
               <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
-                {t("manager:quizz.bulkSelected", { count: selectionCount })}
+                {t("manager:quizz.bulkSelected", {
+                  count: selection.selected.size,
+                })}
               </span>
             </div>
             <Button
@@ -182,15 +194,27 @@ const ConfigManageQuizz = () => {
           </div>
         )}
 
+        {filteredActive.length > 0 && (
+          <SelectAllControl
+            id="quizz-select-all"
+            data-testid="quizz-select-all"
+            allSelected={selection.allSelected}
+            someSelected={selection.someSelected}
+            selectedCount={selection.selected.size}
+            totalCount={filteredActive.length}
+            onToggleAll={selection.toggleAll}
+          />
+        )}
+
         <QuizzList
           quizz={quizz}
           hasMatches={hasFilteredMatches}
           activeQuizz={filteredActive}
           archivedQuizz={filteredArchived}
-          selected={selected}
+          selected={selection.selected}
           showArchived={showArchived}
           navigate={navigate}
-          toggleSelect={toggleSelect}
+          toggleSelect={selection.toggle}
           handleExport={handleExport}
           handleArchived={handleArchived}
           setPendingDelete={setPendingDelete}
@@ -205,8 +229,8 @@ const ConfigManageQuizz = () => {
           handleDelete={handleDelete}
           bulkDeleteOpen={bulkDeleteOpen}
           setBulkDeleteOpen={setBulkDeleteOpen}
-          selectionCount={selectionCount}
-          handleBulkDelete={handleBulkDelete}
+          selectionCount={selection.selected.size}
+          handleBulkDelete={handleBulkDeleteConfirm}
           pendingDuplicate={pendingDuplicate}
           setPendingDuplicate={setPendingDuplicate}
           handleDuplicate={handleDuplicate}
