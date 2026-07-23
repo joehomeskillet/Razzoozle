@@ -7,7 +7,7 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useNavigate } from "@tanstack/react-router"
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
+import { type ChangeEvent, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
