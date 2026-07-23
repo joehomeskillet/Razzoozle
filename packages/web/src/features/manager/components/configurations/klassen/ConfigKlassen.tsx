@@ -8,6 +8,7 @@ import { ActionFooter } from "@razzoozle/web/components/ui"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useRef, useState } from "react"
@@ -282,19 +283,15 @@ const ConfigKlassen = () => {
       )}
 
       {filteredByStatus.length > 0 && (
-        <div className="mb-4 flex shrink-0 items-center">
-          <label htmlFor="classes-select-all" className="flex items-center gap-2 text-sm font-medium">
-            <Checkbox
-              id="classes-select-all"
-              checked={selection.allSelected}
-              indeterminate={selection.someSelected}
-              onChange={() => selection.toggleAll()}
-              data-testid="classes-select-all"
-              aria-label={selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
-            />
-            {selection.someSelected ? t("manager:classes.selectFiltered") : t("manager:classes.selectAll")}
-          </label>
-        </div>
+        <SelectAllControl
+          id="classes-select-all"
+          data-testid="classes-select-all"
+          allSelected={selection.allSelected}
+          someSelected={selection.someSelected}
+          selectedCount={selection.selected.size}
+          totalCount={filteredByStatus.length}
+          onToggleAll={selection.toggleAll}
+        />
       )}
 
       <ClassList
@@ -302,9 +299,9 @@ const ConfigKlassen = () => {
         selectedIds={selection.selected}
         onToggleSelect={selection.toggle}
         onToggleSingleAction={(classId, action) => {
-          socket.emit(EVENTS.CLASS.SET_ACTIVE, { 
-            id: classId, 
-            active: action === 'activate' 
+          socket.emit(EVENTS.CLASS.SET_ACTIVE, {
+            id: classId,
+            active: action === 'activate'
           })
         }}
         onCreateClass={handleOpenCreateDialog}
