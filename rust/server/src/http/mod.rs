@@ -93,61 +93,30 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-/// Node `authorizeManagerRequest` parity: `X-Manager-Token` is a valid
-/// session token (from DB). Authorization via session token only.
-pub async fn authorize_manager_request(
-    headers: &HeaderMap,
-    registry: Arc<RwLock<GameRegistry>>,
-    db_pool: &Option<sqlx::PgPool>,
-) -> bool {
-    let token = headers
-        .get("x-manager-token")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if token.is_empty() {
-        return false;
-    }
-    // Check if token is valid session token
-    if let Some(ref pool) = db_pool {
-        if crate::db::users::session_user(pool, token).await.ok().flatten().is_some() {
-            return true;
-        }
-    }
-    false
-}
-
-/// Admin-only variant of `authorize_manager_request` for privileged HTTP routes
+/// Admin-only variant of the manager check, for privileged HTTP routes
 /// (plugin import/export) that the socket layer gates with `ensure_admin`. The
 /// `x-manager-token` (session token) must resolve to a user whose role is "admin";
 /// a plain authenticated manager (role "user") is rejected. Closes the HTTP
 /// privilege-escalation path around the admin-gated socket plugin handlers.
+///
+/// w2-7: delegates to the centralized `crate::auth::ensure_admin` (was
+/// previously duplicated verbatim here, in `http::assignments`, and in
+/// `http::skeleton`).
 pub async fn authorize_admin_request(
     headers: &HeaderMap,
     db_pool: &Option<sqlx::PgPool>,
 ) -> bool {
-    let token = headers
-        .get("x-manager-token")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if token.is_empty() {
-        return false;
-    }
-    if let Some(ref pool) = db_pool {
-        if let Some(user) = crate::db::users::session_user(pool, token).await.ok().flatten() {
-            return user.role == "admin";
-        }
-    }
-    false
+    crate::auth::ensure_admin(headers, db_pool).await
 }
 
 /// Dev-route auth for `/metrics` (and similar): fail-closed on missing
 /// `DEV_API_KEY`. When the key is set, require constant-time match on
-/// `X-Manager-Token`. Registry is accepted for call-site parity with
-/// `authorize_manager_request` (not used for session lookup here).
+/// `X-Manager-Token`. Registry is accepted for call-site parity with the
+/// manager check (not used for session lookup here).
 /// Dev-route auth for `/metrics` (and similar): fail-closed on missing
 /// `DEV_API_KEY`. When the key is set, require constant-time match on
 /// `Authorization: Bearer <key>` or `X-Manager-Token`. Registry is accepted
-/// for call-site parity with `authorize_manager_request` (not used for session
+/// for call-site parity with the manager check (not used for session
 /// lookup here).
 pub async fn authorize_dev_request(
     headers: &HeaderMap,

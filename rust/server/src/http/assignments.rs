@@ -72,28 +72,22 @@ fn role_may_manage_assignments(role: &str) -> bool {
     matches!(role, "admin" | "lehrkraft")
 }
 
+/// w2-7: token extraction + session lookup now come from the centralized
+/// `crate::auth::ensure_manager_user` (was duplicated verbatim here). The
+/// SEC-X2a role gate (admin|lehrkraft only, "user" role rejected) stays here
+/// unchanged — it is stricter than the base manager check and must not be
+/// weakened by the consolidation.
 async fn authorize_manager_request(
     headers: &HeaderMap,
     registry: &Arc<RwLock<GameRegistry>>,
     db_pool: &Option<sqlx::PgPool>,
 ) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let header_token = headers
-        .get("x-manager-token")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-
-    if header_token.is_empty() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
-    }
-
-    // Check if token is valid session token with allowed role
-    if let Some(ref pool) = db_pool {
-        if let Some(user) = crate::db::users::session_user(pool, header_token).await.ok().flatten() {
-            if role_may_manage_assignments(&user.role) {
-                return Ok(());
-            }
-            tracing::warn!("assignments: denied for role={} (SEC-X2a)", user.role);
+    let _ = registry;
+    if let Some(user) = crate::auth::ensure_manager_user(headers, db_pool).await {
+        if role_may_manage_assignments(&user.role) {
+            return Ok(());
         }
+        tracing::warn!("assignments: denied for role={} (SEC-X2a)", user.role);
     }
 
     Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
