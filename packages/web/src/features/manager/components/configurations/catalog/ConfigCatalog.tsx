@@ -1,16 +1,17 @@
 import * as Select from "@radix-ui/react-select"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import {
   popoverContentClass,
   popoverItemClass,
 } from "@razzoozle/web/components/manager/popover"
 import Button from "@razzoozle/web/components/Button"
-import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
@@ -27,7 +28,6 @@ import {
   Plus,
   SearchX,
   Trash2,
-  X,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
@@ -122,26 +122,11 @@ const ConfigCatalog = () => {
         </div>
 
         {selectionActive && (
-          <div
-            role="toolbar"
-            aria-label={t("manager:catalog.bulkSelected", { count: selectionCount })}
-            className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--radius-theme)] bg-[var(--surface-2)] p-2 pl-3"
+          <BulkActionToolbar
+            count={selectionCount}
+            label={t("manager:catalog.bulkSelected", { count: selectionCount })}
+            onClear={selection.clear}
           >
-            <div className="flex min-w-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                type="button"
-                onClick={selection.clear}
-                aria-label={t("common:cancel")}
-                title={t("common:cancel")}
-              >
-                <X className="size-5" aria-hidden />
-              </Button>
-              <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
-                {t("manager:catalog.bulkSelected", { count: selectionCount })}
-              </span>
-            </div>
             <Button
               size="sm"
               variant="danger"
@@ -154,7 +139,7 @@ const ConfigCatalog = () => {
                 {t("manager:catalog.bulkDelete")}
               </span>
             </Button>
-          </div>
+          </BulkActionToolbar>
         )}
 
         {entries.length === 0 ? (
@@ -218,18 +203,14 @@ const ConfigCatalog = () => {
                     <ListRow
                       selected={selection.isSelected(entry.id)}
                       selection={
-                        <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
-                          <span className="sr-only">
-                            {t("manager:catalog.selectEntry", {
-                              name: entry.question.question,
-                            })}
-                          </span>
-                          <Checkbox
-                            data-testid={`catalog-checkbox-${entry.id}`}
-                            checked={selection.isSelected(entry.id)}
-                            onChange={() => selection.toggle(entry.id)}
-                          />
-                        </label>
+                        <RowSelectionControl
+                          checked={selection.isSelected(entry.id)}
+                          onChange={() => selection.toggle(entry.id)}
+                          ariaLabel={t("manager:catalog.selectEntry", {
+                            name: entry.question.question,
+                          })}
+                          data-testid={`catalog-checkbox-${entry.id}`}
+                        />
                       }
                       leading={
                         <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
