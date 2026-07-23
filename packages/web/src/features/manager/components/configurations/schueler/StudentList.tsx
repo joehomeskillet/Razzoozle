@@ -95,6 +95,7 @@ const StudentList = ({
           (c) => !student.classes.some((sc) => sc.id === c.id),
         )
         const pendingClassId = pendingClassIdByStudentId[student.id] ?? ""
+        const isSelected = selectedIds?.has(student.id) ?? false
 
         const actions: ListRowAction[] = [
           {
@@ -211,30 +212,28 @@ const StudentList = ({
         )
 
         return (
-          <div key={student.id} className="flex items-start gap-2">
-            {onToggleSelect && (
-              <div className="mt-3 flex-shrink-0">
+          <ListRow
+            key={student.id}
+            className="min-w-0"
+            selected={isSelected}
+            selection={onToggleSelect ? (
+              <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
                 <Checkbox
-                  checked={selectedIds?.has(student.id) ?? false}
-                  onChange={() => {
-                    onToggleSelect(student.id)
-                  }}
+                  checked={isSelected}
+                  onChange={() => onToggleSelect(student.id)}
                   aria-label={`Schüler auswählen: ${composedName}`}
                   data-testid={`student-select-${student.id}`}
                 />
-              </div>
-            )}
-            <ListRow
-              className="min-w-0 flex-1"
-              leading={
-                <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
-              }
-              title={title}
-              meta={meta}
-              footer={footer}
-              actions={actions}
-            />
-          </div>
+              </label>
+            ) : undefined}
+            leading={
+              <Users className="size-5 shrink-0 text-[var(--ink-muted)]" />
+            }
+            title={title}
+            meta={meta}
+            footer={footer}
+            actions={actions}
+          />
         )
       })}
     </div>
