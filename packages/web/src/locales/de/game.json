@@ -319,5 +319,10 @@
   },
   "reveal": {
     "correctAnswer": "Richtige Antwort"
+  },
+  "podium": {
+    "firstPlace": "1. Platz",
+    "points": "Punkte",
+    "ranking": "Rangliste"
   }
 }

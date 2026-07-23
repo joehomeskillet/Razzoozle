@@ -319,5 +319,10 @@
   },
   "reveal": {
     "correctAnswer": "正确答案"
+  },
+  "podium": {
+    "firstPlace": "第一名",
+    "points": "分数",
+    "ranking": "排行榜"
   }
 }
