@@ -7,6 +7,9 @@ export interface GameHudProps {
   answered?: number
   total?: number
   submitted?: boolean
+  // Optional data-testid for the submitted pill, so callers that had a
+  // pre-existing e2e selector on their own pill can keep it working.
+  submittedTestId?: string
 }
 
 export function GameHud({
@@ -14,6 +17,7 @@ export function GameHud({
   answered,
   total,
   submitted,
+  submittedTestId,
 }: GameHudProps): ReactNode {
   const { t } = useTranslation()
   const audience = useGameAudience()
@@ -55,7 +59,10 @@ export function GameHud({
 
       {/* Submitted confirmation pill (appears after answer lock-in) */}
       {submitted && (
-        <div className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm">
+        <div
+          data-testid={submittedTestId}
+          className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm"
+        >
           {t("game:hud.answerSaved")}
         </div>
       )}

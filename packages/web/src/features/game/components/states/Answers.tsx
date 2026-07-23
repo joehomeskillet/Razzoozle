@@ -1,9 +1,9 @@
 import { EVENTS, MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { QuestionMediaType } from "@razzoozle/common/types/game"
 import type { CommonStatusDataMap } from "@razzoozle/common/types/game/status"
-import Markdown from "@razzoozle/web/components/Markdown"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
-import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { GameHud } from "@razzoozle/web/features/game/components/stage/GameHud"
+import { QuestionStage } from "@razzoozle/web/features/game/components/stage/QuestionStage"
 import { buildWortartenAnswer } from "@razzoozle/web/features/game/components/answers/buildWortartenAnswer"
 import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGrid"
 import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
@@ -25,7 +25,6 @@ import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import { hapticTap } from "@razzoozle/web/features/game/utils/haptics"
 import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
-import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
@@ -157,10 +156,6 @@ const Answers = ({
       setAckPending(true)
     }, ACK_PENDING_HINT_MS)
   }
-  // Reduced-motion-aware animation bundle. Drives the one lifecycle moment on
-  // this screen (the lock-in confirmation pop); the per-tap press feedback above
-  // is CSS-only to keep the hot path cheap.
-  const reveal = useReveal()
 
   const popUrl = useSoundUrl("answersSound")
   const musicUrl = useSoundUrl("answersMusic")
@@ -554,170 +549,137 @@ const Answers = ({
   // a tap, or a resumed already-answered state. Normal mode never disables.
   const choiceLocked = (lowLatency && submitted) || resumeAnswered
 
-  // A single lock-in confirmation pill — the one lifecycle moment on this screen.
-  // Pops in (overshoot, or opacity-only when reduced) the instant an answer is
-  // locked: multiple-choice in low-latency/resumed mode, or any submitted
-  // slider / multi-select / type-answer. Fires once per question, so a spring
-  // pop is fine here (not the per-tap hot path).
+  // True once the player's answer is locked in: multiple-choice in
+  // low-latency/resumed mode, or any submitted slider / multi-select /
+  // type-answer. Drives GameHud's `submitted` pill (game:hud.answerSaved).
   const answerLockedIn = choiceLocked || submitted
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-between">
-      <div className="mx-auto inline-flex min-h-0 w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
-        <h2 data-testid="question-text" className="text-center text-2xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-[clamp(2rem,4.5vh,5rem)]">
-          <Markdown>{question}</Markdown>
-        </h2>
+    <QuestionStage
+      question={question}
+      media={
+        media ? <QuestionMedia media={media} alt={question} /> : undefined
+      }
+      hud={
+        <GameHud
+          // Kahoot-style circular countdown. `cooldown` is the remaining
+          // seconds (driven by the normal-mode broadcast OR the low-latency
+          // server-clock path above); `time` is the question's total time.
+          timer={<CircularTimer seconds={cooldown} total={time} size={72} />}
+          answered={totalAnswer}
+          total={totalPlayer}
+          submitted={answerLockedIn}
+          submittedTestId="answer-submitted"
+        />
+      }
+    >
+      {submittedBy && (
+        <p className="text-sm text-[color:var(--game-fg)]/60 text-center">
+          {t("game:submittedBy", { name: submittedBy })}
+        </p>
+      )}
 
-        <QuestionMedia media={media} alt={question} />
-
-        {submittedBy && (
-          <p className="text-sm text-[color:var(--game-fg)]/60 text-center">
-            {t("game:submittedBy", { name: submittedBy })}
-          </p>
-        )}
-      </div>
-
-      <div>
-        {/* Low-latency "wird gesendet…" hint — only shown while an answer ack is
-            outstanding. No blind resend happens. */}
-        {ackPending && (
-          <div className="mx-auto mb-2 w-full max-w-7xl px-2 text-center text-sm font-semibold text-[color:var(--game-fg)]/80 lg:max-w-[85vw]">
-            {t("game:sending")}
-          </div>
-        )}
-
-        {/* Lock-in confirmation — appears once the player's answer is committed.
-            One-shot lifecycle pop (opacity-only under reduced motion). aria-live
-            announces the locked state to assistive tech. */}
-        {answerLockedIn && (
-          <motion.div
-            variants={reveal.pop()}
-            initial="hidden"
-            animate="visible"
-            transition={reveal.spring}
-            role="status"
-            data-testid="answer-submitted"
-            aria-live="polite"
-            className="mx-auto mb-2 flex w-full max-w-7xl items-center justify-center px-2 lg:max-w-[85vw]"
-          >
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1 text-sm font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm">
-              {t("game:slider.submitted")}
-            </span>
-          </motion.div>
-        )}
-
-        <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
-          {/* Kahoot-style circular countdown. `cooldown` is the remaining
-              seconds (driven by the normal-mode broadcast OR the low-latency
-              server-clock path above); `time` is the question's total time. */}
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm">{t("game:hud.time")}</span>
-            <CircularTimer seconds={cooldown} total={time} size={72} />
-          </div>
-          <div className="flex flex-col items-center rounded-lg bg-white px-4 text-lg font-bold text-[color:var(--color-field-ink)] border border-[var(--border-hairline)] shadow-sm">
-            <span className="translate-y-1 text-sm">
-              {t("game:hud.answers")}
-            </span>
-            <span className="tabular-nums">
-              {totalAnswer}/{totalPlayer}
-            </span>
-          </div>
+      {/* Low-latency "wird gesendet…" hint — only shown while an answer ack is
+          outstanding. No blind resend happens. */}
+      {ackPending && (
+        <div className="mx-auto mb-2 w-full max-w-7xl px-2 text-center text-sm font-semibold text-[color:var(--game-fg)]/80 lg:max-w-[85vw]">
+          {t("game:sending")}
         </div>
+      )}
 
-        {isTypeAnswer ? (
-          <TypeAnswerInput
-            value={textAnswer}
-            onChange={setTextAnswer}
-            onSubmit={submitTextAnswer}
-            disabled={submitted}
-            testIdPrefix=""
-          />
-        ) : isMathematik ? (
-          <MathematikInput
-            value={mathematikAnswer}
-            onChange={setMathematikAnswer}
-            onSubmit={submitMathematikAnswer}
-            disabled={submitted}
-            testIdPrefix=""
-          />
-        ) : isWortarten ? (
-          <WortartenPicker
-            value={{ choices: wortartenChoices, openTokenIndex }}
-            onChange={(next) => {
-              // The leaf passes the SAME `choices` reference back when only
-              // toggling which token's picker is open, and a NEW array when a
-              // POS was actually picked (see WortartenPicker's own
-              // handleSelectPos vs. token-tap). That's how we tell "a pick
-              // happened" apart from "just opened/closed a picker" without
-              // duplicating the leaf's internal logic here.
-              const picked = next.choices !== wortartenChoices
-              setWortartenChoices(next.choices)
-              setOpenTokenIndex(next.openTokenIndex)
-              if (picked) {
-                sfxPop()
-                hapticTap()
-              }
-            }}
-            onSubmit={submitWortarten}
-            disabled={submitted}
-            testIdPrefix=""
-            sentence={sentence}
-            tokens={tokens}
-            posSet={posSet}
-            disabledTokens={disabledTokens}
-          />
-        ) : isSentenceBuilder ? (
-          <SentenceBuilderBoard
-            value={{ bank: bankChips, placed: placedChunks }}
-            onChange={(next) => {
-              setBankChips(next.bank)
-              setPlacedChunks(next.placed)
+      {isTypeAnswer ? (
+        <TypeAnswerInput
+          value={textAnswer}
+          onChange={setTextAnswer}
+          onSubmit={submitTextAnswer}
+          disabled={submitted}
+          testIdPrefix=""
+        />
+      ) : isMathematik ? (
+        <MathematikInput
+          value={mathematikAnswer}
+          onChange={setMathematikAnswer}
+          onSubmit={submitMathematikAnswer}
+          disabled={submitted}
+          testIdPrefix=""
+        />
+      ) : isWortarten ? (
+        <WortartenPicker
+          value={{ choices: wortartenChoices, openTokenIndex }}
+          onChange={(next) => {
+            // The leaf passes the SAME `choices` reference back when only
+            // toggling which token's picker is open, and a NEW array when a
+            // POS was actually picked (see WortartenPicker's own
+            // handleSelectPos vs. token-tap). That's how we tell "a pick
+            // happened" apart from "just opened/closed a picker" without
+            // duplicating the leaf's internal logic here.
+            const picked = next.choices !== wortartenChoices
+            setWortartenChoices(next.choices)
+            setOpenTokenIndex(next.openTokenIndex)
+            if (picked) {
               sfxPop()
-            }}
-            onSubmit={submitSentenceBuilder}
-            disabled={submitted}
-            testIdPrefix=""
-          />
-        ) : isMultiSelect ? (
-          <MultiSelectGrid
-            value={multiSelectedKeys}
-            onChange={(next) => {
-              setMultiSelectedKeys(next)
-              sfxPop()
-            }}
-            onSubmit={submitMultiSelect}
-            disabled={submitted}
-            testIdPrefix=""
-            answers={answers ?? []}
-            displayOrder={displayOrder}
-          />
-        ) : isSlider ? (
-          <SliderInput
-            value={sliderValue}
-            onChange={setSliderValue}
-            onSubmit={submitSlider}
-            disabled={submitted}
-            min={min ?? 0}
-            max={max ?? 100}
-            step={step ?? 1}
-            unit={unit}
-            testIdPrefix=""
-          />
-        ) : (
-          <ChoiceGrid
-            value={selectedKey}
-            onChange={(key) => {
-              if (key !== null) handleAnswer(key)()
-            }}
-            onSubmit={() => {}}
-            disabled={choiceLocked}
-            testIdPrefix=""
-            answers={answers}
-            displayOrder={displayOrder}
-          />
-        )}
-      </div>
-    </div>
+              hapticTap()
+            }
+          }}
+          onSubmit={submitWortarten}
+          disabled={submitted}
+          testIdPrefix=""
+          sentence={sentence}
+          tokens={tokens}
+          posSet={posSet}
+          disabledTokens={disabledTokens}
+        />
+      ) : isSentenceBuilder ? (
+        <SentenceBuilderBoard
+          value={{ bank: bankChips, placed: placedChunks }}
+          onChange={(next) => {
+            setBankChips(next.bank)
+            setPlacedChunks(next.placed)
+            sfxPop()
+          }}
+          onSubmit={submitSentenceBuilder}
+          disabled={submitted}
+          testIdPrefix=""
+        />
+      ) : isMultiSelect ? (
+        <MultiSelectGrid
+          value={multiSelectedKeys}
+          onChange={(next) => {
+            setMultiSelectedKeys(next)
+            sfxPop()
+          }}
+          onSubmit={submitMultiSelect}
+          disabled={submitted}
+          testIdPrefix=""
+          answers={answers ?? []}
+          displayOrder={displayOrder}
+        />
+      ) : isSlider ? (
+        <SliderInput
+          value={sliderValue}
+          onChange={setSliderValue}
+          onSubmit={submitSlider}
+          disabled={submitted}
+          min={min ?? 0}
+          max={max ?? 100}
+          step={step ?? 1}
+          unit={unit}
+          testIdPrefix=""
+        />
+      ) : (
+        <ChoiceGrid
+          value={selectedKey}
+          onChange={(key) => {
+            if (key !== null) handleAnswer(key)()
+          }}
+          onSubmit={() => {}}
+          disabled={choiceLocked}
+          testIdPrefix=""
+          answers={answers}
+          displayOrder={displayOrder}
+        />
+      )}
+    </QuestionStage>
   )
 }
 
