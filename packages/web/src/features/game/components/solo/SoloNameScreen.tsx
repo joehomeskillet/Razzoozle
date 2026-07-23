@@ -7,6 +7,8 @@ import Button from "@razzoozle/web/components/Button"
 // Name entry screen
 // ---------------------------------------------------------------------------
 
+const USERNAME_MIN_LENGTH = 4
+
 interface NameScreenProps {
   subject: string
   onStart: (name: string) => void
@@ -20,7 +22,7 @@ const NameScreen = ({ subject, onStart }: NameScreenProps) => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (name.trim().length === 0) {
+    if (name.trim().length < USERNAME_MIN_LENGTH) {
       setShowError(true)
       return
     }
@@ -28,14 +30,14 @@ const NameScreen = ({ subject, onStart }: NameScreenProps) => {
   }
 
   const handleBlur = () => {
-    if (name.trim().length === 0) {
+    if (name.trim().length < USERNAME_MIN_LENGTH) {
       setShowError(true)
     }
   }
 
   const handleInputChange = (value: string) => {
     setName(value)
-    if (value.trim().length > 0) {
+    if (value.trim().length >= USERNAME_MIN_LENGTH) {
       setShowError(false)
     }
   }
@@ -66,6 +68,7 @@ const NameScreen = ({ subject, onStart }: NameScreenProps) => {
           <div className="flex flex-col gap-2">
             <input
               type="text"
+              minLength={USERNAME_MIN_LENGTH}
               maxLength={40}
               value={name}
               onChange={(e) => handleInputChange(e.target.value)}
@@ -79,7 +82,7 @@ const NameScreen = ({ subject, onStart }: NameScreenProps) => {
             />
             {showError && (
               <p id="name-error" className="text-sm font-medium text-[var(--state-error)]">
-                Name is required (1–40 characters)
+                {t("game:usernameRequired")}
               </p>
             )}
           </div>
