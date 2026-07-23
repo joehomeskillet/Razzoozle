@@ -256,7 +256,7 @@ const GameWrapper = ({
 
                   {/* GROUP C: Phase Actions (Primary Next + Secondary Exit) */}
                   <div className="flex shrink-0 items-center gap-2">
-                    {statusName !== STATUS.FINISHED && next && (
+                    {statusName !== STATUS.FINISHED && statusName !== STATUS.SHOW_ROUND_RECAP && next && (
                       <Button
                         data-testid="next-btn"
                         variant="primary"
@@ -313,7 +313,7 @@ const GameWrapper = ({
                     >
                       <Maximize className="size-5" aria-hidden />
                     </Button>
-                    {next && (
+                    {statusName !== STATUS.FINISHED && statusName !== STATUS.SHOW_ROUND_RECAP && next && (
                       <Button
                         data-testid="next-btn"
                         variant="primary"

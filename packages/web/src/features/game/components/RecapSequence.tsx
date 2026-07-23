@@ -51,7 +51,7 @@ import {
 import { AnimatePresence, motion } from "motion/react"
 import type { Transition } from "motion/react"
 import clsx from "clsx"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 interface Props {
@@ -177,18 +177,30 @@ const RecapSequence = ({
     setStep((s) => Math.min(s + 1, total))
   }, [total])
 
+  // `onComplete` can be triggered from two independent paths once the final
+  // cue is reached (the auto-hold timer below, and the final-cue "Weiter"
+  // button rendered further down) — guard so a click that lands right as the
+  // timer fires can't hand off to the parent twice.
+  const completedRef = useRef(false)
+  const fireComplete = useCallback(() => {
+    if (completedRef.current) return
+    completedRef.current = true
+    onComplete?.()
+  }, [onComplete])
+
   // Auto-advance through the cards; the final cue holds briefly then completes.
   // Halted while paused; manual advance via the Weiter button / click layer always still works.
   useEffect(() => {
     if (total === 0) {
-      onComplete?.()
+      fireComplete()
       return
     }
     // The final "Podium" cue always hands off after a short hold — in manual
     // mode the user clicks through to reach it, then this brief timer fires
-    // onComplete so the sequence never dead-ends.
+    // onComplete so the sequence never dead-ends. A visible "Weiter" button
+    // (below) lets the host skip the hold instead of waiting it out.
     if (isFinalCue) {
-      const done = setTimeout(() => onComplete?.(), 1400)
+      const done = setTimeout(fireComplete, 1400)
       return () => clearTimeout(done)
     }
     // Per-card auto-advance runs by default (autoMode defaults to true) at
@@ -206,7 +218,7 @@ const RecapSequence = ({
     advance,
     autoMode,
     autoAdvanceMs,
-    onComplete,
+    fireComplete,
   ])
 
   if (total === 0) return null
@@ -382,8 +394,8 @@ const RecapSequence = ({
         </AnimatePresence>
       </div>
 
-      {/* Controls: progress dots + buttons */}
-      {!isFinalCue && (
+      {/* Controls: progress dots + buttons (per-card), or the final-cue advance */}
+      {!isFinalCue ? (
         <div className="relative z-10 flex flex-col items-center gap-4 md:gap-5">
           {/* Progress dots — one per card, filling step-by-step as the index advances
               (a dot lights only once its card has been reached). */}
@@ -421,6 +433,21 @@ const RecapSequence = ({
               {t("game:recap.advance")}
             </Button>
           </div>
+        </div>
+      ) : (
+        // Final-cue advance: fires the same `fireComplete` the 1400ms auto-hold
+        // timer uses, so the host isn't stuck waiting on it — a real click can
+        // hand off immediately. Guarded above, so this can't double-fire even
+        // if it lands right as the timer resolves.
+        <div className="relative z-10 flex items-center">
+          <Button
+            variant="primary"
+            size="md"
+            data-testid="recap-final-advance"
+            onClick={fireComplete}
+          >
+            {t("game:recap.advance")}
+          </Button>
         </div>
       )}
     </section>
