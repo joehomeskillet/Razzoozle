@@ -58,7 +58,8 @@
     "mute": "Couper le son",
     "unmute": "Activer le son",
     "hapticsOff": "Vibration désactivée",
-    "hapticsOn": "Vibration activée"
+    "hapticsOn": "Vibration activée",
+    "hapticsUnsupported": "Vibration non prise en charge sur cet appareil"
   },
   "sending": "envoi…",
   "avatar": {
@@ -187,7 +188,8 @@
     "finish": "Terminer",
     "rank": "Place {{rank}}",
     "replay": "Rejouer",
-    "trophies": "Mes trophées"
+    "trophies": "Mes trophées",
+    "noScores": "—"
   },
   "reward": {
     "bonusPoints": "Bonus",
@@ -259,7 +261,9 @@
     },
     "podiumCue": "Et maintenant : le podium",
     "advance": "Suivant",
-    "awardsTitle": "Récompenses"
+    "awardsTitle": "Récompenses",
+    "resume": "Reprendre",
+    "pause": "Pause"
   },
   "roundRecap": {
     "title": "Temps forts du tour",
@@ -324,5 +328,15 @@
     "firstPlace": "1re place",
     "points": "Points",
     "ranking": "Classement"
+  },
+  "rankUp": "{{count}} vers le haut",
+  "rankDown": "{{count}} vers le bas",
+  "teamLeaderboard": {
+    "players": "{{count}} joueur"
+  },
+  "sliderAnswerLabel": "Réponse",
+  "join": {
+    "identifier": "Identifiant (facultatif)",
+    "identifierHint": "Facultatif pour le suivi des affectations"
   }
 }

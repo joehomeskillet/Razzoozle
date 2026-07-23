@@ -59,7 +59,8 @@
     "mute": "静音",
     "unmute": "取消静音",
     "hapticsOff": "关闭振动",
-    "hapticsOn": "开启振动"
+    "hapticsOn": "开启振动",
+    "hapticsUnsupported": "此设备不支持振动"
   },
   "avatar": {
     "title": "你的头像",
@@ -187,7 +188,8 @@
     "finish": "完成",
     "rank": "第 {{rank}} 名",
     "replay": "再玩一次",
-    "trophies": "我的奖杯"
+    "trophies": "我的奖杯",
+    "noScores": "—"
   },
   "reward": {
     "bonusPoints": "奖励",
@@ -259,7 +261,9 @@
     },
     "podiumCue": "现在：领奖台",
     "advance": "下一个",
-    "awardsTitle": "奖项"
+    "awardsTitle": "奖项",
+    "resume": "继续",
+    "pause": "暂停"
   },
   "roundRecap": {
     "title": "本轮亮点",
@@ -324,5 +328,15 @@
     "firstPlace": "第一名",
     "points": "分数",
     "ranking": "排行榜"
+  },
+  "rankUp": "上升 {{count}} 位",
+  "rankDown": "下降 {{count}} 位",
+  "teamLeaderboard": {
+    "players": "{{count}} 名玩家"
+  },
+  "sliderAnswerLabel": "答案",
+  "join": {
+    "identifier": "标识符（可选）",
+    "identifierHint": "可选用于追踪作业分配"
   }
 }

@@ -73,7 +73,8 @@
     "mute": "Mute",
     "unmute": "Unmute",
     "hapticsOff": "Vibration off",
-    "hapticsOn": "Vibration on"
+    "hapticsOn": "Vibration on",
+    "hapticsUnsupported": "Vibration not supported on this device"
   },
   "avatar": {
     "title": "Your avatar",
@@ -191,7 +192,8 @@
     "finish": "Finish",
     "rank": "Rank {{rank}}",
     "replay": "Play again",
-    "trophies": "My trophies"
+    "trophies": "My trophies",
+    "noScores": "—"
   },
   "reward": {
     "bonusPoints": "Bonus",
@@ -263,7 +265,9 @@
     },
     "podiumCue": "And now: the podium",
     "advance": "Next",
-    "awardsTitle": "Awards"
+    "awardsTitle": "Awards",
+    "resume": "Resume",
+    "pause": "Pause"
   },
   "roundRecap": {
     "title": "Round Highlights",
@@ -324,5 +328,15 @@
     "firstPlace": "1st place",
     "points": "Points",
     "ranking": "Ranking"
+  },
+  "rankUp": "{{count}} up",
+  "rankDown": "{{count}} down",
+  "teamLeaderboard": {
+    "players": "{{count}} player"
+  },
+  "sliderAnswerLabel": "Answer",
+  "join": {
+    "identifier": "Identifier (optional)",
+    "identifierHint": "Optional for assignment tracking"
   }
 }
