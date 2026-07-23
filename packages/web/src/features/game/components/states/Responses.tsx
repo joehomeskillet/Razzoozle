@@ -94,8 +94,8 @@ const Responses = ({
         </h2>
 
         {isTypeAnswer || isSentenceBuilder ? (
-          <div className="mx-auto w-full max-w-4xl px-4">
-            {/* Accepted answers legend */}
+          <div className="mx-auto w-full max-w-7xl px-4 lg:max-w-[85vw]">
+            {/* Accepted answers legend (outside scroll area) */}
             {isTypeAnswer && (
               <div className="mb-4 flex flex-wrap gap-2">
                 {(acceptedAnswers ?? []).map((a) => (
@@ -108,9 +108,9 @@ const Responses = ({
                 ))}
               </div>
             )}
-            {/* Submitted text answers, ranked by frequency */}
+            {/* Submitted text answers, ranked by frequency — internal scroll */}
             <motion.div
-              className="flex flex-col gap-2"
+              className="flex max-h-[40vh] flex-col gap-2 overflow-y-auto"
               variants={reveal.container()}
               initial="hidden"
               animate="visible"
@@ -152,9 +152,7 @@ const Responses = ({
                 transition={reveal.spring}
               >
                 <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
-                  {t("game:sentenceBuilder.correctSentence", {
-                    defaultValue: "Correct answer",
-                  })}
+                  {t("game:sentenceBuilder.correctSentence")}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {correctChunks.map((chunk, i) => (
@@ -214,7 +212,7 @@ const Responses = ({
               transition={reveal.spring}
               className="text-lg font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1.25rem,3vh,2.5rem)]"
             >
-              {t("game:correctAnswer")}
+              {t("game:reveal.correctAnswer")}
             </motion.div>
             <motion.div
               variants={reveal.item()}
@@ -226,7 +224,7 @@ const Responses = ({
           </motion.div>
         ) : (
           <motion.div
-            className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[40vh]`}
+            className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[clamp(16rem,45vh,32rem)]`}
             style={{ gridTemplateColumns: `repeat(${answerList.length}, 1fr)` }}
             variants={reveal.container()}
             initial="hidden"
