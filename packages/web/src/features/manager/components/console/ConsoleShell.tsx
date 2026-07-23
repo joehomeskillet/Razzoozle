@@ -187,7 +187,7 @@ const ConsoleShell = ({
     (index: number) => {
       const list = tablistRef.current
       if (!list) return
-      const items = list.querySelectorAll<HTMLButtonElement>('[role="tab"']')
+      const items = list.querySelectorAll<HTMLButtonElement>('[role="tab"]')
       const clamped = (index + items.length) % items.length
       items[clamped]?.focus()
       if (isDesktop) {
