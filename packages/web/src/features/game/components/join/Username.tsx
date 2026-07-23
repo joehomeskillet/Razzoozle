@@ -17,6 +17,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { type KeyboardEvent, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
+const USERNAME_MIN_LENGTH = 4
 const USERNAME_MAX_LENGTH = 20
 
 const Username = () => {
@@ -45,7 +46,8 @@ const Username = () => {
       return
     }
 
-    if (!username.trim()) {
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername || trimmedUsername.length < USERNAME_MIN_LENGTH) {
       setError(true)
       inputRef.current?.focus()
 
@@ -271,6 +273,7 @@ const Username = () => {
         }}
         onKeyDown={handleKeyDown}
         placeholder={t("game:usernamePlaceholder")}
+        minLength={USERNAME_MIN_LENGTH}
         maxLength={USERNAME_MAX_LENGTH}
         autoComplete="nickname"
         autoCapitalize="words"
