@@ -224,6 +224,7 @@ function DesktopPopover({
   onClose,
   onSelect,
 }: DesktopPopoverProps) {
+  const { t } = useTranslation()
   const popoverRef = useRef<HTMLDivElement>(null)
   const [style, setStyle] = useState<CSSProperties>({
     position: "fixed",
@@ -281,7 +282,8 @@ function DesktopPopover({
   return createPortal(
     <div
       ref={popoverRef}
-      role="listbox"
+      role="dialog"
+      aria-label={t("quizz:wortarten.selectLabel")}
       style={style}
       className={clsx(ANSWER_TILE_SURFACE, "max-w-[16rem] p-2")}
     >
@@ -307,7 +309,7 @@ function DesktopPopover({
  * MP/Solo discriminator for the container/submit-button treatments that
  * genuinely differ between the two (feedback border, width, press-feedback).
  *
- * Adaptive chrome (WP-3a / #316): mobile bottom-sheet (Radix Dialog portal)
+ * Adaptive chrome (WP-3a / issue 316): mobile bottom-sheet (Radix Dialog portal)
  * and desktop fixed popover (createPortal). Token row never reflows.
  */
 export default function WortartenPicker({
@@ -411,7 +413,7 @@ export default function WortartenPicker({
                 }
                 disabled={disabled || isDisabled}
                 aria-expanded={isOpen}
-                aria-haspopup={isDesktop ? "listbox" : "dialog"}
+                aria-haspopup="dialog"
                 aria-label={`${t("quizz:wortarten.selectLabel")}: ${token}`}
                 className={clsx(
                   ANSWER_TILE_SURFACE,
