@@ -155,7 +155,7 @@ where
 {
     connected_usernames
         .into_iter()
-        .any(|n| n.eq_ignore_ascii_case(username))
+        .any(|n| n.to_lowercase() == username.to_lowercase())
 }
 
 /// Parse student_id stored on a player for klassen dedup (identifier_hash).
@@ -898,6 +898,11 @@ mod tests {
         assert!(free_text_name_taken(["Alice"], "alice"));
         assert!(free_text_name_taken(["alice"], "ALICE"));
         assert!(free_text_name_taken(["Alice", "Bob"], "ALICE"));
+
+        // Unicode case-insensitivity (German umlauts): "München" vs "münchen"
+        assert!(free_text_name_taken(["München"], "münchen"));
+        assert!(free_text_name_taken(["münchen"], "MÜNCHEN"));
+        assert!(free_text_name_taken(["Äpfel"], "äpfel"));
 
         // Different names → ok.
         assert!(!free_text_name_taken(["Alice"], "Bob"));
