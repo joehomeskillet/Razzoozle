@@ -82,7 +82,8 @@ const Question = ({
       {submittedBy && (
         <motion.p
           className="text-center text-sm text-[color:var(--game-fg)]/60"
-          variants={reveal.item()}
+          initial={reveal.reduced ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={reveal.spring}
         >
           {t("game:submittedBy", { name: submittedBy })}
