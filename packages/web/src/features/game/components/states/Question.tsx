@@ -8,7 +8,7 @@ import { motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
-import QuestionStage from "../stage/QuestionStage"
+import { QuestionStage } from "../stage/QuestionStage"
 
 interface Props {
   data: CommonStatusDataMap["SHOW_QUESTION"]
