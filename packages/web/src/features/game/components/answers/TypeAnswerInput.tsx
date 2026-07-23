@@ -53,7 +53,7 @@ export default function TypeAnswerInput({
         autoCorrect="off"
         className={clsx(
           ANSWER_TILE_SURFACE,
-          "w-full px-5 py-4 text-xl font-semibold text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] disabled:opacity-50 lg:py-6 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+          "h-14 w-full px-5 py-4 text-center text-lg text-[color:var(--game-fg)] placeholder-[color:var(--game-fg)]/60 outline-none focus:border-[color:var(--color-accent)] focus:ring-2 focus:ring-[color:var(--color-accent)] disabled:opacity-50 md:text-xl",
           showFeedback &&
             (feedback.correct
               ? "ring-2 ring-[var(--state-correct)]"
