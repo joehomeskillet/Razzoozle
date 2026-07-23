@@ -105,9 +105,9 @@ impl GameRegistry {
 
     /// Validate username (parity with Node)
     pub fn validate_username(username: &str) -> Result<(), &'static str> {
-        if username.len() < USERNAME_MIN_LEN {
+        if username.chars().count() < USERNAME_MIN_LEN {
             Err("errors:auth.usernameTooShort")
-        } else if username.len() > USERNAME_MAX_LEN {
+        } else if username.chars().count() > USERNAME_MAX_LEN {
             Err("errors:auth.usernameTooLong")
         } else {
             Ok(())

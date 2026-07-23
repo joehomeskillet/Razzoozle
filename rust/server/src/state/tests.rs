@@ -21,6 +21,18 @@ fn test_validate_username() {
 
     // Too long
     assert!(GameRegistry::validate_username("verylongusernamethatexceedsmax").is_err());
+
+    // CJK characters: 3 chars (9 bytes) — should fail (too short)
+    assert!(GameRegistry::validate_username("中文名").is_err(), "3 CJK chars should be too short");
+
+    // CJK characters: 4 chars (12 bytes) — should pass (exactly min)
+    assert!(GameRegistry::validate_username("中文名字").is_ok(), "4 CJK chars should be valid");
+
+    // CJK characters: 20 chars (60 bytes) — should pass (exactly max)
+    assert!(GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字").is_ok(), "20 CJK chars should be valid");
+
+    // CJK characters: 21 chars (63 bytes) — should fail (too long)
+    assert!(GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字中").is_err(), "21 CJK chars should be too long");
 }
 
 #[test]
