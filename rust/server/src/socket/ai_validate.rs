@@ -326,8 +326,11 @@ pub fn validate_generate_quiz(payload: &Value) -> Result<(String, usize, String)
         .and_then(|v| v.as_u64())
         .ok_or("count is required")?;
 
-    if count < 1 || count > 15 {
-        return Err("count must be 1-15".to_string());
+    if count < 1 || count > constants::AI::QUIZ_MAX_QUESTIONS as u64 {
+        return Err(format!(
+            "count must be 1-{}",
+            constants::AI::QUIZ_MAX_QUESTIONS
+        ));
     }
 
     let language = payload

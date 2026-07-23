@@ -287,7 +287,7 @@ impl AI {
     pub const TEXT_GEN_MAX_PER_SOCKET: u64 = 20;
     pub const TOPIC_MAX_LEN: usize = 200;
     pub const QUIZ_MIN_QUESTIONS: usize = 1;
-    pub const QUIZ_MAX_QUESTIONS: usize = 15;
+    pub const QUIZ_MAX_QUESTIONS: usize = 30;
     pub const ANTHROPIC_VERSION: &'static str = "2023-06-01";
     pub const ANTHROPIC_BASE_URL: Option<&'static str> = Some("https://api.anthropic.com/v1");
     pub const TEMP_MIN: f64 = 0.0;

@@ -194,7 +194,6 @@ describe("Manager Configuration Tabs", () => {
         "users",
         "design",
         "labels",
-        "satellite",
         "dev",
       ]
       expect(keys.sort()).toEqual(expectedKeys.sort())

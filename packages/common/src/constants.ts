@@ -536,7 +536,7 @@ export const AI = {
   TEXT_GEN_COOLDOWN_MS: 4_000,
   TEXT_GEN_MAX_PER_SOCKET: 20,
   QUIZ_MIN_QUESTIONS: 1,
-  QUIZ_MAX_QUESTIONS: 15,
+  QUIZ_MAX_QUESTIONS: 30,
   // Anthropic API version pin (Messages API).
   ANTHROPIC_VERSION: "2023-06-01",
   ANTHROPIC_BASE_URL: "https://api.anthropic.com/v1",

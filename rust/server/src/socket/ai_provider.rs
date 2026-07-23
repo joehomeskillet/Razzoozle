@@ -314,7 +314,7 @@ pub async fn generate_quiz(
         system: Some(system.to_string()),
         prompt,
         json: true,
-        max_tokens: Some(2400),
+        max_tokens: Some((count as u32) * 160 + 400),
         user_id,
         db_pool,
     })

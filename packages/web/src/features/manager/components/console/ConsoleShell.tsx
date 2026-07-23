@@ -98,7 +98,7 @@ const NAV_GROUPS: { labelKey: string; keys: readonly string[] }[] = [
   },
   {
     labelKey: "manager:tabs.groups.system",
-    keys: ["design", "gamemode", "ai", "satellite", "users", "dev"],
+    keys: ["design", "gamemode", "ai", "users", "dev"],
   },
 ]
 

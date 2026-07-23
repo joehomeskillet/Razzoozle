@@ -8,7 +8,6 @@ import ConfigAI from "@razzoozle/web/features/manager/components/configurations/
 import ConfigAchievements from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements"
 import ConfigCatalog from "@razzoozle/web/features/manager/components/configurations/ConfigCatalog"
 import ConfigDev from "./ConfigDev"
-import ConfigDisplay from "@razzoozle/web/features/manager/components/configurations/ConfigDisplay"
 import ConfigGameMode from "@razzoozle/web/features/manager/components/configurations/ConfigGameMode"
 import ConfigManageQuizz from "@razzoozle/web/features/manager/components/configurations/ConfigManageQuizz"
 import ConfigMedia from "@razzoozle/web/features/manager/components/configurations/ConfigMedia"
@@ -42,7 +41,6 @@ import {
   type LucideIcon,
   ListChecks,
   LogOut,
-  Monitor,
   Palette,
   Play,
   Puzzle,
@@ -190,13 +188,6 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigLabels,
     roleGate: "admin",
     gated: "klassenEnabled",
-  },
-  {
-    key: "satellite",
-    nameKey: "manager:tabs.satellite",
-    icon: Monitor,
-    component: ConfigDisplay,
-    roleGate: "admin",
   },
   {
     key: "dev",
