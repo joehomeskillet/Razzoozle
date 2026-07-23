@@ -24,7 +24,10 @@
     "playerNotFound": "Partida o jugador no encontrado — por favor, únete de nuevo",
     "invalidCredentials": "El nombre o el PIN no coinciden con la clase.",
     "alreadyJoined": "Este nombre ya se ha unido.",
-    "classInactive": "Esta clase está desactivada."
+    "classInactive": "Esta clase está desactivada.",
+    "duplicateName": "Este nombre ya está en uso.",
+    "statusError": "Error al cargar el cuestionario.",
+    "networkError": "Error de red al cargar el cuestionario."
   },
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",

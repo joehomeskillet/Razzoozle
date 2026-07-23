@@ -24,7 +24,10 @@
     "playerNotFound": "Partie ou joueur introuvable — veuillez rejoindre à nouveau",
     "invalidCredentials": "Le nom ou le PIN ne correspond pas à la classe.",
     "alreadyJoined": "Ce nom a déjà rejoint.",
-    "classInactive": "Cette classe est désactivée."
+    "classInactive": "Cette classe est désactivée.",
+    "duplicateName": "Ce nom est déjà pris.",
+    "statusError": "Échec du chargement du quiz.",
+    "networkError": "Erreur réseau lors du chargement du quiz."
   },
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",
