@@ -1,3 +1,4 @@
+mod auth;
 mod bot;
 mod socket;
 mod state;
