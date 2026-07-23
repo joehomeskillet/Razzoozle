@@ -316,5 +316,8 @@
     "alreadyJoined": "已加入",
     "selectStudent": "选择 {{name}}",
     "empty": "未找到学生。请询问你的老师。"
+  },
+  "reveal": {
+    "correctAnswer": "正确答案"
   }
 }

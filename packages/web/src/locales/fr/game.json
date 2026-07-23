@@ -316,5 +316,8 @@
     "alreadyJoined": "Rejoint",
     "selectStudent": "Sélectionner {{name}}",
     "empty": "Aucun élève trouvé. Demande à ton enseignant."
+  },
+  "reveal": {
+    "correctAnswer": "Bonne réponse"
   }
 }
