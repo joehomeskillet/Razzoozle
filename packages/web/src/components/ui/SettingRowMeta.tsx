@@ -71,23 +71,21 @@ export function SettingRowStatusMessage({
 /**
  * SettingRowDescription: Renders optional description text below the control.
  * Centralized to enforce consistent styling across SettingRow variants.
+ * Positioned in column 2 of the settings grid; no left padding applied (grid handles alignment).
  */
 export interface SettingRowDescriptionProps {
   description: string
   descId?: string
-  /** CSS class for left padding. Default: "sm:pl-60" */
-  paddingClass?: string
 }
 
 export function SettingRowDescription({
   description,
   descId,
-  paddingClass = "sm:pl-60",
 }: SettingRowDescriptionProps): ReactNode {
   return (
     <p
       id={descId}
-      className={clsx("text-xs text-[var(--ink-subtle)]", paddingClass)}
+      className={clsx("text-xs text-[var(--ink-subtle)]")}
     >
       {description}
     </p>
