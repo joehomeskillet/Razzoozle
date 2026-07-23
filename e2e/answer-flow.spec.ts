@@ -12,6 +12,7 @@ import quizFixture from "./fixtures/all-types-quiz.json" with { type: "json" }
 
 const PLAYER1 = "Player1"
 const PLAYER2 = "Player2"
+const E2E_USER = process.env.E2E_USER ?? "admin"
 const QUIZ_SUBJECT = quizFixture.subject
 
 type Question = (typeof quizFixture.questions)[number]
@@ -252,6 +253,7 @@ async function managerLogin(host: Page) {
     throw new Error("E2E_PW env is required for manager login")
   }
   await host.goto("/manager")
+  await host.getByTestId("login-username").fill(E2E_USER)
   await host.getByTestId("login-password").fill(password)
   await host.getByTestId("login-submit").click()
 }
