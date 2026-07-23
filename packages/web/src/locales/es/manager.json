@@ -851,7 +851,12 @@
     "bulkConfirmTitleDeactivate": "¿Desactivar {{count}} usuarios?",
     "bulkConfirmTitleDelete": "¿Eliminar {{count}} usuarios?",
     "noMatchesHeadline": "Sin coincidencias",
-    "noMatches": "Ajusta la búsqueda o los filtros."
+    "noMatches": "Ajusta la búsqueda o los filtros.",
+    "selectUser": "Seleccionar usuario: {{name}}",
+    "roleFilter": "Filtro de rol",
+    "statusFilter": "Filtro de estado",
+    "roleAll": "Todos los roles",
+    "statusAll": "Todos los estados"
   },
   "profile": {
     "intro": "Tu perfil y tus ajustes personales.",

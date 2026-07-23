@@ -851,7 +851,12 @@
     "bulkConfirmTitleDeactivate": "Désactiver {{count}} utilisateurs ?",
     "bulkConfirmTitleDelete": "Supprimer {{count}} utilisateurs ?",
     "noMatchesHeadline": "Aucun résultat",
-    "noMatches": "Ajuste ta recherche ou tes filtres."
+    "noMatches": "Ajuste ta recherche ou tes filtres.",
+    "selectUser": "Sélectionner l'utilisateur : {{name}}",
+    "roleFilter": "Filtre de rôle",
+    "statusFilter": "Filtre de statut",
+    "roleAll": "Tous les rôles",
+    "statusAll": "Tous les statuts"
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",
