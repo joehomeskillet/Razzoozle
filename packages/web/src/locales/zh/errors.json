@@ -29,7 +29,10 @@
     "playerNotFound": "游戏或玩家未找到 — 请重新加入",
     "invalidCredentials": "姓名或 PIN 与班级不匹配。",
     "alreadyJoined": "这个名字已经加入了。",
-    "classInactive": "该班级已停用。"
+    "classInactive": "该班级已停用。",
+    "duplicateName": "该名字已被使用。",
+    "statusError": "加载测验失败。",
+    "networkError": "加载测验时网络错误。"
   },
   "manager": {
     "failedToReadConfig": "读取游戏配置失败",

@@ -29,7 +29,10 @@
     "playerNotFound": "Game or player not found — please rejoin",
     "invalidCredentials": "Name or PIN doesn't match the class.",
     "alreadyJoined": "This name has already joined.",
-    "classInactive": "This class is deactivated."
+    "classInactive": "This class is deactivated.",
+    "duplicateName": "This name is already taken.",
+    "statusError": "Failed to load the quiz.",
+    "networkError": "Network error while loading the quiz."
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",
