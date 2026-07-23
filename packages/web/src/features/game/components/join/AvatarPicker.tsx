@@ -271,7 +271,7 @@ const AvatarPicker = ({ onDone }: Props) => {
           onClick={() => onDone()}
           className="w-full max-w-xs"
         >
-          {t("game:avatar.done", { defaultValue: "Fertig" })}
+          {t("game:avatar.done")}
         </Button>
       )}
     </div>

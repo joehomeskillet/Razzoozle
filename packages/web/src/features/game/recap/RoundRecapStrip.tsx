@@ -36,7 +36,7 @@ const RoundRecapStrip = ({ awards }: Props) => {
   return (
     <div className="mt-4 flex w-full flex-col items-center gap-3">
       <h3 className="text-lg font-bold text-[color:var(--game-fg)]">
-        {t("game:roundRecap.title", { defaultValue: "Höhepunkte der Runde" })}
+        {t("game:roundRecap.title")}
       </h3>
 
       <motion.div

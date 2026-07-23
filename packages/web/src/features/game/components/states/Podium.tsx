@@ -251,7 +251,7 @@ const PodiumStickerButton = ({
       const outcome = await shareGenerated(options)
       const msg =
         outcome === "shared"
-          ? t("game:recap.sticker.shared", { defaultValue: "Geteilt" })
+          ? t("game:recap.sticker.shared")
           : outcome === "copied"
             ? t("game:recap.sticker.copied", {
                 defaultValue: "In die Zwischenablage kopiert",
@@ -276,8 +276,8 @@ const PodiumStickerButton = ({
         defaultValue: "Sticker wird erstellt …",
       })
     : hasGenerated
-      ? t("game:recap.sticker.share", { defaultValue: "Sticker teilen" })
-      : t("game:recap.sticker.create", { defaultValue: "Sticker erstellen" })
+      ? t("game:recap.sticker.share")
+      : t("game:recap.sticker.create")
 
   return (
     <>
@@ -350,7 +350,7 @@ const SingleWinner = ({
 
       <div className="text-center">
         <p className="text-lg font-semibold text-[color:var(--color-accent)] mb-2">
-          {t("game:podium.firstPlace", { defaultValue: "1. Platz" })}
+          {t("game:podium.firstPlace")}
         </p>
         <p className="text-3xl font-bold text-[color:var(--game-fg)] md:text-4xl lg:text-5xl">
           {p.username}
@@ -359,7 +359,7 @@ const SingleWinner = ({
 
       <div className="flex flex-col items-center gap-2 rounded-lg bg-[var(--color-accent)] px-6 py-4 text-center text-white shadow-lg">
         <p className="text-sm font-semibold opacity-90">
-          {t("game:podium.points", { defaultValue: "Punkte" })}
+          {t("game:podium.points")}
         </p>
         <p className="text-5xl font-bold tabular-nums drop-shadow-sm">
           {p.points}
@@ -506,7 +506,7 @@ const Podium = ({
                     </motion.div>
                     <div className="flex flex-col items-center">
                       <p className="text-sm font-semibold text-white/90">
-                        {t("game:podium.points", { defaultValue: "Punkte" })}
+                        {t("game:podium.points")}
                       </p>
                       <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                         {topThree[1].points}
@@ -563,7 +563,7 @@ const Podium = ({
                   </motion.div>
                   <div className="flex flex-col items-center">
                     <p className="text-sm font-semibold text-white/90">
-                      {t("game:podium.points", { defaultValue: "Punkte" })}
+                      {t("game:podium.points")}
                     </p>
                     <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                       {topThree[0].points}
@@ -618,7 +618,7 @@ const Podium = ({
 
                     <div className="flex flex-col items-center">
                       <p className="text-sm font-semibold text-white/90">
-                        {t("game:podium.points", { defaultValue: "Punkte" })}
+                        {t("game:podium.points")}
                       </p>
                       <p className="text-3xl font-bold text-white tabular-nums drop-shadow-sm md:text-4xl lg:text-[clamp(2rem,5vh,6rem)]">
                         {topThree[2].points}
@@ -647,7 +647,7 @@ const Podium = ({
                 className="w-full mt-6 px-4"
               >
                 <h3 className="text-center text-lg font-semibold text-[color:var(--game-fg)] mb-4">
-                  {t("game:podium.ranking", { defaultValue: "Rangliste" })}
+                  {t("game:podium.ranking")}
                 </h3>
                 <div className="space-y-2 max-w-md mx-auto">
                   {rankingList.map((player, idx) => (
