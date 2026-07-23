@@ -9,6 +9,8 @@ import {
 } from "@razzoozle/web/features/game/utils/dicebear"
 import type { AvatarStyle } from "@razzoozle/web/features/game/utils/dicebear"
 import clsx from "clsx"
+import { Bot, Smile, ThumbsUp, UserRound } from "lucide-react"
+import type { ReactNode } from "react"
 import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -16,6 +18,17 @@ import { useTranslation } from "react-i18next"
 interface Props {
   onDone?: () => void
 }
+
+// Compact style-bar icons (visual emphasis; labels stay in i18n for a11y).
+const STYLE_ICONS: Record<AvatarStyle, ReactNode> = {
+  bottts: <Bot className="size-5" aria-hidden="true" />,
+  thumbs: <ThumbsUp className="size-5" aria-hidden="true" />,
+  fun: <Smile className="size-5" aria-hidden="true" />,
+  people: <UserRound className="size-5" aria-hidden="true" />,
+}
+
+// Preview must read clearly above the compact style bar (design: ≥128px).
+const PREVIEW_SIZE = 144
 
 // Fresh seed for a DiceBear re-roll. Prefers a UUID; falls back to a
 // username/time/counter combo where crypto.randomUUID is unavailable.
@@ -149,16 +162,13 @@ const AvatarPicker = ({ onDone }: Props) => {
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <p className="text-lg font-bold text-gray-800">{t("game:avatar.title")}</p>
+    <div className="flex w-full flex-col items-center gap-5">
+      <p className="text-lg font-bold text-[var(--ink)]">
+        {t("game:avatar.title")}
+      </p>
 
-      {/* Generate mode: current-avatar preview + style segmented control +
-          re-roll. The preview always reflects the applied (stored) avatar. */}
-      <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white/40 p-4">
-        <p className="text-sm font-semibold text-gray-600">
-          {t("game:avatar.generate")}
-        </p>
-
+      {/* Generator card: large preview → compact style segment → central re-roll */}
+      <div className="flex w-full flex-col items-center gap-4 rounded-2xl border border-[var(--border-hairline)] bg-[var(--surface)] p-5 shadow-[var(--shadow-flat)]">
         <button
           type="button"
           aria-label={t("game:avatar.previewSelected")}
@@ -167,34 +177,42 @@ const AvatarPicker = ({ onDone }: Props) => {
           onClick={() => selected && choose(selected)}
           className={clsx(
             "rounded-full outline-3 outline-offset-2 outline-[var(--color-primary)] transition",
+            "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]",
           )}
         >
-          <Avatar src={selected} name={username} size={96} />
+          <Avatar src={selected} name={username} size={PREVIEW_SIZE} />
         </button>
 
         <div
           role="group"
           aria-label={t("game:avatar.styleLabel")}
-          className="flex flex-wrap items-center justify-center gap-2"
+          className="grid w-full grid-cols-4 gap-1.5"
         >
-          {AVATAR_STYLES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={style === value}
-              disabled={generating}
-              onClick={() => handleStyleChange(value)}
-              className={clsx(
-                "min-h-11 rounded-lg border px-3 text-sm font-semibold transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                style === value
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
-              )}
-            >
-              {t(`game:avatar.style.${value}`)}
-            </button>
-          ))}
+          {AVATAR_STYLES.map((value) => {
+            const active = style === value
+
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                disabled={generating}
+                onClick={() => handleStyleChange(value)}
+                className={clsx(
+                  "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg border px-1 py-1.5 text-[0.65rem] font-semibold leading-tight transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                  active
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                    : "border-[var(--border-hairline)] bg-[var(--surface-2)] text-[var(--ink-muted)] hover:bg-[var(--surface-3)]",
+                )}
+              >
+                {STYLE_ICONS[value]}
+                <span className="max-w-full truncate px-0.5">
+                  {t(`game:avatar.style.${value}`)}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         <Button
@@ -202,34 +220,35 @@ const AvatarPicker = ({ onDone }: Props) => {
           size="sm"
           disabled={generating}
           onClick={reroll}
+          className="w-full max-w-xs"
         >
           {t("game:avatar.reroll")}
         </Button>
       </div>
 
+      {/* Native file input: hidden, browser-owned, no color flash; trigger is tertiary */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
         onChange={handleFile}
       />
 
-      {/* Upload mode: own surface so the two ways to set an avatar read as
-          distinct choices. */}
-      <div className="flex w-full flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white/40 p-4">
-        <p className="text-sm font-semibold text-gray-600">
-          {t("game:avatar.uploadHeading")}
-        </p>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={uploading}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {uploading ? t("game:avatar.uploading") : t("game:avatar.upload")}
-        </Button>
-      </div>
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => fileInputRef.current?.click()}
+        className={clsx(
+          "min-h-11 text-sm font-semibold text-[var(--ink-medium)] underline-offset-2 transition-colors",
+          "hover:text-[var(--ink)] hover:underline",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+          "disabled:cursor-not-allowed disabled:opacity-60",
+        )}
+      >
+        {uploading ? t("game:avatar.uploading") : t("game:avatar.upload")}
+      </button>
 
       {/* AT announcement for upload outcomes (the toasts are visual-only). The
           role drives politeness, so no explicit aria-live is needed. */}
@@ -237,14 +256,21 @@ const AvatarPicker = ({ onDone }: Props) => {
         role={status?.tone === "error" ? "alert" : "status"}
         className={clsx(
           "min-h-5 text-sm font-semibold",
-          status?.tone === "error" ? "text-red-600" : "text-gray-600",
+          status?.tone === "error"
+            ? "text-[var(--state-wrong)]"
+            : "text-[var(--ink-medium)]",
         )}
       >
         {status?.message ?? ""}
       </p>
 
       {onDone && (
-        <Button variant="primary" size="sm" onClick={() => onDone()}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => onDone()}
+          className="w-full max-w-xs"
+        >
           {t("game:avatar.done", { defaultValue: "Fertig" })}
         </Button>
       )}
