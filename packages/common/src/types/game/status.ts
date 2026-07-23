@@ -102,6 +102,9 @@ export interface CommonStatusDataMap {
     correctAnswer?: string
     // Sentence-builder: authored correct order, revealed after the round.
     correctChunks?: string[]
+    // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
+    // excluded. OPTIONAL + additive; old clients ignore it.
+    correctTokenPos?: { token: string; pos: string }[]
     // Auto-mode: ms until the screen auto-advances, so the client can render a
     // local countdown. OPTIONAL — present only while auto-mode is on and an
     // advance is armed; absent (manual mode / old clients ignore it) otherwise.
@@ -161,6 +164,9 @@ interface ManagerExtraStatus {
     // Sentence-builder result reveal (manager-only; same authored order as
     // player SHOW_RESULT.correctChunks after answers are closed).
     correctChunks?: string[]
+    // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
+    // excluded. OPTIONAL + additive; old clients ignore it.
+    correctTokenPos?: { token: string; pos: string }[]
     // Per-round recap awards (same as players see on SHOW_RESULT) so the
     // manager can display the round highlights during answer statistics.
     // OPTIONAL + additive.

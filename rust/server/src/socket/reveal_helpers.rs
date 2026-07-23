@@ -9,7 +9,7 @@ use razzoozle_engine::eval::normalize_text;
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::quizz::{Question, QuestionType};
-use razzoozle_protocol::status::{GameStatus, ShowResponsesData};
+use razzoozle_protocol::status::{GameStatus, ShowResponsesData, TokenPos};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -82,6 +82,47 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
                 .collect();
             if texts.is_empty() { None } else { Some(texts.join(", ")) }
         }
+    }
+}
+
+/// Format per-token POS pairs for wortarten reveal (correctTokenPos field).
+/// Returns None for non-wortarten questions. Disabled token positions are
+/// excluded from the result (disabled tokens do not get a POS pair).
+pub fn format_correct_token_pos(question: &Question) -> Option<Vec<TokenPos>> {
+    match question.r#type.as_ref() {
+        Some(QuestionType::Wortarten) => {
+            let disabled: &[i32] = question
+                .disabled_tokens
+                .as_deref()
+                .unwrap_or(&[]);
+            let tokens = question.tokens.as_ref()?;
+            let solutions = question.solutions.as_ref()?;
+            let pos_set = question.pos_set.as_ref()?;
+
+            let result: Vec<TokenPos> = tokens
+                .iter()
+                .enumerate()
+                .filter_map(|(i, token)| {
+                    if disabled.contains(&(i as i32)) {
+                        None
+                    } else {
+                        solutions.get(i).and_then(|&idx| {
+                            pos_set.get(idx as usize).map(|pos| TokenPos {
+                                token: token.clone(),
+                                pos: pos.clone(),
+                            })
+                        })
+                    }
+                })
+                .collect();
+
+            if result.is_empty() {
+                None
+            } else {
+                Some(result)
+            }
+        }
+        _ => None,
     }
 }
 
@@ -251,6 +292,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
+        correct_token_pos: format_correct_token_pos(&question),
         round_recap: round_recap_opt_for_manager,
     })
 }
@@ -329,6 +371,7 @@ pub async fn perform_reveal_and_broadcast(
                 None
             };
             let correct_answer = format_correct_answer(&question);
+            let correct_token_pos = format_correct_token_pos(&question);
 
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
@@ -415,6 +458,7 @@ pub async fn perform_reveal_and_broadcast(
                     // STEP 1 parity fields
                     show_result_data.correct_answer = correct_answer.clone();
                     show_result_data.correct_chunks = correct_chunks.clone();
+                    show_result_data.correct_token_pos = correct_token_pos.clone();
                     show_result_data.poll = Some(is_poll);
                     show_result_data.bonus = Some(bonus_flag && result.correct && !is_practice);
                     show_result_data.scoring_mode = None; // parity: Node omits it
@@ -586,5 +630,32 @@ mod tests {
         q.r#type = Some(QuestionType::Poll);
         let result = format_correct_answer(&q);
         assert_eq!(result, None, "poll returns None");
+    }
+
+    /// WP-4b: format_correct_token_pos test
+    /// Tests wortarten token/POS pairs with disabled token exclusion
+    #[test]
+    fn format_correct_token_pos_wortarten_with_disabled_tokens() {
+        let q: razzoozle_protocol::quizz::Question = serde_json::from_str(
+            r#"{"question":"Satz","type":"wortarten","tokens":["Der","Hund","schläft"],"solutions":[0,1,2],"posSet":["Artikel","Noun","Verb"],"disabledTokens":[1],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+        let result = format_correct_token_pos(&q);
+        let expected = Some(vec![
+            TokenPos { token: "Der".to_string(), pos: "Artikel".to_string() },
+            TokenPos { token: "schläft".to_string(), pos: "Verb".to_string() },
+        ]);
+        assert_eq!(result, expected, "wortarten must exclude disabled token (Hund)");
+    }
+
+    /// WP-4b: format_correct_token_pos for non-wortarten returns None
+    #[test]
+    fn format_correct_token_pos_returns_none_for_non_wortarten() {
+        let q: razzoozle_protocol::quizz::Question = serde_json::from_str(
+            r#"{"question":"2+2?","type":"choice","answers":["4","5"],"solutions":[0],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+        let result = format_correct_token_pos(&q);
+        assert_eq!(result, None, "non-wortarten must return None");
     }
 }

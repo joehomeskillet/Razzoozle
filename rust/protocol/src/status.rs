@@ -40,6 +40,15 @@ pub struct RoundRecapAward {
     pub value: Option<i32>,
 }
 
+/// TokenPos: per-token POS assignment (wortarten reveal)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TokenPos {
+    pub token: String,
+    pub pos: String,
+}
+
 // Status enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -229,6 +238,9 @@ pub struct ShowResultData {
     pub correct_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
+    pub correct_token_pos: Option<Vec<TokenPos>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_advance_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -303,6 +315,9 @@ pub struct ShowResponsesData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_token_pos: Option<Vec<TokenPos>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub round_recap: Option<Vec<RoundRecapAward>>,
