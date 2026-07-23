@@ -12,6 +12,7 @@
 use super::super::HandlerCtx;
 use crate::is_game_host;
 use crate::socket::lifecycle;
+use crate::socket::auth;
 use crate::socket::status_emit::broadcast_status;
 use razzoozle_engine::state::{GameError, GamePhase};
 use razzoozle_protocol::constants;
@@ -477,24 +478,31 @@ fn register_skip_question(socket: &SocketRef, ctx: HandlerCtx) {
                 if let Some((game_ref, game_id)) = game_ref {
                     {
                         let game = game_ref.lock().unwrap();
-                        // Per-game ownership check
-                        if game.manager_socket_id != socket.id.to_string() {
-                            warn!(
-                                "manager:skipQuestion unauthorized: socket.id={} not manager of gameId={}",
-                                socket.id.to_string(),
-                                game_id
-                            );
-                            socket
-                                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                                .ok();
-                            return;
-                        }
-                        // Legacy hostToken check
-                        if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
-                            warn!(
-                                "manager:skipQuestion host-check failed: clientId={}, gameId={}",
-                                ctx.client_id, game_id
-                            );
+                        // Authorization check: allow if satellite-authenticated OR is game host
+                        let is_authorized = if auth::can_authorize_display_event(&ctx) {
+                            // Satellite displays can skip questions
+                            true
+                        } else {
+                            // Regular managers: check per-game ownership and hostToken
+                            if game.manager_socket_id != socket.id.to_string() {
+                                warn!(
+                                    "manager:skipQuestion denied: satellite_auth=false, socket.id={} not manager of gameId={}",
+                                    socket.id.to_string(),
+                                    game_id
+                                );
+                                false
+                            } else if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
+                                warn!(
+                                    "manager:skipQuestion denied: satellite_auth=false, host-check failed for clientId={}, gameId={}",
+                                    ctx.client_id, game_id
+                                );
+                                false
+                            } else {
+                                true
+                            }
+                        };
+
+                        if !is_authorized {
                             socket
                                 .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                 .ok();

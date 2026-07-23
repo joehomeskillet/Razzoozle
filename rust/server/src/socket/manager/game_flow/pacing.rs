@@ -2,6 +2,7 @@
 
 use super::super::super::HandlerCtx;
 use crate::is_game_host;
+use crate::socket::auth;
 use crate::socket::lifecycle::build_select_answer_data;
 use crate::socket::reveal_helpers::build_manager_show_responses;
 use crate::socket::status_emit::{broadcast_status, send_status_to_manager};
@@ -79,22 +80,31 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
 
                 {
                     let game = game_ref.lock().unwrap();
-                    if game.manager_socket_id != socket.id.to_string() {
-                        warn!(
-                            "manager:adjustTimer unauthorized: socket.id={} not manager of gameId={}",
-                            socket.id.to_string(),
-                            game_id
-                        );
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                            .ok();
-                        return;
-                    }
-                    if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
-                        warn!(
-                            "manager:adjustTimer host-check failed: clientId={}, gameId={}",
-                            ctx.client_id, game_id
-                        );
+                    // Authorization check: allow if satellite-authenticated OR is game host
+                    let is_authorized = if auth::can_authorize_display_event(&ctx) {
+                        // Satellite displays can adjust timers
+                        true
+                    } else {
+                        // Regular managers: check per-game ownership and hostToken
+                        if game.manager_socket_id != socket.id.to_string() {
+                            warn!(
+                                "manager:adjustTimer denied: satellite_auth=false, socket.id={} not manager of gameId={}",
+                                socket.id.to_string(),
+                                game_id
+                            );
+                            false
+                        } else if !is_game_host(&game, &payload, &ctx.client_id, user.as_ref()) {
+                            warn!(
+                                "manager:adjustTimer denied: satellite_auth=false, host-check failed for clientId={}, gameId={}",
+                                ctx.client_id, game_id
+                            );
+                            false
+                        } else {
+                            true
+                        }
+                    };
+
+                    if !is_authorized {
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();

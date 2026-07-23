@@ -9,6 +9,7 @@
 
 use super::super::HandlerCtx;
 use crate::is_game_host;
+use crate::socket::auth;
 use crate::socket::lifecycle;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
@@ -52,8 +53,19 @@ fn register_reveal_answer(socket: &SocketRef, ctx: HandlerCtx) {
                     if let Some(game_ref) = game_opt {
                         {
                             let game = game_ref.lock().unwrap();
-                            if !is_game_host(&game, &payload, &ctx.client_id, Some(&user)) {
-                                warn!("manager control denied: event=revealAnswer gameId={} check=is_game_host", game_id);
+                            // Authorization check: allow if satellite-authenticated OR is game host
+                            let is_authorized = if auth::can_authorize_display_event(&ctx) {
+                                // Satellite displays can reveal answers
+                                true
+                            } else if is_game_host(&game, &payload, &ctx.client_id, Some(&user)) {
+                                // Regular managers with session auth
+                                true
+                            } else {
+                                warn!("manager control denied: event=revealAnswer gameId={} satellite_auth=false check=is_game_host", game_id);
+                                false
+                            };
+
+                            if !is_authorized {
                                 socket.emit(constants::manager::UNAUTHORIZED, &serde_json::json!([])).ok();
                                 return;
                             }

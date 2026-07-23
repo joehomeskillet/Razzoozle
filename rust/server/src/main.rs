@@ -283,6 +283,11 @@ async fn main() {
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
 
+            let satellite_token = auth
+                .get("satelliteToken")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+
             info!("Client connected: client_id={}", client_id);
 
             // Modular handlers (one file each under src/socket/). Migrating incrementally;
@@ -293,6 +298,7 @@ async fn main() {
                 client_id: client_id.clone(),
                 db_pool: db_pool.clone(),
                 session_token,
+                satellite_token,
                 user_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             };
             socket::register_all(&socket, &ctx);
