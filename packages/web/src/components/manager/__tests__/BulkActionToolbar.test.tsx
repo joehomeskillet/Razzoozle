@@ -19,9 +19,7 @@ import { describe, expect, it } from "vitest"
 import managerDe from "@razzoozle/web/locales/de/manager.json"
 import commonDe from "@razzoozle/web/locales/de/common.json"
 
-import BulkActionToolbar, {
-  type BulkActionToolbarProps,
-} from "../BulkActionToolbar"
+import BulkActionToolbar from "../BulkActionToolbar"
 
 const renderWithI18n = async (component: React.ReactNode) => {
   const i18n = createInstance()
@@ -49,7 +47,7 @@ describe("BulkActionToolbar — Shared Component", () => {
         count={3}
         label="Active items"
         onClear={() => {}}
-      />,
+      >{null}</BulkActionToolbar>,
     )
 
     expect(markup).toContain('role="toolbar"')
@@ -62,7 +60,7 @@ describe("BulkActionToolbar — Shared Component", () => {
         count={5}
         label="Bulk actions"
         onClear={() => {}}
-      />,
+      >{null}</BulkActionToolbar>,
     )
 
     // German translation for manager:bulk.selected is "{{count}} ausgewählt"
@@ -92,7 +90,7 @@ describe("BulkActionToolbar — Shared Component", () => {
         label="Items selected"
         onClear={() => {}}
         data-testid="bulk-action-toolbar"
-      />,
+      >{null}</BulkActionToolbar>,
     )
 
     expect(markup).toContain('data-testid="bulk-action-toolbar"')
@@ -104,7 +102,7 @@ describe("BulkActionToolbar — Shared Component", () => {
         count={4}
         label="Toolbar"
         onClear={() => {}}
-      />,
+      >{null}</BulkActionToolbar>,
     )
 
     // Verify button element exists
@@ -121,7 +119,7 @@ describe("BulkActionToolbar — Shared Component", () => {
         count={2}
         label="Selection"
         onClear={() => {}}
-      />,
+      >{null}</BulkActionToolbar>,
     )
 
     // Verify shared container classes
