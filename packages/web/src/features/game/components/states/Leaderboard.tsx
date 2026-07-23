@@ -206,7 +206,7 @@ const CelebratoryBanner = ({
             boxShadow: BANNER_GLOW[tier],
           }}
           className={[
-            "mb-4 flex items-center gap-3 rounded-2xl px-5 py-3",
+            "mb-4 max-h-24 flex items-center gap-3 rounded-2xl px-5 py-3 overflow-hidden",
             BANNER_TEXT_COLOR[tier],
             "font-bold drop-shadow-xl",
           ]
@@ -243,7 +243,7 @@ const Leaderboard = ({
   const [displayedLeaderboard, setDisplayedLeaderboard] =
     useState(oldLeaderboard)
   const [isAnimating, setIsAnimating] = useState(false)
-  /** True once the 1600 ms rank transition has settled and chips should appear. */
+  /** True once the 800 ms rank transition has settled and chips should appear. */
   const [chipsVisible, setChipsVisible] = useState(false)
   const [mergedList, setMergedList] = useState<MergedAchievement[]>([])
   const { t } = useTranslation()
@@ -261,12 +261,12 @@ const Leaderboard = ({
     const rankTimer = setTimeout(() => {
       setIsAnimating(true)
       setDisplayedLeaderboard(leaderboard)
-    }, 1600)
+    }, 800)
 
-    // Chips appear ~400 ms after the rank animation fires (rows have settled).
+    // Chips appear ~600 ms after the rank animation fires (rows have settled).
     const chipsTimer = setTimeout(() => {
       setChipsVisible(true)
-    }, 2100)
+    }, 1400)
 
     return () => {
       clearTimeout(rankTimer)
@@ -364,8 +364,8 @@ const Leaderboard = ({
   }, [leaderboard, mergedList, t])
 
   return (
-    <section className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-start px-2">
-      <h2 className="mb-6 text-5xl font-bold text-[color:var(--game-fg)] drop-shadow-md lg:text-[clamp(3rem,7vh,7rem)]">
+    <section className="relative mx-auto flex w-full max-w-7xl lg:max-w-[85vw] flex-1 flex-col items-center justify-start px-2">
+      <h2 className="mb-6 text-3xl md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)] font-bold text-[color:var(--game-fg)] drop-shadow-md">
         {t("game:leaderboard.title")}
       </h2>
 
@@ -434,9 +434,9 @@ const Leaderboard = ({
                 >
                   {/* Main row: avatar + name + streak + points */}
                   <div className="flex w-full items-center justify-between">
-                    <span className="flex items-center gap-2 drop-shadow-md">
+                    <span className="flex items-center gap-2 drop-shadow-md min-w-0">
                       <Avatar src={avatar} name={username} size={36} />
-                      {username}
+                      <span className="truncate" title={username}>{username}</span>
                       <StreakBadge streak={streak} />
                       {emphasize && (
                         <RankDeltaChip move={rank.move} delta={rank.delta} />
