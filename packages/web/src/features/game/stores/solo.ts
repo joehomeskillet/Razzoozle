@@ -143,7 +143,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
         const body = await res.json().catch(() => ({}))
         set({
           phase: "idle",
-          error: (body as { error?: string }).error ?? `Fehler ${res.status}`,
+          error: (body as { error?: string }).error ?? "errors:game.statusError",
         })
         return
       }
@@ -161,7 +161,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
         error: null,
       })
     } catch (err) {
-      set({ phase: "idle", error: "Netzwerkfehler beim Laden des Quiz." })
+      set({ phase: "idle", error: "errors:game.networkError" })
     }
   },
 
