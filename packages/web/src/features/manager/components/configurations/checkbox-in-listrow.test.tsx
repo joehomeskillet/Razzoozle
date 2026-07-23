@@ -351,8 +351,8 @@ describe("StudentList — Checkbox-in-ListRow", () => {
     for (const cls of classes1) {
       expect(markup).toContain(cls)
     }
-    expect(markup.match(/bg-\[var\(--accent-tint\)\]/)).toBeDefined()
-    expect(markup.match(/outline-\[var\(--color-primary\)\]/)).toBeDefined()
+    expect(/bg-\[var\(--accent-tint\)\]\/.exec(markup)).not.toBeNull()
+    expect(/outline-\[var\(--color-primary\)\]\/.exec(markup)).not.toBeNull()
   })
 
   it("does not render selection slot when onToggleSelect is undefined", async () => {
