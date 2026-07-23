@@ -313,7 +313,7 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
         question={question.question}
         media={question.media ? <QuestionMedia media={question.media} alt={question.question} /> : undefined}
         hud={
-          <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)]">
+          <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between gap-1 px-2 text-lg font-bold text-[color:var(--game-fg)] md:text-xl lg:max-w-[85vw] lg:text-[clamp(1rem,2.5vh,2rem)] role="status">
             {/* Kahoot-style circular countdown — same as the live game. `countdown`
                 is the remaining seconds; `question.time` is the total. */}
             <div className="flex flex-col items-center gap-1">
