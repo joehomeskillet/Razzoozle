@@ -51,7 +51,7 @@ export default function SentenceBuilderBoard({
   const isComplete = value.bank.length === 0
 
   return (
-    <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-4 px-4">
+    <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-[var(--game-space-3)] px-4">
       {/* Placed/answer area */}
       <div
         className={clsx(
@@ -76,7 +76,7 @@ export default function SentenceBuilderBoard({
               disabled={disabled}
               {...(isSolo && { "data-testid": `solo-sentence-builder-placed-${chip.id}` })}
               className={clsx(
-                "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
+                "inline-flex min-h-11 items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-4 py-3 text-base font-medium md:text-lg",
                 ANSWERS_COLORS[idx % ANSWERS_COLORS.length],
                 !disabled && PRESS_FEEDBACK,
                 disabled && "cursor-not-allowed",
@@ -111,7 +111,7 @@ export default function SentenceBuilderBoard({
               disabled={disabled}
               data-testid={isSolo ? `solo-sentence-builder-bank-${chip.id}` : `sentence-chunk-${chip.originalIndex}`}
               className={clsx(
-                "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
+                "inline-flex min-h-11 items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-4 py-3 text-base font-medium md:text-lg",
                 ANSWERS_COLORS[chip.originalIndex % ANSWERS_COLORS.length],
                 !disabled && PRESS_FEEDBACK,
                 disabled && "cursor-not-allowed opacity-40 grayscale",
