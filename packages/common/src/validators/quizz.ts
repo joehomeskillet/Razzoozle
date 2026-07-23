@@ -19,6 +19,11 @@ export const questionMediaValidator = z.object({
     ),
 })
 
+export const sequencingItemValidator = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+})
+
 export const questionValidator = z
   .object({
     question: z.string().min(1, "errors:quizz.questionEmpty"),
@@ -70,6 +75,9 @@ export const questionValidator = z
     tokens: z.array(z.string()).optional(),
     posSet: z.array(z.string()).optional(),
     disabledTokens: z.array(z.number().int().nonnegative()).optional(),
+    // Sequencing: items to reorder + correct order
+    items: z.array(sequencingItemValidator).optional(),
+    correctOrder: z.array(z.string()).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -126,6 +134,8 @@ export const questionValidator = z
       // Mathematik: numeric answer with tolerance (permissive stub for now)
     } else if (q.type === "wortarten") {
       // Wortarten: parts of speech tagging (permissive stub for now)
+    } else if (q.type === "sequencing") {
+      // Sequencing: item reordering (permissive stub for now)
     } else {
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
