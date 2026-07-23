@@ -30,7 +30,7 @@
     "invalidCredentials": "Name oder PIN stimmen nicht mit der Klasse überein.",
     "alreadyJoined": "Dieser Name ist schon beigetreten.",
     "classInactive": "Diese Klasse ist deaktiviert.",
-    "statusError": "Fehler {{status}}",
+    "statusError": "Fehler beim Laden des Quiz.",
     "networkError": "Netzwerkfehler beim Laden des Quiz."
   },
   "manager": {
