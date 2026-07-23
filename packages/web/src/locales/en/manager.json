@@ -881,7 +881,12 @@
     "bulkConfirmTitleDeactivate": "Deactivate {{count}} users?",
     "bulkConfirmTitleDelete": "Delete {{count}} users?",
     "noMatchesHeadline": "No matches",
-    "noMatches": "Adjust your search or filters."
+    "noMatches": "Adjust your search or filters.",
+    "selectUser": "Select user: {{name}}",
+    "roleFilter": "Role filter",
+    "statusFilter": "Status filter",
+    "roleAll": "All roles",
+    "statusAll": "All statuses"
   },
   "schueler": {
     "title": "Student Management",

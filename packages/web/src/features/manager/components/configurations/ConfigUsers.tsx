@@ -20,6 +20,9 @@ import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
+import FilterPill from "@razzoozle/web/components/manager/FilterPill"
+import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import {
   Ban,
   CheckCircle2,
@@ -438,45 +441,41 @@ const ConfigUsers = () => {
             className="w-full"
           />
 
-          <div className="flex flex-wrap gap-2">
-            {/* Role filter pills */}
-            {[
-              { value: "all" as const, label: t("manager:users.roleAll", { defaultValue: "Alle Rollen" }) },
-              { value: "user" as const, label: t("manager:users.role.user") },
-              { value: "lehrkraft" as const, label: t("manager:users.role.lehrkraft") },
-              { value: "admin" as const, label: t("manager:users.role.admin") },
-            ].map((pill) => (
-              <button
-                key={pill.value}
-                onClick={() => setRoleFilter(pill.value)}
-                className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-                  roleFilter === pill.value
-                    ? "bg-[var(--accent)] text-[var(--surface)]"
-                    : "bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-4">
+            {/* Role filter group */}
+            <FilterGroup label={t("manager:users.roleFilter")}>
+              {[
+                { value: "all" as const, label: t("manager:users.roleAll", { defaultValue: "Alle Rollen" }) },
+                { value: "user" as const, label: t("manager:users.role.user") },
+                { value: "lehrkraft" as const, label: t("manager:users.role.lehrkraft") },
+                { value: "admin" as const, label: t("manager:users.role.admin") },
+              ].map((pill) => (
+                <FilterPill
+                  key={pill.value}
+                  active={roleFilter === pill.value}
+                  onClick={() => setRoleFilter(pill.value)}
+                >
+                  {pill.label}
+                </FilterPill>
+              ))}
+            </FilterGroup>
 
-            {/* Status filter pills */}
-            {[
-              { value: "all" as const, label: t("manager:users.statusAll", { defaultValue: "Alle Status" }) },
-              { value: "active" as const, label: t("manager:users.active") },
-              { value: "inactive" as const, label: t("manager:users.disabledStatus") },
-            ].map((pill) => (
-              <button
-                key={`status-${pill.value}`}
-                onClick={() => setStatusFilter(pill.value)}
-                className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-                  statusFilter === pill.value
-                    ? "bg-[var(--accent)] text-[var(--surface)]"
-                    : "bg-[var(--surface-4)] text-[var(--ink)] hover:bg-[var(--surface-5)]"
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
+            {/* Status filter group */}
+            <FilterGroup label={t("manager:users.statusFilter")}>
+              {[
+                { value: "all" as const, label: t("manager:users.statusAll", { defaultValue: "Alle Status" }) },
+                { value: "active" as const, label: t("manager:users.active") },
+                { value: "inactive" as const, label: t("manager:users.disabledStatus") },
+              ].map((pill) => (
+                <FilterPill
+                  key={`status-${pill.value}`}
+                  active={statusFilter === pill.value}
+                  onClick={() => setStatusFilter(pill.value)}
+                >
+                  {pill.label}
+                </FilterPill>
+              ))}
+            </FilterGroup>
           </div>
         </div>
 
@@ -542,7 +541,7 @@ const ConfigUsers = () => {
           />
         )
         ) : (
-          <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
+          <>
             {/* Select-all control */}
             {filteredUsers.length > 0 && (
               <SelectAllControl
@@ -556,111 +555,114 @@ const ConfigUsers = () => {
               />
             )}
 
-            {filteredUsers.map((user) => {
-              const isSelf =
-                currentUsername != null && user.username === currentUsername
-              const busy =
-                pendingId === user.id || resettingPassword || deleting || bulkProcessing
+            <div className="min-h-0 flex-1 space-y-3 overflow-auto p-0.5">
+              {filteredUsers.map((user) => {
+                const isSelf =
+                  currentUsername != null && user.username === currentUsername
+                const busy =
+                  pendingId === user.id || resettingPassword || deleting || bulkProcessing
 
-              const allActions: ListRowAction[] = [
-                {
-                  key: "copy",
-                  icon: Copy,
-                  label: t("manager:users.copyUser"),
-                  disabled: busy || isSelf,
-                  title: isSelf
-                    ? t("manager:users.cannot_copy_self", {
-                        defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
+                const allActions: ListRowAction[] = [
+                  {
+                    key: "copy",
+                    icon: Copy,
+                    label: t("manager:users.copyUser"),
+                    disabled: busy || isSelf,
+                    title: isSelf
+                      ? t("manager:users.cannot_copy_self", {
+                          defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
+                        })
+                      : t("manager:users.copyUser"),
+                    onClick: () => openCopyDialog(user),
+                    className: "max-sm:hidden",
+                  },
+                  {
+                    key: "reset",
+                    icon: Key,
+                    label: t("manager:users.resetPassword"),
+                    disabled: busy,
+                    onClick: () => {
+                      setResetPasswordId(user.id)
+                      setResetNewPassword("")
+                    },
+                  },
+                  {
+                    key: "toggle",
+                    icon: user.active ? Ban : CheckCircle2,
+                    label: user.active
+                      ? t("manager:users.disable")
+                      : t("manager:users.enable"),
+                    destructive: user.active,
+                    disabled: busy || isSelf,
+                    title: isSelf
+                      ? user.active
+                        ? t("manager:users.cannot_deactivate_self")
+                        : t("manager:users.cannot_modify_own_account")
+                      : undefined,
+                    onClick: () => {
+                      if (isSelf) return
+                      void handleToggleActive(user)
+                    },
+                    className: "max-sm:hidden",
+                  },
+                  {
+                    key: "delete",
+                    icon: Trash2,
+                    label: t("manager:users.delete"),
+                    destructive: true,
+                    disabled: busy || isSelf,
+                    title: isSelf
+                      ? t("manager:users.cannot_delete_self")
+                      : undefined,
+                    className: "max-sm:hidden",
+                    onClick: () => {
+                      if (isSelf) return
+                      setPendingDelete({
+                        id: user.id,
+                        username: user.username,
+                        role: user.role,
                       })
-                    : t("manager:users.copyUser"),
-                  onClick: () => openCopyDialog(user),
-                },
-                {
-                  key: "reset",
-                  icon: Key,
-                  label: t("manager:users.resetPassword"),
-                  disabled: busy,
-                  onClick: () => {
-                    setResetPasswordId(user.id)
-                    setResetNewPassword("")
+                    },
                   },
-                },
-                {
-                  key: "toggle",
-                  icon: user.active ? Ban : CheckCircle2,
-                  label: user.active
-                    ? t("manager:users.disable")
-                    : t("manager:users.enable"),
-                  destructive: user.active,
-                  disabled: busy || isSelf,
-                  title: isSelf
-                    ? user.active
-                      ? t("manager:users.cannot_deactivate_self")
-                      : t("manager:users.cannot_modify_own_account")
-                    : undefined,
-                  onClick: () => {
-                    if (isSelf) return
-                    void handleToggleActive(user)
-                  },
-                },
-                {
-                  key: "delete",
-                  icon: Trash2,
-                  label: t("manager:users.delete"),
-                  destructive: true,
-                  disabled: busy || isSelf,
-                  title: isSelf
-                    ? t("manager:users.cannot_delete_self")
-                    : undefined,
-                  className: "max-sm:hidden",
-                  onClick: () => {
-                    if (isSelf) return
-                    setPendingDelete({
-                      id: user.id,
-                      username: user.username,
-                      role: user.role,
-                    })
-                  },
-                },
-              ]
+                ]
 
-              return (
-                <ListRow
-                  key={user.id}
-                  leading={
-                    <>
-                      <input
-                        data-testid={`user-select-${user.id}`}
-                        type="checkbox"
+                return (
+                  <ListRow
+                    key={user.id}
+                    selected={selection.isSelected(user.id)}
+                    leading={
+                      <UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                    }
+                    selection={
+                      <RowSelectionControl
                         checked={selection.isSelected(user.id)}
                         onChange={() => selection.toggle(user.id)}
-                        className="mr-2"
-                        aria-label={`Auswahl: ${user.username}`}
+                        ariaLabel={t("manager:users.selectUser", { name: user.username })}
+                        data-testid={`user-select-${user.id}`}
                       />
-                      <UserCog className="size-5 shrink-0 text-[var(--ink-muted)]" />
-                    </>
-                  }
-                  title={user.username}
-                  meta={
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Badge>{getRoleLabel(user.role)}</Badge>
-                      <Badge tone={user.active ? "success" : "danger"}>
-                        {user.active
-                          ? t("manager:users.active")
-                          : t("manager:users.disabledStatus")}
-                      </Badge>
-                    </span>
-                  }
-                  actions={allActions}
-                  overflow={
-                    <span className="sm:hidden">
-                      <OverflowMenu actions={allActions.filter((a) => a.key === "delete")} />
-                    </span>
-                  }
-                />
-              )
-            })}
-          </div>
+                    }
+                    title={user.username}
+                    meta={
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge>{getRoleLabel(user.role)}</Badge>
+                        <Badge tone={user.active ? "success" : "danger"}>
+                          {user.active
+                            ? t("manager:users.active")
+                            : t("manager:users.disabledStatus")}
+                        </Badge>
+                      </span>
+                    }
+                    actions={allActions}
+                    overflow={
+                      <span className="sm:hidden">
+                        <OverflowMenu actions={allActions.filter((a) => a.key === "copy" || a.key === "toggle" || a.key === "delete")} />
+                      </span>
+                    }
+                  />
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* Delete Confirmation Dialog */}

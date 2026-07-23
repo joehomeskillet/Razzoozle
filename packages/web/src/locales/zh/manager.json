@@ -851,7 +851,12 @@
     "bulkConfirmTitleDeactivate": "禁用 {{count}} 个用户？",
     "bulkConfirmTitleDelete": "删除 {{count}} 个用户？",
     "noMatchesHeadline": "无匹配结果",
-    "noMatches": "请调整搜索或筛选条件。"
+    "noMatches": "请调整搜索或筛选条件。",
+    "selectUser": "选择用户：{{name}}",
+    "roleFilter": "角色筛选",
+    "statusFilter": "状态筛选",
+    "roleAll": "所有角色",
+    "statusAll": "所有状态"
   },
   "profile": {
     "intro": "您的个人资料和设置",

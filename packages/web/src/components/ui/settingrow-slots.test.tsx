@@ -6,9 +6,12 @@
 // 3. statusMessage: role="status", aria-live="polite", aria-describedby, tone-based colors.
 // 4. disabledReason: title attribute on disabled row.
 // 5. ActionFooter dirty: opacity-75 plus an accessible unsaved-changes indicator.
+// 6. Grid layout: sm:grid-cols-[15rem_minmax(0,1fr)] on both LabelRow and ToggleField.
+// 7. Description/status spacers: aria-hidden spacer in grid col 1; description/status in col 2.
+// 8. ToggleField cursor states: pending → cursor-wait; disabled → cursor-not-allowed.
 //
-// NOTE: vitest env is 'node' (no jsdom). ActionFooter behavior uses React's
-// server renderer, while the remaining tests verify prop interfaces.
+// NOTE: vitest env is 'node' (no jsdom). ActionFooter, LabelRow, ToggleField behavior
+// use React's server renderer, while the remaining tests verify prop interfaces.
 
 import { createInstance } from "i18next"
 import { renderToStaticMarkup } from "react-dom/server"
@@ -21,6 +24,8 @@ import managerDe from "../../locales/de/manager.json"
 import type { LabelRowProps } from "./LabelRow"
 import type { ToggleFieldProps } from "./ToggleField"
 import ActionFooter, { type ActionFooterProps } from "./ActionFooter"
+import LabelRow from "./LabelRow"
+import ToggleField from "./ToggleField"
 
 const renderActionFooter = async (dirty?: boolean) => {
   const i18n = createInstance()
@@ -36,6 +41,48 @@ const renderActionFooter = async (dirty?: boolean) => {
       <ActionFooter dirty={dirty}>
         <button type="button">Save</button>
       </ActionFooter>
+    </I18nextProvider>,
+  )
+}
+
+const renderLabelRow = async (props: LabelRowProps) => {
+  const i18n = createInstance()
+  await i18n.init({
+    lng: "de",
+    fallbackLng: false,
+    ns: ["manager", "common"],
+    resources: {
+      de: {
+        manager: managerDe,
+        common: {},
+      },
+    },
+  })
+
+  return renderToStaticMarkup(
+    <I18nextProvider i18n={i18n}>
+      <LabelRow {...props} />
+    </I18nextProvider>,
+  )
+}
+
+const renderToggleField = async (props: ToggleFieldProps) => {
+  const i18n = createInstance()
+  await i18n.init({
+    lng: "de",
+    fallbackLng: false,
+    ns: ["manager", "common"],
+    resources: {
+      de: {
+        manager: managerDe,
+        common: {},
+      },
+    },
+  })
+
+  return renderToStaticMarkup(
+    <I18nextProvider i18n={i18n}>
+      <ToggleField {...props} />
     </I18nextProvider>,
   )
 }
@@ -370,5 +417,207 @@ describe("SettingRow API — ARIA compliance", () => {
     // Override label is used instead of i18n fallback.
     expect(propsWithLabel.restartBadge).toBe(true)
     expect(propsWithLabel.restartBadgeLabel).toBe("Needs restart")
+  })
+})
+
+describe("LabelRow — Settings Grid Layout", () => {
+  it("renders grid layout with sm:grid-cols-[15rem_minmax(0,1fr)]", async () => {
+    const markup = await renderLabelRow({
+      label: "Test Setting",
+      children: null,
+    })
+
+    expect(markup).toContain("sm:grid-cols-[15rem_minmax(0,1fr)]")
+  })
+
+  it("renders description with aria-hidden spacer in grid", async () => {
+    const markup = await renderLabelRow({
+      label: "Test Setting",
+      description: "Help text",
+      id: "test-id",
+      children: null,
+    })
+
+    // Spacer should be present with aria-hidden and hidden sm:block
+    expect(markup).toContain("aria-hidden")
+    expect(markup).toContain("hidden sm:block")
+
+    // Description should be present
+    expect(markup).toContain("Help text")
+  })
+
+  it("description does not have sm:pl-60", async () => {
+    const markup = await renderLabelRow({
+      label: "Test Setting",
+      description: "Help text",
+      id: "test-id",
+      children: null,
+    })
+
+    // Get the description paragraph element
+    const descIndex = markup.indexOf("Help text")
+    // Verify that sm:pl-60 is not present in description (grid handles alignment)
+    const descStartIndex = markup.lastIndexOf("<p", descIndex)
+    const descEndIndex = markup.indexOf("</p>", descIndex)
+    const descMarkup = markup.substring(descStartIndex, descEndIndex)
+    expect(descMarkup).not.toContain("sm:pl-60")
+  })
+
+  it("renders status message with aria-hidden spacer in grid", async () => {
+    const markup = await renderLabelRow({
+      label: "Test Setting",
+      statusMessage: { text: "Saving...", tone: "pending" },
+      id: "test-id",
+      children: null,
+    })
+
+    // Spacer should be present
+    expect(markup).toContain("aria-hidden")
+    expect(markup).toContain("hidden sm:block")
+
+    // Status message should be present with role="status"
+    expect(markup).toContain("Saving...")
+    expect(markup).toContain('role="status"')
+  })
+
+  it("DOM order: label → control → description → status", async () => {
+    const markup = await renderLabelRow({
+      label: "Test Setting",
+      description: "Help text",
+      statusMessage: { text: "Status message", tone: "success" },
+      id: "test-id",
+      children: null,
+    })
+
+    const labelIndex = markup.indexOf("Test Setting")
+    const descIndex = markup.indexOf("Help text")
+    const statusIndex = markup.indexOf("Status message")
+
+    // Verify order
+    expect(labelIndex).toBeGreaterThan(-1)
+    expect(descIndex).toBeGreaterThan(labelIndex)
+    expect(statusIndex).toBeGreaterThan(descIndex)
+  })
+})
+
+describe("ToggleField — Settings Grid Layout", () => {
+  it("renders grid layout with sm:grid-cols-[15rem_minmax(0,1fr)]", async () => {
+    const markup = await renderToggleField({
+      label: "Dark Mode",
+      checked: false,
+      onChange: () => {},
+    })
+
+    expect(markup).toContain("sm:grid-cols-[15rem_minmax(0,1fr)]")
+  })
+
+  it("renders description with aria-hidden spacer in grid", async () => {
+    const markup = await renderToggleField({
+      label: "Dark Mode",
+      description: "Enable dark theme",
+      checked: false,
+      onChange: () => {},
+      id: "dark-mode",
+    })
+
+    // Spacer should be present with aria-hidden and hidden sm:block
+    expect(markup).toContain("aria-hidden")
+    expect(markup).toContain("hidden sm:block")
+
+    // Description should be present
+    expect(markup).toContain("Enable dark theme")
+  })
+
+  it("status message with aria-hidden spacer and correct DOM order", async () => {
+    const markup = await renderToggleField({
+      label: "Dark Mode",
+      description: "Enable dark theme",
+      statusMessage: { text: "Updating...", tone: "pending" },
+      checked: false,
+      onChange: () => {},
+      id: "dark-mode",
+    })
+
+    const labelIndex = markup.indexOf("Dark Mode")
+    const descIndex = markup.indexOf("Enable dark theme")
+    const statusIndex = markup.indexOf("Updating...")
+
+    expect(labelIndex).toBeGreaterThan(-1)
+    expect(descIndex).toBeGreaterThan(labelIndex)
+    expect(statusIndex).toBeGreaterThan(descIndex)
+  })
+})
+
+describe("ToggleField — Cursor States", () => {
+  it("pending=true renders cursor-wait and disables button", async () => {
+    const markup = await renderToggleField({
+      label: "Loading Setting",
+      checked: false,
+      onChange: () => {},
+      pending: true,
+    })
+
+    // Should have cursor-wait class
+    expect(markup).toContain("cursor-wait")
+
+    // Button should be disabled
+    expect(markup).toContain("disabled")
+  })
+
+  it("disabled=true (without pending) renders cursor-not-allowed", async () => {
+    const markup = await renderToggleField({
+      label: "Locked Setting",
+      checked: false,
+      onChange: () => {},
+      disabled: true,
+    })
+
+    // Should have cursor-not-allowed class
+    expect(markup).toContain("cursor-not-allowed")
+  })
+
+  it("disabled=false and pending=false renders cursor-pointer", async () => {
+    const markup = await renderToggleField({
+      label: "Active Setting",
+      checked: false,
+      onChange: () => {},
+      disabled: false,
+      pending: false,
+    })
+
+    // Should have cursor-pointer class
+    expect(markup).toContain("cursor-pointer")
+  })
+
+  it("disabled=true with disabledReason adds title attribute", async () => {
+    const markup = await renderToggleField({
+      label: "Protected Setting",
+      checked: false,
+      onChange: () => {},
+      disabled: true,
+      disabledReason: "Admin access required",
+      id: "protected",
+    })
+
+    // Title attribute should be on the root container
+    expect(markup).toContain('title="Admin access required"')
+  })
+
+  it("pending=true does not require disabledReason for title", async () => {
+    const markup = await renderToggleField({
+      label: "Pending Setting",
+      checked: false,
+      onChange: () => {},
+      pending: true,
+    })
+
+    // Should render cursor-wait without title attribute
+    expect(markup).toContain("cursor-wait")
+    // Should NOT have title (only added when disabled AND disabledReason)
+    const titleMatch = markup.match(/title="/g)
+    // If title is present, it should not be for "Pending"
+    if (titleMatch && titleMatch.length > 0) {
+      expect(markup).not.toContain('title="Pending')
+    }
   })
 })

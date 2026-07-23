@@ -69,6 +69,7 @@ const ConfigGameMode = () => {
   const [endScreenModes, setEndScreenModes] = useState(
     config.endScreenModes ?? "full,top3,private",
   )
+  const [pendingEndScreenMode, setPendingEndScreenMode] = useState<string | null>(null)
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
   // the saved value back after a save (and on reconnect), so re-sync local state
@@ -174,6 +175,10 @@ const ConfigGameMode = () => {
       t("manager:gameMode.endScreenModesUpdated"),
   })
 
+  useEffect(() => {
+    if (!endScreenToggle.saving) setPendingEndScreenMode(null)
+  }, [endScreenToggle.saving])
+
   const handleEndScreenModeToggle = useCallback(
     (mode: string) => {
       // Prevent clicks while saving
@@ -190,6 +195,7 @@ const ConfigGameMode = () => {
         return
       }
 
+      setPendingEndScreenMode(mode)
       const next = new Set(current)
       if (isActive) {
         next.delete(mode)
@@ -283,27 +289,30 @@ const ConfigGameMode = () => {
               description={t("manager:gameMode.description")}
               checked={teamMode}
               onChange={handleToggle}
-              disabled={teamModeToggle.saving}
+              pending={teamModeToggle.saving}
               restartBadge
               statusMessage={pendingStatus(teamModeToggle.saving)}
             />
 
             {teamMode && (
-              <div className="flex flex-wrap gap-2 sm:pl-44">
-                {["red", "blue", "green", "yellow"].map((team) => {
-                  return (
-                    <Badge
-                      key={team}
-                      className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
-                    >
-                      <span
-                        className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
-                        aria-hidden
-                      />
-                      {teamLabelMap[team]}
-                    </Badge>
-                  )
-                })}
+              <div className="sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:gap-x-4">
+                <div aria-hidden className="hidden sm:block" />
+                <div className="flex flex-wrap gap-2">
+                  {["red", "blue", "green", "yellow"].map((team) => {
+                    return (
+                      <Badge
+                        key={team}
+                        className="gap-1.5 bg-[var(--surface-3)] text-[var(--ink-muted)]"
+                      >
+                        <span
+                          className={`size-3 rounded-full ${TEAM_COLOR_MAP[team] ?? ""}`}
+                          aria-hidden
+                        />
+                        {teamLabelMap[team]}
+                      </Badge>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
@@ -314,7 +323,7 @@ const ConfigGameMode = () => {
               description={t("manager:gameMode.lowLatencyDescription")}
               checked={lowLatency}
               onChange={handleLowLatencyToggle}
-              disabled={lowLatencyToggle.saving}
+              pending={lowLatencyToggle.saving}
               statusMessage={pendingStatus(lowLatencyToggle.saving)}
             />
 
@@ -325,7 +334,7 @@ const ConfigGameMode = () => {
               description={t("manager:gameMode.lobbyDescription")}
               checked={joinLocked}
               onChange={handleJoinLockedToggle}
-              disabled={joinLockedToggle.saving}
+              pending={joinLockedToggle.saving}
               statusMessage={pendingStatus(joinLockedToggle.saving)}
             />
 
@@ -336,7 +345,7 @@ const ConfigGameMode = () => {
               description={t("manager:gameMode.randomizeAnswersDescription")}
               checked={randomizeAnswers}
               onChange={handleRandomizeAnswersToggle}
-              disabled={randomizeAnswersToggle.saving}
+              pending={randomizeAnswersToggle.saving}
               statusMessage={pendingStatus(randomizeAnswersToggle.saving)}
             />
           </div>
@@ -361,6 +370,7 @@ const ConfigGameMode = () => {
                 handleScoringModeChange(v as "speed" | "accuracy")
               }
               options={scoringOptions}
+              className="flex-row flex-wrap items-center gap-4"
               aria-labelledby="setting-scoring-mode-title"
             />
           </LabelRow>
@@ -377,7 +387,7 @@ const ConfigGameMode = () => {
             description={t("manager:gameMode.klassenDescription")}
             checked={klassenEnabled}
             onChange={handleKlassenToggle}
-            disabled={klassenToggle.saving}
+            pending={klassenToggle.saving}
             restartBadge
             statusMessage={pendingStatus(klassenToggle.saving)}
           />
@@ -400,17 +410,14 @@ const ConfigGameMode = () => {
                   description={endScreenModeDescriptionMap[mode]}
                   checked={isActive}
                   onChange={() => handleEndScreenModeToggle(mode)}
-                  disabled={
-                    isLastActive || endScreenToggle.saving
-                  }
+                  disabled={isLastActive}
                   disabledReason={
                     isLastActive
                       ? t("manager:gameMode.endScreenMinOneActive")
-                      : endScreenToggle.saving
-                        ? t("common:loading")
-                        : undefined
+                      : undefined
                   }
-                  statusMessage={pendingStatus(endScreenToggle.saving)}
+                  pending={endScreenToggle.saving && pendingEndScreenMode === mode}
+                  statusMessage={pendingEndScreenMode === mode ? pendingStatus(true) : undefined}
                 />
               )
             })}

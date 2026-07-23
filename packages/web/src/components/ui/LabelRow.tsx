@@ -72,53 +72,60 @@ const LabelRow = forwardRef<HTMLDivElement, LabelRowProps>(
     return (
       <div
         ref={ref}
-        className={clsx("flex flex-col gap-1", className)}
+        className={clsx(
+          "flex flex-col gap-2 sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:items-center sm:gap-x-4 sm:gap-y-1",
+          className
+        )}
         id={id}
         title={disabled && disabledReason ? disabledReason : undefined}
       >
-        <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:items-center sm:gap-4">
-          <LabelTag
-            {...(htmlFor ? { htmlFor } : {})}
-            id={titleId}
-            className={clsx(
-              "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:py-2.5",
-              "flex flex-wrap items-start gap-2",
-              htmlFor && "cursor-pointer",
-              disabled && "opacity-50"
-            )}
-          >
-            {label}
-            {restartBadge && (
-              <SettingRowRestartBadge
-                restartBadgeLabel={restartBadgeLabel}
-                t={t}
-              />
-            )}
-          </LabelTag>
+        <LabelTag
+          {...(htmlFor ? { htmlFor } : {})}
+          id={titleId}
+          className={clsx(
+            "min-h-11 shrink-0 text-sm font-medium text-[var(--ink-muted)] sm:py-2.5",
+            "flex flex-wrap items-start gap-2",
+            htmlFor && "cursor-pointer",
+            disabled && "opacity-50"
+          )}
+        >
+          {label}
+          {restartBadge && (
+            <SettingRowRestartBadge
+              restartBadgeLabel={restartBadgeLabel}
+              t={t}
+            />
+          )}
+        </LabelTag>
 
-          <div
-            className={clsx(
-              "flex min-h-11 flex-1 items-center gap-2",
-              disabled && "opacity-50"
-            )}
-            aria-describedby={describedBy || undefined}
-          >
-            <div className="flex-1">{children}</div>
-          </div>
+        <div
+          className={clsx(
+            "flex min-h-11 flex-1 items-center gap-2",
+            disabled && "opacity-50"
+          )}
+          aria-describedby={describedBy || undefined}
+        >
+          <div className="flex-1">{children}</div>
         </div>
 
-        {statusMessage && (
-          <SettingRowStatusMessage
-            statusMessage={statusMessage}
-            statusId={statusId}
-          />
+        {description && (
+          <>
+            <div aria-hidden className="hidden sm:block" />
+            <SettingRowDescription
+              description={description}
+              descId={descId}
+            />
+          </>
         )}
 
-        {description && (
-          <SettingRowDescription
-            description={description}
-            descId={descId}
-          />
+        {statusMessage && (
+          <>
+            <div aria-hidden className="hidden sm:block" />
+            <SettingRowStatusMessage
+              statusMessage={statusMessage}
+              statusId={statusId}
+            />
+          </>
         )}
       </div>
     )

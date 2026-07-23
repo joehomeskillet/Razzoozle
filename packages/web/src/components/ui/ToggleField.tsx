@@ -15,6 +15,8 @@ export interface ToggleFieldProps {
   checked: boolean
   onChange: (next: boolean) => void
   disabled?: boolean
+  /** Whether the control is in a pending/loading state. Disables interaction independently of `disabled`. */
+  pending?: boolean
   /** Optional badge signal that the setting requires restart. */
   restartBadge?: boolean
   /** Optional i18n-ized label text for restart badge. If not provided, uses default i18n key. */
@@ -50,6 +52,7 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
       checked,
       onChange,
       disabled,
+      pending,
       restartBadge,
       restartBadgeLabel,
       statusMessage,
@@ -65,70 +68,83 @@ const ToggleField = forwardRef<HTMLDivElement, ToggleFieldProps>(
     const statusId = id && statusMessage ? `${id}-status` : undefined
     const describedBy = clsx(descId, statusId)
 
+    const isInteractionDisabled = disabled || pending
+    const cursorClass = pending ? "cursor-wait" : disabled ? "cursor-not-allowed" : "cursor-pointer"
+
     return (
       <div
         ref={ref}
-        className={clsx("flex flex-col gap-1", className)}
+        className={clsx(
+          "flex flex-col gap-2 sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:items-center sm:gap-x-4 sm:gap-y-1",
+          className
+        )}
         id={id}
         title={disabled && disabledReason ? disabledReason : undefined}
       >
-        <div className="flex min-h-0 flex-col gap-2 sm:grid sm:grid-cols-[15rem_minmax(0,1fr)] sm:items-center sm:gap-4">
-          <span
-            id={titleId}
+        {/* Row 1: Label (col 1) + Toggle Control (col 2) */}
+        <span
+          id={titleId}
+          className={clsx(
+            "shrink-0 text-sm font-medium text-[var(--ink-muted)]",
+            "flex flex-wrap items-start gap-2",
+            isInteractionDisabled && "opacity-50"
+          )}
+        >
+          {label}
+          {restartBadge && (
+            <SettingRowRestartBadge
+              restartBadgeLabel={restartBadgeLabel}
+              t={t}
+            />
+          )}
+        </span>
+
+        <div className={clsx("flex min-h-11 flex-1 items-center", isInteractionDisabled && "opacity-50")}>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-labelledby={titleId}
+            aria-describedby={describedBy || undefined}
+            aria-invalid={statusMessage?.tone === "error"}
+            disabled={isInteractionDisabled}
+            onClick={() => onChange(!checked)}
             className={clsx(
-              "shrink-0 text-sm font-medium text-[var(--ink-muted)]",
-              "flex flex-wrap items-start gap-2",
-              disabled && "opacity-50"
+              "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full",
+              "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+              cursorClass,
+              checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
             )}
           >
-            {label}
-            {restartBadge && (
-              <SettingRowRestartBadge
-                restartBadgeLabel={restartBadgeLabel}
-                t={t}
-              />
-            )}
-          </span>
-
-          <div className={clsx("flex min-h-11 flex-1 items-center", disabled && "opacity-50")}>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={checked}
-              aria-labelledby={titleId}
-              aria-describedby={describedBy || undefined}
-              aria-invalid={statusMessage?.tone === "error"}
-              disabled={disabled}
-              onClick={() => onChange(!checked)}
+            <span
               className={clsx(
-                "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full",
-                "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-                "disabled:cursor-wait",
-                checked ? "bg-[var(--color-primary)]" : "bg-[var(--surface-5)]"
+                "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
+                checked ? "translate-x-6" : "translate-x-1"
               )}
-            >
-              <span
-                className={clsx(
-                  "inline-block size-5 rounded-full bg-[var(--surface)] shadow transition-transform",
-                  checked ? "translate-x-6" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
+            />
+          </button>
         </div>
 
-        {statusMessage && (
-          <SettingRowStatusMessage
-            statusMessage={statusMessage}
-            statusId={statusId}
-          />
+        {/* Row 2: Description with hidden spacer in col 1 + description in col 2 */}
+        {description && (
+          <>
+            <div aria-hidden className="hidden sm:block" />
+            <SettingRowDescription
+              description={description}
+              descId={descId}
+            />
+          </>
         )}
 
-        {description && (
-          <SettingRowDescription
-            description={description}
-            descId={descId}
-          />
+        {/* Row 3: Status with hidden spacer in col 1 + status in col 2 */}
+        {statusMessage && (
+          <>
+            <div aria-hidden className="hidden sm:block" />
+            <SettingRowStatusMessage
+              statusMessage={statusMessage}
+              statusId={statusId}
+            />
+          </>
         )}
       </div>
     )

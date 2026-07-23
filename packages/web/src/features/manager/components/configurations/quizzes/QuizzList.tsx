@@ -1,10 +1,10 @@
 import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
-import Checkbox from "@razzoozle/web/components/Checkbox"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import type { Label } from "@razzoozle/web/components/labels/LabelChip"
 import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
+import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -230,15 +230,11 @@ const QuizzList = ({
             <ListRow
               selected={selected.has(q.id)}
               selection={
-                <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
-                  <span className="sr-only">
-                    {t("manager:quizz.selectQuiz", { name: q.subject })}
-                  </span>
-                  <Checkbox
-                    checked={selected.has(q.id)}
-                    onChange={() => toggleSelect(q.id)}
-                  />
-                </label>
+                <RowSelectionControl
+                  checked={selected.has(q.id)}
+                  onChange={() => toggleSelect(q.id)}
+                  ariaLabel={t("manager:quizz.selectQuiz", { name: q.subject })}
+                />
               }
               leading={
                 <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
@@ -362,6 +358,7 @@ const QuizzList = ({
                   {...listItemMotion(index, reducedMotion)}
                 >
                   <ListRow
+                    selection={<span aria-hidden className="block size-11 shrink-0" />}
                     leading={
                       <ListChecks className="size-5 shrink-0 text-[var(--ink-muted)]" />
                     }
