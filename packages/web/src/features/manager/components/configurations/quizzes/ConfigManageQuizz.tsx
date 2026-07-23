@@ -2,11 +2,12 @@ import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import Select from "@razzoozle/web/components/Select"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
-import { Plus, Trash2, Upload, X } from "lucide-react"
+import { Plus, Trash2, Upload } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useState } from "react"
 
@@ -155,30 +156,13 @@ const ConfigManageQuizz = () => {
 
         {/* Bulk toolbar: inline only when ≥1 selected (not sticky; ActionFooter stays sticky) */}
         {selection.selectionActive && (
-          <div
-            role="toolbar"
-            aria-label={t("manager:quizz.bulkSelected", {
+          <BulkActionToolbar
+            count={selection.selected.size}
+            label={t("manager:quizz.bulkSelected", {
               count: selection.selected.size,
             })}
-            className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--surface-2)] px-3 py-2 outline-2 -outline-offset-2 outline-[var(--border-hairline)]"
+            onClear={() => selection.clear()}
           >
-            <div className="flex min-w-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                type="button"
-                onClick={() => selection.clear()}
-                aria-label={t("common:cancel")}
-                title={t("common:cancel")}
-              >
-                <X className="size-5" aria-hidden />
-              </Button>
-              <span className="min-w-0 truncate text-sm font-semibold text-[var(--ink-muted)]">
-                {t("manager:quizz.bulkSelected", {
-                  count: selection.selected.size,
-                })}
-              </span>
-            </div>
             <Button
               size="sm"
               variant="danger"
@@ -191,7 +175,7 @@ const ConfigManageQuizz = () => {
                 {t("manager:quizz.bulkDelete")}
               </span>
             </Button>
-          </div>
+          </BulkActionToolbar>
         )}
 
         {filteredActive.length > 0 && (
