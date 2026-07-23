@@ -233,11 +233,11 @@ const GameWrapper = ({
                   {/* GROUP B: Media/Display Controls (Icon Buttons) */}
                   <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
                     <AvToggles />
-                    {lowLatencyEnabled && <LowLatencyHealth />}
-                    <DisplayControl />
-                    <DisplayStatusCard />
-                    {import.meta.env.DEV && <SimControl />}
-                    {inviteCode && statusName !== STATUS.SHOW_ROOM && (
+                    {statusName !== STATUS.FINISHED && lowLatencyEnabled && <LowLatencyHealth />}
+                    {statusName !== STATUS.FINISHED && <DisplayControl />}
+                    {statusName !== STATUS.FINISHED && <DisplayStatusCard />}
+                    {statusName !== STATUS.FINISHED && import.meta.env.DEV && <SimControl />}
+                    {statusName !== STATUS.FINISHED && inviteCode && statusName !== STATUS.SHOW_ROOM && (
                       <RejoinQrDialog
                         inviteCode={inviteCode}
                         statusName={statusName}
