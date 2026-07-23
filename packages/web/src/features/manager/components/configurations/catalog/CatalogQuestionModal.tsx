@@ -122,7 +122,7 @@ export const CatalogQuestionModal = ({
         onKeyDown={handleFocusTrap}
         className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--surface)]"
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] bg-gradient-to-r from-[var(--accent-tint)] to-white px-4 py-3 sm:px-6">
+        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)] px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
             <h2
               id="catalog-question-modal-title"

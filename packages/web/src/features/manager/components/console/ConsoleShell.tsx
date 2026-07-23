@@ -310,7 +310,7 @@ const ConsoleShell = ({
           className={clsx(
             "flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-4 py-3 sm:px-6",
             // Subtle accent-tinted gradient → warm, but legible under any theme.
-            "bg-gradient-to-r from-[var(--accent-tint)] to-white",
+            "bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]",
           )}
         >
           {!isDesktop && (
