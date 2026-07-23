@@ -4,6 +4,7 @@ import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Bad
 import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import {
   popoverContentClass,
   popoverItemClass,
@@ -54,7 +55,6 @@ const ConfigCatalog = () => {
     modalOpen,
     pendingDelete,
     setPendingDelete,
-    selected,
     bulkDeleteOpen,
     setBulkDeleteOpen,
     selectionCount,
@@ -65,8 +65,7 @@ const ConfigCatalog = () => {
     openEditModal,
     closeModal,
     handleDelete,
-    clearSelection,
-    toggleSelect,
+    selection,
     handleBulkDelete,
     handleLabelAssign,
     setPendingOp,
@@ -133,7 +132,7 @@ const ConfigCatalog = () => {
                 variant="ghost"
                 size="icon"
                 type="button"
-                onClick={clearSelection}
+                onClick={selection.clear}
                 aria-label={t("common:cancel")}
                 title={t("common:cancel")}
               >
@@ -177,168 +176,182 @@ const ConfigCatalog = () => {
             hint={t("manager:catalog.search")}
           />
         ) : (
-          <motion.div
-            className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
-            {...listContainerMotion(reducedMotion)}
-          >
-            {filteredEntries.map((entry, index) => {
-              const type = entry.question.type ?? "choice"
-              const source = entry.source ?? "manual"
-              const entryLabelIds = entry.labelIds ?? []
-              const entryTags = entry.tags ?? []
-              const assignedLabels = labels.filter((label) =>
-                entryLabelIds.includes(label.id),
-              )
-              const availableLabels = labels.filter(
-                (label) => !entryLabelIds.includes(label.id),
-              )
-              const hasLabelFooter =
-                klassenEnabled &&
-                (assignedLabels.length > 0 || availableLabels.length > 0)
-              const hasFooter = entryTags.length > 0 || hasLabelFooter
+          <>
+            {filteredEntries.length > 0 && (
+              <SelectAllControl
+                id="catalog-select-all"
+                data-testid="catalog-select-all"
+                allSelected={selection.allSelected}
+                someSelected={selection.someSelected}
+                selectedCount={selection.selected.size}
+                totalCount={filteredEntries.length}
+                onToggleAll={selection.toggleAll}
+              />
+            )}
 
-              return (
-                <motion.div
-                  key={entry.id}
-                  data-testid={`catalog-row-${entry.id}`}
-                  {...listItemMotion(index, reducedMotion)}
-                >
-                  <ListRow
-                    selected={selected.has(entry.id)}
-                    selection={
-                      <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
-                        <span className="sr-only">
-                          {t("manager:catalog.selectEntry", {
-                            name: entry.question.question,
-                          })}
-                        </span>
-                        <Checkbox
-                          data-testid={`catalog-checkbox-${entry.id}`}
-                          checked={selected.has(entry.id)}
-                          onChange={() => toggleSelect(entry.id)}
-                        />
-                      </label>
-                    }
-                    leading={
-                      <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
-                    }
-                    title={entry.question.question}
-                    onClick={() => openEditModal(entry)}
-                    bodyLabel={t("manager:catalog.editEntry", {
-                      name: entry.question.question,
-                    })}
-                    meta={
-                      <span className="flex flex-wrap items-center gap-2">
-                        <Badge>
-                          {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
-                        </Badge>
-                        <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
-                          {t(`manager:catalog.source.${source}`)}
-                        </Badge>
-                        <span>
-                          {formatDate(entry.addedAt)}
-                        </span>
-                      </span>
-                    }
-                    footer={
-                      hasFooter && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {klassenEnabled &&
-                            assignedLabels.map((label) => (
-                              <LabelChip
-                                key={label.id}
-                                label={label}
-                                onRemove={() => {
-                                  handleLabelAssign(
-                                    entry.id,
-                                    entryLabelIds.filter(
-                                      (id) => id !== label.id,
-                                    ),
-                                  )
-                                }}
-                              />
-                            ))}
+            <motion.div
+              className="flex min-h-0 flex-1 flex-col space-y-3 p-0.5"
+              {...listContainerMotion(reducedMotion)}
+            >
+              {filteredEntries.map((entry, index) => {
+                const type = entry.question.type ?? "choice"
+                const source = entry.source ?? "manual"
+                const entryLabelIds = entry.labelIds ?? []
+                const entryTags = entry.tags ?? []
+                const assignedLabels = labels.filter((label) =>
+                  entryLabelIds.includes(label.id),
+                )
+                const availableLabels = labels.filter(
+                  (label) => !entryLabelIds.includes(label.id),
+                )
+                const hasLabelFooter =
+                  klassenEnabled &&
+                  (assignedLabels.length > 0 || availableLabels.length > 0)
+                const hasFooter = entryTags.length > 0 || hasLabelFooter
 
-                          {klassenEnabled && availableLabels.length > 0 && (
-                            <Select.Root
-                              value=""
-                              onValueChange={(val: string) => {
-                                handleLabelAssign(entry.id, [
-                                  ...entryLabelIds,
-                                  Number(val),
-                                ])
-                              }}
-                            >
-                              <Select.Trigger
-                                aria-label={t("manager:labels.assignLabel")}
-                                onPointerDown={(e) => e.stopPropagation()}
-                                className={assignTriggerClass}
-                              >
-                                <Plus className="size-3" />
-                                <Select.Value
-                                  placeholder={t("manager:labels.assignTitle")}
+                return (
+                  <motion.div
+                    key={entry.id}
+                    data-testid={`catalog-row-${entry.id}`}
+                    {...listItemMotion(index, reducedMotion)}
+                  >
+                    <ListRow
+                      selected={selection.isSelected(entry.id)}
+                      selection={
+                        <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg">
+                          <span className="sr-only">
+                            {t("manager:catalog.selectEntry", {
+                              name: entry.question.question,
+                            })}
+                          </span>
+                          <Checkbox
+                            data-testid={`catalog-checkbox-${entry.id}`}
+                            checked={selection.isSelected(entry.id)}
+                            onChange={() => selection.toggle(entry.id)}
+                          />
+                        </label>
+                      }
+                      leading={
+                        <Library className="size-5 shrink-0 text-[var(--ink-muted)]" />
+                      }
+                      title={entry.question.question}
+                      onClick={() => openEditModal(entry)}
+                      bodyLabel={t("manager:catalog.editEntry", {
+                        name: entry.question.question,
+                      })}
+                      meta={
+                        <span className="flex flex-wrap items-center gap-2">
+                          <Badge>
+                            {t(TYPE_LABEL_KEY[type] ?? "quizz:type.choice")}
+                          </Badge>
+                          <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
+                            {t(`manager:catalog.source.${source}`)}
+                          </Badge>
+                          <span>
+                            {formatDate(entry.addedAt)}
+                          </span>
+                        </span>
+                      }
+                      footer={
+                        hasFooter && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {klassenEnabled &&
+                              assignedLabels.map((label) => (
+                                <LabelChip
+                                  key={label.id}
+                                  label={label}
+                                  onRemove={() => {
+                                    handleLabelAssign(
+                                      entry.id,
+                                      entryLabelIds.filter(
+                                        (id) => id !== label.id,
+                                      ),
+                                    )
+                                  }}
                                 />
-                              </Select.Trigger>
-                              <Select.Portal>
-                                <Select.Content
-                                  position="popper"
-                                  sideOffset={4}
-                                  onCloseAutoFocus={(e) => e.preventDefault()}
-                                  className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
-                                >
-                                  <Select.Viewport className="p-1">
-                                    {availableLabels.map((label) => (
-                                      <Select.Item
-                                        key={label.id}
-                                        value={String(label.id)}
-                                        className={popoverItemClass}
-                                      >
-                                        <Select.ItemText>
-                                          {label.name}
-                                        </Select.ItemText>
-                                      </Select.Item>
-                                    ))}
-                                  </Select.Viewport>
-                                </Select.Content>
-                              </Select.Portal>
-                            </Select.Root>
-                          )}
+                              ))}
 
-                          {entryTags.map((tag, tagIndex) => (
-                            <Badge
-                              key={`${tag}-${tagIndex}`}
-                              className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )
-                    }
-                    actions={[
-                      {
-                        key: "edit",
-                        icon: Pencil,
-                        label: t("manager:catalog.edit"),
-                        onClick: () => openEditModal(entry),
-                      },
-                      {
-                        key: "delete",
-                        icon: Trash2,
-                        label: t("manager:catalog.delete"),
-                        destructive: true,
-                        onClick: () =>
-                          setPendingDelete({
-                            id: entry.id,
-                            question: entry.question.question,
-                          }),
-                      },
-                    ]}
-                  />
-                </motion.div>
-              )
-            })}
-          </motion.div>
+                            {klassenEnabled && availableLabels.length > 0 && (
+                              <Select.Root
+                                value=""
+                                onValueChange={(val: string) => {
+                                  handleLabelAssign(entry.id, [
+                                    ...entryLabelIds,
+                                    Number(val),
+                                  ])
+                                }}
+                              >
+                                <Select.Trigger
+                                  aria-label={t("manager:labels.assignLabel")}
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  className={assignTriggerClass}
+                                >
+                                  <Plus className="size-3" />
+                                  <Select.Value
+                                    placeholder={t("manager:labels.assignTitle")}
+                                  />
+                                </Select.Trigger>
+                                <Select.Portal>
+                                  <Select.Content
+                                    position="popper"
+                                    sideOffset={4}
+                                    onCloseAutoFocus={(e) => e.preventDefault()}
+                                    className={`z-50 min-w-32 overflow-hidden ${popoverContentClass}`}
+                                  >
+                                    <Select.Viewport className="p-1">
+                                      {availableLabels.map((label) => (
+                                        <Select.Item
+                                          key={label.id}
+                                          value={String(label.id)}
+                                          className={popoverItemClass}
+                                        >
+                                          <Select.ItemText>
+                                            {label.name}
+                                          </Select.ItemText>
+                                        </Select.Item>
+                                      ))}
+                                    </Select.Viewport>
+                                  </Select.Content>
+                                </Select.Portal>
+                              </Select.Root>
+                            )}
+
+                            {entryTags.map((tag, tagIndex) => (
+                              <Badge
+                                key={`${tag}-${tagIndex}`}
+                                className="bg-[var(--surface-3)] text-[var(--ink-medium)]"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )
+                      }
+                      actions={[
+                        {
+                          key: "edit",
+                          icon: Pencil,
+                          label: t("manager:catalog.edit"),
+                          onClick: () => openEditModal(entry),
+                        },
+                        {
+                          key: "delete",
+                          icon: Trash2,
+                          label: t("manager:catalog.delete"),
+                          destructive: true,
+                          onClick: () =>
+                            setPendingDelete({
+                              id: entry.id,
+                              question: entry.question.question,
+                            }),
+                        },
+                      ]}
+                    />
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </>
         )}
 
         <CatalogQuestionModal

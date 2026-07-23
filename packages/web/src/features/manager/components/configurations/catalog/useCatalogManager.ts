@@ -4,6 +4,7 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -35,8 +36,6 @@ export const useCatalogManager = () => {
     id: string
     question: string
   } | null>(null)
-  // Multi-select state keyed by entry id (mirrors useQuizzManager:42).
-  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const requestCatalog = useCallback(() => {
@@ -94,22 +93,6 @@ export const useCatalogManager = () => {
     ),
   )
 
-  // Drop ids that are no longer in the list — mirrors useQuizzManager's prune
-  // effect (:108-121) so a stale selection can't bulk-delete entries that
-  // already vanished (e.g. deleted by another tab).
-  useEffect(() => {
-    setSelected((prev) => {
-      if (prev.size === 0) {
-        return prev
-      }
-
-      const existing = new Set(entries.map((entry) => entry.id))
-      const next = new Set([...prev].filter((id) => existing.has(id)))
-
-      return next.size === prev.size ? prev : next
-    })
-  }, [entries])
-
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase()
     let results = entries
@@ -134,6 +117,9 @@ export const useCatalogManager = () => {
 
     return results
   }, [entries, search, selectedLabelId, klassenEnabled])
+
+  const visibleEntryIds = useMemo(() => filteredEntries.map((e) => e.id), [filteredEntries])
+  const selection = useEntitySelection(visibleEntryIds)
 
   const openAddModal = () => {
     setModalMode("add")
@@ -164,30 +150,14 @@ export const useCatalogManager = () => {
     requestCatalog()
   }
 
-  const clearSelection = () => setSelected(new Set())
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-
-      return next
-    })
-  }
-
   // Client-side loop over CATALOG.DELETE — no bulk server event, mirrors
   // useQuizzManager.handleBulkDelete (:137-145).
   const handleBulkDelete = () => {
-    selected.forEach((id) => {
+    selection.selected.forEach((id) => {
       socket.emit(EVENTS.CATALOG.DELETE, { id })
     })
     toast.success(t("manager:catalog.deleted"))
-    clearSelection()
+    selection.clear()
     setBulkDeleteOpen(false)
     requestCatalog()
   }
@@ -200,8 +170,8 @@ export const useCatalogManager = () => {
     })
   }
 
-  const selectionCount = selected.size
-  const selectionActive = selectionCount > 0
+  const selectionCount = selection.selected.size
+  const selectionActive = selection.selectionActive
 
   return {
     entries,
@@ -220,7 +190,7 @@ export const useCatalogManager = () => {
     setPendingOp,
     pendingDelete,
     setPendingDelete,
-    selected,
+    selected: selection.selected,
     bulkDeleteOpen,
     setBulkDeleteOpen,
     selectionCount,
@@ -229,8 +199,7 @@ export const useCatalogManager = () => {
     openEditModal,
     closeModal,
     handleDelete,
-    clearSelection,
-    toggleSelect,
+    selection,
     handleBulkDelete,
     handleLabelAssign,
   }
