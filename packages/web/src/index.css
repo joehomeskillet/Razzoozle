@@ -86,6 +86,15 @@
   --surface-muted: #374151;
   --footer-bg: #ffffff;  --footer-text: #1f2937;
 
+  /* Game spacing scale. */
+  --game-space-1: 0.25rem;
+  --game-space-2: 0.5rem;
+  --game-space-3: 0.75rem;
+  --game-space-4: 1rem;
+  --game-space-5: 1.5rem;
+  --game-space-6: 2rem;
+  --game-space-7: 3rem;
+  --game-space-8: 4rem;
 
   /* Label palette (8-tone fixed set). Maps to answer/team/state tokens + new values. */
   --label-red: #ef4444;        --label-red-bg: color-mix(in srgb, var(--label-red), white 92%);
