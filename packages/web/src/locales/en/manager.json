@@ -1038,6 +1038,7 @@
     "resultFailed": "{{count}} failed",
     "resultCompleted": "Completed",
     "allSelected": "All {{count}} entries selected",
-    "allFilteredSelected": "All {{count}} filtered entries selected"
+    "allFilteredSelected": "All {{count}} filtered entries selected",
+    "selectedOfTotal": "{{selected}} of {{total}} selected"
   }
 }

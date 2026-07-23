@@ -1038,6 +1038,7 @@
     "resultFailed": "{{count}} 个失败",
     "resultCompleted": "已完成",
     "allSelected": "已选择全部 {{count}} 条记录",
-    "allFilteredSelected": "已选择全部 {{count}} 条筛选记录"
+    "allFilteredSelected": "已选择全部 {{count}} 条筛选记录",
+    "selectedOfTotal": "已选择 {{selected}} 个（共 {{total}} 个）"
   }
 }
