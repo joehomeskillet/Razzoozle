@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Token-class grep gate for manager package design tokens (D1/D2/D10).
+# Token-class grep gate for manager package design tokens (D1/D2/D10/D-GRAD).
 # Enforces design system token constraints before W1 migration completes.
 # Usage: check-manager-tokens.sh [path]
 # Defaults to packages/web/src/features/manager plus the shared component
@@ -71,6 +71,16 @@ grep -rnoE 'bg-black/[0-9]+' \
   grep -vF -f "$EXCLUDE" | \
   grep -v ':bg-black/40$' | \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D10 SCRIM opacity '\2' invalid (only bg-black\/40 allowed)/" >>"$TMPFILE" || true
+
+# D-GRAD: Forbidden white/black gradient utilities.
+# Matches from-white, via-white, to-white, from-black, via-black, to-black.
+# Excludes opacity variants (e.g., from-black/40, to-white/30) and variable forms (e.g., to-[var(...)]).
+grep -rEn '\b(from|via|to)-(white|black)\b' \
+  --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -vE '(from|via|to)-(white|black)(/|\[)' | \
+  grep -vF -f "$EXCLUDE" | \
+  sed 's/^\([^:]*:[^:]*\):.*/\1:D-GRAD forbidden gradient utility (use var() form)/' >>"$TMPFILE" || true
+
 
 # D22b (SettingRow-Grid-Kanon): sm:max-w-60 forbidden in settings rows
 # Matches sm:max-w-60 only in packages/web/src/components/ui/*.tsx
