@@ -5,6 +5,7 @@
   "type": "module",
   "devDependencies": {
     "@browserbasehq/stagehand": "^3.7.0",
+    "@playwright/test": "^1.61.1",
     "zod": "^4.4.3"
   }
 }
