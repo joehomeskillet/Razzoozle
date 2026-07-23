@@ -18,6 +18,8 @@ pub struct HandlerCtx {
     pub db_pool: Option<sqlx::PgPool>,
     /// Session token from handshake auth payload (None if not provided).
     pub session_token: Option<String>,
+    /// Satellite token from handshake auth payload (None if not provided).
+    pub satellite_token: Option<String>,
     /// Lazily-resolved and cached user. Populated on first require_user/require_admin call.
     pub user_cache: Arc<RwLock<Option<AuthUser>>>,
 }
@@ -69,6 +71,8 @@ pub mod ai_http;
 pub mod ai_utils;
 pub mod ai_ratelimit;
 pub mod ai_secrets;
+
+pub mod auth;
 
 pub mod ai;
 pub mod clock_ping;
