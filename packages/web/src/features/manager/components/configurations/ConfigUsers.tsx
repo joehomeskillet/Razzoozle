@@ -452,10 +452,11 @@ const ConfigUsers = () => {
               ].map((pill) => (
                 <FilterPill
                   key={pill.value}
-                  selected={roleFilter === pill.value}
+                  active={roleFilter === pill.value}
                   onClick={() => setRoleFilter(pill.value)}
-                  label={pill.label}
-                />
+                >
+                  {pill.label}
+                </FilterPill>
               ))}
             </FilterGroup>
 
@@ -468,10 +469,11 @@ const ConfigUsers = () => {
               ].map((pill) => (
                 <FilterPill
                   key={`status-${pill.value}`}
-                  selected={statusFilter === pill.value}
+                  active={statusFilter === pill.value}
                   onClick={() => setStatusFilter(pill.value)}
-                  label={pill.label}
-                />
+                >
+                  {pill.label}
+                </FilterPill>
               ))}
             </FilterGroup>
           </div>

@@ -1,11 +1,9 @@
 import * as Select from "@radix-ui/react-select"
 import Button from "@razzoozle/web/components/Button"
-import Checkbox from "@razzoozle/web/components/Checkbox"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import type { Label } from "@razzoozle/web/components/labels/LabelChip"
 import { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
-import {
 import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import {
   popoverContentClass,
