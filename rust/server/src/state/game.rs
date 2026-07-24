@@ -108,6 +108,8 @@ pub struct Game {
     pub temp_round_recap: Option<Vec<RoundRecapAward>>,
     // Per-question shuffled chunks (sentence-builder only)
     pub shuffled_chunks: Option<Vec<String>>,
+    // Per-question shuffled items (sequencing only)
+    pub shuffled_items: Option<Vec<razzoozle_protocol::quizz::SequencingItem>>,
     // task resets to false after emitting.
     pub answer_count_push_pending: bool,
     // Sim-mode bot answer scheduler (None until first bot is added).
@@ -175,6 +177,7 @@ impl Game {
             auto_mode: false,
             temp_round_recap: None,
             shuffled_chunks: None,
+            shuffled_items: None,
             cooldown_abort: None,
             paused: false,
             paused_state: None,

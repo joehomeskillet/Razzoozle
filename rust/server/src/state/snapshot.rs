@@ -353,6 +353,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         auto_advance_task: None,
         temp_round_recap: None,
         shuffled_chunks: None,
+        shuffled_items: None,
         selected_modes,
     };
 

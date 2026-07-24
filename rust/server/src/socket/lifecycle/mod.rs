@@ -129,7 +129,7 @@ async fn open_question(
     broadcast_status(io, game_ref, game_id, &show_question_status);
     emit_plugin_lifecycle(&io, &game_id, "onQuestionShown", "SHOW_QUESTION");
 
-    let (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled_chunks) = {
+    let (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled_chunks, shuffled_items) = {
         let mut game = game_ref.lock().unwrap();
         let server_now_ms = timing::now_ms();
         game.engine.set_clock_ms(server_now_ms);
@@ -165,7 +165,29 @@ async fn open_question(
             game.shuffled_chunks = None;
             None
         };
-        (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled)
+        // Shuffle items for sequencing questions
+        let shuffled_items_opt = if question.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
+            if let Some(items) = &question.items {
+                // Extract item IDs for shuffling
+                let item_ids: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
+                if !item_ids.is_empty() {
+                    let shuffled_ids = payloads::shuffle_chunks_with_guard(item_ids);
+                    // Map shuffled IDs back to original items
+                    let id_to_item: std::collections::HashMap<_, _> = items.iter().map(|item| (item.id.clone(), item.clone())).collect();
+                    let shuffled: Vec<_> = shuffled_ids.iter().filter_map(|id| id_to_item.get(id).cloned()).collect();
+                    game.shuffled_items = Some(shuffled.clone());
+                    Some(shuffled)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            game.shuffled_items = None;
+            None
+        };
+        (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled, shuffled_items_opt)
     };
 
     let select_data = build_select_answer_data(
@@ -176,6 +198,7 @@ async fn open_question(
         deadline_ms,
         server_seq,
         shuffled_chunks,
+        shuffled_items,
     );
     let select_status = GameStatus::SelectAnswer(select_data);
     broadcast_status(io, game_ref, game_id, &select_status);
