@@ -5,6 +5,7 @@ import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/Ques
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
+import QuestionEditorSequencing from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSequencing"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
@@ -63,6 +64,7 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
+  const isSequencing = currentQuestion.type === "sequencing"
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
   const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
@@ -85,6 +87,7 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
         {!isSlider &&
           !isTypeAnswer &&
           !isSentenceBuilder &&
+          !isSequencing &&
           !isMathematik &&
           !isWortarten &&
           !isVokabelliste && (
@@ -100,6 +103,11 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
         {isSentenceBuilder && (
           <Reveal index={2}>
             <QuestionEditorSentence />
+          </Reveal>
+        )}
+        {isSequencing && (
+          <Reveal index={2}>
+            <QuestionEditorSequencing />
           </Reveal>
         )}
         {isMathematik && (
