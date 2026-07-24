@@ -342,5 +342,9 @@
   "join": {
     "identifier": "Identifiant (facultatif)",
     "identifierHint": "Facultatif pour le suivi des affectations"
+  },
+  "sequencing": {
+    "correctOrder": "Ordre correct",
+    "yourOrder": "Ton ordre"
   }
 }

@@ -79,7 +79,9 @@
     "wortarten": "词性标注",
     "wortartenDesc": "德语词性标注",
     "vokabelliste": "词汇表",
-    "vokabellisteDesc": "单词对批量编辑器 → 生成多个文本输入问题"
+    "vokabellisteDesc": "单词对批量编辑器 → 生成多个文本输入问题",
+    "sequencing": "排序",
+    "sequencingDesc": "玩家将项目按正确顺序排列"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",

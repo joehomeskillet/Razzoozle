@@ -1,0 +1,52 @@
+{
+  "en": {
+    "game": {
+      "sequencing.correctOrder": "Correct order",
+      "sequencing.yourOrder": "Your order"
+    },
+    "quizz": {
+      "type.sequencing": "Sequencing",
+      "type.sequencingDesc": "Players arrange items in the correct order"
+    }
+  },
+  "es": {
+    "game": {
+      "sequencing.correctOrder": "Orden correcto",
+      "sequencing.yourOrder": "Tu orden"
+    },
+    "quizz": {
+      "type.sequencing": "Ordenar",
+      "type.sequencingDesc": "Los jugadores ordenan los elementos en el orden correcto"
+    }
+  },
+  "fr": {
+    "game": {
+      "sequencing.correctOrder": "Ordre correct",
+      "sequencing.yourOrder": "Ton ordre"
+    },
+    "quizz": {
+      "type.sequencing": "Classement",
+      "type.sequencingDesc": "Les joueurs classent les éléments dans le bon ordre"
+    }
+  },
+  "it": {
+    "game": {
+      "sequencing.correctOrder": "Ordine corretto",
+      "sequencing.yourOrder": "Il tuo ordine"
+    },
+    "quizz": {
+      "type.sequencing": "Ordinamento",
+      "type.sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto"
+    }
+  },
+  "zh": {
+    "game": {
+      "sequencing.correctOrder": "正确顺序",
+      "sequencing.yourOrder": "你的顺序"
+    },
+    "quizz": {
+      "type.sequencing": "排序",
+      "type.sequencingDesc": "玩家将项目按正确顺序排列"
+    }
+  }
+}
