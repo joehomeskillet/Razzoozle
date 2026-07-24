@@ -54,9 +54,12 @@ export function SequencingBoard({
       {/* Placed/answer area */}
       <div
         className={clsx(
-          "flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-[var(--surface)] p-4 shadow-[var(--shadow-flat)]",
-          feedback?.correct && "bg-[var(--state-correct)]",
-          feedback && !feedback.correct && "bg-[var(--state-wrong)]",
+          "flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] p-4 shadow-[var(--shadow-flat)]",
+          feedback == null
+            ? "bg-[var(--surface)]"
+            : feedback.correct
+              ? "bg-[var(--state-correct)]"
+              : "bg-[var(--state-wrong)]",
         )}
         {...(isSolo && { "data-testid": "solo-sequencing-answer-bar" })}
       >
