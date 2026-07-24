@@ -33,8 +33,7 @@ Das Skript ist im SDD nur spezifiziert und noch **nicht** gebaut.
    Konsolen-Regeln gelten NICHT auf der Spielfläche und umgekehrt. Nie eine
    Komponente aus `features/game/components/answers/` in die Konsole
    importieren — und keine Konsolen-Komponente ins Spiel.
-2. **Tokens statt Literalen** in der Konsole (`bg-[var(--surface)]`,
-   `text-[var(--ink)]`); Gate: `bash scripts/check-manager-tokens.sh`.
+2. **Tokens & CLI Component Generators:** Niemals UI-Komponenten von Hand tippen. IMMER die CLI-Generatoren (`pnpm g:console`, `pnpm g:menu`, `pnpm g:question`, `pnpm g:display`, `pnpm g:player`) nutzen. Verbot harter Hex-Farben und ungeprüfter Arbitrary-Klassen; Nutzung gemappter Tailwind v4 Token-Klassen (`bg-answer-1`, `text-accent-contrast`, `bg-surface-2`, `text-ink`). Gates: `pnpm tokens:validate` (Linter), `pnpm tokens:fix` (Auto-Fixer) sowie `bash scripts/check-manager-tokens.sh`.
 3. **i18n ×6** (de/en/es/fr/it/zh), Pflege nur über `scripts/locale-sync.mjs`,
    niemals `defaultValue`-Fallbacks. Gate: `bash scripts/check-locales.sh`.
 4. **`route.gen.ts` ist generiert.** Neue Route = neue Datei unter
@@ -153,6 +152,7 @@ Nutze **mehrere Lanes parallel**, nicht eine:
 
 ```bash
 cd /nvmetank1/projects/Razzoozle/source
+pnpm tokens:validate                        # Ziel: 0 findings (Design Token Linter)
 pnpm --filter @razzoozle/web build          # erzeugt route.gen.ts mit
 pnpm --filter @razzoozle/web exec tsc --noEmit
 bash scripts/check-manager-tokens.sh        # Ziel: 0 findings

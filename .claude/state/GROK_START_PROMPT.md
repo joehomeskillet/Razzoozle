@@ -50,6 +50,7 @@ cat docs/design/question-type-contract.md     # das Pflichtenheft
 git status --short                            # muss leer sein
 git log --oneline -5
 pnpm --filter @razzoozle/web build            # muss durchlaufen
+pnpm tokens:validate                          # muss 0 findings zeigen (Design Token Linter)
 bash scripts/check-manager-tokens.sh          # muss 0 findings zeigen
 ```
 
@@ -114,6 +115,7 @@ Regeln, die nicht delegierbar sind:
 4. **Sag den Workern, dass `tsc` in ihrem Worktree nicht läuft** (keine
    `node_modules`; dort zu installieren vergiftet den pnpm-Store). Sie sollen
    das ausdrücklich als „ungeprüft" melden statt einen Pass zu behaupten.
+5. **Verlange im WP-Prompt die Nutzung der CLI Domain Generators** (`pnpm g:console <Name>`, `pnpm g:menu <Name>`, `pnpm g:question <Name>`, `pnpm g:display <Name>`, `pnpm g:player <Name>`) für jede neue UI-Komponente. Handgeschriebener Boilerplate ist verboten. Das garantiert 100% Token-Compliance und fertige Vitest-Tests.
 
 ## Schritt 5 — Nach JEDEM Report verifizieren, bevor du glaubst
 
@@ -141,6 +143,7 @@ automatischen Scan gefunden.
 ## Schritt 6 — Gates vor jedem Merge nach main
 
 ```bash
+pnpm tokens:validate                          # Ziel: 0 findings (Design Token Linter)
 pnpm --filter @razzoozle/web build            # ← das echte Gate, erzeugt route.gen.ts mit
 pnpm --filter @razzoozle/web exec tsc --noEmit
 bash scripts/check-manager-tokens.sh          # Ziel: 0 findings
