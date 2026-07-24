@@ -109,6 +109,7 @@ const Answers = ({
   const isFillBlank = type === "fill-blank" && !!slotOptions?.length
   const isMatching = type === "matching" && !!matchItems?.length
   const isDropPin = type === "drop-pin" && !!media?.url
+  const isPoll = type === "poll"
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -842,6 +843,18 @@ const Answers = ({
           disabled={submitted}
           testIdPrefix=""
           answers={answers ?? []}
+          displayOrder={displayOrder}
+        />
+      ) : isPoll ? (
+        <ChoiceGrid
+          value={selectedKey}
+          onChange={(key) => {
+            if (key !== null) handleAnswer(key)()
+          }}
+          onSubmit={() => {}}
+          disabled={choiceLocked}
+          testIdPrefix=""
+          answers={answers}
           displayOrder={displayOrder}
         />
       ) : isSlider ? (
