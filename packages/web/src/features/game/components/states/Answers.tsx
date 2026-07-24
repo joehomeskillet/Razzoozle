@@ -476,6 +476,12 @@ const Answers = ({
     setSubmitted(true)
     sfxPop()
     hapticTap()
+    const labels = slotSelections.map((sel, i) => {
+      const opts = isFillBlank
+        ? (slotOptions?.[i] ?? [])
+        : (matchItems?.[i]?.options ?? [])
+      return sel != null ? (opts[sel] ?? String(sel)) : ""
+    })
     socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
       gameId,
       data: {
@@ -485,6 +491,7 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+    setSubmittedChunks(labels)
     armAckPending(clientMessageId)
   }
 
