@@ -17,7 +17,11 @@
     "i18n:check": "i18n-check -l packages/web/src/locales -s de -f i18next",
     "i18n:report": "i18n-check -l packages/web/src/locales -s de -f i18next -o unused,undefined -u packages/web/src",
     "tokens:build": "npx style-dictionary build --config style-dictionary.config.mjs",
-    "g:console": "node scripts/generate-console-component.mjs"
+    "g:component": "node scripts/generate-component.mjs",
+    "g:console": "node scripts/generate-component.mjs --domain console",
+    "g:question": "node scripts/generate-component.mjs --domain question",
+    "g:display": "node scripts/generate-component.mjs --domain display",
+    "g:player": "node scripts/generate-component.mjs --domain player"
   },
   "devDependencies": {
     "@lingual/i18n-check": "0.9.5",
