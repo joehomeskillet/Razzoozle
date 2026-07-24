@@ -7,14 +7,15 @@ import Select from "@razzoozle/web/components/Select"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
 import { ActionFooter } from "@razzoozle/web/components/ui"
-import { Plus, Trash2, Upload } from "lucide-react"
+import { Plus, Trash2, Upload, LayoutTemplate } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useState } from "react"
 
 import { useLabelManager } from "../labels/useLabelManager"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import TemplateLibraryCard from "@razzoozle/web/features/manager/components/templates/TemplateLibraryCard"
+import TemplatePickerDialog from "@razzoozle/web/features/manager/components/templates/TemplatePickerDialog"
+import TemplateMetaDialog from "@razzoozle/web/features/manager/components/templates/TemplateMetaDialog"
 import QuizzDialogs from "./QuizzDialogs"
 import QuizzList from "./QuizzList"
 import type { SortKey } from "./types"
@@ -51,6 +52,9 @@ const ConfigManageQuizz = () => {
   const { klassenEnabled } = useConfig()
   const { labels } = useLabelManager()
   const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
+  const [templateMetaOpen, setTemplateMetaOpen] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
 
   const { filteredActive, filteredArchived, hasFilteredMatches } = useMemo(() => {
     if (!klassenEnabled || activeFilterId === null) {
@@ -84,6 +88,11 @@ const ConfigManageQuizz = () => {
   const handleBulkDeleteConfirm = () => {
     handleBulkDelete(Array.from(selection.selected))
     selection.clear()
+  }
+
+  const handleTemplateMetaSaved = () => {
+    setTemplateMetaOpen(false)
+    setSelectedTemplate(null)
   }
 
   return (
@@ -191,8 +200,6 @@ const ConfigManageQuizz = () => {
           />
         )}
 
-        <TemplateLibraryCard />
-
         <QuizzList
           quizz={quizz}
           hasMatches={hasFilteredMatches}
@@ -246,7 +253,38 @@ const ConfigManageQuizz = () => {
           <Upload className="size-5" aria-hidden />
           <span>{t("manager:quizz.import")}</span>
         </Button>
+        <Button
+          data-testid="quizz-template-btn"
+          variant="secondary"
+          size="lg"
+          type="button"
+          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+          onClick={() => setTemplatePickerOpen(true)}
+        >
+          <LayoutTemplate className="size-5" aria-hidden />
+          <span>{t("manager:templates.open")}</span>
+        </Button>
       </ActionFooter>
+
+      <TemplatePickerDialog
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+        onRename={(template) => {
+          setSelectedTemplate(template)
+          setTemplateMetaOpen(true)
+        }}
+        onCreate={() => {
+          setSelectedTemplate(undefined)
+          setTemplateMetaOpen(true)
+        }}
+      />
+
+      <TemplateMetaDialog
+        open={templateMetaOpen}
+        onOpenChange={setTemplateMetaOpen}
+        template={selectedTemplate}
+        onSaved={handleTemplateMetaSaved}
+      />
     </>
   )
 }
