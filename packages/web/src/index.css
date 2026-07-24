@@ -26,6 +26,47 @@
   --surface-5: #d1d5db;
   --line: #e5e7eb;
   --ring-selected: rgb(255 255 255 / 0.8);
+
+  /* Answers & Dynamic Accent Utilities */
+  --color-answer-1: var(--answer-1);
+  --color-answer-2: var(--answer-2);
+  --color-answer-3: var(--answer-3);
+  --color-answer-4: var(--answer-4);
+  --color-answer-text: var(--answer-text);
+  --color-field-cream: var(--color-field-cream);
+  --color-field-ink: var(--color-field-ink);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-contrast: var(--accent-contrast);
+
+  /* Team Base Colors */
+  --color-team-red: var(--team-red);
+  --color-team-blue: var(--team-blue);
+  --color-team-green: var(--team-green);
+  --color-team-yellow: var(--team-yellow);
+
+  /* Tier Base Colors */
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-diamant: var(--tier-diamant);
+
+  /* Game State Colors */
+  --color-state-correct: var(--state-correct);
+  --color-state-wrong: var(--state-wrong);
+  --color-state-correct-soft: var(--state-correct-soft);
+  --color-state-wrong-soft: var(--state-wrong-soft);
+
+  /* Rank Delta Colors */
+  --color-rank-up: var(--rank-up);
+  --color-rank-down: var(--rank-down);
+
+  /* Status Colors */
+  --color-status-online-bg: var(--status-online-bg);
+  --color-status-online-text: var(--status-online-text);
+  --color-status-offline-bg: var(--status-offline-bg);
+  --color-status-offline-text: var(--status-offline-text);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-text: var(--status-pending-text);
 }
 
 /* Defaults overridden at runtime by the theme (features/theme/apply.ts). */
@@ -119,6 +160,14 @@
     color-mix(in srgb, var(--color-primary), black 34%),
     #1f2937 12%
   );
+
+  /* Status tokens (D3 console & player state badges). */
+  --status-online-bg: #dcfce7;
+  --status-online-text: #166534;
+  --status-offline-bg: #fee2e2;
+  --status-offline-text: #991b1b;
+  --status-pending-bg: #fef3c7;
+  --status-pending-text: #92400e;
 }
 
 body {

@@ -22,20 +22,12 @@
  *   Consumed via `bg-[var(--status-online-bg)] text-[var(--status-online-text)]` etc.
  *   Note: --state-wrong-soft (used in D4 destructive hover) is pinned in index.css:71.
  */
-:root {
-  --accent-tint: color-mix(in srgb, var(--color-primary), white 88%);
-  --accent-contrast: color-mix(
-    in srgb,
-    color-mix(in srgb, var(--color-primary), black 34%),
-    #1f2937 12%
-  );
-  --status-online-bg: #dcfce7;
-  --status-online-text: #166534;
-  --status-offline-bg: #fee2e2;
-  --status-offline-text: #991b1b;
-  --status-pending-bg: #fef3c7;
-  --status-pending-text: #92400e;
-}
+/*
+ * Global defaults for --accent-tint, --accent-contrast, and status tokens live in
+ * index.css :root. The .console-shell rules below scope and pin these values
+ * specifically for the admin console subtree.
+ */
+
 
 /*
  * Admin-console insulation: the console shell (ConsoleShell.tsx carries the

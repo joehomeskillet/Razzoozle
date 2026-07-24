@@ -131,3 +131,86 @@ export const THEME_TOKENS: ThemeTokenDef[] = [
     description: "Player score footer text.",
   },
 ]
+
+/**
+ * Type-safe union of all Razzoozle CSS design tokens.
+ */
+export type CssTokenName =
+  | "--color-primary"
+  | "--color-secondary"
+  | "--color-text"
+  | "--color-accent"
+  | "--ink"
+  | "--ink-muted"
+  | "--ink-medium"
+  | "--ink-subtle"
+  | "--ink-faint"
+  | "--surface-2"
+  | "--surface-3"
+  | "--surface-4"
+  | "--surface-5"
+  | "--line"
+  | "--ring-selected"
+  | "--answer-1"
+  | "--answer-2"
+  | "--answer-3"
+  | "--answer-4"
+  | "--answer-text"
+  | "--surface"
+  | "--border-hairline"
+  | "--shadow-flat"
+  | "--color-field-cream"
+  | "--color-field-ink"
+  | "--accent-contrast-text"
+  | "--team-red"
+  | "--team-blue"
+  | "--team-green"
+  | "--team-yellow"
+  | "--team-red-ring"
+  | "--team-red-text"
+  | "--team-blue-ring"
+  | "--team-blue-text"
+  | "--team-green-ring"
+  | "--team-green-text"
+  | "--team-yellow-ring"
+  | "--team-yellow-text"
+  | "--tier-bronze"
+  | "--tier-silver"
+  | "--tier-gold"
+  | "--tier-diamant"
+  | "--tier-bronze-glow"
+  | "--tier-silver-glow"
+  | "--tier-gold-glow"
+  | "--tier-diamant-glow"
+  | "--state-correct"
+  | "--state-wrong"
+  | "--state-correct-soft"
+  | "--state-wrong-soft"
+  | "--danger-bg"
+  | "--rank-up"
+  | "--rank-down"
+  | "--rank-up-soft"
+  | "--rank-down-soft"
+  | "--timer-urgent"
+  | "--timer-track"
+  | "--streak-color"
+  | "--surface-muted"
+  | "--footer-bg"
+  | "--footer-text"
+  | "--accent-tint"
+  | "--accent-contrast"
+  | "--status-online-bg"
+  | "--status-online-text"
+  | "--status-offline-bg"
+  | "--status-offline-text"
+  | "--status-pending-bg"
+  | "--status-pending-text"
+  | `--game-space-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`
+
+/**
+ * Returns a CSS `var(...)` expression for a design token name in a type-safe way.
+ */
+export function getThemeTokenCssVar(token: CssTokenName): string {
+  return `var(${token})`
+}
+
