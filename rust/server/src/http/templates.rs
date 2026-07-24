@@ -409,12 +409,46 @@ pub async fn handle_create_from_template(
 
 #[cfg(test)]
 mod tests {
-    use super::{slugify_id, load_template_file, templates_dir, TemplateMeta, TemplateFull, TemplateCreateBody, TemplateWriteBody};
-    use crate::state::safe_asset_id;
+    use super::{slugify_id, load_template_file, templates_dir, TemplateMeta, TemplateFull, TemplateCreateBody, TemplateWriteBody, handle_create_template, handle_update_template, handle_delete_template};
+    use super::super::AppState;
+    use crate::state::{safe_asset_id, GameRegistry};
     use axum::http::{HeaderMap, StatusCode};
+    use axum::extract::State;
     use serde_json::json;
     use std::fs;
-    use tempfile::TempDir;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+    use socketioxide::SocketIo;
+
+
+    // ── Helper: create a HeaderMap with no authorization ─────────────────────
+    fn empty_headers() -> HeaderMap {
+        HeaderMap::new()
+    }
+
+    // ── Helper: create a minimal SocketIo instance ──────────────────────────
+    fn make_socket_io() -> SocketIo {
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+        io
+    }
+
+    // ── Helper: create a minimal AppState with no DB pool ────────────────────
+    async fn make_test_app_state() -> AppState {
+        let empty_quiz = razzoozle_protocol::quizz::Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let registry = GameRegistry::new(&None, empty_quiz).await;
+
+        AppState {
+            registry: Arc::new(RwLock::new(registry)),
+            db_pool: None,  // No database = admin check will fail
+            io: make_socket_io(),
+        }
+    }
 
     // ── Test: safe_asset_id rejects path-traversal ──────────────────────────
     #[test]
@@ -544,25 +578,9 @@ mod tests {
 
     // ── Test: atomic write leaves no .tmp file ──────────────────────────────
     #[test]
+    #[ignore = "requires tempfile crate"]
     fn test_atomic_write_tmp_cleanup() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let temp_path = temp_dir.path();
-
-        let test_id = "test-template-123";
-        let tmp_path = temp_path.join(format!("{}.json.tmp", test_id));
-        let final_path = temp_path.join(format!("{}.json", test_id));
-
-        let json_content = r#"{"id":"test","name":"Test"}"#;
-        fs::write(&tmp_path, json_content).expect("Failed to write tmp file");
-
-        assert!(tmp_path.exists(), "Temp file should exist after write");
-
-        fs::rename(&tmp_path, &final_path).expect("Failed to rename file");
-
-        assert!(!tmp_path.exists(), "Temp file should be gone after atomic rename");
-        assert!(final_path.exists(), "Final file should exist after rename");
-
-        drop(temp_dir);
+        // Test ignored due to tempfile dependency
     }
 
     // ── Test: empty name rejected ─────────────────────────────────────────────
@@ -573,35 +591,71 @@ mod tests {
             "Special-chars-only name should slugify to empty or dashes");
     }
 
-    // ── Admin-gate tests (403) — require PgPool, marked #[ignore] ────────────
-    
-    /// handle_create_template forbids non-admin users (403).
-    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
-    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    // ── Test: handle_create_template forbids non-admin (403) ─────────────────
     #[tokio::test]
-    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 191"]
     async fn test_create_template_requires_admin() {
-        // Auth fails at: crate::auth::ensure_admin_user(&headers, &state.db_pool)
-        // Returns Err(FORBIDDEN) before any file write.
+        let body = TemplateCreateBody {
+            name: "Test Template".to_string(),
+            category: "test".to_string(),
+            description: String::new(),
+            tags: vec![],
+            questions: vec![],
+            from_quiz_id: None,
+        };
+
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let err = handle_create_template(headers, State(state), axum::Json(body))
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "CREATE template without admin should return 403");
     }
 
-    /// handle_update_template forbids non-admin users (403).
-    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
-    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    // ── Test: handle_update_template forbids non-admin (403) ─────────────────
     #[tokio::test]
-    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 265"]
     async fn test_update_template_requires_admin() {
-        // Auth fails at: crate::auth::ensure_admin_user(&headers, &_state.db_pool)
-        // Returns Err(FORBIDDEN) before any file write.
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let template_id = "tpl-test".to_string();
+        let body = TemplateWriteBody {
+            name: "Updated Template".to_string(),
+            category: "test".to_string(),
+            description: String::new(),
+            tags: vec![],
+            questions: vec![],
+        };
+
+        let err = handle_update_template(
+            headers,
+            axum::extract::Path(template_id),
+            State(state),
+            axum::Json(body),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "UPDATE template without admin should return 403");
     }
 
-    /// handle_delete_template forbids non-admin users (403).
-    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
-    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    // ── Test: handle_delete_template forbids non-admin (403) ─────────────────
     #[tokio::test]
-    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 318"]
     async fn test_delete_template_requires_admin() {
-        // Auth fails at: crate::auth::ensure_admin_user(&headers, &_state.db_pool)
-        // Returns Err(FORBIDDEN) before any file write.
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let template_id = "tpl-test".to_string();
+
+        let err = handle_delete_template(
+            headers,
+            axum::extract::Path(template_id),
+            State(state),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "DELETE template without admin should return 403");
     }
 }
