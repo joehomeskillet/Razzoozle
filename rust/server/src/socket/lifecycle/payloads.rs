@@ -41,6 +41,7 @@ pub(crate) fn build_select_answer_data(
     server_seq: Option<i32>,
 
     shuffled_chunks: Option<Vec<String>>,
+    shuffled_items: Option<Vec<razzoozle_protocol::quizz::SequencingItem>>,
 ) -> SelectAnswerData {
     SelectAnswerData {
         question: question.question.clone(),
@@ -57,7 +58,7 @@ pub(crate) fn build_select_answer_data(
         step: question.step.map(|v| v as i32),
         unit: question.unit.clone(),
         shuffled_chunks,
-        shuffled_items: None,
+        shuffled_items,
         server_seq,
         server_now_ms: Some(server_now_ms),
         question_start_at_server_ms: Some(question_start_at_server_ms),

@@ -139,6 +139,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                 // `question_start_at_server_ms` is preserved so this is a resync,
                 // not a restart.
                 let shuffled_chunks = game.shuffled_chunks.clone();
+                let shuffled_items = game.shuffled_items.clone();
                 let select_data = build_select_answer_data(
                     &game.engine.current_question().clone(),
                     game.players.len() as i32,
@@ -147,6 +148,7 @@ pub fn register_adjust_timer(socket: &SocketRef, ctx: HandlerCtx) {
                     game.deadline_ms,
                     if game.low_latency { Some(game.server_seq) } else { None },
                     shuffled_chunks,
+                    shuffled_items,
                 );
                 drop(game);
 

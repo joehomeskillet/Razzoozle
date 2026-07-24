@@ -8,7 +8,7 @@ use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_engine::eval::normalize_text;
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
 use razzoozle_protocol::constants;
-use razzoozle_protocol::quizz::{Question, QuestionType};
+use razzoozle_protocol::quizz::{Question, QuestionType, SequencingItem};
 use razzoozle_protocol::status::{GameStatus, ShowResponsesData, TokenPos};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
@@ -136,6 +136,10 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let is_sentence_builder = matches!(
         question.r#type.as_ref(),
         Some(QuestionType::SentenceBuilder)
+    );
+    let is_sequencing = matches!(
+        question.r#type.as_ref(),
+        Some(QuestionType::Sequencing)
     );
     let collects_text = is_type_answer || is_sentence_builder;
     let mut responses = HashMap::new();
@@ -292,8 +296,16 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
-        correct_order: None,
-        items: None,
+        correct_order: if is_sequencing {
+            question.correct_order.clone()
+        } else {
+            None
+        },
+        items: if is_sequencing {
+            question.items.clone()
+        } else {
+            None
+        },
         correct_token_pos: format_correct_token_pos(&question),
         round_recap: round_recap_opt_for_manager,
     })
@@ -374,6 +386,24 @@ pub async fn perform_reveal_and_broadcast(
             };
             let correct_answer = format_correct_answer(&question);
             let correct_token_pos = format_correct_token_pos(&question);
+            
+            // Sequencing: reveal the authored item order and items (mirrors SentenceBuilder chunks)
+            let correct_order: Option<Vec<String>> = if matches!(
+                question.r#type.as_ref(),
+                Some(QuestionType::Sequencing)
+            ) {
+                question.correct_order.clone()
+            } else {
+                None
+            };
+            let items: Option<Vec<SequencingItem>> = if matches!(
+                question.r#type.as_ref(),
+                Some(QuestionType::Sequencing)
+            ) {
+                question.items.clone()
+            } else {
+                None
+            };
 
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
@@ -460,6 +490,8 @@ pub async fn perform_reveal_and_broadcast(
                     // STEP 1 parity fields
                     show_result_data.correct_answer = correct_answer.clone();
                     show_result_data.correct_chunks = correct_chunks.clone();
+                    show_result_data.correct_order = correct_order.clone();
+                    show_result_data.items = items.clone();
                     show_result_data.correct_token_pos = correct_token_pos.clone();
                     show_result_data.poll = Some(is_poll);
                     show_result_data.bonus = Some(bonus_flag && result.correct && !is_practice);
