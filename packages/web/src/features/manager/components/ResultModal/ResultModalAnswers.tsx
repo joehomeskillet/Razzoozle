@@ -58,7 +58,7 @@ const MediaPreview = ({ media }: { media?: QuestionMedia }) => {
 }
 
 const ResultModalAnswers = () => {
-  const { questionResult, totalPlayers, answeredCount } = useResultModal()
+  const { questionResult, totalPlayers, answeredCount, maxAnswerCount } = useResultModal()
   const { t } = useTranslation()
 
   const noAnswerCount = totalPlayers - answeredCount
@@ -212,53 +212,72 @@ const ResultModalAnswers = () => {
             </div>
           </div>
         ) : (
-          rows.map((row, i) => (
-            <div key={i} className="flex items-center gap-3">
-              {row.color && row.answerLabel ? (
-                <div
-                  className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"  /* token-ok: answer-badge-white-on-color */,
-                    row.color,
-                  )}
-                >
-                  {row.answerLabel}
-                </div>
-              ) : (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)]">
-                  <X className="size-3 text-[var(--ink-faint)]" />
-                </div>
-              )}
+          rows.map((row, i) => {
+            const proportion = maxAnswerCount > 0 ? row.count / maxAnswerCount : 0
+            const barFillPercent = Math.round(proportion * 100)
+            const barColor = row.isCorrect
+              ? "bg-[var(--state-correct-soft)]"
+              : row.color
+                ? `${row.color} opacity-60`
+                : "bg-[var(--ink-faint)] opacity-20"
 
-              <span
-                className={clsx("min-w-0 flex-1 truncate text-sm font-medium", {
-                  "text-[var(--ink-faint)]": !row.color,
-                })}
-              >
-                <Markdown>{row.label}</Markdown>
-              </span>
-
-              {!isPoll && (
-                <div className="shrink-0">
-                  {row.isCorrect ? (
-                    <Check className="size-5 text-[var(--state-correct)]" />
-                  ) : (
-                    <X
+            return (
+              <div key={i} className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3">
+                  {row.color && row.answerLabel ? (
+                    <div
                       className={clsx(
-                        "size-5",
-                        row.color ? "text-[var(--state-wrong)]" : "text-[var(--state-wrong)]",
+                        "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"  /* token-ok: answer-badge-white-on-color */,
+                        row.color,
                       )}
-                    />
+                    >
+                      {row.answerLabel}
+                    </div>
+                  ) : (
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)]">
+                      <X className="size-3 text-[var(--ink-faint)]" />
+                    </div>
                   )}
-                </div>
-              )}
 
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="text-center text-sm font-semibold text-[var(--ink-medium)]">
-                  {row.count}
-                </span>
+                  <span
+                    className={clsx("min-w-0 flex-1 truncate text-sm font-medium", {
+                      "text-[var(--ink-faint)]": !row.color,
+                    })}
+                  >
+                    <Markdown>{row.label}</Markdown>
+                  </span>
+
+                  {!isPoll && (
+                    <div className="shrink-0">
+                      {row.isCorrect ? (
+                        <Check className="size-5 text-[var(--state-correct)]" />
+                      ) : (
+                        <X
+                          className={clsx(
+                            "size-5",
+                            row.color ? "text-[var(--state-wrong)]" : "text-[var(--state-wrong)]",
+                          )}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-center text-sm font-semibold text-[var(--ink-medium)]">
+                      {row.count}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-4)]">
+                  <div
+                    className={clsx("h-full rounded-full transition-all duration-300", barColor)}
+                    style={{ width: `${barFillPercent}%` }}
+                  />
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>
