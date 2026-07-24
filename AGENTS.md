@@ -28,6 +28,7 @@ pnpm g:player <Name>                        # Scaffold 100% token-compliant Mobi
 pnpm tokens:build                           # Auto-build W3C design.tokens.json -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
 pnpm tokens:doc                             # Auto-generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 pnpm tokens:validate                        # Check codebase for unmapped arbitrary token usages
+pnpm tokens:ast                             # AST structural linter for hardcoded hex attributes & inline styles
 pnpm tokens:fix                             # Auto-rewrite arbitrary var() syntax to mapped Tailwind v4 tokens
 bash rust/gate.sh                           # deterministic Rust gate — run after EVERY Rust
                                              # worker return, before committing. Never trust a

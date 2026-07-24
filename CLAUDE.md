@@ -40,6 +40,7 @@ pnpm g:player <Name>                         # Mobile Phone Client component + t
 pnpm tokens:build                            # Build W3C tokens -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
 pnpm tokens:doc                              # Generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
+pnpm tokens:ast                              # AST structural linter for hardcoded hex attributes & inline styles
 pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```
 
