@@ -326,6 +326,9 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
+        correct_options: None,
+        correct_matches: None,
+        correct_hotspot_index: None,
         correct_order: if is_sequencing {
             question.correct_order.clone()
         } else {
