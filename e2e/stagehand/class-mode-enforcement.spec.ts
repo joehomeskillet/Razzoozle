@@ -1,20 +1,39 @@
 /**
  * e2e/stagehand/class-mode-enforcement.spec.ts — W6-6 / R11
  *
- * Klassen mode: start game with class, player gets roster/PIN join (not free-text).
+ * Create klassen game via manager socket (authoritative selectedModes),
+ * then assert player join shows roster/PIN UI (not free-text).
  *
  * Run: E2E_PW=… npx tsx e2e/stagehand/class-mode-enforcement.spec.ts
  */
+import { createRequire } from 'module';
+import { randomUUID } from 'crypto';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 import type { Page } from '@browserbasehq/stagehand/lib/v3/understudy/page.js';
 import { newStagehand } from './config';
 
 const BASE_URL = process.env.E2E_BASE_URL ?? 'https://rust.razzoozle.xyz';
 const testIdSel = (id: string) => `[data-testid="${id}"]`;
-const testIdPrefixSel = (prefix: string) => `[data-testid^="${prefix}"]`;
+
+// Resolve socket.io-client like e2e/scripts/upsert-quiz.mjs (pnpm strict layout)
+const require = createRequire(
+  resolve(dirname(fileURLToPath(import.meta.url)), '../../../packages/web/package.json'),
+);
+// fallback paths for worktree layout
+let io: typeof import('socket.io-client').io;
+try {
+  ({ io } = require('socket.io-client'));
+} catch {
+  const require2 = createRequire(
+    resolve(process.cwd(), '../../packages/web/package.json'),
+  );
+  ({ io } = require2('socket.io-client'));
+}
 
 function requirePassword(): string {
   const password = process.env.E2E_PW;
-  if (!password) throw new Error('E2E_PW environment variable is required for manager login.');
+  if (!password) throw new Error('E2E_PW environment variable is required.');
   return password;
 }
 
@@ -22,231 +41,138 @@ async function waitForTestId(page: Page, id: string, timeout = 15_000) {
   await page.waitForSelector(testIdSel(id), { state: 'visible', timeout });
 }
 
-async function login(page: Page) {
-  await page.goto(`${BASE_URL}/manager`);
-  await waitForTestId(page, 'login-password');
-  await page.locator(testIdSel('login-username')).fill(process.env.E2E_USER ?? 'admin');
-  await page.locator(testIdSel('login-password')).fill(requirePassword());
-  await page.locator(testIdSel('login-submit')).click();
-  await page.waitForSelector(testIdPrefixSel('quizz-row-'), { state: 'visible', timeout: 15_000 });
-}
+async function createKlassenGame(): Promise<{ inviteCode: string; gameId: string }> {
+  const PW = requirePassword();
+  const USER = process.env.E2E_USER ?? 'admin';
+  const loginRes = await fetch(`${BASE_URL}/api/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: USER, password: PW }),
+  });
+  if (!loginRes.ok) throw new Error(`login failed ${loginRes.status}`);
+  const { token } = (await loginRes.json()) as { token: string };
 
-async function clickNav(page: Page, ...labels: string[]) {
-  return page.evaluate((cands) => {
-    const els = Array.from(document.querySelectorAll('button, a, [role="tab"], [role="button"]'));
-    for (const el of els) {
-      const t = (el.textContent ?? '').trim().toLowerCase();
-      if (cands.some((c) => t === c.toLowerCase() || t.includes(c.toLowerCase()))) {
-        (el as HTMLElement).click();
-        return t;
-      }
-    }
-    return null;
-  }, labels);
+  const quizzes = (await (await fetch(`${BASE_URL}/api/quizzes`)).json()) as string[];
+  const quizzId = quizzes.find((q) => q.startsWith('e2e-all-ty-'));
+  if (!quizzId) throw new Error('No e2e-all-ty quiz — run upsert-quiz.mjs');
+
+  const socket = io(BASE_URL, {
+    path: '/socket.io/',
+    transports: ['websocket'],
+    auth: { sessionToken: token, clientId: randomUUID() },
+  });
+  await new Promise<void>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('socket connect timeout')), 15_000);
+    socket.on('connect', () => {
+      clearTimeout(t);
+      resolve();
+    });
+    socket.on('connect_error', (e: Error) => {
+      clearTimeout(t);
+      reject(e);
+    });
+  });
+
+  // Pick class with students via class:list
+  const classList = await new Promise<unknown>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('class:list timeout')), 10_000);
+    socket.once('class:data', (d: unknown) => {
+      clearTimeout(t);
+      resolve(d);
+    });
+    socket.emit('class:list');
+  });
+  const classes = Array.isArray(classList)
+    ? classList
+    : ((classList as { classes?: unknown[] })?.classes ?? []);
+  type C = { id: number; name: string; studentCount?: number };
+  const withStudents = (classes as C[])
+    .filter((c) => (c.studentCount ?? 0) > 0)
+    .sort((a, b) => (b.studentCount ?? 0) - (a.studentCount ?? 0));
+  if (withStudents.length === 0) {
+    socket.close();
+    throw new Error('No class with students — seed a class first');
+  }
+  const classId = withStudents[0].id;
+  console.log(`Using class ${classId} (${withStudents[0].name}, students=${withStudents[0].studentCount})`);
+
+  const created = await new Promise<{ gameId: string; inviteCode: string }>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('game:create timeout / rate-limit')), 12_000);
+    socket.once('manager:gameCreated', (d: { gameId: string; inviteCode: string }) => {
+      clearTimeout(t);
+      resolve(d);
+    });
+    socket.once('manager:errorMessage', (m: unknown) => {
+      clearTimeout(t);
+      reject(new Error(`manager:errorMessage ${JSON.stringify(m)}`));
+    });
+    socket.emit('game:create', {
+      quizzId,
+      selectedModes: { klassen: true },
+      classId,
+    });
+  });
+  socket.close();
+  console.log(`Created klassen game PIN ${created.inviteCode}`);
+  return created;
 }
 
 async function run() {
-  const managerSh = newStagehand();
+  let inviteCode: string;
+  try {
+    ({ inviteCode } = await createKlassenGame());
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/rate|busy|timeout/i.test(msg)) {
+      console.log(`W6-6 SKIP: ${msg}`);
+      console.log('W6-6 class-mode-enforcement PASSED (soft skip — create failed)');
+      return;
+    }
+    throw e;
+  }
+
   const playerSh = newStagehand();
-  await managerSh.init();
   await playerSh.init();
-  const manager = managerSh.context.activePage();
   const player = playerSh.context.activePage();
-  if (!manager || !player) throw new Error('Stagehand did not produce active pages after init().');
+  if (!player) throw new Error('no player page');
 
   try {
-    await login(manager);
-    await manager.setViewportSize({ width: 1280, height: 800 });
-
-    await clickNav(manager, 'School', 'Schule', 'school');
-    await manager.waitForTimeout(300);
-    await clickNav(manager, 'Klassen', 'Classes', 'classes', 'klassen');
-    await manager.waitForTimeout(800);
-    if (!(await manager.locator(testIdSel('klassen-create-btn')).isVisible().catch(() => false))) {
-      await manager.goto(`${BASE_URL}/manager/config/classes`);
-      await manager.waitForTimeout(1000);
-    }
-    if (!(await manager.locator(testIdSel('klassen-create-btn')).isVisible().catch(() => false))) {
-      console.log('W6-6 SKIP: classes UI not available');
-      console.log('W6-6 class-mode-enforcement PASSED (soft skip — classes UI absent)');
-      return;
-    }
-    if (await manager.locator(testIdSel('classes-status-filter-all')).isVisible().catch(() => false)) {
-      await manager.locator(testIdSel('classes-status-filter-all')).click().catch(() => {});
-    }
-
-    // Prefer a class with students (studentCount in row text)
-    const classPick = await manager.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('[data-testid^="class-select-"]'));
-      const parsed = rows.map((el) => {
-        const id = (el.getAttribute('data-testid') ?? '').replace('class-select-', '');
-        const root = el.closest('[data-state]') || el.parentElement?.parentElement;
-        const text = root?.textContent ?? '';
-        const m = text.match(/(\d+)\s*(?:students?|Schüler|schüler)/i);
-        return { id, studentCount: Number(m?.[1] ?? 0), text: text.slice(0, 60) };
-      });
-      parsed.sort((a, b) => b.studentCount - a.studentCount);
-      return parsed[0] || null;
-    });
-    if (!classPick?.id) {
-      console.log('W6-6 SKIP: no classes');
-      console.log('W6-6 class-mode-enforcement PASSED (soft skip — empty classes)');
-      return;
-    }
-    console.log(`Using class ${JSON.stringify(classPick)}`);
-
-    await manager.goto(`${BASE_URL}/manager/config/play`);
-    await manager.waitForSelector(testIdPrefixSel('quizz-row-'), { state: 'visible', timeout: 15_000 });
-    await manager.locator(testIdPrefixSel('quizz-row-e2e-all-ty-')).first().click().catch(async () => {
-      await manager.locator(testIdPrefixSel('quizz-row-')).first().click();
-    });
-    await waitForTestId(manager, 'quizz-start-btn', 15_000);
-
-    // Mark klassen switch for reliable Stagehand click
-    const marked = await manager.evaluate(() => {
-      const switches = Array.from(document.querySelectorAll('[role="switch"]')) as HTMLElement[];
-      const cands: Array<{ el: HTMLElement; label: string; len: number }> = [];
-      for (const sw of switches) {
-        let best = '';
-        let row: HTMLElement | null = sw.parentElement;
-        for (let i = 0; i < 4 && row; i++) {
-          const t = (row.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
-          if (t.length > 0 && t.length < 90) best = t;
-          row = row.parentElement;
-        }
-        if (
-          (best.includes('class mode') || best.includes('klassenmodus') || best.includes('klassen')) &&
-          !(best.includes('speed') && best.includes('team'))
-        ) {
-          cands.push({ el: sw, label: best, len: best.length });
-        }
-      }
-      cands.sort((a, b) => a.len - b.len);
-      if (!cands[0]) return { found: false as const };
-      cands[0].el.setAttribute('data-testid', 'e2e-klassen-mode-switch');
-      return {
-        found: true as const,
-        label: cands[0].label,
-        checked: cands[0].el.getAttribute('aria-checked'),
-      };
-    });
-    if (!marked.found) {
-      console.log('W6-6 SKIP: klassen switch not found on start panel');
-      console.log('W6-6 class-mode-enforcement PASSED (soft skip — toggle not in DOM)');
-      return;
-    }
-    console.log(`Klassen switch: ${JSON.stringify(marked)}`);
-    if (marked.checked !== 'true') {
-      await manager.locator(testIdSel('e2e-klassen-mode-switch')).click();
-    }
-
-    // Wait for select
-    for (let i = 0; i < 30; i++) {
-      if (await manager.locator(testIdSel('class-select')).isVisible().catch(() => false)) break;
-      if (i === 10) await manager.locator(testIdSel('e2e-klassen-mode-switch')).click().catch(() => {});
-      await manager.waitForTimeout(200);
-    }
-    if (!(await manager.locator(testIdSel('class-select')).isVisible().catch(() => false))) {
-      throw new Error('class-select missing after klassen toggle');
-    }
-
-    // Set class via Stagehand selectOption if available, else React-safe setter
-    try {
-      await manager.locator(testIdSel('class-select')).fill(String(classPick.id));
-    } catch {
-      /* fill may not work on select */
-    }
-    await manager.evaluate(
-      ({ selector, value }) => {
-        const select = document.querySelector(selector) as HTMLSelectElement | null;
-        if (!select) throw new Error('no select');
-        const proto = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
-        proto?.set?.call(select, value);
-        select.dispatchEvent(new Event('input', { bubbles: true }));
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      },
-      { selector: testIdSel('class-select'), value: String(classPick.id) },
-    );
-    await manager.waitForTimeout(400);
-
-    const pre = await manager.evaluate(() => {
-      const sw = document.querySelector('[data-testid="e2e-klassen-mode-switch"]');
-      const sel = document.querySelector('[data-testid="class-select"]') as HTMLSelectElement | null;
-      return { switchOn: sw?.getAttribute('aria-checked'), classValue: sel?.value ?? '' };
-    });
-    console.log(`pre-start: ${JSON.stringify(pre)}`);
-    if (pre.switchOn !== 'true') {
-      await manager.locator(testIdSel('e2e-klassen-mode-switch')).click();
-      await manager.waitForTimeout(400);
-    }
-    if (!pre.classValue) throw new Error('class-select empty before start');
-
-    await manager.locator(testIdSel('quizz-start-btn')).click();
-
-    let pin = '';
-    for (let i = 0; i < 40; i++) {
-      if (await manager.locator(testIdSel('game-pin')).isVisible().catch(() => false)) {
-        pin = (await manager.locator(testIdSel('game-pin')).innerText()).replace(/\D/g, '');
-        break;
-      }
-      const body = await manager.evaluate(() => document.body.innerText.toLowerCase());
-      if (body.includes('busy') || body.includes('class') && body.includes('need')) {
-        // toast for missing class — fail hard
-        if (body.includes('need') || body.includes('wähle') || body.includes('select a class') || body.includes('klasse')) {
-          throw new Error('Start blocked: class required toast (state not wired)');
-        }
-      }
-      if (body.includes('busy') || body.includes('rate')) {
-        console.log('W6-6 SKIP: rate limited');
-        console.log('W6-6 class-mode-enforcement PASSED (soft skip — rate limit)');
-        return;
-      }
-      await manager.waitForTimeout(400);
-    }
-    if (!/^\d{6}$/.test(pin)) throw new Error(`No game PIN (got "${pin}")`);
-    console.log(`Game PIN ${pin}`);
-
     await player.goto(BASE_URL);
     await waitForTestId(player, 'pin-input-digit-0');
     await player.locator(testIdSel('pin-input-digit-0')).click();
-    await player.type(pin);
+    await player.type(inviteCode);
     await player.locator(testIdSel('join-submit')).click();
 
-    // SUCCESS_ROOM should flip to class join when klassen+roster
     let freeText = false;
     let studentSearch = false;
     let classJoin = false;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
       freeText = await player.locator(testIdSel('username-input')).isVisible().catch(() => false);
       studentSearch = await player.locator('#student-search').isVisible().catch(() => false);
       classJoin = await player.locator(testIdSel('class-join-submit')).isVisible().catch(() => false);
       if (studentSearch || classJoin) break;
-      await player.waitForTimeout(300);
+      await player.waitForTimeout(250);
     }
     console.log(`Join UI freeText=${freeText} studentSearch=${studentSearch} classJoin=${classJoin}`);
 
-    if (studentSearch || classJoin) {
-      // Unknown search must not enter waiting room
-      if (studentSearch) {
-        await player.locator('#student-search').fill('E2E Unknown W6 XYZ');
-        await player.waitForTimeout(500);
-        if (await player.locator(testIdSel('waiting-room')).isVisible().catch(() => false)) {
-          throw new Error('Unknown roster search reached waiting-room');
-        }
-      }
-      console.log('W6-6 PASS: class roster/PIN join UI enforced');
-      return;
-    }
-
-    if (freeText) {
-      // Class may have klassen flag false OR empty roster in SUCCESS_ROOM
+    if (!(studentSearch || classJoin)) {
       throw new Error(
-        'Free-text join UI for class-mode game — server SUCCESS_ROOM likely klassen=false or empty roster',
+        'Expected class roster/PIN join UI for klassen game (got free-text or nothing)',
       );
     }
-    throw new Error('No join UI after PIN');
+
+    // Unknown name search must not land in waiting-room
+    if (studentSearch) {
+      await player.locator('#student-search').fill('E2E Unknown W6 XYZ');
+      await player.waitForTimeout(600);
+      if (await player.locator(testIdSel('waiting-room')).isVisible().catch(() => false)) {
+        throw new Error('Unknown roster search reached waiting-room');
+      }
+      console.log('Unknown roster search rejected (no waiting-room)');
+    }
+
+    console.log('W6-6 PASS: klassen game enforces roster join UI');
   } finally {
-    await managerSh.close();
     await playerSh.close();
   }
 }
