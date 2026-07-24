@@ -159,5 +159,16 @@
   },
   "editor": {
     "testPlay": "Test play"
+  },
+  "sequencing": {
+    "itemsLabel": "Items to order",
+    "newItemPlaceholder": "Type new item...",
+    "itemPlaceholder": "Item text",
+    "addItem": "Add item",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeItem": "Remove item",
+    "preview": "Players will order these items",
+    "minItemsRequired": "At least 2 items required"
   }
 }
