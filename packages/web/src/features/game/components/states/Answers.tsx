@@ -8,6 +8,7 @@ import { buildWortartenAnswer } from "@razzoozle/web/features/game/components/an
 import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGrid"
 import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
 import MultiSelectGrid from "@razzoozle/web/features/game/components/answers/MultiSelectGrid"
+import { SequencingBoard, type SequencingBoardValue } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
 import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answers/SentenceBuilderBoard"
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
@@ -53,6 +54,8 @@ const Answers = ({
     step,
     unit,
     shuffledChunks,
+    // Sequencing questions: shuffled items (no solution info).
+    shuffledItems,
     // Wortarten: the source sentence, its whitespace tokens, and the fixed
     // POS label set the player picks from (server contract — see
     // rust/protocol/src/quizz.rs + packages/common/src/types/game/status.ts).
@@ -89,6 +92,7 @@ const Answers = ({
   const isMultiSelect = type === "multiple-select"
   const isTypeAnswer = type === "type-answer"
   const isSentenceBuilder = type === "sentence-builder"
+  const isSequencing = type === "sequencing"
   const isMathematik = type === "mathematik"
   const isWortarten = type === "wortarten"
   const [cooldown, setCooldown] = useState(() =>
@@ -191,6 +195,22 @@ const Answers = ({
     setPlacedChunks([])
     setSubmittedChunks(undefined)
   }, [isSentenceBuilder, shuffledChunks, setSubmittedChunks])
+
+  useEffect(() => {
+    if (!isSequencing || !shuffledItems) {
+      return
+    }
+
+    const chips = shuffledItems.map((item) => ({
+      text: item.label,
+      originalIndex: 0,
+      id: item.id,
+    }))
+
+    setBankChips(chips)
+    setPlacedChunks([])
+    setSubmittedChunks(undefined)
+  }, [isSequencing, shuffledItems, setSubmittedChunks])
 
   // Wortarten: reset the per-token POS picks (and close any open picker) each
   // time a fresh Wortarten question mounts.
@@ -426,6 +446,33 @@ const Answers = ({
     armAckPending(clientMessageId)
   }
 
+  const submitSequencing = () => {
+    if (!player || !gameId || submitted || placedChunks.length === 0) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    const answerText = JSON.stringify(placedChunks.map((item) => item.id))
+
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText,
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+
+    setSubmittedChunks(placedChunks.map((item) => item.text))
+
+    armAckPending(clientMessageId)
+  }
+
   useEffect(() => {
     const disabledMusicMedia = [
       MEDIA_TYPES.AUDIO,
@@ -638,6 +685,21 @@ const Answers = ({
             sfxPop()
           }}
           onSubmit={submitSentenceBuilder}
+          disabled={submitted}
+          testIdPrefix=""
+        />
+      ) : isSequencing ? (
+        <SequencingBoard
+          value={{
+            bank: bankChips.map(chip => ({ label: chip.text, id: chip.id })),
+            placed: placedChunks.map(chip => ({ label: chip.text, id: chip.id })),
+          }}
+          onChange={(next: SequencingBoardValue) => {
+            setBankChips(next.bank.map(item => ({ text: item.label, originalIndex: 0, id: item.id })))
+            setPlacedChunks(next.placed.map(item => ({ text: item.label, originalIndex: 0, id: item.id })))
+            sfxPop()
+          }}
+          onSubmit={submitSequencing}
           disabled={submitted}
           testIdPrefix=""
         />
