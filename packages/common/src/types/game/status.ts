@@ -111,6 +111,12 @@ export interface CommonStatusDataMap {
     correctAnswer?: string
     // Sentence-builder: authored correct order, revealed after the round.
     correctChunks?: string[]
+    // Fill-blank: correct option label per slot (additive; old clients ignore).
+    correctOptions?: string[]
+    // Matching: correct option label per left item (additive).
+    correctMatches?: string[]
+    // Drop-pin: primary correct hotspot index (additive).
+    correctHotspotIndex?: number
     // Sequencing: correct order and items, revealed after the round.
     correctOrder?: string[]
     items?: SequencingItem[]
@@ -182,6 +188,12 @@ interface ManagerExtraStatus {
     // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
     // excluded. OPTIONAL + additive; old clients ignore it.
     correctTokenPos?: { token: string; pos: string }[]
+    // Fill-blank: correct option label per slot (additive; old clients ignore).
+    correctOptions?: string[]
+    // Matching: correct option label per left item (additive).
+    correctMatches?: string[]
+    // Drop-pin: primary correct hotspot index (additive).
+    correctHotspotIndex?: number
     // Per-round recap awards (same as players see on SHOW_RESULT) so the
     // manager can display the round highlights during answer statistics.
     // OPTIONAL + additive.
