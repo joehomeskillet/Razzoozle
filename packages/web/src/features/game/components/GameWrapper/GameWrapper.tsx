@@ -8,6 +8,7 @@ import DisplayStatusCard from "@razzoozle/web/features/manager/components/Displa
 import SimControl from "@razzoozle/web/features/manager/components/SimControl"
 import AvToggles from "./AvToggles"
 import RejoinQrDialog from "./RejoinQrDialog"
+import GameControlPanel from "./GameControlPanel"
 import LowLatencyHealth from "@razzoozle/web/features/game/components/LowLatencyHealth"
 import { getLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
 import { preloadFirstCorrectSound } from "@razzoozle/web/features/game/utils/firstCorrectSound"
@@ -236,6 +237,8 @@ const GameWrapper = ({
                     {statusName !== STATUS.FINISHED && lowLatencyEnabled && <LowLatencyHealth />}
                     {statusName !== STATUS.FINISHED && <DisplayControl />}
                     {statusName !== STATUS.FINISHED && <DisplayStatusCard />}
+                    {statusName !== STATUS.FINISHED &&
+                      statusName !== STATUS.SHOW_ROUND_RECAP && <GameControlPanel />}
                     {statusName !== STATUS.FINISHED && import.meta.env.DEV && <SimControl />}
                     {statusName !== STATUS.FINISHED && inviteCode && statusName !== STATUS.SHOW_ROOM && (
                       <RejoinQrDialog
