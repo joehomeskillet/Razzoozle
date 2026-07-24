@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
-use razzoozle_protocol::quizz::{QuestionType, Quizz};
+use razzoozle_protocol::quizz::{QuestionType, Quizz, SequencingItem};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::sync::RwLock;
@@ -70,6 +70,10 @@ pub struct SoloQuestion {
     pub disabledTokens: Option<Vec<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shuffledChunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub items: Option<Vec<SequencingItem>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shuffledItems: Option<Vec<String>>,
     pub time: i32,
     pub cooldown: i32,
 }
@@ -188,6 +192,19 @@ pub async fn handle_get_quiz_solo(
                 None
             };
 
+            // Shuffle items for sequencing questions
+            let (items, shuffled_items) = if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
+                if let Some(items) = &q.items {
+                    let item_ids: Vec<String> = items.iter().map(|it| it.id.clone()).collect();
+                    let shuffled_ids = shuffle_chunks_with_guard(item_ids);
+                    (q.items.clone(), Some(shuffled_ids))
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            };
+
             SoloQuestion {
                 question: q.question.clone(),
                 r#type: q.r#type.as_ref().map(|t| question_type_wire(t).to_string()),
@@ -208,6 +225,8 @@ pub async fn handle_get_quiz_solo(
                 posSet: q.pos_set.clone(),
                 disabledTokens: q.disabled_tokens.clone(),
                 shuffledChunks: shuffled_chunks,
+                items,
+                shuffledItems: shuffled_items,
                 time: q.time,
                 cooldown: q.cooldown,
             }
@@ -515,6 +534,8 @@ mod tests {
             posSet: Some(vec!["ART".to_string(), "V".to_string(), "ART".to_string(), "N".to_string()]),
             disabledTokens: None,
             shuffledChunks: None,
+            items: None,
+            shuffledItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -537,6 +558,43 @@ mod tests {
             // Only assert if we have enough items to reliably shuffle
             assert_ne!(chunks, shuffled);
         }
+    }
+
+    #[test]
+    fn test_solo_question_sequencing_shuffled() {
+        use razzoozle_protocol::quizz::SequencingItem;
+        
+        let items = vec![
+            SequencingItem { id: "item-1".to_string(), label: "First".to_string() },
+            SequencingItem { id: "item-2".to_string(), label: "Second".to_string() },
+            SequencingItem { id: "item-3".to_string(), label: "Third".to_string() },
+            SequencingItem { id: "item-4".to_string(), label: "Fourth".to_string() },
+        ];
+        let question = SoloQuestion {
+            question: "Arrange in order".to_string(),
+            r#type: Some("sequencing".to_string()),
+            media: None,
+            answers: None,
+            min: None,
+            max: None,
+            step: None,
+            unit: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            posSet: None,
+            disabledTokens: None,
+            shuffledChunks: None,
+            items: Some(items.clone()),
+            shuffledItems: Some(vec!["item-1".to_string(), "item-2".to_string(), "item-3".to_string(), "item-4".to_string()]),
+            time: 30,
+            cooldown: 0,
+        };
+
+        let json = serde_json::to_string(&question).unwrap();
+        assert!(json.contains("items"));
+        assert!(json.contains("shuffledItems"));
+        assert!(json.contains("item-1"));
     }
 
     #[test]
@@ -609,6 +667,8 @@ mod tests {
             posSet: None,
             disabledTokens: None,
             shuffledChunks: None,
+            items: None,
+            shuffledItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -647,6 +707,8 @@ mod tests {
             tokens: None,
             pos_set: None,
             disabled_tokens: None,
+            items: None,
+            correct_order: None,
         }
     }
 
