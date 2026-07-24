@@ -71,6 +71,12 @@ export interface CommonStatusDataMap {
     posSet?: string[]
     // Wortarten: indices of tokens that are disabled (not scored/clickable).
     disabledTokens?: number[]
+    // Fill-blank: text segments around slots (len === slotOptions.length + 1).
+    segments?: string[]
+    // Fill-blank: option lists only (correctIndex stripped — anti-cheat).
+    slotOptions?: string[][]
+    // Matching: label + options only (correctIndex stripped).
+    matchItems?: Array<{ label: string; options: string[] }>
     // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
     // absent in normal mode and ignored by old clients. Client uses these only
     // to drive the countdown/UI (never for scoring — scoring is server-side).

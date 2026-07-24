@@ -197,6 +197,27 @@ pub struct SelectAnswerData {
     #[serde(skip_serializing_if = "Option::is_none", rename = "disabledTokens")]
     #[ts(optional)]
     pub disabled_tokens: Option<Vec<i32>>,
+    /// Fill-blank: text segments around slots (no solutions).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub segments: Option<Vec<String>>,
+    /// Fill-blank: per-slot option lists only (correctIndex stripped — anti-cheat).
+    #[serde(skip_serializing_if = "Option::is_none", rename = "slotOptions")]
+    #[ts(optional)]
+    pub slot_options: Option<Vec<Vec<String>>>,
+    /// Matching: left labels + option lists only (correctIndex stripped).
+    #[serde(skip_serializing_if = "Option::is_none", rename = "matchItems")]
+    #[ts(optional)]
+    pub match_items: Option<Vec<MatchItemPlay>>,
+}
+
+/// Matching play-time row (no correctIndex — anti-cheat).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchItemPlay {
+    pub label: String,
+    pub options: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

@@ -11,6 +11,8 @@ import {
   Languages,
   ListChecks,
   ListOrdered,
+  TextCursorInput,
+  Link2,
   SlidersHorizontal,
   ToggleLeft,
   BookOpen,
@@ -85,6 +87,18 @@ const TYPES: Array<{
     labelKey: "quizz:type.wortarten",
     descKey: "quizz:type.wortartenDesc",
     icon: Languages,
+  },
+  {
+    key: "fill-blank",
+    labelKey: "quizz:type.fillBlank",
+    descKey: "quizz:type.fillBlankDesc",
+    icon: TextCursorInput,
+  },
+  {
+    key: "matching",
+    labelKey: "quizz:type.matching",
+    descKey: "quizz:type.matchingDesc",
+    icon: Link2,
   },
   {
     key: "vokabelliste",
@@ -251,6 +265,36 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         correct: undefined,
         step: undefined,
         unit: undefined,
+      })
+    } else if (next === "fill-blank") {
+      updateQuestion(currentIndex, {
+        type: "fill-blank",
+        segments: ["", ""],
+        slots: [{ options: ["", ""], correctIndex: 0 }],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        leftItems: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "matching") {
+      updateQuestion(currentIndex, {
+        type: "matching",
+        leftItems: [{ label: "", options: ["", ""], correctIndex: 0 }],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        ...SLIDER_CLEAR,
       })
     } else if (next === "vokabelliste") {
       updateQuestion(currentIndex, {

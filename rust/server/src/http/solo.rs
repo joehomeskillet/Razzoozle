@@ -74,6 +74,15 @@ pub struct SoloQuestion {
     pub items: Option<Vec<SequencingItem>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shuffledItems: Option<Vec<String>>,
+    /// Fill-blank text segments (play-time).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segments: Option<Vec<String>>,
+    /// Fill-blank slots with options only (correctIndex forced 0 — anti-cheat).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slots: Option<Vec<serde_json::Value>>,
+    /// Matching rows with options only (correctIndex forced 0).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub leftItems: Option<Vec<serde_json::Value>>,
     pub time: i32,
     pub cooldown: i32,
 }
@@ -227,6 +236,31 @@ pub async fn handle_get_quiz_solo(
                 shuffledChunks: shuffled_chunks,
                 items,
                 shuffledItems: shuffled_items,
+                segments: q.segments.clone(),
+                // Strip real correctIndex for client (scoring stays server-side).
+                slots: q.slots.as_ref().map(|slots| {
+                    slots
+                        .iter()
+                        .map(|s| {
+                            serde_json::json!({
+                                "options": s.options,
+                                "correctIndex": 0
+                            })
+                        })
+                        .collect()
+                }),
+                leftItems: q.left_items.as_ref().map(|items| {
+                    items
+                        .iter()
+                        .map(|i| {
+                            serde_json::json!({
+                                "label": i.label,
+                                "options": i.options,
+                                "correctIndex": 0
+                            })
+                        })
+                        .collect()
+                }),
                 time: q.time,
                 cooldown: q.cooldown,
             }
@@ -536,6 +570,9 @@ mod tests {
             shuffledChunks: None,
             items: None,
             shuffledItems: None,
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -587,6 +624,9 @@ mod tests {
             shuffledChunks: None,
             items: Some(items.clone()),
             shuffledItems: Some(vec!["item-1".to_string(), "item-2".to_string(), "item-3".to_string(), "item-4".to_string()]),
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -669,6 +709,9 @@ mod tests {
             shuffledChunks: None,
             items: None,
             shuffledItems: None,
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
