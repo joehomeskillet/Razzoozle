@@ -81,6 +81,15 @@ if [[ -x "$(dirname "$0")/../scripts/check-locales.sh" ]] || [[ -f "$(dirname "$
   else say "NO-GO: invalid locale JSON (see above)"; fail=1; fi
 fi
 
+# --- 6. Design Token & Agent Rule Governance (BLOCKING) ----------------------
+if [[ -f "$(dirname "$0")/../scripts/sync-agent-rules.mjs" ]]; then
+  if node "$(dirname "$0")/../scripts/sync-agent-rules.mjs" >/dev/null 2>&1 && node "$(dirname "$0")/../scripts/lint-design-tokens.mjs" >/dev/null 2>&1; then
+    say "ok: design tokens & agent governance rules verified"
+  else
+    say "NO-GO: design tokens or agent governance rules invalid"; fail=1
+  fi
+fi
+
 # --- verdict ------------------------------------------------------------------
 if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests compile, all batch markers intact)"; exit 0
 else say "GATE FAILED ❌ — DISCARD worker output (drop the worktree, or git checkout HEAD -- rust/server/src)"; exit 1; fi

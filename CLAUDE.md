@@ -52,3 +52,31 @@ pnpm tokens:fix                              # Auto-rewrite arbitrary var() synt
 See `AGENTS.md` for package-scoped commands (`pnpm --filter @razzoozle/socket ...`),
 the Rust gate (`bash rust/gate.sh`), and the Docker build.
 
+
+
+<!-- UNIFIED DESIGN SYSTEM GOVERNANCE RULES (AUTO-SYNCED) -->
+# MANDATORY UI & DESIGN SYSTEM GOVERNANCE RULES FOR ALL AI AGENTS
+
+1. **NEVER Hand-Write UI Components From Scratch**:
+   - ALWAYS use CLI domain generators:
+     - `pnpm g:console <Name>`   -> Scaffold Admin Console component + Vitest test
+     - `pnpm g:menu <Name>`      -> Scaffold Admin Menu/Nav component + Vitest test
+     - `pnpm g:question <Name>`  -> Scaffold Quiz/Answer Tile component + Vitest test
+     - `pnpm g:display <Name>`   -> Scaffold Kiosk Display stage component + Vitest test
+     - `pnpm g:player <Name>`    -> Scaffold Mobile Phone Client component + Vitest test
+
+2. **NO Hardcoded Hex Colors or Arbitrary Unmapped Class Syntax**:
+   - Hardcoded hex styles (e.g. `#7c3aed`, `#22c55e`) or unmapped arbitrary classes (e.g. `bg-[#7c3aed]`) are STRICTLY FORBIDDEN.
+   - ALWAYS use mapped Tailwind v4 semantic utility classes (`bg-brand-primary`, `bg-answer-1`, `bg-surface-2`, `text-ink`, `bg-status-online-bg`).
+   - For JS/Canvas/Confetti dynamic color references, ALWAYS use `getThemeTokenCssVar()` from `@razzoozle/common/theme-tokens`.
+
+3. **Mandatory CLI Verification Chain**:
+   - Before completing any UI task, ALWAYS run:
+     - `pnpm tokens:validate`   (Check for unmapped arbitrary token usages)
+     - `pnpm tokens:ast`        (AST structural linter for hardcoded hex & inline styles)
+     - `pnpm tokens:wasm`       (High-speed SWC/AST token codemod transformer)
+     - `pnpm tokens:morph`      (Zero-runtime Tailwind v4 compiler)
+     - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)
+     - `pnpm tokens:ai-audit`   (Dual-Pass AI Design System Governance Audit)
+     - `pnpm tokens:daemon`     (Autonomous monorepo refactoring daemon)
+<!-- END UNIFIED DESIGN GOVERNANCE RULES -->
