@@ -330,7 +330,10 @@
     "empty": "Keine Schülerin oder Schüler gefunden. Frag deine Lehrkraft."
   },
   "reveal": {
-    "correctAnswer": "Richtige Antwort"
+    "correctAnswer": "Richtige Antwort",
+    "yourAnswer": "Deine Antwort",
+    "yourValue": "Dein Wert",
+    "correctValue": "Richtiger Wert"
   },
   "podium": {
     "firstPlace": "1. Platz",
@@ -352,21 +355,24 @@
     "slotWrong": "Falsch",
     "correctAnswer": "Richtige Antwort: {{option}}",
     "selectOption": "Option wählen",
-    "fillAllSlots": "Bitte alle Lücken ausfüllen"
+    "fillAllSlots": "Bitte alle Lücken ausfüllen",
+    "correctAnswers": "Richtige Lösungen"
   },
   "matching": {
     "slotCorrect": "Korrekt",
     "slotWrong": "Falsch",
     "correctAnswer": "Richtige Antwort: {{option}}",
     "selectOption": "Option wählen",
-    "fillAllSlots": "Bitte alle Lücken ausfüllen"
+    "fillAllSlots": "Bitte alle Lücken ausfüllen",
+    "correctMatches": "Richtige Zuordnungen"
   },
   "dropPin": {
     "prompt": "Klicke auf die richtige Stelle im Bild",
     "clickImage": "Setze den Pin",
     "reveal": "Richtige Zone",
     "correct": "Treffer!",
-    "incorrect": "Daneben"
+    "incorrect": "Daneben",
+    "correctLocation": "Richtige Stelle"
   },
   "study": {
     "badge": "Lernen",
