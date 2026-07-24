@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { execSync } from 'child_process'
 
 // Parse CLI arguments
 const args = process.argv.slice(2)
@@ -345,3 +346,14 @@ fs.writeFileSync(testFile, config.test, 'utf-8')
 
 console.log(`\x1b[32m✔ Scaffolded [${domain.toUpperCase()}] component:\x1b[0m ${compFile}`)
 console.log(`\x1b[32m✔ Scaffolded Vitest test file:\x1b[0m ${testFile}`)
+
+// Self-Healing AST Loop: Automatically run design token & AST linters in --fix mode
+try {
+  console.log(`\x1b[36m⚡ Running Self-Healing AST Loop on scaffolded files...\x1b[0m`)
+  execSync('node scripts/lint-design-tokens.mjs --fix', { stdio: 'inherit' })
+  execSync('node scripts/ast-grep-tokens.mjs --fix', { stdio: 'inherit' })
+  console.log(`\x1b[32m✔ Self-Healing AST Loop complete: Component is 100% token-compliant!\x1b[0m`)
+} catch (e) {
+  console.warn(`\x1b[33m⚠ Self-Healing AST loop warning:\x1b[0m ${e.message}`)
+}
+
