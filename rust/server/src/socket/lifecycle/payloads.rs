@@ -57,6 +57,7 @@ pub(crate) fn build_select_answer_data(
         step: question.step.map(|v| v as i32),
         unit: question.unit.clone(),
         shuffled_chunks,
+        shuffled_items: None,
         server_seq,
         server_now_ms: Some(server_now_ms),
         question_start_at_server_ms: Some(question_start_at_server_ms),

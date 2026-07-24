@@ -292,6 +292,8 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
+        correct_order: None,
+        items: None,
         correct_token_pos: format_correct_token_pos(&question),
         round_recap: round_recap_opt_for_manager,
     })
