@@ -184,19 +184,33 @@ async function run() {
     if (!hasClassSelect) {
       throw new Error('class-select missing after enabling klassenMode');
     }
-    await manager.evaluate(
+    const selected = await manager.evaluate(
       ({ selector, value }) => {
         const select = document.querySelector(selector) as HTMLSelectElement | null;
         if (!select) throw new Error('class-select missing in evaluate');
-        // Prefer matching option exists
-        const opts = Array.from(select.options).map((o) => o.value);
-        const v = opts.includes(value) ? value : opts.find((o) => o && o !== '') || value;
-        select.value = v;
+        const opts = Array.from(select.options).map((o) => ({
+          value: o.value,
+          text: o.textContent ?? '',
+        }));
+        const v =
+          opts.find((o) => o.value === value)?.value ||
+          opts.find((o) => o.value && o.value !== '')?.value ||
+          '';
+        if (!v) return { ok: false as const, opts };
+        // React-controlled <select>: native setter + input/change
+        const proto = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+        proto?.set?.call(select, v);
         select.dispatchEvent(new Event('input', { bubbles: true }));
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        return { ok: true as const, value: select.value, opts };
       },
-      { selector: testIdSel('class-select'), value: classId },
+      { selector: testIdSel('class-select'), value: String(classId) },
     );
+    console.log(`class-select set: ${JSON.stringify(selected)}`);
+    if (!selected.ok || !selected.value) {
+      throw new Error(`Failed to set class-select; options=${JSON.stringify(selected)}`);
+    }
+    await manager.waitForTimeout(300);
 
     await manager.locator(testIdSel('quizz-start-btn')).click();
     // Wait for pin with rate-limit awareness
@@ -225,19 +239,30 @@ async function run() {
     await player.locator(testIdSel('join-submit')).click();
     await player.waitForTimeout(2_500);
 
-    const freeText = await player.locator(testIdSel('username-input')).isVisible().catch(() => false);
-    const studentSearch = await player.locator('#student-search').isVisible().catch(() => false);
-    const classJoin = await player.locator(testIdSel('class-join-submit')).isVisible().catch(() => false);
-
-    if (freeText && !studentSearch && !classJoin) {
-      throw new Error('Free-text username path remained available in class mode.');
+    // Wait up to 8s for class-join UI (socket auth / roster payload)
+    let freeText = false;
+    let studentSearch = false;
+    let classJoin = false;
+    for (let i = 0; i < 20; i++) {
+      freeText = await player.locator(testIdSel('username-input')).isVisible().catch(() => false);
+      studentSearch = await player.locator('#student-search').isVisible().catch(() => false);
+      classJoin = await player.locator(testIdSel('class-join-submit')).isVisible().catch(() => false);
+      if (studentSearch || classJoin) break;
+      await player.waitForTimeout(400);
     }
-    if (studentSearch || classJoin || !freeText) {
-      console.log(
-        `W6-6 PASS: class join UI enforced (freeText=${freeText}, studentSearch=${studentSearch}, classJoin=${classJoin})`,
+
+    console.log(
+      `Join UI: freeText=${freeText} studentSearch=${studentSearch} classJoin=${classJoin}`,
+    );
+
+    if (studentSearch || classJoin) {
+      console.log('W6-6 PASS: class roster/PIN join UI shown');
+    } else if (freeText) {
+      throw new Error(
+        'Free-text username path remained available; class-mode join UI never appeared (game may not have klassen flag).',
       );
     } else {
-      throw new Error('Could not determine class-mode join enforcement UI');
+      throw new Error('Neither free-text nor class-join UI visible after PIN');
     }
 
     // Unknown student search should not empty-pass into waiting room
