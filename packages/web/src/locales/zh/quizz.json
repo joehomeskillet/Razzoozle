@@ -159,5 +159,16 @@
   },
   "editor": {
     "testPlay": "试玩"
+  },
+  "sequencing": {
+    "itemsLabel": "要排序的项目",
+    "newItemPlaceholder": "输入新项目...",
+    "itemPlaceholder": "项目文本",
+    "addItem": "添加项目",
+    "moveUp": "向上移动",
+    "moveDown": "向下移动",
+    "removeItem": "删除项目",
+    "preview": "玩家将排序这些项目",
+    "minItemsRequired": "需要至少 2 个项目"
   }
 }

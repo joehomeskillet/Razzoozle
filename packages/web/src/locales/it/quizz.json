@@ -159,5 +159,16 @@
   },
   "editor": {
     "testPlay": "Prova"
+  },
+  "sequencing": {
+    "itemsLabel": "Elementi da ordinare",
+    "newItemPlaceholder": "Digita un nuovo elemento...",
+    "itemPlaceholder": "Testo dell'elemento",
+    "addItem": "Aggiungi elemento",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù",
+    "removeItem": "Rimuovi elemento",
+    "preview": "I giocatori ordineranno questi elementi",
+    "minItemsRequired": "Sono richiesti almeno 2 elementi"
   }
 }

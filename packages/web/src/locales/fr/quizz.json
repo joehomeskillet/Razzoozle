@@ -159,5 +159,16 @@
   },
   "editor": {
     "testPlay": "Test"
+  },
+  "sequencing": {
+    "itemsLabel": "Éléments à trier",
+    "newItemPlaceholder": "Saisissez un nouvel élément...",
+    "itemPlaceholder": "Texte de l'élément",
+    "addItem": "Ajouter un élément",
+    "moveUp": "Déplacer vers le haut",
+    "moveDown": "Déplacer vers le bas",
+    "removeItem": "Supprimer l'élément",
+    "preview": "Les joueurs vont trier ces éléments",
+    "minItemsRequired": "Au moins 2 éléments sont requis"
   }
 }
