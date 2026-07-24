@@ -48,8 +48,10 @@ const BASE_URL = 'https://rust.razzoozle.xyz';
 // then "-" plus a random 8-hex-char suffix — the same deterministic prefix
 // solo-types.spec.ts resolves against. The subject needle covers reseeds
 // whose id drifted from the prefix.
-const QUIZ_ID_PREFIX = 'e2e-all-ty-';
-const SUBJECT_NEEDLE = 'all types';
+// Prefer the dedicated 3-type seed (e2e-slot-ty-*) — short path, no wortarten
+// pass-through. Fall back to all-types seed (e2e-all-ty-*) when present.
+const QUIZ_ID_PREFIXES = ['e2e-slot-ty-', 'e2e-all-ty-'] as const;
+const SUBJECT_NEEDLES = ['slot types', 'all types'] as const;
 
 // Cap on per-quiz solo-payload probes during resolution: every probe (and
 // every in-play check-answer call) counts against the 120/min per-IP solo
@@ -172,7 +174,14 @@ async function resolveQuiz(page: Page): Promise<ResolvedQuiz | null> {
   // Prefix matches first (V8's sort is stable, so list order is preserved
   // within each group), then all other ids for the subject-needle probe.
   const ordered = [...new Set(ids)].sort(
-    (a, b) => Number(b.startsWith(QUIZ_ID_PREFIX)) - Number(a.startsWith(QUIZ_ID_PREFIX)),
+    (a, b) => {
+      const score = (id: string) =>
+        QUIZ_ID_PREFIXES.reduce(
+          (s, p, i) => (id.startsWith(p) ? Math.max(s, QUIZ_ID_PREFIXES.length - i) : s),
+          0,
+        );
+      return score(b) - score(a);
+    },
   );
 
   const matchedWithoutTargets: string[] = [];
@@ -196,7 +205,9 @@ async function resolveQuiz(page: Page): Promise<ResolvedQuiz | null> {
       continue;
     }
     const subject = payload.subject ?? '';
-    const isSeedIdentity = id.startsWith(QUIZ_ID_PREFIX) || subject.toLowerCase().includes(SUBJECT_NEEDLE);
+    const isSeedIdentity =
+      QUIZ_ID_PREFIXES.some((p) => id.startsWith(p)) ||
+      SUBJECT_NEEDLES.some((n) => subject.toLowerCase().includes(n));
     if (!isSeedIdentity) {
       continue;
     }
@@ -242,7 +253,30 @@ const RESULT_NEXT_SEL = 'div.z-50.border-t button:not([aria-pressed]):not([disab
 
 async function waitForResultPhaseAndAdvance(page: Page, timeoutMs = 20_000) {
   await page.waitForSelector(RESULT_NEXT_SEL, { state: 'visible', timeout: timeoutMs });
+  // Capture current question text so we can wait for it to change after Next.
+  let prevText = '';
+  try {
+    prevText = await page.locator(testIdSel('question-text')).first().innerText();
+  } catch {
+    // result phase may not show question-text — fine
+  }
   await page.locator(RESULT_NEXT_SEL).click();
+  // SoloAutoAdvance may land on the next question's cooldown first; wait until
+  // question-text updates (or disappears on finish). Prevents stale Qn text
+  // being asserted against Qn+1.
+  if (prevText) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      try {
+        const next = await page.locator(testIdSel('question-text')).first().innerText();
+        if (next && next !== prevText) return;
+      } catch {
+        // finished / no question text
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 200));
+    }
+  }
 }
 
 
@@ -462,10 +496,26 @@ async function playQuiz(page: Page, quiz: ResolvedQuiz): Promise<Set<TargetType>
     const budgetMs = ((q.cooldown ?? 5) + 20) * 1000;
 
     try {
-      await page.waitForSelector(testIdSel('question-text'), { state: 'visible', timeout: 15_000 });
-      const shown = await page.locator(testIdSel('question-text')).first().innerText();
+      // Wait until THIS question's text is visible (not the previous one).
+      const deadline = Date.now() + 20_000;
+      let shown = '';
+      while (Date.now() < deadline) {
+        try {
+          await page.waitForSelector(testIdSel('question-text'), {
+            state: 'visible',
+            timeout: 2_000,
+          });
+          shown = await page.locator(testIdSel('question-text')).first().innerText();
+          if (!q.question || shown.includes(q.question)) break;
+        } catch {
+          // keep polling
+        }
+        await new Promise((r) => setTimeout(r, 250));
+      }
       if (q.question && !shown.includes(q.question)) {
-        throw new Error(`stale/mismatched question text — expected "${q.question}", got "${shown}"`);
+        throw new Error(
+          `stale/mismatched question text — expected "${q.question}", got "${shown}"`,
+        );
       }
 
       if (isTarget) {
@@ -519,7 +569,7 @@ async function main() {
     if (!quiz) {
       console.warn(
         `SKIP: no quiz with fill-blank/matching/drop-pin questions found ` +
-          `(id prefix "${QUIZ_ID_PREFIX}" or subject containing "All Types"). ` +
+          `(id prefixes ${QUIZ_ID_PREFIXES.join('|')} or subject needles ${SUBJECT_NEEDLES.join('|')}). ` +
           'All skipped cleanly — exit 0.',
       );
       return;
