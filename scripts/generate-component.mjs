@@ -17,9 +17,12 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
+// Normalize menu/nav aliases
+if (domain === 'nav') domain = 'menu'
+
 if (!name) {
-  console.error('Usage: pnpm g:component <Name> [--domain console|question|display|player]')
-  console.error('Shortcuts: pnpm g:console <Name>, pnpm g:question <Name>, pnpm g:display <Name>, pnpm g:player <Name>')
+  console.error('Usage: pnpm g:component <Name> [--domain console|question|display|player|menu]')
+  console.error('Shortcuts: pnpm g:console <Name>, pnpm g:question <Name>, pnpm g:display <Name>, pnpm g:player <Name>, pnpm g:menu <Name>')
   process.exit(1)
 }
 
@@ -83,6 +86,99 @@ describe("${PascalName} (Console)", () => {
     render(<${PascalName} title="Admin Panel" status="online" />)
     expect(screen.getByText("Admin Panel")).toBeDefined()
     expect(screen.getByText("online")).toBeDefined()
+  })
+})
+`
+  },
+
+  menu: {
+    dir: 'packages/web/src/components/manager',
+    template: `import { useState, useRef } from "react"
+
+export interface MenuItem {
+  id: string
+  label: string
+  icon?: React.ReactNode
+  onClick?: () => void
+  active?: boolean
+  danger?: boolean
+}
+
+export interface ${PascalName}Props {
+  items: MenuItem[]
+  triggerLabel?: string
+}
+
+/**
+ * ${PascalName} — 100% Token-compliant Admin Navigation/Overflow Menu component.
+ * Scaffolded via \`pnpm g:menu ${PascalName}\`.
+ */
+export function ${PascalName}({ items, triggerLabel = "Menu" }: ${PascalName}Props) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  return (
+    <div className="relative inline-block text-left" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm font-semibold text-ink hover:bg-surface-3 active:bg-surface-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+      >
+        <span>{triggerLabel}</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg border border-line bg-surface-2 p-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                item.onClick?.()
+                setIsOpen(false)
+              }}
+              className={\`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors \${
+                item.danger
+                  ? "text-state-wrong hover:bg-state-wrong-soft"
+                  : item.active
+                    ? "bg-accent-tint text-accent-contrast font-semibold"
+                    : "text-ink hover:bg-surface-3"
+              }\`}
+            >
+              {item.icon && <span className="size-4 shrink-0">{item.icon}</span>}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ${PascalName}
+`,
+    test: `import { render, screen, fireEvent } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import { ${PascalName} } from "../${PascalName}"
+
+describe("${PascalName} (Admin Menu)", () => {
+  it("renders trigger and opens menu items when clicked", () => {
+    const handleClick = vi.fn()
+    const items = [
+      { id: "edit", label: "Edit Item", onClick: handleClick },
+      { id: "delete", label: "Delete Item", danger: true },
+    ]
+
+    render(<${PascalName} triggerLabel="Options" items={items} />)
+
+    const trigger = screen.getByText("Options")
+    expect(trigger).toBeDefined()
+
+    fireEvent.click(trigger)
+    expect(screen.getByText("Edit Item")).toBeDefined()
+
+    fireEvent.click(screen.getByText("Edit Item"))
+    expect(handleClick).toHaveBeenCalledOnce()
   })
 })
 `
