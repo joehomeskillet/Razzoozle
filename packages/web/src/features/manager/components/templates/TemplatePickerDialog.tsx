@@ -19,7 +19,7 @@ import {
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { Edit, Trash2, LayoutTemplate } from "lucide-react"
 import { motion } from "motion/react"
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { Fragment, useEffect, useState, useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "@tanstack/react-router"
 
@@ -225,13 +225,14 @@ const TemplatePickerDialog = ({
                 {t("manager:templates.allCategories")}
               </FilterPill>
               {categories.map((category) => (
-                <FilterPill
-                  key={category}
-                  active={selectedCategory === category}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </FilterPill>
+                <Fragment key={category}>
+                  <FilterPill
+                    active={selectedCategory === category}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                  </FilterPill>
+                </Fragment>
               ))}
             </div>
           </>
