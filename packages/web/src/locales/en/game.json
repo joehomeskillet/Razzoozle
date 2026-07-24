@@ -74,7 +74,11 @@
     "unmute": "Unmute",
     "hapticsOff": "Vibration off",
     "hapticsOn": "Vibration on",
-    "hapticsUnsupported": "Vibration not supported on this device"
+    "hapticsUnsupported": "Vibration not supported on this device",
+    "skipQuestion": "Skip question",
+    "revealAnswer": "Reveal answer",
+    "addTime": "Add 10 seconds",
+    "subtractTime": "Remove 10 seconds"
   },
   "avatar": {
     "title": "Your avatar",
