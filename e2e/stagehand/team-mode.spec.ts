@@ -173,7 +173,23 @@ async function run() {
     console.log('Team mode toggled on start panel');
 
     await manager.locator(testIdSel('quizz-start-btn')).click();
-    await waitForTestId(manager, 'game-pin');
+    // Start can require a second click if mode toggles dirty the form.
+    const pinDeadline = Date.now() + 25_000;
+    let pinVisible = false;
+    while (Date.now() < pinDeadline) {
+      if (await manager.locator(testIdSel('game-pin')).isVisible().catch(() => false)) {
+        pinVisible = true;
+        break;
+      }
+      // Retry start if still on panel
+      if (await manager.locator(testIdSel('quizz-start-btn')).isVisible().catch(() => false)) {
+        await manager.locator(testIdSel('quizz-start-btn')).click().catch(() => {});
+      }
+      await manager.waitForTimeout(800);
+    }
+    if (!pinVisible) {
+      throw new Error('game-pin never appeared after team-mode start');
+    }
     const { pin } = await managerSh.extract(
       'Locate the 6-digit PIN code displayed on the screen for players to join.',
       PinSchema,

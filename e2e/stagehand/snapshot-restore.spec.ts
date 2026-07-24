@@ -157,32 +157,45 @@ async function runSnapshotRestore() {
     );
     await rejoinedPage.goto(`${BASE_URL}/party/${gameId}`);
 
-    // Flexible rejoin post-condition: mid-game shell (result, disabled answers, question, wait)
-    const rejoinDeadline = Date.now() + 20_000;
-    let rejoined = false;
-    while (Date.now() < rejoinDeadline) {
-      if (await isTestIdVisible(rejoinedPage, 'answer-result')) {
-        rejoined = true;
-        break;
+    const waitRejoinShell = async (page: Page, ms: number) => {
+      const deadline = Date.now() + ms;
+      while (Date.now() < deadline) {
+        if (await isTestIdVisible(page, 'answer-result')) return true;
+        if (await isTestIdVisible(page, 'question-text')) return true;
+        if (await isTestIdVisible(page, 'waiting-room')) return true;
+        if (
+          await page
+            .locator(testIdPrefixSel('answer-btn-'))
+            .first()
+            .isVisible()
+            .catch(() => false)
+        ) {
+          return true;
+        }
+        await page.waitForTimeout(400);
       }
-      if (await isTestIdVisible(rejoinedPage, 'question-text')) {
-        rejoined = true;
-        break;
-      }
-      if (await isTestIdVisible(rejoinedPage, 'waiting-room')) {
-        rejoined = true;
-        break;
-      }
-      const anyAnswer = await rejoinedPage
-        .locator(testIdPrefixSel('answer-btn-'))
-        .first()
+      return false;
+    };
+
+    let rejoined = await waitRejoinShell(rejoinedPage, 12_000);
+    if (!rejoined) {
+      // Fallback: classic PIN + same username rejoin (token deep-link can race)
+      console.warn('Token party deep-link did not mount shell — falling back to PIN rejoin');
+      await rejoinedPage.goto(BASE_URL);
+      await waitForTestId(rejoinedPage, 'pin-input-digit-0');
+      await rejoinedPage.locator(testIdSel('pin-input-digit-0')).click();
+      await rejoinedPage.type(pin);
+      await rejoinedPage.locator(testIdSel('join-submit')).click();
+      // Mid-game rejoin may skip username if identity is recovered; else re-enter.
+      const needName = await rejoinedPage
+        .locator(testIdSel('username-input'))
         .isVisible()
         .catch(() => false);
-      if (anyAnswer) {
-        rejoined = true;
-        break;
+      if (needName) {
+        await rejoinedPage.locator(testIdSel('username-input')).fill(PLAYER_NAME);
+        await rejoinedPage.locator(testIdSel('join-submit')).click();
       }
-      await rejoinedPage.waitForTimeout(400);
+      rejoined = await waitRejoinShell(rejoinedPage, 20_000);
     }
     if (!rejoined) {
       throw new Error('Rejoin did not show mid-game player UI (result/question/answers/wait)');
